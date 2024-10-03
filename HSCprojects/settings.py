@@ -38,7 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     "dashboard.apps.DashboardConfig",
-    "accounts.apps.AccountsConfig"
+    "accounts.apps.AccountsConfig",
+    "anomalis.apps.AnomalisConfig"
 ]
 
 MIDDLEWARE = [
