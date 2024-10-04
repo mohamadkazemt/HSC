@@ -14,6 +14,7 @@ Like: www.facebook.com/keenthemes
 	<!--begin::Head-->
 	<head>
         {% load static %}
+
 		<title>پنل ادمین مترونیک  </title>
 		<meta charset="utf-8" />
 		<meta name="description" content="The most advanced Bootstrap 5 Admin Theme with 40 unique prebuilt layouts on Themeforest trusted by 100,000 beginners and professionals. Multi-demo, حالت تیره, RTL support and complete React, Angular, Vue, Asp.Net Core, Rails, Spring, Blazor, Django, Express.js, Node.js, Flask, Symfony & Laravel versions. Grab your copy now and get life-time updates for free." />
@@ -36,6 +37,7 @@ Like: www.facebook.com/keenthemes
 		<!--begin::Global Stylesheets Bundle(mandatory for all pages)-->
 		<link href="{% static 'assets/plugins/global/plugins.bundle.rtl.css' %}" rel="stylesheet" type="text/css" />
 		<link href="{% static 'assets/css/style.bundle.rtl.css' %}" rel="stylesheet" type="text/css" />
+
 		<!--end::Global Stylesheets Bundle-->
 		<script>// Frame-busting to prevent site from being loaded within a frame without permission (click-jacking) if (window.top != window.self) { window.top.location.replace(window.self.location.href); }</script>
 	</head>
@@ -49,6 +51,6 @@ Like: www.facebook.com/keenthemes
     {% block content %}{% endblock %}
     
     
-    
+
     </body>
 </html>

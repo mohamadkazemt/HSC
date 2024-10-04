@@ -1,17 +1,14 @@
 from django.contrib import admin
-from anomalis.models import Anomaly
-from .models import Location, Anomalytype
-
-class AnomalyAdmin(admin.ModelAdmin):
-    list_display = ('location', 'anomalytype', 'created_by', 'followup', 'description')
-    list_filter = ('location', 'anomalytype', 'created_by', 'followup', 'description')
-    search_fields = ('location', 'anomalytype', 'created_by', 'followup', 'description')
-    ordering = ('location', 'anomalytype', 'created_by', 'followup', 'description')
-
-admin.site.register(Anomaly, AnomalyAdmin)
+from anomalis.models import CorrectiveAction
+from .models import Location, Anomalytype, Tags
 
 
 
 
 admin.site.register(Location)
 admin.site.register(Anomalytype)
+admin.site.register(CorrectiveAction)
+admin.site.register(Tags)
+
+
+

@@ -1,4 +1,6 @@
 ﻿{% extends 'base.html' %}
+
+
 {% load static %}
 {% block content %}
 
@@ -2874,7 +2876,8 @@
 					<!--begin::Modal body-->
 					<div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-15">
 						<!--begin:form-->
-						<form id="kt_modal_new_target_form" class="form" action="#">
+						<form id="kt_modal_new_target_form" class="form" action="#" method="post">
+                            {% csrf_token %}
 							<!--begin::Heading-->
 							<div class="mb-13 text-center">
 								<!--begin::Title-->
@@ -2890,78 +2893,77 @@
 							<div class="d-flex flex-column mb-8 fv-row">
 								<!--begin::Tags-->
 								<label class="d-flex align-items-center fs-6 fw-semibold mb-2">
-									<span class="required">محل ناهنجاری</span>
+									<span class="required">{{ form.location.label}}</span>
 									<span class="ms-1" data-bs-toggle="tooltip" title="لطفا مکانی که دارای ناهنجاری است را انتخاب کنید.">
 										<i class="ki-outline ki-information-5 text-gray-500 fs-6"></i>
 									</span>
 								</label>
 								<!--end::Tags-->
-								<input type="text" class="form-control form-control-solid" placeholder="عنوان" name="target_title" />
+                                {{ form.location }}
 							</div>
 							<!--end::Input group-->
 							<!--begin::Input group-->
 							<div class="row g-9 mb-8">
 								<!--begin::Col-->
 								<div class="col-md-6 fv-row">
-									<label class="required fs-6 fw-semibold mb-2">اختصاص دادن</label>
-									<select class="form-select form-select-solid" data-control="select2" data-hide-search="true" data-placeholder="انتخاب عضو" name="target_assign">
-										<option value="">انتخاب user...</option>
-										<option value="1">کارینا کالرک</option>
-										<option value="2">رابرت دو</option>
-										<option value="3">قلی رضایی</option>
-										<option value="4">امید وحیدی</option>
-										<option value="5">محسن برومند</option>
-									</select>
+									<label class="required fs-6 fw-semibold mb-2">{{ form.followup.label}}</label>
+									{{ form.followup }}
 								</div>
 								<!--end::Col-->
 								<!--begin::Col-->
 								<div class="col-md-6 fv-row">
-									<label class="required fs-6 fw-semibold mb-2">سررسید</label>
+									<label class="required fs-6 fw-semibold mb-2">{{ form.anomalytype.label }}</label>
 									<!--begin::Input-->
 									<div class="position-relative d-flex align-items-center">
-										<!--begin::Icon-->
-										<i class="ki-outline ki-calendar-8 fs-2 position-absolute mx-4"></i>
-										<!--end::Icon-->
-										<!--begin::تاریخpicker-->
-										<input class="form-control form-control-solid ps-12" placeholder="انتخاب یک تاریخ" name="due_date" />
-										<!--end::تاریخpicker-->
+									{{ form.anomalytype }}
 									</div>
 									<!--end::Input-->
 								</div>
 								<!--end::Col-->
 							</div>
 							<!--end::Input group-->
+                            	<div class="d-flex flex-column mb-8 fv-row">
+								<!--begin::Tags-->
+								<label class="d-flex align-items-center fs-6 fw-semibold mb-2">
+									<span class="required">{{ form.correctiveaction.label}}</span>
+									<span class="ms-1" data-bs-toggle="tooltip" title="لطفا یک اقدام اصلاحی رو انتخاب کنید.">
+										<i class="ki-outline ki-information-5 text-gray-500 fs-6"></i>
+									</span>
+								</label>
+								<!--end::Tags-->
+                                {{ form.correctiveaction }}
+							</div>
 							<!--begin::Input group-->
 							<div class="d-flex flex-column mb-8">
-								<label class="fs-6 fw-semibold mb-2">جزییات</label>
-								<textarea class="form-control form-control-solid" rows="3" name="target_details" placeholder="نوع جزییات"></textarea>
+								<label class="fs-6 fw-semibold mb-2">{{ form.description.label }}</label>
+                                {{ form.description }}
 							</div>
 							<!--end::Input group-->
 							<!--begin::Input group-->
 							<div class="d-flex flex-column mb-8 fv-row">
 								<!--begin::Tags-->
 								<label class="d-flex align-items-center fs-6 fw-semibold mb-2">
-									<span class="required">برچسب ها</span>
+									<span class="required">{{ form.tag.label }}</span>
 									<span class="ms-1" data-bs-toggle="tooltip" title="اولویت هدف را مشخص کنید">
 										<i class="ki-outline ki-information-5 text-gray-500 fs-6"></i>
 									</span>
 								</label>
 								<!--end::Tags-->
-								<input class="form-control form-control-solid" value="وارد کردن, فوری" name="tags" />
+                                {{ form.tag}}
 							</div>
 							<!--end::Input group-->
 							<!--begin::Input group-->
 							<div class="d-flex flex-stack mb-8">
 								<!--begin::Tags-->
 								<div class="me-5">
-									<label class="fs-6 fw-semibold">افزودن کاربران</label>
-									<div class="fs-7 fw-semibold text-muted">اگر به اطلاعات بیشتری نیاز دارید ، لطفا برنامه ریزی بودجه را بررسی کنید</div>
+									<label class="fs-6 fw-semibold">{{ form.action.label }}</label>
+									<div class="fs-7 fw-semibold text-muted">در صورت روشن بودن این گزینه به معنای ایمن بودن آنومالی می باشد</div>
 								</div>
 								<!--end::Tags-->
 								<!--begin::Switch-->
 								<label class="form-check form-switch form-check-custom form-check-solid">
-									<input class="form-check-input" type="checkbox" value="1" checked="checked" />
-									<span class="form-check-label fw-semibold text-muted">همه بدهکار هستیم</span>
+									{{ form.action }}
+									<span class="form-check-label fw-semibold text-muted">وضعیت را مشخص کنید</span>
 								</label>
 								<!--end::Switch-->
 							</div>
@@ -4371,6 +4373,7 @@
 		<script src="{% static 'assets/js/custom/utilities/modals/create-campaign.js' %}"></script>
 		<script src="{% static 'assets/js/custom/utilities/modals/new-target.js' %}"></script>
 		<script src="{% static 'assets/js/custom/utilities/modals/users-search.js' %}"></script>
+
 		<!--end::سفارشی Javascript-->
 		<!--end::Javascript-->
 {% endblock %}

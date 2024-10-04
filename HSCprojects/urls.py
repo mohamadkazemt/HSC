@@ -22,4 +22,5 @@ urlpatterns = [
     path('dashboard/', include('dashboard.urls')),
     path('accounts/', include('accounts.urls')),
     path('anomalis/', include('anomalis.urls')),
+    path('select2/', include('django_select2.urls')),
 ]

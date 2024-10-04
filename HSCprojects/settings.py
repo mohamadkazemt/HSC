@@ -39,7 +39,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     "dashboard.apps.DashboardConfig",
     "accounts.apps.AccountsConfig",
-    "anomalis.apps.AnomalisConfig"
+    "anomalis.apps.AnomalisConfig",
+
+    'taggit',
+    "django_select2",
 ]
 
 MIDDLEWARE = [
