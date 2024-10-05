@@ -1,31 +1,25 @@
 from django import forms
-from taggit.models import Tag
-
-from .models import Anomaly, Tags
+from .models import Anomaly, Priority
 from django_select2.forms import Select2TagWidget
 
 
 
 
 class AnomalyForm(forms.ModelForm):
-    tags = forms.ModelMultipleChoiceField(
-        queryset=Tags.objects.all(),
-        widget=Select2TagWidget(attrs={'class': 'form-control form-control-solid', 'data-tags': 'true', 'data-control': 'select2'}),
-        required=False
-    )
+
 
     class Meta:
         model = Anomaly
-        fields = ('location', 'anomalytype', 'created_by', 'followup', 'description', 'action', 'correctiveaction', 'tag')
+        fields = ('location', 'anomalytype', 'created_by', 'followup', 'description', 'action', 'correctiveaction', 'priority')
         labels = {
-            'location': 'محل ناهنجاری',
-            'anomalytype': 'نوع ناهنجاری',
+            'location': 'محل آنومالی ',
+            'anomalytype': 'نوع آنومالی',
             'created_by': 'ایجاد کننده',
             'followup': 'پیگیری',
             'description': 'شرح',
             'action': 'وضعیت',
             'correctiveaction': 'اقدامات اصلاحی',
-            'tag': 'برچسب'
+            'priority': 'اولویت'
         }
         widgets = {
             'location': forms.Select(attrs={'class': 'form-control form-control-solid', 'data-control': 'select2'}),
@@ -35,6 +29,7 @@ class AnomalyForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'class': 'form-control form-control-solid', 'rows': 3, 'placeholder': 'یاداشت افسر ایمنی'}),
             'action': forms.CheckboxInput(attrs={'class': 'form-check-input form-check-solid'}),
             'correctiveaction': forms.Select(attrs={'class': 'form-select form-select-solid', 'data-control': 'select2'}),
+            'priority': forms.Select(attrs={'class': 'form-control form-control-solid', 'data-control': 'select2'})
         }
 
 

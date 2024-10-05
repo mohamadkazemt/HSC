@@ -2943,13 +2943,13 @@
 							<div class="d-flex flex-column mb-8 fv-row">
 								<!--begin::Tags-->
 								<label class="d-flex align-items-center fs-6 fw-semibold mb-2">
-									<span class="required">{{ form.tag.label }}</span>
+									<span class="required">{{ form.priority.label }}</span>
 									<span class="ms-1" data-bs-toggle="tooltip" title="اولویت هدف را مشخص کنید">
 										<i class="ki-outline ki-information-5 text-gray-500 fs-6"></i>
 									</span>
 								</label>
 								<!--end::Tags-->
-                                {{ form.tag}}
+                                {{ form.priority}}
 							</div>
 							<!--end::Input group-->
 							<!--begin::Input group-->
@@ -4356,24 +4356,5 @@
 		</div>
 		<!--end::Modal - دعوت دوست-->
 		<!--end::Modals-->
-		<!--begin::Javascript-->
-		<script>var hostUrl = "assets/";</script>
-		<!--begin::Global Javascript Bundle(mandatory for all pages)-->
-		<script src="{% static 'assets/plugins/global/plugins.bundle.js' %}"></script>
-		<script src="{% static 'assets/js/scripts.bundle.js' %}"></script>
-		<!--end::Global Javascript Bundle-->
-		<!--begin::Vendors Javascript(used for this page only)-->
-		<script src="{% static 'assets/plugins/custom/datatables/datatables.bundle.js' %}"></script>
-		<!--end::Vendors Javascript-->
-		<!--begin::سفارشی Javascript(used for this page only)-->
-		<script src="{% static 'assets/js/widgets.bundle.js' %}"></script>
-		<script src="{% static 'assets/js/custom/widgets.js' %}"></script>
-		<script src="{% static 'assets/js/custom/apps/chat/chat.js' %}"></script>
-		<script src="{% static 'assets/js/custom/utilities/modals/upgrade-plan.js' %}"></script>
-		<script src="{% static 'assets/js/custom/utilities/modals/create-campaign.js' %}"></script>
-		<script src="{% static 'assets/js/custom/utilities/modals/new-target.js' %}"></script>
-		<script src="{% static 'assets/js/custom/utilities/modals/users-search.js' %}"></script>
 
-		<!--end::سفارشی Javascript-->
-		<!--end::Javascript-->
 {% endblock %}

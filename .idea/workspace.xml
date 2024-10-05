@@ -4,26 +4,23 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="newtemolate">
-      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0003_correctiveaction.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0004_alter_anomaly_options_alter_anomalytype_options_and_more.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0005_tags.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0006_anomaly_tag_alter_tags_tag_name.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0007_remove_anomaly_tag_anomaly_tag.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="formanomali">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/HSCprojects/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/apps.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0001_initial.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/migrations/0001_initial.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0002_anomaly.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0003_correctiveaction.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0004_alter_anomaly_options_alter_anomalytype_options_and_more.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0005_tags.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0006_anomaly_tag_alter_tags_tag_name.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0007_remove_anomaly_tag_anomaly_tag.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/new-anomalie.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/new-anomalie.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dashboard/templates/dashboard/dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/dashboard/templates/dashboard/dashboard.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/base.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/sidebar.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/sidebar.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -62,6 +59,9 @@
     &quot;accountId&quot;: &quot;b1049974-7825-44ef-a60c-99f35deafaf1&quot;
   }
 }</component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/anomalis/admin.py" root0="FORCE_HIGHLIGHTING" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 5
 }</component>
@@ -79,8 +79,10 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.pycharm.django.structure.promotion.once.per.project&quot;: &quot;true&quot;,
     &quot;com.codeium.enabled&quot;: &quot;true&quot;,
+    &quot;com.codeium.snoozedEndTime&quot;: &quot;0&quot;,
     &quot;django.template.preview.state&quot;: &quot;SHOW_EDITOR&quot;,
     &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;C:/Users/MKT/PycharmProjects/HSCprojects/accounts/templates/static&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
@@ -169,7 +171,12 @@
       <workItem from="1727945747735" duration="1646000" />
       <workItem from="1727947441815" duration="19802000" />
       <workItem from="1728016504849" duration="9024000" />
-      <workItem from="1728026350527" duration="7536000" />
+      <workItem from="1728026350527" duration="7852000" />
+      <workItem from="1728098705428" duration="3034000" />
+      <workItem from="1728104090054" duration="884000" />
+      <workItem from="1728104998052" duration="486000" />
+      <workItem from="1728105504300" duration="326000" />
+      <workItem from="1728105841816" duration="1559000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
@@ -185,7 +192,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۰۲" />
       <updated>1727641532891</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL‎−۰۰۰۰۳" summary="formanomali">
+      <option name="closed" value="true" />
+      <created>1728036855616</created>
+      <option name="number" value="LOCAL‎−۰۰۰۰۳" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۰۳" />
+      <updated>1728036855616</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -206,6 +220,7 @@
     <MESSAGE value="anomalies" />
     <MESSAGE value="accont" />
     <MESSAGE value="newtemolate" />
-    <option name="LAST_COMMIT_MESSAGE" value="newtemolate" />
+    <MESSAGE value="formanomali" />
+    <option name="LAST_COMMIT_MESSAGE" value="formanomali" />
   </component>
 </project>

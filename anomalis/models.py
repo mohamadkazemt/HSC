@@ -7,8 +7,8 @@ class Location(models.Model):
     name = models.CharField(max_length=100)
 
     class Meta:
-        verbose_name = "محل ناهنجاری"
-        verbose_name_plural = "محل‌های ناهنجاری"
+        verbose_name = "محل آنومالی"
+        verbose_name_plural = "محل‌های آنومالی"
 
     def __str__(self):
         return self.name
@@ -19,15 +19,15 @@ class Anomalytype(models.Model):
     description = models.TextField()
 
     class Meta:
-        verbose_name = "نوع ناهنجاری"
-        verbose_name_plural = "نوع‌های ناهنجاری"
+        verbose_name = "نوع آنومالی"
+        verbose_name_plural = "نوع‌های آنومالی"
 
     def __str__(self):
         return self.type
 
 
 class CorrectiveAction(models.Model):
-    anomali_type = models.ForeignKey(Anomalytype, on_delete=models.CASCADE, verbose_name="نوع ناهنجاری")
+    anomali_type = models.ForeignKey(Anomalytype, on_delete=models.CASCADE, verbose_name="نوع آنومالی")
     description = models.TextField(max_length=500, verbose_name="شرح عملیات اصلاحی")
 
     class Meta:
@@ -36,32 +36,32 @@ class CorrectiveAction(models.Model):
 
     def __str__(self):
         return self.description
-class Tags(models.Model):
-    tag_name = models.CharField(max_length=20,verbose_name='برچسب')
+class Priority(models.Model):
+    priority = models.CharField(max_length=20,verbose_name='اولویت')
 
     class Meta:
-        verbose_name = 'برچسب '
-        verbose_name_plural = 'برچسب ها'
+        verbose_name = 'اولویت '
+        verbose_name_plural = 'اولویت ها'
 
     def __str__(self):
-        return  self.tag_name
+        return  self.priority
 
 class Anomaly(models.Model):
-    location = models.ForeignKey(Location, on_delete=models.CASCADE, verbose_name="محل ناهنجاری")
-    anomalytype = models.ForeignKey(Anomalytype, on_delete=models.CASCADE, verbose_name="نوع ناهنجاری")
+    location = models.ForeignKey(Location, on_delete=models.CASCADE, verbose_name="محل آنومالی")
+    anomalytype = models.ForeignKey(Anomalytype, on_delete=models.CASCADE, verbose_name="نوع آنومالی")
     correctiveaction = models.ForeignKey(CorrectiveAction, on_delete=models.CASCADE, verbose_name="عملیات اصلاحی")
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_anomalies', verbose_name="ایجاد کننده")
     followup = models.ForeignKey(User, on_delete=models.CASCADE, related_name='followup_anomalies', verbose_name="پیگیری")
-    description = models.TextField(verbose_name="شرح")
+    description = models.TextField(verbose_name="شرح آنومالی")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="تاریخ بروزرسانی")
     action = models.BooleanField(default=True, verbose_name="وضعیت")
-    tag = models.ManyToManyField(Tags, verbose_name="برچسب")
+    priority = models.ForeignKey(Priority, on_delete=models.CASCADE, verbose_name="اولویت")
 
 
     class Meta:
-        verbose_name = "ناهنجاری"
-        verbose_name_plural = "ناهنجاری‌ها"
+        verbose_name = "آنومالی"
+        verbose_name_plural = "آنومالی ها"
 
     def __str__(self):
         return self.description
