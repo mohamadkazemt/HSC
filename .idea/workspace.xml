@@ -5,20 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="formanomali">
-      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0002_anomaly_image.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0003_alter_anomaly_image.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/list.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0004_alter_anomaly_priority.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0005_alter_anomaly_priority.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/5231f75b-5c5f-44bd-8b76-eadd8e404281.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/5231f75b-5c5f-44bd-8b76-eadd8e404281.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/7dd4c7fb-63b6-4604-b3a8-088698e57a7e.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/7dd4c7fb-63b6-4604-b3a8-088698e57a7e.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/HSCprojects/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/forms.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/new-anomalie.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/new-anomalie.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/accounts/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/list.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/list.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/sidebar.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/sidebar.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/toolbar.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/toolbar.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -55,7 +50,7 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/mohamadkazemt/HSC.git&quot;,
-    &quot;accountId&quot;: &quot;b1049974-7825-44ef-a60c-99f35deafaf1&quot;
+    &quot;accountId&quot;: &quot;9fc15a5e-2546-4e3c-a99c-962a28c99e79&quot;
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
@@ -74,7 +69,6 @@
   &quot;keyToString&quot;: {
     &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
     &quot;Django Server.HSCprojects.executor&quot;: &quot;Run&quot;,
-    &quot;HTTP Request.generated-requests | #1.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.OpenDjangoStructureViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.pycharm.django.structure.promotion.once.per.project&quot;: &quot;true&quot;,
@@ -83,7 +77,7 @@
     &quot;django.template.preview.state&quot;: &quot;SHOW_EDITOR&quot;,
     &quot;git-widget-placeholder&quot;: &quot;master&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/No1/PycharmProjects/HSC3/anomalis/templates/anomalis&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/MKT/PycharmProjects/HSCprojects/accounts/templates/static&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -95,7 +89,6 @@
 }</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
-      <recent name="C:\Users\No1\PycharmProjects\HSC3\anomalis\templates\anomalis" />
       <recent name="C:\Users\MKT\PycharmProjects\HSCprojects\accounts\templates\static" />
       <recent name="C:\Users\MKT\PycharmProjects\HSCprojects\accounts\templates\accounts" />
       <recent name="C:\Users\MKT\PycharmProjects\HSCprojects\static" />
@@ -109,10 +102,7 @@
       <recent name="C:\Users\MKT\PycharmProjects\HSCprojects\dashboard" />
     </key>
   </component>
-  <component name="RunManager" selected="Django Server.HSCprojects">
-    <configuration name="generated-requests | #1" type="HttpClient.HttpRequestRunConfigurationType" factoryName="HTTP Request" temporary="true" nameIsGenerated="true" path="$APPLICATION_CONFIG_DIR$/scratches/generated-requests.http" requestIdentifier="#1" runType="Run single request">
-      <method v="2" />
-    </configuration>
+  <component name="RunManager">
     <configuration name="HSCprojects" type="Python.DjangoServer" factoryName="Django server">
       <module name="HSCprojects" />
       <option name="ENV_FILES" value="" />
@@ -138,11 +128,6 @@
       <option name="customRunCommand" value="" />
       <method v="2" />
     </configuration>
-    <recent_temporary>
-      <list>
-        <item itemvalue="HTTP Request.generated-requests | #1" />
-      </list>
-    </recent_temporary>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
@@ -185,10 +170,11 @@
       <workItem from="1728104090054" duration="884000" />
       <workItem from="1728104998052" duration="486000" />
       <workItem from="1728105504300" duration="326000" />
-      <workItem from="1728105841816" duration="2079000" />
-      <workItem from="1728365118274" duration="137000" />
-      <workItem from="1728365268987" duration="6481000" />
-      <workItem from="1728373026934" duration="8128000" />
+      <workItem from="1728105841816" duration="1559000" />
+      <workItem from="1728390421241" duration="2319000" />
+      <workItem from="1728392776102" duration="222000" />
+      <workItem from="1728393021939" duration="60000" />
+      <workItem from="1728393109032" duration="5292000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
@@ -211,14 +197,7 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۰۳" />
       <updated>1728036855616</updated>
     </task>
-    <task id="LOCAL‎−۰۰۰۰۴" summary="formanomali">
-      <option name="closed" value="true" />
-      <created>1728108211534</created>
-      <option name="number" value="LOCAL‎−۰۰۰۰۴" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۰۴" />
-      <updated>1728108211535</updated>
-    </task>
-    <option name="localTasksCounter" value="5" />
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

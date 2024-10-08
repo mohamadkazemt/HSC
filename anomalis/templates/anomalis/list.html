@@ -39,62 +39,70 @@
                                                         <th class="min-w-120px">ایجاد کننده</th>
                                                         <th class="min-w-120px">پیگیری کننده</th>
                                                         <th class="min-w-120px">اولویت</th>
-                                                        <th class="min-w-120px">وضعیت</th>
+                                                        <th class="min-w-120px">عکس</th> <!-- ستون جدید برای عکس -->
                                                         <th class="min-w-100px text-end">عملیات</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
                                                     {% for anomaly in anomalies %}
                                                     <tr>
+                                                        <td><a href="#" class="text-gray-900 fw-bold text-hover-primary fs-6">{{ anomaly.description }}</a></td>
+                                                        <td><a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">{{ anomaly.location }}</a></td>
+                                                        <td><a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">{{ anomaly.created_at|date:"Y/m/d" }}</a></td>
+                                                        <td><a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">{{ anomaly.created_by }}</a></td>
+                                                        <td><a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">{{ anomaly.followup }}</a></td>
                                                         <td>
-                                                            <a href="#" class="text-gray-900 fw-bold text-hover-primary fs-6">{{ anomaly.description }}</a>
-                                                        </td>
-                                                        <td>
-                                                            <a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">{{ anomaly.location }}</a>
-                                                        </td>
-                                                        <td>
-                                                            <a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">{{ anomaly.created_at|date:"Y/m/d" }}</a>
-                                                        </td>
-                                                        <td>
-                                                            <a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">{{ anomaly.created_by }}</a>
-                                                        </td>
-                                                        <td>
-                                                            <a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">{{ anomaly.followup }}</a>
-                                                        </td>
-                                                        <td>
-                                                            {% if anomaly.priority == "زیاد" %}
+                                                            {% if anomaly.priority.name == "زیاد" %}
                                                                 <span class="badge badge-light-danger">زیاد</span>
-                                                            {% elif anomaly.priority == "متوسط" %}
+                                                            {% elif anomaly.priority.name == "متوسط" %}
                                                                 <span class="badge badge-light-warning">متوسط</span>
-                                                            {% elif anomaly.priority == "کم" %}
+                                                            {% elif anomaly.priority.name == "کم" %}
                                                                 <span class="badge badge-light-success">کم</span>
+                                                            {% else %}
+                                                                <span class="badge badge-light-secondary">نامشخص</span>
                                                             {% endif %}
                                                         </td>
+                                                        <!-- ستون عکس -->
                                                         <td>
-                                                            <span class="badge {{ anomaly.action|yesno:'badge-light-success,badge-light-danger' }}">
-                                                                {{ anomaly.action|yesno:"تایید شده,درحال پردازش" }}
-                                                            </span>
+                                                            <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal{{ anomaly.id }}">
+                                                                <img src="{{ anomaly.image.url }}" alt="{{ anomaly.description }}" style="width: 50px; height: auto;">
+                                                            </a>
                                                         </td>
                                                         <td class="text-end">
-                                                            <!-- لینک به صفحه تغییر وضعیت -->
+                                                            <!-- دکمه‌های عملیات (تغییر وضعیت، ویرایش، حذف) -->
                                                             <a href="{% url 'anomalis:toggle_status' anomaly.id %}" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1">
                                                                 <i class="ki-outline ki-switch fs-2"></i>
                                                             </a>
-                                                            <!-- لینک به صفحه ویرایش -->
                                                             <a href="{% url 'anomalis:edit' anomaly.id %}" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1">
                                                                 <i class="ki-outline ki-pencil fs-2"></i>
                                                             </a>
-                                                            <!-- لینک به صفحه حذف -->
                                                             <a href="{% url 'anomalis:delete' anomaly.id %}" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm">
                                                                 <i class="ki-outline ki-trash fs-2"></i>
                                                             </a>
                                                         </td>
                                                     </tr>
+
+                                                    <!-- Modal برای نمایش عکس بزرگ -->
+                                                    <div class="modal fade" id="imageModal{{ anomaly.id }}" tabindex="-1" aria-labelledby="imageModalLabel{{ anomaly.id }}" aria-hidden="true">
+                                                        <div class="modal-dialog modal-dialog-centered">
+                                                            <div class="modal-content">
+                                                                <div class="modal-header">
+                                                                    <h5 class="modal-title" id="imageModalLabel{{ anomaly.id }}">عکس آنومالی</h5>
+                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="بستن"></button>
+                                                                </div>
+                                                                <div class="modal-body">
+                                                                    <img src="{{ anomaly.image.url }}" alt="{{ anomaly.description }}" style="width: 100%; height: auto;">
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
                                                     {% endfor %}
                                                 </tbody>
                                             </table>
                                         </div>
                                     </div>
+
 
 
 									<!--end::جداول Widget 13-->

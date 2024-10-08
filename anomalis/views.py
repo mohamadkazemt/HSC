@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from .forms import  AnomalyForm
 from django.shortcuts import redirect
 
@@ -20,15 +20,15 @@ def anomalis(request):
             print(form.errors)
     else:
         form = AnomalyForm()
-    return render(request, 'anomalis/new-anomalie.html', {'form': form})
+    return render(request, 'anomalis/new-anomalie.html', {'form': form, 'pagetitle': 'افزودن آنومالی جدید'})
 
 
 
 @login_required
+@user_passes_test(lambda u: not u.groups.filter(name='مسئول پیگیری').exists(), login_url='accounts:login')
 def anomaly_list(request):
     anomalies = Anomaly.objects.all()  # گرفتن همه آنومالی‌ها از مدل
-    return render(request, 'anomalis/list.html',{'anomalies': anomalies})
-
+    return render(request, 'anomalis/list.html',{'anomalies': anomalies, 'pagetitle': 'لیست آنومالی‌ها'})
 @login_required
 def toggle_status(request, pk):
     anomaly = get_object_or_404(Anomaly, pk=pk)
