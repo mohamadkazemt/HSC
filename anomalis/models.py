@@ -57,6 +57,10 @@ class Anomaly(models.Model):
     updated_at = models.DateTimeField(auto_now=True, verbose_name="تاریخ بروزرسانی")
     action = models.BooleanField(default=True, verbose_name="وضعیت")
     priority = models.ForeignKey(Priority, on_delete=models.CASCADE, verbose_name="اولویت")
+    image = models.ImageField(upload_to='anomalies/%Y/%m/%d', verbose_name="تصویر آنومالی", blank=True, null=True)
+
+
+
 
 
     class Meta:

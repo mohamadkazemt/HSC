@@ -3,11 +3,7 @@
 
 {% load static %}
 {% block content %}
-
-
-
-		<!--begin::اپلیکیشن-->
-		<div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+<div class="d-flex flex-column flex-root app-root" id="kt_app_root">
 			<!--begin::Page-->
 			<div class="app-page flex-column flex-column-fluid" id="kt_app_page">
 				<!--begin::Header-->
@@ -16,52 +12,92 @@
 				<!--begin::Wrapper-->
 				<div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
 					<!--begin::Sidebar-->
-
                     {% include 'sidebar.html' %}
-
-                    <!--end::Sidebar-->
+					<!--end::Sidebar-->
 					<!--begin::اصلی-->
 					<div class="app-main flex-column flex-row-fluid" id="kt_app_main">
 						<!--begin::Content wrapper-->
 						<div class="d-flex flex-column flex-column-fluid">
 							<!--begin::Toolbar-->
-
-
 							{% include 'toolbar.html' %}
-
-
 							<!--end::Toolbar-->
 							<!--begin::Content-->
 							<div id="kt_app_content" class="app-content flex-column-fluid">
 								<!--begin::Content container-->
 								<div id="kt_app_content_container" class="app-container container-fluid">
-									<!--begin::کارت-->
-									<div class="card">
-										<!--begin::کارت body-->
-										<div class="card-body">
-											<!--begin::Heading-->
-											<div class="card-px text-center pt-15 pb-15">
-												<!--begin::Title-->
-												<h2 class="fs-2x fw-bold mb-0">لیست آنومالی</h2>
-												<!--end::Title-->
-												<!--begin::توضیحات-->
-												<p class="text-gray-500 fs-4 fw-semibold py-7">برای ارسال انومالی بر روی دکمه زیرکلیک کنید
-												<br />------------</p>
-												<!--end::توضیحات-->
-												<!--begin::Actions-->
-												<a href="#" class="btn btn-primary er fs-6 px-8 py-4" data-bs-toggle="modal" data-bs-target="#kt_modal_new_target">آنومالی جدید</a>
-												<!--end::Actions-->
-											</div>
-											<!--end::Heading-->
-											<!--begin::Illustration-->
-											<div class="text-center pb-15 px-5">
-												<img src="{% static 'assets/media/illustrations/sketchy-1/17.png' %}" alt="" class="mw-100 h-200px h-sm-325px" />
-											</div>
-											<!--end::Illustration-->
-										</div>
-										<!--end::کارت body-->
-									</div>
-									<!--end::کارت-->
+									<!--begin::Row-->
+									<div class="row g-5 g-xl-8">
+									<!--begin::جداول Widget 13-->
+									<div class="card-body py-3">
+                                        <div class="table-responsive">
+                                            <table class="table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3">
+                                                <thead>
+                                                    <tr class="fw-bold text-muted">
+                                                        <th class="min-w-150px">توضیحات</th>
+                                                        <th class="min-w-120px">محل</th>
+                                                        <th class="min-w-120px">تاریخ ایجاد</th>
+                                                        <th class="min-w-120px">ایجاد کننده</th>
+                                                        <th class="min-w-120px">پیگیری کننده</th>
+                                                        <th class="min-w-120px">اولویت</th>
+                                                        <th class="min-w-120px">وضعیت</th>
+                                                        <th class="min-w-100px text-end">عملیات</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for anomaly in anomalies %}
+                                                    <tr>
+                                                        <td>
+                                                            <a href="#" class="text-gray-900 fw-bold text-hover-primary fs-6">{{ anomaly.description }}</a>
+                                                        </td>
+                                                        <td>
+                                                            <a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">{{ anomaly.location }}</a>
+                                                        </td>
+                                                        <td>
+                                                            <a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">{{ anomaly.created_at|date:"Y/m/d" }}</a>
+                                                        </td>
+                                                        <td>
+                                                            <a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">{{ anomaly.created_by }}</a>
+                                                        </td>
+                                                        <td>
+                                                            <a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">{{ anomaly.followup }}</a>
+                                                        </td>
+                                                        <td>
+                                                            {% if anomaly.priority == "زیاد" %}
+                                                                <span class="badge badge-light-danger">زیاد</span>
+                                                            {% elif anomaly.priority == "متوسط" %}
+                                                                <span class="badge badge-light-warning">متوسط</span>
+                                                            {% elif anomaly.priority == "کم" %}
+                                                                <span class="badge badge-light-success">کم</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge {{ anomaly.action|yesno:'badge-light-success,badge-light-danger' }}">
+                                                                {{ anomaly.action|yesno:"تایید شده,درحال پردازش" }}
+                                                            </span>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <!-- لینک به صفحه تغییر وضعیت -->
+                                                            <a href="{% url 'anomalis:toggle_status' anomaly.id %}" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1">
+                                                                <i class="ki-outline ki-switch fs-2"></i>
+                                                            </a>
+                                                            <!-- لینک به صفحه ویرایش -->
+                                                            <a href="{% url 'anomalis:edit' anomaly.id %}" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1">
+                                                                <i class="ki-outline ki-pencil fs-2"></i>
+                                                            </a>
+                                                            <!-- لینک به صفحه حذف -->
+                                                            <a href="{% url 'anomalis:delete' anomaly.id %}" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm">
+                                                                <i class="ki-outline ki-trash fs-2"></i>
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+
+									<!--end::جداول Widget 13-->
 								</div>
 								<!--end::Content container-->
 							</div>
@@ -69,9 +105,7 @@
 						</div>
 						<!--end::Content wrapper-->
 						<!--begin::Footer-->
-
-                        {% include 'footer.html' %}
-
+                            {% include 'footer.html' %}
 						<!--end::Footer-->
 					</div>
 					<!--end:::اصلی-->
@@ -1780,7 +1814,7 @@
 									<div class="d-flex align-items-center">
 										<!--begin::Avatar-->
 										<div class="symbol symbol-35px symbol-circle">
-											<img alt="Pic" src="{% static 'assets/media/avatars/300-1.jpg' %}" />
+											<img alt="Pic" src="assets/media/avatars/300-1.jpg" />
 										</div>
 										<!--end::Avatar-->
 										<!--begin::Details-->
@@ -1916,7 +1950,7 @@
 									<div class="d-flex align-items-center">
 										<!--begin::Avatar-->
 										<div class="symbol symbol-35px symbol-circle">
-											<img alt="Pic" src="{% static 'assets/media/avatars/300-9.jpg' %}" />
+											<img alt="Pic" src="assets/media/avatars/300-9.jpg" />
 										</div>
 										<!--end::Avatar-->
 										<!--begin::Details-->
@@ -2268,7 +2302,7 @@
 											</label>
 											<!--end::Tags-->
 											<!--begin::Image input placeholder-->
-											<style>.image-input-placeholder { background-image: url('{% static 'assets/media/svg/files/blank-image.svg' %}'); } [data-bs-theme="dark"] .image-input-placeholder { background-image: url('{% static 'assets/media/svg/files/blank-image-dark.svg' %}'); }</style>
+											<style>.image-input-placeholder { background-image: url('assets/media/svg/files/blank-image.svg'); } [data-bs-theme="dark"] .image-input-placeholder { background-image: url('assets/media/svg/files/blank-image-dark.svg'); }</style>
 											<!--end::Image input placeholder-->
 											<!--begin::Image input-->
 											<div class="image-input image-input-empty image-input-outline image-input-placeholder" data-kt-image-input="true">
@@ -2858,12 +2892,12 @@
 			</div>
 		</div>
 		<!--end::Modal - ساختن کمپین-->
-		<!--begin::Modal - هدف جدید-->
-		<div class="modal fade" id="kt_modal_new_target" tabindex="-1" aria-hidden="true">
+		<!--begin::Modal - دعوت دوستs-->
+		<div class="modal fade" id="kt_modal_invite_friends" tabindex="-1" aria-hidden="true">
 			<!--begin::Modal dialog-->
-			<div class="modal-dialog modal-dialog-centered mw-650px">
+			<div class="modal-dialog mw-650px">
 				<!--begin::Modal content-->
-				<div class="modal-content rounded">
+				<div class="modal-content">
 					<!--begin::Modal header-->
 					<div class="modal-header pb-0 border-0 justify-content-end">
 						<!--begin::Close-->
@@ -2874,155 +2908,533 @@
 					</div>
 					<!--begin::Modal header-->
 					<!--begin::Modal body-->
-					<div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-15">
-						<!--begin:form-->
-						<form id="kt_modal_new_target_form" class="form" method="post" enctype="multipart/form-data">
-                            {% csrf_token %}
+					<div class="modal-body scroll-y mx-5 mx-xl-18 pt-0 pb-15">
+						<!--begin::Heading-->
+						<div class="text-center mb-13">
+							<!--begin::Title-->
+							<h1 class="mb-3">دعوت از دوستان</h1>
+							<!--end::Title-->
+							<!--begin::توضیحات-->
+							<div class="text-muted fw-semibold fs-5">اگر به اطلاعات بیشتری نیاز دارید ، لطفاً این مورد را بررسی کنید 
+							<a href="#" class="link-primary fw-bold">صفحه سوالات متداول</a>.</div>
+							<!--end::توضیحات-->
+						</div>
+						<!--end::Heading-->
+						<!--begin::Google Contacts دعوت-->
+						<div class="btn btn-light-primary fw-bold w-100 mb-8">
+						<img alt="Logo" src="assets/media/svg/brand-logos/google-icon.svg" class="h-20px me-3" />دعوت از مخاطبین جمیل</div>
+						<!--end::Google Contacts دعوت-->
+						<!--begin::separator-->
+						<div class="separator d-flex flex-center mb-8">
+							<span class="text-uppercase bg-body fs-7 fw-semibold text-muted px-3">یا</span>
+						</div>
+						<!--end::separator-->
+						<!--begin::Textarea-->
+						<textarea class="form-control form-control-solid mb-8" rows="3" placeholder="ایمیل خود را وارد کنید"></textarea>
+						<!--end::Textarea-->
+						<!--begin::users-->
+						<div class="mb-10">
 							<!--begin::Heading-->
-							<div class="mb-13 text-center">
-								<!--begin::Title-->
-								<h1 class="mb-3">فرم آنومالی</h1>
-								<!--end::Title-->
-								<!--begin::توضیحات-->
-								<div class="text-muted fw-semibold fs-5">اگر به اطلاعات لازم دارید ،
-								<a href="#" class="fw-bold link-primary">دستورالعمل ها</a> لطفاً بررسی کنید.</div>
-								<!--end::توضیحات-->
-							</div>
+							<div class="fs-6 fw-semibold mb-2">دعوت از کاربران</div>
 							<!--end::Heading-->
-							<!--begin::Input group-->
-							<div class="d-flex flex-column mb-8 fv-row">
-								<!--begin::Tags-->
-								<label class="d-flex align-items-center fs-6 fw-semibold mb-2">
-									<span class="required">{{ form.location.label}}</span>
-									<span class="ms-1" data-bs-toggle="tooltip" title="لطفا مکانی که دارای ناهنجاری است را انتخاب کنید.">
-										<i class="ki-outline ki-information-5 text-gray-500 fs-6"></i>
-									</span>
-								</label>
-								<!--end::Tags-->
-                                {{ form.location }}
-							</div>
-							<!--end::Input group-->
-							<!--begin::Input group-->
-							<div class="row g-9 mb-8">
-								<!--begin::Col-->
-								<div class="col-md-6 fv-row">
-									<label class="required fs-6 fw-semibold mb-2">{{ form.followup.label}}</label>
-									{{ form.followup }}
-								</div>
-								<!--end::Col-->
-								<!--begin::Col-->
-								<div class="col-md-6 fv-row">
-									<label class="required fs-6 fw-semibold mb-2">{{ form.anomalytype.label }}</label>
-									<!--begin::Input-->
-									<div class="position-relative d-flex align-items-center">
-									{{ form.anomalytype }}
-									</div>
-									<!--end::Input-->
-								</div>
-								<!--end::Col-->
-							</div>
-							<!--end::Input group-->
-                            	<div class="d-flex flex-column mb-8 fv-row">
-								<!--begin::Tags-->
-								<label class="d-flex align-items-center fs-6 fw-semibold mb-2">
-									<span class="required">{{ form.correctiveaction.label}}</span>
-									<span class="ms-1" data-bs-toggle="tooltip" title="لطفا یک اقدام اصلاحی رو انتخاب کنید.">
-										<i class="ki-outline ki-information-5 text-gray-500 fs-6"></i>
-									</span>
-								</label>
-								<!--end::Tags-->
-                                {{ form.correctiveaction }}
-							</div>
-							<!--begin::Input group-->
-							<div class="d-flex flex-column mb-8">
-								<label class="fs-6 fw-semibold mb-2">{{ form.description.label }}</label>
-                                {{ form.description }}
-							</div>
-							<!--end::Input group-->
-							<!--begin::Input group-->
-							<div class="d-flex flex-column mb-8 fv-row">
-								<!--begin::Tags-->
-								<label class="d-flex align-items-center fs-6 fw-semibold mb-2">
-									<span class="required">{{ form.priority.label }}</span>
-									<span class="ms-1" data-bs-toggle="tooltip" title="اولویت هدف را مشخص کنید">
-										<i class="ki-outline ki-information-5 text-gray-500 fs-6"></i>
-									</span>
-								</label>
-								<!--end::Tags-->
-                                {{ form.priority}}
-							</div>
-							<!--end::Input group-->
-
-                            <div class="d-flex flex-column mb-8 fv-row">
-								<!--begin::Image-->
-								<label class="d-flex align-items-center fs-6 fw-semibold mb-2">
-									<span class="required">{{ form.image.label}}</span>
-									<span class="ms-1" data-bs-toggle="tooltip" title="لطفا عکس ناهنجاری است بارگذاری کنید.">
-										<i class="ki-outline ki-information-5 text-gray-500 fs-6"></i>
-									</span>
-								</label>
-								<!--end::Image-->
-                                {{ form.image }}
-							</div>
-
-							<!--begin::Input group-->
-							<div class="d-flex flex-stack mb-8">
-								<!--begin::Tags-->
-								<div class="me-5">
-									<label class="fs-6 fw-semibold">{{ form.action.label }}</label>
-									<div class="fs-7 fw-semibold text-muted">در صورت روشن بودن این گزینه به معنای ایمن بودن آنومالی می باشد</div>
-								</div>
-								<!--end::Tags-->
-								<!--begin::Switch-->
-								<label class="form-check form-switch form-check-custom form-check-solid">
-									{{ form.action }}
-									<span class="form-check-label fw-semibold text-muted">وضعیت را مشخص کنید</span>
-								</label>
-								<!--end::Switch-->
-							</div>
-							<!--end::Input group-->
-							<!--begin::Input group-->
-							<div class="mb-15 fv-row">
-								<!--begin::Wrapper-->
-								<div class="d-flex flex-stack">
-									<!--begin::Tags-->
-									<div class="fw-semibold me-5">
-										<label class="fs-6">اعلان ها</label>
-										<div class="fs-7 text-muted">اجازه اعلان ها توسط تلفن یا ایمیل</div>
-									</div>
-									<!--end::Tags-->
-									<!--begin::Checkboxes-->
+							<!--begin::لیست-->
+							<div class="mh-300px scroll-y me-n7 pe-7">
+								<!--begin::user-->
+								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
+									<!--begin::Details-->
 									<div class="d-flex align-items-center">
-										<!--begin::Checkbox-->
-										<label class="form-check form-check-custom form-check-solid me-10">
-											<input class="form-check-input h-20px w-20px" type="checkbox" name="communication[]" value="email" checked="checked" />
-											<span class="form-check-label fw-semibold">ایمیل</span>
-										</label>
-										<!--end::Checkbox-->
-										<!--begin::Checkbox-->
-										<label class="form-check form-check-custom form-check-solid">
-											<input class="form-check-input h-20px w-20px" type="checkbox" name="communication[]" value="phone" />
-											<span class="form-check-label fw-semibold">تلفن</span>
-										</label>
-										<!--end::Checkbox-->
+										<!--begin::Avatar-->
+										<div class="symbol symbol-35px symbol-circle">
+											<img alt="Pic" src="assets/media/avatars/300-6.jpg" />
+										</div>
+										<!--end::Avatar-->
+										<!--begin::Details-->
+										<div class="ms-5">
+											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">مرادی نیا</a>
+											<div class="fw-semibold text-muted">smith@kpmg.com</div>
+										</div>
+										<!--end::Details-->
 									</div>
-									<!--end::Checkboxes-->
+									<!--end::Details-->
+									<!--begin::Access menu-->
+									<div class="ms-2 w-100px">
+										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
+											<option value="1">مهمان</option>
+											<option value="2" selected="selected">مدیر</option>
+											<option value="3">متفرقه</option>
+										</select>
+									</div>
+									<!--end::Access menu-->
 								</div>
-								<!--end::Wrapper-->
+								<!--end::user-->
+								<!--begin::user-->
+								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
+									<!--begin::Details-->
+									<div class="d-flex align-items-center">
+										<!--begin::Avatar-->
+										<div class="symbol symbol-35px symbol-circle">
+											<span class="symbol-label bg-light-danger text-danger fw-semibold">M</span>
+										</div>
+										<!--end::Avatar-->
+										<!--begin::Details-->
+										<div class="ms-5">
+											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">میلاد مرادی</a>
+											<div class="fw-semibold text-muted">melody@altbox.com</div>
+										</div>
+										<!--end::Details-->
+									</div>
+									<!--end::Details-->
+									<!--begin::Access menu-->
+									<div class="ms-2 w-100px">
+										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
+											<option value="1" selected="selected">مهمان</option>
+											<option value="2">مدیر</option>
+											<option value="3">متفرقه</option>
+										</select>
+									</div>
+									<!--end::Access menu-->
+								</div>
+								<!--end::user-->
+								<!--begin::user-->
+								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
+									<!--begin::Details-->
+									<div class="d-flex align-items-center">
+										<!--begin::Avatar-->
+										<div class="symbol symbol-35px symbol-circle">
+											<img alt="Pic" src="assets/media/avatars/300-1.jpg" />
+										</div>
+										<!--end::Avatar-->
+										<!--begin::Details-->
+										<div class="ms-5">
+											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">جلالی</a>
+											<div class="fw-semibold text-muted">max@kt.com</div>
+										</div>
+										<!--end::Details-->
+									</div>
+									<!--end::Details-->
+									<!--begin::Access menu-->
+									<div class="ms-2 w-100px">
+										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
+											<option value="1">مهمان</option>
+											<option value="2">مدیر</option>
+											<option value="3" selected="selected">متفرقه </option>
+										</select>
+									</div>
+									<!--end::Access menu-->
+								</div>
+								<!--end::user-->
+								<!--begin::user-->
+								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
+									<!--begin::Details-->
+									<div class="d-flex align-items-center">
+										<!--begin::Avatar-->
+										<div class="symbol symbol-35px symbol-circle">
+											<img alt="Pic" src="assets/media/avatars/300-5.jpg" />
+										</div>
+										<!--end::Avatar-->
+										<!--begin::Details-->
+										<div class="ms-5">
+											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">محسن برومند</a>
+											<div class="fw-semibold text-muted">sean@dellito.com</div>
+										</div>
+										<!--end::Details-->
+									</div>
+									<!--end::Details-->
+									<!--begin::Access menu-->
+									<div class="ms-2 w-100px">
+										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
+											<option value="1">مهمان</option>
+											<option value="2" selected="selected">مدیر</option>
+											<option value="3">متفرقه</option>
+										</select>
+									</div>
+									<!--end::Access menu-->
+								</div>
+								<!--end::user-->
+								<!--begin::user-->
+								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
+									<!--begin::Details-->
+									<div class="d-flex align-items-center">
+										<!--begin::Avatar-->
+										<div class="symbol symbol-35px symbol-circle">
+											<img alt="Pic" src="assets/media/avatars/300-25.jpg" />
+										</div>
+										<!--end::Avatar-->
+										<!--begin::Details-->
+										<div class="ms-5">
+											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">رضا علی ابادی</a>
+											<div class="fw-semibold text-muted">brian@exchange.com</div>
+										</div>
+										<!--end::Details-->
+									</div>
+									<!--end::Details-->
+									<!--begin::Access menu-->
+									<div class="ms-2 w-100px">
+										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
+											<option value="1">مهمان</option>
+											<option value="2">مدیر</option>
+											<option value="3" selected="selected">متفرقه </option>
+										</select>
+									</div>
+									<!--end::Access menu-->
+								</div>
+								<!--end::user-->
+								<!--begin::user-->
+								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
+									<!--begin::Details-->
+									<div class="d-flex align-items-center">
+										<!--begin::Avatar-->
+										<div class="symbol symbol-35px symbol-circle">
+											<span class="symbol-label bg-light-warning text-warning fw-semibold">C</span>
+										</div>
+										<!--end::Avatar-->
+										<!--begin::Details-->
+										<div class="ms-5">
+											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">میکائیل کرمانی</a>
+											<div class="fw-semibold text-muted">mik@pex.com</div>
+										</div>
+										<!--end::Details-->
+									</div>
+									<!--end::Details-->
+									<!--begin::Access menu-->
+									<div class="ms-2 w-100px">
+										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
+											<option value="1">مهمان</option>
+											<option value="2" selected="selected">مدیر</option>
+											<option value="3">متفرقه</option>
+										</select>
+									</div>
+									<!--end::Access menu-->
+								</div>
+								<!--end::user-->
+								<!--begin::user-->
+								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
+									<!--begin::Details-->
+									<div class="d-flex align-items-center">
+										<!--begin::Avatar-->
+										<div class="symbol symbol-35px symbol-circle">
+											<img alt="Pic" src="assets/media/avatars/300-9.jpg" />
+										</div>
+										<!--end::Avatar-->
+										<!--begin::Details-->
+										<div class="ms-5">
+											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">محمد رصایی</a>
+											<div class="fw-semibold text-muted">f.mit@kpmg.com</div>
+										</div>
+										<!--end::Details-->
+									</div>
+									<!--end::Details-->
+									<!--begin::Access menu-->
+									<div class="ms-2 w-100px">
+										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
+											<option value="1">مهمان</option>
+											<option value="2">مدیر</option>
+											<option value="3" selected="selected">متفرقه </option>
+										</select>
+									</div>
+									<!--end::Access menu-->
+								</div>
+								<!--end::user-->
+								<!--begin::user-->
+								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
+									<!--begin::Details-->
+									<div class="d-flex align-items-center">
+										<!--begin::Avatar-->
+										<div class="symbol symbol-35px symbol-circle">
+											<span class="symbol-label bg-light-danger text-danger fw-semibold">O</span>
+										</div>
+										<!--end::Avatar-->
+										<!--begin::Details-->
+										<div class="ms-5">
+											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">امید وحیدی</a>
+											<div class="fw-semibold text-muted">olivia@corpmail.com</div>
+										</div>
+										<!--end::Details-->
+									</div>
+									<!--end::Details-->
+									<!--begin::Access menu-->
+									<div class="ms-2 w-100px">
+										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
+											<option value="1">مهمان</option>
+											<option value="2" selected="selected">مدیر</option>
+											<option value="3">متفرقه</option>
+										</select>
+									</div>
+									<!--end::Access menu-->
+								</div>
+								<!--end::user-->
+								<!--begin::user-->
+								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
+									<!--begin::Details-->
+									<div class="d-flex align-items-center">
+										<!--begin::Avatar-->
+										<div class="symbol symbol-35px symbol-circle">
+											<span class="symbol-label bg-light-primary text-primary fw-semibold">N</span>
+										</div>
+										<!--end::Avatar-->
+										<!--begin::Details-->
+										<div class="ms-5">
+											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">محسن برومند</a>
+											<div class="fw-semibold text-muted">owen.neil@gmail.com</div>
+										</div>
+										<!--end::Details-->
+									</div>
+									<!--end::Details-->
+									<!--begin::Access menu-->
+									<div class="ms-2 w-100px">
+										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
+											<option value="1" selected="selected">مهمان</option>
+											<option value="2">مدیر</option>
+											<option value="3">متفرقه</option>
+										</select>
+									</div>
+									<!--end::Access menu-->
+								</div>
+								<!--end::user-->
+								<!--begin::user-->
+								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
+									<!--begin::Details-->
+									<div class="d-flex align-items-center">
+										<!--begin::Avatar-->
+										<div class="symbol symbol-35px symbol-circle">
+											<img alt="Pic" src="assets/media/avatars/300-23.jpg" />
+										</div>
+										<!--end::Avatar-->
+										<!--begin::Details-->
+										<div class="ms-5">
+											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">علی کاربر</a>
+											<div class="fw-semibold text-muted">dam@consilting.com</div>
+										</div>
+										<!--end::Details-->
+									</div>
+									<!--end::Details-->
+									<!--begin::Access menu-->
+									<div class="ms-2 w-100px">
+										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
+											<option value="1">مهمان</option>
+											<option value="2">مدیر</option>
+											<option value="3" selected="selected">متفرقه </option>
+										</select>
+									</div>
+									<!--end::Access menu-->
+								</div>
+								<!--end::user-->
+								<!--begin::user-->
+								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
+									<!--begin::Details-->
+									<div class="d-flex align-items-center">
+										<!--begin::Avatar-->
+										<div class="symbol symbol-35px symbol-circle">
+											<span class="symbol-label bg-light-danger text-danger fw-semibold">E</span>
+										</div>
+										<!--end::Avatar-->
+										<!--begin::Details-->
+										<div class="ms-5">
+											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">الهام بارانی</a>
+											<div class="fw-semibold text-muted">emma@intenso.com</div>
+										</div>
+										<!--end::Details-->
+									</div>
+									<!--end::Details-->
+									<!--begin::Access menu-->
+									<div class="ms-2 w-100px">
+										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
+											<option value="1">مهمان</option>
+											<option value="2" selected="selected">مدیر</option>
+											<option value="3">متفرقه</option>
+										</select>
+									</div>
+									<!--end::Access menu-->
+								</div>
+								<!--end::user-->
+								<!--begin::user-->
+								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
+									<!--begin::Details-->
+									<div class="d-flex align-items-center">
+										<!--begin::Avatar-->
+										<div class="symbol symbol-35px symbol-circle">
+											<img alt="Pic" src="assets/media/avatars/300-12.jpg" />
+										</div>
+										<!--end::Avatar-->
+										<!--begin::Details-->
+										<div class="ms-5">
+											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">آنا کوهی</a>
+											<div class="fw-semibold text-muted">ana.cf@limtel.com</div>
+										</div>
+										<!--end::Details-->
+									</div>
+									<!--end::Details-->
+									<!--begin::Access menu-->
+									<div class="ms-2 w-100px">
+										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
+											<option value="1" selected="selected">مهمان</option>
+											<option value="2">مدیر</option>
+											<option value="3">متفرقه</option>
+										</select>
+									</div>
+									<!--end::Access menu-->
+								</div>
+								<!--end::user-->
+								<!--begin::user-->
+								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
+									<!--begin::Details-->
+									<div class="d-flex align-items-center">
+										<!--begin::Avatar-->
+										<div class="symbol symbol-35px symbol-circle">
+											<span class="symbol-label bg-light-info text-info fw-semibold">A</span>
+										</div>
+										<!--end::Avatar-->
+										<!--begin::Details-->
+										<div class="ms-5">
+											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">رابرت دو</a>
+											<div class="fw-semibold text-muted">robert@benko.com</div>
+										</div>
+										<!--end::Details-->
+									</div>
+									<!--end::Details-->
+									<!--begin::Access menu-->
+									<div class="ms-2 w-100px">
+										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
+											<option value="1">مهمان</option>
+											<option value="2">مدیر</option>
+											<option value="3" selected="selected">متفرقه </option>
+										</select>
+									</div>
+									<!--end::Access menu-->
+								</div>
+								<!--end::user-->
+								<!--begin::user-->
+								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
+									<!--begin::Details-->
+									<div class="d-flex align-items-center">
+										<!--begin::Avatar-->
+										<div class="symbol symbol-35px symbol-circle">
+											<img alt="Pic" src="assets/media/avatars/300-13.jpg" />
+										</div>
+										<!--end::Avatar-->
+										<!--begin::Details-->
+										<div class="ms-5">
+											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">جواد مولای</a>
+											<div class="fw-semibold text-muted">miller@mapple.com</div>
+										</div>
+										<!--end::Details-->
+									</div>
+									<!--end::Details-->
+									<!--begin::Access menu-->
+									<div class="ms-2 w-100px">
+										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
+											<option value="1">مهمان</option>
+											<option value="2">مدیر</option>
+											<option value="3" selected="selected">متفرقه </option>
+										</select>
+									</div>
+									<!--end::Access menu-->
+								</div>
+								<!--end::user-->
+								<!--begin::user-->
+								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
+									<!--begin::Details-->
+									<div class="d-flex align-items-center">
+										<!--begin::Avatar-->
+										<div class="symbol symbol-35px symbol-circle">
+											<span class="symbol-label bg-light-success text-success fw-semibold">L</span>
+										</div>
+										<!--end::Avatar-->
+										<!--begin::Details-->
+										<div class="ms-5">
+											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">لقمان کامرانی</a>
+											<div class="fw-semibold text-muted">lucy.m@fentech.com</div>
+										</div>
+										<!--end::Details-->
+									</div>
+									<!--end::Details-->
+									<!--begin::Access menu-->
+									<div class="ms-2 w-100px">
+										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
+											<option value="1">مهمان</option>
+											<option value="2" selected="selected">مدیر</option>
+											<option value="3">متفرقه</option>
+										</select>
+									</div>
+									<!--end::Access menu-->
+								</div>
+								<!--end::user-->
+								<!--begin::user-->
+								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
+									<!--begin::Details-->
+									<div class="d-flex align-items-center">
+										<!--begin::Avatar-->
+										<div class="symbol symbol-35px symbol-circle">
+											<img alt="Pic" src="assets/media/avatars/300-21.jpg" />
+										</div>
+										<!--end::Avatar-->
+										<!--begin::Details-->
+										<div class="ms-5">
+											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">احسان ورزقانی</a>
+											<div class="fw-semibold text-muted">ethan@loop.com.au</div>
+										</div>
+										<!--end::Details-->
+									</div>
+									<!--end::Details-->
+									<!--begin::Access menu-->
+									<div class="ms-2 w-100px">
+										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
+											<option value="1" selected="selected">مهمان</option>
+											<option value="2">مدیر</option>
+											<option value="3">متفرقه</option>
+										</select>
+									</div>
+									<!--end::Access menu-->
+								</div>
+								<!--end::user-->
+								<!--begin::user-->
+								<div class="d-flex flex-stack py-4">
+									<!--begin::Details-->
+									<div class="d-flex align-items-center">
+										<!--begin::Avatar-->
+										<div class="symbol symbol-35px symbol-circle">
+											<span class="symbol-label bg-light-info text-info fw-semibold">A</span>
+										</div>
+										<!--end::Avatar-->
+										<!--begin::Details-->
+										<div class="ms-5">
+											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">رابرت دو</a>
+											<div class="fw-semibold text-muted">robert@benko.com</div>
+										</div>
+										<!--end::Details-->
+									</div>
+									<!--end::Details-->
+									<!--begin::Access menu-->
+									<div class="ms-2 w-100px">
+										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
+											<option value="1">مهمان</option>
+											<option value="2">مدیر</option>
+											<option value="3" selected="selected">متفرقه </option>
+										</select>
+									</div>
+									<!--end::Access menu-->
+								</div>
+								<!--end::user-->
 							</div>
-							<!--end::Input group-->
-							<!--begin::Actions-->
-							<div class="text-center">
-								<button type="reset" id="kt_modal_new_target_cancel" class="btn btn-light me-3">انصراف</button>
-								<button type="submit" id="kt_modal_new_target_submit" class="btn btn-primary">
-									<span class="indicator-label">ثبت</span>
-									<span class="indicator-progress">لطفا صبر کنید...
-									<span class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
-								</button>
+							<!--end::لیست-->
+						</div>
+						<!--end::users-->
+						<!--begin::Notice-->
+						<div class="d-flex flex-stack">
+							<!--begin::Tags-->
+							<div class="me-5 fw-semibold">
+								<label class="fs-6">افزودن کاربران</label>
+								<div class="fs-7 text-muted">اگر به اطلاعات بیشتری نیاز دارید ، لطفا برنامه ریزی بودجه را بررسی کنید</div>
 							</div>
-							<!--end::Actions-->
-						</form>
-						<!--end:form-->
+							<!--end::Tags-->
+							<!--begin::Switch-->
+							<label class="form-check form-switch form-check-custom form-check-solid">
+								<input class="form-check-input" type="checkbox" value="1" checked="checked" />
+								<span class="form-check-label fw-semibold text-muted">همه بدهکار هستیم</span>
+							</label>
+							<!--end::Switch-->
+						</div>
+						<!--end::Notice-->
 					</div>
 					<!--end::Modal body-->
 				</div>
@@ -3030,7 +3442,7 @@
 			</div>
 			<!--end::Modal dialog-->
 		</div>
-		<!--end::Modal - هدف جدید-->
+		<!--end::Modal - دعوت دوست-->
 		<!--begin::Modal - Users جستجو-->
 		<div class="modal fade" id="kt_modal_users_search" tabindex="-1" aria-hidden="true">
 			<!--begin::Modal dialog-->
@@ -3057,7 +3469,7 @@
 						<!--begin::جستجو-->
 						<div id="kt_modal_users_search_handler" data-kt-search-keypress="true" data-kt-search-min-length="2" data-kt-search-enter="enter" data-kt-search-layout="inline">
 							<!--begin::form-->
-							<form data-kt-search-element="form" class="w-100 position-relative mb-5" autocomplete="off" method="post">
+							<form data-kt-search-element="form" class="w-100 position-relative mb-5" autocomplete="off">
 								<!--begin::Hidden input(افزودنed to disable form autocomplete)-->
 								<input type="hidden" />
 								<!--end::Hidden input-->
@@ -3398,7 +3810,7 @@
 												<!--end::Checkbox-->
 												<!--begin::Avatar-->
 												<div class="symbol symbol-35px symbol-circle">
-													<img alt="Pic" src="{% static 'assets/media/avatars/300-9.jpg' %}" />
+													<img alt="Pic" src="assets/media/avatars/300-9.jpg" />
 												</div>
 												<!--end::Avatar-->
 												<!--begin::Details-->
@@ -3758,13 +4170,13 @@
 												<!--end::Checkbox-->
 												<!--begin::Avatar-->
 												<div class="symbol symbol-35px symbol-circle">
-													<img alt="Pic" src="assets/media/avatars/300-12.jpg" />
+													<img alt="Pic" src="assets/media/avatars/300-9.jpg" />
 												</div>
 												<!--end::Avatar-->
 												<!--begin::Details-->
 												<div class="ms-5">
-													<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">آنا کوهی</a>
-													<div class="fw-semibold text-muted">ana.cf@limtel.com</div>
+													<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">محمد رصایی</a>
+													<div class="fw-semibold text-muted">f.mit@kpmg.com</div>
 												</div>
 												<!--end::Details-->
 											</div>
@@ -3817,557 +4229,5 @@
 			<!--end::Modal dialog-->
 		</div>
 		<!--end::Modal - Users جستجو-->
-		<!--begin::Modal - دعوت دوستs-->
-		<div class="modal fade" id="kt_modal_invite_friends" tabindex="-1" aria-hidden="true">
-			<!--begin::Modal dialog-->
-			<div class="modal-dialog mw-650px">
-				<!--begin::Modal content-->
-				<div class="modal-content">
-					<!--begin::Modal header-->
-					<div class="modal-header pb-0 border-0 justify-content-end">
-						<!--begin::Close-->
-						<div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal">
-							<i class="ki-outline ki-cross fs-1"></i>
-						</div>
-						<!--end::Close-->
-					</div>
-					<!--begin::Modal header-->
-					<!--begin::Modal body-->
-					<div class="modal-body scroll-y mx-5 mx-xl-18 pt-0 pb-15">
-						<!--begin::Heading-->
-						<div class="text-center mb-13">
-							<!--begin::Title-->
-							<h1 class="mb-3">دعوت از دوستان</h1>
-							<!--end::Title-->
-							<!--begin::توضیحات-->
-							<div class="text-muted fw-semibold fs-5">اگر به اطلاعات بیشتری نیاز دارید ، لطفاً این مورد را بررسی کنید 
-							<a href="#" class="link-primary fw-bold">صفحه سوالات متداول</a>.</div>
-							<!--end::توضیحات-->
-						</div>
-						<!--end::Heading-->
-						<!--begin::Google Contacts دعوت-->
-						<div class="btn btn-light-primary fw-bold w-100 mb-8">
-						<img alt="Logo" src="assets/media/svg/brand-logos/google-icon.svg" class="h-20px me-3" />دعوت از مخاطبین جمیل</div>
-						<!--end::Google Contacts دعوت-->
-						<!--begin::separator-->
-						<div class="separator d-flex flex-center mb-8">
-							<span class="text-uppercase bg-body fs-7 fw-semibold text-muted px-3">یا</span>
-						</div>
-						<!--end::separator-->
-						<!--begin::Textarea-->
-						<textarea class="form-control form-control-solid mb-8" rows="3" placeholder="ایمیل خود را وارد کنید"></textarea>
-						<!--end::Textarea-->
-						<!--begin::users-->
-						<div class="mb-10">
-							<!--begin::Heading-->
-							<div class="fs-6 fw-semibold mb-2">دعوت از کاربران</div>
-							<!--end::Heading-->
-							<!--begin::لیست-->
-							<div class="mh-300px scroll-y me-n7 pe-7">
-								<!--begin::user-->
-								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
-									<!--begin::Details-->
-									<div class="d-flex align-items-center">
-										<!--begin::Avatar-->
-										<div class="symbol symbol-35px symbol-circle">
-											<img alt="Pic" src="assets/media/avatars/300-6.jpg" />
-										</div>
-										<!--end::Avatar-->
-										<!--begin::Details-->
-										<div class="ms-5">
-											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">مرادی نیا</a>
-											<div class="fw-semibold text-muted">smith@kpmg.com</div>
-										</div>
-										<!--end::Details-->
-									</div>
-									<!--end::Details-->
-									<!--begin::Access menu-->
-									<div class="ms-2 w-100px">
-										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
-											<option value="1">مهمان</option>
-											<option value="2" selected="selected">مدیر</option>
-											<option value="3">متفرقه</option>
-										</select>
-									</div>
-									<!--end::Access menu-->
-								</div>
-								<!--end::user-->
-								<!--begin::user-->
-								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
-									<!--begin::Details-->
-									<div class="d-flex align-items-center">
-										<!--begin::Avatar-->
-										<div class="symbol symbol-35px symbol-circle">
-											<span class="symbol-label bg-light-danger text-danger fw-semibold">M</span>
-										</div>
-										<!--end::Avatar-->
-										<!--begin::Details-->
-										<div class="ms-5">
-											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">میلاد مرادی</a>
-											<div class="fw-semibold text-muted">melody@altbox.com</div>
-										</div>
-										<!--end::Details-->
-									</div>
-									<!--end::Details-->
-									<!--begin::Access menu-->
-									<div class="ms-2 w-100px">
-										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
-											<option value="1" selected="selected">مهمان</option>
-											<option value="2">مدیر</option>
-											<option value="3">متفرقه</option>
-										</select>
-									</div>
-									<!--end::Access menu-->
-								</div>
-								<!--end::user-->
-								<!--begin::user-->
-								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
-									<!--begin::Details-->
-									<div class="d-flex align-items-center">
-										<!--begin::Avatar-->
-										<div class="symbol symbol-35px symbol-circle">
-											<img alt="Pic" src="assets/media/avatars/300-1.jpg" />
-										</div>
-										<!--end::Avatar-->
-										<!--begin::Details-->
-										<div class="ms-5">
-											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">جلالی</a>
-											<div class="fw-semibold text-muted">max@kt.com</div>
-										</div>
-										<!--end::Details-->
-									</div>
-									<!--end::Details-->
-									<!--begin::Access menu-->
-									<div class="ms-2 w-100px">
-										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
-											<option value="1">مهمان</option>
-											<option value="2">مدیر</option>
-											<option value="3" selected="selected">متفرقه </option>
-										</select>
-									</div>
-									<!--end::Access menu-->
-								</div>
-								<!--end::user-->
-								<!--begin::user-->
-								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
-									<!--begin::Details-->
-									<div class="d-flex align-items-center">
-										<!--begin::Avatar-->
-										<div class="symbol symbol-35px symbol-circle">
-											<img alt="Pic" src="assets/media/avatars/300-5.jpg" />
-										</div>
-										<!--end::Avatar-->
-										<!--begin::Details-->
-										<div class="ms-5">
-											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">محسن برومند</a>
-											<div class="fw-semibold text-muted">sean@dellito.com</div>
-										</div>
-										<!--end::Details-->
-									</div>
-									<!--end::Details-->
-									<!--begin::Access menu-->
-									<div class="ms-2 w-100px">
-										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
-											<option value="1">مهمان</option>
-											<option value="2" selected="selected">مدیر</option>
-											<option value="3">متفرقه</option>
-										</select>
-									</div>
-									<!--end::Access menu-->
-								</div>
-								<!--end::user-->
-								<!--begin::user-->
-								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
-									<!--begin::Details-->
-									<div class="d-flex align-items-center">
-										<!--begin::Avatar-->
-										<div class="symbol symbol-35px symbol-circle">
-											<img alt="Pic" src="assets/media/avatars/300-25.jpg" />
-										</div>
-										<!--end::Avatar-->
-										<!--begin::Details-->
-										<div class="ms-5">
-											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">رضا علی ابادی</a>
-											<div class="fw-semibold text-muted">brian@exchange.com</div>
-										</div>
-										<!--end::Details-->
-									</div>
-									<!--end::Details-->
-									<!--begin::Access menu-->
-									<div class="ms-2 w-100px">
-										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
-											<option value="1">مهمان</option>
-											<option value="2">مدیر</option>
-											<option value="3" selected="selected">متفرقه </option>
-										</select>
-									</div>
-									<!--end::Access menu-->
-								</div>
-								<!--end::user-->
-								<!--begin::user-->
-								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
-									<!--begin::Details-->
-									<div class="d-flex align-items-center">
-										<!--begin::Avatar-->
-										<div class="symbol symbol-35px symbol-circle">
-											<span class="symbol-label bg-light-warning text-warning fw-semibold">C</span>
-										</div>
-										<!--end::Avatar-->
-										<!--begin::Details-->
-										<div class="ms-5">
-											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">میکائیل کرمانی</a>
-											<div class="fw-semibold text-muted">mik@pex.com</div>
-										</div>
-										<!--end::Details-->
-									</div>
-									<!--end::Details-->
-									<!--begin::Access menu-->
-									<div class="ms-2 w-100px">
-										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
-											<option value="1">مهمان</option>
-											<option value="2" selected="selected">مدیر</option>
-											<option value="3">متفرقه</option>
-										</select>
-									</div>
-									<!--end::Access menu-->
-								</div>
-								<!--end::user-->
-								<!--begin::user-->
-								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
-									<!--begin::Details-->
-									<div class="d-flex align-items-center">
-										<!--begin::Avatar-->
-										<div class="symbol symbol-35px symbol-circle">
-											<img alt="Pic" src="{% static 'assets/media/avatars/300-9.jpg' %}" />
-										</div>
-										<!--end::Avatar-->
-										<!--begin::Details-->
-										<div class="ms-5">
-											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">محمد رصایی</a>
-											<div class="fw-semibold text-muted">f.mit@kpmg.com</div>
-										</div>
-										<!--end::Details-->
-									</div>
-									<!--end::Details-->
-									<!--begin::Access menu-->
-									<div class="ms-2 w-100px">
-										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
-											<option value="1">مهمان</option>
-											<option value="2">مدیر</option>
-											<option value="3" selected="selected">متفرقه </option>
-										</select>
-									</div>
-									<!--end::Access menu-->
-								</div>
-								<!--end::user-->
-								<!--begin::user-->
-								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
-									<!--begin::Details-->
-									<div class="d-flex align-items-center">
-										<!--begin::Avatar-->
-										<div class="symbol symbol-35px symbol-circle">
-											<span class="symbol-label bg-light-danger text-danger fw-semibold">O</span>
-										</div>
-										<!--end::Avatar-->
-										<!--begin::Details-->
-										<div class="ms-5">
-											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">امید وحیدی</a>
-											<div class="fw-semibold text-muted">olivia@corpmail.com</div>
-										</div>
-										<!--end::Details-->
-									</div>
-									<!--end::Details-->
-									<!--begin::Access menu-->
-									<div class="ms-2 w-100px">
-										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
-											<option value="1">مهمان</option>
-											<option value="2" selected="selected">مدیر</option>
-											<option value="3">متفرقه</option>
-										</select>
-									</div>
-									<!--end::Access menu-->
-								</div>
-								<!--end::user-->
-								<!--begin::user-->
-								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
-									<!--begin::Details-->
-									<div class="d-flex align-items-center">
-										<!--begin::Avatar-->
-										<div class="symbol symbol-35px symbol-circle">
-											<span class="symbol-label bg-light-primary text-primary fw-semibold">N</span>
-										</div>
-										<!--end::Avatar-->
-										<!--begin::Details-->
-										<div class="ms-5">
-											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">محسن برومند</a>
-											<div class="fw-semibold text-muted">owen.neil@gmail.com</div>
-										</div>
-										<!--end::Details-->
-									</div>
-									<!--end::Details-->
-									<!--begin::Access menu-->
-									<div class="ms-2 w-100px">
-										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
-											<option value="1" selected="selected">مهمان</option>
-											<option value="2">مدیر</option>
-											<option value="3">متفرقه</option>
-										</select>
-									</div>
-									<!--end::Access menu-->
-								</div>
-								<!--end::user-->
-								<!--begin::user-->
-								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
-									<!--begin::Details-->
-									<div class="d-flex align-items-center">
-										<!--begin::Avatar-->
-										<div class="symbol symbol-35px symbol-circle">
-											<img alt="Pic" src="{% static 'assets/media/avatars/300-23.jpg' %}" />
-										</div>
-										<!--end::Avatar-->
-										<!--begin::Details-->
-										<div class="ms-5">
-											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">علی کاربر</a>
-											<div class="fw-semibold text-muted">dam@consilting.com</div>
-										</div>
-										<!--end::Details-->
-									</div>
-									<!--end::Details-->
-									<!--begin::Access menu-->
-									<div class="ms-2 w-100px">
-										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
-											<option value="1">مهمان</option>
-											<option value="2">مدیر</option>
-											<option value="3" selected="selected">متفرقه </option>
-										</select>
-									</div>
-									<!--end::Access menu-->
-								</div>
-								<!--end::user-->
-								<!--begin::user-->
-								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
-									<!--begin::Details-->
-									<div class="d-flex align-items-center">
-										<!--begin::Avatar-->
-										<div class="symbol symbol-35px symbol-circle">
-											<span class="symbol-label bg-light-danger text-danger fw-semibold">E</span>
-										</div>
-										<!--end::Avatar-->
-										<!--begin::Details-->
-										<div class="ms-5">
-											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">الهام بارانی</a>
-											<div class="fw-semibold text-muted">emma@intenso.com</div>
-										</div>
-										<!--end::Details-->
-									</div>
-									<!--end::Details-->
-									<!--begin::Access menu-->
-									<div class="ms-2 w-100px">
-										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
-											<option value="1">مهمان</option>
-											<option value="2" selected="selected">مدیر</option>
-											<option value="3">متفرقه</option>
-										</select>
-									</div>
-									<!--end::Access menu-->
-								</div>
-								<!--end::user-->
-								<!--begin::user-->
-								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
-									<!--begin::Details-->
-									<div class="d-flex align-items-center">
-										<!--begin::Avatar-->
-										<div class="symbol symbol-35px symbol-circle">
-											<img alt="Pic" src="{% static 'assets/media/avatars/300-12.jpg' %}" />
-										</div>
-										<!--end::Avatar-->
-										<!--begin::Details-->
-										<div class="ms-5">
-											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">آنا کوهی</a>
-											<div class="fw-semibold text-muted">ana.cf@limtel.com</div>
-										</div>
-										<!--end::Details-->
-									</div>
-									<!--end::Details-->
-									<!--begin::Access menu-->
-									<div class="ms-2 w-100px">
-										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
-											<option value="1" selected="selected">مهمان</option>
-											<option value="2">مدیر</option>
-											<option value="3">متفرقه</option>
-										</select>
-									</div>
-									<!--end::Access menu-->
-								</div>
-								<!--end::user-->
-								<!--begin::user-->
-								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
-									<!--begin::Details-->
-									<div class="d-flex align-items-center">
-										<!--begin::Avatar-->
-										<div class="symbol symbol-35px symbol-circle">
-											<span class="symbol-label bg-light-info text-info fw-semibold">A</span>
-										</div>
-										<!--end::Avatar-->
-										<!--begin::Details-->
-										<div class="ms-5">
-											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">رابرت دو</a>
-											<div class="fw-semibold text-muted">robert@benko.com</div>
-										</div>
-										<!--end::Details-->
-									</div>
-									<!--end::Details-->
-									<!--begin::Access menu-->
-									<div class="ms-2 w-100px">
-										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
-											<option value="1">مهمان</option>
-											<option value="2">مدیر</option>
-											<option value="3" selected="selected">متفرقه </option>
-										</select>
-									</div>
-									<!--end::Access menu-->
-								</div>
-								<!--end::user-->
-								<!--begin::user-->
-								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
-									<!--begin::Details-->
-									<div class="d-flex align-items-center">
-										<!--begin::Avatar-->
-										<div class="symbol symbol-35px symbol-circle">
-											<img alt="Pic" src="{% static 'assets/media/avatars/300-13.jpg' %}" />
-										</div>
-										<!--end::Avatar-->
-										<!--begin::Details-->
-										<div class="ms-5">
-											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">جواد مولای</a>
-											<div class="fw-semibold text-muted">miller@mapple.com</div>
-										</div>
-										<!--end::Details-->
-									</div>
-									<!--end::Details-->
-									<!--begin::Access menu-->
-									<div class="ms-2 w-100px">
-										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
-											<option value="1">مهمان</option>
-											<option value="2">مدیر</option>
-											<option value="3" selected="selected">متفرقه </option>
-										</select>
-									</div>
-									<!--end::Access menu-->
-								</div>
-								<!--end::user-->
-								<!--begin::user-->
-								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
-									<!--begin::Details-->
-									<div class="d-flex align-items-center">
-										<!--begin::Avatar-->
-										<div class="symbol symbol-35px symbol-circle">
-											<span class="symbol-label bg-light-success text-success fw-semibold">L</span>
-										</div>
-										<!--end::Avatar-->
-										<!--begin::Details-->
-										<div class="ms-5">
-											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">لقمان کامرانی</a>
-											<div class="fw-semibold text-muted">lucy.m@fentech.com</div>
-										</div>
-										<!--end::Details-->
-									</div>
-									<!--end::Details-->
-									<!--begin::Access menu-->
-									<div class="ms-2 w-100px">
-										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
-											<option value="1">مهمان</option>
-											<option value="2" selected="selected">مدیر</option>
-											<option value="3">متفرقه</option>
-										</select>
-									</div>
-									<!--end::Access menu-->
-								</div>
-								<!--end::user-->
-								<!--begin::user-->
-								<div class="d-flex flex-stack py-4 border-bottom border-gray-300 border-bottom-dashed">
-									<!--begin::Details-->
-									<div class="d-flex align-items-center">
-										<!--begin::Avatar-->
-										<div class="symbol symbol-35px symbol-circle">
-											<img alt="Pic" src="{% static 'assets/media/avatars/300-21.jpg' %}" />
-										</div>
-										<!--end::Avatar-->
-										<!--begin::Details-->
-										<div class="ms-5">
-											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">احسان ورزقانی</a>
-											<div class="fw-semibold text-muted">ethan@loop.com.au</div>
-										</div>
-										<!--end::Details-->
-									</div>
-									<!--end::Details-->
-									<!--begin::Access menu-->
-									<div class="ms-2 w-100px">
-										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
-											<option value="1" selected="selected">مهمان</option>
-											<option value="2">مدیر</option>
-											<option value="3">متفرقه</option>
-										</select>
-									</div>
-									<!--end::Access menu-->
-								</div>
-								<!--end::user-->
-								<!--begin::user-->
-								<div class="d-flex flex-stack py-4">
-									<!--begin::Details-->
-									<div class="d-flex align-items-center">
-										<!--begin::Avatar-->
-										<div class="symbol symbol-35px symbol-circle">
-											<img alt="Pic" src="{% static 'assets/media/avatars/300-23.jpg' %}" />
-										</div>
-										<!--end::Avatar-->
-										<!--begin::Details-->
-										<div class="ms-5">
-											<a href="#" class="fs-5 fw-bold text-gray-900 text-hover-primary mb-2">علی کاربر</a>
-											<div class="fw-semibold text-muted">dam@consilting.com</div>
-										</div>
-										<!--end::Details-->
-									</div>
-									<!--end::Details-->
-									<!--begin::Access menu-->
-									<div class="ms-2 w-100px">
-										<select class="form-select form-select-solid form-select-sm" data-control="select2" data-dropdown-parent="#kt_modal_invite_friends" data-hide-search="true">
-											<option value="1">مهمان</option>
-											<option value="2">مدیر</option>
-											<option value="3" selected="selected">متفرقه </option>
-										</select>
-									</div>
-									<!--end::Access menu-->
-								</div>
-								<!--end::user-->
-							</div>
-							<!--end::لیست-->
-						</div>
-						<!--end::users-->
-						<!--begin::Notice-->
-						<div class="d-flex flex-stack">
-							<!--begin::Tags-->
-							<div class="me-5 fw-semibold">
-								<label class="fs-6">افزودن کاربران</label>
-								<div class="fs-7 text-muted">اگر به اطلاعات بیشتری نیاز دارید ، لطفا برنامه ریزی بودجه را بررسی کنید</div>
-							</div>
-							<!--end::Tags-->
-							<!--begin::Switch-->
-							<label class="form-check form-switch form-check-custom form-check-solid">
-								<input class="form-check-input" type="checkbox" value="1" checked="checked" />
-								<span class="form-check-label fw-semibold text-muted">همه بدهکار هستیم</span>
-							</label>
-							<!--end::Switch-->
-						</div>
-						<!--end::Notice-->
-					</div>
-					<!--end::Modal body-->
-				</div>
-				<!--end::Modal content-->
-			</div>
-			<!--end::Modal dialog-->
-		</div>
-		<!--end::Modal - دعوت دوست-->
 		<!--end::Modals-->
-
 {% endblock %}
