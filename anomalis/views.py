@@ -37,17 +37,19 @@ def toggle_status(request, pk):
     return redirect('anomalis:anomalis')  # بازگشت به لیست آنومالی‌ه
 
 @login_required
-
 def edit_anomaly(request, pk):
-    anomaly = get_object_or_404(Anomaly, pk=pk)
+    anomaly = get_object_or_404(Anomaly, pk=pk)  # گرفتن آنومالی مورد نظر از دیتابیس
+
     if request.method == 'POST':
-        form = AnomalyForm(request.POST, instance=anomaly)
+        form = AnomalyForm(request.POST, request.FILES, instance=anomaly)  # استفاده از اینستنس برای ویرایش
         if form.is_valid():
-            form.save()
-            return redirect('anomalis:anomalis')
+            form.save()  # ذخیره تغییرات
+            return redirect('anomalis:anomalis')  # بازگشت به صفحه لیست یا هر صفحه دیگری
     else:
-        form = AnomalyForm(instance=anomaly)
-    return render(request, 'anomalis/list.html', {'form': form})
+        form = AnomalyForm(instance=anomaly)  # نمایش اطلاعات موجود در فرم
+
+    return render(request, 'anomalis/edit_anomaly.html', {'form': form})
+
 
 @login_required
 def delete_anomaly(request, pk):

@@ -1,6 +1,6 @@
+from django.contrib.auth.models import User
 from django.db import models
 
-from accounts.forms import User
 
 
 class Location(models.Model):
