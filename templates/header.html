@@ -1193,9 +1193,9 @@
 											<!--end::Avatar-->
 											<!--begin::کاربرname-->
 											<div class="d-flex flex-column">
-												<div class="fw-bold d-flex align-items-center fs-5">جلالی 
-												<span class="badge badge-light-success fw-bold fs-8 px-2 py-1 ms-2">حرفه ای</span></div>
-												<a href="#" class="fw-semibold text-muted text-hover-primary fs-7">max@kt.com</a>
+												<div class="fw-bold d-flex align-items-center fs-5">{{ user.first_name }} {{ user.last_name }} 
+												<span class="badge badge-light-success fw-bold fs-8 px-2 py-1 ms-2">{{ user.groups.all|first }}</span></div>
+												<a href="#" class="fw-semibold text-muted text-hover-primary fs-7">{{ user.username }}</a>
 											</div>
 											<!--end::کاربرname-->
 										</div>
@@ -1380,7 +1380,7 @@
 									<!--end::Menu item-->
 									<!--begin::Menu item-->
 									<div class="menu-item px-5">
-										<a href="authentication/layouts/corporate/sign-in.html" class="menu-link px-5">خروج</a>
+										<a href="{% url 'accounts:logout' %}" class="menu-link px-5">خروج</a>
 									</div>
 									<!--end::Menu item-->
 								</div>
