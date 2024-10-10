@@ -43,6 +43,7 @@ INSTALLED_APPS = [
 
     'taggit',
     "django_select2",
+    'analytics.apps.AnalyticsConfig'
 ]
 
 MIDDLEWARE = [
@@ -70,6 +71,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'accounts.context_processors.user_profile_processor',
+                'analytics.context_processors.anomaly_stats_context',
             ],
         },
     },

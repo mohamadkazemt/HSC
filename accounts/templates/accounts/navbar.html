@@ -44,17 +44,7 @@
 														<!--end::user-->
 														<!--begin::Actions-->
 														<div class="d-flex my-4">
-															<a href="#" class="btn btn-sm btn-light me-2" id="kt_user_follow_button">
-																<i class="ki-outline ki-check fs-3 d-none"></i>
-																<!--begin::Indicatیا label-->
-																<span class="indicator-label">دنبال کردن</span>
-																<!--end::Indicatیا label-->
-																<!--begin::Indicatیا progress-->
-																<span class="indicator-progress">لطفا صبر کنید...
-																<span class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
-																<!--end::Indicatیا progress-->
-															</a>
-															<a href="#" class="btn btn-sm btn-primary me-3" data-bs-toggle="modal" data-bs-target="#kt_modal_offer_a_deal">من را استخدام کن</a>
+
 															<!--begin::Menu-->
 															<div class="me-0">
 																<button class="btn btn-sm btn-icon btn-bg-light btn-active-color-primary" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
@@ -155,11 +145,11 @@
 																	<!--begin::شماره کارت-->
 																	<div class="d-flex align-items-center">
 																		<i class="ki-outline ki-arrow-up fs-3 text-success me-2"></i>
-																		<div class="fs-2 fw-bold" data-kt-countup="true" data-kt-countup-value="4500" data-kt-countup-prefix="$">0</div>
+																		<div class="fs-2 fw-bold" data-kt-countup="true" data-kt-countup-value="{{ anomaly_stats.total_anomalies }}" data-kt-countup-prefix="">0</div>
 																	</div>
 																	<!--end::شماره کارت-->
 																	<!--begin::Tags-->
-																	<div class="fw-semibold fs-6 text-gray-500">درآمد</div>
+																	<div class="fw-semibold fs-6 text-gray-500">تعداد کل آنومالی</div>
 																	<!--end::Tags-->
 																</div>
 																<!--end::Stat-->
@@ -168,11 +158,11 @@
 																	<!--begin::شماره کارت-->
 																	<div class="d-flex align-items-center">
 																		<i class="ki-outline ki-arrow-down fs-3 text-danger me-2"></i>
-																		<div class="fs-2 fw-bold" data-kt-countup="true" data-kt-countup-value="80">0</div>
+																		<div class="fs-2 fw-bold" data-kt-countup="true" data-kt-countup-value="{{ anomaly_stats.high_priority_anomalies }}">0</div>
 																	</div>
 																	<!--end::شماره کارت-->
 																	<!--begin::Tags-->
-																	<div class="fw-semibold fs-6 text-gray-500">پروژه ها</div>
+																	<div class="fw-semibold fs-6 text-gray-500">آنومالی با اولویت زیاد </div>
 																	<!--end::Tags-->
 																</div>
 																<!--end::Stat-->
@@ -181,11 +171,11 @@
 																	<!--begin::شماره کارت-->
 																	<div class="d-flex align-items-center">
 																		<i class="ki-outline ki-arrow-up fs-3 text-success me-2"></i>
-																		<div class="fs-2 fw-bold" data-kt-countup="true" data-kt-countup-value="60" data-kt-countup-prefix="%">0</div>
+																		<div class="fs-2 fw-bold" data-kt-countup="true" data-kt-countup-value="{{ anomaly_stats.secured_anomalies }}" data-kt-countup-prefix="">0</div>
 																	</div>
 																	<!--end::شماره کارت-->
 																	<!--begin::Tags-->
-																	<div class="fw-semibold fs-6 text-gray-500">نرخ موفقیت</div>
+																	<div class="fw-semibold fs-6 text-gray-500">آنومالی های ایمن</div>
 																	<!--end::Tags-->
 																</div>
 																<!--end::Stat-->

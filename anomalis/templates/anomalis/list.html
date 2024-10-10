@@ -40,6 +40,7 @@
                                                         <th class="min-w-120px">ایجاد کننده</th>
                                                         <th class="min-w-120px">پیگیری کننده</th>
                                                         <th class="min-w-120px">اولویت</th>
+                                                        <th class="min-w-120px">وضعیت</th>
                                                         <th class="min-w-120px">عکس</th> <!-- ستون جدید برای عکس -->
                                                         <th class="min-w-100px text-end">عملیات</th>
                                                     </tr>
@@ -52,7 +53,7 @@
                                                         <td><a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">{{ anomaly.location }}</a></td>
                                                         <td><a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">{{ anomaly.created_at|date:"Y/m/d" }}</a></td>
                                                         <td><a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">{{ anomaly.created_by }}</a></td>
-                                                        <td><a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">{{ anomaly.followup }}</a></td>
+                                                        <td><a href="#" class="text-gray-900 fw-bold text-hover-primary d-block mb-1 fs-6">{{ anomaly.followup  }}</a></td>
                                                         <td>
                                                             {% if anomaly.priority.priority == "زیاد" %}
                                                                 <span class="badge badge-light-danger">زیاد</span>
@@ -63,6 +64,14 @@
                                                             {% else %}
                                                                 <span class="badge badge-light-secondary">نامشخص</span>
                                                             {% endif %}
+                                                        </td>
+                                                    <!-- ستون وضعیت -->
+                                                        <td>
+                                                        {% if anomaly.action == True %}
+                                                            <span class="badge badge-light-success">ایمن</span>
+                                                        {% else %}
+                                                            <span class="badge badge-light-danger">غیر امن</span>
+                                                        {% endif %}
                                                         </td>
                                                         <!-- ستون عکس -->
                                                         <td>
