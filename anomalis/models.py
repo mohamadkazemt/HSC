@@ -26,8 +26,44 @@ class Anomalytype(models.Model):
         return self.type
 
 
+
+class HSE(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+
+    class Meta:
+        verbose_name = "نوع آنومالی HSE"
+        verbose_name_plural = "نوع‌های آنومالی HSE"
+
+    def __str__(self):
+        return self.name
+
+
+
+
+class AnomalyDescription(models.Model):
+
+    description = models.TextField(max_length=500, verbose_name="شرح آنومالی")
+    anomalytype = models.ForeignKey(Anomalytype, on_delete=models.CASCADE, verbose_name="نوع آنومالی")
+    hse_type = models.CharField(
+        max_length=1,
+        choices=[('H', 'Health'), ('S', 'Safety'), ('E', 'Environment')],
+        verbose_name="نوع HSE"
+    )
+
+    class Meta:
+        verbose_name = "شرح آنومالی"
+        verbose_name_plural = "شرح‌های آنومالی"
+
+
+
+    def __str__(self):
+        return self.description
+
+
+
 class CorrectiveAction(models.Model):
-    anomali_type = models.ForeignKey(Anomalytype, on_delete=models.CASCADE, verbose_name="نوع آنومالی")
+    anomali_type = models.ForeignKey(AnomalyDescription, on_delete=models.CASCADE, verbose_name="نوع آنومالی")
     description = models.TextField(max_length=500, verbose_name="شرح عملیات اصلاحی")
 
     class Meta:
@@ -36,6 +72,9 @@ class CorrectiveAction(models.Model):
 
     def __str__(self):
         return self.description
+
+
+
 class Priority(models.Model):
     priority = models.CharField(max_length=20,verbose_name='اولویت')
 
@@ -46,9 +85,15 @@ class Priority(models.Model):
     def __str__(self):
         return  self.priority
 
+
+
+
+
 class Anomaly(models.Model):
     location = models.ForeignKey(Location, on_delete=models.CASCADE, verbose_name="محل آنومالی")
     anomalytype = models.ForeignKey(Anomalytype, on_delete=models.CASCADE, verbose_name="نوع آنومالی")
+    anomalydescription = models.ForeignKey(AnomalyDescription, on_delete=models.CASCADE, verbose_name="شرح آنومالی")
+    hse_type = models.CharField(max_length=1, choices=[('H', 'Health'), ('S', 'Safety'), ('E', 'Environment')], verbose_name="نوع HSE")
     correctiveaction = models.ForeignKey(CorrectiveAction, on_delete=models.CASCADE, verbose_name="عملیات اصلاحی")
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_anomalies', verbose_name="ایجاد کننده")
     followup = models.ForeignKey(User, on_delete=models.CASCADE, related_name='followup_anomalies', verbose_name="پیگیری")
