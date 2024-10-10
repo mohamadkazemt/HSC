@@ -1,10 +1,11 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.http import JsonResponse
 from dashboard.views import dashboard
-from .forms import User, UserEditForm
+from .forms import LoginForm
 from .models import UserProfile
 
 name = 'accounts'
@@ -26,7 +27,7 @@ def user_login(request):
         else:
             return JsonResponse({'success': False, 'message': 'Invalid login credentials'}, status=400)  # لاگین ناموفق
 
-    return render(request, 'accounts/login.html', {'form': User()})
+    return render(request, 'accounts/login.html', {'form': LoginForm()})
 
 
 
@@ -41,36 +42,34 @@ def user_profile(request):
     return render(request, 'accounts/overview.html')
 
 
+from django.shortcuts import render, redirect
+from .forms import UserForm, UserProfileForm
+from django.contrib.auth.decorators import login_required
+
 @login_required
-def edit_user(request):
+def edit_profile(request):
+    user_profile, created = UserProfile.objects.get_or_create(user=request.user)
+
     if request.method == 'POST':
-        form = UserEditForm(request.POST, request.FILES)
-        if form.is_valid():
-            user = request.user
-            user.email = form.cleaned_data['email']
-            user.username = form.cleaned_data['username']
-            user.first_name = form.cleaned_data['first_name']
-            user.last_name = form.cleaned_data['last_name']
-            user.save()
+        user_form = UserForm(request.POST, instance=request.user)
+        profile_form = UserProfileForm(request.POST, request.FILES, instance=user_profile)
 
-            # Update user profile
-            profile = user.userprofile
-            profile.mobile = form.cleaned_data['mobile']
-            if 'image' in request.FILES:
-                profile.image = request.FILES['image']
-            profile.save()
+        # بررسی فایل‌های آپلود شده
+        print(request.FILES)
 
-            return redirect('profile')  # فرض کنیم این URL به صفحه پروفایل بازگردانده می‌شود
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile_form.save()
+            print(f"فایل آپلود شده: {user_profile.image.url}")  # نمایش مسیر فایل ذخیره شده
+            return redirect('accounts:profile')
+        else:
+            messages.error(request, 'لطفاً خطاهای زیر را برطرف کنید.')
     else:
-        # مقادیر اولیه فرم را با اطلاعات فعلی کاربر پر کنید
-        user = request.user
-        initial_data = {
-            'email': user.email,
-            'username': user.username,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'mobile': user.userprofile.mobile,
-        }
-        form = UserEditForm(initial=initial_data)
+        user_form = UserForm(instance=request.user)
+        profile_form = UserProfileForm(instance=user_profile)
 
-    return render(request, 'accounts/settings.html', {'form': form})
+    return render(request, 'accounts/settings.html', {
+        'user_form': user_form,
+        'profile_form': profile_form,
+    })
+

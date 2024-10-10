@@ -1,3 +1,4 @@
+from django.core.paginator import Paginator
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from .forms import  AnomalyForm
@@ -25,10 +26,20 @@ def anomalis(request):
 
 
 @login_required
-@user_passes_test(lambda u: not u.groups.filter(name='مسئول پیگیری').exists(), login_url='accounts:login')
+#@user_passes_test(lambda u: not u.groups.filter(name='مسئول پیگیری').exists(), login_url='accounts:login')
 def anomaly_list(request):
-    anomalies = Anomaly.objects.all()  # گرفتن همه آنومالی‌ها از مدل
-    return render(request, 'anomalis/list.html',{'anomalies': anomalies, 'pagetitle': 'لیست آنومالی‌ها'})
+    # بررسی می‌کنیم که آیا کاربر عضو گروه "مسئول پیگیری" هست یا نه
+    if request.user.groups.filter(name='مسئول پیگیری').exists():
+        # تمام آنومالی‌هایی که کاربر پیگیری آنها است را بازیابی می‌کنیم
+        anomalies = Anomaly.objects.filter(followup=request.user)
+    else:
+        anomalies = Anomaly.objects.all()
+
+    paginator = Paginator(anomalies, 10)  # 10 آنومالی در هر صفحه
+    page_number = request.GET.get('page')  # دریافت شماره صفحه از url
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'anomalis/list.html',{'page_obj': page_obj, 'anomalies': anomalies, 'pagetitle': 'لیست آنومالی‌ها'})
 @login_required
 def toggle_status(request, pk):
     anomaly = get_object_or_404(Anomaly, pk=pk)
