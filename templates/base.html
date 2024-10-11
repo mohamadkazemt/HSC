@@ -4,16 +4,16 @@
 <head>
     {% load static %}
 
-    <title>پنل ادمین مترونیک  </title>
+    <title>HSE کاراوران صنعت خاور میانه  </title>
     <meta charset="utf-8" />
     <meta name="description" content="The most advanced Bootstrap 5 Admin Theme with 40 unique prebuilt layouts on Themeforest trusted by 100,000 beginners and professionals. Multi-demo, حالت تیره, RTL support and complete React, Angular, Vue, Asp.Net Core, Rails, Spring, Blazor, Django, Express.js, Node.js, Flask, Symfony & Laravel versions. Grab your copy now and get life-time updates for free." />
     <meta name="keywords" content="metronic, bootstrap, bootstrap 5, angular, VueJs, React, Asp.Net Core, Rails, Spring, Blazor, Django, Express.js, Node.js, Flask, Symfony & Laravel starter kits, admin themes, web design, figma, web development, free templates, free admin themes, bootstrap theme, bootstrap template, bootstrap dashboard, bootstrap dak mode, bootstrap button, bootstrap datepicker, bootstrap timepicker, fullcalendar, datatables, flaticon" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:type" content="article" />
-    <meta property="og:title" content="پنل ادمین مترونیک  " />
-    <meta property="og:url" content="https://keenthemes.com/metronic" />
-    <meta property="og:site_name" content="مترونیک by ساتراس وب" />
+    <meta property="og:title" content="HSE کاراوران صنعت خاور میانه" />
+    <meta property="og:url" content="https://mkt0900.ir" />
+    <meta property="og:site_name" content="HSE by MKT" />
     <link rel="canonical" href="http://index.html" />
     <link rel="shortcut icon" href="{% static 'assets/media/logos/favicon.ico' %}" />
     <!--begin::Fonts(mandatory for all pages)-->
@@ -22,6 +22,7 @@
     <!--begin::Vendor Stylesheets(used for this page only)-->
     <link href="{% static 'assets/plugins/custom/fullcalendar/fullcalendar.bundle.css' %}" rel="stylesheet" type="text/css" />
     <link href="{% static 'assets/plugins/custom/datatables/datatables.bundle.css' %}" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <!--end::Vendor Stylesheets-->
     <!--begin::Global Stylesheets Bundle(mandatory for all pages)-->
     <link href="{% static 'assets/plugins/global/plugins.bundle.rtl.css' %}" rel="stylesheet" type="text/css" />
@@ -44,7 +45,8 @@
 
 
 <!--begin::Javascript-->
-<script>var hostUrl = "assets/";</script>
+<script>var hostUrl = "{% static  'assets/' %}";</script>
+
 <!--begin::Global Javascript Bundle(mandatory for all pages)-->
 <script src="{% static 'assets/plugins/global/plugins.bundle.js' %}"></script>
 <script src="{% static 'assets/js/scripts.bundle.js' %}"></script>
@@ -61,6 +63,20 @@
 <script src="{% static 'assets/js/custom/utilities/modals/new-target.js' %}"></script>
 <script src="{% static 'assets/js/custom/utilities/modals/users-search.js' %}"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://unpkg.com/@yaireo/tagify"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+$(document).ready(function() {
+    var table = $('#kt_profile_overview_table').DataTable({
+        "searching": true,  // فعال‌سازی قابلیت جستجو
+        "paging": true,     // فعال‌سازی قابلیت صفحه‌بندی
+        "info": true        // نمایش اطلاعات رکوردها
+    });
+
+    // تست کنید که آیا DataTables به درستی فعال شده است
+    console.log("DataTable initialized: ", table);
+</script>
 <script type="text/javascript">
     $(document).ready(function() {
         $('#id_anomalytype').change(function() {
@@ -110,8 +126,20 @@
                 });
             });
     });
+$(document).ready(function() {
+    var table = $('#kt_profile_overview_table').DataTable({
+        "searching": true,  // فعال‌سازی قابلیت جستجو
+        "paging": true,     // فعال‌سازی قابلیت صفحه‌بندی
+        "info": true        // نمایش اطلاعات رکوردها
+    });
 
+    // تست کنید که آیا DataTables به درستی فعال شده است
+    console.log("DataTable initialized: ", table);
+});
 </script>
+
+
+
 
 <!--end::سفارشی Javascript-->
 <!--end::Javascript-->
