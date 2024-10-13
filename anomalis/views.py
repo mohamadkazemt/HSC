@@ -7,8 +7,9 @@ from .forms import  AnomalyForm
 from django.shortcuts import redirect
 from django.http import JsonResponse
 from .models import AnomalyDescription, CorrectiveAction
-from .models import Anomaly
-
+from .models import Anomaly, Comments
+from django.views.decorators.csrf import csrf_exempt
+import jdatetime
 name = 'anomalis'
 
 @login_required
@@ -33,7 +34,12 @@ def anomalis(request):
             print(form.errors)
     else:
         form = AnomalyForm()
-    return render(request, 'anomalis/new-anomalie.html', {'form': form, 'pagetitle':'افزودن آنومالی جدید', 'title': 'افزودن آنومالی جدید'})
+
+
+    return render(request, 'anomalis/new-anomalie.html', {'form': form,
+                                                          'pagetitle':'افزودن آنومالی جدید',
+                                                          'title': 'افزودن آنومالی جدید',
+                                                          })
 
 
 
@@ -98,8 +104,45 @@ def edit_anomaly(request, pk):
     return render(request, 'anomalis/edit_anomaly.html', {'form': form})
 
 
-@login_required
-def delete_anomaly(request, pk):
+
+
+
+
+
+def anomaly_detail_view(request, pk):
     anomaly = get_object_or_404(Anomaly, pk=pk)
-    anomaly.delete()
-    return redirect('anomalis:anomalis')
+    comments = anomaly.comments.all()  # دریافت کامنت‌های مرتبط با آنومالی
+    return render(request, 'anomalis/anomaly-details.html', {'anomaly': anomaly, 'comments': comments})
+
+
+
+
+
+
+
+
+@csrf_exempt
+def add_comment(request):
+    if request.method == 'POST':
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            anomaly_id = request.POST.get('anomaly_id')
+            anomaly = Anomaly.objects.get(id=anomaly_id)
+            user = request.user  # کاربر فعلی
+
+            # ایجاد کامنت جدید
+            comment = form.save(commit=False)
+            comment.anomaly = anomaly
+            comment.user = user
+            comment.save()
+
+            # تبدیل تاریخ به شمسی
+            created_at_shamsi = jdatetime.datetime.fromgregorian(datetime=comment.created_at)
+
+            return JsonResponse({
+                'user': user.username,
+                'content': comment.content,
+                'created_at': created_at_shamsi.strftime('%Y/%m/%d %H:%M')
+            })
+        else:
+            return JsonResponse({'error': 'Invalid form submission.'}, status=400)

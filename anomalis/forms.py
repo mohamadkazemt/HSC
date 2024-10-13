@@ -1,7 +1,7 @@
 from django import forms
 from .models import Anomaly, Priority
 from django_select2.forms import Select2TagWidget
-
+from .models import Comments
 
 
 
@@ -35,4 +35,21 @@ class AnomalyForm(forms.ModelForm):
             'anomalydescription': forms.Select(attrs={'class': 'form-select form-select-solid', 'data-control': 'select2'}),
             'hse_type': forms.TextInput(attrs={'class': 'form-control form-control-solid', 'readonly': True}),
 
+        }
+
+
+
+
+from django import forms
+from .models import Comments  # مطمئن شوید که نام مدل درست باشد
+
+class CommentForm(forms.ModelForm):
+    class Meta:
+        model = Comments  # استفاده از مدل درست
+        fields = ['comment']  # استفاده از فیلد comment به جای content
+        widgets = {
+            'comment': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'نظر خود را وارد کنید'}),
+        }
+        labels = {
+            'comment': 'نظر شما',
         }

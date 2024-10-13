@@ -1,6 +1,5 @@
 from django.contrib.auth.models import User
 from django.db import models
-
 from accounts.models import UserProfile
 
 
@@ -89,7 +88,6 @@ class Priority(models.Model):
 
 
 
-
 class Anomaly(models.Model):
     location = models.ForeignKey(Location, on_delete=models.CASCADE, verbose_name="محل آنومالی")
     anomalytype = models.ForeignKey(Anomalytype, on_delete=models.CASCADE, verbose_name="نوع آنومالی")
@@ -116,3 +114,22 @@ class Anomaly(models.Model):
 
     def __str__(self):
         return self.description
+
+
+class Comments(models.Model):
+    anomaly = models.ForeignKey(Anomaly, on_delete=models.CASCADE, related_name='comments', verbose_name="آنومالی")
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, verbose_name="کاربر")
+    comment = models.TextField(verbose_name="کامنت")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="تاریخ بروزرسانی")
+
+    class Meta:
+        verbose_name = "کامنت"
+        verbose_name_plural = "کامنت ها"
+
+    def __str__(self):
+        return self.comment
+
+
+    def __str__(self):
+        return self.comment

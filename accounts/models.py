@@ -21,4 +21,4 @@ class UserProfile(models.Model):
     group = models.CharField(max_length=1, choices=GROUP_CHOICES, blank=True)
 
     def __str__(self):
-        return f'{self.user.username} Profile'
+        return f'{self.user.first_name} {self.user.last_name}'
