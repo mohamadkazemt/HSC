@@ -164,8 +164,8 @@
                                         <div class="card-header mt-5">
                                             <!--begin::کارت title-->
                                             <div class="card-title flex-column">
-                                                <h3 class="fw-bold mb-1">خروجی های پروژه</h3>
-                                                <div class="fs-6 text-gray-500">کل 260300 دلار تا کنون خرج شده است</div>
+                                                <h3 class="fw-bold mb-1">لیست آنومالی</h3>
+                                                <div class="fs-6 text-gray-500">{{ all_users_anomaly_stats.total_anomalies_year }} آنومالی در سال جاری ثبت شده است </div>
                                             </div>
                                             <!--begin::کارت toolbar-->
                                             <div class="card-toolbar my-1">
@@ -220,12 +220,12 @@
                                                                         </div>
                                                                     </div>
                                                                     <div class="d-flex flex-column justify-content-center">
-                                                                        <a href="" class="fs-6 text-gray-800 text-hover-primary">{{ anomaly.followup.last_name }}</a>
+                                                                        <a href="" class="fs-6 text-gray-800 text-hover-primary">{{ anomaly.followup.user.first_name }} {{ anomaly.followup.user.last_name }}</a>
                                                                         <div class="fw-semibold text-gray-500">{{ anomaly.followup.mobile }}</div>
                                                                     </div>
                                                                 </div>
                                                             </td>
-                                                            <td>{{ anomaly.created_by }}</td>
+                                                            <td>{{ anomaly.created_by.user.first_name }} {{ anomaly.created_by.user.last_name }}</td>
                                                             <td>{{ anomaly.created_at|date:"Y/m/d" }}</td>
                                                             <td>{{ anomaly.location }}</td>
                                                             <td>{{ anomaly.description }}</td>

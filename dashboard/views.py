@@ -18,7 +18,8 @@ def dashboard(request):
     context = {
         'is_admin_user': is_admin_user,
         'is_followup_user': is_followup_user,
-        'is_safety_officer': is_safety_officer
+        'is_safety_officer': is_safety_officer,
+        'title': 'داشبورد',
     }
 
     return render(request, 'dashboard/dashboard.html',context)

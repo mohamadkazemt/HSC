@@ -1,6 +1,8 @@
 from django.core.paginator import Paginator
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.template.defaultfilters import title
+from accounts.models import UserProfile
 from .forms import  AnomalyForm
 from django.shortcuts import redirect
 from django.http import JsonResponse
@@ -15,7 +17,15 @@ def anomalis(request):
         form = AnomalyForm(request.POST, request.FILES)
         if form.is_valid():
             anomaly = form.save(commit=False)  # فرم را ذخیره نمی‌کنیم تا بتوانیم فیلد ایجاد کننده را تنظیم کنیم
-            anomaly.created_by = request.user  # کاربر لاگین شده را به عنوان ایجادکننده تنظیم می‌کنیم
+
+            try:
+                user_profile = UserProfile.objects.get(user=request.user)
+            except UserProfile.DoesNotExist:
+                return redirect('accounts:login')
+
+
+            anomaly.created_by = user_profile  # کاربر لاگین شده را به عنوان ایجادکننده تنظیم می‌کنیم  # کاربر لاگین شده را به عنوان ایجادکننده تنظیم می‌کنیم
+            anomaly.group = request.user.userprofile.group
             anomaly.hse_type = anomaly.anomalydescription.hse_type  # تنظیم خودکار hse_type از anomalydescription
             anomaly.save()  # حالا فرم را ذخیره می‌کنیم
             return redirect('anomalis:anomalis')
@@ -23,7 +33,7 @@ def anomalis(request):
             print(form.errors)
     else:
         form = AnomalyForm()
-    return render(request, 'anomalis/new-anomalie.html', {'form': form, 'pagetitle': 'افزودن آنومالی جدید'})
+    return render(request, 'anomalis/new-anomalie.html', {'form': form, 'pagetitle':'افزودن آنومالی جدید', 'title': 'افزودن آنومالی جدید'})
 
 
 
@@ -65,7 +75,7 @@ def anomaly_list(request):
     page_number = request.GET.get('page')  # دریافت شماره صفحه از url
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'anomalis/list.html',{'page_obj': page_obj, 'anomalies': anomalies, 'pagetitle': 'لیست آنومالی‌ها'})
+    return render(request, 'anomalis/list.html',{'page_obj': page_obj, 'anomalies': anomalies, 'pagetitle': 'لیست آنومالی‌ها', 'title': 'لیست آنومالی‌ها'})
 @login_required
 def toggle_status(request, pk):
     anomaly = get_object_or_404(Anomaly, pk=pk)

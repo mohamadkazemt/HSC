@@ -4,32 +4,31 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="formanomali">
-      <change afterPath="$PROJECT_DIR$/analytics/context_processors.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/analytics/migrations/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/analytics/utils.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0003_alter_anomaly_hse_type.py" afterDir="false" />
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="listnew">
+      <change afterPath="$PROJECT_DIR$/accounts/migrations/0002_userprofile_group.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/accounts/migrations/0003_alter_userprofile_group.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0002_alter_anomaly_created_by_alter_anomaly_followup.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0003_alter_anomaly_created_by_alter_anomaly_followup.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0004_anomaly_group.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/accounts/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/forms.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/accounts/migrations/0001_initial.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/migrations/0001_initial.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/migrations/0002_alter_userprofile_user.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/accounts/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/accounts/templates/accounts/navbar.html" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/templates/accounts/navbar.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/templates/accounts/overview.html" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/templates/accounts/overview.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/accounts/templates/accounts/settings.html" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/templates/accounts/settings.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/analytics/context_processors.py" beforeDir="false" afterPath="$PROJECT_DIR$/analytics/context_processors.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/analytics/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/analytics/utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/migrations/0001_initial.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/migrations/0001_initial.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0002_anomaly_image.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0003_alter_anomaly_image.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0004_alter_anomaly_priority.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0005_alter_anomaly_priority.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/migrations/0002_alter_correctiveaction_anomali_type.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0002_alter_correctiveaction_anomali_type.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0003_alter_anomaly_hse_type.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/delete.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/information.html" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/list.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/new-anomalie.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/new-anomalie.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dashboard/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/dashboard/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/assets/css/style.bundle.css" beforeDir="false" afterPath="$PROJECT_DIR$/static/assets/css/style.bundle.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/assets/css/style.bundle.rtl.css" beforeDir="false" afterPath="$PROJECT_DIR$/static/assets/css/style.bundle.rtl.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/assets/js/custom/utilities/modals/new-target.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/assets/js/custom/utilities/modals/new-target.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/base.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -66,7 +65,7 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/mohamadkazemt/HSC.git&quot;,
-    &quot;accountId&quot;: &quot;b1049974-7825-44ef-a60c-99f35deafaf1&quot;
+    &quot;accountId&quot;: &quot;9fc15a5e-2546-4e3c-a99c-962a28c99e79&quot;
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
@@ -200,6 +199,10 @@
       <workItem from="1728365118274" duration="137000" />
       <workItem from="1728365268987" duration="6481000" />
       <workItem from="1728373026934" duration="8128000" />
+      <workItem from="1728662379614" duration="1310000" />
+      <workItem from="1728663719796" duration="10193000" />
+      <workItem from="1728734760428" duration="14299000" />
+      <workItem from="1728752700608" duration="3186000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
@@ -229,7 +232,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۰۴" />
       <updated>1728108211535</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL‎−۰۰۰۰۵" summary="listnew">
+      <option name="closed" value="true" />
+      <created>1728674478573</created>
+      <option name="number" value="LOCAL‎−۰۰۰۰۵" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۰۵" />
+      <updated>1728674478573</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -251,7 +261,8 @@
     <MESSAGE value="accont" />
     <MESSAGE value="newtemolate" />
     <MESSAGE value="formanomali" />
-    <option name="LAST_COMMIT_MESSAGE" value="formanomali" />
+    <MESSAGE value="listnew" />
+    <option name="LAST_COMMIT_MESSAGE" value="listnew" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

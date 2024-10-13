@@ -4,7 +4,7 @@
 <head>
     {% load static %}
 
-    <title>HSE کاراوران صنعت خاور میانه  </title>
+    <title>{{ title }}|کاراوران صنعت</title>
     <meta charset="utf-8" />
     <meta name="description" content="The most advanced Bootstrap 5 Admin Theme with 40 unique prebuilt layouts on Themeforest trusted by 100,000 beginners and professionals. Multi-demo, حالت تیره, RTL support and complete React, Angular, Vue, Asp.Net Core, Rails, Spring, Blazor, Django, Express.js, Node.js, Flask, Symfony & Laravel versions. Grab your copy now and get life-time updates for free." />
     <meta name="keywords" content="metronic, bootstrap, bootstrap 5, angular, VueJs, React, Asp.Net Core, Rails, Spring, Blazor, Django, Express.js, Node.js, Flask, Symfony & Laravel starter kits, admin themes, web design, figma, web development, free templates, free admin themes, bootstrap theme, bootstrap template, bootstrap dashboard, bootstrap dak mode, bootstrap button, bootstrap datepicker, bootstrap timepicker, fullcalendar, datatables, flaticon" />
@@ -66,17 +66,7 @@
 <script src="https://unpkg.com/@yaireo/tagify"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script>
-$(document).ready(function() {
-    var table = $('#kt_profile_overview_table').DataTable({
-        "searching": true,  // فعال‌سازی قابلیت جستجو
-        "paging": true,     // فعال‌سازی قابلیت صفحه‌بندی
-        "info": true        // نمایش اطلاعات رکوردها
-    });
 
-    // تست کنید که آیا DataTables به درستی فعال شده است
-    console.log("DataTable initialized: ", table);
-</script>
 <script type="text/javascript">
     $(document).ready(function() {
         $('#id_anomalytype').change(function() {
@@ -126,16 +116,6 @@ $(document).ready(function() {
                 });
             });
     });
-$(document).ready(function() {
-    var table = $('#kt_profile_overview_table').DataTable({
-        "searching": true,  // فعال‌سازی قابلیت جستجو
-        "paging": true,     // فعال‌سازی قابلیت صفحه‌بندی
-        "info": true        // نمایش اطلاعات رکوردها
-    });
-
-    // تست کنید که آیا DataTables به درستی فعال شده است
-    console.log("DataTable initialized: ", table);
-});
 </script>
 
 

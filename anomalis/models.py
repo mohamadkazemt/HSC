@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.db import models
 
+from accounts.models import UserProfile
 
 
 class Location(models.Model):
@@ -95,8 +96,9 @@ class Anomaly(models.Model):
     anomalydescription = models.ForeignKey(AnomalyDescription, on_delete=models.CASCADE, verbose_name="شرح آنومالی")
     hse_type = models.CharField(max_length=1, choices=[('H', 'Health'), ('S', 'Safety'), ('E', 'Environment')], verbose_name="نوع HSE")
     correctiveaction = models.ForeignKey(CorrectiveAction, on_delete=models.CASCADE, verbose_name="عملیات اصلاحی")
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_anomalies', verbose_name="ایجاد کننده")
-    followup = models.ForeignKey(User, on_delete=models.CASCADE, related_name='followup_anomalies', verbose_name="پیگیری")
+    created_by = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='created_anomalies', verbose_name="ایجاد کننده")
+    followup = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='followup_anomalies', verbose_name="پیگیری")
+    group = models.CharField(max_length=1, choices=UserProfile.GROUP_CHOICES, verbose_name="گروه کاری")
     description = models.TextField(verbose_name="شرح آنومالی")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="تاریخ بروزرسانی")

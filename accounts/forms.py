@@ -22,13 +22,15 @@ class UserForm(forms.ModelForm):
             'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'نام'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'نام خانوادگی'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'ایمیل'}),
+
         }
 
 class UserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
-        fields = ['image', 'mobile']  # فیلدهای مربوط به پروفایل کاربر
+        fields = ['image', 'mobile', 'group']  # فیلدهای مربوط به پروفایل کاربر
         widgets = {
             'image': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'mobile': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'شماره موبایل'}),
+            'group': forms.Select(attrs={'class': 'form-control'})
         }

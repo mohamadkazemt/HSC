@@ -35,7 +35,7 @@
 																<a href="#" class="d-flex align-items-center text-gray-500 text-hover-primary me-5 mb-2">
 																<i class="ki-outline ki-profile-circle fs-4 me-1"></i>{{ user.groups.all|first}}</a>
 																<a href="#" class="d-flex align-items-center text-gray-500 text-hover-primary me-5 mb-2">
-																<i class="ki-outline ki-geolocation fs-4 me-1"></i>منطقه زندگی</a>
+																<i class="fas fa-users fs-4 me-1"></i> گروه کاری : {{ userprofile.group }} </a>
 																<a href="#" class="d-flex align-items-center text-gray-500 text-hover-primary mb-2">
 																<i class="ki-outline ki-sms fs-4"></i>{{ user.email }}</a>
 															</div>
@@ -145,7 +145,7 @@
 																	<!--begin::شماره کارت-->
 																	<div class="d-flex align-items-center">
 																		<i class="ki-outline ki-arrow-up fs-3 text-success me-2"></i>
-																		<div class="fs-2 fw-bold" data-kt-countup="true" data-kt-countup-value="{{ anomaly_stats.total_anomalies }}" data-kt-countup-prefix="">0</div>
+																		<div class="fs-2 fw-bold" data-kt-countup="true" data-kt-countup-value="{{ user_anomaly_stats.total_anomalies }}" data-kt-countup-prefix="">0</div>
 																	</div>
 																	<!--end::شماره کارت-->
 																	<!--begin::Tags-->
@@ -158,7 +158,7 @@
 																	<!--begin::شماره کارت-->
 																	<div class="d-flex align-items-center">
 																		<i class="ki-outline ki-arrow-down fs-3 text-danger me-2"></i>
-																		<div class="fs-2 fw-bold" data-kt-countup="true" data-kt-countup-value="{{ anomaly_stats.high_priority_anomalies }}">0</div>
+																		<div class="fs-2 fw-bold" data-kt-countup="true" data-kt-countup-value="{{ user_anomaly_stats.high_priority_anomalies }}">0</div>
 																	</div>
 																	<!--end::شماره کارت-->
 																	<!--begin::Tags-->
@@ -171,7 +171,7 @@
 																	<!--begin::شماره کارت-->
 																	<div class="d-flex align-items-center">
 																		<i class="ki-outline ki-arrow-up fs-3 text-success me-2"></i>
-																		<div class="fs-2 fw-bold" data-kt-countup="true" data-kt-countup-value="{{ anomaly_stats.secured_anomalies }}" data-kt-countup-prefix="">0</div>
+																		<div class="fs-2 fw-bold" data-kt-countup="true" data-kt-countup-value="{{ user_anomaly_stats.secured_anomalies }}" data-kt-countup-prefix="">0</div>
 																	</div>
 																	<!--end::شماره کارت-->
 																	<!--begin::Tags-->
@@ -179,6 +179,17 @@
 																	<!--end::Tags-->
 																</div>
 																<!--end::Stat-->
+                                                                <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-6 mb-3">
+																	<!--begin::شماره کارت-->
+																	<div class="d-flex align-items-center">
+																		<i class="ki-outline ki-arrow-up fs-3 text-success me-2"></i>
+																		<div class="fs-2 fw-bold" data-kt-countup="true" data-kt-countup-value="{{ user_anomaly_stats.secured_anomalies }}" data-kt-countup-prefix="">0</div>
+																	</div>
+																	<!--end::شماره کارت-->
+																	<!--begin::Tags-->
+																	<div class="fw-semibold fs-6 text-gray-500">آنومالی های ناایمن</div>
+																	<!--end::Tags-->
+																</div>
 															</div>
 															<!--end::Stats-->
 														</div>
