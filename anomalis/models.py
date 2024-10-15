@@ -26,7 +26,6 @@ class Anomalytype(models.Model):
         return self.type
 
 
-
 class HSE(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField()
@@ -39,10 +38,7 @@ class HSE(models.Model):
         return self.name
 
 
-
-
 class AnomalyDescription(models.Model):
-
     description = models.TextField(max_length=500, verbose_name="شرح آنومالی")
     anomalytype = models.ForeignKey(Anomalytype, on_delete=models.CASCADE, verbose_name="نوع آنومالی")
     hse_type = models.CharField(
@@ -55,11 +51,8 @@ class AnomalyDescription(models.Model):
         verbose_name = "شرح آنومالی"
         verbose_name_plural = "شرح‌های آنومالی"
 
-
-
     def __str__(self):
         return self.description
-
 
 
 class CorrectiveAction(models.Model):
@@ -74,28 +67,28 @@ class CorrectiveAction(models.Model):
         return self.description
 
 
-
 class Priority(models.Model):
-    priority = models.CharField(max_length=20,verbose_name='اولویت')
+    priority = models.CharField(max_length=20, verbose_name='اولویت')
 
     class Meta:
         verbose_name = 'اولویت '
         verbose_name_plural = 'اولویت ها'
 
     def __str__(self):
-        return  self.priority
-
-
+        return self.priority
 
 
 class Anomaly(models.Model):
     location = models.ForeignKey(Location, on_delete=models.CASCADE, verbose_name="محل آنومالی")
     anomalytype = models.ForeignKey(Anomalytype, on_delete=models.CASCADE, verbose_name="نوع آنومالی")
     anomalydescription = models.ForeignKey(AnomalyDescription, on_delete=models.CASCADE, verbose_name="شرح آنومالی")
-    hse_type = models.CharField(max_length=1, choices=[('H', 'Health'), ('S', 'Safety'), ('E', 'Environment')], verbose_name="نوع HSE")
+    hse_type = models.CharField(max_length=1, choices=[('H', 'Health'), ('S', 'Safety'), ('E', 'Environment')],
+                                verbose_name="نوع HSE")
     correctiveaction = models.ForeignKey(CorrectiveAction, on_delete=models.CASCADE, verbose_name="عملیات اصلاحی")
-    created_by = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='created_anomalies', verbose_name="ایجاد کننده")
-    followup = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='followup_anomalies', verbose_name="پیگیری")
+    created_by = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='created_anomalies',
+                                   verbose_name="ایجاد کننده")
+    followup = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='followup_anomalies',
+                                 verbose_name="پیگیری")
     group = models.CharField(max_length=1, choices=UserProfile.GROUP_CHOICES, verbose_name="گروه کاری")
     description = models.TextField(verbose_name="شرح آنومالی")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
@@ -104,32 +97,34 @@ class Anomaly(models.Model):
     priority = models.ForeignKey(Priority, on_delete=models.CASCADE, verbose_name="اولویت")
     image = models.ImageField(upload_to='anomalies/%Y/%m/%d', verbose_name="تصویر آنومالی", blank=True, null=True)
 
-
-
-
-
     class Meta:
         verbose_name = "آنومالی"
         verbose_name_plural = "آنومالی ها"
 
     def __str__(self):
-        return self.description
+        return str(self.description[:30]) + '...'
 
 
-class Comments(models.Model):
+class Comment(models.Model):
     anomaly = models.ForeignKey(Anomaly, on_delete=models.CASCADE, related_name='comments', verbose_name="آنومالی")
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, verbose_name="کاربر")
     comment = models.TextField(verbose_name="کامنت")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="تاریخ بروزرسانی")
+    parent = models.ForeignKey('self', null=True, blank=True, related_name='replies', on_delete=models.CASCADE,
+                               verbose_name="پاسخ به")  # Added parent field for replies
 
     class Meta:
         verbose_name = "کامنت"
         verbose_name_plural = "کامنت ها"
 
     def __str__(self):
-        return self.comment
+        return str(self.comment[:30])
 
+    @property
+    def is_reply(self):
+        return self.parent is not None
 
     def __str__(self):
         return self.comment
+

@@ -5,14 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="listnew2">
-      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0005_comments.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0006_alter_comments_anomaly.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/anomaly-details.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0007_comment_delete_comments.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/anomalis/templatetags/jalali.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/admin.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/forms.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/anomalis.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/anomaly-details.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/anomaly-details.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/list.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/list.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/views.py" afterDir="false" />
@@ -30,8 +30,8 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Python Script" />
         <option value="HTML File" />
+        <option value="Python Script" />
       </list>
     </option>
   </component>
@@ -68,29 +68,29 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
-    &quot;Django Server.HSCprojects.executor&quot;: &quot;Run&quot;,
-    &quot;HTTP Request.generated-requests | #1.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.OpenDjangoStructureViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.pycharm.django.structure.promotion.once.per.project&quot;: &quot;true&quot;,
-    &quot;com.codeium.enabled&quot;: &quot;true&quot;,
-    &quot;com.codeium.snoozedEndTime&quot;: &quot;0&quot;,
-    &quot;django.template.preview.state&quot;: &quot;SHOW_EDITOR&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/No1/PycharmProjects/HSC3/templates&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultHtmlFileTemplate": "HTML File",
+    "Django Server.HSCprojects.executor": "Run",
+    "HTTP Request.generated-requests | #1.executor": "Run",
+    "RunOnceActivity.OpenDjangoStructureViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.pycharm.django.structure.promotion.once.per.project": "true",
+    "com.codeium.enabled": "true",
+    "com.codeium.snoozedEndTime": "0",
+    "django.template.preview.state": "SHOW_EDITOR",
+    "git-widget-placeholder": "880e093d",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "C:/Users/No1/PycharmProjects/HSC3/templates",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\No1\PycharmProjects\HSC3\templates" />

@@ -3,13 +3,18 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.template.defaultfilters import title
 from accounts.models import UserProfile
-from .forms import  AnomalyForm
+from .forms import AnomalyForm, CommentForm
 from django.shortcuts import redirect
 from django.http import JsonResponse
-from .models import AnomalyDescription, CorrectiveAction
-from .models import Anomaly, Comments
+from .models import AnomalyDescription, CorrectiveAction, Comment
+from .models import Anomaly
 from django.views.decorators.csrf import csrf_exempt
 import jdatetime
+
+
+
+
+
 name = 'anomalis'
 
 @login_required
@@ -67,21 +72,31 @@ def get_corrective_action(request, description_id):
         return JsonResponse({'error': 'Corrective action not found'}, status=404)
 
 
+
+
 @login_required
-#@user_passes_test(lambda u: not u.groups.filter(name='مسئول پیگیری').exists(), login_url='accounts:login')
 def anomaly_list(request):
-    # بررسی می‌کنیم که آیا کاربر عضو گروه "مسئول پیگیری" هست یا نه
     if request.user.groups.filter(name='مسئول پیگیری').exists():
-        # تمام آنومالی‌هایی که کاربر پیگیری آنها است را بازیابی می‌کنیم
         anomalies = Anomaly.objects.filter(followup=request.user)
     else:
         anomalies = Anomaly.objects.all()
 
-    paginator = Paginator(anomalies, 10)  # 10 آنومالی در هر صفحه
-    page_number = request.GET.get('page')  # دریافت شماره صفحه از url
+    # Convert the date fields to Jalali
+    for anomaly in anomalies:
+        anomaly.created_at_jalali = jdatetime.datetime.fromgregorian(datetime=anomaly.created_at)
+        anomaly.updated_at_jalali = jdatetime.datetime.fromgregorian(datetime=anomaly.updated_at)
+
+    paginator = Paginator(anomalies, 10)  # 10 anomalies per page
+    page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'anomalis/list.html',{'page_obj': page_obj, 'anomalies': anomalies, 'pagetitle': 'لیست آنومالی‌ها', 'title': 'لیست آنومالی‌ها'})
+    return render(request, 'anomalis/list.html', {
+        'page_obj': page_obj,
+        'anomalies': anomalies,
+        'pagetitle': 'لیست آنومالی‌ها',
+        'title': 'لیست آنومالی‌ها'
+    })
+
 @login_required
 def toggle_status(request, pk):
     anomaly = get_object_or_404(Anomaly, pk=pk)
@@ -109,40 +124,31 @@ def edit_anomaly(request, pk):
 
 
 
+@login_required
 def anomaly_detail_view(request, pk):
     anomaly = get_object_or_404(Anomaly, pk=pk)
-    comments = anomaly.comments.all()  # دریافت کامنت‌های مرتبط با آنومالی
-    return render(request, 'anomalis/anomaly-details.html', {'anomaly': anomaly, 'comments': comments})
+    comments = anomaly.comments.filter(parent__isnull=True)  # فقط کامنت‌های سطح بالا
 
-
-
-
-
-
-
-
-@csrf_exempt
-def add_comment(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         form = CommentForm(request.POST)
         if form.is_valid():
-            anomaly_id = request.POST.get('anomaly_id')
-            anomaly = Anomaly.objects.get(id=anomaly_id)
-            user = request.user  # کاربر فعلی
-
-            # ایجاد کامنت جدید
             comment = form.save(commit=False)
             comment.anomaly = anomaly
-            comment.user = user
+            # پیدا کردن پروفایل کاربر و انتساب آن به کامنت
+            comment.user = UserProfile.objects.get(user=request.user)  # به جای request.user، پروفایل کاربر را واکشی می‌کنیم
+            parent_id = request.POST.get('parent_id')  # بررسی اینکه آیا این کامنت، پاسخ به یک کامنت دیگر است
+            if parent_id:
+                parent_comment = Comment.objects.get(id=parent_id)
+                comment.parent = parent_comment  # تنظیم والد برای کامنت
             comment.save()
+            return redirect('anomalis:anomaly_detail', pk=anomaly.id)
+    else:
+        form = CommentForm()
 
-            # تبدیل تاریخ به شمسی
-            created_at_shamsi = jdatetime.datetime.fromgregorian(datetime=comment.created_at)
+    context = {
+        'anomaly': anomaly,
+        'comments': comments,
+        'form': form,  # ارسال فرم به قالب
+    }
+    return render(request, 'anomalis/anomaly-details.html', context)
 
-            return JsonResponse({
-                'user': user.username,
-                'content': comment.content,
-                'created_at': created_at_shamsi.strftime('%Y/%m/%d %H:%M')
-            })
-        else:
-            return JsonResponse({'error': 'Invalid form submission.'}, status=400)

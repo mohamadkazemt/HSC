@@ -1,7 +1,6 @@
 from django import forms
-from .models import Anomaly, Priority
+from .models import Anomaly, Priority, Comment
 from django_select2.forms import Select2TagWidget
-from .models import Comments
 
 
 
@@ -40,16 +39,10 @@ class AnomalyForm(forms.ModelForm):
 
 
 
-from django import forms
-from .models import Comments  # مطمئن شوید که نام مدل درست باشد
-
 class CommentForm(forms.ModelForm):
     class Meta:
-        model = Comments  # استفاده از مدل درست
-        fields = ['comment']  # استفاده از فیلد comment به جای content
+        model = Comment
+        fields = ['comment']  # Only include the comment text
         widgets = {
-            'comment': forms.Textarea(attrs={'class': 'form-control', 'placeholder': 'نظر خود را وارد کنید'}),
-        }
-        labels = {
-            'comment': 'نظر شما',
+            'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'نوشتن نظر شما..'}),
         }
