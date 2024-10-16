@@ -1,7 +1,7 @@
 from tkinter.font import names
 from django.urls import path, include
 from . import views
-from .views import get_anomalydescription, get_hse_type, get_corrective_action, anomaly_detail_view, add_comment
+from .views import get_anomalydescription, get_hse_type, get_corrective_action, anomaly_detail_view
 
 app_name = 'anomalis'
 urlpatterns = [
@@ -12,6 +12,7 @@ urlpatterns = [
     path('get-anomalydescription/', get_anomalydescription, name='get_anomalydescription'),
     path('get-hse-type/<int:description_id>/', get_hse_type, name='get_hse_type'),
     path('get-corrective-action/<int:description_id>/', get_corrective_action, name='get_corrective_action'),
-    path('anomaly/<int:pk>/', anomaly_detail_view, name='anomaly_detail'),
-    path('add-comment/', add_comment, name='add_comment'),
+    path('anomaly/<int:pk>/', views.anomaly_detail_view, name='anomaly_detail'),
+
 ]
+

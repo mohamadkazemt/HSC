@@ -5,19 +5,24 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="listnew2">
-      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0005_comments.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0006_alter_comments_anomaly.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/anomaly-details.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/apps.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0001_initial.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/migrations/0001_initial.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0002_alter_anomaly_created_by_alter_anomaly_followup.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/migrations/0002_alter_anomaly_created_by_alter_anomaly_followup.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0003_alter_anomaly_created_by_alter_anomaly_followup.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/migrations/0003_alter_anomaly_created_by_alter_anomaly_followup.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0004_anomaly_group.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/migrations/0004_anomaly_group.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0005_comments.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/migrations/0005_comments.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0006_alter_comments_anomaly.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/migrations/0006_alter_comments_anomaly.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/anomalis.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/anomaly-details.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/anomaly-details.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/list.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/new-anomalie.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/new-anomalie.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/tests.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/tests.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/base.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -193,6 +198,8 @@
       <workItem from="1728752700608" duration="3186000" />
       <workItem from="1728785603576" duration="240000" />
       <workItem from="1728823610001" duration="17738000" />
+      <workItem from="1729002128647" duration="781000" />
+      <workItem from="1729091606927" duration="1152000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
