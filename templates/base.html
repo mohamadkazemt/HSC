@@ -43,7 +43,7 @@
 
 {% endblock %}
 
-
+<script> src="{% static 'assets/js/notifications.js' %}"</script>
 <!--begin::Javascript-->
 <script>var hostUrl = "{% static  'assets/' %}";</script>
 
@@ -66,6 +66,7 @@
 <script src="https://unpkg.com/@yaireo/tagify"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script> src="{% static 'assets/js/notifications.js' %}"</script>
 
 <script type="text/javascript">
     $(document).ready(function() {
@@ -116,33 +117,6 @@
                 });
             });
     });
-$(document).ready(function() {
-    $('#comment-form').submit(function(event) {
-        event.preventDefault();  // جلوگیری از ارسال عادی فرم
-
-        var formData = $(this).serialize();  // سریالایز کردن داده‌های فرم
-
-        $.ajax({
-            url: '{% url "anomalis:add_comment" %}',  // آدرس ویو ثبت کامنت
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}'  // محافظت از CSRF
-            },
-            data: formData,
-            success: function(response) {
-                // اضافه کردن کامنت جدید به لیست
-                $('#comments-list').append('<li><strong>' + response.user + '</strong>: ' + response.content + ' (' + response.created_at + ')</li>');
-
-                // پاک کردن فیلد متن
-                $('#comment-content').val('');
-            },
-            error: function() {
-                alert('خطا در ارسال نظر. لطفا دوباره تلاش کنید.');
-            }
-        });
-    });
-});
-
 </script>
 
 

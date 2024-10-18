@@ -2,7 +2,11 @@ from django.core.paginator import Paginator
 from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.template.defaultfilters import title
+from django.urls import reverse
+
 from accounts.models import UserProfile
+from dashboard.models import Notification
+from dashboard.sms_utils import send_sms
 from .forms import AnomalyForm, CommentForm
 from django.shortcuts import redirect
 from django.http import JsonResponse
@@ -10,9 +14,8 @@ from .models import AnomalyDescription, CorrectiveAction, Comment
 from .models import Anomaly
 from django.views.decorators.csrf import csrf_exempt
 import jdatetime
-
-
-
+from accounts.models import UserProfile
+from django.contrib.auth.models import Group, User
 
 
 name = 'anomalis'
@@ -77,7 +80,8 @@ def get_corrective_action(request, description_id):
 @login_required
 def anomaly_list(request):
     if request.user.groups.filter(name='مسئول پیگیری').exists():
-        anomalies = Anomaly.objects.filter(followup=request.user)
+        user_profile = UserProfile.objects.get(user=request.user)
+        anomalies = Anomaly.objects.filter(followup=user_profile)
     else:
         anomalies = Anomaly.objects.all()
 
@@ -97,29 +101,6 @@ def anomaly_list(request):
         'title': 'لیست آنومالی‌ها'
     })
 
-@login_required
-def toggle_status(request, pk):
-    anomaly = get_object_or_404(Anomaly, pk=pk)
-    anomaly.action = not anomaly.action  # تغییر وضعیت
-    anomaly.save()
-    return redirect('anomalis:anomalis')  # بازگشت به لیست آنومالی‌ه
-
-@login_required
-def edit_anomaly(request, pk):
-    anomaly = get_object_or_404(Anomaly, pk=pk)  # گرفتن آنومالی مورد نظر از دیتابیس
-
-    if request.method == 'POST':
-        form = AnomalyForm(request.POST, request.FILES, instance=anomaly)  # استفاده از اینستنس برای ویرایش
-        if form.is_valid():
-            form.save()  # ذخیره تغییرات
-            return redirect('anomalis:anomalis')  # بازگشت به صفحه لیست یا هر صفحه دیگری
-    else:
-        form = AnomalyForm(instance=anomaly)  # نمایش اطلاعات موجود در فرم
-
-    return render(request, 'anomalis/edit_anomaly.html', {'form': form})
-
-
-
 
 
 
@@ -127,19 +108,24 @@ def edit_anomaly(request, pk):
 @login_required
 def anomaly_detail_view(request, pk):
     anomaly = get_object_or_404(Anomaly, pk=pk)
-    comments = anomaly.comments.filter(parent__isnull=True)  # فقط کامنت‌های سطح بالا
+    comments = anomaly.comments.filter(parent__isnull=True)
+
+    # بررسی اینکه کاربر عضو گروه 'مدیر HSE' یا 'افسر HSE' است یا خیر
+    is_hse_manager = request.user.groups.filter(name__in=['مدیر HSE', 'افسر HSE']).exists()
+
+    # بررسی اینکه آیا درخواست ایمن‌سازی ارسال شده است یا خیر
+    is_request_sent = anomaly.is_request_sent  # بررسی از فیلد is_request_sent
 
     if request.method == "POST":
         form = CommentForm(request.POST)
         if form.is_valid():
             comment = form.save(commit=False)
             comment.anomaly = anomaly
-            # پیدا کردن پروفایل کاربر و انتساب آن به کامنت
-            comment.user = UserProfile.objects.get(user=request.user)  # به جای request.user، پروفایل کاربر را واکشی می‌کنیم
-            parent_id = request.POST.get('parent_id')  # بررسی اینکه آیا این کامنت، پاسخ به یک کامنت دیگر است
+            comment.user = request.user
+            parent_id = request.POST.get('parent_id')
             if parent_id:
                 parent_comment = Comment.objects.get(id=parent_id)
-                comment.parent = parent_comment  # تنظیم والد برای کامنت
+                comment.parent = parent_comment
             comment.save()
             return redirect('anomalis:anomaly_detail', pk=anomaly.id)
     else:
@@ -148,7 +134,120 @@ def anomaly_detail_view(request, pk):
     context = {
         'anomaly': anomaly,
         'comments': comments,
-        'form': form,  # ارسال فرم به قالب
+        'form': form,
+        'title': 'جزئیات آنومالی',
+        'is_hse_manager': is_hse_manager,
+        'is_request_sent': is_request_sent
     }
     return render(request, 'anomalis/anomaly-details.html', context)
+
+
+
+
+@login_required
+def request_safe(request, pk):
+    anomaly = get_object_or_404(Anomaly, pk=pk)
+
+    if request.method == 'POST' and request.user == anomaly.followup.user:
+        # تغییر وضعیت آنومالی به حالت در انتظار تأیید
+        anomaly.action = False
+        anomaly.is_request_sent = True  # ثبت اینکه درخواست ارسال شده است
+        anomaly.save()
+
+        # پیدا کردن مدیران HSE و افسران HSE و ارسال پیامک به شماره موبایل آنها
+        hse_managers = User.objects.filter(groups__name__in=['مدیر HSE', 'افسر HSE'])
+        for manager in hse_managers:
+            try:
+                # دریافت شماره موبایل از پروفایل کاربر
+                manager_profile = UserProfile.objects.get(user=manager)
+                mobile_number = manager_profile.mobile
+
+                # ارسال پیامک
+                send_sms(mobile_number, f"درخواست ایمن شدن آنومالی با شماره {anomaly.pk} در انتظار تأیید است.")
+
+                # اضافه کردن نوتیفیکیشن برای هر مدیر HSE و افسر HSE
+                Notification.objects.create(
+                    user=manager,
+                    message=f"درخواست ایمن شدن آنومالی با شماره {anomaly.pk} ارسال شده است.",
+                    url=reverse('anomalis:anomaly_detail', args=[anomaly.pk])
+                )
+            except UserProfile.DoesNotExist:
+                print(f"پروفایل برای کاربر {manager.username} وجود ندارد.")
+
+        return redirect('anomalis:anomaly_detail', pk=anomaly.pk)
+
+    return redirect('anomalis:anomalis')
+
+
+
+
+
+@login_required
+@user_passes_test(lambda u: u.groups.filter(name__in=['مدیر HSE', 'افسر HSE']).exists())
+def approve_safe(request, pk):
+    anomaly = get_object_or_404(Anomaly, pk=pk)
+
+    if request.method == 'POST':
+        anomaly.action = True  # تنظیم به حالت ایمن
+        anomaly.is_request_sent = False  # درخواست تایید شده و دیگر در انتظار نیست
+        anomaly.save()
+
+        # دریافت پروفایل ایجادکننده و مسئول پیگیری
+        creator_profile = anomaly.created_by
+        followup_profile = anomaly.followup
+
+        # ارسال پیامک به ایجادکننده و مسئول پیگیری
+        send_sms(creator_profile.mobile, f"آنومالی با شماره {anomaly.pk} ایمن اعلام شد.")
+        send_sms(followup_profile.mobile, f"آنومالی با شماره {anomaly.pk} ایمن اعلام شد.")
+
+        # اضافه کردن نوتیفیکیشن برای ایجادکننده و مسئول پیگیری
+        Notification.objects.create(
+            user=creator_profile.user,
+            message=f"آنومالی با شماره {anomaly.pk} ایمن اعلام شد.",
+            url=reverse('anomalis:anomaly_detail', args=[anomaly.pk])
+        )
+        Notification.objects.create(
+            user=followup_profile.user,
+            message=f"آنومالی با شماره {anomaly.pk} ایمن اعلام شد.",
+            url=reverse('anomalis:anomaly_detail', args=[anomaly.pk])
+        )
+
+        return redirect('anomalis:anomaly_detail', pk=anomaly.pk)
+
+
+
+
+
+
+@login_required
+@user_passes_test(lambda u: u.groups.filter(name__in=['مدیر HSE', 'افسر HSE']).exists())
+def reject_safe(request, pk):
+    anomaly = get_object_or_404(Anomaly, pk=pk)
+
+    if request.method == 'POST':
+        # وضعیت آنومالی تغییر نمی‌کند چون درخواست رد شده است
+        anomaly.is_request_sent = False  # ثبت اینکه درخواست لغو شده است
+        anomaly.save()
+
+        # دریافت پروفایل ایجادکننده و مسئول پیگیری
+        creator_profile = anomaly.created_by
+        followup_profile = anomaly.followup
+
+        # ارسال پیامک به ایجادکننده و مسئول پیگیری
+        send_sms(creator_profile.mobile, f"درخواست ایمن شدن آنومالی با شماره {anomaly.pk} رد شد.")
+        send_sms(followup_profile.mobile, f"درخواست ایمن شدن آنومالی با شماره {anomaly.pk} رد شد.")
+
+        # اضافه کردن نوتیفیکیشن برای ایجادکننده و مسئول پیگیری
+        Notification.objects.create(
+            user=creator_profile.user,
+            message=f"درخواست ایمن شدن آنومالی با شماره {anomaly.pk} رد شد.",
+            url=reverse('anomalis:anomaly_detail', args=[anomaly.pk])
+        )
+        Notification.objects.create(
+            user=followup_profile.user,
+            message=f"درخواست ایمن شدن آنومالی با شماره {anomaly.pk} رد شد.",
+            url=reverse('anomalis:anomaly_detail', args=[anomaly.pk])
+        )
+
+        return redirect('anomalis:anomaly_detail', pk=anomaly.pk)
 

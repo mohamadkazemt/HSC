@@ -4,25 +4,37 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="listnew2">
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="commentsnew">
+      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0008_anomaly_is_request_sent.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dashboard/context_processors.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dashboard/migrations/0001_initial.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dashboard/migrations/0002_rename_link_notification_url_and_more.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dashboard/sms_utils.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dashboard/templates/dashboard/notification_list.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/assets/js/notifications.js" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/notification.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources/7dd4c7fb-63b6-4604-b3a8-088698e57a7e.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources/7dd4c7fb-63b6-4604-b3a8-088698e57a7e.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/apps.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/forms.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0001_initial.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/migrations/0001_initial.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0002_alter_anomaly_created_by_alter_anomaly_followup.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/migrations/0002_alter_anomaly_created_by_alter_anomaly_followup.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0003_alter_anomaly_created_by_alter_anomaly_followup.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/migrations/0003_alter_anomaly_created_by_alter_anomaly_followup.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0004_anomaly_group.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/migrations/0004_anomaly_group.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0005_comments.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/migrations/0005_comments.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0006_alter_comments_anomaly.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/migrations/0006_alter_comments_anomaly.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/asgi.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/asgi.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/wsgi.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/wsgi.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/anomaly-details.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/anomaly-details.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/list.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/new-anomalie.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/new-anomalie.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/tests.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/tests.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dashboard/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/dashboard/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dashboard/templates/dashboard/dashboard.html" beforeDir="false" afterPath="$PROJECT_DIR$/dashboard/templates/dashboard/dashboard.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dashboard/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/dashboard/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dashboard/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/dashboard/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/404.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/404.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/base.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/footer.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/footer.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/header.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/header.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/sidebar.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/sidebar.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/toolbar.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/toolbar.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/topbar.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/topbar.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -37,6 +49,7 @@
       <list>
         <option value="Python Script" />
         <option value="HTML File" />
+        <option value="JavaScript File" />
       </list>
     </option>
   </component>
@@ -199,7 +212,10 @@
       <workItem from="1728785603576" duration="240000" />
       <workItem from="1728823610001" duration="17738000" />
       <workItem from="1729002128647" duration="781000" />
-      <workItem from="1729091606927" duration="1152000" />
+      <workItem from="1729091606927" duration="3588000" />
+      <workItem from="1729100190623" duration="517000" />
+      <workItem from="1729101641398" duration="31274000" />
+      <workItem from="1729228438111" duration="1103000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
@@ -243,7 +259,21 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۰۶" />
       <updated>1728785733194</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL‎−۰۰۰۰۷" summary="commentsnew">
+      <option name="closed" value="true" />
+      <created>1729092892636</created>
+      <option name="number" value="LOCAL‎−۰۰۰۰۷" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۰۷" />
+      <updated>1729092892636</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۰۸" summary="commentsnew">
+      <option name="closed" value="true" />
+      <created>1729092918799</created>
+      <option name="number" value="LOCAL‎−۰۰۰۰۸" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۰۸" />
+      <updated>1729092918799</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -267,7 +297,8 @@
     <MESSAGE value="formanomali" />
     <MESSAGE value="listnew" />
     <MESSAGE value="listnew2" />
-    <option name="LAST_COMMIT_MESSAGE" value="listnew2" />
+    <MESSAGE value="commentsnew" />
+    <option name="LAST_COMMIT_MESSAGE" value="commentsnew" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -275,6 +306,11 @@
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/anomalis/admin.py</url>
           <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="django-line">
+          <url>file://$PROJECT_DIR$/dashboard/templates/dashboard/dashboard.html</url>
+          <line>35</line>
+          <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

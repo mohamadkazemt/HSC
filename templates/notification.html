@@ -1,0 +1,40 @@
+<!-- جدید اعلان ها -->
+{% load static %}
+<div class="mb-10">
+    <h4 class="fw-bold text-primary">اعلان‌های جدید</h4>
+    {% for notification in unread_notifications %}
+    <div class="d-flex justify-content-start mb-10">
+        <div class="d-flex flex-column align-items-start">
+            <div class="p-5 rounded bg-light-info text-gray-900 fw-semibold mw-lg-400px text-start">
+                <a href="{{ notification.url }}" class="text-hover-primary">{{ notification.message }}</a>
+                <br>
+                <span class="text-muted fs-7">{{ notification.timestamp|timesince }} پیش</span>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="text-muted text-center">
+        هیچ اعلان جدیدی وجود ندارد.
+    </div>
+    {% endfor %}
+</div>
+
+<!-- خوانده شده اعلان ها -->
+<div class="mb-10">
+    <h4 class="fw-bold text-secondary">اعلان‌های خوانده شده</h4>
+    {% for notification in read_notifications %}
+    <div class="d-flex justify-content-start mb-10">
+        <div class="d-flex flex-column align-items-start">
+            <div class="p-5 rounded bg-light-secondary text-gray-900 fw-semibold mw-lg-400px text-start">
+                <a href="{{ notification.url }}" class="text-hover-primary">{{ notification.message }}</a>
+                <br>
+                <span class="text-muted fs-7">{{ notification.timestamp|timesince }} پیش</span>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="text-muted text-center">
+        هیچ اعلان خوانده‌شده‌ای وجود ندارد.
+    </div>
+    {% endfor %}
+</div>

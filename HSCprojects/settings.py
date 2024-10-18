@@ -43,7 +43,9 @@ INSTALLED_APPS = [
 
     'taggit',
     "django_select2",
-    'analytics.apps.AnalyticsConfig'
+    'analytics.apps.AnalyticsConfig',
+    'crispy_forms',
+    'crispy_bootstrap5',
 ]
 
 MIDDLEWARE = [
@@ -57,6 +59,8 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'HSCprojects.urls'
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
 
 TEMPLATES = [
     {
@@ -72,6 +76,8 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'accounts.context_processors.user_profile_processor',
                 'analytics.context_processors.anomaly_stats_context',
+                'dashboard.context_processors.notification_context_processor',
+                'dashboard.context_processors.notifications',
             ],
         },
     },
@@ -142,3 +148,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = '/dashboard/'
+
+# ارسال پیامک
+SMS_API_KEY = 'gCLhWKiCoUXwUQiNBIXCpQ81IiGfujNmKgWyrQr19WwgDkv3dSfFSDgIbsSEoo03'
+SMS_LINE_NUMBER = '30007732001185'

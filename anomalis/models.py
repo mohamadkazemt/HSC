@@ -96,6 +96,7 @@ class Anomaly(models.Model):
     action = models.BooleanField(default=True, verbose_name="وضعیت")
     priority = models.ForeignKey(Priority, on_delete=models.CASCADE, verbose_name="اولویت")
     image = models.ImageField(upload_to='anomalies/%Y/%m/%d', verbose_name="تصویر آنومالی", blank=True, null=True)
+    is_request_sent = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "آنومالی"

@@ -13,6 +13,27 @@
 											<!--end::Breadcrumb-->
 										</div>
 										<!--end::Page title-->
+{% if anomaly.followup.user == request.user and not anomaly.is_request_sent and not anomaly.action %}
+    <form method="POST" action="{% url 'anomalis:request_safe' anomaly.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-warning">درخواست ایمن شدن</button>
+    </form>
+{% endif %}
+
+{% if is_hse_manager and is_request_sent and not anomaly.action %}
+    <div class="d-flex justify-content-between my-3">
+        <form action="{% url 'anomalis:approve_safe' anomaly.pk %}" method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success">تأیید ایمن بودن</button>
+        </form>
+
+        <form action="{% url 'anomalis:reject_safe' anomaly.pk %}" method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">رد درخواست</button>
+        </form>
+    </div>
+{% endif %}
+                                    
 
 									</div>
 									<!--end::Toolbar wrapper-->
