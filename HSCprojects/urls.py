@@ -21,6 +21,7 @@ from django.urls import path, include
 from HSCprojects import settings
 
 urlpatterns = [
+    path('', include('accounts.urls')),
     path('admin/', admin.site.urls),
     path('dashboard/', include('dashboard.urls')),
     path('accounts/', include('accounts.urls')),

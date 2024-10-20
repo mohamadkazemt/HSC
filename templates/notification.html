@@ -1,40 +1,142 @@
-<!-- جدید اعلان ها -->
 {% load static %}
-<div class="mb-10">
-    <h4 class="fw-bold text-primary">اعلان‌های جدید</h4>
-    {% for notification in unread_notifications %}
-    <div class="d-flex justify-content-start mb-10">
-        <div class="d-flex flex-column align-items-start">
-            <div class="p-5 rounded bg-light-info text-gray-900 fw-semibold mw-lg-400px text-start">
-                <a href="{{ notification.url }}" class="text-hover-primary">{{ notification.message }}</a>
-                <br>
-                <span class="text-muted fs-7">{{ notification.timestamp|timesince }} پیش</span>
-            </div>
+{% if request.user.is_authenticated %}
+<div class="card w-100 border-0 rounded-0" id="kt_drawer_chat_messenger">
+    <!--begin::کارت body-->
+    <div class="card-body">
+        <!--begin::Tabs-->
+        <div class="d-flex justify-content-center mb-5">
+            <button class="btn btn-primary me-2" id="newNotificationsTab">اعلان‌های جدید</button>
+            <button class="btn btn-secondary" id="readNotificationsTab">اعلان‌های خوانده شده</button>
         </div>
+        <!--end::Tabs-->
+
+        <!-- جدید اعلان ها -->
+        {% if request.user.is_authenticated %}
+<div class="notifications-list" id="newNotificationsList">
+            <h4 class="fw-bold text-primary">اعلان‌های جدید</h4>
+            {% for notification in unread_notifications %}
+            <div class="d-flex justify-content-start mb-10">
+                <div class="d-flex flex-column align-items-start">
+                    <div class="p-5 rounded bg-light-info text-gray-900 fw-semibold mw-lg-400px text-start">
+                        <form method="get" action="{% url 'dashboard:mark_notification_and_redirect' notification.id %}">
+                            <button type="submit" class="btn btn-link text-hover-primary p-0">{{ notification.message }}</button>
+                        </form>
+                        <br>
+                        <span class="text-muted fs-7">ایجاد شده: {{ notification.created_at|timesince }} پیش</span>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-muted text-center">
+                هیچ اعلان جدیدی وجود ندارد.
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- خوانده شده اعلان ها -->
+        <div class="notifications-list d-none" id="readNotificationsList">
+    <div class="pagination-controls mb-3 d-flex justify-content-center">
+        {% if read_notifications.has_previous %}
+            <a href="?page={{ read_notifications.previous_page_number }}" class="btn btn-outline-secondary me-2">قبلی</a>
+        {% endif %}
+        <span id="pageNumber" class="align-self-center">صفحه {{ read_notifications.number }} از {{ read_notifications.paginator.num_pages }}</span>
+        {% if read_notifications.has_next %}
+            <a href="?page={{ read_notifications.next_page_number }}" class="btn btn-outline-secondary ms-2">بعدی</a>
+        {% endif %}
     </div>
-    {% empty %}
-    <div class="text-muted text-center">
-        هیچ اعلان جدیدی وجود ندارد.
-    </div>
-    {% endfor %}
+            <div class="pagination-controls mb-3 d-flex justify-content-center">
+                <button class="btn btn-outline-secondary me-2" id="prevPage">قبلی</button>
+                <span id="pageNumber" class="align-self-center">صفحه 1</span>
+                <button class="btn btn-outline-secondary ms-2" id="nextPage">بعدی</button>
+            </div>
+{% else %}
+<div class="text-muted text-center">برای مشاهده اعلان‌ها ابتدا وارد شوید.</div>
+{% endif %}
+            <h4 class="fw-bold text-secondary">اعلان‌های خوانده شده</h4>
+            {% for notification in read_notifications %}
+            <div class="d-flex justify-content-start mb-10">
+                <div class="d-flex flex-column align-items-start">
+                    <div class="p-5 rounded bg-light-secondary text-gray-900 fw-semibold mw-lg-400px text-start">
+                        <a href="{{ notification.url }}" class="text-hover-primary">{{ notification.message }}</a>
+                        <br>
+                        <span class="text-muted fs-7">ایجاد شده: {{ notification.created_at|timesince }} پیش</span>
+                        {% if notification.read_at %}
+                        <br>
+                        <span class="text-muted fs-7">خوانده شده: {{ notification.read_at|timesince }} پیش</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-muted text-center">
+                هیچ اعلان خوانده‌شده‌ای وجود ندارد.
+            </div>
+            {% endfor %}
+        </div>
+
+{% endif %}
+
+<script>
+    let currentPage = 1;
+    const notificationsPerPage = 5;
+    const readNotifications = Array.from(document.querySelectorAll('#readNotificationsList .d-flex.justify-content-start'));
+    const pageNumberEl = document.getElementById('pageNumber');
+    const prevPageBtn = document.getElementById('prevPage');
+    const nextPageBtn = document.getElementById('nextPage');
+
+    function showPage(page) {
+        const start = (page - 1) * notificationsPerPage;
+        const end = start + notificationsPerPage;
+
+        readNotifications.forEach((notification, index) => {
+            if (index >= start && index < end) {
+                notification.classList.remove('d-none');
+            } else {
+                notification.classList.add('d-none');
+            }
+        });
+
+        pageNumberEl.textContent = `صفحه ${page}`;
+        prevPageBtn.disabled = page === 1;
+        nextPageBtn.disabled = end >= readNotifications.length;
+    }
+
+    prevPageBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            showPage(currentPage);
+        }
+    });
+
+    nextPageBtn.addEventListener('click', () => {
+        if (currentPage * notificationsPerPage < readNotifications.length) {
+            currentPage++;
+            showPage(currentPage);
+        }
+    });
+
+    showPage(currentPage);
+</script>
+</div>
+    <!--end::کارت body-->
 </div>
 
-<!-- خوانده شده اعلان ها -->
-<div class="mb-10">
-    <h4 class="fw-bold text-secondary">اعلان‌های خوانده شده</h4>
-    {% for notification in read_notifications %}
-    <div class="d-flex justify-content-start mb-10">
-        <div class="d-flex flex-column align-items-start">
-            <div class="p-5 rounded bg-light-secondary text-gray-900 fw-semibold mw-lg-400px text-start">
-                <a href="{{ notification.url }}" class="text-hover-primary">{{ notification.message }}</a>
-                <br>
-                <span class="text-muted fs-7">{{ notification.timestamp|timesince }} پیش</span>
-            </div>
-        </div>
-    </div>
-    {% empty %}
-    <div class="text-muted text-center">
-        هیچ اعلان خوانده‌شده‌ای وجود ندارد.
-    </div>
-    {% endfor %}
-</div>
+<script>
+    document.getElementById('newNotificationsTab').addEventListener('click', function() {
+        document.getElementById('newNotificationsList').classList.remove('d-none');
+        document.getElementById('readNotificationsList').classList.add('d-none');
+        this.classList.add('btn-primary');
+        this.classList.remove('btn-secondary');
+        document.getElementById('readNotificationsTab').classList.add('btn-secondary');
+        document.getElementById('readNotificationsTab').classList.remove('btn-primary');
+    });
+
+    document.getElementById('readNotificationsTab').addEventListener('click', function() {
+        document.getElementById('readNotificationsList').classList.remove('d-none');
+        document.getElementById('newNotificationsList').classList.add('d-none');
+        this.classList.add('btn-primary');
+        this.classList.remove('btn-secondary');
+        document.getElementById('newNotificationsTab').classList.add('btn-secondary');
+        document.getElementById('newNotificationsTab').classList.remove('btn-primary');
+    });
+</script>

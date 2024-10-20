@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     'analytics.apps.AnalyticsConfig',
     'crispy_forms',
     'crispy_bootstrap5',
+    'shift_manager.apps.ShiftManagerConfig',
+    'django_jalali',
 ]
 
 MIDDLEWARE = [
@@ -77,7 +79,9 @@ TEMPLATES = [
                 'accounts.context_processors.user_profile_processor',
                 'analytics.context_processors.anomaly_stats_context',
                 'dashboard.context_processors.notification_context_processor',
-                'dashboard.context_processors.notifications',
+                'shift_manager.context_processors.shift_context_processor',
+                'shift_manager.context_processors.shift_data_processor',
+
             ],
         },
     },

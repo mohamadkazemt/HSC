@@ -219,6 +219,7 @@ def approve_safe(request, pk):
 
 
 
+
 @login_required
 @user_passes_test(lambda u: u.groups.filter(name__in=['مدیر HSE', 'افسر HSE']).exists())
 def reject_safe(request, pk):

@@ -14,6 +14,9 @@ name = 'accounts'
 
 
 def user_login(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard:dashboard')  # یا هر آدرس دیگری که برای داشبورد تعریف کرده‌اید
+
     if request.method == 'POST':
         username = request.POST['username']
         password = request.POST['password']

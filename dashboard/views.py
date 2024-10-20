@@ -1,7 +1,8 @@
+from django.utils import timezone
+
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from dashboard.models import Notification
-
 
 
 name = 'dashboard'
@@ -32,8 +33,7 @@ def dashboard(request):
 
 
 
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
+
 
 @login_required
 def notification_list(request):
@@ -46,8 +46,25 @@ def notification_list(request):
     })
 
 
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from .models import Notification
+
+
 @login_required
-def mark_notifications_as_read(request):
-    notifications = request.user.notifications.filter(is_read=False)
-    notifications.update(is_read=True)
-    return redirect('dashboard')
+def mark_notification_and_redirect(request, notification_id):
+    # دریافت نوتیفیکیشن مربوطه
+    notification = get_object_or_404(Notification, id=notification_id, user=request.user)
+
+    # علامت زدن به عنوان خوانده‌شده
+    if not notification.is_read:
+        notification.is_read = True
+        notification.read_at = timezone.now()
+        notification.save()
+
+    # هدایت به URL مقصد نوتیفیکیشن
+    return redirect(notification.url if notification.url else 'dashboard')
+
+
+
+
