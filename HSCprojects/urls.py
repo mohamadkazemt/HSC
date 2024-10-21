@@ -21,13 +21,15 @@ from django.urls import path, include
 from HSCprojects import settings
 
 urlpatterns = [
-    path('', include('accounts.urls')),
+    path('', include('accounts.urls', namespace='accounts_root')),
+    path('accounts/', include('accounts.urls', namespace='accounts')),
     path('admin/', admin.site.urls),
     path('dashboard/', include('dashboard.urls')),
-    path('accounts/', include('accounts.urls')),
     path('anomalis/', include('anomalis.urls')),
     path('select2/', include('django_select2.urls')),
 ]
+
+
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 else:

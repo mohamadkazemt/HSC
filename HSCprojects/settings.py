@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'crispy_bootstrap5',
     'shift_manager.apps.ShiftManagerConfig',
     'django_jalali',
+    'import_export',
 ]
 
 MIDDLEWARE = [

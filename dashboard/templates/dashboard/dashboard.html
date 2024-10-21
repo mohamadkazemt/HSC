@@ -29,33 +29,17 @@
 					<div class="app-main flex-column flex-row-fluid" id="kt_app_main">
 						<!--begin::Content wrapper-->
 						<div class="d-flex flex-column flex-column-fluid">
+                        <!--begin::Toolbar-->
+                        {% include 'toolbar.html' %}
+                        <!--end::Toolbar-->
 							<!--begin::Content-->
 							<div id="kt_app_content" class="app-content flex-column-fluid">
 								<!--begin::Content container-->
 								<div id="kt_app_content_container" class="app-container container-fluid">
 
 								</div>
-                                                                           {% if shifts %}
-    <div class="shift-info">
-        <h4>اطلاعات شیفت امروز:</h4>
-        <ul>
-            <li>گروه A: {{ shifts.A }}</li>
-            <li>گروه B: {{ shifts.B }}</li>
-            <li>گروه C: {{ shifts.C }}</li>
-            <li>گروه D: {{ shifts.D }}</li>
-        </ul>
-    </div>
-{% else %}
-    <div class="shift-info">
-        <p>الگوی شیفت‌ها هنوز تنظیم نشده است. لطفاً با مدیر سیستم تماس بگیرید.</p>
-    </div>
-{% endif %}
 
-
-
-                                {% include 'shift_manager/shift_calendar.html' %}
-
-								<!--end::Content container-->
+                            <!--end::Content container-->
 							</div>
 							<!--end::Content-->
 						</div>
