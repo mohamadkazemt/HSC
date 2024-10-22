@@ -1,12 +1,7 @@
+# models.py
 from django.db import models
 from django.contrib.auth.models import User
-from django.conf import settings
 
-
-
-
-
-# Create your models here.
 class UserProfile(models.Model):
     GROUP_CHOICES = [
         ('A', 'گروه A'),
@@ -16,9 +11,15 @@ class UserProfile(models.Model):
         ('G', 'گروه G'),
     ]
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userprofile')
+    # اول بدون unique اضافه میکنیم
+    personnel_code = models.CharField(max_length=10, default='', blank=True, verbose_name='کد پرسنلی')
     image = models.ImageField(upload_to='profile_pics', blank=True)
     mobile = models.CharField(max_length=10, blank=True)
     group = models.CharField(max_length=1, choices=GROUP_CHOICES, blank=True)
 
     def __str__(self):
         return f'{self.user.first_name} {self.user.last_name}'
+
+    class Meta:
+        verbose_name = 'پروفایل کاربر'
+        verbose_name_plural = 'پروفایل کاربران'

@@ -6,12 +6,18 @@ SHIFT_PATTERN = [
     'شب کار اول', 'شب کار دوم', 'OFF اول', 'OFF دوم'
 ]
 
-
 def get_shift_for_date(input_date):
     try:
         initial_setup = InitialShiftSetup.objects.latest('start_date')
     except InitialShiftSetup.DoesNotExist:
-        raise ValueError("No initial shift setup found. Please set an initial shift setup.")
+        # ایجاد یک تنظیم پیش‌فرض
+        initial_setup = InitialShiftSetup.objects.create(
+            start_date=datetime.date(2024, 1, 1),  # تاریخ شروع پیش‌فرض
+            group_A_shift='روزکار اول',
+            group_B_shift='عصرکار اول',
+            group_C_shift='شب کار اول',
+            group_D_shift='OFF اول'
+        )
 
     delta_days = (input_date - initial_setup.start_date).days
     shift_index = delta_days % len(SHIFT_PATTERN)

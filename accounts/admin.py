@@ -2,40 +2,45 @@ from django.contrib import admin
 from import_export.admin import ImportExportModelAdmin
 from .models import UserProfile
 from django.contrib.auth.models import User
-from import_export import resources
+from import_export import resources, fields
+from import_export.widgets import ForeignKeyWidget
 
 
-# تعریف resource برای UserProfile
 class UserProfileResource(resources.ModelResource):
+    user = fields.Field(
+        column_name='user',
+        attribute='user',
+        widget=ForeignKeyWidget(User, 'username')
+    )
+
     class Meta:
         model = UserProfile
+        import_id_fields = ['personnel_code']
+        fields = ('personnel_code', 'mobile', 'group', 'user')
+        export_order = fields
 
-    # override کردن متد before_save_instance برای تنظیم نام کاربری و رمز عبور
-    def before_save_instance(self, instance, using_transactions, dry_run):
-        # بررسی اینکه User وجود دارد یا نه
-        if not instance.user:
-            # ایجاد کاربر جدید
-            username = f"user_{instance.mobile}"
+    def before_import_row(self, row, **kwargs):
+        personnel_code = str(row.get('personnel_code', '')).strip()
+        mobile = str(row.get('mobile', '')).strip()
 
-            # بررسی اینکه نام کاربری یکتا باشد
-            if User.objects.filter(username=username).exists():
-                raise ValueError(f"Username {username} already exists. Please provide unique mobile.")
-
+        # اگر کاربر با این کد پرسنلی وجود نداشت، یک کاربر جدید بسازید
+        try:
+            User.objects.get(username=personnel_code)
+        except User.DoesNotExist:
             user = User.objects.create(
-                username=username,
-                first_name=instance.user.first_name if instance.user else "",
-                last_name=instance.user.last_name if instance.user else "",
+                username=personnel_code,
+                first_name=row.get('first_name', ''),
+                last_name=row.get('last_name', '')
             )
-            user.set_password('default_password')  # تنظیم رمز عبور پیش‌فرض
+            # تنظیم شماره موبایل به عنوان رمز عبور
+            user.set_password(mobile)
             user.save()
-
-            # اتصال User به UserProfile
-            instance.user = user
+            row['user'] = user.username
 
 
-# تعریف admin با استفاده از UserProfileResource
 @admin.register(UserProfile)
 class UserProfileAdmin(ImportExportModelAdmin):
     resource_class = UserProfileResource
-    list_display = ('user', 'group', 'mobile')
-    search_fields = ('user__username', 'group', 'mobile')
+    list_display = ('personnel_code', 'user', 'group', 'mobile')
+    search_fields = ('personnel_code', 'user__username', 'group', 'mobile')
+    list_filter = ('group',)

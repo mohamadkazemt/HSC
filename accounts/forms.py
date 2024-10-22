@@ -28,8 +28,9 @@ class UserForm(forms.ModelForm):
 class UserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
-        fields = ['image', 'mobile', 'group']  # فیلدهای مربوط به پروفایل کاربر
+        fields = ['personnel_code', 'image', 'mobile', 'group']
         widgets = {
+            'personnel_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'کد پرسنلی'}),
             'image': forms.ClearableFileInput(attrs={'class': 'form-control'}),
             'mobile': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'شماره موبایل'}),
             'group': forms.Select(attrs={'class': 'form-control'})
