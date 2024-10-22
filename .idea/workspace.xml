@@ -4,7 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="v0.0.1/2" />
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="v0.0.1/3">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -213,6 +216,7 @@
       <workItem from="1729454237192" duration="380000" />
       <workItem from="1729493579680" duration="6950000" />
       <workItem from="1729502930743" duration="6074000" />
+      <workItem from="1729621448139" duration="4239000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
@@ -291,7 +295,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۱۱" />
       <updated>1729618272628</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL‎−۰۰۰۱۲" summary="v0.0.1/3">
+      <option name="closed" value="true" />
+      <created>1729621541090</created>
+      <option name="number" value="LOCAL‎−۰۰۰۱۲" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۱۲" />
+      <updated>1729621541090</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -319,6 +330,7 @@
     <MESSAGE value="notifications" />
     <MESSAGE value="v0.0.1" />
     <MESSAGE value="v0.0.1/2" />
-    <option name="LAST_COMMIT_MESSAGE" value="v0.0.1/2" />
+    <MESSAGE value="v0.0.1/3" />
+    <option name="LAST_COMMIT_MESSAGE" value="v0.0.1/3" />
   </component>
 </project>
