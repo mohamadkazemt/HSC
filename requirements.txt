@@ -18,3 +18,5 @@ smsir-python==1.0.8
 sqlparse==0.5.1
 tzdata==2024.2
 urllib3==2.2.3
+django-import-export
+gunicorn
