@@ -55,9 +55,15 @@
                                                     <!--begin::نویسنده-->
                                                     <div class="d-flex align-items-center">
                                                         <!--begin::Avatar-->
-                                                        <div class="symbol symbol-50px me-5">
-                                                            <img src="{{ anomaly.followup.image.url }}" class="" alt="" />
-                                                        </div>
+                                                        {% if anomaly.followup.image %}
+                                                            <div class="symbol symbol-50px me-5">
+                                                                <img src="{{ anomaly.followup.image.url }}" class="" alt="" />
+                                                            </div>
+                                                        {% else %}
+                                                            <div class="symbol symbol-50px me-5">
+                                                                <img src="{% static 'assets/media/avatars/blank.png' %}" class="" alt="" />
+                                                            </div>
+                                                        {% endif %}
                                                         <!--end::Avatar-->
                                                         <!--begin::Info-->
                                                         <div class="flex-grow-1">
@@ -80,11 +86,11 @@
                                                                 <a href="#" class="d-flex align-items-center text-gray-500 text-hover-primary me-5 mb-2">
                                                                     <i class="fas fa-shield-alt fs-4 me-1"></i> HSE:
                                                                     {% if anomaly.hse_type == 'H' %}
-                                                                         Health
+                                                                        Health
                                                                     {% elif anomaly.hse_type == 'S' %}
-                                                                         Safety
+                                                                        Safety
                                                                     {% elif anomaly.hse_type == 'E' %}
-                                                                         Environment
+                                                                        Environment
                                                                     {% endif %}
                                                                 </a>
 
@@ -833,7 +839,7 @@
             <div id="kt_drawer_chat" class="bg-body" data-kt-drawer="true" data-kt-drawer-name="chat" data-kt-drawer-activate="true" data-kt-drawer-overlay="true" data-kt-drawer-width="{default:'300px', 'md': '500px'}" data-kt-drawer-direction="end" data-kt-drawer-toggle="#kt_drawer_chat_toggle" data-kt-drawer-close="#kt_drawer_chat_close">
                 <!--begin::Messenger-->
 
-                   {% include 'notification.html' %}
+                {% include 'notification.html' %}
 
                 <!--end::Messenger-->
             </div>

@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -49,6 +50,8 @@ INSTALLED_APPS = [
     'shift_manager.apps.ShiftManagerConfig',
     'django_jalali',
     'import_export',
+    'BaseInfo.apps.BaseinfoConfig',
+    'OperationsShiftReports.apps.OperationsshiftreportsConfig'
 ]
 
 MIDDLEWARE = [
@@ -97,8 +100,8 @@ WSGI_APPLICATION = 'HSCprojects.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'HSCprojects_db',
-        'USER': 'HSCprojects_user',
+        'NAME': 'hsc_db',
+        'USER': 'hsc_user',
         'PASSWORD': 'Znmk@0900',
         'HOST': 'localhost',
         'PORT': '5432',
@@ -144,6 +147,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+#STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 STATICFILES_DIRS = [
     BASE_DIR / "static"

@@ -8,9 +8,10 @@ SHIFT_PATTERN = [
 
 def get_shift_for_date(input_date):
     try:
+        # گرفتن آخرین تنظیمات اولیه شیفت‌ها
         initial_setup = InitialShiftSetup.objects.latest('start_date')
     except InitialShiftSetup.DoesNotExist:
-        # ایجاد یک تنظیم پیش‌فرض
+        # ایجاد یک تنظیم پیش‌فرض در صورت نبود رکورد
         initial_setup = InitialShiftSetup.objects.create(
             start_date=datetime.date(2024, 1, 1),  # تاریخ شروع پیش‌فرض
             group_A_shift='روزکار اول',
@@ -19,14 +20,15 @@ def get_shift_for_date(input_date):
             group_D_shift='OFF اول'
         )
 
+    # محاسبه تعداد روزهایی که از تاریخ شروع گذشته است
     delta_days = (input_date - initial_setup.start_date).days
-    shift_index = delta_days % len(SHIFT_PATTERN)
 
+    # محاسبه شیفت‌ها برای هر گروه به صورت جداگانه با استفاده از الگوی شیفت‌ها
     shifts = {
-        'A': SHIFT_PATTERN[(shift_index + 0) % len(SHIFT_PATTERN)],
-        'B': SHIFT_PATTERN[(shift_index + 2) % len(SHIFT_PATTERN)],
-        'C': SHIFT_PATTERN[(shift_index + 4) % len(SHIFT_PATTERN)],
-        'D': SHIFT_PATTERN[(shift_index + 6) % len(SHIFT_PATTERN)],
+        'A': SHIFT_PATTERN[(SHIFT_PATTERN.index(initial_setup.group_A_shift) + delta_days) % len(SHIFT_PATTERN)],
+        'B': SHIFT_PATTERN[(SHIFT_PATTERN.index(initial_setup.group_B_shift) + delta_days) % len(SHIFT_PATTERN)],
+        'C': SHIFT_PATTERN[(SHIFT_PATTERN.index(initial_setup.group_C_shift) + delta_days) % len(SHIFT_PATTERN)],
+        'D': SHIFT_PATTERN[(SHIFT_PATTERN.index(initial_setup.group_D_shift) + delta_days) % len(SHIFT_PATTERN)],
     }
 
     return shifts
