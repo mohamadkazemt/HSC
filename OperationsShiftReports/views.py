@@ -1,17 +1,35 @@
+from accounts.models import UserProfile
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.utils import timezone
 
-from shift_manager.utils import get_shift_for_date
 from .models import ShiftReport, LoadingOperation, ShiftLeave, VehicleReport
-from .forms import LoadingOperationFormSet, ShiftLeaveFormSet
+from shift_manager.utils import get_shift_for_date
 
 def create_shift_report(request):
     today = timezone.now().date()
     shifts = get_shift_for_date(today)
 
+    # دریافت اطلاعات گروه فعلی بر اساس پروفایل کاربر لاگین شده
+    if request.user.is_authenticated:
+        try:
+            user_profile = UserProfile.objects.get(user=request.user)
+            current_group = user_profile.group  # دریافت گروه از پروفایل کاربر
+            current_shift = shifts.get(current_group)  # دریافت شیفت برای گروه فعلی
+        except UserProfile.DoesNotExist:
+            messages.error(request, 'پروفایل کاربری یافت نشد. لطفاً با مدیر سیستم تماس بگیرید.')
+            current_group = None
+    else:
+        messages.error(request, 'لطفاً وارد شوید.')
+        return redirect('login')
+
+    # فیلتر کردن پرسنل‌های متعلق به گروه شیفت جاری
+    if current_group:
+        personnels = UserProfile.objects.filter(group=current_group)
+    else:
+        personnels = UserProfile.objects.none()
+
     if request.method == "POST":
-        # دریافت داده‌ها از فرم
         loading_operations = request.POST.getlist('loading_operations[]')
         leaves = request.POST.getlist('leaves[]')
         vehicles = request.POST.getlist('vehicles[]')
@@ -23,6 +41,7 @@ def create_shift_report(request):
             return render(request, 'OperationsShiftReports/create_shift_report.html', {
                 'shifts': shifts,
                 'reports': reports,
+                'personnels': personnels,
                 'error_message': 'لطفا تمام فیلدها را پر کنید و حداقل یک آیتم در هر بخش اضافه کنید.'
             })
 
@@ -30,16 +49,13 @@ def create_shift_report(request):
             # ذخیره گزارش شیفت
             shift_report = ShiftReport.objects.create(
                 shift_date=today,
-                supervisor_comments=supervisor_comments
+                supervisor_comments=supervisor_comments,
+                group=current_group  # گروه فعلی به صورت دینامیک
             )
 
             # ذخیره عملیات بارگیری
             for op in loading_operations:
                 stone_type, load_count = op.split(',')
-                if not stone_type or not load_count:
-                    messages.error(request, 'خطا در ورود اطلاعات عملیات بارگیری.')
-                    return redirect('create_shift_report')
-
                 loading_operation = LoadingOperation.objects.create(
                     stone_type=stone_type,
                     load_count=load_count
@@ -48,23 +64,17 @@ def create_shift_report(request):
 
             # ذخیره مرخصی‌ها
             for leave in leaves:
-                personnel_name, leave_status = leave.split(',')
-                if not personnel_name or not leave_status:
-                    messages.error(request, 'خطا در ورود اطلاعات مرخصی‌ها.')
-                    return redirect('create_shift_report')
+                personnel_id, leave_status = leave.split(',')
+                personnel = UserProfile.objects.get(id=personnel_id)
 
                 shift_leave = ShiftLeave.objects.create(
-                    personnel_name=personnel_name,
+                    personnel=personnel,
                     leave_status=leave_status
                 )
                 shift_report.shift_leaves.add(shift_leave)
 
             # ذخیره خودروها
             for vehicle in vehicles:
-                if not vehicle:
-                    messages.error(request, 'خطا در ورود اطلاعات خودروها.')
-                    return redirect('create_shift_report')
-
                 vehicle_report = VehicleReport.objects.create(vehicle_name=vehicle)
                 shift_report.vehicle_reports.add(vehicle_report)
 
@@ -72,15 +82,19 @@ def create_shift_report(request):
             return redirect('create_shift_report')
 
         except Exception as e:
-            # نمایش پیام خطای دقیق به کاربر
             messages.error(request, f'خطایی در ذخیره‌سازی اطلاعات رخ داد: {str(e)}')
             reports = ShiftReport.objects.all()
             return render(request, 'OperationsShiftReports/create_shift_report.html', {
                 'shifts': shifts,
                 'reports': reports,
+                'personnels': personnels,
                 'error_message': str(e)
             })
 
-    # دریافت تمام گزارشات برای نمایش
     reports = ShiftReport.objects.all()
-    return render(request, 'OperationsShiftReports/create_shift_report.html', {'shifts': shifts, 'reports': reports})
+    return render(request, 'OperationsShiftReports/create_shift_report.html', {
+        'shifts': shifts,
+        'reports': reports,
+        'personnels': personnels,
+        'current_shift': current_shift  # اضافه کردن شیفت فعلی برای نمایش در قالب
+    })

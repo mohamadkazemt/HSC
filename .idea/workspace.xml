@@ -5,25 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="amaliyat1">
-      <change afterPath="$PROJECT_DIR$/BaseInfo/migrations/0003_alter_miningblock_type_and_more.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/forms.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/migrations/0001_initial.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/create_shift_report.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/shift_report_wizard.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/migrations/0002_alter_shiftreport_options_and_more.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BaseInfo/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/BaseInfo/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/HSCprojects/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/apps.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/OperationsShiftReports/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/create_shift_report.html" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/create_shift_report.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/OperationsShiftReports/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/templates/accounts/navbar.html" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/templates/accounts/navbar.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/topbar.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/topbar.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -236,7 +223,7 @@
       <workItem from="1729621448139" duration="4239000" />
       <workItem from="1729773263916" duration="8134000" />
       <workItem from="1729835136207" duration="16782000" />
-      <workItem from="1729924626205" duration="20987000" />
+      <workItem from="1729924626205" duration="23183000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
@@ -329,7 +316,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۱۳" />
       <updated>1729886361186</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL‎−۰۰۰۱۴" summary="amaliyat1">
+      <option name="closed" value="true" />
+      <created>1729963968933</created>
+      <option name="number" value="LOCAL‎−۰۰۰۱۴" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۱۴" />
+      <updated>1729963968934</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

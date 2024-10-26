@@ -72,104 +72,110 @@
     </script>
 </head>
 <body>
-    <h1>گزارش شیفت - {{ shifts.A }}</h1>
+<h1>گزارش شیفت - {{ current_shift }}</h1>
+<p>شیفت‌ها:</p>
+<ul>
+    <li>گروه A: {{ shifts.A }}</li>
+    <li>گروه B: {{ shifts.B }}</li>
+    <li>گروه C: {{ shifts.C }}</li>
+    <li>گروه D: {{ shifts.D }}</li>
+</ul>
 
-    <!-- نمایش پیام‌های خطا -->
-    {% if messages %}
-        <ul class="messages">
-            {% for message in messages %}
-                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+
+<!-- نمایش پیام‌های خطا -->
+{% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+            <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+
+<form method="post" id="form">
+    {% csrf_token %}
+
+    <!-- عملیات بارگیری -->
+    <fieldset>
+        <legend>عملیات بارگیری</legend>
+        <input type="text" id="stone_type" placeholder="نوع سنگ">
+        <input type="number" id="load_count" placeholder="تعداد بار">
+        <button type="button" onclick="addLoadingOperation()">اضافه کردن</button>
+        <ul id="loading_list"></ul>
+    </fieldset>
+
+    <!-- مرخصی‌ها -->
+    <fieldset>
+        <legend>مرخصی‌ها</legend>
+        <select id="personnel_name">
+            {% for personnel in personnels %}
+                <option value="{{ personnel.id }}">{{ personnel.user.first_name }} {{ personnel.user.last_name }}</option>
             {% endfor %}
-        </ul>
-    {% endif %}
-
-    <form method="post" id="form">
-        {% csrf_token %}
-
-        <!-- عملیات بارگیری -->
-        <fieldset>
-            <legend>عملیات بارگیری</legend>
-            <input type="text" id="stone_type" placeholder="نوع سنگ">
-            <input type="number" id="load_count" placeholder="تعداد بار">
-            <button type="button" onclick="addLoadingOperation()">اضافه کردن</button>
-            <ul id="loading_list"></ul>
-        </fieldset>
-
-        <!-- مرخصی‌ها -->
-        <fieldset>
-            <legend>مرخصی‌ها</legend>
-            <input type="text" id="personnel_name" placeholder="نام پرسنل">
-            <select id="leave_status">
-                <option value="مجاز">مجاز</option>
-                <option value="غیر مجاز">غیر مجاز</option>
-            </select>
-            <button type="button" onclick="addLeave()">اضافه کردن</button>
-            <ul id="leave_list"></ul>
-        </fieldset>
-
-        <!-- خودروها -->
-        <fieldset>
-            <legend>خودروها</legend>
-            <input type="text" id="vehicle_name" placeholder="نام خودرو">
-            <button type="button" onclick="addVehicle()">اضافه کردن</button>
-            <ul id="vehicle_list"></ul>
-        </fieldset>
-
-        <!-- توضیحات سرشیفت -->
-        <label for="supervisor_comments">توضیحات سرشیفت:</label>
-        <textarea id="supervisor_comments" name="supervisor_comments"></textarea>
-
-        <button type="submit">ثبت گزارش</button>
-    </form>
-</body>
-</html>
+        </select>
+        <select id="leave_status">
+            <option value="authorized">مجاز</option>
+            <option value="unauthorized">غیر مجاز</option>
+        </select>
+        <button type="button" onclick="addLeave()">اضافه کردن</button>
+        <ul id="leave_list"></ul>
+    </fieldset>
 
 
-<meta charset="UTF-8">
-    <title>لیست گزارشات</title>
-</head>
-<body>
-    <h1>لیست گزارشات ثبت‌شده</h1>
+    <!-- خودروها -->
+    <fieldset>
+        <legend>خودروها</legend>
+        <input type="text" id="vehicle_name" placeholder="نام خودرو">
+        <button type="button" onclick="addVehicle()">اضافه کردن</button>
+        <ul id="vehicle_list"></ul>
+    </fieldset>
 
-    <table border="1">
-        <thead>
-            <tr>
-                <th>تاریخ شیفت</th>
-                <th>توضیحات سرشیفت</th>
-                <th>عملیات بارگیری</th>
-                <th>مرخصی‌ها</th>
-                <th>خودروها</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for report in reports %}
-            <tr>
-                <td>{{ report.shift_date }}</td>
-                <td>{{ report.supervisor_comments }}</td>
-                <td>
-                    <ul>
+    <!-- توضیحات سرشیفت -->
+    <label for="supervisor_comments">توضیحات سرشیفت:</label>
+    <textarea id="supervisor_comments" name="supervisor_comments"></textarea>
+
+    <button type="submit">ثبت گزارش</button>
+</form>
+
+<!-- لیست گزارشات ثبت‌شده -->
+<h2>لیست گزارشات ثبت‌شده</h2>
+<table border="1">
+    <thead>
+    <tr>
+        <th>تاریخ شیفت</th>
+        <th>توضیحات سرشیفت</th>
+        <th>عملیات بارگیری</th>
+        <th>مرخصی‌ها</th>
+        <th>خودروها</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for report in reports %}
+        <tr>
+            <td>{{ report.shift_date }}</td>
+            <td>{{ report.supervisor_comments }}</td>
+            <td>
+                <ul>
                     {% for operation in report.loading_operations.all %}
                         <li>نوع سنگ: {{ operation.stone_type }} - تعداد بار: {{ operation.load_count }}</li>
                     {% endfor %}
-                    </ul>
-                </td>
-                <td>
-                    <ul>
+                </ul>
+            </td>
+            <td>
+                <ul>
                     {% for leave in report.shift_leaves.all %}
                         <li>نام پرسنل: {{ leave.personnel_name }} - وضعیت: {{ leave.get_leave_status_display }}</li>
                     {% endfor %}
-                    </ul>
-                </td>
-                <td>
-                    <ul>
+                </ul>
+            </td>
+            <td>
+                <ul>
                     {% for vehicle in report.vehicle_reports.all %}
                         <li>نام خودرو: {{ vehicle.vehicle_name }}</li>
                     {% endfor %}
-                    </ul>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                </ul>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
 </body>
 </html>
