@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <title>گزارش شیفت</title>
+    <script>
+        // تابع اضافه کردن به لیست عملیات بارگیری
+        function addLoadingOperation() {
+            const stoneType = document.getElementById("stone_type").value;
+            const loadCount = document.getElementById("load_count").value;
+            if (stoneType && loadCount) {
+                const list = document.getElementById("loading_list");
+                const entry = document.createElement('li');
+                entry.textContent = `نوع سنگ: ${stoneType}, تعداد بار: ${loadCount}`;
+                list.appendChild(entry);
+
+                // افزودن به فرم مخفی برای ارسال به سرور
+                const hiddenInput = document.createElement("input");
+                hiddenInput.type = "hidden";
+                hiddenInput.name = "loading_operations[]";
+                hiddenInput.value = `${stoneType},${loadCount}`;
+                document.getElementById("form").appendChild(hiddenInput);
+
+                // خالی کردن فیلدها
+                document.getElementById("stone_type").value = "";
+                document.getElementById("load_count").value = "";
+            }
+        }
+
+        // تابع اضافه کردن به لیست مرخصی‌ها
+        function addLeave() {
+            const personnel = document.getElementById("personnel_name").value;
+            const status = document.getElementById("leave_status").value;
+            if (personnel && status) {
+                const list = document.getElementById("leave_list");
+                const entry = document.createElement('li');
+                entry.textContent = `نام پرسنل: ${personnel}, وضعیت مرخصی: ${status}`;
+                list.appendChild(entry);
+
+                // افزودن به فرم مخفی برای ارسال به سرور
+                const hiddenInput = document.createElement("input");
+                hiddenInput.type = "hidden";
+                hiddenInput.name = "leaves[]";
+                hiddenInput.value = `${personnel},${status}`;
+                document.getElementById("form").appendChild(hiddenInput);
+
+                // خالی کردن فیلدها
+                document.getElementById("personnel_name").value = "";
+            }
+        }
+
+        // تابع اضافه کردن به لیست خودروها
+        function addVehicle() {
+            const vehicleName = document.getElementById("vehicle_name").value;
+            if (vehicleName) {
+                const list = document.getElementById("vehicle_list");
+                const entry = document.createElement('li');
+                entry.textContent = `نام خودرو: ${vehicleName}`;
+                list.appendChild(entry);
+
+                // افزودن به فرم مخفی برای ارسال به سرور
+                const hiddenInput = document.createElement("input");
+                hiddenInput.type = "hidden";
+                hiddenInput.name = "vehicles[]";
+                hiddenInput.value = `${vehicleName}`;
+                document.getElementById("form").appendChild(hiddenInput);
+
+                // خالی کردن فیلدها
+                document.getElementById("vehicle_name").value = "";
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>گزارش شیفت - {{ shifts.A }}</h1>
+
+    <!-- نمایش پیام‌های خطا -->
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <form method="post" id="form">
+        {% csrf_token %}
+
+        <!-- عملیات بارگیری -->
+        <fieldset>
+            <legend>عملیات بارگیری</legend>
+            <input type="text" id="stone_type" placeholder="نوع سنگ">
+            <input type="number" id="load_count" placeholder="تعداد بار">
+            <button type="button" onclick="addLoadingOperation()">اضافه کردن</button>
+            <ul id="loading_list"></ul>
+        </fieldset>
+
+        <!-- مرخصی‌ها -->
+        <fieldset>
+            <legend>مرخصی‌ها</legend>
+            <input type="text" id="personnel_name" placeholder="نام پرسنل">
+            <select id="leave_status">
+                <option value="مجاز">مجاز</option>
+                <option value="غیر مجاز">غیر مجاز</option>
+            </select>
+            <button type="button" onclick="addLeave()">اضافه کردن</button>
+            <ul id="leave_list"></ul>
+        </fieldset>
+
+        <!-- خودروها -->
+        <fieldset>
+            <legend>خودروها</legend>
+            <input type="text" id="vehicle_name" placeholder="نام خودرو">
+            <button type="button" onclick="addVehicle()">اضافه کردن</button>
+            <ul id="vehicle_list"></ul>
+        </fieldset>
+
+        <!-- توضیحات سرشیفت -->
+        <label for="supervisor_comments">توضیحات سرشیفت:</label>
+        <textarea id="supervisor_comments" name="supervisor_comments"></textarea>
+
+        <button type="submit">ثبت گزارش</button>
+    </form>
+</body>
+</html>
+
+
+<meta charset="UTF-8">
+    <title>لیست گزارشات</title>
+</head>
+<body>
+    <h1>لیست گزارشات ثبت‌شده</h1>
+
+    <table border="1">
+        <thead>
+            <tr>
+                <th>تاریخ شیفت</th>
+                <th>توضیحات سرشیفت</th>
+                <th>عملیات بارگیری</th>
+                <th>مرخصی‌ها</th>
+                <th>خودروها</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for report in reports %}
+            <tr>
+                <td>{{ report.shift_date }}</td>
+                <td>{{ report.supervisor_comments }}</td>
+                <td>
+                    <ul>
+                    {% for operation in report.loading_operations.all %}
+                        <li>نوع سنگ: {{ operation.stone_type }} - تعداد بار: {{ operation.load_count }}</li>
+                    {% endfor %}
+                    </ul>
+                </td>
+                <td>
+                    <ul>
+                    {% for leave in report.shift_leaves.all %}
+                        <li>نام پرسنل: {{ leave.personnel_name }} - وضعیت: {{ leave.get_leave_status_display }}</li>
+                    {% endfor %}
+                    </ul>
+                </td>
+                <td>
+                    <ul>
+                    {% for vehicle in report.vehicle_reports.all %}
+                        <li>نام خودرو: {{ vehicle.vehicle_name }}</li>
+                    {% endfor %}
+                    </ul>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

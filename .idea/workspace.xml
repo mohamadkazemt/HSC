@@ -4,16 +4,26 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="v0.0.1/3">
-      <change afterPath="$PROJECT_DIR$/BaseInfo/migrations/0001_initial.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/BaseInfo/migrations/0002_alter_contractor_options_and_more.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/BaseInfo/migrations/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/migrations/__init__.py" afterDir="false" />
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="amaliyat1">
+      <change afterPath="$PROJECT_DIR$/BaseInfo/migrations/0003_alter_miningblock_type_and_more.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/forms.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/migrations/0001_initial.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/create_shift_report.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/shift_report_wizard.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BaseInfo/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/BaseInfo/models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/anomaly-details.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/anomaly-details.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/list.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shift_manager/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/shift_manager/utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/apps.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/accounts/templates/accounts/navbar.html" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/templates/accounts/navbar.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/topbar.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/topbar.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -65,31 +75,31 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
-    &quot;Django Server.Django.executor&quot;: &quot;Run&quot;,
-    &quot;Django Server.HSCprojects.executor&quot;: &quot;Run&quot;,
-    &quot;Django Server.Unnamed.executor&quot;: &quot;Run&quot;,
-    &quot;HTTP Request.generated-requests | #1.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.OpenDjangoStructureViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.pycharm.django.structure.promotion.once.per.project&quot;: &quot;true&quot;,
-    &quot;com.codeium.enabled&quot;: &quot;true&quot;,
-    &quot;com.codeium.snoozedEndTime&quot;: &quot;0&quot;,
-    &quot;django.template.preview.state&quot;: &quot;SHOW_EDITOR&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/MKT/PycharmProjects/HSC/templates/admin&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultHtmlFileTemplate": "HTML File",
+    "Django Server.Django.executor": "Run",
+    "Django Server.HSCprojects.executor": "Run",
+    "Django Server.Unnamed.executor": "Run",
+    "HTTP Request.generated-requests | #1.executor": "Run",
+    "RunOnceActivity.OpenDjangoStructureViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.pycharm.django.structure.promotion.once.per.project": "true",
+    "com.codeium.enabled": "true",
+    "com.codeium.snoozedEndTime": "0",
+    "django.template.preview.state": "SHOW_EDITOR",
+    "git-widget-placeholder": "master",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "C:/Users/MKT/PycharmProjects/HSC/templates/admin",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "com.intellij.pycharm.community.ide.impl.configuration.PythonContentEntriesConfigurable",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\MKT\PycharmProjects\HSC\templates\admin" />
@@ -225,7 +235,8 @@
       <workItem from="1729502930743" duration="6074000" />
       <workItem from="1729621448139" duration="4239000" />
       <workItem from="1729773263916" duration="8134000" />
-      <workItem from="1729835136207" duration="16519000" />
+      <workItem from="1729835136207" duration="16782000" />
+      <workItem from="1729924626205" duration="20987000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
@@ -311,7 +322,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۱۲" />
       <updated>1729621541090</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL‎−۰۰۰۱۳" summary="amaliyat1">
+      <option name="closed" value="true" />
+      <created>1729886361186</created>
+      <option name="number" value="LOCAL‎−۰۰۰۱۳" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۱۳" />
+      <updated>1729886361186</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -340,6 +358,7 @@
     <MESSAGE value="v0.0.1" />
     <MESSAGE value="v0.0.1/2" />
     <MESSAGE value="v0.0.1/3" />
-    <option name="LAST_COMMIT_MESSAGE" value="v0.0.1/3" />
+    <MESSAGE value="amaliyat1" />
+    <option name="LAST_COMMIT_MESSAGE" value="amaliyat1" />
   </component>
 </project>

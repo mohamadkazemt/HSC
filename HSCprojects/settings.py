@@ -51,7 +51,8 @@ INSTALLED_APPS = [
     'django_jalali',
     'import_export',
     'BaseInfo.apps.BaseinfoConfig',
-    'OperationsShiftReports.apps.OperationsshiftreportsConfig'
+    'OperationsShiftReports.apps.OperationsshiftreportsConfig',
+    'formtools',
 ]
 
 MIDDLEWARE = [
@@ -97,14 +98,20 @@ WSGI_APPLICATION = 'HSCprojects.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+#DATABASES = {
+        #'default': {
+        #    'ENGINE': 'django.db.backends.postgresql',
+       #     'NAME': 'hsc_db',
+      #      'USER': 'hsc_user',
+     #       'PASSWORD': 'Znmk@0900',
+    #        'HOST': 'localhost',
+   #         'PORT': '5432',
+  #      }
+ #   }
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'hsc_db',
-        'USER': 'hsc_user',
-        'PASSWORD': 'Znmk@0900',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 

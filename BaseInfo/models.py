@@ -1,6 +1,8 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 
+
+
 class Contractor(models.Model):
     name = models.CharField(max_length=100, verbose_name="نام پیمانکار")
     contact_info = models.CharField(max_length=255, verbose_name="اطلاعات تماس", blank=True)
@@ -34,6 +36,7 @@ class MiningMachine(models.Model):
         ('Loader', 'بارکننده'),
         ('Transporter', 'حمل کننده'),
         ('RoadBuilder', 'جاده سازی'),
+        ('Driller', 'حفاری'),
     ]
     OWNERSHIP_CHOICES = [
         ('Company', 'شرکت'),
