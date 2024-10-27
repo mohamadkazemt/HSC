@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block header %}
+{% include "header.html" %}
+{% endblock %}
+
+{% block sidebar %}
+{% include "sidebar.html" %}
+{% endblock %}
+
+{% block content %}
+<div id="kt_app_content" class="app-content flex-column-fluid">
+    <div id="kt_app_content_container" class="app-container container-fluid">
+        <div class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10" id="kt_create_account_stepper">
+            <div class="card d-flex justify-content-center justify-content-xl-start flex-row-auto w-100 w-xl-300px w-xxl-400px">
+                <div class="card-body px-6 px-lg-10 px-xxl-15 py-20">
+                    <div class="stepper-nav">
+                        <div class="stepper-item current" data-kt-stepper-element="nav">
+                            <div class="stepper-wrapper">
+                                <div class="stepper-icon w-40px h-40px">
+                                    <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                    <span class="stepper-number">1</span>
+                                </div>
+                                <div class="stepper-label">
+                                    <h3 class="stepper-title">عملیات بارگیری</h3>
+                                    <div class="stepper-desc fw-semibold">اطلاعات عملیات بارگیری</div>
+                                </div>
+                            </div>
+                            <div class="stepper-line h-40px"></div>
+                        </div>
+                        <div class="stepper-item" data-kt-stepper-element="nav">
+                            <div class="stepper-wrapper">
+                                <div class="stepper-icon w-40px h-40px">
+                                    <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                    <span class="stepper-number">2</span>
+                                </div>
+                                <div class="stepper-label">
+                                    <h3 class="stepper-title">مرخصی‌ها</h3>
+                                    <div class="stepper-desc fw-semibold">اطلاعات مرخصی</div>
+                                </div>
+                            </div>
+                            <div class="stepper-line h-40px"></div>
+                        </div>
+                        <div class="stepper-item" data-kt-stepper-element="nav">
+                            <div class="stepper-wrapper">
+                                <div class="stepper-icon w-40px h-40px">
+                                    <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                    <span class="stepper-number">3</span>
+                                </div>
+                                <div class="stepper-label">
+                                    <h3 class="stepper-title">خودروها</h3>
+                                    <div class="stepper-desc fw-semibold">اطلاعات خودروها</div>
+                                </div>
+                            </div>
+                            <div class="stepper-line h-40px"></div>
+                        </div>
+                        <div class="stepper-item" data-kt-stepper-element="nav">
+                            <div class="stepper-wrapper">
+                                <div class="stepper-icon w-40px h-40px">
+                                    <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                    <span class="stepper-number">4</span>
+                                </div>
+                                <div class="stepper-label">
+                                    <h3 class="stepper-title">توضیحات سرشیفت</h3>
+                                    <div class="stepper-desc fw-semibold">وارد کردن توضیحات</div>
+                                </div>
+                            </div>
+                            <div class="stepper-line h-40px"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card d-flex flex-row-fluid flex-center">
+                <form class="card-body py-20 w-100 mw-xl-700px px-9" novalidate="novalidate" id="kt_create_account_form">
+                    <div class="current" data-kt-stepper-element="content">
+                        <div class="w-100">
+                            <div class="pb-10 pb-lg-15">
+                                <h2 class="fw-bold d-flex align-items-center text-gray-900">عملیات بارگیری</h2>
+                            </div>
+                            <div class="form-group">
+                                <label for="stone_type">نوع سنگ:</label>
+                                <select id="stone_type" class="form-control">
+                                    <option value="" disabled selected>نوع سنگ را انتخاب کنید</option>
+                                    <option value="w">باطله</option>
+                                    <option value="O">آهن</option>
+                                    <option value="T">آهن کم عیار</option>
+                                </select>
+                                <label for="load_count">تعداد بار:</label>
+                                <input type="number" id="load_count" class="form-control" placeholder="تعداد بار">
+                                <button type="button" class="btn btn-success mt-3" onclick="addLoadingOperation()">اضافه کردن</button>
+                            </div>
+                            <ul id="loading_list" class="list-group mt-3"></ul>
+                        </div>
+                    </div>
+                    <div data-kt-stepper-element="content">
+                        <div class="w-100">
+                            <div class="pb-10 pb-lg-15">
+                                <h2 class="fw-bold text-gray-900">مرخصی‌ها</h2>
+                            </div>
+                            <div class="form-group">
+                                <label for="personnel_name">پرسنل:</label>
+                                <select id="personnel_name" class="form-control">
+                                    {% for personnel in personnels %}
+                                        <option value="{{ personnel.id }}">{{ personnel }}</option>
+                                    {% endfor %}
+                                </select>
+                                <label for="leave_status">وضعیت مرخصی:</label>
+                                <select id="leave_status" class="form-control">
+                                    <option value="authorized">مجاز</option>
+                                    <option value="unauthorized">غیر مجاز</option>
+                                </select>
+                                <button type="button" class="btn btn-success mt-3" onclick="addLeave()">اضافه کردن</button>
+                            </div>
+                            <ul id="leave_list" class="list-group mt-3"></ul>
+                        </div>
+                    </div>
+                    <div data-kt-stepper-element="content">
+                        <div class="w-100">
+                            <div class="pb-10 pb-lg-15">
+                                <h2 class="fw-bold text-gray-900">خودروها</h2>
+                            </div>
+                            <div class="form-group">
+                                <label for="vehicle_name">نام خودرو:</label>
+                                <select id="vehicle_name" class="form-control">
+                                    <option value="" disabled selected>خودرو را انتخاب کنید</option>
+                                    {% for vehicle in vehicles %}
+                                        <option value="{{ vehicle.id }}">{{ vehicle.vehicle_name }} - {{ vehicle.contractor.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" class="btn btn-success mt-3" onclick="addVehicle()">اضافه کردن</button>
+                            </div>
+                            <ul id="vehicle_list" class="list-group mt-3"></ul>
+                        </div>
+                    </div>
+                    <div data-kt-stepper-element="content">
+                        <div class="w-100">
+                            <div class="pb-10 pb-lg-15">
+                                <h2 class="fw-bold text-gray-900">توضیحات سرشیفت</h2>
+                            </div>
+                            <div class="form-group">
+                                <label for="supervisor_comments">توضیحات سرشیفت:</label>
+                                <textarea id="supervisor_comments" name="supervisor_comments" class="form-control"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary mt-3">ثبت گزارش</button>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-stack pt-10">
+                        <div class="mr-2">
+                            <button type="button" class="btn btn-lg btn-light-primary me-3" onclick="previousStep()">
+                                <i class="ki-outline ki-arrow-left fs-4 me-1"></i>برگشت
+                            </button>
+                        </div>
+                        <div>
+                            <button type="button" class="btn btn-lg btn-primary" onclick="nextStep()">ادامه
+                                <i class="ki-outline ki-arrow-left fs-4 ms-1 me-0"></i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+    <script>
+    function addLoadingOperation() {
+        const stoneType = document.getElementById("stone_type").value;
+        const loadCount = document.getElementById("load_count").value;
+        if (stoneType && loadCount) {
+            const list = document.getElementById("loading_list");
+            const entry = document.createElement('li');
+            entry.className = "list-group-item";
+            entry.textContent = `نوع سنگ: ${stoneType}, تعداد بار: ${loadCount}`;
+            list.appendChild(entry);
+        }
+    }
+
+    function addLeave() {
+        const personnel = document.getElementById("personnel_name").options[document.getElementById("personnel_name").selectedIndex].text;
+        const status = document.getElementById("leave_status").value;
+        if (personnel && status) {
+            const list = document.getElementById("leave_list");
+            const entry = document.createElement('li');
+            entry.className = "list-group-item";
+            entry.textContent = `پرسنل: ${personnel}, وضعیت مرخصی: ${status}`;
+            list.appendChild(entry);
+        }
+    }
+
+    function addVehicle() {
+        const vehicleName = document.getElementById("vehicle_name").options[document.getElementById("vehicle_name").selectedIndex].text;
+        if (vehicleName) {
+            const list = document.getElementById("vehicle_list");
+            const entry = document.createElement('li');
+            entry.className = "list-group-item";
+            entry.textContent = `خودرو: ${vehicleName}`;
+            list.appendChild(entry);
+        }
+    }
+
+    function nextStep() {
+        const currentStep = document.querySelector(".stepper-item.current");
+        const nextStep = currentStep.nextElementSibling;
+        if (nextStep) {
+            currentStep.classList.remove("current");
+            nextStep.classList.add("current");
+            const currentContent = document.querySelector("[data-kt-stepper-element='content'].current");
+            const nextContent = currentContent.nextElementSibling;
+            if (nextContent) {
+                currentContent.classList.remove("current");
+                nextContent.classList.add("current");
+            }
+        }
+    }
+
+    function previousStep() {
+        const currentStep = document.querySelector(".stepper-item.current");
+        const previousStep = currentStep.previousElementSibling;
+        if (previousStep) {
+            currentStep.classList.remove("current");
+            previousStep.classList.add("current");
+            const currentContent = document.querySelector("[data-kt-stepper-element='content'].current");
+            const previousContent = currentContent.previousElementSibling;
+            if (previousContent) {
+                currentContent.classList.remove("current");
+                previousContent.classList.add("current");
+            }
+        }
+    }
+</script>
+{% endblock %}
+
+{% block footer %}
+{% include "footer.html" %}
+{% endblock %}
+
+

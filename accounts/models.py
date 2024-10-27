@@ -18,7 +18,8 @@ class UserProfile(models.Model):
     group = models.CharField(max_length=1, choices=GROUP_CHOICES, blank=True)
 
     def __str__(self):
-        return f'{self.user.first_name} {self.user.last_name}'
+        name = f'{self.user.first_name} {self.user.last_name} {self.personnel_code}'.strip()
+        return name if name else self.user.username
 
     class Meta:
         verbose_name = 'پروفایل کاربر'

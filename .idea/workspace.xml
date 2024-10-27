@@ -4,29 +4,49 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="v0.0.1">
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="amaliyat1">
+      <change afterPath="$PROJECT_DIR$/BaseInfo/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/BaseInfo/admin.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/BaseInfo/apps.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/BaseInfo/migrations/0001_initial.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/BaseInfo/migrations/0002_alter_contractor_options_and_more.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/BaseInfo/migrations/0003_alter_miningblock_type_and_more.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/BaseInfo/migrations/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/BaseInfo/models.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/BaseInfo/tests.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/BaseInfo/views.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/admin.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/apps.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/forms.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/migrations/0001_initial.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/migrations/0002_alter_shiftreport_options_and_more.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/migrations/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/models.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/create_shift_report.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/shift_report_wizard.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/tests.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/urls.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/views.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/form.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/media/profile_pics/300-10.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/media/profile_pics/300-3.jpg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/assets/media/logos/logo-dark.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/assets/media/logos/logo-small.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/forms.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/migrations/0001_initial.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/migrations/0001_initial.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/migrations/0002_userprofile_group.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/migrations/0003_alter_userprofile_group.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/accounts/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0001_initial.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/migrations/0001_initial.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0002_alter_anomaly_created_by_alter_anomaly_followup.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0003_alter_anomaly_created_by_alter_anomaly_followup.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0004_anomaly_group.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0005_comments.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0006_alter_comments_anomaly.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0007_comment_delete_comments.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0008_anomaly_is_request_sent.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dashboard/migrations/0001_initial.py" beforeDir="false" afterPath="$PROJECT_DIR$/dashboard/migrations/0001_initial.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dashboard/migrations/0002_rename_link_notification_url_and_more.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dashboard/migrations/0003_notification_read_at.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/shift_manager/migrations/0001_initial.py" beforeDir="false" afterPath="$PROJECT_DIR$/shift_manager/migrations/0001_initial.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/accounts/templates/accounts/navbar.html" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/templates/accounts/navbar.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/anomaly-details.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/anomaly-details.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/list.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shift_manager/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/shift_manager/utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/sidebar.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/sidebar.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/topbar.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/topbar.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -63,7 +83,7 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/mohamadkazemt/HSC.git&quot;,
-    &quot;accountId&quot;: &quot;b1049974-7825-44ef-a60c-99f35deafaf1&quot;
+    &quot;accountId&quot;: &quot;2a885c31-2a1e-4349-814d-9dbf44111a39&quot;
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
@@ -78,31 +98,31 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
-    &quot;Django Server.Django.executor&quot;: &quot;Run&quot;,
-    &quot;Django Server.HSCprojects.executor&quot;: &quot;Run&quot;,
-    &quot;Django Server.Unnamed.executor&quot;: &quot;Run&quot;,
-    &quot;HTTP Request.generated-requests | #1.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.OpenDjangoStructureViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.pycharm.django.structure.promotion.once.per.project&quot;: &quot;true&quot;,
-    &quot;com.codeium.enabled&quot;: &quot;true&quot;,
-    &quot;com.codeium.snoozedEndTime&quot;: &quot;0&quot;,
-    &quot;django.template.preview.state&quot;: &quot;SHOW_EDITOR&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/MKT/PycharmProjects/HSC/templates/admin&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultHtmlFileTemplate": "HTML File",
+    "Django Server.Django.executor": "Run",
+    "Django Server.HSCprojects.executor": "Run",
+    "Django Server.Unnamed.executor": "Run",
+    "HTTP Request.generated-requests | #1.executor": "Run",
+    "RunOnceActivity.OpenDjangoStructureViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.pycharm.django.structure.promotion.once.per.project": "true",
+    "com.codeium.enabled": "true",
+    "com.codeium.snoozedEndTime": "0",
+    "django.template.preview.state": "SHOW_EDITOR",
+    "git-widget-placeholder": "Merging master",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "C:/Users/MKT/PycharmProjects/HSC/templates/admin",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "com.intellij.pycharm.community.ide.impl.configuration.PythonContentEntriesConfigurable",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\MKT\PycharmProjects\HSC\templates\admin" />
@@ -149,8 +169,8 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="HTTP Request.generated-requests | #1" />
       <item itemvalue="Django Server.Unnamed" />
+      <item itemvalue="HTTP Request.generated-requests | #1" />
     </list>
     <recent_temporary>
       <list>
@@ -236,7 +256,10 @@
       <workItem from="1729454237192" duration="380000" />
       <workItem from="1729493579680" duration="6950000" />
       <workItem from="1729502930743" duration="6074000" />
-      <workItem from="1729589653754" duration="4436000" />
+      <workItem from="1729621448139" duration="4239000" />
+      <workItem from="1729773263916" duration="8134000" />
+      <workItem from="1729835136207" duration="16782000" />
+      <workItem from="1729924626205" duration="23183000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
@@ -301,7 +324,42 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۰۹" />
       <updated>1729454555557</updated>
     </task>
-    <option name="localTasksCounter" value="10" />
+    <task id="LOCAL‎−۰۰۰۱۰" summary="v0.0.1">
+      <option name="closed" value="true" />
+      <created>1729616823056</created>
+      <option name="number" value="LOCAL‎−۰۰۰۱۰" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۱۰" />
+      <updated>1729616823056</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۱۱" summary="v0.0.1/2">
+      <option name="closed" value="true" />
+      <created>1729618272628</created>
+      <option name="number" value="LOCAL‎−۰۰۰۱۱" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۱۱" />
+      <updated>1729618272628</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۱۲" summary="v0.0.1/3">
+      <option name="closed" value="true" />
+      <created>1729621541090</created>
+      <option name="number" value="LOCAL‎−۰۰۰۱۲" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۱۲" />
+      <updated>1729621541090</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۱۳" summary="amaliyat1">
+      <option name="closed" value="true" />
+      <created>1729886361186</created>
+      <option name="number" value="LOCAL‎−۰۰۰۱۳" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۱۳" />
+      <updated>1729886361186</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۱۴" summary="amaliyat1">
+      <option name="closed" value="true" />
+      <created>1729963968933</created>
+      <option name="number" value="LOCAL‎−۰۰۰۱۴" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۱۴" />
+      <updated>1729963968934</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -328,6 +386,9 @@
     <MESSAGE value="commentsnew" />
     <MESSAGE value="notifications" />
     <MESSAGE value="v0.0.1" />
-    <option name="LAST_COMMIT_MESSAGE" value="v0.0.1" />
+    <MESSAGE value="v0.0.1/2" />
+    <MESSAGE value="v0.0.1/3" />
+    <MESSAGE value="amaliyat1" />
+    <option name="LAST_COMMIT_MESSAGE" value="amaliyat1" />
   </component>
 </project>

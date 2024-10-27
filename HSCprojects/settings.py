@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -49,6 +50,9 @@ INSTALLED_APPS = [
     'shift_manager.apps.ShiftManagerConfig',
     'django_jalali',
     'import_export',
+    'BaseInfo.apps.BaseinfoConfig',
+    'OperationsShiftReports.apps.OperationsshiftreportsConfig',
+    'formtools',
 ]
 
 MIDDLEWARE = [
@@ -94,12 +98,23 @@ WSGI_APPLICATION = 'HSCprojects.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+#DATABASES = {
+        #'default': {
+        #    'ENGINE': 'django.db.backends.postgresql',
+       #     'NAME': 'hsc_db',
+      #      'USER': 'hsc_user',
+     #       'PASSWORD': 'Znmk@0900',
+    #        'HOST': 'localhost',
+   #         'PORT': '5432',
+  #      }
+ #   }
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
 
 
 # Password validation
@@ -139,6 +154,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+#STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 STATICFILES_DIRS = [
     BASE_DIR / "static"
