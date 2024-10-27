@@ -149,8 +149,8 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Django Server.Unnamed" />
       <item itemvalue="HTTP Request.generated-requests | #1" />
+      <item itemvalue="Django Server.Unnamed" />
     </list>
     <recent_temporary>
       <list>
