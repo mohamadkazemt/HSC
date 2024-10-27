@@ -26,7 +26,7 @@ var KTModalUpdateCustomer = function () {
 
                 // Show popup confirmation 
                 Swal.fire({
-                    text: "Form has been successfully submitted!",
+                    text: "فرم با موفقیت ثبت شد!",
                     icon: "success",
                     buttonsStyling: false,
                     confirmButtonText: "Ok, got it!",
@@ -128,4 +128,23 @@ var KTModalUpdateCustomer = function () {
 // On document ready
 KTUtil.onDOMContentLoaded(function () {
     KTModalUpdateCustomer.init();
+});
+
+
+
+
+// سایر کدهای فایل update.js
+
+document.addEventListener('DOMContentLoaded', function() {
+    const messagesDiv = document.querySelector('.messages');
+    if (messagesDiv) {
+        const messages = messagesDiv.querySelectorAll('.alert');
+        messages.forEach(message => {
+            // نمایش پیغام در Console به عنوان تست، این را می‌توان تغییر داد به نمایش دلخواه
+            console.log(message.textContent);
+
+            // اضافه کردن کد برای نمایش بهتر پیغام‌ها با استفاده از alert یا نمایش زیباتر
+            alert(message.textContent);
+        });
+    }
 });

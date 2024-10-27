@@ -20,7 +20,7 @@ class LoadingOperation(models.Model):
 
 # مدل مرخصی شیفت
 class ShiftLeave(models.Model):
-    personnel_name = models.CharField(max_length=100, verbose_name="نام پرسنل")
+    personnel_name = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
     leave_status = models.CharField(max_length=50, choices=[('authorized', 'مجاز'), ('unauthorized', 'غیر مجاز')], default= 'unauthorized', verbose_name="وضعیت مرخصی")
 
     def __str__(self):

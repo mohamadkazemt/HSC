@@ -4,9 +4,19 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="amalyat3">
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="amaliyat1">
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/migrations/0003_alter_shiftleave_personnel_name.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/list.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/assets/js/custom_forms.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/create_shift_report.html" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/create_shift_report.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/shift_report_wizard.html" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/src/js/custom/apps/customers/update.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/src/js/custom/apps/customers/update.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/base.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -19,9 +29,9 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="JavaScript File" />
         <option value="Python Script" />
         <option value="HTML File" />
+        <option value="JavaScript File" />
       </list>
     </option>
   </component>
@@ -73,7 +83,7 @@
     "django.template.preview.state": "SHOW_EDITOR",
     "git-widget-placeholder": "master",
     "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "C:/Users/No1/PycharmProjects/new/HSC/OperationsShiftReports/templates/OperationsShiftReports",
+    "last_opened_file_path": "C:/Users/MKT/PycharmProjects/HSC/static",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -85,11 +95,11 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\MKT\PycharmProjects\HSC\OperationsShiftReports\templates\OperationsShiftReports" />
       <recent name="C:\Users\MKT\PycharmProjects\HSC\templates\admin" />
       <recent name="C:\Users\MKT\PycharmProjects\HSC\static\assets\media\misc" />
       <recent name="C:\Users\MKT\PycharmProjects\HSC\static\src\media\logos" />
       <recent name="C:\Users\No1\PycharmProjects\HSC3\templates" />
-      <recent name="C:\Users\No1\PycharmProjects\HSC3\accounts\templates\accounts" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\MKT\PycharmProjects\HSC\static\assets\media\logos" />
@@ -319,14 +329,7 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۱۴" />
       <updated>1729963968934</updated>
     </task>
-    <task id="LOCAL‎−۰۰۰۱۵" summary="amalyat3">
-      <option name="closed" value="true" />
-      <created>1730025904387</created>
-      <option name="number" value="LOCAL‎−۰۰۰۱۵" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۱۵" />
-      <updated>1730025904387</updated>
-    </task>
-    <option name="localTasksCounter" value="16" />
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -356,7 +359,6 @@
     <MESSAGE value="v0.0.1/2" />
     <MESSAGE value="v0.0.1/3" />
     <MESSAGE value="amaliyat1" />
-    <MESSAGE value="amalyat3" />
-    <option name="LAST_COMMIT_MESSAGE" value="amalyat3" />
+    <option name="LAST_COMMIT_MESSAGE" value="amaliyat1" />
   </component>
 </project>

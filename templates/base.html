@@ -27,7 +27,7 @@
     <!--begin::Global Stylesheets Bundle(mandatory for all pages)-->
     <link href="{% static 'assets/plugins/global/plugins.bundle.rtl.css' %}" rel="stylesheet" type="text/css" />
     <link href="{% static 'assets/css/style.bundle.rtl.css' %}" rel="stylesheet" type="text/css" />
-
+{% block style %}{% endblock %}
     <!--end::Global Stylesheets Bundle-->
     <script>// Frame-busting to prevent site from being loaded within a frame without permission (click-jacking) if (window.top != window.self) { window.top.location.replace(window.self.location.href); }</script>
 </head>
@@ -43,7 +43,7 @@
 
 {% endblock %}
 
-<script> src="{% static 'assets/js/notifications.js' %}"</script>
+
 <!--begin::Javascript-->
 <script>var hostUrl = "{% static  'assets/' %}";</script>
 
@@ -66,8 +66,8 @@
 <script src="https://unpkg.com/@yaireo/tagify"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script> src="{% static 'assets/js/notifications.js' %}"</script>
-
+<script src="{% static 'assets/js/notifications.js' %}"></script>
+ {% block extra_js %}{% endblock %}
 <script type="text/javascript">
     $(document).ready(function() {
         $('#id_anomalytype').change(function() {
@@ -76,6 +76,7 @@
                 url: "{% url 'anomalis:get_anomalydescription' %}",
                 data: {
                     'anomalytype_id': anomalytypeId
+
                 },
                 success: function(data) {
                     var options = '<option value="">-- انتخاب شرح آنومالی --</option>';
