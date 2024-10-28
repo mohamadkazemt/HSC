@@ -4,18 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="amaliyat1">
-      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/migrations/0003_alter_shiftleave_personnel_name.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/list.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/assets/js/custom_forms.js" afterDir="false" />
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="amaliyat4">
+      <change afterPath="$PROJECT_DIR$/.idea/jsLibraryMappings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/migrations/0004_shiftreport_attached_file.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/assets/css/select2-styles.css" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/assets/js/select2-scripts.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/HSCprojects.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/HSCprojects.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/OperationsShiftReports/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/create_shift_report.html" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/create_shift_report.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/shift_report_wizard.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/OperationsShiftReports/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/src/js/custom/apps/customers/update.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/src/js/custom/apps/customers/update.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/assets/js/custom_forms.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/assets/js/custom_forms.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/base.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -68,31 +68,32 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "DefaultHtmlFileTemplate": "HTML File",
-    "Django Server.Django.executor": "Run",
-    "Django Server.HSCprojects.executor": "Run",
-    "Django Server.Unnamed.executor": "Run",
-    "HTTP Request.generated-requests | #1.executor": "Run",
-    "RunOnceActivity.OpenDjangoStructureViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.pycharm.django.structure.promotion.once.per.project": "true",
-    "com.codeium.enabled": "true",
-    "com.codeium.snoozedEndTime": "0",
-    "django.template.preview.state": "SHOW_EDITOR",
-    "git-widget-placeholder": "master",
-    "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "C:/Users/MKT/PycharmProjects/HSC/static",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "com.intellij.pycharm.community.ide.impl.configuration.PythonContentEntriesConfigurable",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
+    &quot;Django Server.Django.executor&quot;: &quot;Run&quot;,
+    &quot;Django Server.HSCprojects.executor&quot;: &quot;Run&quot;,
+    &quot;Django Server.Unnamed.executor&quot;: &quot;Run&quot;,
+    &quot;HTTP Request.generated-requests | #1.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.OpenDjangoStructureViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.pycharm.django.structure.promotion.once.per.project&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;com.codeium.enabled&quot;: &quot;true&quot;,
+    &quot;com.codeium.snoozedEndTime&quot;: &quot;0&quot;,
+    &quot;django.template.preview.state&quot;: &quot;SHOW_EDITOR&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/MKT/PycharmProjects/HSC/static&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\MKT\PycharmProjects\HSC\OperationsShiftReports\templates\OperationsShiftReports" />
@@ -102,11 +103,11 @@
       <recent name="C:\Users\No1\PycharmProjects\HSC3\templates" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\MKT\PycharmProjects\HSC\static\assets\js" />
+      <recent name="C:\Users\MKT\PycharmProjects\HSC\static\assets\css" />
       <recent name="C:\Users\MKT\PycharmProjects\HSC\static\assets\media\logos" />
       <recent name="C:\Users\MKT\PycharmProjects\HSCprojects\anomalis\templates\anomalis" />
       <recent name="C:\Users\MKT\PycharmProjects\HSCprojects\dashboard\templates" />
-      <recent name="C:\Users\MKT\PycharmProjects\HSCprojects\accounts" />
-      <recent name="C:\Users\MKT\PycharmProjects\HSCprojects\accounts\templates\accounts" />
     </key>
   </component>
   <component name="RunManager" selected="Django Server.Unnamed">
@@ -230,6 +231,8 @@
       <workItem from="1729773263916" duration="8134000" />
       <workItem from="1729835136207" duration="16782000" />
       <workItem from="1729924626205" duration="23183000" />
+      <workItem from="1730120931133" duration="16251000" />
+      <workItem from="1730144501878" duration="401000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
@@ -329,7 +332,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۱۴" />
       <updated>1729963968934</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL‎−۰۰۰۱۵" summary="amaliyat4">
+      <option name="closed" value="true" />
+      <created>1730057438244</created>
+      <option name="number" value="LOCAL‎−۰۰۰۱۵" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۱۵" />
+      <updated>1730057438244</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -359,6 +369,7 @@
     <MESSAGE value="v0.0.1/2" />
     <MESSAGE value="v0.0.1/3" />
     <MESSAGE value="amaliyat1" />
-    <option name="LAST_COMMIT_MESSAGE" value="amaliyat1" />
+    <MESSAGE value="amaliyat4" />
+    <option name="LAST_COMMIT_MESSAGE" value="amaliyat4" />
   </component>
 </project>

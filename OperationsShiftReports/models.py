@@ -55,7 +55,7 @@ class ShiftReport(models.Model):
     shift_date = models.DateField(verbose_name="تاریخ شیفت")
     supervisor_comments = models.TextField(blank=True, verbose_name="توضیحات سرشیفت")
     group = models.CharField(max_length=1, choices=UserProfile.GROUP_CHOICES, verbose_name="گروه کاری")
-
+    attached_file = models.FileField(upload_to='shift_reports', blank=True, verbose_name="فایل ضمیمه")
     loading_operations = models.ManyToManyField('LoadingOperation', related_name='shift_reports', blank=True)
     shift_leaves = models.ManyToManyField('ShiftLeave', related_name='shift_reports', blank=True)
     vehicle_reports = models.ManyToManyField('VehicleReport', related_name='shift_reports', blank=True)

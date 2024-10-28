@@ -27,6 +27,9 @@
     <!--begin::Global Stylesheets Bundle(mandatory for all pages)-->
     <link href="{% static 'assets/plugins/global/plugins.bundle.rtl.css' %}" rel="stylesheet" type="text/css" />
     <link href="{% static 'assets/css/style.bundle.rtl.css' %}" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <!-- Custom Select2 CSS -->
+    <link href="{% static 'assets/css/select2-styles.css' %}" rel="stylesheet" />
 {% block style %}{% endblock %}
     <!--end::Global Stylesheets Bundle-->
     <script>// Frame-busting to prevent site from being loaded within a frame without permission (click-jacking) if (window.top != window.self) { window.top.location.replace(window.self.location.href); }</script>
@@ -67,6 +70,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="{% static 'assets/js/notifications.js' %}"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <!-- Custom Select2 JS -->
+<script src="{% static 'assets/js/select2-scripts.js' %}"></script>
  {% block extra_js %}{% endblock %}
 <script type="text/javascript">
     $(document).ready(function() {
