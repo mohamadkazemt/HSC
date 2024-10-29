@@ -55,10 +55,24 @@ class ShiftReport(models.Model):
     shift_date = models.DateField(verbose_name="تاریخ شیفت")
     supervisor_comments = models.TextField(blank=True, verbose_name="توضیحات سرشیفت")
     group = models.CharField(max_length=1, choices=UserProfile.GROUP_CHOICES, verbose_name="گروه کاری")
-    attached_file = models.FileField(upload_to='shift_reports', blank=True, verbose_name="فایل ضمیمه")
+    # اضافه کردن فیلد فایل
+    attached_file = models.FileField(
+        upload_to='shift_reports/%Y/%m/%d/',
+        verbose_name="فایل ضمیمه",
+        null=True,
+        blank=True
+    )
     loading_operations = models.ManyToManyField('LoadingOperation', related_name='shift_reports', blank=True)
     shift_leaves = models.ManyToManyField('ShiftLeave', related_name='shift_reports', blank=True)
     vehicle_reports = models.ManyToManyField('VehicleReport', related_name='shift_reports', blank=True)
+    creator = models.ForeignKey(
+        'accounts.UserProfile',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="ایجاد کننده",
+        related_name='created_shift_reports'
+    )
 
     def __str__(self):
         return f"شیفت {self.get_group_display()} - {self.shift_date}"

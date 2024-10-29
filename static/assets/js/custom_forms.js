@@ -80,6 +80,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // نمایش نام فایل انتخاب شده
+    const fileInput = document.getElementById('attached_file');
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const fileName = e.target.files[0]?.name || 'فایلی انتخاب نشده';
+            const fileNameDisplay = document.querySelector('.file-name-display');
+            if (fileNameDisplay) {
+                fileNameDisplay.textContent = fileName;
+            }
+        });
+    }
+
     // راه‌اندازی اولیه دکمه‌های ناوبری
     updateNavigationButtons();
 });
@@ -88,19 +100,19 @@ function addLoadingOperation() {
     const stoneType = document.getElementById("stone_type").value;
     const stoneTypeText = $("#stone_type option:selected").text();
     const loadCount = document.getElementById("load_count").value;
-    
+
     if (stoneType && loadCount) {
         const list = document.getElementById("loading_list");
         const entry = document.createElement('li');
         entry.className = "list-group-item d-flex justify-content-between align-items-center";
         entry.textContent = `نوع سنگ: ${stoneTypeText}, تعداد بار: ${loadCount}`;
-        
+
         const hiddenInput = document.createElement('input');
         hiddenInput.type = "hidden";
         hiddenInput.name = "loading_operations[]";
         hiddenInput.value = `${stoneType},${loadCount}`;
         document.getElementById("kt_create_account_form").appendChild(hiddenInput);
-        
+
         const deleteButton = document.createElement('button');
         deleteButton.className = "btn btn-danger btn-sm";
         deleteButton.textContent = "حذف";
@@ -108,7 +120,7 @@ function addLoadingOperation() {
             list.removeChild(entry);
             document.getElementById("kt_create_account_form").removeChild(hiddenInput);
         };
-        
+
         entry.appendChild(deleteButton);
         list.appendChild(entry);
 
@@ -137,13 +149,13 @@ function addLeave() {
         const entry = document.createElement('li');
         entry.className = "list-group-item d-flex justify-content-between align-items-center";
         entry.textContent = `پرسنل: ${personnelName}, وضعیت مرخصی: ${statusText}`;
-        
+
         const hiddenInput = document.createElement('input');
         hiddenInput.type = "hidden";
         hiddenInput.name = "leaves[]";
         hiddenInput.value = `${personnelId},${status}`;
         document.getElementById("kt_create_account_form").appendChild(hiddenInput);
-        
+
         const deleteButton = document.createElement('button');
         deleteButton.className = "btn btn-danger btn-sm";
         deleteButton.textContent = "حذف";
@@ -151,7 +163,7 @@ function addLeave() {
             list.removeChild(entry);
             document.getElementById("kt_create_account_form").removeChild(hiddenInput);
         };
-        
+
         entry.appendChild(deleteButton);
         list.appendChild(entry);
 
@@ -178,13 +190,13 @@ function addVehicle() {
         const entry = document.createElement('li');
         entry.className = "list-group-item d-flex justify-content-between align-items-center";
         entry.textContent = `خودرو: ${vehicleName}`;
-        
+
         const hiddenInput = document.createElement('input');
         hiddenInput.type = "hidden";
         hiddenInput.name = "vehicles[]";
         hiddenInput.value = vehicleId;
         document.getElementById("kt_create_account_form").appendChild(hiddenInput);
-        
+
         const deleteButton = document.createElement('button');
         deleteButton.className = "btn btn-danger btn-sm";
         deleteButton.textContent = "حذف";
@@ -192,7 +204,7 @@ function addVehicle() {
             list.removeChild(entry);
             document.getElementById("kt_create_account_form").removeChild(hiddenInput);
         };
-        
+
         entry.appendChild(deleteButton);
         list.appendChild(entry);
 
@@ -206,6 +218,160 @@ function addVehicle() {
             confirmButtonText: 'باشه'
         });
     }
+}
+
+// تابع اعتبارسنجی فایل
+function validateFileUpload() {
+    const fileInput = document.getElementById('attached_file');
+    if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const fileSize = file.size;
+        const fileName = file.name;
+        const fileExtension = fileName.split('.').pop().toLowerCase();
+
+        // بررسی سایز فایل (5MB)
+        const maxSize = 5 * 1024 * 1024;
+        if (fileSize > maxSize) {
+            Swal.fire({
+                title: 'خطا',
+                text: 'حجم فایل نباید بیشتر از 5 مگابایت باشد.',
+                icon: 'error',
+                confirmButtonText: 'باشه'
+            });
+            fileInput.value = '';
+            return false;
+        }
+
+        // بررسی پسوند فایل
+        const allowedExtensions = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
+        if (!allowedExtensions.includes(fileExtension)) {
+            Swal.fire({
+                title: 'خطا',
+                text: 'فرمت فایل مجاز نیست. لطفا از فرمت‌های PDF، Word یا تصویر استفاده کنید.',
+                icon: 'error',
+                confirmButtonText: 'باشه'
+            });
+            fileInput.value = '';
+            return false;
+        }
+    }
+    return true;
+}
+
+// تابع ارسال فرم
+function submitForm() {
+    // بررسی اعتبارسنجی اولیه فرم
+    const form = document.getElementById("kt_create_account_form");
+    const formData = new FormData(form);
+
+    // بررسی موارد اجباری
+    const loadingList = document.getElementById("loading_list");
+    const leaveList = document.getElementById("leave_list");
+    const vehicleList = document.getElementById("vehicle_list");
+    const supervisorComments = document.querySelector('textarea[name="supervisor_comments"]');
+
+    if (loadingList.children.length === 0) {
+        Swal.fire({
+            title: 'خطا',
+            text: 'لطفا حداقل یک عملیات بارگیری را اضافه کنید.',
+            icon: 'error',
+            confirmButtonText: 'باشه'
+        });
+        return;
+    }
+
+    if (leaveList.children.length === 0) {
+        Swal.fire({
+            title: 'خطا',
+            text: 'لطفا حداقل یک مرخصی را اضافه کنید.',
+            icon: 'error',
+            confirmButtonText: 'باشه'
+        });
+        return;
+    }
+
+    if (vehicleList.children.length === 0) {
+        Swal.fire({
+            title: 'خطا',
+            text: 'لطفا حداقل یک خودرو را اضافه کنید.',
+            icon: 'error',
+            confirmButtonText: 'باشه'
+        });
+        return;
+    }
+
+    if (!supervisorComments.value.trim()) {
+        Swal.fire({
+            title: 'خطا',
+            text: 'لطفا توضیحات سرشیفت را وارد کنید.',
+            icon: 'error',
+            confirmButtonText: 'باشه'
+        });
+        return;
+    }
+
+    // اعتبارسنجی فایل
+    if (!validateFileUpload()) {
+        return;
+    }
+
+    // نمایش لودینگ
+    Swal.fire({
+        title: 'لطفا صبر کنید...',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    // ارسال درخواست
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`خطای HTTP: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        Swal.close();
+
+        if (data.messages) {
+            let hasError = false;
+            data.messages.forEach(message => {
+                if (message.tags === 'error') {
+                    hasError = true;
+                }
+
+                Swal.fire({
+                    title: message.tags === 'success' ? 'موفقیت' : 'خطا',
+                    text: message.message,
+                    icon: message.tags === 'success' ? 'success' : 'error',
+                    confirmButtonText: 'باشه'
+                }).then(() => {
+                    // فقط در صورت موفقیت و آخرین پیام، ریدایرکت انجام شود
+                    if (!hasError) {
+                        window.location.href = '/OperationsShiftReports/loading-operations/';
+                    }
+                });
+            });
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.close();
+        Swal.fire({
+            title: 'خطا',
+            text: 'خطایی در ارسال اطلاعات رخ داد.',
+            icon: 'error',
+            confirmButtonText: 'باشه'
+        });
+    });
 }
 
 function updateNavigationButtons() {
