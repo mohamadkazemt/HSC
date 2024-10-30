@@ -4,14 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="amaliyat5">
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="amaliyat1">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/create_shift_report.html" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/create_shift_report.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/list.html" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/list.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/OperationsShiftReports/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/static/assets/js/custom_forms.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/assets/js/custom_forms.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/sidebar.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/sidebar.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -48,7 +45,7 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/mohamadkazemt/HSC.git&quot;,
-    &quot;accountId&quot;: &quot;2a885c31-2a1e-4349-814d-9dbf44111a39&quot;
+    &quot;accountId&quot;: &quot;b1049974-7825-44ef-a60c-99f35deafaf1&quot;
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
@@ -73,7 +70,6 @@
     &quot;RunOnceActivity.OpenDjangoStructureViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.pycharm.django.structure.promotion.once.per.project&quot;: &quot;true&quot;,
-    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
     &quot;com.codeium.enabled&quot;: &quot;true&quot;,
     &quot;com.codeium.snoozedEndTime&quot;: &quot;0&quot;,
     &quot;django.template.preview.state&quot;: &quot;SHOW_EDITOR&quot;,
@@ -85,7 +81,7 @@
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.intellij.pycharm.community.ide.impl.configuration.PythonContentEntriesConfigurable&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
@@ -98,11 +94,11 @@
       <recent name="C:\Users\No1\PycharmProjects\HSC3\templates" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
-      <recent name="C:\Users\MKT\PycharmProjects\HSC\static\assets\js" />
-      <recent name="C:\Users\MKT\PycharmProjects\HSC\static\assets\css" />
       <recent name="C:\Users\MKT\PycharmProjects\HSC\static\assets\media\logos" />
       <recent name="C:\Users\MKT\PycharmProjects\HSCprojects\anomalis\templates\anomalis" />
       <recent name="C:\Users\MKT\PycharmProjects\HSCprojects\dashboard\templates" />
+      <recent name="C:\Users\MKT\PycharmProjects\HSCprojects\accounts" />
+      <recent name="C:\Users\MKT\PycharmProjects\HSCprojects\accounts\templates\accounts" />
     </key>
   </component>
   <component name="RunManager" selected="Django Server.Unnamed">
@@ -226,8 +222,6 @@
       <workItem from="1729773263916" duration="8134000" />
       <workItem from="1729835136207" duration="16782000" />
       <workItem from="1729924626205" duration="23183000" />
-      <workItem from="1730120931133" duration="16251000" />
-      <workItem from="1730144501878" duration="401000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
@@ -327,14 +321,7 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۱۴" />
       <updated>1729963968934</updated>
     </task>
-    <task id="LOCAL‎−۰۰۰۱۵" summary="amaliyat4">
-      <option name="closed" value="true" />
-      <created>1730057438244</created>
-      <option name="number" value="LOCAL‎−۰۰۰۱۵" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۱۵" />
-      <updated>1730057438244</updated>
-    </task>
-    <option name="localTasksCounter" value="16" />
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -364,7 +351,6 @@
     <MESSAGE value="v0.0.1/2" />
     <MESSAGE value="v0.0.1/3" />
     <MESSAGE value="amaliyat1" />
-    <MESSAGE value="amaliyat4" />
-    <option name="LAST_COMMIT_MESSAGE" value="amaliyat4" />
+    <option name="LAST_COMMIT_MESSAGE" value="amaliyat1" />
   </component>
 </project>

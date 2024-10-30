@@ -146,16 +146,16 @@ def create_shift_report(request):
         personnels = UserProfile.objects.filter(group=current_group) if current_group else UserProfile.objects.none()
 
         # دریافت خودروهای فعال
-        vehicles = ContractorVehicle.objects.filter(is_active=True)
+        vehicles = ContractorVehicle.objects.filter(is_active=True).select_related('contractor')
 
         # دریافت بارکننده‌های فعال
-        loaders = MiningMachine.objects.filter(
+        mining_machines = MiningMachine.objects.filter(
             machine_type='Loader',
             is_active=True
         ).select_related('contractor')
 
         # دریافت بلوک‌های در حال بارگیری
-        blocks = MiningBlock.objects.filter(
+        mining_blocks = MiningBlock.objects.filter(
             is_active=True,
             status='loading'
         )
@@ -165,8 +165,8 @@ def create_shift_report(request):
             'personnels': personnels,
             'vehicles': vehicles,
             'current_shift': current_shift,
-            'loaders': loaders,
-            'blocks': blocks,
+            'mining_machines': mining_machines,
+            'mining_blocks': mining_blocks,
         }
 
         return render(request, 'OperationsShiftReports/create_shift_report.html', context)

@@ -1,9 +1,27 @@
-// تعریف stepper به عنوان یک متغیر global
 let stepper;
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Stepper
-    stepper = new KTStepper(document.querySelector("#kt_create_account_stepper"));
+    const stepperElement = document.querySelector("#kt_create_account_stepper");
+    if (!stepperElement) return;
+
+    stepper = new KTStepper(stepperElement);
+
+    // تنظیم event listener برای تغییر مرحله
+    stepper.on('kt.stepper.changed', function(stepper) {
+        // به‌روزرسانی محتوا زمانی که مرحله تغییر می‌کند
+        const currentStepIndex = stepper.getCurrentStepIndex();
+        updateStepContent(currentStepIndex);
+    });
+
+    // تنظیم event listener برای قبل از تغییر مرحله
+    stepper.on('kt.stepper.next', function(stepper) {
+        // اعتبارسنجی قبل از رفتن به مرحله بعد
+        const currentStepIndex = stepper.getCurrentStepIndex();
+        if (!validateStep(currentStepIndex)) {
+            stepper.stop(); // توقف انتقال به مرحله بعد اگر اعتبارسنجی رد شود
+        }
+    });
 
     // Initialize form event handlers
     initializeFormHandlers();
@@ -11,24 +29,37 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize Select2 elements
     initializeSelect2();
 
-    // Initialize Navigation (Next, Previous, and Submit buttons)
+    // Initialize Navigation
     initializeNavigation();
+
+    // تنظیم event listener برای تغییر وضعیت ماشین
+    const machineStatus = document.getElementById('machine_status');
+    if (machineStatus) {
+        machineStatus.addEventListener('change', function() {
+            const reasonContainer = document.querySelector('.machine-inactive-reason');
+            if (reasonContainer) {
+                reasonContainer.style.display = this.value === 'inactive' ? 'block' : 'none';
+            }
+        });
+    }
+
+    // نمایش محتوای مرحله اول در شروع
+    setTimeout(() => {
+        updateStepContent(1);
+    }, 100);
 });
 
-// مدیریت فرم و جلوگیری از ارسال پیش‌فرض در مراحل میانی
 function initializeFormHandlers() {
     const form = document.getElementById('kt_create_account_form');
     if (!form) return;
 
     form.addEventListener('submit', function(event) {
-        // جلوگیری از ارسال فرم تا زمانی که به مرحله آخر نرسیده‌ایم
         if (stepper.getCurrentStepIndex() !== stepper.getTotalStepsNumber()) {
             event.preventDefault();
         }
     });
 }
 
-// تنظیمات Select2
 function initializeSelect2() {
     $('.select2').select2({
         dir: "rtl",
@@ -41,115 +72,154 @@ function initializeSelect2() {
                 return "در حال جستجو...";
             }
         },
-        dropdownParent: $('#kt_create_account_stepper') // اطمینان از قرارگیری صحیح در داخل استپر
+        dropdownParent: $('#kt_create_account_stepper')
     });
 }
 
-// مدیریت دکمه‌های "ادامه"، "برگشت" و "ثبت"
 function initializeNavigation() {
-    // دکمه "ادامه"
-    const nextButtons = document.querySelectorAll('.next-step, [data-kt-stepper-action="next"]');
+    const nextButtons = document.querySelectorAll('[data-kt-stepper-action="next"], .next-step');
     nextButtons.forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
-            handleNextStep();  // رفتن به مرحله بعد
+            handleNextStep();
         });
     });
 
-    // دکمه "برگشت"
-    const prevButtons = document.querySelectorAll('.prev-step, [data-kt-stepper-action="previous"]');
+    const prevButtons = document.querySelectorAll('[data-kt-stepper-action="previous"], .prev-step');
     prevButtons.forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
-            handlePreviousStep();  // برگشت به مرحله قبلی
+            handlePreviousStep();
         });
     });
 
-    // دکمه "ثبت"
     const submitButton = document.querySelector('[data-kt-stepper-action="submit"]');
     if (submitButton) {
         submitButton.addEventListener('click', function(e) {
             if (stepper.getCurrentStepIndex() === stepper.getTotalStepsNumber()) {
-                document.getElementById('kt_create_account_form').submit();  // ارسال فرم
+                document.getElementById('kt_create_account_form').submit();
             } else {
-                e.preventDefault();  // جلوگیری از ارسال فرم قبل از مرحله آخر
+                e.preventDefault();
             }
         });
     }
 }
 
-// مدیریت جابجایی به مرحله بعد
 function handleNextStep() {
-    const currentStep = stepper.getCurrentStepIndex();
-
-    // اعتبارسنجی مرحله فعلی
-    if (validateStep(currentStep)) {
-        stepper.goNext();  // رفتن به مرحله بعد
-        updateStepContent();  // به‌روزرسانی محتوای مرحله
+    if (validateStep(stepper.getCurrentStepIndex())) {
+        stepper.goNext();
     }
 }
 
-// مدیریت برگشت به مرحله قبلی
 function handlePreviousStep() {
-    stepper.goPrevious();  // به مرحله قبلی برو
-    updateStepContent();  // به‌روزرسانی محتوای مرحله
+    stepper.goPrevious();
 }
 
-// به‌روزرسانی محتوای مراحل بر اساس مرحله فعلی
-function updateStepContent() {
-    const currentStep = stepper.getCurrentStepIndex();  // شماره مرحله فعلی
-    const totalSteps = stepper.getTotalStepsNumber();   // تعداد کل مراحل
-
-    // دریافت تمام بخش‌های محتوای هر مرحله
-    const stepContents = document.querySelectorAll('[data-kt-stepper-element="content"]');
-
-    // پنهان کردن تمامی محتوای مراحل و نمایش فقط مرحله فعلی
-    stepContents.forEach((content, index) => {
-        if (index + 1 === currentStep) {
-            content.style.display = 'block';  // نمایش محتوای مرحله فعلی
-        } else {
-            content.style.display = 'none';   // مخفی کردن سایر مراحل
-        }
+function updateStepContent(stepIndex) {
+    // پنهان کردن همه محتواها
+    const allContents = document.querySelectorAll('[data-kt-stepper-element="content"]');
+    allContents.forEach(content => {
+        content.style.display = 'none';
+        content.classList.remove('current');
     });
 
-    // به‌روزرسانی وضعیت دکمه‌ها (ادامه، برگشت، ثبت)
-    updateNavigationVisibility();
+    // نمایش محتوای فعلی
+    const currentContent = allContents[stepIndex - 1];
+    if (currentContent) {
+        currentContent.style.display = 'block';
+        currentContent.classList.add('current');
+
+        // اطمینان از نمایش محتوا با استفاده از setTimeout
+        setTimeout(() => {
+            currentContent.style.display = 'block';
+            currentContent.classList.add('current');
+        }, 50);
+    }
+
+    // به‌روزرسانی وضعیت دکمه‌ها
+    updateNavigationVisibility(stepIndex);
 }
 
-// به‌روزرسانی دکمه‌های "ادامه"، "برگشت" و "ثبت"
-function updateNavigationVisibility() {
-    const currentStep = stepper.getCurrentStepIndex();
+function updateNavigationVisibility(currentStep) {
     const totalSteps = stepper.getTotalStepsNumber();
 
     const nextButton = document.querySelector('[data-kt-stepper-action="next"]');
     const prevButton = document.querySelector('[data-kt-stepper-action="previous"]');
     const submitButton = document.querySelector('[data-kt-stepper-action="submit"]');
 
-    // نمایش یا مخفی کردن دکمه‌ها بر اساس مرحله فعلی
     if (nextButton) {
-        nextButton.style.display = currentStep === totalSteps ? 'none' : '';  // مخفی کردن دکمه "ادامه" در مرحله آخر
+        nextButton.style.display = currentStep === totalSteps ? 'none' : '';
     }
     if (prevButton) {
-        prevButton.style.display = currentStep === 1 ? 'none' : '';  // مخفی کردن دکمه "برگشت" در مرحله اول
+        prevButton.style.display = currentStep === 1 ? 'none' : '';
     }
     if (submitButton) {
-        submitButton.style.display = currentStep === totalSteps ? '' : 'none';  // نمایش دکمه "ثبت" در مرحله آخر
+        submitButton.style.display = currentStep === totalSteps ? '' : 'none';
     }
 }
 
-// اعتبارسنجی مراحل مختلف
 function validateStep(stepNumber) {
     switch(stepNumber) {
-        case 1: return true;  // اعتبارسنجی عملیات بارگیری
-        case 2: return true;  // اعتبارسنجی ماشین‌آلات بارگیری
-        case 3: return true;  // اعتبارسنجی مرخصی‌ها
-        case 4: return true;  // اعتبارسنجی خودروها
-        case 5: return true;  // اعتبارسنجی توضیحات سرشیفت
-        default: return true;
+        case 1:
+            return validateLoadingOperations();
+        case 2:
+            return validateMiningMachines();
+        case 3:
+            return validateLeaves();
+        case 4:
+            return validateVehicles();
+        case 5:
+            return validateSupervisorComments();
+        default:
+            return true;
     }
 }
 
-// مدیریت پیام‌های خطا
+function validateLoadingOperations() {
+    const table = document.querySelector('#loading_operations_table tbody');
+    if (!table || table.children.length === 0) {
+        showError('لطفاً حداقل یک عملیات بارگیری را اضافه کنید');
+        return false;
+    }
+    return true;
+}
+
+function validateMiningMachines() {
+    const table = document.querySelector('#mining_machines_table tbody');
+    if (!table || table.children.length === 0) {
+        showError('لطفاً حداقل یک ماشین‌آلات را اضافه کنید');
+        return false;
+    }
+    return true;
+}
+
+function validateLeaves() {
+    const table = document.querySelector('#leaves_table tbody');
+    if (!table || table.children.length === 0) {
+        showError('لطفاً حداقل یک مرخصی را اضافه کنید');
+        return false;
+    }
+    return true;
+}
+
+function validateVehicles() {
+    const table = document.querySelector('#vehicles_table tbody');
+    if (!table || table.children.length === 0) {
+        showError('لطفاً حداقل یک خودرو را اضافه کنید');
+        return false;
+    }
+    return true;
+}
+
+function validateSupervisorComments() {
+    const comments = document.querySelector('#supervisor_comments')?.value;
+    if (!comments?.trim()) {
+        showError('لطفاً توضیحات سرشیفت را وارد کنید');
+        return false;
+    }
+    return true;
+}
+
 function showError(message) {
     Swal.fire({
         title: 'خطا',
@@ -162,7 +232,7 @@ function showError(message) {
     });
 }
 
-// افزودن عملیات بارگیری به جدول
+// توابع اضافه کردن آیتم‌ها
 function addLoadingOperation() {
     const stoneType = document.getElementById('stone_type');
     const loadCount = document.getElementById('load_count');
@@ -172,78 +242,332 @@ function addLoadingOperation() {
         return;
     }
 
+    const loadCountValue = parseInt(loadCount.value);
+    if (isNaN(loadCountValue) || loadCountValue <= 0) {
+        showError('لطفا تعداد بار معتبر وارد کنید.');
+        return;
+    }
+
     const tbody = document.querySelector('#loading_operations_table tbody');
-    if (!tbody) return;
+    if (!tbody) {
+        showError('جدول عملیات بارگیری یافت نشد.');
+        return;
+    }
 
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-        <td>${stoneType.options[stoneType.selectedIndex].text}</td>
-        <td>${loadCount.value}</td>
-        <td>
-            <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">حذف</button>
-            <input type="hidden" name="loading_operations[]" value="${stoneType.value},${loadCount.value}">
-        </td>
-    `;
-    tbody.appendChild(tr);
+    try {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${stoneType.options[stoneType.selectedIndex].text}</td>
+            <td>${loadCountValue}</td>
+            <td>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeTableRow(this)">حذف</button>
+                <input type="hidden" name="loading_operations[]" value="${stoneType.value},${loadCountValue}">
+            </td>
+        `;
+        tbody.appendChild(tr);
 
-    // پاک کردن فیلدها
-    stoneType.value = '';
-    loadCount.value = '';
-    $(stoneType).trigger('change');  // ریست کردن انتخاب
+        // پاک کردن فیلدها
+        stoneType.value = '';
+        loadCount.value = '';
+        if ($(stoneType).hasClass('select2-hidden-accessible')) {
+            $(stoneType).trigger('change');
+        }
+
+    } catch (error) {
+        console.error('Error in addLoadingOperation:', error);
+        showError('خطا در افزودن عملیات بارگیری');
+    }
 }
 
-// افزودن ماشین‌آلات به جدول
 function addMiningMachine() {
     const machineSelect = document.getElementById('mining_machine_id');
     const blockSelect = document.getElementById('mining_block_id');
     const status = document.getElementById('machine_status');
     const inactiveReason = document.getElementById('machine_inactive_reason');
 
-    // بررسی اینکه آیا فیلدهای ماشین‌آلات و بلوک انتخاب شده‌اند
     if (!machineSelect?.value || !blockSelect?.value) {
         showError('لطفا ماشین‌آلات و بلوک را انتخاب کنید.');
         return;
     }
 
-    // اگر وضعیت غیرفعال است، دلیل غیرفعال بودن هم باید وارد شود
     if (status.value === 'inactive' && !inactiveReason?.value.trim()) {
         showError('لطفا دلیل غیرفعال بودن را وارد کنید.');
         return;
     }
 
     const tbody = document.querySelector('#mining_machines_table tbody');
-    if (!tbody) return;
+    if (!tbody) {
+        showError('جدول ماشین‌آلات یافت نشد.');
+        return;
+    }
 
-    // ایجاد یک سطر جدید در جدول برای اضافه کردن ماشین‌آلات
-    const tr = document.createElement('tr');
-    const machineText = machineSelect.options[machineSelect.selectedIndex].text;
-    const blockText = blockSelect.options[blockSelect.selectedIndex].text;
+    try {
+        const tr = document.createElement('tr');
+        const machineText = machineSelect.options[machineSelect.selectedIndex].text;
+        const blockText = blockSelect.options[blockSelect.selectedIndex].text;
 
-    // جدا کردن نام ماشین و پیمانکار
-    const [machineName, contractorName = '-'] = machineText.split(' - ');
-    const [blockName, blockType = '-'] = blockText.split(' - ');
+        const [machineName, contractorName = '-'] = machineText.split(' - ');
+        const [blockName, blockType = '-'] = blockText.split(' - ');
 
-    // اضافه کردن اطلاعات به سطر
-    tr.innerHTML = `
-        <td>${machineName}</td>
-        <td>${contractorName}</td>
-        <td>${blockName}</td>
-        <td>${blockType}</td>
-        <td>${status.value === 'active' ? 'فعال' : 'غیرفعال'}</td>
-        <td>${inactiveReason?.value || '-'}</td>
-        <td>
-            <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">حذف</button>
-            <input type="hidden" name="mining_machines[]" value="${machineSelect.value},${blockSelect.value},${status.value},${inactiveReason?.value || ''}">
-        </td>
-    `;
+        tr.innerHTML = `
+            <td>${machineName}</td>
+            <td>${contractorName}</td>
+            <td>${blockName}</td>
+            <td>${blockType}</td>
+            <td>${status.value === 'active' ? 'فعال' : 'غیرفعال'}</td>
+            <td>${inactiveReason?.value || '-'}</td>
+            <td>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeTableRow(this)">حذف</button>
+                <input type="hidden" name="mining_machines[]" value="${machineSelect.value},${blockSelect.value},${status.value},${inactiveReason?.value || ''}">
+            </td>
+        `;
 
-    // افزودن سطر جدید به جدول
-    tbody.appendChild(tr);
+        tbody.appendChild(tr);
 
-    // پاک کردن فیلدهای انتخابی و ریست کردن آنها
-    $(machineSelect).val('').trigger('change');
-    $(blockSelect).val('').trigger('change');
-    status.value = 'active';  // وضعیت به فعال برگردد
-    if (inactiveReason) inactiveReason.value = '';  // فیلد دلیل غیرفعال بودن خالی شود
-    document.querySelector('.machine-inactive-reason').style.display = 'none';  // مخفی کردن فیلد دلیل غیرفعال بودن
+        // پاک کردن فیلدها
+        $(machineSelect).val('').trigger('change');
+        $(blockSelect).val('').trigger('change');
+        status.value = 'active';
+        if (inactiveReason) inactiveReason.value = '';
+        document.querySelector('.machine-inactive-reason').style.display = 'none';
+
+    } catch (error) {
+        console.error('Error in addMiningMachine:', error);
+        showError('خطا در افزودن ماشین‌آلات');
+    }
 }
+
+function addLeave() {
+    const personnelSelect = document.getElementById('personnel_id');
+    const leaveStatus = document.getElementById('leave_status');
+
+    if (!personnelSelect?.value) {
+        showError('لطفا پرسنل را انتخاب کنید.');
+        return;
+    }
+
+    const tbody = document.querySelector('#leaves_table tbody');
+    if (!tbody) {
+        showError('جدول مرخصی‌ها یافت نشد.');
+        return;
+    }
+
+    try {
+        const tr = document.createElement('tr');
+        const personnelText = personnelSelect.options[personnelSelect.selectedIndex].text;
+        const [personnelName, personnelCode = '-'] = personnelText.split(' - ');
+
+        tr.innerHTML = `
+            <td>${personnelName}</td>
+            <td>${personnelCode}</td>
+            <td>${leaveStatus.value === 'authorized' ? 'مجاز' : 'غیر مجاز'}</td>
+            <td>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeTableRow(this)">حذف</button>
+                <input type="hidden" name="leaves[]" value="${personnelSelect.value},${leaveStatus.value}">
+            </td>
+        `;
+
+        tbody.appendChild(tr);
+
+        // پاک کردن فیلدها
+        $(personnelSelect).val('').trigger('change');
+        leaveStatus.value = 'unauthorized';
+
+    } catch (error) {
+        console.error('Error in addLeave:', error);
+        showError('خطا در افزودن مرخصی');
+    }
+}
+
+function addVehicle() {
+    const vehicleSelect = document.getElementById('vehicle_id');
+
+    if (!vehicleSelect?.value) {
+        showError('لطفا خودرو را انتخاب کنید.');
+        return;
+    }
+
+    const tbody = document.querySelector('#vehicles_table tbody');
+    if (!tbody) {
+        showError('جدول خودروها یافت نشد.');
+        return;
+    }
+
+    try {
+        const tr = document.createElement('tr');
+        const vehicleText = vehicleSelect.options[vehicleSelect.selectedIndex].text;
+        const [vehicleName, contractorName, vehicleType] = vehicleText.split(' - ');
+
+        tr.innerHTML = `
+            <td>${vehicleName}</td>
+            <td>${contractorName || '-'}</td>
+            <td>${vehicleName}</td>
+            <td>${contractorName || '-'}</td>
+            <td>${vehicleType || '-'}</td>
+            <td>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeTableRow(this)">حذف</button>
+                <input type="hidden" name="vehicles[]" value="${vehicleSelect.value}">
+            </td>
+        `;
+
+        tbody.appendChild(tr);
+
+        // پاک کردن فیلد
+        $(vehicleSelect).val('').trigger('change');
+
+    } catch (error) {
+        console.error('Error in addVehicle:', error);
+        showError('خطا در افزودن خودرو');
+    }
+}
+
+// تابع حذف سطر از جدول
+function removeTableRow(button) {
+    try {
+        const row = button.closest('tr');
+        if (row) {
+            row.remove();
+        }
+    } catch (error) {
+        console.error('Error in removeTableRow:', error);
+        showError('خطا در حذف سطر');
+    }
+}
+
+// تابع کمکی برای نمایش پیام موفقیت
+function showSuccess(message) {
+    Swal.fire({
+        title: 'موفقیت',
+        text: message,
+        icon: 'success',
+        confirmButtonText: 'باشه',
+        customClass: {
+            confirmButton: 'btn btn-primary'
+        }
+    });
+}
+
+// تابع کمکی برای نمایش پیام تأیید
+function showConfirm(message, callback) {
+    Swal.fire({
+        title: 'تأیید',
+        text: message,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'بله',
+        cancelButtonText: 'خیر',
+        customClass: {
+            confirmButton: 'btn btn-primary',
+            cancelButton: 'btn btn-secondary'
+        }
+    }).then((result) => {
+        if (result.isConfirmed && callback) {
+            callback();
+        }
+    });
+}
+
+// تابع برای بررسی وضعیت فرم قبل از ارسال
+function validateForm() {
+    const currentStep = stepper.getCurrentStepIndex();
+    const totalSteps = stepper.getTotalStepsNumber();
+
+    if (currentStep === totalSteps) {
+        // بررسی تمام مراحل قبل از ارسال نهایی
+        for (let i = 1; i <= totalSteps; i++) {
+            if (!validateStep(i)) {
+                stepper.goTo(i);
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
+// اضافه کردن event listener برای نمایش/مخفی کردن فیلد دلیل غیرفعال بودن
+document.addEventListener('DOMContentLoaded', function() {
+    const machineStatus = document.getElementById('machine_status');
+    if (machineStatus) {
+        machineStatus.addEventListener('change', function() {
+            const reasonContainer = document.querySelector('.machine-inactive-reason');
+            if (reasonContainer) {
+                reasonContainer.style.display = this.value === 'inactive' ? 'block' : 'none';
+            }
+        });
+    }
+});
+
+// مدیریت ارسال فرم
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('kt_create_account_form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!validateForm()) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    }
+});
+
+// تابع برای پاک کردن تمام فیلدهای یک فرم
+function resetForm(formElement) {
+    if (!formElement) return;
+
+    // پاک کردن input های معمولی
+    formElement.querySelectorAll('input:not([type="hidden"])').forEach(input => {
+        input.value = '';
+    });
+
+    // پاک کردن select ها
+    formElement.querySelectorAll('select').forEach(select => {
+        if ($(select).hasClass('select2-hidden-accessible')) {
+            $(select).val('').trigger('change');
+        } else {
+            select.selectedIndex = 0;
+        }
+    });
+
+    // پاک کردن textarea ها
+    formElement.querySelectorAll('textarea').forEach(textarea => {
+        textarea.value = '';
+    });
+}
+
+// تابع برای بررسی اعتبار فایل آپلود شده
+function validateFile(file) {
+    if (!file) return true;
+
+    // بررسی حجم فایل (حداکثر 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+        showError('حجم فایل نباید بیشتر از 5 مگابایت باشد.');
+        return false;
+    }
+
+    // بررسی پسوند فایل
+    const allowedTypes = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
+    const fileName = file.name.toLowerCase();
+    const fileExtension = '.' + fileName.split('.').pop();
+
+    if (!allowedTypes.includes(fileExtension)) {
+        showError('فرمت فایل مجاز نیست. فرمت‌های مجاز: PDF, Word, JPG');
+        return false;
+    }
+
+    return true;
+}
+
+// مدیریت آپلود فایل
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.querySelector('input[type="file"]');
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && !validateFile(file)) {
+                this.value = ''; // پاک کردن انتخاب فایل در صورت نامعتبر بودن
+            }
+        });
+    }
+});
