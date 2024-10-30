@@ -1,63 +1,49 @@
 let stepper;
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Stepper
-    const stepperElement = document.querySelector("#kt_create_account_stepper");
-    if (!stepperElement) return;
-
-    stepper = new KTStepper(stepperElement);
-
-    // تنظیم event listener برای تغییر مرحله
-    stepper.on('kt.stepper.changed', function(stepper) {
-        // به‌روزرسانی محتوا زمانی که مرحله تغییر می‌کند
-        const currentStepIndex = stepper.getCurrentStepIndex();
-        updateStepContent(currentStepIndex);
-    });
-
-    // تنظیم event listener برای قبل از تغییر مرحله
-    stepper.on('kt.stepper.next', function(stepper) {
-        // اعتبارسنجی قبل از رفتن به مرحله بعد
-        const currentStepIndex = stepper.getCurrentStepIndex();
-        if (!validateStep(currentStepIndex)) {
-            stepper.stop(); // توقف انتقال به مرحله بعد اگر اعتبارسنجی رد شود
-        }
-    });
-
-    // Initialize form event handlers
+    initializeStepper();
     initializeFormHandlers();
-
-    // Initialize Select2 elements
     initializeSelect2();
+    initializeFileUpload();
+    initializeMachineStatusHandler();
 
-    // Initialize Navigation
-    initializeNavigation();
-
-    // تنظیم event listener برای تغییر وضعیت ماشین
-    const machineStatus = document.getElementById('machine_status');
-    if (machineStatus) {
-        machineStatus.addEventListener('change', function() {
-            const reasonContainer = document.querySelector('.machine-inactive-reason');
-            if (reasonContainer) {
-                reasonContainer.style.display = this.value === 'inactive' ? 'block' : 'none';
-            }
-        });
-    }
-
-    // نمایش محتوای مرحله اول در شروع
     setTimeout(() => {
         updateStepContent(1);
     }, 100);
 });
 
+function initializeStepper() {
+    const stepperElement = document.querySelector("#kt_create_account_stepper");
+    if (!stepperElement) return;
+    stepper = new KTStepper(stepperElement);
+
+    document.querySelectorAll('[data-kt-stepper-action="next"]').forEach(btn =>
+        btn.addEventListener('click', handleNextStep));
+
+    document.querySelectorAll('[data-kt-stepper-action="previous"]').forEach(btn =>
+        btn.addEventListener('click', handlePreviousStep));
+}
+
 function initializeFormHandlers() {
     const form = document.getElementById('kt_create_account_form');
     if (!form) return;
 
-    form.addEventListener('submit', function(event) {
-        if (stepper.getCurrentStepIndex() !== stepper.getTotalStepsNumber()) {
-            event.preventDefault();
-        }
+    // Form submit handler
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
     });
+
+    // Submit button click handler
+    const submitBtn = document.querySelector('[data-kt-stepper-action="submit"]');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const form = document.getElementById('kt_create_account_form');
+            if (form && validateAllSteps()) {
+                submitShiftReport(form);
+            }
+        });
+    }
 }
 
 function initializeSelect2() {
@@ -65,192 +51,196 @@ function initializeSelect2() {
         dir: "rtl",
         width: '100%',
         language: {
-            noResults: function() {
-                return "نتیجه‌ای یافت نشد";
-            },
-            searching: function() {
-                return "در حال جستجو...";
-            }
+            noResults: () => "نتیجه‌ای یافت نشد",
+            searching: () => "در حال جستجو..."
         },
         dropdownParent: $('#kt_create_account_stepper')
     });
 }
 
-function initializeNavigation() {
-    const nextButtons = document.querySelectorAll('[data-kt-stepper-action="next"], .next-step');
-    nextButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            handleNextStep();
-        });
-    });
+function initializeFileUpload() {
+    const fileInput = document.querySelector('input[type="file"]');
+    if (!fileInput) return;
 
-    const prevButtons = document.querySelectorAll('[data-kt-stepper-action="previous"], .prev-step');
-    prevButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            handlePreviousStep();
-        });
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file && !validateFile(file)) {
+            e.target.value = '';
+        }
     });
-
-    const submitButton = document.querySelector('[data-kt-stepper-action="submit"]');
-    if (submitButton) {
-        submitButton.addEventListener('click', function(e) {
-            if (stepper.getCurrentStepIndex() === stepper.getTotalStepsNumber()) {
-                document.getElementById('kt_create_account_form').submit();
-            } else {
-                e.preventDefault();
-            }
-        });
-    }
 }
 
+function initializeMachineStatusHandler() {
+    const machineStatus = document.getElementById('machine_status');
+    machineStatus?.addEventListener('change', function() {
+        const reasonContainer = document.querySelector('.machine-inactive-reason');
+        if (reasonContainer) {
+            reasonContainer.style.display = this.value === 'inactive' ? 'block' : 'none';
+        }
+    });
+}
+
+// Get total steps function
+function getTotalSteps() {
+    return document.querySelectorAll('[data-kt-stepper-element="content"]').length;
+}
+
+// Navigation Functions
 function handleNextStep() {
-    if (validateStep(stepper.getCurrentStepIndex())) {
+    if (validateCurrentStep(stepper.getCurrentStepIndex())) {
         stepper.goNext();
+        updateStepContent(stepper.getCurrentStepIndex());
     }
 }
 
 function handlePreviousStep() {
     stepper.goPrevious();
+    updateStepContent(stepper.getCurrentStepIndex());
 }
 
 function updateStepContent(stepIndex) {
-    // پنهان کردن همه محتواها
-    const allContents = document.querySelectorAll('[data-kt-stepper-element="content"]');
-    allContents.forEach(content => {
-        content.style.display = 'none';
-        content.classList.remove('current');
-    });
+    document.querySelectorAll('[data-kt-stepper-element="content"]')
+        .forEach(content => {
+            content.style.display = 'none';
+            content.classList.remove('current');
+        });
 
-    // نمایش محتوای فعلی
-    const currentContent = allContents[stepIndex - 1];
+    const currentContent = document.querySelectorAll('[data-kt-stepper-element="content"]')[stepIndex - 1];
     if (currentContent) {
         currentContent.style.display = 'block';
         currentContent.classList.add('current');
-
-        // اطمینان از نمایش محتوا با استفاده از setTimeout
-        setTimeout(() => {
-            currentContent.style.display = 'block';
-            currentContent.classList.add('current');
-        }, 50);
     }
 
-    // به‌روزرسانی وضعیت دکمه‌ها
-    updateNavigationVisibility(stepIndex);
+    updateNavigationButtons(stepIndex);
 }
 
-function updateNavigationVisibility(currentStep) {
-    const totalSteps = stepper.getTotalStepsNumber();
+function updateNavigationButtons(stepIndex) {
+    const totalSteps = getTotalSteps();
+    const nextBtn = document.querySelector('[data-kt-stepper-action="next"]');
+    const prevBtn = document.querySelector('[data-kt-stepper-action="previous"]');
+    const submitBtn = document.querySelector('[data-kt-stepper-action="submit"]');
 
-    const nextButton = document.querySelector('[data-kt-stepper-action="next"]');
-    const prevButton = document.querySelector('[data-kt-stepper-action="previous"]');
-    const submitButton = document.querySelector('[data-kt-stepper-action="submit"]');
+    if (nextBtn) nextBtn.style.display = stepIndex === totalSteps ? 'none' : 'block';
+    if (prevBtn) prevBtn.style.display = stepIndex === 1 ? 'none' : 'block';
+    if (submitBtn) {
+        submitBtn.style.display = stepIndex === totalSteps ? 'block' : 'none';
+        if (stepIndex === totalSteps) {
+            setTimeout(() => submitBtn.style.display = 'block', 100);
+        }
+    }
+}
 
-    if (nextButton) {
-        nextButton.style.display = currentStep === totalSteps ? 'none' : '';
+// Validation Functions
+function validateAllSteps() {
+    const totalSteps = getTotalSteps();
+    for (let i = 1; i <= totalSteps; i++) {
+        if (!validateStep(i)) {
+            stepper.goTo(i);
+            return false;
+        }
     }
-    if (prevButton) {
-        prevButton.style.display = currentStep === 1 ? 'none' : '';
-    }
-    if (submitButton) {
-        submitButton.style.display = currentStep === totalSteps ? '' : 'none';
-    }
+    return true;
 }
 
 function validateStep(stepNumber) {
-    switch(stepNumber) {
-        case 1:
-            return validateLoadingOperations();
-        case 2:
-            return validateMiningMachines();
-        case 3:
-            return validateLeaves();
-        case 4:
-            return validateVehicles();
-        case 5:
-            return validateSupervisorComments();
-        default:
-            return true;
-    }
+    const validationFunctions = {
+        1: validateLoadingOperations,
+        2: validateMiningMachines,
+        3: validateLeaves,
+        4: validateVehicles,
+        5: validateSupervisorComments
+    };
+
+    return validationFunctions[stepNumber]?.() ?? true;
+}
+
+function validateCurrentStep(stepIndex) {
+    return validateStep(stepIndex);
 }
 
 function validateLoadingOperations() {
-    const table = document.querySelector('#loading_operations_table tbody');
-    if (!table || table.children.length === 0) {
-        showError('لطفاً حداقل یک عملیات بارگیری را اضافه کنید');
+    const tbody = document.querySelector('#loading_operations_table tbody');
+    if (!tbody?.children.length) {
+        showError('لطفا حداقل یک عملیات بارگیری را اضافه کنید');
         return false;
     }
     return true;
 }
 
 function validateMiningMachines() {
-    const table = document.querySelector('#mining_machines_table tbody');
-    if (!table || table.children.length === 0) {
-        showError('لطفاً حداقل یک ماشین‌آلات را اضافه کنید');
+    const tbody = document.querySelector('#mining_machines_table tbody');
+    if (!tbody?.children.length) {
+        showError('لطفا حداقل یک ماشین‌آلات را اضافه کنید');
         return false;
     }
     return true;
 }
 
 function validateLeaves() {
-    const table = document.querySelector('#leaves_table tbody');
-    if (!table || table.children.length === 0) {
-        showError('لطفاً حداقل یک مرخصی را اضافه کنید');
+    const tbody = document.querySelector('#leaves_table tbody');
+    if (!tbody?.children.length) {
+        showError('لطفا حداقل یک مرخصی را اضافه کنید');
         return false;
     }
     return true;
 }
 
 function validateVehicles() {
-    const table = document.querySelector('#vehicles_table tbody');
-    if (!table || table.children.length === 0) {
-        showError('لطفاً حداقل یک خودرو را اضافه کنید');
+    const tbody = document.querySelector('#vehicles_table tbody');
+    if (!tbody?.children.length) {
+        showError('لطفا حداقل یک خودرو را اضافه کنید');
         return false;
     }
     return true;
 }
 
 function validateSupervisorComments() {
-    const comments = document.querySelector('#supervisor_comments')?.value;
-    if (!comments?.trim()) {
-        showError('لطفاً توضیحات سرشیفت را وارد کنید');
+    const commentsTextarea = document.querySelector('[name="supervisor_comments"]');
+    if (!commentsTextarea?.value.trim()) {
+        showError('لطفا توضیحات سرشیفت را وارد کنید');
         return false;
     }
     return true;
 }
 
-function showError(message) {
-    Swal.fire({
-        title: 'خطا',
-        text: message,
-        icon: 'error',
-        confirmButtonText: 'باشه',
-        customClass: {
-            confirmButton: 'btn btn-primary'
-        }
-    });
+function validateFile(file) {
+    if (!file) return true;
+
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+        showError('حجم فایل نباید بیشتر از 5 مگابایت باشد');
+        return false;
+    }
+
+    const allowedTypes = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
+    const fileExtension = '.' + file.name.toLowerCase().split('.').pop();
+    if (!allowedTypes.includes(fileExtension)) {
+        showError('فرمت فایل مجاز نیست. فرمت‌های مجاز: PDF, Word, JPG');
+        return false;
+    }
+
+    return true;
 }
 
-// توابع اضافه کردن آیتم‌ها
+// Add Item Functions
 function addLoadingOperation() {
     const stoneType = document.getElementById('stone_type');
     const loadCount = document.getElementById('load_count');
 
     if (!stoneType?.value || !loadCount?.value) {
-        showError('لطفا نوع سنگ و تعداد بار را وارد کنید.');
+        showError('لطفا نوع سنگ و تعداد بار را وارد کنید');
         return;
     }
 
     const loadCountValue = parseInt(loadCount.value);
     if (isNaN(loadCountValue) || loadCountValue <= 0) {
-        showError('لطفا تعداد بار معتبر وارد کنید.');
+        showError('لطفا تعداد بار معتبر وارد کنید');
         return;
     }
 
     const tbody = document.querySelector('#loading_operations_table tbody');
     if (!tbody) {
-        showError('جدول عملیات بارگیری یافت نشد.');
+        showError('جدول عملیات بارگیری یافت نشد');
         return;
     }
 
@@ -266,12 +256,9 @@ function addLoadingOperation() {
         `;
         tbody.appendChild(tr);
 
-        // پاک کردن فیلدها
         stoneType.value = '';
         loadCount.value = '';
-        if ($(stoneType).hasClass('select2-hidden-accessible')) {
-            $(stoneType).trigger('change');
-        }
+        $(stoneType).trigger('change');
 
     } catch (error) {
         console.error('Error in addLoadingOperation:', error);
@@ -286,18 +273,18 @@ function addMiningMachine() {
     const inactiveReason = document.getElementById('machine_inactive_reason');
 
     if (!machineSelect?.value || !blockSelect?.value) {
-        showError('لطفا ماشین‌آلات و بلوک را انتخاب کنید.');
+        showError('لطفا ماشین‌آلات و بلوک را انتخاب کنید');
         return;
     }
 
     if (status.value === 'inactive' && !inactiveReason?.value.trim()) {
-        showError('لطفا دلیل غیرفعال بودن را وارد کنید.');
+        showError('لطفا دلیل غیرفعال بودن را وارد کنید');
         return;
     }
 
     const tbody = document.querySelector('#mining_machines_table tbody');
     if (!tbody) {
-        showError('جدول ماشین‌آلات یافت نشد.');
+        showError('جدول ماشین‌آلات یافت نشد');
         return;
     }
 
@@ -318,13 +305,11 @@ function addMiningMachine() {
             <td>${inactiveReason?.value || '-'}</td>
             <td>
                 <button type="button" class="btn btn-sm btn-danger" onclick="removeTableRow(this)">حذف</button>
-                <input type="hidden" name="mining_machines[]" value="${machineSelect.value},${blockSelect.value},${status.value},${inactiveReason?.value || ''}">
+                <input type="hidden" name="loader_statuses[]" value="${machineSelect.value},${blockSelect.value},${status.value},${inactiveReason?.value || ''}">
             </td>
         `;
-
         tbody.appendChild(tr);
 
-        // پاک کردن فیلدها
         $(machineSelect).val('').trigger('change');
         $(blockSelect).val('').trigger('change');
         status.value = 'active';
@@ -342,13 +327,13 @@ function addLeave() {
     const leaveStatus = document.getElementById('leave_status');
 
     if (!personnelSelect?.value) {
-        showError('لطفا پرسنل را انتخاب کنید.');
+        showError('لطفا پرسنل را انتخاب کنید');
         return;
     }
 
     const tbody = document.querySelector('#leaves_table tbody');
     if (!tbody) {
-        showError('جدول مرخصی‌ها یافت نشد.');
+        showError('جدول مرخصی‌ها یافت نشد');
         return;
     }
 
@@ -366,10 +351,8 @@ function addLeave() {
                 <input type="hidden" name="leaves[]" value="${personnelSelect.value},${leaveStatus.value}">
             </td>
         `;
-
         tbody.appendChild(tr);
 
-        // پاک کردن فیلدها
         $(personnelSelect).val('').trigger('change');
         leaveStatus.value = 'unauthorized';
 
@@ -383,36 +366,32 @@ function addVehicle() {
     const vehicleSelect = document.getElementById('vehicle_id');
 
     if (!vehicleSelect?.value) {
-        showError('لطفا خودرو را انتخاب کنید.');
+        showError('لطفا خودرو را انتخاب کنید');
         return;
     }
 
     const tbody = document.querySelector('#vehicles_table tbody');
     if (!tbody) {
-        showError('جدول خودروها یافت نشد.');
+        showError('جدول خودروها یافت نشد');
         return;
     }
 
     try {
         const tr = document.createElement('tr');
         const vehicleText = vehicleSelect.options[vehicleSelect.selectedIndex].text;
-        const [vehicleName, contractorName, vehicleType] = vehicleText.split(' - ');
+        const [vehicleName, contractorName = '-', vehicleType = '-'] = vehicleText.split(' - ');
 
         tr.innerHTML = `
             <td>${vehicleName}</td>
-            <td>${contractorName || '-'}</td>
-            <td>${vehicleName}</td>
-            <td>${contractorName || '-'}</td>
-            <td>${vehicleType || '-'}</td>
+            <td>${contractorName}</td>
+            <td>${vehicleType}</td>
             <td>
                 <button type="button" class="btn btn-sm btn-danger" onclick="removeTableRow(this)">حذف</button>
                 <input type="hidden" name="vehicles[]" value="${vehicleSelect.value}">
             </td>
         `;
-
         tbody.appendChild(tr);
 
-        // پاک کردن فیلد
         $(vehicleSelect).val('').trigger('change');
 
     } catch (error) {
@@ -421,153 +400,142 @@ function addVehicle() {
     }
 }
 
-// تابع حذف سطر از جدول
 function removeTableRow(button) {
     try {
-        const row = button.closest('tr');
-        if (row) {
-            row.remove();
-        }
+        button.closest('tr')?.remove();
     } catch (error) {
         console.error('Error in removeTableRow:', error);
         showError('خطا در حذف سطر');
     }
 }
 
-// تابع کمکی برای نمایش پیام موفقیت
-function showSuccess(message) {
-    Swal.fire({
-        title: 'موفقیت',
-        text: message,
-        icon: 'success',
-        confirmButtonText: 'باشه',
-        customClass: {
-            confirmButton: 'btn btn-primary'
-        }
-    });
-}
-
-// تابع کمکی برای نمایش پیام تأیید
-function showConfirm(message, callback) {
-    Swal.fire({
-        title: 'تأیید',
-        text: message,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'بله',
-        cancelButtonText: 'خیر',
-        customClass: {
-            confirmButton: 'btn btn-primary',
-            cancelButton: 'btn btn-secondary'
-        }
-    }).then((result) => {
-        if (result.isConfirmed && callback) {
-            callback();
-        }
-    });
-}
-
-// تابع برای بررسی وضعیت فرم قبل از ارسال
-function validateForm() {
-    const currentStep = stepper.getCurrentStepIndex();
-    const totalSteps = stepper.getTotalStepsNumber();
-
-    if (currentStep === totalSteps) {
-        // بررسی تمام مراحل قبل از ارسال نهایی
-        for (let i = 1; i <= totalSteps; i++) {
-            if (!validateStep(i)) {
-                stepper.goTo(i);
-                return false;
-            }
-        }
-        return true;
-    }
-    return false;
-}
-
-// اضافه کردن event listener برای نمایش/مخفی کردن فیلد دلیل غیرفعال بودن
-document.addEventListener('DOMContentLoaded', function() {
-    const machineStatus = document.getElementById('machine_status');
-    if (machineStatus) {
-        machineStatus.addEventListener('change', function() {
-            const reasonContainer = document.querySelector('.machine-inactive-reason');
-            if (reasonContainer) {
-                reasonContainer.style.display = this.value === 'inactive' ? 'block' : 'none';
-            }
-        });
-    }
-});
-
-// مدیریت ارسال فرم
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('kt_create_account_form');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            if (!validateForm()) {
-                e.preventDefault();
-                return false;
-            }
-        });
-    }
-});
-
-// تابع برای پاک کردن تمام فیلدهای یک فرم
-function resetForm(formElement) {
-    if (!formElement) return;
-
-    // پاک کردن input های معمولی
-    formElement.querySelectorAll('input:not([type="hidden"])').forEach(input => {
-        input.value = '';
-    });
-
-    // پاک کردن select ها
-    formElement.querySelectorAll('select').forEach(select => {
-        if ($(select).hasClass('select2-hidden-accessible')) {
-            $(select).val('').trigger('change');
-        } else {
-            select.selectedIndex = 0;
-        }
-    });
-
-    // پاک کردن textarea ها
-    formElement.querySelectorAll('textarea').forEach(textarea => {
-        textarea.value = '';
-    });
-}
-
-// تابع برای بررسی اعتبار فایل آپلود شده
-function validateFile(file) {
-    if (!file) return true;
-
-    // بررسی حجم فایل (حداکثر 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
-        showError('حجم فایل نباید بیشتر از 5 مگابایت باشد.');
+function submitShiftReport(formElement) {
+    if (!validateAllSteps()) {
         return false;
     }
 
-    // بررسی پسوند فایل
-    const allowedTypes = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png'];
-    const fileName = file.name.toLowerCase();
-    const fileExtension = '.' + fileName.split('.').pop();
-
-    if (!allowedTypes.includes(fileExtension)) {
-        showError('فرمت فایل مجاز نیست. فرمت‌های مجاز: PDF, Word, JPG');
+    // Validate supervisor comments
+    const comments = document.querySelector('[name="supervisor_comments"]');
+    if (!comments?.value.trim()) {
+        showError('لطفا توضیحات سرشیفت را وارد کنید');
         return false;
     }
 
-    return true;
-}
+    const formData = new FormData(formElement);
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const submitBtn = document.querySelector('[data-kt-stepper-action="submit"]');
 
-// مدیریت آپلود فایل
-document.addEventListener('DOMContentLoaded', function() {
+    // Add loading state
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> در حال ارسال...';
+    }
+
+    // Add all form data
+    formData.append('supervisor_comments', comments.value.trim());
+
+    // Add file if exists
     const fileInput = document.querySelector('input[type="file"]');
-    if (fileInput) {
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file && !validateFile(file)) {
-                this.value = ''; // پاک کردن انتخاب فایل در صورت نامعتبر بودن
+    if (fileInput?.files[0]) {
+        formData.append('attached_file', fileInput.files[0]);
+    }
+
+    // Collect data from all tables
+    const tables = {
+        loading_operations: '#loading_operations_table',
+        loader_statuses: '#mining_machines_table',
+        leaves: '#leaves_table',
+        vehicles: '#vehicles_table'
+    };
+
+    Object.entries(tables).forEach(([key, selector]) => {
+        const data = [];
+        document.querySelectorAll(`${selector} tbody tr input[type="hidden"]`).forEach(input => {
+            data.push(input.value);
+        });
+        formData.append(key, JSON.stringify(data));
+    });
+
+    // Send AJAX request
+    $.ajax({
+        url: formElement.action || window.location.href,
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        headers: { 'X-CSRFToken': csrftoken },
+        success: function(response) {
+            handleSubmitResponse(response);
+        },
+        error: function(xhr) {
+            handleSubmitError(xhr);
+        },
+        complete: function() {
+            // Reset submit button
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'ثبت گزارش';
+            }
+        }
+    });
+}
+
+function handleSubmitResponse(response) {
+    if (response.messages?.[0]) {
+        const message = response.messages[0];
+        Swal.fire({
+            title: message.tags === 'success' ? 'موفقیت' : 'خطا',
+            text: message.message,
+            icon: message.tags === 'success' ? 'success' : 'error',
+            confirmButtonText: 'باشه',
+            customClass: getSwalCustomClasses()
+        }).then(result => {
+            if (result.isConfirmed && message.tags === 'success') {
+                window.location.reload();
             }
         });
     }
-});
+}
+
+function handleSubmitError(xhr) {
+    let errorMessage = 'خطا در ارسال اطلاعات. لطفا دوباره تلاش کنید.';
+    if (xhr.responseJSON?.messages?.[0]?.message) {
+        errorMessage = xhr.responseJSON.messages[0].message;
+    }
+
+    Swal.fire({
+        title: 'خطا',
+        text: errorMessage,
+        icon: 'error',
+        confirmButtonText: 'باشه',
+        customClass: getSwalCustomClasses()
+    });
+}
+
+function showError(message) {
+    Swal.fire({
+        title: 'خطا',
+        text: message,
+        icon: 'error',
+        confirmButtonText: 'باشه',
+        customClass: getSwalCustomClasses()
+    });
+}
+
+function getSwalCustomClasses() {
+    return {
+        container: 'rtl-alert',
+        popup: 'rtl-alert',
+        header: 'rtl-alert',
+        title: 'rtl-alert',
+        closeButton: 'rtl-alert',
+        icon: 'rtl-alert',
+        image: 'rtl-alert',
+        content: 'rtl-alert',
+        input: 'rtl-alert',
+        actions: 'rtl-alert',
+        confirmButton: 'rtl-alert btn btn-primary',
+        cancelButton: 'rtl-alert btn btn-secondary',
+        footer: 'rtl-alert'
+    };
+}

@@ -104,7 +104,7 @@
 
     <!-- Form Content -->
     <div class="card d-flex flex-row-fluid flex-center">
-        <form class="card-body py-20 w-100 mw-xl-700px px-9" method="post" novalidate="novalidate" id="kt_create_account_form" enctype="multipart/form-data">
+        <form class="card-body py-20 w-100 mw-xl-700px px-9" method="post" novalidate="novalidate" action="{% url 'operations:create_shift_report' %}" id="kt_create_account_form" enctype="multipart/form-data">
             {% csrf_token %}
 
             <!-- عملیات بارگیری -->
@@ -336,28 +336,23 @@
 
             <!-- Navigation Buttons -->
     <!-- Navigation Buttons -->
-<div class="d-flex flex-stack pt-10">
+ <div class="d-flex flex-stack pt-10">
     <div class="mr-2">
-        <button type="button" class="btn btn-lg btn-light-primary me-3 prev-step" data-kt-stepper-action="previous">
-            <span class="svg-icon svg-icon-4 me-1">
-                <i class="ki-outline ki-arrow-right fs-4 me-1"></i>
-            </span>
+        <button type="button" class="btn btn-lg btn-light-primary me-3" data-kt-stepper-action="previous">
+            <i class="ki-duotone ki-arrow-left fs-4 me-1"></i>
             برگشت
         </button>
     </div>
+
     <div>
-        <button type="button" class="btn btn-lg btn-primary next-step" data-kt-stepper-action="next">
+        <button type="button" class="btn btn-lg btn-primary" data-kt-stepper-action="next">
             ادامه
-            <span class="svg-icon svg-icon-4 ms-1">
-                <i class="ki-outline ki-arrow-left fs-4 ms-1 me-0"></i>
-            </span>
+            <i class="ki-duotone ki-arrow-right fs-4 ms-1"></i>
         </button>
 
-        <button type="button" class="btn btn-lg btn-success" data-kt-stepper-action="submit" style="display: none;">
+        <button type="submit" class="btn btn-lg btn-success" data-kt-stepper-action="submit">
             ثبت گزارش
-            <span class="svg-icon svg-icon-4 ms-1">
-                <i class="ki-outline ki-check fs-4 ms-1 me-0"></i>
-            </span>
+            <i class="ki-duotone ki-check fs-4 ms-1"></i>
         </button>
     </div>
 </div>
@@ -380,8 +375,8 @@
 {% block extra_js %}
 
 
-    <script src="{% static 'assets/js/custom_forms.js' %}"> {{ messages|safe }}</script>
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-
+<script src="{% static 'assets/js/custom_forms.js' %}"> {{ messages|safe }}</script>
 {% endblock %}
