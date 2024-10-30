@@ -1,7 +1,7 @@
 from django.db import models
 from shift_manager.utils import get_shift_for_date
 from accounts.models import UserProfile
-
+from BaseInfo.models import MiningMachine, MiningBlock
 
 # مدل شیفت برای هر عملیات بارگیری
 class LoadingOperation(models.Model):
@@ -38,14 +38,45 @@ class VehicleReport(models.Model):
         return f"{self.vehicle_name} - {'فعال' if self.is_active else 'غیر فعال'}"
 
 
-# مدل برای دستگاه‌های معدنی
-class MiningMachineReport(models.Model):
-    machine_name = models.CharField(max_length=100, verbose_name="نام دستگاه")
-    machine_type = models.CharField(max_length=50, verbose_name="نوع دستگاه")
-    block = models.CharField(max_length=100, verbose_name="نام بلوک")
+
+
+
+class LoaderStatus(models.Model):
+    STATUS_CHOICES = [
+        ('active', 'فعال'),
+        ('inactive', 'غیرفعال'),
+    ]
+
+    loader = models.ForeignKey(
+        MiningMachine,
+        on_delete=models.CASCADE,
+        limit_choices_to={'machine_type': 'Loader', 'is_active': True},
+        verbose_name="بارکننده"
+    )
+    block = models.ForeignKey(
+        MiningBlock,
+        on_delete=models.CASCADE,
+        limit_choices_to={'is_active': True},
+        verbose_name="بلوک"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='active',
+        verbose_name="وضعیت"
+    )
+    inactive_reason = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="دلیل غیرفعال بودن"
+    )
+
+    class Meta:
+        verbose_name = "وضعیت بارکننده"
+        verbose_name_plural = "وضعیت بارکننده‌ها"
 
     def __str__(self):
-        return f"{self.machine_name} - {self.machine_type} در بلوک {self.block}"
+        return f"{self.loader.machine_name} - بلوک {self.block.block_name}"
 
 
 
@@ -73,6 +104,9 @@ class ShiftReport(models.Model):
         verbose_name="ایجاد کننده",
         related_name='created_shift_reports'
     )
+    loader_statuses = models.ManyToManyField('LoaderStatus', related_name='shift_reports', blank=True)
+
+
 
     def __str__(self):
         return f"شیفت {self.get_group_display()} - {self.shift_date}"

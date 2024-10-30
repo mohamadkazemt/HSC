@@ -78,6 +78,30 @@
                                                     </tbody>
                                                 </table>
                                             </div>
+                                        <!-- پایین صفحه، بخش pagination -->
+{% if loading_operations.paginator.num_pages > 1 %}
+<nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+        {% if loading_operations.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ loading_operations.previous_page_number }}">&laquo; قبلی</a>
+            </li>
+        {% endif %}
+
+        {% for page_num in page_range %}
+            <li class="page-item {% if page_num == loading_operations.number %}active{% endif %}">
+                <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+            </li>
+        {% endfor %}
+
+        {% if loading_operations.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ loading_operations.next_page_number }}">بعدی &raquo;</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
                                         </div>
                                     </div>
                                 </div>

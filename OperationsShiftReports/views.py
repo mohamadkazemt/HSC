@@ -1,24 +1,35 @@
-import os
 from django.core.paginator import Paginator
-from django.http import JsonResponse
+import jdatetime
+from shift_manager.utils import get_shift_for_date, SHIFT_PATTERN  # اضافه کردن SHIFT_PATTERN
 from django.shortcuts import render
+from django.http import JsonResponse
 from django.contrib import messages
 from django.utils import timezone
-from .models import ShiftReport, LoadingOperation, ShiftLeave, VehicleReport
 from accounts.models import UserProfile
-from BaseInfo.models import ContractorVehicle
+from BaseInfo.models import ContractorVehicle, MiningMachine, MiningBlock
 from shift_manager.utils import get_shift_for_date
+from .models import (
+    ShiftReport,
+    LoadingOperation,
+    ShiftLeave,
+    VehicleReport,
+    LoaderStatus
+)
+import os
 
 
 def create_shift_report(request):
     if request.method == "POST":
         try:
+            # دریافت داده‌های فرم
             loading_operations = request.POST.getlist('loading_operations[]')
             leaves = request.POST.getlist('leaves[]')
             vehicles_post = request.POST.getlist('vehicles[]')
+            loader_statuses = request.POST.getlist('loader_statuses[]')
             supervisor_comments = request.POST.get('supervisor_comments')
             attached_file = request.FILES.get('attached_file')
 
+            # اعتبارسنجی داده‌های ورودی
             if not loading_operations:
                 return JsonResponse({
                     'messages': [{'tags': 'error', 'message': 'لطفا حداقل یک عملیات بارگیری را اضافه کنید.'}]
@@ -31,20 +42,22 @@ def create_shift_report(request):
                 return JsonResponse({
                     'messages': [{'tags': 'error', 'message': 'لطفا حداقل یک خودرو را اضافه کنید.'}]
                 })
+            if not loader_statuses:
+                return JsonResponse({
+                    'messages': [{'tags': 'error', 'message': 'لطفا حداقل یک وضعیت بارکننده را اضافه کنید.'}]
+                })
             if not supervisor_comments:
                 return JsonResponse({
                     'messages': [{'tags': 'error', 'message': 'لطفا توضیحات سرشیفت را وارد کنید.'}]
                 })
 
-            # اعتبارسنجی فایل
+            # اعتبارسنجی فایل پیوست
             if attached_file:
-                # بررسی سایز فایل (5MB)
-                if attached_file.size > 5 * 1024 * 1024:
+                if attached_file.size > 5 * 1024 * 1024:  # 5MB
                     return JsonResponse({
                         'messages': [{'tags': 'error', 'message': 'حجم فایل نباید بیشتر از 5 مگابایت باشد.'}]
                     })
 
-                # بررسی پسوند فایل
                 allowed_extensions = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png']
                 ext = os.path.splitext(attached_file.name)[1].lower()
                 if ext not in allowed_extensions:
@@ -52,6 +65,7 @@ def create_shift_report(request):
                         'messages': [{'tags': 'error', 'message': 'فرمت فایل مجاز نیست.'}]
                     })
 
+            # دریافت گروه کاربر
             user_profile = UserProfile.objects.get(user=request.user)
             current_group = user_profile.group
 
@@ -61,7 +75,7 @@ def create_shift_report(request):
                 supervisor_comments=supervisor_comments,
                 group=current_group,
                 attached_file=attached_file if attached_file else None,
-                creator = request.user.userprofile
+                creator=user_profile
             )
 
             # ذخیره عملیات بارگیری
@@ -86,8 +100,24 @@ def create_shift_report(request):
             # ذخیره خودروها
             for vehicle_id in vehicles_post:
                 vehicle = ContractorVehicle.objects.get(id=vehicle_id)
-                vehicle_report = VehicleReport.objects.create(vehicle_name=vehicle.vehicle_name)
+                vehicle_report = VehicleReport.objects.create(
+                    vehicle_name=vehicle.vehicle_name
+                )
                 shift_report.vehicle_reports.add(vehicle_report)
+
+            # ذخیره وضعیت بارکننده‌ها
+            for loader_status in loader_statuses:
+                loader_id, block_id, status, reason = loader_status.split(',')
+                loader = MiningMachine.objects.get(id=loader_id)
+                block = MiningBlock.objects.get(id=block_id)
+
+                loader_status = LoaderStatus.objects.create(
+                    loader=loader,
+                    block=block,
+                    status=status,
+                    inactive_reason=reason if status == 'inactive' else None
+                )
+                shift_report.loader_statuses.add(loader_status)
 
             return JsonResponse({
                 'messages': [{'tags': 'success', 'message': 'گزارش شیفت با موفقیت ثبت شد.'}]
@@ -98,7 +128,7 @@ def create_shift_report(request):
                 'messages': [{'tags': 'error', 'message': f'خطا در ثبت گزارش: {str(e)}'}]
             })
 
-    else:
+    else:  # GET request
         today = timezone.now().date()
         shifts = get_shift_for_date(today)
         current_group = None
@@ -112,24 +142,36 @@ def create_shift_report(request):
             except UserProfile.DoesNotExist:
                 messages.error(request, 'پروفایل کاربری یافت نشد.')
 
+        # دریافت لیست پرسنل گروه
         personnels = UserProfile.objects.filter(group=current_group) if current_group else UserProfile.objects.none()
+
+        # دریافت خودروهای فعال
         vehicles = ContractorVehicle.objects.filter(is_active=True)
+
+        # دریافت بارکننده‌های فعال
+        loaders = MiningMachine.objects.filter(
+            machine_type='Loader',
+            is_active=True
+        ).select_related('contractor')
+
+        # دریافت بلوک‌های در حال بارگیری
+        blocks = MiningBlock.objects.filter(
+            is_active=True,
+            status='loading'
+        )
 
         context = {
             'shifts': shifts,
             'personnels': personnels,
             'vehicles': vehicles,
             'current_shift': current_shift,
+            'loaders': loaders,
+            'blocks': blocks,
         }
 
         return render(request, 'OperationsShiftReports/create_shift_report.html', context)
 
 
-from django.core.paginator import Paginator
-from django.shortcuts import render
-from .models import LoadingOperation
-import jdatetime
-from shift_manager.utils import get_shift_for_date, SHIFT_PATTERN  # اضافه کردن SHIFT_PATTERN
 
 
 def get_day_name(date):
@@ -182,8 +224,10 @@ def get_shift_details(group, date):
 def loading_operations_list(request):
     operations = LoadingOperation.objects.prefetch_related(
         'shift_reports',
-        'shift_reports__creator__userprofile'  # اصلاح prefetch برای userprofile
+        'shift_reports__creator'
     ).all().order_by('-id')
+
+    operations_data = []
 
     for operation in operations:
         shift_reports = list(operation.shift_reports.all())
@@ -193,26 +237,30 @@ def loading_operations_list(request):
             day_name = get_day_name(jalali_date)
             shift_details = get_shift_details(shift_report.group, shift_report.shift_date)
 
-            # اطلاعات ایجاد کننده با استفاده از userprofile
             creator = shift_report.creator
             if creator:
-                try:
-                    creator_profile = creator.userprofile
-                    creator_data = {
-                        'full_name': creator.get_full_name() or creator.username,
-                        'username': creator.username,
-                        'personnel_code': creator_profile.personnel_code,
-                        'group': creator_profile.get_group_display() if creator_profile.group else 'بدون گروه',
-                        'image_url': creator_profile.image.url if creator_profile.image else None
-                    }
-                except UserProfile.DoesNotExist:
-                    creator_data = {
-                        'full_name': creator.get_full_name() or creator.username,
-                        'username': creator.username,
-                        'personnel_code': '',
-                        'group': 'بدون گروه',
-                        'image_url': None
-                    }
+                # Get first name and last name separately
+                first_name = creator.user.first_name.strip()
+                last_name = creator.user.last_name.strip()
+
+                # Combine them if both exist, otherwise use available parts
+                if first_name and last_name:
+                    full_name = f"{first_name} {last_name}"
+                elif first_name:
+                    full_name = first_name
+                elif last_name:
+                    full_name = last_name
+                else:
+                    # Only use username as absolute last resort
+                    full_name = creator.user.username
+
+                creator_data = {
+                    'full_name': full_name,
+                    'username': creator.user.username,
+                    'personnel_code': creator.personnel_code,
+                    'group': creator.get_group_display() if creator.group else 'بدون گروه',
+                    'image_url': creator.image.url if creator.image else None
+                }
             else:
                 creator_data = {
                     'full_name': 'نامشخص',
@@ -245,15 +293,15 @@ def loading_operations_list(request):
                 'shift_type': 'نامشخص',
                 'shift_number': 'نامشخص',
                 'shift_name': 'نامشخص',
-                 'creator': {
+                'creator': {
                     'full_name': 'نامشخص',
                     'username': 'نامشخص',
-                    'avatar': None
+                    'personnel_code': '',
+                    'group': 'نامشخص',
+                    'image_url': None
                 }
             }
         operations_data.append(data)
-
-
 
     paginator = Paginator(operations_data, 10)
     page_number = request.GET.get('page')
