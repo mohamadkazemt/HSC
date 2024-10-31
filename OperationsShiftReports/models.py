@@ -8,7 +8,7 @@ class LoadingOperation(models.Model):
     stone_type_list = [
         ('w', 'باطله'),
         ('O', 'آهن'),
-        ('T', 'آهن کم عیار')
+        ('T', 'T1')
     ]
 
     stone_type = models.CharField(max_length=50, verbose_name="نوع سنگ", choices=stone_type_list, default='w')
