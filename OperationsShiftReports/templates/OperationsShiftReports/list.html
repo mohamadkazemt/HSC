@@ -25,7 +25,7 @@
                                                 <table class="table table-row-bordered table-striped gy-5 gs-7">
                                                     <thead>
                                                     <tr class="fw-bold fs-6 text-gray-800">
-                                                        <th>شماره گزارش</th>
+                                                        <th style="width: auto">شماره گزارش</th>
                                                         <th>تاریخ ثبت</th>
                                                         <th>روز هفته</th>
                                                         <th>گروه کاری</th>
@@ -58,50 +58,46 @@
                                                                         </div>
                                                                     {% endif %}
                                                                     <div class="d-flex flex-column">
-                                                                        <span class="text-gray-800 text-hover-primary mb-1">{{ operation.creator.username }}</span>
-                                                                        <small class="text-muted">
-                                                                            کد پرسنلی: {{ operation.creator.personnel_code }}
+                                                                        <span class="text-gray-800 text-hover-primary mb-1">{{ operation.creator.display_name }}</span>
+                                                                        <span class="small">کد پرسنلی: {{ operation.creator.personnel_code }}
                                                                             {% if operation.creator.group %}
-                                                                                <span class="mx-2">|</span>
-                                                                                {{ operation.creator.group }}
+                                                                                <span class="mx-2">|</span> {{ operation.creator.group }}
                                                                             {% endif %}
-                                                                        </small>
+                                                                        </span>
                                                                     </div>
                                                                 </div>
 
                                                             </td>
-                                                        <td>
-                                                            <a href="#" class="btn btn-light btn-sm">نمایش جزئیات</a>
-                                                            </td>
-                                                        </tr>
+                                                            <td>
+                                                                <a href="{% url 'operations:operation_detail' pk=operation.id %}" class="btn btn-light btn-sm">نمایش جزئیات</a>                                                        </tr>
                                                     {% endfor %}
                                                     </tbody>
                                                 </table>
                                             </div>
-                                        <!-- پایین صفحه، بخش pagination -->
-{% if loading_operations.paginator.num_pages > 1 %}
-<nav aria-label="Page navigation">
-    <ul class="pagination justify-content-center">
-        {% if loading_operations.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ loading_operations.previous_page_number }}">&laquo; قبلی</a>
-            </li>
-        {% endif %}
+                                            <!-- پایین صفحه، بخش pagination -->
+                                            {% if loading_operations.paginator.num_pages > 1 %}
+                                                <nav aria-label="Page navigation">
+                                                    <ul class="pagination justify-content-center">
+                                                        {% if loading_operations.has_previous %}
+                                                            <li class="page-item">
+                                                                <a class="page-link" href="?page={{ loading_operations.previous_page_number }}">&laquo; قبلی</a>
+                                                            </li>
+                                                        {% endif %}
 
-        {% for page_num in page_range %}
-            <li class="page-item {% if page_num == loading_operations.number %}active{% endif %}">
-                <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
-            </li>
-        {% endfor %}
+                                                        {% for page_num in page_range %}
+                                                            <li class="page-item {% if page_num == loading_operations.number %}active{% endif %}">
+                                                                <a class="page-link" href="?page={{ page_num }}">{{ page_num }}</a>
+                                                            </li>
+                                                        {% endfor %}
 
-        {% if loading_operations.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ loading_operations.next_page_number }}">بعدی &raquo;</a>
-            </li>
-        {% endif %}
-    </ul>
-</nav>
-{% endif %}
+                                                        {% if loading_operations.has_next %}
+                                                            <li class="page-item">
+                                                                <a class="page-link" href="?page={{ loading_operations.next_page_number }}">بعدی &raquo;</a>
+                                                            </li>
+                                                        {% endif %}
+                                                    </ul>
+                                                </nav>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>

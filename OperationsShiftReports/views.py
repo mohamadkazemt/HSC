@@ -2,9 +2,11 @@ from django.core.paginator import Paginator
 import jdatetime
 import json  # تغییر در import
 
+from django.db.models import Sum
+
 from shift_manager.utils import get_shift_for_date, SHIFT_PATTERN
-from django.shortcuts import render
-from django.http import JsonResponse
+from django.shortcuts import render, get_object_or_404
+from django.http import JsonResponse, Http404
 from django.contrib import messages
 from django.utils import timezone
 from accounts.models import UserProfile
@@ -19,6 +21,8 @@ from .models import (
 import os
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+
+
 
 def create_shift_report(request):
     if request.method == "POST":
@@ -238,7 +242,8 @@ def get_shift_details(group, date):
 def loading_operations_list(request):
     operations = LoadingOperation.objects.prefetch_related(
         'shift_reports',
-        'shift_reports__creator'
+        'shift_reports__creator',
+        'shift_reports__creator__user'  # اضافه کردن prefetch برای user
     ).all().order_by('-id')
 
     operations_data = []
@@ -253,35 +258,39 @@ def loading_operations_list(request):
 
             creator = shift_report.creator
             if creator:
-                # Get first name and last name separately
+                # ساخت نام کامل با اولویت نام و نام خانوادگی
                 first_name = creator.user.first_name.strip()
                 last_name = creator.user.last_name.strip()
 
-                # Combine them if both exist, otherwise use available parts
                 if first_name and last_name:
-                    full_name = f"{first_name} {last_name}"
+                    display_name = f"{first_name} {last_name}"
                 elif first_name:
-                    full_name = first_name
+                    display_name = first_name
                 elif last_name:
-                    full_name = last_name
+                    display_name = last_name
                 else:
-                    # Only use username as absolute last resort
-                    full_name = creator.user.username
+                    display_name = creator.user.username
 
                 creator_data = {
-                    'full_name': full_name,
+                    'full_name': display_name,
+                    'display_name': display_name,  # اضافه کردن فیلد جدید
                     'username': creator.user.username,
                     'personnel_code': creator.personnel_code,
                     'group': creator.get_group_display() if creator.group else 'بدون گروه',
-                    'image_url': creator.image.url if creator.image else None
+                    'image_url': creator.image.url if creator.image else None,
+                    'first_name': first_name,  # اضافه کردن نام
+                    'last_name': last_name,  # اضافه کردن نام خانوادگی
                 }
             else:
                 creator_data = {
                     'full_name': 'نامشخص',
+                    'display_name': 'نامشخص',
                     'username': 'نامشخص',
                     'personnel_code': '',
                     'group': 'نامشخص',
-                    'image_url': None
+                    'image_url': None,
+                    'first_name': '',
+                    'last_name': ''
                 }
 
             data = {
@@ -309,10 +318,13 @@ def loading_operations_list(request):
                 'shift_name': 'نامشخص',
                 'creator': {
                     'full_name': 'نامشخص',
+                    'display_name': 'نامشخص',
                     'username': 'نامشخص',
                     'personnel_code': '',
                     'group': 'نامشخص',
-                    'image_url': None
+                    'image_url': None,
+                    'first_name': '',
+                    'last_name': ''
                 }
             }
         operations_data.append(data)
@@ -327,3 +339,42 @@ def loading_operations_list(request):
     }
 
     return render(request, 'OperationsShiftReports/list.html', context)
+
+
+def operation_detail(request, pk):
+    operation = get_object_or_404(LoadingOperation, id=pk)
+
+    # Get the shift report that contains this operation
+    shift_report = ShiftReport.objects.select_related(
+        'creator',
+        'creator__user'
+    ).prefetch_related(
+        'loader_statuses',
+        'loader_statuses__loader',
+        'loader_statuses__block',
+        'shift_leaves',
+        'shift_leaves__personnel_name',
+        'shift_leaves__personnel_name__user',
+        'vehicle_reports'
+    ).filter(
+        loading_operations=operation
+    ).first()
+
+    if not shift_report:
+        raise Http404("No shift report found for this operation")
+
+    # تبدیل تاریخ میلادی به شمسی
+    jalali_date = jdatetime.date.fromgregorian(date=shift_report.shift_date)
+
+    # دریافت اطلاعات شیفت
+    shift_details = get_shift_details(shift_report.group, shift_report.shift_date)
+
+    context = {
+        'operation': operation,
+        'shift_report': shift_report,
+        'jalali_date': jalali_date.strftime('%Y/%m/%d'),
+        'shift_type': shift_details['shift_type']
+
+    }
+
+    return render(request, 'OperationsShiftReports/operation_detail.html', context)
