@@ -1,222 +1,322 @@
 {% extends 'base.html' %}
 {% block content %}
-{% load static %}
+    {% load static %}
 
-<div id="kt_app_root" class="d-flex flex-column flex-root app-root">
-    <div id="kt_app_page" class="app-page flex-column flex-column-fluid">
-        {% include 'header.html' %}
+    <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+        <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+            {% include 'header.html' %}
 
-        <div id="kt_app_wrapper" class="app-wrapper flex-column flex-row-fluid">
-            {% include 'sidebar.html' %}
+            <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+                {% include 'sidebar.html' %}
 
-            <div id="kt_app_main" class="app-main flex-column flex-row-fluid">
-                <div class="d-flex flex-column flex-column-fluid">
-                    {% include 'toolbar.html' %}
+                <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                    <div class="d-flex flex-column flex-column-fluid">
+                        {% include 'toolbar.html' %}
 
-                    <div id="kt_app_content" class="app-content flex-column-fluid">
-                        <div id="kt_app_content_container" class="app-container container-fluid">
-                            <!-- Header Card -->
-                            <div class="card card-flush mb-6">
-                                <div class="card-header pt-5">
-                                    <h3 class="card-title align-items-start flex-column">
-                                        <span class="card-label fw-bold fs-3 mb-1">گزارش شیفت شماره ({{ operation.id }})</span>
-                                        <span class="text-muted mt-1 fw-semibold fs-7">جزئیات کامل گزارش عملیات</span>
-                                    </h3>
-                                </div>
-
-                                <div class="card-body pt-0">
-                                    <div class="d-flex flex-wrap gap-5">
-                                        <!-- Basic Info -->
-                                        <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-2 mb-3">
-                                            <div class="fs-6 text-gray-800 fw-bold">نوع سنگ:</div>
-                                            <div class="fs-7 text-gray-600">{{ operation.get_stone_type_display }}</div>
-                                        </div>
-
-                                        <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-2 mb-3">
-                                            <div class="fs-6 text-gray-800 fw-bold">تعداد بار:</div>
-                                            <div class="fs-7 text-gray-600">{{ operation.sumloded }}</div>
-                                        </div>
-
-                                        <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-2 mb-3">
-                                            <div class="fs-6 text-gray-800 fw-bold">گروه کاری:</div>
-                                            <div class="fs-7 text-gray-600">{{ operation.group }}</div>
-                                        </div>
-
-                                        <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-2 mb-3">
-                                            <div class="fs-6 text-gray-800 fw-bold">نوع شیفت:</div>
-                                            <div class="fs-7 text-gray-600">{{ operation.shift_type }}</div>
-                                        </div>
-
-                                        <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-2 mb-3">
-                                            <div class="fs-6 text-gray-800 fw-bold">تاریخ:</div>
-                                            <div class="fs-7 text-gray-600">{{ operation.jalali_date }}</div>
+                        <div class="app-content flex-column-fluid" id="kt_app_content">
+                            <div class="app-container container-fluid" id="kt_app_content_container">
+                                <!-- کارت اطلاعات اصلی -->
+                                <div class="card card-flush mb-6">
+                                    <div class="card-header pt-5">
+                                        <div class="card-title align-items-start flex-column">
+                                            <h3 class="card-label fw-bold fs-3 mb-1">گزارش شیفت شماره ({{ operation.id }})</h3>
+                                            <span class="text-muted mt-1 fw-semibold fs-7">جزئیات کامل گزارش عملیات</span>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
 
-                            <!-- Supervisor Report -->
-                            <div class="card card-flush mb-6">
-                                <div class="card-header">
-                                    <h3 class="card-title align-items-start flex-column">
-                                        <span class="card-label fw-bold fs-3 mb-1">گزارش سرشیفت</span>
-                                    </h3>
-                                </div>
-                                <div class="card-body">
-                                    <div class="fw-semibold text-gray-600">{{ operation.supervisor_comments }}</div>
-                                </div>
-                            </div>
+                                    <div class="card-body pt-0">
+                                        <div class="d-flex flex-wrap gap-5">
+                                            <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-2 mb-3">
+                                                <div class="d-flex align-items-center">
+                                                    {% if shift_report.creator.image %}
+                                                        <div class="symbol symbol-50px me-5">
+                                                            <img src="{{ shift_report.creator.image.url }}" alt="" />
+                                                        </div>
+                                                    {% endif %}
+                                                    <div class="d-flex flex-column">
+                                                        <span class="text-gray-800 fs-5 fw-bold">{{ shift_report.creator.user.get_full_name }}</span>
+                                                        <span class="text-gray-600">کد پرسنلی: {{ shift_report.creator.personnel_code }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
 
-                            <div class="row g-5 g-xl-8">
-                                <!-- Loaders Status -->
-                                <div class="col-xl-6">
-                                    <div class="card card-flush h-xl-100">
-                                        <div class="card-header">
-                                            <h3 class="card-title align-items-start flex-column">
-                                                <span class="card-label fw-bold fs-3 mb-1">وضعیت بارکننده‌ها</span>
-                                            </h3>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="table-responsive">
-                                                <table class="table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3">
-                                                    <thead>
-                                                        <tr class="fw-bold text-muted">
-                                                            <th>نام بارکننده</th>
-                                                            <th>بلوک</th>
-                                                            <th>وضعیت</th>
-                                                            <th>دلیل توقف</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {% for status in operation.loader_statuses.all %}
-                                                        <tr>
-                                                            <td>{{ status.loader.machine_name }}</td>
-                                                            <td>{{ status.block.block_name }}</td>
-                                                            <td>
-                                                                {% if status.status == 'active' %}
-                                                                <span class="badge badge-success">فعال</span>
-                                                                {% else %}
-                                                                <span class="badge badge-danger">غیرفعال</span>
-                                                                {% endif %}
-                                                            </td>
-                                                            <td>{{ status.inactive_reason|default:"-" }}</td>
-                                                        </tr>
-                                                        {% endfor %}
-                                                    </tbody>
-                                                </table>
+                                            <!-- تعداد کل بار -->
+                                            <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-2 mb-3">
+                                                <div class="d-flex flex-column">
+                                                    <div class="text-gray-400 fs-7">مجموع بارها</div>
+                                                    <div class="text-gray-800 fs-6 fw-bold">{{ loading_summary.total }}</div>
+                                                </div>
+                                            </div>
+
+                                            <!-- سایر اطلاعات مثل قبل -->
+                                            <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-2 mb-3">
+                                                <div class="d-flex flex-column">
+                                                    <div class="text-gray-400 fs-7">گروه کاری</div>
+                                                    <div class="text-gray-800 fs-6 fw-bold">گروه {{ shift_report.group }}</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-2 mb-3">
+                                                <div class="d-flex flex-column">
+                                                    <div class="text-gray-400 fs-7">نوع شیفت</div>
+                                                    <div class="text-gray-800 fs-6 fw-bold">{{ shift_type }}</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="border border-gray-300 border-dashed rounded min-w-125px py-3 px-4 me-2 mb-3">
+                                                <div class="d-flex flex-column">
+                                                    <div class="text-gray-400 fs-7">تاریخ</div>
+                                                    <div class="text-gray-800 fs-6 fw-bold">{{ jalali_date }}</div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Shift Leaves -->
-                                <div class="col-xl-6">
-                                    <div class="card card-flush h-xl-100">
-                                        <div class="card-header">
-                                            <h3 class="card-title align-items-start flex-column">
-                                                <span class="card-label fw-bold fs-3 mb-1">مرخصی‌های شیفت</span>
-                                            </h3>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="table-responsive">
-                                                <table class="table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3">
-                                                    <thead>
-                                                        <tr class="fw-bold text-muted">
-                                                            <th>نام پرسنل</th>
-                                                            <th>کد پرسنلی</th>
-                                                            <th>وضعیت مرخصی</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        {% for leave in operation.shift_leaves.all %}
-                                                        <tr>
-                                                            <td>{{ leave.personnel_name.user.get_full_name }}</td>
-                                                            <td>{{ leave.personnel_name.personnel_code }}</td>
-                                                            <td>
-                                                                {% if leave.leave_status == 'authorized' %}
-                                                                <span class="badge badge-success">مجاز</span>
-                                                                {% else %}
-                                                                <span class="badge badge-danger">غیرمجاز</span>
-                                                                {% endif %}
-                                                            </td>
-                                                        </tr>
-                                                        {% endfor %}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                                <!-- کارت گزارش سرشیفت -->
+                                <div class="card card-flush mb-6">
+    <div class="card-header">
+        <div class="card-title align-items-start flex-column">
+            <h3 class="card-label fw-bold fs-3 mb-1">گزارش سرشیفت</h3>
+        </div>
+    </div>
 
-                            <!-- Vehicles -->
-                            <div class="card card-flush mt-6">
-                                <div class="card-header">
-                                    <h3 class="card-title align-items-start flex-column">
-                                        <span class="card-label fw-bold fs-3 mb-1">خودروهای پیمانکاران</span>
-                                    </h3>
-                                </div>
-                                <div class="card-body">
-                                    <div class="table-responsive">
-                                        <table class="table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3">
-                                            <thead>
-                                                <tr class="fw-bold text-muted">
-                                                    <th>نام خودرو</th>
-                                                    <th>وضعیت</th>
-                                                    <th>زمان شروع توقف</th>
-                                                    <th>زمان پایان توقف</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for vehicle in operation.vehicle_reports.all %}
-                                                <tr>
-                                                    <td>{{ vehicle.vehicle_name }}</td>
-                                                    <td>
-                                                        {% if vehicle.is_active %}
-                                                        <span class="badge badge-success">فعال</span>
-                                                        {% else %}
-                                                        <span class="badge badge-danger">غیرفعال</span>
-                                                        {% endif %}
-                                                    </td>
-                                                    <td>{{ vehicle.inactive_time_start|default:"-" }}</td>
-                                                    <td>{{ vehicle.inactive_time_end|default:"-" }}</td>
-                                                </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
+    <div class="card-body">
+        <!-- Supervisor Comments -->
+        <div class="fw-semibold text-gray-600 mb-6">
+            {{ shift_report.supervisor_comments }}
+        </div>
 
-                            <!-- Creator Info -->
-                            <div class="card card-flush mt-6">
-                                <div class="card-header">
-                                    <h3 class="card-title align-items-start flex-column">
-                                        <span class="card-label fw-bold fs-3 mb-1">اطلاعات ثبت کننده</span>
-                                    </h3>
-                                </div>
-                                <div class="card-body">
-                                    <div class="d-flex align-items-center">
-                                        {% if operation.creator.image %}
-                                        <div class="symbol symbol-50px me-5">
-                                            <img src="{{ operation.creator.image.url }}" alt="" />
-                                        </div>
-                                        {% endif %}
-                                        <div class="d-flex flex-column">
-                                            <span class="text-gray-800 fs-5 fw-bold">{{ operation.creator.user.get_full_name }}</span>
-                                            <span class="text-gray-600">کد پرسنلی: {{ operation.creator.personnel_code }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+        <!-- Attachments Section -->
+        {% if file_info %}
+        <div class="separator separator-dashed my-5"></div>
 
+        <div class="d-flex flex-column">
+            <div class="fs-5 fw-bold mb-4">فایل‌های پیوست:</div>
+
+            <div class="d-flex flex-stack py-3">
+                <div class="d-flex align-items-center">
+                    <!-- File Icon -->
+                    <div class="symbol symbol-40px me-4">
+                        {% if file_info.is_image %}
+                        <div class="symbol-label bg-light-primary">
+                            <i class="ki-duotone ki-file-image fs-2 text-primary">
+                                <span class="path1"></span>
+                                <span class="path2"></span>
+                            </i>
                         </div>
+                        {% else %}
+                        <div class="symbol-label bg-light-primary">
+                            <i class="ki-duotone ki-file fs-2 text-primary">
+                                <span class="path1"></span>
+                                <span class="path2"></span>
+                            </i>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- File Info -->
+                    <div class="d-flex flex-column">
+                        <a href="{{ file_info.url }}" class="text-gray-800 text-hover-primary mb-1 fs-6 fw-bold">
+                            {{ file_info.name }}
+                        </a>
+                        <span class="text-muted fw-semibold">{{ file_info.size }}</span>
                     </div>
                 </div>
-                {% include 'footer.html' %}
+
+                <!-- Actions -->
+                <div class="d-flex my-2">
+                    {% if file_info.is_image %}
+                    <a href="{{ file_info.url }}" class="btn btn-sm btn-icon btn-light-primary me-2"
+                       data-bs-toggle="tooltip" title="پیش‌نمایش">
+                        <i class="ki-duotone ki-eye fs-2">
+                            <span class="path1"></span>
+                            <span class="path2"></span>
+                        </i>
+                    </a>
+                    {% endif %}
+                    <a href="{{ file_info.url }}" class="btn btn-sm btn-icon btn-light-primary"
+                       download data-bs-toggle="tooltip" title="دانلود">
+                        <i class="ki-duotone ki-cloud-download fs-2">
+                            <span class="path1"></span>
+                            <span class="path2"></span>
+                        </i>
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Row 1: Loader Status and Shift Leaves -->
+<div class="row g-5 g-xl-8 mb-8">
+    <!-- Loader Status Card -->
+    <div class="col-xl-6">
+        <div class="card card-flush h-xl-100 shadow-sm">
+            <div class="card-header pt-5">
+                <div class="card-title align-items-start flex-column">
+                    <h3 class="card-label fw-bold fs-3 mb-1">وضعیت بارکننده‌ها</h3>
+                </div>
+            </div>
+            <div class="card-body pt-3">
+                <div class="table-responsive">
+                    <table class="table align-middle table-row-bordered table-row-gray-100 gy-3 gs-3">
+                        <thead>
+                            <tr class="fw-bold fs-6 text-gray-800 border-bottom border-gray-200">
+                                <th>نام بارکننده</th>
+                                <th>بلوک</th>
+                                <th>وضعیت</th>
+                                <th>دلیل توقف</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for status in shift_report.loader_statuses.all %}
+                            <tr>
+                                <td>{{ status.loader.machine_name }}</td>
+                                <td>{{ status.block.block_name }}</td>
+                                <td>
+                                    {% if status.status == 'active' %}
+                                    <span class="badge badge-light-success">فعال</span>
+                                    {% else %}
+                                    <span class="badge badge-light-danger">غیرفعال</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ status.inactive_reason|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shift Leaves Card -->
+    <div class="col-xl-6">
+        <div class="card card-flush h-xl-100 shadow-sm">
+            <div class="card-header pt-5">
+                <div class="card-title align-items-start flex-column">
+                    <h3 class="card-label fw-bold fs-3 mb-1">مرخصی‌های شیفت</h3>
+                </div>
+            </div>
+            <div class="card-body pt-3">
+                <div class="table-responsive">
+                    <table class="table align-middle table-row-bordered table-row-gray-100 gy-3 gs-3">
+                        <thead>
+                            <tr class="fw-bold fs-6 text-gray-800 border-bottom border-gray-200">
+                                <th>نام پرسنل</th>
+                                <th>کد پرسنلی</th>
+                                <th>وضعیت مرخصی</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for leave in shift_report.shift_leaves.all %}
+                            <tr>
+                                <td>{{ leave.personnel_name.user.get_full_name }}</td>
+                                <td>{{ leave.personnel_name.personnel_code }}</td>
+                                <td>
+                                    {% if leave.leave_status == 'authorized' %}
+                                    <span class="badge badge-light-success">مجاز</span>
+                                    {% else %}
+                                    <span class="badge badge-light-danger">غیرمجاز</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Row 2: Loading Details and Contractor Vehicles -->
+<div class="row g-5 g-xl-8">
+    <!-- Loading Details Card -->
+    <div class="col-xl-6">
+        <div class="card card-flush h-xl-100 shadow-sm">
+            <div class="card-header pt-5">
+                <div class="card-title align-items-start flex-column">
+                    <h3 class="card-label fw-bold fs-3 mb-1">جزئیات بارگیری</h3>
+                </div>
+            </div>
+            <div class="card-body pt-3">
+                <div class="table-responsive">
+                    <table class="table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3">
+                        <thead>
+                            <tr class="fw-bold text-muted">
+                                <th class="min-w-150px">نوع سنگ</th>
+                                <th class="min-w-100px">تعداد بار</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for detail in loading_summary.details %}
+                            <tr>
+                                <td class="fw-bold text-dark">{{ detail.stone_type }}</td>
+                                <td class="text-dark fw-bold">{{ detail.load_count }}</td>
+                            </tr>
+                            {% endfor %}
+                            <tr class="border-top border-top-dashed">
+                                <td class="fw-bold fs-6 text-gray-800">مجموع کل</td>
+                                <td class="fw-bold fs-6 text-gray-800">{{ loading_summary.total }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contractor Vehicles Card -->
+    <div class="col-xl-6">
+        <div class="card card-flush h-xl-100 shadow-sm">
+            <div class="card-header pt-5">
+                <div class="card-title align-items-start flex-column">
+                    <h3 class="card-label fw-bold fs-3 mb-1">خودروهای پیمانکاران</h3>
+                </div>
+            </div>
+            <div class="card-body pt-3">
+                <div class="table-responsive">
+                    <table class="table align-middle table-row-bordered table-row-gray-100 gy-3 gs-3">
+                        <thead>
+                            <tr class="fw-bold fs-6 text-gray-800 border-bottom border-gray-200">
+                                <th>نام خودرو</th>
+                                <th>وضعیت</th>
+                                <th>زمان شروع توقف</th>
+                                <th>زمان پایان توقف</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for vehicle in shift_report.vehicle_reports.all %}
+                            <tr>
+                                <td>{{ vehicle.vehicle_name }}</td>
+                                <td>
+                                    {% if vehicle.is_active %}
+                                    <span class="badge badge-light-success">فعال</span>
+                                    {% else %}
+                                    <span class="badge badge-light-danger">غیرفعال</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ vehicle.inactive_time_start|default:"-" }}</td>
+                                <td>{{ vehicle.inactive_time_end|default:"-" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% include 'footer.html' %}
 {% endblock %}

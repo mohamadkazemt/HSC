@@ -355,7 +355,8 @@ def operation_detail(request, pk):
         'shift_leaves',
         'shift_leaves__personnel_name',
         'shift_leaves__personnel_name__user',
-        'vehicle_reports'
+        'vehicle_reports',
+        'loading_operations'
     ).filter(
         loading_operations=operation
     ).first()
@@ -363,18 +364,59 @@ def operation_detail(request, pk):
     if not shift_report:
         raise Http404("No shift report found for this operation")
 
+    # محاسبه مجموع بارها به تفکیک نوع سنگ
+    loading_summary = {
+        'total': 0,
+        'details': []
+    }
+
+    for op in shift_report.loading_operations.all():
+        loading_summary['total'] += op.load_count
+        loading_summary['details'].append({
+            'stone_type': op.get_stone_type_display(),
+            'load_count': op.load_count
+        })
+
     # تبدیل تاریخ میلادی به شمسی
     jalali_date = jdatetime.date.fromgregorian(date=shift_report.shift_date)
 
     # دریافت اطلاعات شیفت
     shift_details = get_shift_details(shift_report.group, shift_report.shift_date)
 
+    # پردازش اطلاعات فایل پیوست
+    file_info = None
+    if shift_report.attached_file:
+        filename = os.path.basename(shift_report.attached_file.name)
+        file_extension = os.path.splitext(filename)[1].lower()
+        file_size = shift_report.attached_file.size
+
+        # تعیین نوع فایل
+        is_image = file_extension in ['.jpg', '.jpeg', '.png']
+        is_pdf = file_extension == '.pdf'
+        is_doc = file_extension in ['.doc', '.docx']
+
+        # محاسبه حجم فایل
+        if file_size < 1000000:  # کمتر از 1MB
+            formatted_size = f"{file_size / 1024:.1f} KB"
+        else:
+            formatted_size = f"{file_size / 1048576:.1f} MB"
+
+        file_info = {
+            'name': filename,
+            'size': formatted_size,
+            'url': shift_report.attached_file.url,
+            'is_image': is_image,
+            'is_pdf': is_pdf,
+            'is_doc': is_doc
+        }
+
     context = {
         'operation': operation,
         'shift_report': shift_report,
         'jalali_date': jalali_date.strftime('%Y/%m/%d'),
-        'shift_type': shift_details['shift_type']
-
+        'shift_type': shift_details['shift_type'],
+        'loading_summary': loading_summary,
+        'file_info': file_info  # اضافه کردن اطلاعات فایل به context
     }
 
     return render(request, 'OperationsShiftReports/operation_detail.html', context)

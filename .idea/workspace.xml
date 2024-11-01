@@ -5,7 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="amalyat6">
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/operation_detail.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/list.html" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -219,8 +224,7 @@
       <workItem from="1729773263916" duration="8134000" />
       <workItem from="1729835136207" duration="16782000" />
       <workItem from="1729924626205" duration="23183000" />
-      <workItem from="1730345654118" duration="9622000" />
-      <workItem from="1730432980563" duration="680000" />
+      <workItem from="1730345654118" duration="8916000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
@@ -320,14 +324,7 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۱۴" />
       <updated>1729963968934</updated>
     </task>
-    <task id="LOCAL‎−۰۰۰۱۵" summary="amalyat6">
-      <option name="closed" value="true" />
-      <created>1730369445998</created>
-      <option name="number" value="LOCAL‎−۰۰۰۱۵" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۱۵" />
-      <updated>1730369445998</updated>
-    </task>
-    <option name="localTasksCounter" value="16" />
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -357,7 +354,6 @@
     <MESSAGE value="v0.0.1/2" />
     <MESSAGE value="v0.0.1/3" />
     <MESSAGE value="amaliyat1" />
-    <MESSAGE value="amalyat6" />
-    <option name="LAST_COMMIT_MESSAGE" value="amalyat6" />
+    <option name="LAST_COMMIT_MESSAGE" value="amaliyat1" />
   </component>
 </project>
