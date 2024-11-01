@@ -385,30 +385,37 @@ def operation_detail(request, pk):
 
     # پردازش اطلاعات فایل پیوست
     file_info = None
+    file_info = None
     if shift_report.attached_file:
-        filename = os.path.basename(shift_report.attached_file.name)
-        file_extension = os.path.splitext(filename)[1].lower()
-        file_size = shift_report.attached_file.size
+        try:
+            # بررسی وجود فیزیکی فایل
+            if default_storage.exists(shift_report.attached_file.name):
+                filename = os.path.basename(shift_report.attached_file.name)
+                file_extension = os.path.splitext(filename)[1].lower()
+                file_size = default_storage.size(shift_report.attached_file.name)
 
-        # تعیین نوع فایل
-        is_image = file_extension in ['.jpg', '.jpeg', '.png']
-        is_pdf = file_extension == '.pdf'
-        is_doc = file_extension in ['.doc', '.docx']
+                # تعیین نوع فایل
+                is_image = file_extension in ['.jpg', '.jpeg', '.png']
+                is_pdf = file_extension == '.pdf'
+                is_doc = file_extension in ['.doc', '.docx']
 
-        # محاسبه حجم فایل
-        if file_size < 1000000:  # کمتر از 1MB
-            formatted_size = f"{file_size / 1024:.1f} KB"
-        else:
-            formatted_size = f"{file_size / 1048576:.1f} MB"
+                # محاسبه حجم فایل
+                if file_size < 1000000:  # کمتر از 1MB
+                    formatted_size = f"{file_size / 1024:.1f} KB"
+                else:
+                    formatted_size = f"{file_size / 1048576:.1f} MB"
 
-        file_info = {
-            'name': filename,
-            'size': formatted_size,
-            'url': shift_report.attached_file.url,
-            'is_image': is_image,
-            'is_pdf': is_pdf,
-            'is_doc': is_doc
-        }
+                file_info = {
+                    'name': filename,
+                    'size': formatted_size,
+                    'url': shift_report.attached_file.url,
+                    'is_image': is_image,
+                    'is_pdf': is_pdf,
+                    'is_doc': is_doc
+                }
+        except Exception as e:
+            # در صورت بروز خطا، اطلاعات فایل را نادیده می‌گیریم
+            file_info = None
 
     context = {
         'operation': operation,
