@@ -1,9 +1,7 @@
 from django.core.paginator import Paginator
 import jdatetime
-import json  # تغییر در import
-
+import json
 from django.db.models import Sum
-
 from shift_manager.utils import get_shift_for_date, SHIFT_PATTERN
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse, Http404
@@ -21,9 +19,59 @@ from .models import (
 import os
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+from .permissions import operations_required
+from django.contrib.auth.decorators import login_required
 
 
+def convert_to_persian_day(date):
+    """تبدیل روز هفته به فارسی برای تاریخ شمسی"""
+    days = {
+        5: 'پنج‌شنبه',
+        4: 'چهارشنبه',
+        3: 'سه‌شنبه',
+        2: 'دوشنبه',
+        1: 'یکشنبه',
+        0: 'شنبه',
+        6: 'جمعه'
+    }
+    # استفاده از weekday() تاریخ شمسی
+    if isinstance(date, jdatetime.date):
+        return days[date.weekday()]
+    else:
+        # تبدیل به تاریخ شمسی اگر میلادی باشد
+        jalali_date = jdatetime.date.fromgregorian(date=date)
+        return days[jalali_date.weekday()]
 
+
+def get_shift_details(group, date):
+    """دریافت جزئیات شیفت"""
+    shifts = get_shift_for_date(date)
+    shift_name = shifts.get(group, "نامشخص")
+
+    # نمایش نوع شیفت (روزکار، عصرکار، شب‌کار)
+    if 'روزکار' in shift_name:
+        shift_type = 'روزکار'
+    elif 'عصرکار' in shift_name:
+        shift_type = 'عصرکار'
+    elif 'شب کار' in shift_name:
+        shift_type = 'شب‌کار'
+    elif 'OFF' in shift_name:
+        shift_type = 'استراحت'
+    else:
+        shift_type = 'نامشخص'
+
+    # نمایش شماره شیفت (اول یا دوم)
+    shift_number = 'اول' if 'اول' in shift_name else 'دوم'
+
+    return {
+        'shift_name': shift_name,  # نام کامل شیفت
+        'shift_type': shift_type,  # نوع شیفت
+        'shift_number': shift_number  # شماره شیفت
+    }
+
+
+@login_required
+@operations_required
 def create_shift_report(request):
     if request.method == "POST":
         try:
@@ -49,7 +97,7 @@ def create_shift_report(request):
                         'messages': [{'tags': 'error', 'message': 'فرمت فایل مجاز نیست.'}]
                     })
 
-            # استفاده از json.loads به جای serializers.json
+            # استفاده از json.loads
             try:
                 loading_operations = json.loads(request.POST.get('loading_operations', '[]'))
                 loader_statuses = json.loads(request.POST.get('loader_statuses', '[]'))
@@ -190,60 +238,13 @@ def create_shift_report(request):
         return render(request, 'OperationsShiftReports/create_shift_report.html', context)
 
 
-
-
-def get_day_name(date):
-    """تبدیل روز هفته به فارسی برای تاریخ شمسی"""
-    days = {
-        5: 'پنج‌شنبه',
-        4: 'چهارشنبه',
-        3: 'سه‌شنبه',
-        2: 'دوشنبه',
-        1: 'یکشنبه',
-        0: 'شنبه',
-        6: 'جمعه'
-    }
-    # استفاده از weekday() تاریخ شمسی
-    if isinstance(date, jdatetime.date):
-        return days[date.weekday()]
-    else:
-        # تبدیل به تاریخ شمسی اگر میلادی باشد
-        jalali_date = jdatetime.date.fromgregorian(date=date)
-        return days[jalali_date.weekday()]
-
-
-def get_shift_details(group, date):
-    """دریافت جزئیات شیفت"""
-    shifts = get_shift_for_date(date)
-    shift_name = shifts.get(group, "نامشخص")
-
-    # نمایش نوع شیفت (روزکار، عصرکار، شب‌کار)
-    if 'روزکار' in shift_name:
-        shift_type = 'روزکار'
-    elif 'عصرکار' in shift_name:
-        shift_type = 'عصرکار'
-    elif 'شب کار' in shift_name:
-        shift_type = 'شب‌کار'
-    elif 'OFF' in shift_name:
-        shift_type = 'استراحت'
-    else:
-        shift_type = 'نامشخص'
-
-    # نمایش شماره شیفت (اول یا دوم)
-    shift_number = 'اول' if 'اول' in shift_name else 'دوم'
-
-    return {
-        'shift_name': shift_name,  # نام کامل شیفت
-        'shift_type': shift_type,  # نوع شیفت
-        'shift_number': shift_number  # شماره شیفت
-    }
-
-
+@login_required
+@operations_required
 def loading_operations_list(request):
     operations = LoadingOperation.objects.prefetch_related(
         'shift_reports',
         'shift_reports__creator',
-        'shift_reports__creator__user'  # اضافه کردن prefetch برای user
+        'shift_reports__creator__user'
     ).all().order_by('-id')
 
     operations_data = []
@@ -253,7 +254,7 @@ def loading_operations_list(request):
         if shift_reports:
             shift_report = shift_reports[0]
             jalali_date = jdatetime.date.fromgregorian(date=shift_report.shift_date)
-            day_name = get_day_name(jalali_date)
+            day_name = convert_to_persian_day(jalali_date)  # اینجا نام تابع تغییر کرد
             shift_details = get_shift_details(shift_report.group, shift_report.shift_date)
 
             creator = shift_report.creator
@@ -273,13 +274,13 @@ def loading_operations_list(request):
 
                 creator_data = {
                     'full_name': display_name,
-                    'display_name': display_name,  # اضافه کردن فیلد جدید
+                    'display_name': display_name,
                     'username': creator.user.username,
                     'personnel_code': creator.personnel_code,
                     'group': creator.get_group_display() if creator.group else 'بدون گروه',
                     'image_url': creator.image.url if creator.image else None,
-                    'first_name': first_name,  # اضافه کردن نام
-                    'last_name': last_name,  # اضافه کردن نام خانوادگی
+                    'first_name': first_name,
+                    'last_name': last_name,
                 }
             else:
                 creator_data = {
@@ -341,6 +342,8 @@ def loading_operations_list(request):
     return render(request, 'OperationsShiftReports/list.html', context)
 
 
+@login_required
+@operations_required
 def operation_detail(request, pk):
     operation = get_object_or_404(LoadingOperation, id=pk)
 
@@ -384,7 +387,6 @@ def operation_detail(request, pk):
     shift_details = get_shift_details(shift_report.group, shift_report.shift_date)
 
     # پردازش اطلاعات فایل پیوست
-    file_info = None
     file_info = None
     if shift_report.attached_file:
         try:
