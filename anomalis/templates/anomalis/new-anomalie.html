@@ -1,7 +1,16 @@
 ﻿{% extends 'base.html' %}
-
-
 {% load static %}
+{% block style %}
+
+
+        <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <!-- Custom Select2 CSS -->
+    <link href="{% static 'assets/css/select2-styles.css' %}" rel="stylesheet" />
+
+
+
+{% endblock %}
+
 {% block content %}
 
 
@@ -4032,4 +4041,63 @@
     <!--end::Modal - دعوت دوست-->
     <!--end::Modals-->
 
+{% endblock %}
+
+
+
+{% block extra_js %}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{% static 'assets/plugins/custom/select2/select2.min.js' %}"></script>
+<link href="{% static 'assets/plugins/custom/select2/select2.min.css' %}" rel="stylesheet" type="text/css" />
+<script type="text/javascript">
+    $(document).ready(function() {
+        $('#id_anomalytype').change(function() {
+            var anomalytypeId = $(this).val();
+            $.ajax({
+                url: "{% url 'anomalis:get_anomalydescription' %}",
+                data: {
+                    'anomalytype_id': anomalytypeId
+
+                },
+                success: function(data) {
+                    var options = '<option value="">-- انتخاب شرح آنومالی --</option>';
+                    $.each(data.descriptions, function(index, description) {
+                        options += '<option value="' + description.id + '">' + description.description + '</option>';
+                    });
+                    $('#id_anomalydescription').html(options);
+                }
+            });
+        });
+    });
+</script>
+<script>
+    document.getElementById("id_anomalydescription").addEventListener("change", function() {
+        var descriptionId = this.value;
+
+        // استفاده از Ajax برای دریافت نوع HSE
+        fetch(`/anomalis/get-hse-type/${descriptionId}/`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("id_hse_type").value = data.hse_type;
+            });
+    });
+    document.getElementById("id_anomalydescription").addEventListener("change", function() {
+        var descriptionId = this.value;
+
+        // استفاده از Ajax برای دریافت عملیات اصلاحی
+        fetch(`/anomalis/get-corrective-action/${descriptionId}/`)
+            .then(response => response.json())
+            .then(data => {
+                var correctiveActionSelect = document.getElementById("id_correctiveaction");
+                correctiveActionSelect.innerHTML = ''; // لیست فعلی را پاک کنید
+
+                data.actions.forEach(action => {
+                    var option = document.createElement("option");
+                    option.value = action.id;
+                    option.text = action.description;
+                    correctiveActionSelect.appendChild(option);
+                });
+            });
+    });
+</script>
 {% endblock %}
