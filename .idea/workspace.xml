@@ -4,11 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="amalyat6">
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/base.html" afterDir="false" />
-    </list>
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="amalyatend1" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -321,7 +317,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۱۴" />
       <updated>1729963968934</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL‎−۰۰۰۱۵" summary="amalyatend1">
+      <option name="closed" value="true" />
+      <created>1730710634254</created>
+      <option name="number" value="LOCAL‎−۰۰۰۱۵" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۱۵" />
+      <updated>1730710634254</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -351,6 +354,7 @@
     <MESSAGE value="v0.0.1/2" />
     <MESSAGE value="v0.0.1/3" />
     <MESSAGE value="amaliyat1" />
-    <option name="LAST_COMMIT_MESSAGE" value="amaliyat1" />
+    <MESSAGE value="amalyatend1" />
+    <option name="LAST_COMMIT_MESSAGE" value="amalyatend1" />
   </component>
 </project>

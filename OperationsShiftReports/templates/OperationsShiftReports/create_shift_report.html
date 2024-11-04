@@ -9,378 +9,378 @@
 {% endblock %}
 
 {% block content %}
-<div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+    <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
     <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
-        {% include 'header.html' %}
-        <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
-            {% include 'sidebar.html' %}
-            <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
-                <div class="d-flex flex-column flex-column-fluid">
-                    {% include 'toolbar.html' %}
-                    <div id="kt_app_content" class="app-content flex-column-fluid">
-                        <div id="kt_app_content_container" class="app-container container-fluid">
-                            <div class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10" id="kt_create_account_stepper">
+    {% include 'header.html' %}
+    <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+        {% include 'sidebar.html' %}
+        <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+            <div class="d-flex flex-column flex-column-fluid">
+                {% include 'toolbar.html' %}
+                <div id="kt_app_content" class="app-content flex-column-fluid">
+                    <div id="kt_app_content_container" class="app-container container-fluid">
+                        <div class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10" id="kt_create_account_stepper">
 
 
-<!-- Stepper -->
-<div id="kt_create_account_stepper" class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10">
-    <!-- Stepper Navigation -->
-    <div class="card d-flex justify-content-center justify-content-xl-start flex-row-auto w-100 w-xl-300px w-xxl-400px">
-        <div class="card-body px-6 px-lg-10 px-xxl-15 py-20">
-            <div class="stepper-nav">
-                <!-- عملیات بارگیری -->
-                <div class="stepper-item current" data-kt-stepper-element="nav">
-                    <div class="stepper-wrapper">
-                        <div class="stepper-icon w-40px h-40px">
-                            <i class="ki-outline ki-check fs-2 stepper-check"></i>
-                            <span class="stepper-number">1</span>
-                        </div>
-                        <div class="stepper-label">
-                            <h3 class="stepper-title">عملیات بارگیری</h3>
-                            <div class="stepper-desc fw-semibold">اطلاعات عملیات بارگیری</div>
-                        </div>
-                    </div>
-                    <div class="stepper-line h-40px"></div>
-                </div>
-                <!-- اضافه کردن مرحله جدید در navigation -->
-<div class="stepper-item" data-kt-stepper-element="nav">
-    <div class="stepper-wrapper">
-        <div class="stepper-icon w-40px h-40px">
-            <i class="ki-outline ki-check fs-2 stepper-check"></i>
-            <span class="stepper-number">2</span>
-        </div>
-        <div class="stepper-label">
-            <h3 class="stepper-title">ماشین‌آلات بارگیری</h3>
-            <div class="stepper-desc fw-semibold">وضعیت ماشین‌آلات و بلوک‌ها</div>
-        </div>
-    </div>
-    <div class="stepper-line h-40px"></div>
-</div>
+                            <!-- Stepper -->
+                            <div id="kt_create_account_stepper" class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10">
+                                <!-- Stepper Navigation -->
+                                <div class="card d-flex justify-content-center justify-content-xl-start flex-row-auto w-100 w-xl-300px w-xxl-400px">
+                                    <div class="card-body px-6 px-lg-10 px-xxl-15 py-20">
+                                        <div class="stepper-nav">
+                                            <!-- عملیات بارگیری -->
+                                            <div class="stepper-item current" data-kt-stepper-element="nav">
+                                                <div class="stepper-wrapper">
+                                                    <div class="stepper-icon w-40px h-40px">
+                                                        <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                        <span class="stepper-number">1</span>
+                                                    </div>
+                                                    <div class="stepper-label">
+                                                        <h3 class="stepper-title">عملیات بارگیری</h3>
+                                                        <div class="stepper-desc fw-semibold">اطلاعات عملیات بارگیری</div>
+                                                    </div>
+                                                </div>
+                                                <div class="stepper-line h-40px"></div>
+                                            </div>
+                                            <!-- اضافه کردن مرحله جدید در navigation -->
+                                            <div class="stepper-item" data-kt-stepper-element="nav">
+                                                <div class="stepper-wrapper">
+                                                    <div class="stepper-icon w-40px h-40px">
+                                                        <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                        <span class="stepper-number">2</span>
+                                                    </div>
+                                                    <div class="stepper-label">
+                                                        <h3 class="stepper-title">ماشین‌آلات بارگیری</h3>
+                                                        <div class="stepper-desc fw-semibold">وضعیت ماشین‌آلات و بلوک‌ها</div>
+                                                    </div>
+                                                </div>
+                                                <div class="stepper-line h-40px"></div>
+                                            </div>
 
-                <!-- مرخصی‌ها -->
-                <div class="stepper-item" data-kt-stepper-element="nav">
-                    <div class="stepper-wrapper">
-                        <div class="stepper-icon w-40px h-40px">
-                            <i class="ki-outline ki-check fs-2 stepper-check"></i>
-                            <span class="stepper-number">3</span>
-                        </div>
-                        <div class="stepper-label">
-                            <h3 class="stepper-title">مرخصی‌ها</h3>
-                            <div class="stepper-desc fw-semibold">اطلاعات مرخصی</div>
-                        </div>
-                    </div>
-                    <div class="stepper-line h-40px"></div>
-                </div>
+                                            <!-- مرخصی‌ها -->
+                                            <div class="stepper-item" data-kt-stepper-element="nav">
+                                                <div class="stepper-wrapper">
+                                                    <div class="stepper-icon w-40px h-40px">
+                                                        <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                        <span class="stepper-number">3</span>
+                                                    </div>
+                                                    <div class="stepper-label">
+                                                        <h3 class="stepper-title">مرخصی‌ها</h3>
+                                                        <div class="stepper-desc fw-semibold">اطلاعات مرخصی</div>
+                                                    </div>
+                                                </div>
+                                                <div class="stepper-line h-40px"></div>
+                                            </div>
 
-                <!-- خودروها -->
-                <div class="stepper-item" data-kt-stepper-element="nav">
-                    <div class="stepper-wrapper">
-                        <div class="stepper-icon w-40px h-40px">
-                            <i class="ki-outline ki-check fs-2 stepper-check"></i>
-                            <span class="stepper-number">4</span>
-                        </div>
-                        <div class="stepper-label">
-                            <h3 class="stepper-title">خودروها</h3>
-                            <div class="stepper-desc fw-semibold">اطلاعات خودروها</div>
-                        </div>
-                    </div>
-                    <div class="stepper-line h-40px"></div>
-                </div>
+                                            <!-- خودروها -->
+                                            <div class="stepper-item" data-kt-stepper-element="nav">
+                                                <div class="stepper-wrapper">
+                                                    <div class="stepper-icon w-40px h-40px">
+                                                        <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                        <span class="stepper-number">4</span>
+                                                    </div>
+                                                    <div class="stepper-label">
+                                                        <h3 class="stepper-title">خودروها</h3>
+                                                        <div class="stepper-desc fw-semibold">اطلاعات خودروها</div>
+                                                    </div>
+                                                </div>
+                                                <div class="stepper-line h-40px"></div>
+                                            </div>
 
-                <!-- توضیحات سرشیفت -->
-                <div class="stepper-item" data-kt-stepper-element="nav">
-                    <div class="stepper-wrapper">
-                        <div class="stepper-icon w-40px h-40px">
-                            <i class="ki-outline ki-check fs-2 stepper-check"></i>
-                            <span class="stepper-number">5</span>
-                        </div>
-                        <div class="stepper-label">
-                            <h3 class="stepper-title">توضیحات سرشیفت</h3>
-                            <div class="stepper-desc fw-semibold">وارد کردن توضیحات</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+                                            <!-- توضیحات سرشیفت -->
+                                            <div class="stepper-item" data-kt-stepper-element="nav">
+                                                <div class="stepper-wrapper">
+                                                    <div class="stepper-icon w-40px h-40px">
+                                                        <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                        <span class="stepper-number">5</span>
+                                                    </div>
+                                                    <div class="stepper-label">
+                                                        <h3 class="stepper-title">توضیحات سرشیفت</h3>
+                                                        <div class="stepper-desc fw-semibold">وارد کردن توضیحات</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
-    <!-- Form Content -->
-    <div class="card d-flex flex-row-fluid flex-center">
-        <form class="card-body py-20 w-100 mw-xl-700px px-9" method="post" novalidate="novalidate" action="{% url 'operations:create_shift_report' %}" id="kt_create_account_form" enctype="multipart/form-data">
-            {% csrf_token %}
+                                <!-- Form Content -->
+                                <div class="card d-flex flex-row-fluid flex-center">
+                                    <form class="card-body py-20 w-100 mw-xl-700px px-9" method="post" novalidate="novalidate" action="{% url 'operations:create_shift_report' %}" id="kt_create_account_form" enctype="multipart/form-data">
+                                        {% csrf_token %}
 
-            <!-- عملیات بارگیری -->
+                                        <!-- عملیات بارگیری -->
 
-            <div class="current" data-kt-stepper-element="content">
-                <div class="w-100">
-                    <div class="pb-10 pb-lg-15">
-                        <h2 class="fw-bold text-gray-900">عملیات بارگیری</h2>
-                    </div>
-                    <div class="form-group">
-                        <label for="stone_type" class="required form-label">نوع سنگ:</label>
-                        <select id="stone_type" class="form-select select2" data-control="select2" data-placeholder="نوع سنگ را انتخاب کنید">
-                            <option></option>
-                            <option value="w">باطله</option>
-                            <option value="O">آهن</option>
-                            <option value="T">T1</option>
-                        </select>
+                                        <div class="current" data-kt-stepper-element="content">
+                                            <div class="w-100">
+                                                <div class="pb-10 pb-lg-15">
+                                                    <h2 class="fw-bold text-gray-900">عملیات بارگیری</h2>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="stone_type" class="required form-label">نوع سنگ:</label>
+                                                    <select id="stone_type" class="form-select select2" data-control="select2" data-placeholder="نوع سنگ را انتخاب کنید">
+                                                        <option></option>
+                                                        <option value="w">باطله</option>
+                                                        <option value="O">آهن</option>
+                                                        <option value="T">T1</option>
+                                                    </select>
 
-                        <label for="load_count" class="required form-label mt-5">تعداد بار:</label>
-                        <input type="number" id="load_count" class="form-control" placeholder="تعداد بار">
+                                                    <label for="load_count" class="required form-label mt-5">تعداد بار:</label>
+                                                    <input type="number" id="load_count" class="form-control" placeholder="تعداد بار">
 
-                        <button type="button" class="btn btn-primary mt-5" onclick="addLoadingOperation()">
-                            <i class="ki-outline ki-plus-square fs-2"></i>
-                            اضافه کردن
-                        </button>
-                    </div>
+                                                    <button type="button" class="btn btn-primary mt-5" onclick="addLoadingOperation()">
+                                                        <i class="ki-outline ki-plus-square fs-2"></i>
+                                                        اضافه کردن
+                                                    </button>
+                                                </div>
 
-                    <div class="separator separator-dashed my-5"></div>
-                    <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-6 gy-5" id="loading_operations_table">
-                            <thead>
-                                <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                                    <th>نوع سنگ</th>
-                                    <th>تعداد بار</th>
-                                    <th>عملیات</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
+                                                <div class="separator separator-dashed my-5"></div>
+                                                <div class="table-responsive">
+                                                    <table class="table align-middle table-row-dashed fs-6 gy-5" id="loading_operations_table">
+                                                        <thead>
+                                                        <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
+                                                            <th>نوع سنگ</th>
+                                                            <th>تعداد بار</th>
+                                                            <th>عملیات</th>
+                                                        </tr>
+                                                        </thead>
+                                                        <tbody></tbody>
+                                                    </table>
+                                                </div>
 
-                </div>
-            </div>
+                                            </div>
+                                        </div>
 
-        <div data-kt-stepper-element="content">
-    <div class="w-100">
-        <div class="pb-10 pb-lg-15">
-            <h2 class="fw-bold text-dark">وضعیت ماشین‌آلات بارگیری</h2>
-        </div>
+                                        <div data-kt-stepper-element="content">
+                                            <div class="w-100">
+                                                <div class="pb-10 pb-lg-15">
+                                                    <h2 class="fw-bold text-dark">وضعیت ماشین‌آلات بارگیری</h2>
+                                                </div>
 
-        <div class="mb-10">
-            <div class="row mb-5">
-                <div class="col-md-3">
-                    <label class="required form-label">ماشین‌آلات</label>
-                    <select class="form-select select2" id="mining_machine_id" data-control="select2" data-placeholder="انتخاب ماشین‌آلات">
-                        <option></option>
-                        {% for machine in mining_machines %}
-                            <option value="{{ machine.id }}">
-                                {{ machine.machine_name }}
-                                {% if machine.contractor %}
-                                    - {{ machine.contractor.name }}
-                                {% endif %}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="required form-label">بلوک</label>
-                    <select class="form-select select2" id="mining_block_id" data-control="select2" data-placeholder="انتخاب بلوک">
-                        <option></option>
-                        {% for block in mining_blocks %}
-                            <option value="{{ block.id }}">
-                                {{ block.block_name }} - {{ block.get_type_display }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="required form-label">وضعیت</label>
-                    <select class="form-select" id="machine_status" onchange="toggleMachineInactiveReason()">
-                        <option value="active">فعال</option>
-                        <option value="inactive">غیرفعال</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <button type="button" class="btn btn-primary mt-8" onclick="addMiningMachine()">
-                        <i class="ki-outline ki-plus-square fs-2"></i>
-                        افزودن
-                    </button>
-                </div>
-            </div>
+                                                <div class="mb-10">
+                                                    <div class="row mb-5">
+                                                        <div class="col-md-3">
+                                                            <label class="required form-label">ماشین‌آلات</label>
+                                                            <select class="form-select select2" id="mining_machine_id" data-control="select2" data-placeholder="انتخاب ماشین‌آلات">
+                                                                <option></option>
+                                                                {% for machine in mining_machines %}
+                                                                    <option value="{{ machine.id }}">
+                                                                        {{ machine.machine_name }}
+                                                                        {% if machine.contractor %}
+                                                                            - {{ machine.contractor.name }}
+                                                                        {% endif %}
+                                                                    </option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <label class="required form-label">بلوک</label>
+                                                            <select class="form-select select2" id="mining_block_id" data-control="select2" data-placeholder="انتخاب بلوک">
+                                                                <option></option>
+                                                                {% for block in mining_blocks %}
+                                                                    <option value="{{ block.id }}">
+                                                                        {{ block.block_name }} - {{ block.get_type_display }}
+                                                                    </option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <label class="required form-label">وضعیت</label>
+                                                            <select class="form-select" id="machine_status" onchange="toggleMachineInactiveReason()">
+                                                                <option value="active">فعال</option>
+                                                                <option value="inactive">غیرفعال</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <button type="button" class="btn btn-primary mt-8" onclick="addMiningMachine()">
+                                                                <i class="ki-outline ki-plus-square fs-2"></i>
+                                                                افزودن
+                                                            </button>
+                                                        </div>
+                                                    </div>
 
-            <!-- فیلد دلیل غیرفعال بودن -->
-            <div class="row mb-5 machine-inactive-reason" style="display: none;">
-                <div class="col-12">
-                    <label class="form-label">دلیل غیرفعال بودن</label>
-                    <textarea class="form-control" id="machine_inactive_reason" rows="3"></textarea>
-                </div>
-            </div>
+                                                    <!-- فیلد دلیل غیرفعال بودن -->
+                                                    <div class="row mb-5 machine-inactive-reason" style="display: none;">
+                                                        <div class="col-12">
+                                                            <label class="form-label">دلیل غیرفعال بودن</label>
+                                                            <textarea class="form-control" id="machine_inactive_reason" rows="3"></textarea>
+                                                        </div>
+                                                    </div>
 
-            <!-- جدول ماشین‌آلات -->
-            <div class="table-responsive">
-                <table class="table align-middle table-row-dashed fs-6 gy-5" id="mining_machines_table">
-                    <thead>
-                        <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                            <th>ماشین‌آلات</th>
-                            <th>پیمانکار</th>
-                            <th>بلوک</th>
-                            <th>نوع بلوک</th>
-                            <th>وضعیت</th>
-                            <th>دلیل غیرفعال بودن</th>
-                            <th>عملیات</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
+                                                    <!-- جدول ماشین‌آلات -->
+                                                    <div class="table-responsive">
+                                                        <table class="table align-middle table-row-dashed fs-6 gy-5" id="mining_machines_table">
+                                                            <thead>
+                                                            <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
+                                                                <th>ماشین‌آلات</th>
+                                                                <th>پیمانکار</th>
+                                                                <th>بلوک</th>
+                                                                <th>نوع بلوک</th>
+                                                                <th>وضعیت</th>
+                                                                <th>دلیل غیرفعال بودن</th>
+                                                                <th>عملیات</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody></tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
 
-            <!-- مرخصی‌ها -->
-            <div data-kt-stepper-element="content">
-                <div class="w-100">
-                    <div class="pb-10 pb-lg-15">
-                        <h2 class="fw-bold text-gray-900">مرخصی‌ها</h2>
-                    </div>
-                    <div class="form-group">
-                        <label class="required form-label">پرسنل:</label>
-                        <select id="personnel_id" class="form-select select2" data-control="select2" data-placeholder="پرسنل را انتخاب کنید">
-                            <option></option>
-                            {% for personnel in personnels %}
-                                <option value="{{ personnel.id }}">
-                                    {{ personnel.user.get_full_name }} - {{ personnel.personnel_code }}
-                                </option>
-                            {% endfor %}
-                        </select>
+                                        <!-- مرخصی‌ها -->
+                                        <div data-kt-stepper-element="content">
+                                            <div class="w-100">
+                                                <div class="pb-10 pb-lg-15">
+                                                    <h2 class="fw-bold text-gray-900">مرخصی‌ها</h2>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label class="required form-label">پرسنل:</label>
+                                                    <select id="personnel_id" class="form-select select2" data-control="select2" data-placeholder="پرسنل را انتخاب کنید">
+                                                        <option></option>
+                                                        {% for personnel in personnels %}
+                                                            <option value="{{ personnel.id }}">
+                                                                {{ personnel.user.get_full_name }} - {{ personnel.personnel_code }}
+                                                            </option>
+                                                        {% endfor %}
+                                                    </select>
 
-                        <label class="required form-label mt-5">وضعیت مرخصی:</label>
-                        <select id="leave_status" class="form-select select2" data-control="select2" data-placeholder="وضعیت مرخصی را انتخاب کنید">
-                            <option></option>
-                            <option value="authorized">مجاز</option>
-                            <option value="unauthorized">غیر مجاز</option>
-                        </select>
+                                                    <label class="required form-label mt-5">وضعیت مرخصی:</label>
+                                                    <select id="leave_status" class="form-select select2" data-control="select2" data-placeholder="وضعیت مرخصی را انتخاب کنید">
+                                                        <option></option>
+                                                        <option value="authorized">مجاز</option>
+                                                        <option value="unauthorized">غیر مجاز</option>
+                                                    </select>
 
-                        <button type="button" class="btn btn-primary mt-5" onclick="addLeave()">
-                            <i class="ki-outline ki-plus-square fs-2"></i>
-                            اضافه کردن
-                        </button>
-                    </div>
-                    <div class="separator separator-dashed my-5"></div>
-                    <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-6 gy-5" id="leaves_table">
-                            <thead>
-                                <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                                    <th>نام پرسنل</th>
-                                    <th>کد پرسنلی</th>
-                                    <th>نوع مرخصی</th>
-                                    <th>عملیات</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+                                                    <button type="button" class="btn btn-primary mt-5" onclick="addLeave()">
+                                                        <i class="ki-outline ki-plus-square fs-2"></i>
+                                                        اضافه کردن
+                                                    </button>
+                                                </div>
+                                                <div class="separator separator-dashed my-5"></div>
+                                                <div class="table-responsive">
+                                                    <table class="table align-middle table-row-dashed fs-6 gy-5" id="leaves_table">
+                                                        <thead>
+                                                        <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
+                                                            <th>نام پرسنل</th>
+                                                            <th>کد پرسنلی</th>
+                                                            <th>نوع مرخصی</th>
+                                                            <th>عملیات</th>
+                                                        </tr>
+                                                        </thead>
+                                                        <tbody></tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
 
-            <!-- خودروها -->
-            <div data-kt-stepper-element="content">
-                <div class="w-100">
-                    <div class="pb-10 pb-lg-15">
-                        <h2 class="fw-bold text-gray-900">خودروها</h2>
-                    </div>
-                    <div class="form-group">
-                        <label class="required form-label">نام خودرو:</label>
-                        <select id="vehicle_id" class="form-select select2" data-control="select2" data-placeholder="خودرو را انتخاب کنید">
-                            <option></option>
-                            {% for vehicle in vehicles %}
-                                <option value="{{ vehicle.id }}">
-                                    {{ vehicle.vehicle_name }} - {{ vehicle.contractor.name }} - {{ vehicle.get_vehicle_type_display }}
-                                </option>
-                            {% endfor %}
-                        </select>
+                                        <!-- خودروها -->
+                                        <div data-kt-stepper-element="content">
+                                            <div class="w-100">
+                                                <div class="pb-10 pb-lg-15">
+                                                    <h2 class="fw-bold text-gray-900">خودروها</h2>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label class="required form-label">نام خودرو:</label>
+                                                    <select id="vehicle_id" class="form-select select2" data-control="select2" data-placeholder="خودرو را انتخاب کنید">
+                                                        <option></option>
+                                                        {% for vehicle in vehicles %}
+                                                            <option value="{{ vehicle.id }}">
+                                                                {{ vehicle.vehicle_name }} - {{ vehicle.contractor.name }} - {{ vehicle.get_vehicle_type_display }}
+                                                            </option>
+                                                        {% endfor %}
+                                                    </select>
 
-                        <button type="button" class="btn btn-primary mt-5" onclick="addVehicle()">
-                            <i class="ki-outline ki-plus-square fs-2"></i>
-                            اضافه کردن
-                        </button>
-                    </div>
-                    <div class="separator separator-dashed my-5"></div>
-                    <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-6 gy-5" id="vehicles_table">
-                            <thead>
-                                <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
-                                    <th>نام خودرو</th>
-                                    <th>پیمانکار</th>
-                                    <th>نوع خودرو</th>
-                                    <th>عملیات</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+                                                    <button type="button" class="btn btn-primary mt-5" onclick="addVehicle()">
+                                                        <i class="ki-outline ki-plus-square fs-2"></i>
+                                                        اضافه کردن
+                                                    </button>
+                                                </div>
+                                                <div class="separator separator-dashed my-5"></div>
+                                                <div class="table-responsive">
+                                                    <table class="table align-middle table-row-dashed fs-6 gy-5" id="vehicles_table">
+                                                        <thead>
+                                                        <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
+                                                            <th>نام خودرو</th>
+                                                            <th>پیمانکار</th>
+                                                            <th>نوع خودرو</th>
+                                                            <th>عملیات</th>
+                                                        </tr>
+                                                        </thead>
+                                                        <tbody></tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
 
-            <!-- توضیحات سرشیفت -->
-            <div data-kt-stepper-element="content">
-                <div class="w-100">
-                    <div class="pb-10 pb-lg-15">
-                        <h2 class="fw-bold text-gray-900">توضیحات سرشیفت</h2>
-                    </div>
+                                        <!-- توضیحات سرشیفت -->
+                                        <div data-kt-stepper-element="content">
+                                            <div class="w-100">
+                                                <div class="pb-10 pb-lg-15">
+                                                    <h2 class="fw-bold text-gray-900">توضیحات سرشیفت</h2>
+                                                </div>
 
-                    <div class="form-group mb-5">
-                        <label class="form-label required">توضیحات سرشیفت:</label>
-                        <textarea name="supervisor_comments" class="form-control" rows="4"></textarea>
-                    </div>
+                                                <div class="form-group mb-5">
+                                                    <label class="form-label required">توضیحات سرشیفت:</label>
+                                                    <textarea name="supervisor_comments" class="form-control" rows="4"></textarea>
+                                                </div>
 
-                    <div class="form-group mb-5">
-                        <label class="form-label">فایل ضمیمه:</label>
-                        <input type="file" name="attached_file" class="form-control" id="attached_file"
-                               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
-                        <div class="form-text text-muted">
-                            فرمت‌های مجاز: PDF, Word, JPG (حداکثر حجم: 5MB)
-                        </div>
-                    </div>
-                </div>
-            </div>
+                                                <div class="form-group mb-5">
+                                                    <label class="form-label">فایل ضمیمه:</label>
+                                                    <input type="file" name="attached_file" class="form-control" id="attached_file"
+                                                           accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                                                    <div class="form-text text-muted">
+                                                        فرمت‌های مجاز: PDF, Word, JPG (حداکثر حجم: 5MB)
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
 
-            <!-- Navigation Buttons -->
-    <!-- Navigation Buttons -->
- <div class="d-flex flex-stack pt-10">
-    <div class="mr-2">
-        <button type="button" class="btn btn-lg btn-light-primary me-3" data-kt-stepper-action="previous">
-            <i class="ki-duotone ki-arrow-left fs-4 me-1"></i>
-            برگشت
-        </button>
-    </div>
+                                        <!-- Navigation Buttons -->
+                                        <!-- Navigation Buttons -->
+                                        <div class="d-flex flex-stack pt-10">
+                                            <div class="mr-2">
+                                                <button type="button" class="btn btn-lg btn-light-primary me-3" data-kt-stepper-action="previous">
+                                                    <i class="ki-duotone ki-arrow-left fs-4 me-1"></i>
+                                                    برگشت
+                                                </button>
+                                            </div>
 
-    <div>
-        <button type="button" class="btn btn-lg btn-primary" data-kt-stepper-action="next">
-            ادامه
-            <i class="ki-duotone ki-arrow-right fs-4 ms-1"></i>
-        </button>
+                                            <div>
+                                                <button type="button" class="btn btn-lg btn-primary" data-kt-stepper-action="next">
+                                                    ادامه
+                                                    <i class="ki-duotone ki-arrow-right fs-4 ms-1"></i>
+                                                </button>
 
-        <button type="submit" class="btn btn-lg btn-success" data-kt-stepper-action="submit">
-            ثبت گزارش
-            <i class="ki-duotone ki-check fs-4 ms-1"></i>
-        </button>
-    </div>
-</div>
-        </form>
+                                                <button type="submit" class="btn btn-lg btn-success" data-kt-stepper-action="submit">
+                                                    ثبت گزارش
+                                                    <i class="ki-duotone ki-check fs-4 ms-1"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
 
 
 
+                                </div>
                             </div>
                         </div>
+                        {% include 'footer.html' %}
                     </div>
-                    {% include 'footer.html' %}
                 </div>
             </div>
         </div>
     </div>
-</div>
 {% endblock %}
 
 
 {% block extra_js %}
 
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <!-- Custom Select2 JS -->
-<script src="{% static 'assets/js/select2-scripts.js' %}"></script>
+    <script src="{% static 'assets/js/select2-scripts.js' %}"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<script src="{% static 'assets/js/custom_forms.js' %}"> {{ messages|safe }}</script>
+    <script src="{% static 'assets/js/custom_forms.js' %}"> {{ messages|safe }}</script>
 {% endblock %}
