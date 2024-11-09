@@ -3,12 +3,9 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.template.defaultfilters import title
 from django.urls import reverse
-
-from accounts.models import UserProfile
 from dashboard.models import Notification
 from dashboard.sms_utils import send_sms
 from .forms import AnomalyForm, CommentForm
-from django.shortcuts import redirect
 from django.http import JsonResponse
 from .models import AnomalyDescription, CorrectiveAction, Comment
 from .models import Anomaly
@@ -16,7 +13,11 @@ from django.views.decorators.csrf import csrf_exempt
 import jdatetime
 from accounts.models import UserProfile
 from django.contrib.auth.models import Group, User
-
+from django.contrib import messages
+from django.core.exceptions import PermissionDenied
+from django.db.models import Prefetch
+from django.shortcuts import render, get_object_or_404, redirect
+from django.utils import timezone
 
 name = 'anomalis'
 
@@ -102,46 +103,53 @@ def anomaly_list(request):
     })
 
 
-
-
-
 @login_required
 def anomaly_detail_view(request, pk):
-    anomaly = get_object_or_404(Anomaly, pk=pk)
-    comments = anomaly.comments.filter(parent__isnull=True)
+    anomaly = get_object_or_404(
+        Anomaly.objects.prefetch_related(
+            Prefetch('comments',
+                     queryset=Comment.objects.filter(parent__isnull=True).select_related('user'),
+                     to_attr='root_comments')
+        ),
+        pk=pk
+    )
 
-    # بررسی اینکه کاربر عضو گروه 'مدیر HSE' یا 'افسر HSE' است یا خیر
+    # Remove permission check and just use login_required
     is_hse_manager = request.user.groups.filter(name__in=['مدیر HSE', 'افسر HSE']).exists()
-
-    # بررسی اینکه آیا درخواست ایمن‌سازی ارسال شده است یا خیر
-    is_request_sent = anomaly.is_request_sent  # بررسی از فیلد is_request_sent
 
     if request.method == "POST":
         form = CommentForm(request.POST)
         if form.is_valid():
-            comment = form.save(commit=False)
-            comment.anomaly = anomaly
-            comment.user = request.user
-            parent_id = request.POST.get('parent_id')
-            if parent_id:
-                parent_comment = Comment.objects.get(id=parent_id)
-                comment.parent = parent_comment
-            comment.save()
-            return redirect('anomalis:anomaly_detail', pk=anomaly.id)
-    else:
-        form = CommentForm()
+            try:
+                comment = form.save(commit=False)
+                comment.anomaly = anomaly
+                comment.user = request.user.userprofile
+
+                # Handle reply
+                parent_id = request.POST.get('parent_id')
+                if parent_id:
+                    parent_comment = get_object_or_404(Comment, id=parent_id)
+                    comment.parent = parent_comment
+
+                comment.save()
+                messages.success(request, "نظر شما با موفقیت ثبت شد")
+
+            except UserProfile.DoesNotExist:
+                messages.error(request, "پروفایل کاربری یافت نشد")
+                return redirect('accounts:profile')
+
+        return redirect('anomalis:anomaly_detail', pk=anomaly.id)
 
     context = {
         'anomaly': anomaly,
-        'comments': comments,
-        'form': form,
+        'comments': anomaly.root_comments,
+        'form': CommentForm(),
         'title': 'جزئیات آنومالی',
         'is_hse_manager': is_hse_manager,
-        'is_request_sent': is_request_sent
+        'is_request_sent': anomaly.is_request_sent
     }
+
     return render(request, 'anomalis/anomaly-details.html', context)
-
-
 
 
 @login_required

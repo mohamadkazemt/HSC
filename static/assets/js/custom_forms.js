@@ -54,7 +54,15 @@ function initializeSelect2() {
             noResults: () => "نتیجه‌ای یافت نشد",
             searching: () => "در حال جستجو..."
         },
-        dropdownParent: $('#kt_create_account_stepper')
+        dropdownParent: $('#kt_create_account_stepper'),
+        selectionCssClass: 'form-select form-select-solid',
+        dropdownCssClass: 'select2-dropdown-kt',
+        placeholder: 'انتخاب کنید...'
+    }).on('select2:open', function() {
+        setTimeout(function() {
+            $('.select2-search__field').addClass('form-control form-control-solid');
+            $('.select2-dropdown').addClass('select2-dropdown-kt');
+        }, 0);
     });
 }
 
@@ -80,12 +88,10 @@ function initializeMachineStatusHandler() {
     });
 }
 
-// Get total steps function
 function getTotalSteps() {
     return document.querySelectorAll('[data-kt-stepper-element="content"]').length;
 }
 
-// Navigation Functions
 function handleNextStep() {
     if (validateCurrentStep(stepper.getCurrentStepIndex())) {
         stepper.goNext();
@@ -203,6 +209,19 @@ function validateSupervisorComments() {
     return true;
 }
 
+function validateSelect2Fields() {
+    let isValid = true;
+    $('.select2[required]').each(function() {
+        if (!$(this).val()) {
+            const fieldName = $(this).data('placeholder') || 'این فیلد';
+            showError(`لطفاً ${fieldName} را انتخاب کنید`);
+            isValid = false;
+            return false;
+        }
+    });
+    return isValid;
+}
+
 function validateFile(file) {
     if (!file) return true;
 
@@ -224,15 +243,15 @@ function validateFile(file) {
 
 // Add Item Functions
 function addLoadingOperation() {
-    const stoneType = document.getElementById('stone_type');
-    const loadCount = document.getElementById('load_count');
+    const stoneType = $('#stone_type');
+    const loadCount = $('#load_count');
 
-    if (!stoneType?.value || !loadCount?.value) {
+    if (!stoneType.val() || !loadCount.val()) {
         showError('لطفا نوع سنگ و تعداد بار را وارد کنید');
         return;
     }
 
-    const loadCountValue = parseInt(loadCount.value);
+    const loadCountValue = parseInt(loadCount.val());
     if (isNaN(loadCountValue) || loadCountValue <= 0) {
         showError('لطفا تعداد بار معتبر وارد کنید');
         return;
@@ -247,37 +266,36 @@ function addLoadingOperation() {
     try {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${stoneType.options[stoneType.selectedIndex].text}</td>
+            <td>${stoneType.find('option:selected').text()}</td>
             <td>${loadCountValue}</td>
             <td>
                 <button type="button" class="btn btn-sm btn-danger" onclick="removeTableRow(this)">حذف</button>
-                <input type="hidden" name="loading_operations[]" value="${stoneType.value},${loadCountValue}">
+                <input type="hidden" name="loading_operations[]" value="${stoneType.val()},${loadCountValue}">
             </td>
         `;
         tbody.appendChild(tr);
 
-        stoneType.value = '';
-        loadCount.value = '';
-        $(stoneType).trigger('change');
+        // Reset fields
+        stoneType.val(null).trigger('change');
+        loadCount.val('');
 
     } catch (error) {
         console.error('Error in addLoadingOperation:', error);
         showError('خطا در افزودن عملیات بارگیری');
     }
 }
-
 function addMiningMachine() {
-    const machineSelect = document.getElementById('mining_machine_id');
-    const blockSelect = document.getElementById('mining_block_id');
-    const status = document.getElementById('machine_status');
-    const inactiveReason = document.getElementById('machine_inactive_reason');
+    const machineSelect = $('#mining_machine_id');
+    const blockSelect = $('#mining_block_id');
+    const status = $('#machine_status');
+    const inactiveReason = $('#machine_inactive_reason');
 
-    if (!machineSelect?.value || !blockSelect?.value) {
+    if (!machineSelect.val() || !blockSelect.val()) {
         showError('لطفا ماشین‌آلات و بلوک را انتخاب کنید');
         return;
     }
 
-    if (status.value === 'inactive' && !inactiveReason?.value.trim()) {
+    if (status.val() === 'inactive' && !inactiveReason.val()?.trim()) {
         showError('لطفا دلیل غیرفعال بودن را وارد کنید');
         return;
     }
@@ -290,8 +308,8 @@ function addMiningMachine() {
 
     try {
         const tr = document.createElement('tr');
-        const machineText = machineSelect.options[machineSelect.selectedIndex].text;
-        const blockText = blockSelect.options[blockSelect.selectedIndex].text;
+        const machineText = machineSelect.find('option:selected').text();
+        const blockText = blockSelect.find('option:selected').text();
 
         const [machineName, contractorName = '-'] = machineText.split(' - ');
         const [blockName, blockType = '-'] = blockText.split(' - ');
@@ -301,20 +319,21 @@ function addMiningMachine() {
             <td>${contractorName}</td>
             <td>${blockName}</td>
             <td>${blockType}</td>
-            <td>${status.value === 'active' ? 'فعال' : 'غیرفعال'}</td>
-            <td>${inactiveReason?.value || '-'}</td>
+            <td>${status.val() === 'active' ? 'فعال' : 'غیرفعال'}</td>
+            <td>${inactiveReason.val() || '-'}</td>
             <td>
                 <button type="button" class="btn btn-sm btn-danger" onclick="removeTableRow(this)">حذف</button>
-                <input type="hidden" name="loader_statuses[]" value="${machineSelect.value},${blockSelect.value},${status.value},${inactiveReason?.value || ''}">
+                <input type="hidden" name="loader_statuses[]" value="${machineSelect.val()},${blockSelect.val()},${status.val()},${inactiveReason.val() || ''}">
             </td>
         `;
         tbody.appendChild(tr);
 
-        $(machineSelect).val('').trigger('change');
-        $(blockSelect).val('').trigger('change');
-        status.value = 'active';
-        if (inactiveReason) inactiveReason.value = '';
-        document.querySelector('.machine-inactive-reason').style.display = 'none';
+        // Reset fields
+        machineSelect.val(null).trigger('change');
+        blockSelect.val(null).trigger('change');
+        status.val('active');
+        inactiveReason.val('');
+        $('.machine-inactive-reason').hide();
 
     } catch (error) {
         console.error('Error in addMiningMachine:', error);
@@ -323,10 +342,10 @@ function addMiningMachine() {
 }
 
 function addLeave() {
-    const personnelSelect = document.getElementById('personnel_id');
-    const leaveStatus = document.getElementById('leave_status');
+    const personnelSelect = $('#personnel_id');
+    const leaveStatus = $('#leave_status');
 
-    if (!personnelSelect?.value) {
+    if (!personnelSelect.val()) {
         showError('لطفا پرسنل را انتخاب کنید');
         return;
     }
@@ -339,22 +358,23 @@ function addLeave() {
 
     try {
         const tr = document.createElement('tr');
-        const personnelText = personnelSelect.options[personnelSelect.selectedIndex].text;
+        const personnelText = personnelSelect.find('option:selected').text();
         const [personnelName, personnelCode = '-'] = personnelText.split(' - ');
 
         tr.innerHTML = `
             <td>${personnelName}</td>
             <td>${personnelCode}</td>
-            <td>${leaveStatus.value === 'authorized' ? 'مجاز' : 'غیر مجاز'}</td>
+            <td>${leaveStatus.val() === 'authorized' ? 'مجاز' : 'غیر مجاز'}</td>
             <td>
                 <button type="button" class="btn btn-sm btn-danger" onclick="removeTableRow(this)">حذف</button>
-                <input type="hidden" name="leaves[]" value="${personnelSelect.value},${leaveStatus.value}">
+                <input type="hidden" name="leaves[]" value="${personnelSelect.val()},${leaveStatus.val()}">
             </td>
         `;
         tbody.appendChild(tr);
 
-        $(personnelSelect).val('').trigger('change');
-        leaveStatus.value = 'unauthorized';
+        // Reset fields
+        personnelSelect.val(null).trigger('change');
+        leaveStatus.val('unauthorized');
 
     } catch (error) {
         console.error('Error in addLeave:', error);
@@ -363,9 +383,9 @@ function addLeave() {
 }
 
 function addVehicle() {
-    const vehicleSelect = document.getElementById('vehicle_id');
+    const vehicleSelect = $('#vehicle_id');
 
-    if (!vehicleSelect?.value) {
+    if (!vehicleSelect.val()) {
         showError('لطفا خودرو را انتخاب کنید');
         return;
     }
@@ -378,7 +398,7 @@ function addVehicle() {
 
     try {
         const tr = document.createElement('tr');
-        const vehicleText = vehicleSelect.options[vehicleSelect.selectedIndex].text;
+        const vehicleText = vehicleSelect.find('option:selected').text();
         const [vehicleName, contractorName = '-', vehicleType = '-'] = vehicleText.split(' - ');
 
         tr.innerHTML = `
@@ -387,12 +407,13 @@ function addVehicle() {
             <td>${vehicleType}</td>
             <td>
                 <button type="button" class="btn btn-sm btn-danger" onclick="removeTableRow(this)">حذف</button>
-                <input type="hidden" name="vehicles[]" value="${vehicleSelect.value}">
+                <input type="hidden" name="vehicles[]" value="${vehicleSelect.val()}">
             </td>
         `;
         tbody.appendChild(tr);
 
-        $(vehicleSelect).val('').trigger('change');
+        // Reset fields
+        vehicleSelect.val(null).trigger('change');
 
     } catch (error) {
         console.error('Error in addVehicle:', error);
@@ -415,8 +436,8 @@ function submitShiftReport(formElement) {
     }
 
     // Validate supervisor comments
-    const comments = document.querySelector('[name="supervisor_comments"]');
-    if (!comments?.value.trim()) {
+    const comments = $('[name="supervisor_comments"]');
+    if (!comments.val()?.trim()) {
         showError('لطفا توضیحات سرشیفت را وارد کنید');
         return false;
     }
@@ -432,7 +453,7 @@ function submitShiftReport(formElement) {
     }
 
     // Add all form data
-    formData.append('supervisor_comments', comments.value.trim());
+    formData.append('supervisor_comments', comments.val().trim());
 
     // Add file if exists
     const fileInput = document.querySelector('input[type="file"]');
@@ -456,7 +477,7 @@ function submitShiftReport(formElement) {
         formData.append(key, JSON.stringify(data));
     });
 
-    // Send AJAX request
+    // Send AJAX request with jQuery
     $.ajax({
         url: formElement.action || window.location.href,
         type: 'POST',
@@ -464,12 +485,8 @@ function submitShiftReport(formElement) {
         processData: false,
         contentType: false,
         headers: { 'X-CSRFToken': csrftoken },
-        success: function(response) {
-            handleSubmitResponse(response);
-        },
-        error: function(xhr) {
-            handleSubmitError(xhr);
-        },
+        success: handleSubmitResponse,
+        error: handleSubmitError,
         complete: function() {
             // Reset submit button
             if (submitBtn) {

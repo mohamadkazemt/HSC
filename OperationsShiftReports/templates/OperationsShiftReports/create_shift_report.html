@@ -3,9 +3,7 @@
 {% load static %}
 {% block style %}
 
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <!-- Custom Select2 CSS -->
-    <link href="{% static 'assets/css/select2-styles.css' %}" rel="stylesheet" />
+
 {% endblock %}
 
 {% block content %}
@@ -375,12 +373,6 @@
 
 
 {% block extra_js %}
-
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <!-- Custom Select2 JS -->
-    <script src="{% static 'assets/js/select2-scripts.js' %}"></script>
-
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
+    
     <script src="{% static 'assets/js/custom_forms.js' %}"> {{ messages|safe }}</script>
 {% endblock %}
