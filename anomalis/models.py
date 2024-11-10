@@ -13,6 +13,17 @@ class Location(models.Model):
     def __str__(self):
         return self.name
 
+class LocationSection(models.Model):
+    location = models.ForeignKey(Location, on_delete=models.CASCADE)
+    section = models.CharField(max_length=100)
+
+    class Meta:
+        verbose_name = "بخش محل"
+        verbose_name_plural = "بخش های محل ها"
+
+    def __str__(self):
+        return self.section
+
 
 class Anomalytype(models.Model):
     type = models.CharField(max_length=100)
@@ -80,6 +91,7 @@ class Priority(models.Model):
 
 class Anomaly(models.Model):
     location = models.ForeignKey(Location, on_delete=models.CASCADE, verbose_name="محل آنومالی")
+    section = models.ForeignKey(LocationSection, on_delete=models.CASCADE, null=True, blank=True, related_name='anomalies', verbose_name= "بخش محل ")
     anomalytype = models.ForeignKey(Anomalytype, on_delete=models.CASCADE, verbose_name="نوع آنومالی")
     anomalydescription = models.ForeignKey(AnomalyDescription, on_delete=models.CASCADE, verbose_name="شرح آنومالی")
     hse_type = models.CharField(max_length=1, choices=[('H', 'Health'), ('S', 'Safety'), ('E', 'Environment')],

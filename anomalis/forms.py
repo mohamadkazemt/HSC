@@ -28,10 +28,11 @@ class AnomalyForm(forms.ModelForm):
 
     class Meta:
         model = Anomaly
-        fields = ('location', 'anomalytype', 'followup', 'description', 'action',
+        fields = ('location', 'section','anomalytype', 'followup', 'description', 'action',
                   'correctiveaction', 'priority', 'image', 'anomalydescription', 'hse_type')
         labels = {
             'location': 'محل آنومالی',
+            'section' : 'بخش محل',
             'anomalytype': 'نوع آنومالی',
             'followup': 'پیگیری',
             'description': 'شرح',
@@ -50,6 +51,14 @@ class AnomalyForm(forms.ModelForm):
                 'aria-hidden': 'true',
                 'data-kt-initialized': '1',
                 'data-placeholder': 'محل آنومالی را انتخاب کنید'
+            }),
+            'section': forms.Select(attrs={
+                'class': 'form-select form-select-solid modal-select2',
+                'data-control': 'select2',
+                'data-dropdown-parent': '#kt_modal_new_target .modal-body',
+                'aria-hidden': 'true',
+                'data-kt-initialized': '1',
+                'data-placeholder': 'بخش محل آنومالی را انتخاب کنید'
             }),
             'anomalytype': forms.Select(attrs={
                 'class': 'form-select form-select-solid modal-select2',
@@ -127,6 +136,7 @@ class AnomalyForm(forms.ModelForm):
         # اضافه کردن placeholder برای فیلدها
         placeholders = {
             'location': 'محل آنومالی را انتخاب کنید',
+            'section': 'بخش محل آنومالی را انتخاب کنید',
             'anomalytype': 'نوع آنومالی را انتخاب کنید',
             'followup': 'مسئول پیگیری را انتخاب کنید',
             'description': 'توضیحات خود را وارد کنید',

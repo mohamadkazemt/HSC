@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls.base import reverse
 from django.utils.safestring import mark_safe
 from . import models
-from anomalis.models import CorrectiveAction, Anomaly, AnomalyDescription, HSE, Comment
+from anomalis.models import CorrectiveAction, Anomaly, AnomalyDescription, HSE, Comment, LocationSection
 from .models import Location, Anomalytype, Priority
 from .views import anomaly_list
 import jdatetime
@@ -33,6 +33,7 @@ class CommentInline(admin.ModelAdmin):
 
 
 admin.site.register(Location)
+admin.site.register(LocationSection)
 admin.site.register(Anomalytype)
 admin.site.register(CorrectiveAction)
 admin.site.register(Priority)

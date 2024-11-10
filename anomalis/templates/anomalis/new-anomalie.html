@@ -2535,16 +2535,24 @@
                         </div>
                         <!--end::Heading-->
                         <!--begin::Input group-->
-                        <div class="d-flex flex-column mb-8 fv-row">
-                            <!--begin::Tags-->
-                            <label class="d-flex align-items-center fs-6 fw-semibold mb-2">
-                                <span class="required">{{ form.location.label}}</span>
-                                <span class="ms-1" data-bs-toggle="tooltip" title="لطفا مکانی که دارای ناهنجاری است را انتخاب کنید.">
-										<i class="ki-outline ki-information-5 text-gray-500 fs-6"></i>
-									</span>
-                            </label>
-                            <!--end::Tags-->
-                            {{ form.location }}
+
+                        <div class="row g-9 mb-8">
+                            <!--begin::Col-->
+                            <div class="col-md-6 fv-row">
+                                <label class="required fs-6 fw-semibold mb-2">{{ form.location.label}}</label>
+                                {{ form.location }}
+                            </div>
+                            <!--end::Col-->
+                            <!--begin::Col-->
+                            <div class="col-md-6 fv-row">
+                                <label class="required fs-6 fw-semibold mb-2">{{ form.section.label }}</label>
+                                <!--begin::Input-->
+                                <div class="position-relative d-flex align-items-center">
+                                    {{ form.section }}
+                                </div>
+                                <!--end::Input-->
+                            </div>
+                            <!--end::Col-->
                         </div>
                         <!--end::Input group-->
                         <!--begin::Input group-->

@@ -1,4 +1,3 @@
-from tkinter.font import names
 from django.urls import path, include
 from . import views
 from .views import get_anomalydescription, get_hse_type, get_corrective_action
