@@ -39,44 +39,44 @@
                                             </div>
                                             <!--begin::کارت toolbar-->
                                             <div class="card-toolbar my-1">
-    <form method="get" action="{% url 'anomalis:list' %}" class="d-flex align-items-center flex-wrap">
-        <div class="me-2">
-            <select id="kt_filter_year" name="time" class="form-select form-select-solid form-select-sm">
-                <option value="همه" {% if time_filter == 'همه' %}selected{% endif %}>همه زمان</option>
-                <option value="امسال" {% if time_filter == 'امسال' %}selected{% endif %}>امسال</option>
-                <option value="این ماه" {% if time_filter == 'این ماه' %}selected{% endif %}>در این ماه</option>
-                <option value="ماه گذشته" {% if time_filter == 'ماه گذشته' %}selected{% endif %}>ماه گذشته</option>
-                <option value="90 روز اخیر" {% if time_filter == '90 روز اخیر' %}selected{% endif %}>90 روز اخیر</option>
-            </select>
-        </div>
-        <div class="me-2">
-            <select id="kt_filter_status" name="status" class="form-select form-select-solid form-select-sm">
-                <option value="همه" {% if status_filter == 'همه' %}selected{% endif %}>همه آنومالی ها</option>
-                <option value="ایمن" {% if status_filter == 'ایمن' %}selected{% endif %}>ایمن شده</option>
-                <option value="نا ایمن" {% if status_filter == 'نا ایمن' %}selected{% endif %}>نا ایمن</option>
-            </select>
-        </div>
-        <div class="me-2">
-            <select id="kt_filter_priority" name="priority" class="form-select form-select-solid form-select-sm">
-                <option value="همه" {% if priority_filter == 'همه' %}selected{% endif %}>همه اولویت‌ها</option>
-                <option value="زیاد" {% if priority_filter == 'زیاد' %}selected{% endif %}>اولویت زیاد</option>
-                <option value="کم" {% if priority_filter == 'کم' %}selected{% endif %}>اولویت کم</option>
-            </select>
-        </div>
-        <div class="me-2">
-            <input type="text" name="search" id="kt_filter_search"
-                   class="form-control form-control-solid form-select-sm"
-                   placeholder="جستجو"
-                   value="{{ search_query }}">
-        </div>
-        <div class="me-2">
-            <button type="submit" class="btn btn-primary">اعمال فیلترها</button>
-        </div>
-        <div>
-            <a href="{% url 'anomalis:export_anomalies_to_excel' %}?search={{ search_query }}&priority={{ priority_filter }}&status={{ status_filter }}&time={{ time_filter }}" class="btn btn-success">خروجی اکسل</a>
-        </div>
-    </form>
-</div>
+                                                <form method="get" action="{% url 'anomalis:list' %}" class="d-flex align-items-center flex-wrap">
+                                                    <div class="me-2">
+                                                        <select id="kt_filter_year" name="time" class="form-select form-select-solid form-select-sm">
+                                                            <option value="همه" {% if time_filter == 'همه' %}selected{% endif %}>همه زمان</option>
+                                                            <option value="امسال" {% if time_filter == 'امسال' %}selected{% endif %}>امسال</option>
+                                                            <option value="این ماه" {% if time_filter == 'این ماه' %}selected{% endif %}>در این ماه</option>
+                                                            <option value="ماه گذشته" {% if time_filter == 'ماه گذشته' %}selected{% endif %}>ماه گذشته</option>
+                                                            <option value="90 روز اخیر" {% if time_filter == '90 روز اخیر' %}selected{% endif %}>90 روز اخیر</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="me-2">
+                                                        <select id="kt_filter_status" name="status" class="form-select form-select-solid form-select-sm">
+                                                            <option value="همه" {% if status_filter == 'همه' %}selected{% endif %}>همه آنومالی ها</option>
+                                                            <option value="ایمن" {% if status_filter == 'ایمن' %}selected{% endif %}>ایمن شده</option>
+                                                            <option value="نا ایمن" {% if status_filter == 'نا ایمن' %}selected{% endif %}>نا ایمن</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="me-2">
+                                                        <select id="kt_filter_priority" name="priority" class="form-select form-select-solid form-select-sm">
+                                                            <option value="همه" {% if priority_filter == 'همه' %}selected{% endif %}>همه اولویت‌ها</option>
+                                                            <option value="زیاد" {% if priority_filter == 'زیاد' %}selected{% endif %}>اولویت زیاد</option>
+                                                            <option value="کم" {% if priority_filter == 'کم' %}selected{% endif %}>اولویت کم</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="me-2">
+                                                        <input type="text" name="search" id="kt_filter_search"
+                                                               class="form-control form-control-solid form-select-sm"
+                                                               placeholder="جستجو"
+                                                               value="{{ search_query }}">
+                                                    </div>
+                                                    <div class="me-2">
+                                                        <button type="submit" class="btn btn-primary">اعمال فیلترها</button>
+                                                    </div>
+                                                    <div>
+                                                        <a href="{% url 'anomalis:export_anomalies_to_excel' %}?search={{ search_query }}&priority={{ priority_filter }}&status={{ status_filter }}&time={{ time_filter }}" class="btn btn-success">خروجی اکسل</a>
+                                                    </div>
+                                                </form>
+                                            </div>
 
 
                                         </div>

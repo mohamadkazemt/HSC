@@ -1,9 +1,11 @@
 from django.utils import timezone
-
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from dashboard.models import Notification
-
+import jdatetime
+from collections import Counter
+from django.shortcuts import render
+from anomalis.models import Anomaly
 
 name = 'dashboard'
 
@@ -68,3 +70,39 @@ def mark_notification_and_redirect(request, notification_id):
 
 
 
+
+@login_required
+def dashboard(request):
+    # دریافت پارامترهای فیلتر از درخواست
+    status_filter = request.GET.get('status', 'همه')
+    priority_filter = request.GET.get('priority', 'همه')
+
+    # فیلتر کردن داده‌های آنومالی بر اساس پارامترهای انتخاب شده
+    anomalies = Anomaly.objects.all()
+
+    if status_filter == 'ایمن':
+        anomalies = anomalies.filter(action=True)
+    elif status_filter == 'نا ایمن':
+        anomalies = anomalies.filter(action=False)
+
+    if priority_filter != 'همه':
+        anomalies = anomalies.filter(priority__priority=priority_filter)
+
+    # تبدیل تاریخ‌ها به ماه و سال شمسی و شمارش تعداد آنومالی‌ها
+    anomaly_dates = [
+        jdatetime.datetime.fromgregorian(datetime=anomaly.created_at).strftime("%Y-%m")
+        for anomaly in anomalies
+    ]
+    anomaly_counts = Counter(anomaly_dates)
+    months = list(anomaly_counts.keys())
+    counts = list(anomaly_counts.values())
+
+    context = {
+        'months': months,  # ماه‌های شمسی
+        'counts': counts,  # تعداد آنومالی‌ها در هر ماه
+        'status_filter': status_filter,
+        'priority_filter': priority_filter,
+        'title': 'داشبورد',
+    }
+
+    return render(request, 'dashboard/dashboard.html', context)
