@@ -14,6 +14,6 @@ urlpatterns = [
     path('anomaly/<int:pk>/request-safe/', views.request_safe, name='request_safe'),
     path('anomaly/<int:pk>/approve/', views.approve_safe, name='approve_safe'),
     path('anomaly/<int:pk>/reject/', views.reject_safe, name='reject_safe'),
-
+    path('export-anomalies/', views.export_anomalies_to_excel, name='export_anomalies_to_excel'),
 
 ]

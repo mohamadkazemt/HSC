@@ -2,6 +2,8 @@
 
 
 {% load static %}
+{% load jalali %}
+
 {% block content %}
     <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
         <!--begin::Page-->
@@ -37,29 +39,46 @@
                                             </div>
                                             <!--begin::کارت toolbar-->
                                             <div class="card-toolbar my-1">
-                                                <div class="me-6 my-1">
-                                                    <select id="kt_filter_year" name="year" data-control="select2" data-hide-search="true" class="w-125px form-select form-select-solid form-select-sm">
-                                                        <option value="همه" selected="selected">همه زمان</option>
-                                                        <option value="thisyear">امسال</option>
-                                                        <option value="thismonth">This month</option>
-                                                        <option value="lastmonth">Last month</option>
-                                                        <option value="last90days">90 روز اخیر</option>
-                                                    </select>
-                                                </div>
-                                                <div class="me-4 my-1">
-                                                    <select id="kt_filter_orders" name="orders" data-control="select2" data-hide-search="true" class="w-125px form-select form-select-solid form-select-sm">
-                                                        <option value="همه" selected="selected">همه آنومالی ها</option>
-                                                        <option value="تایید شده">تایید شده</option>
-                                                        <option value="رد شده">رد شده</option>
-                                                        <option value="درحال پردازش">درحال پردازش</option>
-                                                        <option value="در جابجایی">در جابجایی</option>
-                                                    </select>
-                                                </div>
-                                                <div class="d-flex align-items-center position-relative my-1">
-                                                    <i class="ki-outline ki-magnifier fs-3 position-absolute ms-3"></i>
-                                                    <input type="text" id="kt_filter_search" class="form-control form-control-solid form-select-sm w-150px ps-9" placeholder="جستجو " />
-                                                </div>
-                                            </div>
+    <form method="get" action="{% url 'anomalis:list' %}" class="d-flex align-items-center flex-wrap">
+        <div class="me-2">
+            <select id="kt_filter_year" name="time" class="form-select form-select-solid form-select-sm">
+                <option value="همه" {% if time_filter == 'همه' %}selected{% endif %}>همه زمان</option>
+                <option value="امسال" {% if time_filter == 'امسال' %}selected{% endif %}>امسال</option>
+                <option value="این ماه" {% if time_filter == 'این ماه' %}selected{% endif %}>در این ماه</option>
+                <option value="ماه گذشته" {% if time_filter == 'ماه گذشته' %}selected{% endif %}>ماه گذشته</option>
+                <option value="90 روز اخیر" {% if time_filter == '90 روز اخیر' %}selected{% endif %}>90 روز اخیر</option>
+            </select>
+        </div>
+        <div class="me-2">
+            <select id="kt_filter_status" name="status" class="form-select form-select-solid form-select-sm">
+                <option value="همه" {% if status_filter == 'همه' %}selected{% endif %}>همه آنومالی ها</option>
+                <option value="ایمن" {% if status_filter == 'ایمن' %}selected{% endif %}>ایمن شده</option>
+                <option value="نا ایمن" {% if status_filter == 'نا ایمن' %}selected{% endif %}>نا ایمن</option>
+            </select>
+        </div>
+        <div class="me-2">
+            <select id="kt_filter_priority" name="priority" class="form-select form-select-solid form-select-sm">
+                <option value="همه" {% if priority_filter == 'همه' %}selected{% endif %}>همه اولویت‌ها</option>
+                <option value="زیاد" {% if priority_filter == 'زیاد' %}selected{% endif %}>اولویت زیاد</option>
+                <option value="کم" {% if priority_filter == 'کم' %}selected{% endif %}>اولویت کم</option>
+            </select>
+        </div>
+        <div class="me-2">
+            <input type="text" name="search" id="kt_filter_search"
+                   class="form-control form-control-solid form-select-sm"
+                   placeholder="جستجو"
+                   value="{{ search_query }}">
+        </div>
+        <div class="me-2">
+            <button type="submit" class="btn btn-primary">اعمال فیلترها</button>
+        </div>
+        <div>
+            <a href="{% url 'anomalis:export_anomalies_to_excel' %}?search={{ search_query }}&priority={{ priority_filter }}&status={{ status_filter }}&time={{ time_filter }}" class="btn btn-success">خروجی اکسل</a>
+        </div>
+    </form>
+</div>
+
+
                                         </div>
                                         <!--begin::کارت body-->
                                         <div class="card-body pt-0">
@@ -102,7 +121,7 @@
                                                                 </div>
                                                             </td>
                                                             <td>{{ anomaly.created_by.user.first_name }} {{ anomaly.created_by.user.last_name }}</td>
-                                                            <td>{{ anomaly.created_at_jalali|date:"Y/m/d" }}</td>
+                                                            <td>{{ anomaly.created_at|to_jalali }}</td>
                                                             <td>{{ anomaly.location }}</td>
                                                             <td>{{ anomaly.anomalydescription }}</td>
                                                             <td>
