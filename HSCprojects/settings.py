@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     "dashboard.apps.DashboardConfig",
     "accounts.apps.AccountsConfig",
     "anomalis.apps.AnomalisConfig",
+    'django.contrib.humanize',
 
     'taggit',
     "django_select2",
@@ -169,3 +170,21 @@ LOGIN_REDIRECT_URL = '/dashboard/'
 # ارسال پیامک
 SMS_API_KEY = 'gCLhWKiCoUXwUQiNBIXCpQ81IiGfujNmKgWyrQr19WwgDkv3dSfFSDgIbsSEoo03'
 SMS_LINE_NUMBER = '30007732001185'
+
+
+# settings.py
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        '': {  # Root logger
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+    },
+}
