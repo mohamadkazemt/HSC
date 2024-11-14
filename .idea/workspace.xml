@@ -5,15 +5,17 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="endamaliyat&amp;anomali">
-      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/migrations/0009_alter_loadingoperation_stone_type.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/anomalis/utils.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/assets/css/anomaly-report.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/forms.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/migrations/0001_initial.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/migrations/0001_initial.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/new-anomalie.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/new-anomalie.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/list.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/list.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/base.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -26,9 +28,10 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Python Script" />
-        <option value="JavaScript File" />
+        <option value="CSS File" />
         <option value="HTML File" />
+        <option value="JavaScript File" />
+        <option value="Python Script" />
       </list>
     </option>
   </component>
@@ -81,12 +84,13 @@
     &quot;git-widget-placeholder&quot;: &quot;master&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;C:/Users/MKT/PycharmProjects/HSC/static&quot;,
+    &quot;list.type.of.created.stylesheet&quot;: &quot;CSS&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
 }</component>
@@ -229,7 +233,10 @@
       <workItem from="1729924626205" duration="23183000" />
       <workItem from="1730345654118" duration="8916000" />
       <workItem from="1731173462890" duration="8329000" />
-      <workItem from="1731236845844" duration="4569000" />
+      <workItem from="1731236845844" duration="24553000" />
+      <workItem from="1731342418831" duration="9444000" />
+      <workItem from="1731511957650" duration="1828000" />
+      <workItem from="1731515312185" duration="2338000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
@@ -359,7 +366,15 @@
       <option name="project" value="LOCAL" />
       <updated>1731173519478</updated>
     </task>
-    <option name="localTasksCounter" value="19" />
+    <task id="LOCAL-00019" summary="endamaliyat&amp;anomali">
+      <option name="closed" value="true" />
+      <created>1731248066115</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1731248066115</updated>
+    </task>
+    <option name="localTasksCounter" value="20" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

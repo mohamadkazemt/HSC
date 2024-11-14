@@ -1,5 +1,5 @@
 from django.core.paginator import Paginator
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.template.defaultfilters import title
 from django.urls import reverse
@@ -16,8 +16,17 @@ from django.contrib.auth.models import Group, User
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db.models import Prefetch
-from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
+from django.db.models import Count
+from django.db.models.functions import TruncDate, ExtractMonth, ExtractYear
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+
+
+
+
+
 
 name = 'anomalis'
 

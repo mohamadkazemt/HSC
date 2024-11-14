@@ -2,6 +2,10 @@ from django import forms
 from .models import Anomaly, Priority, Comment
 from django_select2.forms import Select2TagWidget
 from .models import Anomaly, UserProfile
+from django import forms
+from .models import Location, Anomalytype, AnomalyDescription, HSE, CorrectiveAction, Priority, UserProfile
+
+
 
 
 class AnomalyForm(forms.ModelForm):
@@ -178,3 +182,6 @@ class CommentForm(forms.ModelForm):
             raise forms.ValidationError("لطفا از کلمات نامناسب استفاده نکنید")
 
         return comment
+
+
+

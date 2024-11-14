@@ -1,6 +1,7 @@
 from django.urls import path, include
 from . import views
 from .views import get_anomalydescription, get_hse_type, get_corrective_action
+from . import views
 
 app_name = 'anomalis'
 urlpatterns = [
@@ -13,7 +14,6 @@ urlpatterns = [
     path('anomaly/<int:pk>/request-safe/', views.request_safe, name='request_safe'),
     path('anomaly/<int:pk>/approve/', views.approve_safe, name='approve_safe'),
     path('anomaly/<int:pk>/reject/', views.reject_safe, name='reject_safe'),
-
 
 
 ]
