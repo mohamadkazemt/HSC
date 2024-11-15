@@ -4,14 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="amalyatend1">
-      <change afterPath="$PROJECT_DIR$/accounts/templatetags/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/accounts/templatetags/custom_tags.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="sidbaredite">
+      <change afterPath="$PROJECT_DIR$/dailyreport_hse/migrations/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/header.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/header.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/sidebar.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/sidebar.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -339,7 +335,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۱۶" />
       <updated>1730711348312</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL‎−۰۰۰۱۷" summary="sidbaredite">
+      <option name="closed" value="true" />
+      <created>1731665843950</created>
+      <option name="number" value="LOCAL‎−۰۰۰۱۷" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۱۷" />
+      <updated>1731665843950</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -370,6 +373,7 @@
     <MESSAGE value="v0.0.1/3" />
     <MESSAGE value="amaliyat1" />
     <MESSAGE value="amalyatend1" />
-    <option name="LAST_COMMIT_MESSAGE" value="amalyatend1" />
+    <MESSAGE value="sidbaredite" />
+    <option name="LAST_COMMIT_MESSAGE" value="sidbaredite" />
   </component>
 </project>
