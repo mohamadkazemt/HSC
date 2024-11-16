@@ -90,25 +90,26 @@ class Priority(models.Model):
 
 
 class Anomaly(models.Model):
-    location = models.ForeignKey(Location, on_delete=models.CASCADE, verbose_name="محل آنومالی")
-    section = models.ForeignKey(LocationSection, on_delete=models.CASCADE, null=True, blank=True, related_name='anomalies', verbose_name= "بخش محل ")
+    location = models.ForeignKey(Location, on_delete=models.CASCADE, verbose_name="سایت")
+    section = models.ForeignKey(LocationSection, on_delete=models.CASCADE, null=True, blank=True, related_name='anomalies', verbose_name= "محل شناسایی آنومالی")
     anomalytype = models.ForeignKey(Anomalytype, on_delete=models.CASCADE, verbose_name="نوع آنومالی")
     anomalydescription = models.ForeignKey(AnomalyDescription, on_delete=models.CASCADE, verbose_name="شرح آنومالی")
     hse_type = models.CharField(max_length=1, choices=[('H', 'Health'), ('S', 'Safety'), ('E', 'Environment')],
-                                verbose_name="نوع HSE")
+                                verbose_name="حوزه HSE")
     correctiveaction = models.ForeignKey(CorrectiveAction, on_delete=models.CASCADE, verbose_name="عملیات اصلاحی")
     created_by = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='created_anomalies',
                                    verbose_name="ایجاد کننده")
     followup = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='followup_anomalies',
                                  verbose_name="پیگیری")
     group = models.CharField(max_length=1, choices=UserProfile.GROUP_CHOICES, verbose_name="گروه کاری")
-    description = models.TextField(verbose_name="شرح آنومالی")
+    description = models.TextField(verbose_name="توضیحات")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="تاریخ بروزرسانی")
     action = models.BooleanField(default=True, verbose_name="وضعیت")
     priority = models.ForeignKey(Priority, on_delete=models.CASCADE, verbose_name="اولویت")
     image = models.ImageField(upload_to='anomalies/%Y/%m/%d', verbose_name="تصویر آنومالی", blank=True, null=True)
     is_request_sent = models.BooleanField(default=False)
+
 
     class Meta:
         verbose_name = "آنومالی"

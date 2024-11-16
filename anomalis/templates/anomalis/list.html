@@ -72,9 +72,11 @@
                                                     <div class="me-2">
                                                         <button type="submit" class="btn btn-primary">اعمال فیلترها</button>
                                                     </div>
+                                                {% if user.is_superuser %}
                                                     <div>
                                                         <a href="{% url 'anomalis:export_anomalies_to_excel' %}?search={{ search_query }}&priority={{ priority_filter }}&status={{ status_filter }}&time={{ time_filter }}" class="btn btn-success">خروجی اکسل</a>
                                                     </div>
+                                                {% endif %}
                                                 </form>
                                             </div>
 
@@ -125,12 +127,12 @@
                                                             <td>{{ anomaly.location }}</td>
                                                             <td>{{ anomaly.anomalydescription }}</td>
                                                             <td>
-                                                                {% if anomaly.priority.priority == "زیاد" %}
-                                                                    <span class="badge badge-light-danger">زیاد</span>
-                                                                {% elif anomaly.priority.priority == "متوسط" %}
-                                                                    <span class="badge badge-light-warning">متوسط</span>
-                                                                {% elif anomaly.priority.priority == "کم" %}
-                                                                    <span class="badge badge-light-success">کم</span>
+                                                                {% if anomaly.priority.priority == "زیاد( High)" %}
+                                                                    <span class="badge badge-light-danger">زیاد( High)</span>
+                                                                {% elif anomaly.priority.priority == "متوسط(Middle)" %}
+                                                                    <span class="badge badge-light-warning">متوسط(Middle)</span>
+                                                                {% elif anomaly.priority.priority == "کم (Low)" %}
+                                                                    <span class="badge badge-light-success">کم (Low)</span>
                                                                 {% else %}
                                                                     <span class="badge badge-light-secondary">نامشخص</span>
                                                                 {% endif %}
@@ -139,7 +141,7 @@
                                                                 {% if anomaly.action %}
                                                                     <span class="badge badge-light-success">ایمن</span>
                                                                 {% else %}
-                                                                    <span class="badge badge-light-danger">غیر امن</span>
+                                                                    <span class="badge badge-light-danger">غیر ایمن</span>
                                                                 {% endif %}
                                                             </td>
                                                             <td class="text-end">

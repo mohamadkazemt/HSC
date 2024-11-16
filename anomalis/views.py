@@ -198,6 +198,7 @@ def anomaly_list(request):
 
 
 @login_required
+@user_passes_test(lambda u: u.groups.filter(name='مدیر HSE').exists())
 def export_anomalies_to_excel(request):
     search_query = request.GET.get('search', '')
     priority_filter = request.GET.get('priority', 'همه')
