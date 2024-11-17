@@ -36,57 +36,57 @@
                         <div id="kt_app_content" class="app-content flex-column-fluid">
                             <!--begin::Content container-->
                             <div id="kt_app_content_container" class="app-container container-fluid">
-                <!--begin::Content-->
-<div class="row">
-    <!-- شروع بلوک نمودار آنومالی با فیلتر -->
-    <div class="col-xl-6 col-lg-12">
-        <div class="card card-xl-stretch mb-5">
-            <!-- شروع هدر کارت -->
-            <div class="card-header border-0 pt-5">
-                <!-- عنوان کارت -->
-                <h3 class="card-title align-items-start flex-column">
-                    <span class="card-label fw-bold fs-3 mb-1">آمار اخیر</span>
-                    <span class="text-muted fw-semibold fs-7">فیلترهای مختلف برای نمایش آنومالی‌ها</span>
-                </h3>
-            </div>
-            <!-- پایان هدر کارت -->
+                                <!--begin::Content-->
+                                <div class="row">
+                                    <!-- شروع بلوک نمودار آنومالی با فیلتر -->
+                                    <div class="col-xl-6 col-lg-12">
+                                        <div class="card card-xl-stretch mb-5">
+                                            <!-- شروع هدر کارت -->
+                                            <div class="card-header border-0 pt-5">
+                                                <!-- عنوان کارت -->
+                                                <h3 class="card-title align-items-start flex-column">
+                                                    <span class="card-label fw-bold fs-3 mb-1">آمار اخیر</span>
+                                                    <span class="text-muted fw-semibold fs-7">فیلترهای مختلف برای نمایش آنومالی‌ها</span>
+                                                </h3>
+                                            </div>
+                                            <!-- پایان هدر کارت -->
 
-            <!-- شروع بدنه کارت (شامل فرم فیلتر و نمودار) -->
-            <div class="card-body">
-                <!-- فرم فیلتر -->
-                <div class="filter-form mb-4">
-                    <form method="get" action="{% url 'dashboard:dashboard' %}" class="d-flex align-items-center">
-                        <div class="me-2">
-                            <select name="status" class="form-select">
-                                <option value="همه" {% if status_filter == 'همه' %}selected{% endif %}>همه وضعیت‌ها</option>
-                                <option value="ایمن" {% if status_filter == 'ایمن' %}selected{% endif %}>ایمن</option>
-                                <option value="نا ایمن" {% if status_filter == 'نا ایمن' %}selected{% endif %}>نا ایمن</option>
-                            </select>
-                        </div>
-                        <div class="me-2">
-                            <select name="priority" class="form-select">
-                                <option value="همه" {% if priority_filter == 'همه' %}selected{% endif %}>همه اولویت‌ها</option>
-                                <option value="زیاد" {% if priority_filter == 'زیاد' %}selected{% endif %}>اولویت زیاد</option>
-                                <option value="کم" {% if priority_filter == 'کم' %}selected{% endif %}>اولویت کم</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-primary">اعمال فیلترها</button>
-                    </form>
-                </div>
+                                            <!-- شروع بدنه کارت (شامل فرم فیلتر و نمودار) -->
+                                            <div class="card-body">
+                                                <!-- فرم فیلتر -->
+                                                <div class="filter-form mb-4">
+                                                    <form method="get" action="{% url 'dashboard:dashboard' %}" class="d-flex align-items-center">
+                                                        <div class="me-2">
+                                                            <select name="status" class="form-select">
+                                                                <option value="همه" {% if status_filter == 'همه' %}selected{% endif %}>همه وضعیت‌ها</option>
+                                                                <option value="ایمن" {% if status_filter == 'ایمن' %}selected{% endif %}>ایمن</option>
+                                                                <option value="نا ایمن" {% if status_filter == 'نا ایمن' %}selected{% endif %}>نا ایمن</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="me-2">
+                                                            <select name="priority" class="form-select">
+                                                                <option value="همه" {% if priority_filter == 'همه' %}selected{% endif %}>همه اولویت‌ها</option>
+                                                                <option value="زیاد" {% if priority_filter == 'زیاد' %}selected{% endif %}>اولویت زیاد</option>
+                                                                <option value="کم" {% if priority_filter == 'کم' %}selected{% endif %}>اولویت کم</option>
+                                                            </select>
+                                                        </div>
+                                                        <button type="submit" class="btn btn-primary">اعمال فیلترها</button>
+                                                    </form>
+                                                </div>
 
-                <!-- نمودار آنومالی -->
-                <canvas id="anomaliesChart" style="height: 350px"></canvas>
-            </div>
-            <!-- پایان بدنه کارت -->
-        </div>
-    </div>
-</div>
-
-
+                                                <!-- نمودار آنومالی -->
+                                                <canvas id="anomaliesChart" style="height: 350px"></canvas>
+                                            </div>
+                                            <!-- پایان بدنه کارت -->
+                                        </div>
+                                    </div>
+                                </div>
 
 
 
-                <!--end::Content-->
+
+
+                                <!--end::Content-->
                             </div>
 
                             <!--end::Content container-->
@@ -121,7 +121,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // داده‌های ارسالی از ویو به قالب
         const months = {{ months|safe }};

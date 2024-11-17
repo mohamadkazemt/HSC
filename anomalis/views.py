@@ -4,7 +4,8 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.template.defaultfilters import title
 from django.urls import reverse
 from dashboard.models import Notification
-from dashboard.sms_utils import send_sms
+from dashboard.sms_utils import send_template_sms, logger
+
 from .forms import AnomalyForm, CommentForm
 from django.http import JsonResponse
 from .models import AnomalyDescription, CorrectiveAction, Comment
@@ -59,6 +60,20 @@ def anomalis(request):
                 anomaly.hse_type = anomaly.anomalydescription.hse_type
                 anomaly.save()
 
+                # ارسال پیامک به مسئولین پیگیری
+                responsible_users = User.objects.filter(groups__name='مسئول پیگیری')
+                template_id = 684430  # شناسه قالب
+                for user in responsible_users:
+                    try:
+                        profile = UserProfile.objects.get(user=user)
+                        parameters = [
+                            {"Name": "status", "Value": "ثبت شده"},
+                            {"Name": "anomaly_id", "Value": str(anomaly.id)}
+                        ]
+                        send_template_sms(profile.mobile, template_id, parameters)
+                    except UserProfile.DoesNotExist:
+                        logger.warning(f"پروفایل برای کاربر {user.username} یافت نشد.")
+
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({
                         'status': 'success',
@@ -76,24 +91,6 @@ def anomalis(request):
                         'errors': {}
                     })
                 messages.error(request, f'خطا در ثبت آنومالی: {str(e)}')
-        else:
-            # نمایش خطاها به صورت پیام
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                errors = {}
-                for field, error_list in form.errors.items():
-                    field_name = form.fields[field].label or field
-                    errors[field] = [str(error) for error in error_list]
-                return JsonResponse({
-                    'status': 'error',
-                    'message': 'لطفاً خطاهای فرم را برطرف کنید',
-                    'errors': errors
-                })
-            else:
-                for field, errors in form.errors.items():
-                    for error in errors:
-                        field_name = form.fields[field].label or field
-                        messages.error(request, f'{field_name}: {error}')
-
     else:
         form = AnomalyForm()
 
@@ -323,35 +320,27 @@ def request_safe(request, pk):
     anomaly = get_object_or_404(Anomaly, pk=pk)
 
     if request.method == 'POST' and request.user == anomaly.followup.user:
-        # تغییر وضعیت آنومالی به حالت در انتظار تأیید
         anomaly.action = False
-        anomaly.is_request_sent = True  # ثبت اینکه درخواست ارسال شده است
+        anomaly.is_request_sent = True
         anomaly.save()
 
-        # پیدا کردن مدیران HSE و افسران HSE و ارسال پیامک به شماره موبایل آنها
+        # ارسال پیامک به مدیران HSE
         hse_managers = User.objects.filter(groups__name__in=['مدیر HSE', 'افسر HSE'])
+        template_id = 254988  # شناسه قالب برای درخواست ایمنی
         for manager in hse_managers:
             try:
-                # دریافت شماره موبایل از پروفایل کاربر
-                manager_profile = UserProfile.objects.get(user=manager)
-                mobile_number = manager_profile.mobile
-
-                # ارسال پیامک
-                send_sms(mobile_number, f"درخواست ایمن شدن آنومالی با شماره {anomaly.pk} در انتظار تأیید است.")
-
-                # اضافه کردن نوتیفیکیشن برای هر مدیر HSE و افسر HSE
-                Notification.objects.create(
-                    user=manager,
-                    message=f"درخواست ایمن شدن آنومالی با شماره {anomaly.pk} ارسال شده است.",
-                    url=reverse('anomalis:anomaly_detail', args=[anomaly.pk])
-                )
+                profile = UserProfile.objects.get(user=manager)
+                parameters = [
+                    {"Name": "status", "Value": "در انتظار تایید"},
+                    {"Name": "anomaly_id", "Value": str(anomaly.id)}
+                ]
+                send_template_sms(profile.mobile, template_id, parameters)
             except UserProfile.DoesNotExist:
-                print(f"پروفایل برای کاربر {manager.username} وجود ندارد.")
+                logger.warning(f"پروفایل برای کاربر {manager.username} یافت نشد.")
 
         return redirect('anomalis:anomaly_detail', pk=anomaly.pk)
 
     return redirect('anomalis:anomalis')
-
 
 
 
@@ -362,34 +351,21 @@ def approve_safe(request, pk):
     anomaly = get_object_or_404(Anomaly, pk=pk)
 
     if request.method == 'POST':
-        anomaly.action = True  # تنظیم به حالت ایمن
-        anomaly.is_request_sent = False  # درخواست تایید شده و دیگر در انتظار نیست
+        anomaly.action = True
+        anomaly.is_request_sent = False
         anomaly.save()
 
-        # دریافت پروفایل ایجادکننده و مسئول پیگیری
-        creator_profile = anomaly.created_by
-        followup_profile = anomaly.followup
-
         # ارسال پیامک به ایجادکننده و مسئول پیگیری
-        send_sms(creator_profile.mobile, f"آنومالی با شماره {anomaly.pk} ایمن اعلام شد.")
-        send_sms(followup_profile.mobile, f"آنومالی با شماره {anomaly.pk} ایمن اعلام شد.")
-
-        # اضافه کردن نوتیفیکیشن برای ایجادکننده و مسئول پیگیری
-        Notification.objects.create(
-            user=creator_profile.user,
-            message=f"آنومالی با شماره {anomaly.pk} ایمن اعلام شد.",
-            url=reverse('anomalis:anomaly_detail', args=[anomaly.pk])
-        )
-        Notification.objects.create(
-            user=followup_profile.user,
-            message=f"آنومالی با شماره {anomaly.pk} ایمن اعلام شد.",
-            url=reverse('anomalis:anomaly_detail', args=[anomaly.pk])
-        )
+        recipients = [anomaly.created_by, anomaly.followup]
+        template_id = 244118  # شناسه قالب تایید ایمنی
+        for recipient in recipients:
+            parameters = [
+                {"Name": "status", "Value": "ایمن شده"},
+                {"Name": "anomaly_id", "Value": str(anomaly.id)}
+            ]
+            send_template_sms(recipient.mobile, template_id, parameters)
 
         return redirect('anomalis:anomaly_detail', pk=anomaly.pk)
-
-
-
 
 
 
@@ -400,29 +376,17 @@ def reject_safe(request, pk):
     anomaly = get_object_or_404(Anomaly, pk=pk)
 
     if request.method == 'POST':
-        # وضعیت آنومالی تغییر نمی‌کند چون درخواست رد شده است
-        anomaly.is_request_sent = False  # ثبت اینکه درخواست لغو شده است
+        anomaly.is_request_sent = False
         anomaly.save()
 
-        # دریافت پروفایل ایجادکننده و مسئول پیگیری
-        creator_profile = anomaly.created_by
-        followup_profile = anomaly.followup
-
         # ارسال پیامک به ایجادکننده و مسئول پیگیری
-        send_sms(creator_profile.mobile, f"درخواست ایمن شدن آنومالی با شماره {anomaly.pk} رد شد.")
-        send_sms(followup_profile.mobile, f"درخواست ایمن شدن آنومالی با شماره {anomaly.pk} رد شد.")
-
-        # اضافه کردن نوتیفیکیشن برای ایجادکننده و مسئول پیگیری
-        Notification.objects.create(
-            user=creator_profile.user,
-            message=f"درخواست ایمن شدن آنومالی با شماره {anomaly.pk} رد شد.",
-            url=reverse('anomalis:anomaly_detail', args=[anomaly.pk])
-        )
-        Notification.objects.create(
-            user=followup_profile.user,
-            message=f"درخواست ایمن شدن آنومالی با شماره {anomaly.pk} رد شد.",
-            url=reverse('anomalis:anomaly_detail', args=[anomaly.pk])
-        )
+        recipients = [anomaly.created_by, anomaly.followup]
+        template_id = 320925  # شناسه قالب رد ایمنی
+        for recipient in recipients:
+            parameters = [
+                {"Name": "status", "Value": "رد شده"},
+                {"Name": "anomaly_id", "Value": str(anomaly.id)}
+            ]
+            send_template_sms(recipient.mobile, template_id, parameters)
 
         return redirect('anomalis:anomaly_detail', pk=anomaly.pk)
-
