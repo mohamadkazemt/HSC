@@ -93,7 +93,8 @@
                                                         <th class="min-w-250px">مسئول پیگیری</th>
                                                         <th class="min-w-90px">ایجاد کننده</th>
                                                         <th class="min-w-150px">تاریخ</th>
-                                                        <th class="min-w-90px">محل</th>
+                                                        <th class="min-w-90px">سایت</th>
+                                                        <th class="min-w-90px">محل شناسایی آنومالی</th>
                                                         <th class="min-w-90px">شرح</th>
                                                         <th class="min-w-90px">اولویت</th>
                                                         <th class="min-w-90px">وضعیت</th>
@@ -126,6 +127,7 @@
                                                             <td>{{ anomaly.created_by.user.first_name }} {{ anomaly.created_by.user.last_name }}</td>
                                                             <td>{{ anomaly.created_at|to_jalali }}</td>
                                                             <td>{{ anomaly.location }}</td>
+                                                            <td>{{ anomaly.section }}</td>
                                                             <td>{{ anomaly.anomalydescription }}</td>
                                                             <td>
                                                                 {% if anomaly.priority.priority == "زیاد( High)" %}

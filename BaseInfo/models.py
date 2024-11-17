@@ -16,11 +16,20 @@ class Contractor(models.Model):
 
 
 class ContractorVehicle(models.Model):
-    contractor = models.ForeignKey(Contractor, on_delete=models.CASCADE, verbose_name="پیمانکار")
+    OWNERSHIP_CHOICES = [
+        ('Company', 'شرکت'),
+        ('Contractor', 'پیمانکار'),
+    ]
+    number_car = models.CharField(max_length=15, unique=True, null=True, blank=True, verbose_name="شماره خودرو")
     vehicle_name = models.CharField(max_length=100, verbose_name="نام خودرو")
-    vehicle_type = models.CharField(max_length=50, choices=[('pickup truck', 'وانت'), ('riding', 'سواری')], verbose_name="نوع خودرو")
     license_plate = models.CharField(max_length=15, unique=True, verbose_name="پلاک خودرو")
+    vehicle_type = models.CharField(max_length=50, choices=[('pickup truck', 'وانت'), ('riding', 'سواری'), ('bus', 'اتوبوس'), ('minibus', 'مینی بوس'), ('van', 'ون')], verbose_name="نوع خودرو")
+    ownership = models.CharField(max_length=10, choices=OWNERSHIP_CHOICES, null=True, blank=True, verbose_name="مالکیت")
+    contractor = models.ForeignKey(Contractor, on_delete=models.SET_NULL, null=True, blank=True,
+                                   verbose_name="پیمانکار",
+                                   help_text="در صورت مالکیت پیمانکار، پیمانکار را انتخاب کنید.")
     is_active = models.BooleanField(default=True, verbose_name="فعال")
+
 
     def __str__(self):
         return f"{self.vehicle_name} - {self.contractor.name}"

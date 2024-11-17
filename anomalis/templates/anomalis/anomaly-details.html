@@ -150,6 +150,7 @@
 
                                                             </div>
 
+
                                                             <!--end::تاریخ-->
                                                         </div>
                                                         <!--end::Info-->
@@ -172,7 +173,12 @@
                                                             <div class="separator separator-solid"></div>
                                                             <!--end::separator-->
                                                             <!--begin::Nav-->
+<div class="card-header d-flex justify-content-between align-items-center">
 
+    <a href="{% url 'anomalis:anomaly_pdf' anomaly.id %}" class="btn btn-primary btn-sm">
+        <i class="fas fa-file-pdf"></i> دانلود PDF
+    </a>
+</div>
                                                             <!--end::Nav-->
                                                             <!--begin::separator-->
                                                             <div class="separator separator-solid mb-1"></div>

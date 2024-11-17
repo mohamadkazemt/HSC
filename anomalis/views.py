@@ -3,13 +3,13 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.template.defaultfilters import title
 from django.urls import reverse
+
+from HSCprojects import settings
 from dashboard.models import Notification
 from dashboard.sms_utils import send_template_sms, logger
-
 from .forms import AnomalyForm, CommentForm
 from django.http import JsonResponse
-from .models import AnomalyDescription, CorrectiveAction, Comment
-from .models import Anomaly
+from .models import AnomalyDescription, CorrectiveAction, Comment, LocationSection, Anomaly
 from django.views.decorators.csrf import csrf_exempt
 import jdatetime
 from accounts.models import UserProfile
@@ -25,8 +25,12 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 import openpyxl
-
 from .templatetags.jalali import to_jalali
+from django.template.loader import get_template
+from django.http import HttpResponse
+from weasyprint import HTML
+from django.conf import settings
+from urllib.parse import urljoin
 
 name = 'anomalis'
 
@@ -237,7 +241,7 @@ def export_anomalies_to_excel(request):
     ws.title = "Anomalies"
 
     # اضافه کردن سرفصل‌ها
-    ws.append(['کد آنومالی', 'مسئول پیگیری', 'ایجاد کننده', 'تاریخ', 'محل', 'شرح', 'اولویت', 'وضعیت'])
+    ws.append(['کد آنومالی', 'مسئول پیگیری', 'ایجاد کننده', 'تاریخ', 'سایت','محل شناسایی آنومالی', 'شرح', 'اولویت', 'وضعیت'])
 
     # اضافه کردن داده‌ها
     for anomaly in anomalies:
@@ -249,6 +253,7 @@ def export_anomalies_to_excel(request):
             f"{anomaly.created_by.user.first_name} {anomaly.created_by.user.last_name}",
             jalali_date,
             anomaly.location.name,
+            anomaly.section.section,
             anomaly.description,
             anomaly.priority.priority,
             'ایمن' if anomaly.action else 'نا ایمن',
@@ -390,3 +395,39 @@ def reject_safe(request, pk):
             send_template_sms(recipient.mobile, template_id, parameters)
 
         return redirect('anomalis:anomaly_detail', pk=anomaly.pk)
+
+
+
+
+def get_sections(request):
+    location_id = request.GET.get('location_id')
+    sections = LocationSection.objects.filter(location_id=location_id).values('id', 'section')
+    return JsonResponse({'sections': list(sections)})
+
+
+
+
+
+
+
+@login_required
+def anomaly_pdf_view(request, pk):
+    anomaly = get_object_or_404(Anomaly, pk=pk)
+    template = get_template('anomalis/detail_view.html')
+
+    # ایجاد مسیر کامل فایل‌های استاتیک و مدیا
+    static_url = request.build_absolute_uri(settings.STATIC_URL)
+    media_url = request.build_absolute_uri(settings.MEDIA_URL)
+
+    html_content = template.render({
+        'anomaly': anomaly,
+        'title': 'گزارش آنومالی',
+        'static_url': static_url,
+        'media_url': media_url,
+    }, request)
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="anomaly_{pk}.pdf"'
+    HTML(string=html_content).write_pdf(response)
+    return response
+
