@@ -20,7 +20,7 @@ class AnomalyForm(forms.ModelForm):
             'oninvalid': "this.setCustomValidity('لطفا این فیلد را پر کنید')",
             'oninput': "this.setCustomValidity('')"
         }),
-        label="پیگیری"
+        label="مسئول پیگیری",
     )
     # Override the action field to set default to False
     action = forms.BooleanField(
@@ -28,7 +28,8 @@ class AnomalyForm(forms.ModelForm):
         initial=False,   # Set default value to False
         widget=forms.CheckboxInput(attrs={
             'class': 'form-check-input form-check-solid'
-        })
+        }),
+        label="وضعیت آنومالی"
     )
     def clean_image(self):
         image = self.cleaned_data.get('image')
@@ -146,7 +147,7 @@ class AnomalyForm(forms.ModelForm):
             'description': forms.Textarea(attrs={
                 'class': 'form-control form-control-solid',
                 'rows': 3,
-                'placeholder': 'یادداشت افسر ایمنی',
+                'placeholder': 'یادداشت بازرس ایمنی',
                 'oninvalid': "this.setCustomValidity('لطفا این فیلد را پر کنید')",
                 'oninput': "this.setCustomValidity('')"
             }),

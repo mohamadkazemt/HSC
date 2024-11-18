@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    {% load static %}
+    {% load jalali %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        body {
+            font-family: Tahoma, sans-serif;
+            direction: rtl;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .header .info {
+            text-align: right;
+            font-size: 12px;
+        }
+        .header .info p {
+            margin: 0;
+            line-height: 1.5;
+        }
+        .header .logo {
+            text-align: left;
+        }
+        .header .logo img {
+            width: 50px;
+        }
+        h1 {
+            font-size: 18px;
+            margin: 20px 0;
+            text-align: center;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table th, table td {
+            border: 1px solid #007bff;
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+        }
+        table th {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+    .photo-section {
+        text-align: center;
+        margin-top: 30px;
+        padding: 20px;
+        border: 2px solid #007bff;
+        border-radius: 10px;
+        background-color: #f9f9f9;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    .photo-section img {
+        max-width: 80%;
+        height: auto;
+        border: 2px solid #ccc;
+        border-radius: 10px;
+        margin-top: 15px;
+    }
+    .photo-section h3 {
+        margin-bottom: 15px;
+        font-size: 16px;
+        color: #333;
+        text-decoration: underline;
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <img src="{{ static_url }}assets/media/logos/logo-small.png" alt="لوگو شرکت">
+
+            </div>
+            <div class="info">
+                <p>کد فرم: {{ anomaly.id }}</p>
+                <p>تاریخ ایجاد: {{ anomaly.created_at|to_jalali }}</p>
+                <p>تاریخ بروزرسانی: {{ anomaly.updated_at|to_jalali }}</p>
+            </div>
+        </div>
+
+        <h1>فرم گزارش آنومالی</h1>
+
+        <!-- Table -->
+        <table>
+            <tr>
+                <th>عنوان</th>
+                <th>جزئیات</th>
+            </tr>
+            <tr>
+                <td>آنومالی شماره</td>
+                <td>{{ anomaly.anomalydescription }} - {{ anomaly.id }}</td>
+            </tr>
+            <tr>
+                <td>محل آنومالی</td>
+                <td>{{ anomaly.location.name }}</td>
+            </tr>
+            <tr>
+                <td>نوع آنومالی</td>
+                <td>{{ anomaly.anomalytype }}</td>
+            </tr>
+            <tr>
+                <td>وضعیت</td>
+                <td>{% if anomaly.action %}ایمن{% else %}غیر ایمن{% endif %}</td>
+            </tr>
+            <tr>
+                <td>اولویت</td>
+                <td>{{ anomaly.priority }}</td>
+            </tr>
+            <tr>
+                <td>مسئول پیگیری</td>
+                <td>{{ anomaly.followup.user.first_name }} {{ anomaly.followup.user.last_name }}</td>
+            </tr>
+            <tr>
+                <td>عملیات اصلاحی</td>
+                <td>{{ anomaly.correctiveaction }}</td>
+            </tr>
+            <tr>
+                <td>توضیحات</td>
+                <td>{{ anomaly.description }}</td>
+            </tr>
+        </table>
+
+        <!-- Photo Section -->
+<!-- Photo Section -->
+{% if anomaly.image %}
+    <div class="photo-section">
+        <h3>تصویر آنومالی</h3>
+        <img src="{{ media_url }}{{ anomaly.image }}" alt="تصویر آنومالی">
+    </div>
+{% else %}
+    <p style="text-align: center; font-size: 14px; color: #777;">تصویری برای این آنومالی وجود ندارد.</p>
+{% endif %}
+
+    </div>
+</body>
+</html>

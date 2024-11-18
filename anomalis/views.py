@@ -3,12 +3,13 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.template.defaultfilters import title
 from django.urls import reverse
+
+from HSCprojects import settings
 from dashboard.models import Notification
-from dashboard.sms_utils import send_sms
+from dashboard.sms_utils import send_template_sms, logger
 from .forms import AnomalyForm, CommentForm
 from django.http import JsonResponse
-from .models import AnomalyDescription, CorrectiveAction, Comment
-from .models import Anomaly
+from .models import AnomalyDescription, CorrectiveAction, Comment, LocationSection, Anomaly
 from django.views.decorators.csrf import csrf_exempt
 import jdatetime
 from accounts.models import UserProfile
@@ -24,8 +25,12 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 import openpyxl
-
 from .templatetags.jalali import to_jalali
+from django.template.loader import get_template
+from django.http import HttpResponse
+from weasyprint import HTML
+from django.conf import settings
+from urllib.parse import urljoin
 
 name = 'anomalis'
 
@@ -59,6 +64,20 @@ def anomalis(request):
                 anomaly.hse_type = anomaly.anomalydescription.hse_type
                 anomaly.save()
 
+                # ارسال پیامک به مسئولین پیگیری
+                responsible_users = User.objects.filter(groups__name='مسئول پیگیری')
+                template_id = 684430  # شناسه قالب
+                for user in responsible_users:
+                    try:
+                        profile = UserProfile.objects.get(user=user)
+                        parameters = [
+                            {"Name": "status", "Value": "ثبت شده"},
+                            {"Name": "anomaly_id", "Value": str(anomaly.id)}
+                        ]
+                        send_template_sms(profile.mobile, template_id, parameters)
+                    except UserProfile.DoesNotExist:
+                        logger.warning(f"پروفایل برای کاربر {user.username} یافت نشد.")
+
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({
                         'status': 'success',
@@ -76,24 +95,6 @@ def anomalis(request):
                         'errors': {}
                     })
                 messages.error(request, f'خطا در ثبت آنومالی: {str(e)}')
-        else:
-            # نمایش خطاها به صورت پیام
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                errors = {}
-                for field, error_list in form.errors.items():
-                    field_name = form.fields[field].label or field
-                    errors[field] = [str(error) for error in error_list]
-                return JsonResponse({
-                    'status': 'error',
-                    'message': 'لطفاً خطاهای فرم را برطرف کنید',
-                    'errors': errors
-                })
-            else:
-                for field, errors in form.errors.items():
-                    for error in errors:
-                        field_name = form.fields[field].label or field
-                        messages.error(request, f'{field_name}: {error}')
-
     else:
         form = AnomalyForm()
 
@@ -198,6 +199,7 @@ def anomaly_list(request):
 
 
 @login_required
+@user_passes_test(lambda u: u.groups.filter(name='مدیر HSE').exists())
 def export_anomalies_to_excel(request):
     search_query = request.GET.get('search', '')
     priority_filter = request.GET.get('priority', 'همه')
@@ -239,7 +241,7 @@ def export_anomalies_to_excel(request):
     ws.title = "Anomalies"
 
     # اضافه کردن سرفصل‌ها
-    ws.append(['کد آنومالی', 'مسئول پیگیری', 'ایجاد کننده', 'تاریخ', 'محل', 'شرح', 'اولویت', 'وضعیت'])
+    ws.append(['کد آنومالی', 'مسئول پیگیری', 'ایجاد کننده', 'تاریخ', 'سایت','محل شناسایی آنومالی', 'شرح', 'اولویت', 'وضعیت'])
 
     # اضافه کردن داده‌ها
     for anomaly in anomalies:
@@ -251,6 +253,7 @@ def export_anomalies_to_excel(request):
             f"{anomaly.created_by.user.first_name} {anomaly.created_by.user.last_name}",
             jalali_date,
             anomaly.location.name,
+            anomaly.section.section,
             anomaly.description,
             anomaly.priority.priority,
             'ایمن' if anomaly.action else 'نا ایمن',
@@ -322,35 +325,27 @@ def request_safe(request, pk):
     anomaly = get_object_or_404(Anomaly, pk=pk)
 
     if request.method == 'POST' and request.user == anomaly.followup.user:
-        # تغییر وضعیت آنومالی به حالت در انتظار تأیید
         anomaly.action = False
-        anomaly.is_request_sent = True  # ثبت اینکه درخواست ارسال شده است
+        anomaly.is_request_sent = True
         anomaly.save()
 
-        # پیدا کردن مدیران HSE و افسران HSE و ارسال پیامک به شماره موبایل آنها
+        # ارسال پیامک به مدیران HSE
         hse_managers = User.objects.filter(groups__name__in=['مدیر HSE', 'افسر HSE'])
+        template_id = 254988  # شناسه قالب برای درخواست ایمنی
         for manager in hse_managers:
             try:
-                # دریافت شماره موبایل از پروفایل کاربر
-                manager_profile = UserProfile.objects.get(user=manager)
-                mobile_number = manager_profile.mobile
-
-                # ارسال پیامک
-                send_sms(mobile_number, f"درخواست ایمن شدن آنومالی با شماره {anomaly.pk} در انتظار تأیید است.")
-
-                # اضافه کردن نوتیفیکیشن برای هر مدیر HSE و افسر HSE
-                Notification.objects.create(
-                    user=manager,
-                    message=f"درخواست ایمن شدن آنومالی با شماره {anomaly.pk} ارسال شده است.",
-                    url=reverse('anomalis:anomaly_detail', args=[anomaly.pk])
-                )
+                profile = UserProfile.objects.get(user=manager)
+                parameters = [
+                    {"Name": "status", "Value": "در انتظار تایید"},
+                    {"Name": "anomaly_id", "Value": str(anomaly.id)}
+                ]
+                send_template_sms(profile.mobile, template_id, parameters)
             except UserProfile.DoesNotExist:
-                print(f"پروفایل برای کاربر {manager.username} وجود ندارد.")
+                logger.warning(f"پروفایل برای کاربر {manager.username} یافت نشد.")
 
         return redirect('anomalis:anomaly_detail', pk=anomaly.pk)
 
     return redirect('anomalis:anomalis')
-
 
 
 
@@ -361,34 +356,21 @@ def approve_safe(request, pk):
     anomaly = get_object_or_404(Anomaly, pk=pk)
 
     if request.method == 'POST':
-        anomaly.action = True  # تنظیم به حالت ایمن
-        anomaly.is_request_sent = False  # درخواست تایید شده و دیگر در انتظار نیست
+        anomaly.action = True
+        anomaly.is_request_sent = False
         anomaly.save()
 
-        # دریافت پروفایل ایجادکننده و مسئول پیگیری
-        creator_profile = anomaly.created_by
-        followup_profile = anomaly.followup
-
         # ارسال پیامک به ایجادکننده و مسئول پیگیری
-        send_sms(creator_profile.mobile, f"آنومالی با شماره {anomaly.pk} ایمن اعلام شد.")
-        send_sms(followup_profile.mobile, f"آنومالی با شماره {anomaly.pk} ایمن اعلام شد.")
-
-        # اضافه کردن نوتیفیکیشن برای ایجادکننده و مسئول پیگیری
-        Notification.objects.create(
-            user=creator_profile.user,
-            message=f"آنومالی با شماره {anomaly.pk} ایمن اعلام شد.",
-            url=reverse('anomalis:anomaly_detail', args=[anomaly.pk])
-        )
-        Notification.objects.create(
-            user=followup_profile.user,
-            message=f"آنومالی با شماره {anomaly.pk} ایمن اعلام شد.",
-            url=reverse('anomalis:anomaly_detail', args=[anomaly.pk])
-        )
+        recipients = [anomaly.created_by, anomaly.followup]
+        template_id = 244118  # شناسه قالب تایید ایمنی
+        for recipient in recipients:
+            parameters = [
+                {"Name": "status", "Value": "ایمن شده"},
+                {"Name": "anomaly_id", "Value": str(anomaly.id)}
+            ]
+            send_template_sms(recipient.mobile, template_id, parameters)
 
         return redirect('anomalis:anomaly_detail', pk=anomaly.pk)
-
-
-
 
 
 
@@ -399,29 +381,53 @@ def reject_safe(request, pk):
     anomaly = get_object_or_404(Anomaly, pk=pk)
 
     if request.method == 'POST':
-        # وضعیت آنومالی تغییر نمی‌کند چون درخواست رد شده است
-        anomaly.is_request_sent = False  # ثبت اینکه درخواست لغو شده است
+        anomaly.is_request_sent = False
         anomaly.save()
 
-        # دریافت پروفایل ایجادکننده و مسئول پیگیری
-        creator_profile = anomaly.created_by
-        followup_profile = anomaly.followup
-
         # ارسال پیامک به ایجادکننده و مسئول پیگیری
-        send_sms(creator_profile.mobile, f"درخواست ایمن شدن آنومالی با شماره {anomaly.pk} رد شد.")
-        send_sms(followup_profile.mobile, f"درخواست ایمن شدن آنومالی با شماره {anomaly.pk} رد شد.")
-
-        # اضافه کردن نوتیفیکیشن برای ایجادکننده و مسئول پیگیری
-        Notification.objects.create(
-            user=creator_profile.user,
-            message=f"درخواست ایمن شدن آنومالی با شماره {anomaly.pk} رد شد.",
-            url=reverse('anomalis:anomaly_detail', args=[anomaly.pk])
-        )
-        Notification.objects.create(
-            user=followup_profile.user,
-            message=f"درخواست ایمن شدن آنومالی با شماره {anomaly.pk} رد شد.",
-            url=reverse('anomalis:anomaly_detail', args=[anomaly.pk])
-        )
+        recipients = [anomaly.created_by, anomaly.followup]
+        template_id = 320925  # شناسه قالب رد ایمنی
+        for recipient in recipients:
+            parameters = [
+                {"Name": "status", "Value": "رد شده"},
+                {"Name": "anomaly_id", "Value": str(anomaly.id)}
+            ]
+            send_template_sms(recipient.mobile, template_id, parameters)
 
         return redirect('anomalis:anomaly_detail', pk=anomaly.pk)
+
+
+
+
+def get_sections(request):
+    location_id = request.GET.get('location_id')
+    sections = LocationSection.objects.filter(location_id=location_id).values('id', 'section')
+    return JsonResponse({'sections': list(sections)})
+
+
+
+
+
+
+
+@login_required
+def anomaly_pdf_view(request, pk):
+    anomaly = get_object_or_404(Anomaly, pk=pk)
+    template = get_template('anomalis/detail_view.html')
+
+    # ایجاد مسیر کامل فایل‌های استاتیک و مدیا
+    static_url = request.build_absolute_uri(settings.STATIC_URL)
+    media_url = request.build_absolute_uri(settings.MEDIA_URL)
+
+    html_content = template.render({
+        'anomaly': anomaly,
+        'title': 'گزارش آنومالی',
+        'static_url': static_url,
+        'media_url': media_url,
+    }, request)
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="anomaly_{pk}.pdf"'
+    HTML(string=html_content).write_pdf(response)
+    return response
 

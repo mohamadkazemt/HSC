@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'BaseInfo.apps.BaseinfoConfig',
     'OperationsShiftReports.apps.OperationsshiftreportsConfig',
     'formtools',
+    'dailyreport_hse.apps.DailyreportHseConfig'
 ]
 
 MIDDLEWARE = [
@@ -167,9 +168,11 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = '/dashboard/'
 
+
 # ارسال پیامک
-SMS_API_KEY = 'gCLhWKiCoUXwUQiNBIXCpQ81IiGfujNmKgWyrQr19WwgDkv3dSfFSDgIbsSEoo03'
-SMS_LINE_NUMBER = '30007732001185'
+SMSIR_API_KEY = 'gCLhWKiCoUXwUQiNBIXCpQ81IiGfujNmKgWyrQr19WwgDkv3dSfFSDgIbsSEoo03'
+SMSIR_LINE_NUMBER = '30007732001185'
+
 
 
 # settings.py

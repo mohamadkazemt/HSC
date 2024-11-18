@@ -2,28 +2,29 @@
 {% load static %}
 {% block content %}
 
-<div id="kt_app_root" class="d-flex flex-column flex-root app-root">
-    <div id="kt_app_page" class="app-page flex-column flex-column-fluid">
-        {% include 'header.html' %}
+    <div id="kt_app_root" class="d-flex flex-column flex-root app-root">
+        <div id="kt_app_page" class="app-page flex-column flex-column-fluid">
+            {% include 'header.html' %}
 
-        <div id="kt_app_wrapper" class="app-wrapper flex-column flex-row-fluid">
-            {% include 'sidebar.html' %}
+            <div id="kt_app_wrapper" class="app-wrapper flex-column flex-row-fluid">
+                {% include 'sidebar.html' %}
 
-            <div id="kt_app_main" class="app-main flex-column flex-row-fluid">
-                <div class="d-flex flex-column flex-column-fluid">
-                    {% include 'toolbar.html' %}
+                <div id="kt_app_main" class="app-main flex-column flex-row-fluid">
+                    <div class="d-flex flex-column flex-column-fluid">
+                        {% include 'toolbar.html' %}
 
-                    <div id="kt_app_content" class="app-content flex-column-fluid">
-                        <div id="kt_app_content_container" class="app-container container-fluid">
-                            <div class="card">
-                                <div class="card-body">
-                                    <div class="card-px text-center pt-15 pb-15">
-                                        <h2 class="fs-2x fw-bold mb-0">لیست آنومالی</h2>
-                                        <p class="text-gray-400 fs-4 fw-semibold py-7">برای ارسال انومالی بر روی دکمه زیرکلیک کنید<br/>-----------</p>
-                                        <a href="#" class="btn btn-primary er fs-6 px-8 py-4" data-bs-toggle="modal" data-bs-target="#kt_modal_new_target">آنومالی جدید</a>
-                                    </div>
-                                    <div class="text-center pb-15 px-5">
-                                        <img src="{% static 'assets/media/illustrations/sketchy-1/17.png' %}" alt="" class="mw-100 h-200px h-sm-325px">
+                        <div id="kt_app_content" class="app-content flex-column-fluid">
+                            <div id="kt_app_content_container" class="app-container container-fluid">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="card-px text-center pt-15 pb-15">
+                                            <h2 class="fs-2x fw-bold mb-0">لیست آنومالی</h2>
+                                            <p class="text-gray-400 fs-4 fw-semibold py-7">برای ارسال انومالی بر روی دکمه زیرکلیک کنید<br/>-----------</p>
+                                            <a href="#" class="btn btn-primary er fs-6 px-8 py-4" data-bs-toggle="modal" data-bs-target="#kt_modal_new_target">آنومالی جدید</a>
+                                        </div>
+                                        <div class="text-center pb-15 px-5">
+                                            <img src="{% static 'assets/media/illustrations/sketchy-1/17.png' %}" alt="" class="mw-100 h-200px h-sm-325px">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -31,208 +32,208 @@
                     </div>
                 </div>
             </div>
+
+            {% include 'footer.html' %}
         </div>
-
-        {% include 'footer.html' %}
     </div>
-</div>
 
-<div id="kt_drawer_chat" class="bg-body" data-kt-drawer="true" data-kt-drawer-name="chat" data-kt-drawer-activate="true"
-    data-kt-drawer-overlay="true" data-kt-drawer-width="{default:'300px', 'md': '500px'}" data-kt-drawer-direction="end"
-    data-kt-drawer-toggle="#kt_drawer_chat_toggle" data-kt-drawer-close="#kt_drawer_chat_close">
-    {% include 'notification.html' %}
-</div>
+    <div id="kt_drawer_chat" class="bg-body" data-kt-drawer="true" data-kt-drawer-name="chat" data-kt-drawer-activate="true"
+         data-kt-drawer-overlay="true" data-kt-drawer-width="{default:'300px', 'md': '500px'}" data-kt-drawer-direction="end"
+         data-kt-drawer-toggle="#kt_drawer_chat_toggle" data-kt-drawer-close="#kt_drawer_chat_close">
+        {% include 'notification.html' %}
+    </div>
 
-<div id="kt_scrolltop" class="scrolltop" data-kt-scrolltop="true"></div>
+    <div id="kt_scrolltop" class="scrolltop" data-kt-scrolltop="true"></div>
 
-<!-- Modal Form -->
-<div class="modal fade" id="kt_modal_new_target" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered mw-650px">
-        <div class="modal-content rounded">
-            <div class="modal-header pb-0 border-0 justify-content-end">
-                <div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal">
+    <!-- Modal Form -->
+    <div class="modal fade" id="kt_modal_new_target" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered mw-650px">
+            <div class="modal-content rounded">
+                <div class="modal-header pb-0 border-0 justify-content-end">
+                    <div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal">
                     <span class="svg-icon svg-icon-1">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
                             <rect opacity="0.5" x="6" y="17.3137" width="16" height="2" rx="1" transform="rotate(-45 6 17.3137)" fill="black"/>
                             <rect x="7.41422" y="6" width="16" height="2" rx="1" transform="rotate(45 7.41422 6)" fill="black"/>
                         </svg>
                     </span>
+                    </div>
                 </div>
-            </div>
 
-            <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-15">
-                <!-- Display Messages -->
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-
-                <form id="anomaly_form" class="form" action="{% url 'anomalis:anomalis' %}" method="post" enctype="multipart/form-data">
-                    {% csrf_token %}
-
-                    <div class="mb-13 text-center">
-                        <h1 class="mb-3">فرم آنومالی</h1>
-                        <div class="text-muted fw-semibold fs-5">
-                            اگر به اطلاعات لازم دارید ، <a href="#" class="fw-bold link-primary">دستورالعمل ها</a>
-                            لطفاً بررسی کنید.
-                        </div>
-                    </div>
-
-                    <!-- Location and Section -->
-                    <div class="row g-9 mb-8">
-                        <div class="col-md-6 fv-row">
-                            <label class="required fs-6 fw-semibold mb-2">{{ form.location.label }}</label>
-                            {{ form.location }}
-                            {% if form.location.errors %}
-                            <div class="fv-plugins-message-container invalid-feedback">
-                                {{ form.location.errors|join:" " }}
+                <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-15">
+                    <!-- Display Messages -->
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form id="anomaly_form" class="form" action="{% url 'anomalis:anomalis' %}" method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <div class="mb-13 text-center">
+                            <h1 class="mb-3">فرم آنومالی</h1>
+                            <div class="text-muted fw-semibold fs-5">
+                                اگر به اطلاعات لازم دارید ، <a href="#" class="fw-bold link-primary">دستورالعمل ها</a>
+                                لطفاً بررسی کنید.
+                            </div>
+                        </div>
+
+                        <!-- Location and Section -->
+                        <div class="row g-9 mb-8">
+                            <div class="col-md-6 fv-row">
+                                <label for="id_location" class="required fs-6 fw-semibold mb-2">{{ form.location.label }}</label>
+                                {{ form.location}}
+                                {% if form.location.errors %}
+                                    <div class="fv-plugins-message-container invalid-feedback">
+                                        {{ form.location.errors|join:" " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 fv-row">
+                                <label for="id_section" class="fs-6 fw-semibold mb-2">{{ form.section.label }}</label>
+                                {{ form.section }}
+                                {% if form.section.errors %}
+                                    <div class="fv-plugins-message-container invalid-feedback">
+                                        {{ form.section.errors|join:" " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+
+                        <!-- Followup and Anomaly Type -->
+                        <div class="row g-9 mb-8">
+                            <div class="col-md-6 fv-row">
+                                <label class="required fs-6 fw-semibold mb-2">{{ form.followup.label }}</label>
+                                {{ form.followup }}
+                                {% if form.followup.errors %}
+                                    <div class="fv-plugins-message-container invalid-feedback">
+                                        {{ form.followup.errors|join:" " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6 fv-row">
+                                <label class="required fs-6 fw-semibold mb-2">{{ form.anomalytype.label }}</label>
+                                {{ form.anomalytype }}
+                                {% if form.anomalytype.errors %}
+                                    <div class="fv-plugins-message-container invalid-feedback">
+                                        {{ form.anomalytype.errors|join:" " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Anomaly Description -->
+                        <div class="d-flex flex-column mb-8 fv-row">
+                            <label class="required fs-6 fw-semibold mb-2">
+                                {{ form.anomalydescription.label }}
+                                <span class="ms-1" data-bs-toggle="tooltip" title="لطفا یک شرح آنومالی را انتخاب کنید"></span>
+                            </label>
+                            {{ form.anomalydescription }}
+                            {% if form.anomalydescription.errors %}
+                                <div class="fv-plugins-message-container invalid-feedback">
+                                    {{ form.anomalydescription.errors|join:" " }}
+                                </div>
                             {% endif %}
                         </div>
 
-                        <div class="col-md-6 fv-row">
-                            <label class="fs-6 fw-semibold mb-2">{{ form.section.label }}</label>
-                            {{ form.section }}
-                            {% if form.section.errors %}
-                            <div class="fv-plugins-message-container invalid-feedback">
-                                {{ form.section.errors|join:" " }}
+                        <!-- HSE Type and Corrective Action -->
+                        <div class="row g-9 mb-8">
+                            <div class="col-md-6 fv-row">
+                                <label class="fs-6 fw-semibold mb-2">{{ form.hse_type.label }}</label>
+                                {{ form.hse_type }}
+                                {% if form.hse_type.errors %}
+                                    <div class="fv-plugins-message-container invalid-feedback">
+                                        {{ form.hse_type.errors|join:" " }}
+                                    </div>
+                                {% endif %}
                             </div>
-                            {% endif %}
-                        </div>
-                    </div>
 
-                    <!-- Followup and Anomaly Type -->
-                    <div class="row g-9 mb-8">
-                        <div class="col-md-6 fv-row">
-                            <label class="required fs-6 fw-semibold mb-2">{{ form.followup.label }}</label>
-                            {{ form.followup }}
-                            {% if form.followup.errors %}
-                            <div class="fv-plugins-message-container invalid-feedback">
-                                {{ form.followup.errors|join:" " }}
+                            <div class="col-md-6 fv-row">
+                                <label class="required fs-6 fw-semibold mb-2">{{ form.correctiveaction.label }}</label>
+                                {{ form.correctiveaction }}
+                                {% if form.correctiveaction.errors %}
+                                    <div class="fv-plugins-message-container invalid-feedback">
+                                        {{ form.correctiveaction.errors|join:" " }}
+                                    </div>
+                                {% endif %}
                             </div>
-                            {% endif %}
                         </div>
 
-                        <div class="col-md-6 fv-row">
-                            <label class="required fs-6 fw-semibold mb-2">{{ form.anomalytype.label }}</label>
-                            {{ form.anomalytype }}
-                            {% if form.anomalytype.errors %}
-                            <div class="fv-plugins-message-container invalid-feedback">
-                                {{ form.anomalytype.errors|join:" " }}
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <!-- Anomaly Description -->
-                    <div class="d-flex flex-column mb-8 fv-row">
-                        <label class="required fs-6 fw-semibold mb-2">
-                            {{ form.anomalydescription.label }}
-                            <span class="ms-1" data-bs-toggle="tooltip" title="لطفا یک شرح آنومالی را انتخاب کنید"></span>
-                        </label>
-                        {{ form.anomalydescription }}
-                        {% if form.anomalydescription.errors %}
-                        <div class="fv-plugins-message-container invalid-feedback">
-                            {{ form.anomalydescription.errors|join:" " }}
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    <!-- HSE Type and Corrective Action -->
-                    <div class="row g-9 mb-8">
-                        <div class="col-md-6 fv-row">
-                            <label class="fs-6 fw-semibold mb-2">{{ form.hse_type.label }}</label>
-                            {{ form.hse_type }}
-                            {% if form.hse_type.errors %}
-                            <div class="fv-plugins-message-container invalid-feedback">
-                                {{ form.hse_type.errors|join:" " }}
-                            </div>
+                        <!-- Description -->
+                        <div class="d-flex flex-column mb-8">
+                            <label class="fs-6 fw-semibold mb-2">{{ form.description.label }}</label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="fv-plugins-message-container invalid-feedback">
+                                    {{ form.description.errors|join:" " }}
+                                </div>
                             {% endif %}
                         </div>
 
-                        <div class="col-md-6 fv-row">
-                            <label class="required fs-6 fw-semibold mb-2">{{ form.correctiveaction.label }}</label>
-                            {{ form.correctiveaction }}
-                            {% if form.correctiveaction.errors %}
-                            <div class="fv-plugins-message-container invalid-feedback">
-                                {{ form.correctiveaction.errors|join:" " }}
-                            </div>
+                        <!-- Priority -->
+                        <div class="d-flex flex-column mb-8 fv-row">
+                            <label class="required fs-6 fw-semibold mb-2">
+                                {{ form.priority.label }}
+                                <span class="ms-1" data-bs-toggle="tooltip" title="اولویت را مشخص کنید"></span>
+                            </label>
+                            {{ form.priority }}
+                            {% if form.priority.errors %}
+                                <div class="fv-plugins-message-container invalid-feedback">
+                                    {{ form.priority.errors|join:" " }}
+                                </div>
                             {% endif %}
                         </div>
-                    </div>
 
-                    <!-- Description -->
-                    <div class="d-flex flex-column mb-8">
-                        <label class="fs-6 fw-semibold mb-2">{{ form.description.label }}</label>
-                        {{ form.description }}
-                        {% if form.description.errors %}
-                        <div class="fv-plugins-message-container invalid-feedback">
-                            {{ form.description.errors|join:" " }}
+                        <!-- Image -->
+                        <div class="d-flex flex-column mb-8 fv-row">
+                            <label class="required fs-6 fw-semibold mb-2">
+                                {{ form.image.label }}
+                                <span class="ms-1" data-bs-toggle="tooltip" title="لطفا تصویر آنومالی را بارگذاری کنید"></span>
+                            </label>
+                            {{ form.image }}
+                            {% if form.image.errors %}
+                                <div class="fv-plugins-message-container invalid-feedback">
+                                    {{ form.image.errors|join:" " }}
+                                </div>
+                            {% endif %}
                         </div>
-                        {% endif %}
-                    </div>
 
-                    <!-- Priority -->
-                    <div class="d-flex flex-column mb-8 fv-row">
-                        <label class="required fs-6 fw-semibold mb-2">
-                            {{ form.priority.label }}
-                            <span class="ms-1" data-bs-toggle="tooltip" title="اولویت را مشخص کنید"></span>
-                        </label>
-                        {{ form.priority }}
-                        {% if form.priority.errors %}
-                        <div class="fv-plugins-message-container invalid-feedback">
-                            {{ form.priority.errors|join:" " }}
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    <!-- Image -->
-                    <div class="d-flex flex-column mb-8 fv-row">
-                        <label class="required fs-6 fw-semibold mb-2">
-                            {{ form.image.label }}
-                            <span class="ms-1" data-bs-toggle="tooltip" title="لطفا تصویر آنومالی را بارگذاری کنید"></span>
-                        </label>
-                        {{ form.image }}
-                        {% if form.image.errors %}
-                        <div class="fv-plugins-message-container invalid-feedback">
-                            {{ form.image.errors|join:" " }}
-                        </div>
-                        {% endif %}
-                    </div>
-
-                    <!-- Action -->
-                    <div class="d-flex flex-stack mb-8">
-                        <div class="me-5">
-                            <label class="fs-6 fw-semibold">{{ form.action.label }}</label>
-                            <div class="fs-7 fw-semibold text-muted">
-                                در صورت روشن بودن این گزینه به معنای ایمن بودن آنومالی می باشد
+                        <!-- Action -->
+                        <div class="d-flex flex-stack mb-8">
+                            <div class="me-5">
+                                <label class="fs-6 fw-semibold">{{ form.action.label }}</label>
+                                <div class="fs-7 fw-semibold text-muted">
+                                    در صورت روشن بودن این گزینه به معنای ایمن بودن آنومالی می باشد
+                                </div>
+                            </div>
+                            <div class="form-check form-switch">
+                                {{ form.action }}
                             </div>
                         </div>
-                        <div class="form-check form-switch">
-                            {{ form.action }}
-                        </div>
-                    </div>
 
-                    <!-- Submit Buttons -->
-                    <div class="text-center">
-                                    <button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">انصراف</button>
-            <button type="submit" class="btn btn-primary" data-kt-indicator="off">
-                <span class="indicator-label">ثبت</span>
-                <span class="indicator-progress">
+                        <!-- Submit Buttons -->
+                        <div class="text-center">
+                            <button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">انصراف</button>
+                            <button type="submit" class="btn btn-primary" data-kt-indicator="off">
+                                <span class="indicator-label">ثبت</span>
+                                <span class="indicator-progress">
                     لطفا صبر کنید...
                     <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
                 </span>
-            </button>
-                    </div>
-                </form>
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
 {% endblock %}
 
@@ -241,259 +242,288 @@
 
 
 {% block extra_js %}
-        <script>
-    // Add this to your JavaScript/jQuery code
-$(document).ready(function() {
-    // Initialize Select2 elements within the modal
-    $('#kt_modal_new_target .form-select').select2({
-        dropdownParent: $('#kt_modal_new_target'), // Attach dropdown to modal
-    });
-});
-
-
-$(document).ready(function() {
-    // تابع راه‌اندازی Select2
-    function initializeSelect2() {
-        $('.modal-select2').select2({
-            dropdownParent: $('#kt_modal_new_target .modal-body'),
-            width: '100%',
-            language: 'fa',
-            dir: 'rtl',
-            placeholder: 'انتخاب کنید...'
+    <script>
+        // Add this to your JavaScript/jQuery code
+        $(document).ready(function() {
+            // Initialize Select2 elements within the modal
+            $('#kt_modal_new_target .form-select').select2({
+                dropdownParent: $('#kt_modal_new_target'), // Attach dropdown to modal
+            });
         });
-    }
 
-    // راه‌اندازی اولیه Select2
-    initializeSelect2();
 
-    // رویداد تغییر نوع آنومالی
-    $('#id_anomalytype').on('change', function() {
-        var anomalytypeId = $(this).val();
-        if (anomalytypeId) {
-            $.ajax({
-                url: "{% url 'anomalis:get_anomalydescription' %}",
-                data: {
-                    'anomalytype_id': anomalytypeId
-                },
-                success: function(data) {
-                    var $anomalyDescription = $('#id_anomalydescription');
-                    $anomalyDescription.empty();
-                    $anomalyDescription.append('<option value="">-- انتخاب شرح آنومالی --</option>');
+        $(document).ready(function() {
+            // تابع راه‌اندازی Select2
+            function initializeSelect2() {
+                $('.modal-select2').select2({
+                    dropdownParent: $('#kt_modal_new_target .modal-body'),
+                    width: '100%',
+                    language: 'fa',
+                    dir: 'rtl',
+                    placeholder: 'انتخاب کنید...'
+                });
+            }
 
-                    $.each(data.descriptions, function(index, description) {
-                        $anomalyDescription.append(new Option(description.description, description.id));
+            // راه‌اندازی اولیه Select2
+            initializeSelect2();
+
+            // رویداد تغییر نوع آنومالی
+            $('#id_anomalytype').on('change', function() {
+                var anomalytypeId = $(this).val();
+                if (anomalytypeId) {
+                    $.ajax({
+                        url: "{% url 'anomalis:get_anomalydescription' %}",
+                        data: {
+                            'anomalytype_id': anomalytypeId
+                        },
+                        success: function(data) {
+                            var $anomalyDescription = $('#id_anomalydescription');
+                            $anomalyDescription.empty();
+                            $anomalyDescription.append('<option value="">-- انتخاب شرح آنومالی --</option>');
+
+                            $.each(data.descriptions, function(index, description) {
+                                $anomalyDescription.append(new Option(description.description, description.id));
+                            });
+
+                            // بازسازی Select2 برای شرح آنومالی
+                            $anomalyDescription.trigger('change');
+                        }
                     });
-
-                    // بازسازی Select2 برای شرح آنومالی
-                    $anomalyDescription.trigger('change');
                 }
             });
-        }
-    });
 
-    // رویداد تغییر شرح آنومالی
-    $('#id_anomalydescription').on('change', function() {
-        var descriptionId = $(this).val();
-        if (descriptionId) {
-            // دریافت نوع HSE
-            fetch(`/anomalis/get-hse-type/${descriptionId}/`)
-                .then(response => response.json())
-                .then(data => {
-                    $('#id_hse_type').val(data.hse_type);
+            // رویداد تغییر شرح آنومالی
+            $('#id_anomalydescription').on('change', function() {
+                var descriptionId = $(this).val();
+                if (descriptionId) {
+                    // دریافت نوع HSE
+                    fetch(`/anomalis/get-hse-type/${descriptionId}/`)
+                        .then(response => response.json())
+                        .then(data => {
+                            $('#id_hse_type').val(data.hse_type);
+                        });
+
+                    // دریافت عملیات اصلاحی
+                    fetch(`/anomalis/get-corrective-action/${descriptionId}/`)
+                        .then(response => response.json())
+                        .then(data => {
+                            var $correctiveAction = $('#id_correctiveaction');
+                            $correctiveAction.empty();
+                            $correctiveAction.append('<option value="">-- انتخاب اقدام اصلاحی --</option>');
+
+                            data.actions.forEach(action => {
+                                $correctiveAction.append(new Option(action.description, action.id));
+                            });
+
+                            // بازسازی Select2 برای اقدامات اصلاحی
+                            $correctiveAction.trigger('change');
+                        });
+                }
+            });
+
+            // مدیریت باز شدن مودال
+            $('#kt_modal_new_target').on('shown.bs.modal', function() {
+                setTimeout(function() {
+                    initializeSelect2();
+                }, 100);
+            });
+
+            // مدیریت بسته شدن مودال
+            $('#kt_modal_new_target').on('hidden.bs.modal', function() {
+                $('.modal-select2').select2('destroy');
+                $('.select2-container').remove();
+            });
+
+            // مدیریت اسکرول مودال
+            $('#kt_modal_new_target .modal-body').scroll(function() {
+                $('.select2-container--open').css({
+                    position: 'fixed',
+                    top: $('.select2-container--open').parent().offset().top - $(window).scrollTop()
                 });
-
-            // دریافت عملیات اصلاحی
-            fetch(`/anomalis/get-corrective-action/${descriptionId}/`)
-                .then(response => response.json())
-                .then(data => {
-                    var $correctiveAction = $('#id_correctiveaction');
-                    $correctiveAction.empty();
-                    $correctiveAction.append('<option value="">-- انتخاب اقدام اصلاحی --</option>');
-
-                    data.actions.forEach(action => {
-                        $correctiveAction.append(new Option(action.description, action.id));
-                    });
-
-                    // بازسازی Select2 برای اقدامات اصلاحی
-                    $correctiveAction.trigger('change');
-                });
-        }
-    });
-
-    // مدیریت باز شدن مودال
-    $('#kt_modal_new_target').on('shown.bs.modal', function() {
-        setTimeout(function() {
-            initializeSelect2();
-        }, 100);
-    });
-
-    // مدیریت بسته شدن مودال
-    $('#kt_modal_new_target').on('hidden.bs.modal', function() {
-        $('.modal-select2').select2('destroy');
-        $('.select2-container').remove();
-    });
-
-    // مدیریت اسکرول مودال
-    $('#kt_modal_new_target .modal-body').scroll(function() {
-        $('.select2-container--open').css({
-            position: 'fixed',
-            top: $('.select2-container--open').parent().offset().top - $(window).scrollTop()
+            });
         });
-    });
-});
 
-</script>
+    </script>
     // اضافه کردن در بخش extra_js
-{# در بخش extra_js قرار دهید #}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const modalElement = document.querySelector('#kt_modal_new_target');
-    if (!modalElement) return;
+    {# در بخش extra_js قرار دهید #}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const modalElement = document.querySelector('#kt_modal_new_target');
+            if (!modalElement) return;
 
-    const form = modalElement.querySelector('form');
-    if (!form) return;
+            const form = modalElement.querySelector('form');
+            if (!form) return;
 
-    const submitButton = form.querySelector('button[type="submit"]');
-    if (!submitButton) return;
+            const submitButton = form.querySelector('button[type="submit"]');
+            if (!submitButton) return;
 
-    // تابع پاک کردن خطاها
-    const clearErrors = () => {
-        form.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
-        form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-    };
+            // تابع پاک کردن خطاها
+            const clearErrors = () => {
+                form.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+                form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            };
 
-    // تابع نمایش پیام
-    const showMessage = (message, type = 'success') => {
-        const messageContainer = form.querySelector('.messages-container');
-        if (!messageContainer) return;
+            // تابع نمایش پیام
+            const showMessage = (message, type = 'success') => {
+                const messageContainer = form.querySelector('.messages-container');
+                if (!messageContainer) return;
 
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-        alertDiv.innerHTML = `
+                const alertDiv = document.createElement('div');
+                alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+                alertDiv.innerHTML = `
             ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         `;
 
-        messageContainer.querySelectorAll('.alert').forEach(el => el.remove());
-        messageContainer.insertBefore(alertDiv, messageContainer.firstChild);
-    };
+                messageContainer.querySelectorAll('.alert').forEach(el => el.remove());
+                messageContainer.insertBefore(alertDiv, messageContainer.firstChild);
+            };
 
-    // تابع نمایش خطاها
-    const showErrors = (errors) => {
-        clearErrors();
-        Object.entries(errors).forEach(([fieldName, errorMessages]) => {
-            const field = form.querySelector(`[name="${fieldName}"]`);
-            if (!field) return;
+            // تابع نمایش خطاها
+            const showErrors = (errors) => {
+                clearErrors();
+                Object.entries(errors).forEach(([fieldName, errorMessages]) => {
+                    const field = form.querySelector(`[name="${fieldName}"]`);
+                    if (!field) return;
 
-            field.classList.add('is-invalid');
+                    field.classList.add('is-invalid');
 
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'invalid-feedback d-block';
-            errorDiv.innerHTML = Array.isArray(errorMessages) ? errorMessages.join('<br>') : errorMessages;
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'invalid-feedback d-block';
+                    errorDiv.innerHTML = Array.isArray(errorMessages) ? errorMessages.join('<br>') : errorMessages;
 
-            if (field.classList.contains('select2-hidden-accessible')) {
-                const select2Container = field.nextElementSibling;
-                select2Container?.after(errorDiv);
-            } else {
-                field.parentNode.appendChild(errorDiv);
-            }
-        });
-    };
+                    if (field.classList.contains('select2-hidden-accessible')) {
+                        const select2Container = field.nextElementSibling;
+                        select2Container?.after(errorDiv);
+                    } else {
+                        field.parentNode.appendChild(errorDiv);
+                    }
+                });
+            };
 
-    // تابع غیرفعال/فعال کردن دکمه submit
-    const toggleSubmitButton = (loading = true) => {
-        submitButton.disabled = loading;
-        submitButton.setAttribute('data-kt-indicator', loading ? 'on' : 'off');
-    };
+            // تابع غیرفعال/فعال کردن دکمه submit
+            const toggleSubmitButton = (loading = true) => {
+                submitButton.disabled = loading;
+                submitButton.setAttribute('data-kt-indicator', loading ? 'on' : 'off');
+            };
 
-    // مدیریت submit فرم
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        clearErrors();
-        toggleSubmitButton(true);
+            // مدیریت submit فرم
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                clearErrors();
+                toggleSubmitButton(true);
 
-        try {
-            // ساخت FormData و اضافه کردن CSRF token
-            const formData = new FormData(this);
-            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                try {
+                    // ساخت FormData و اضافه کردن CSRF token
+                    const formData = new FormData(this);
+                    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
-            const response = await fetch(this.getAttribute('action'), {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': csrftoken
-                },
-                credentials: 'same-origin'
-            });
+                    const response = await fetch(this.getAttribute('action'), {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': csrftoken
+                        },
+                        credentials: 'same-origin'
+                    });
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
 
-            const contentType = response.headers.get("content-type");
-            if (!contentType || !contentType.includes("application/json")) {
-                throw new TypeError("Response was not JSON");
-            }
+                    const contentType = response.headers.get("content-type");
+                    if (!contentType || !contentType.includes("application/json")) {
+                        throw new TypeError("Response was not JSON");
+                    }
 
-            const data = await response.json();
+                    const data = await response.json();
 
-            if (data.status === 'success') {
-                showMessage(data.message);
-                setTimeout(() => window.location.href = data.redirect, 1500);
-            } else {
-                showMessage(data.message || 'خطا در ثبت اطلاعات', 'danger');
-                if (data.errors) {
-                    showErrors(data.errors);
-                }
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            showMessage('خطا در ارسال فرم. لطفا دوباره تلاش کنید.', 'danger');
-        } finally {
-            toggleSubmitButton(false);
-        }
-    });
-
-    // حذف خطاها هنگام تغییر مقدار فیلدها
-    form.querySelectorAll('input, select, textarea').forEach(field => {
-        field.addEventListener('change', function() {
-            if (this.classList.contains('is-invalid')) {
-                this.classList.remove('is-invalid');
-                const errorMessage = this.parentNode.querySelector('.invalid-feedback');
-                errorMessage?.remove();
-            }
-        });
-    });
-
-    // مدیریت Select2
-    form.querySelectorAll('.modal-select2').forEach(select => {
-        if (typeof $.fn.select2 !== 'undefined') {
-            $(select).select2({
-                dropdownParent: $('#kt_modal_new_target .modal-body')
-            }).on('select2:select', function() {
-                const errorMessage = this.parentNode.querySelector('.invalid-feedback');
-                if (errorMessage) {
-                    errorMessage.remove();
-                    this.classList.remove('is-invalid');
+                    if (data.status === 'success') {
+                        showMessage(data.message);
+                        setTimeout(() => window.location.href = data.redirect, 1500);
+                    } else {
+                        showMessage(data.message || 'خطا در ثبت اطلاعات', 'danger');
+                        if (data.errors) {
+                            showErrors(data.errors);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showMessage('خطا در ارسال فرم. لطفا دوباره تلاش کنید.', 'danger');
+                } finally {
+                    toggleSubmitButton(false);
                 }
             });
-        }
-    });
 
-    // ریست فرم هنگام بستن مودال
-    modalElement.addEventListener('hidden.bs.modal', () => {
-        form.reset();
-        clearErrors();
-        form.querySelectorAll('.alert').forEach(el => el.remove());
+            // حذف خطاها هنگام تغییر مقدار فیلدها
+            form.querySelectorAll('input, select, textarea').forEach(field => {
+                field.addEventListener('change', function() {
+                    if (this.classList.contains('is-invalid')) {
+                        this.classList.remove('is-invalid');
+                        const errorMessage = this.parentNode.querySelector('.invalid-feedback');
+                        errorMessage?.remove();
+                    }
+                });
+            });
 
-        form.querySelectorAll('.modal-select2').forEach(select => {
-            if (typeof $.fn.select2 !== 'undefined') {
-                $(select).val(null).trigger('change');
-            }
+            // مدیریت Select2
+            form.querySelectorAll('.modal-select2').forEach(select => {
+                if (typeof $.fn.select2 !== 'undefined') {
+                    $(select).select2({
+                        dropdownParent: $('#kt_modal_new_target .modal-body')
+                    }).on('select2:select', function() {
+                        const errorMessage = this.parentNode.querySelector('.invalid-feedback');
+                        if (errorMessage) {
+                            errorMessage.remove();
+                            this.classList.remove('is-invalid');
+                        }
+                    });
+                }
+            });
+
+            // ریست فرم هنگام بستن مودال
+            modalElement.addEventListener('hidden.bs.modal', () => {
+                form.reset();
+                clearErrors();
+                form.querySelectorAll('.alert').forEach(el => el.remove());
+
+                form.querySelectorAll('.modal-select2').forEach(select => {
+                    if (typeof $.fn.select2 !== 'undefined') {
+                        $(select).val(null).trigger('change');
+                    }
+                });
+            });
         });
-    });
-});
-</script>
+        $(document).ready(function () {
+            // اطمینان از تعامل درست با فرم داخل مدال
+            $('#kt_modal_new_target').on('change', '#id_location', function () {
+                var locationId = $(this).val(); // دریافت آی‌دی سایت
+                var $sectionSelect = $('#id_section'); // فیلد بخش
+                $sectionSelect.empty(); // پاک کردن گزینه‌های قبلی
+
+                if (locationId) {
+                    // ارسال درخواست AJAX
+                    $.ajax({
+                        url: "{% url 'anomalis:get_sections' %}", // ویوی مربوطه
+                        data: { location_id: locationId }, // ارسال آی‌دی سایت
+                        success: function (data) {
+                            // افزودن گزینه‌های جدید
+                            $sectionSelect.append('<option value="">-- انتخاب بخش --</option>');
+                            data.sections.forEach(function (section) {
+                                $sectionSelect.append('<option value="' + section.id + '">' + section.section + '</option>');
+                            });
+                        },
+                        error: function () {
+                            alert('خطا در دریافت بخش‌ها. لطفاً دوباره تلاش کنید.');
+                        }
+                    });
+                } else {
+                    $sectionSelect.append('<option value="">-- ابتدا سایت را انتخاب کنید --</option>');
+                }
+            });
+        });
+
+    </script>
 
 {% endblock %}

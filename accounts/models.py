@@ -14,7 +14,7 @@ class UserProfile(models.Model):
     # اول بدون unique اضافه میکنیم
     personnel_code = models.CharField(max_length=10, default='', blank=True, verbose_name='کد پرسنلی')
     image = models.ImageField(upload_to='profile_pics', blank=True)
-    mobile = models.CharField(max_length=10, blank=True)
+    mobile = models.CharField(max_length=11, blank=True)
     group = models.CharField(max_length=1, choices=GROUP_CHOICES, blank=True)
 
     def __str__(self):

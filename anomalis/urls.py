@@ -15,5 +15,9 @@ urlpatterns = [
     path('anomaly/<int:pk>/approve/', views.approve_safe, name='approve_safe'),
     path('anomaly/<int:pk>/reject/', views.reject_safe, name='reject_safe'),
     path('export-anomalies/', views.export_anomalies_to_excel, name='export_anomalies_to_excel'),
+    path('get-sections/', views.get_sections, name='get_sections'),
+    path('anomaly/<int:pk>/pdf/', views.anomaly_pdf_view, name='anomaly_pdf'),
+
+
 
 ]
