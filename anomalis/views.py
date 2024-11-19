@@ -167,7 +167,7 @@ def anomaly_list(request):
         user_profile = UserProfile.objects.get(user=request.user)
         anomalies = Anomaly.objects.filter(followup=user_profile)
     else:
-        anomalies = Anomaly.objects.all()
+        anomalies = Anomaly.objects.all().order_by('-created_at')
 
     # Convert the date fields to Jalali
     for anomaly in anomalies:
