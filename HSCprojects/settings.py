@@ -11,7 +11,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 import os
 from pathlib import Path
-
+from logging.handlers import TimedRotatingFileHandler
+from datetime import datetime
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -181,18 +182,39 @@ SMSIR_LINE_NUMBER = '30007732001185'
 
 
 # settings.py
+
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
     'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': os.path.join(
+                BASE_DIR, 'logs', f"django_{datetime.now().strftime('%Y-%m-%d')}.log"
+            ),
+            'when': 'midnight',  # چرخش فایل روزانه
+            'interval': 1,       # هر یک روز
+            'backupCount': 28,   # نگهداری لاگ‌ها برای 4 هفته (28 روز)
+            'formatter': 'verbose',
         },
     },
     'loggers': {
-        '': {  # Root logger
-            'handlers': ['console'],
+        'django': {
+            'handlers': ['file'],
             'level': 'DEBUG',
+            'propagate': True,
         },
     },
 }
