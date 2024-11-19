@@ -31,25 +31,33 @@ from django.http import HttpResponse
 from weasyprint import HTML
 from django.conf import settings
 from urllib.parse import urljoin
-
+import logging
 name = 'anomalis'
 
 
-# views.py
 
-# views.py
+
+# تنظیم لاگر
+logger = logging.getLogger(__name__)
 
 @login_required
 def anomalis(request):
     if request.method == 'POST':
+        logger.info(f"Received POST request from user {request.user.username}")
+
         form = AnomalyForm(request.POST, request.FILES)
         if form.is_valid():
+            logger.info(f"Form data is valid for user {request.user.username}")
+
             try:
                 anomaly = form.save(commit=False)
+                logger.debug(f"Anomaly instance created but not saved yet: {anomaly}")
 
                 try:
                     user_profile = UserProfile.objects.get(user=request.user)
+                    logger.debug(f"UserProfile found for user {request.user.username}: {user_profile}")
                 except UserProfile.DoesNotExist:
+                    logger.warning(f"UserProfile not found for user {request.user.username}")
                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                         return JsonResponse({
                             'status': 'error',
@@ -59,10 +67,13 @@ def anomalis(request):
                     messages.error(request, 'پروفایل کاربری یافت نشد')
                     return redirect('accounts:login')
 
+                # تنظیم مقادیر اضافی
                 anomaly.created_by = user_profile
                 anomaly.group = request.user.userprofile.group
                 anomaly.hse_type = anomaly.anomalydescription.hse_type
                 anomaly.save()
+
+                logger.info(f"Anomaly {anomaly.id} saved successfully by user {request.user.username}")
 
                 # ارسال پیامک به مسئولین پیگیری
                 responsible_users = User.objects.filter(groups__name='مسئول پیگیری')
@@ -75,19 +86,23 @@ def anomalis(request):
                             {"Name": "anomaly_id", "Value": str(anomaly.id)}
                         ]
                         send_template_sms(profile.mobile, template_id, parameters)
+                        logger.info(f"SMS sent to {profile.mobile} for anomaly {anomaly.id}")
                     except UserProfile.DoesNotExist:
-                        logger.warning(f"پروفایل برای کاربر {user.username} یافت نشد.")
+                        logger.warning(f"UserProfile not found for responsible user {user.username}")
 
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    logger.info(f"Returning success response for AJAX request by user {request.user.username}")
                     return JsonResponse({
                         'status': 'success',
                         'message': 'آنومالی با موفقیت ثبت شد',
                         'redirect': reverse('anomalis:anomalis')
                     })
+
                 messages.success(request, 'آنومالی با موفقیت ثبت شد')
                 return redirect('anomalis:anomalis')
 
             except Exception as e:
+                logger.error(f"Error occurred while saving anomaly: {e}", exc_info=True)
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({
                         'status': 'error',
@@ -95,7 +110,16 @@ def anomalis(request):
                         'errors': {}
                     })
                 messages.error(request, f'خطا در ثبت آنومالی: {str(e)}')
+        else:
+            logger.warning(f"Form validation failed for user {request.user.username}: {form.errors}")
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'فرم نامعتبر است',
+                    'errors': form.errors
+                })
     else:
+        logger.info(f"GET request received from user {request.user.username}")
         form = AnomalyForm()
 
     return render(request, 'anomalis/new-anomalie.html', {
@@ -103,6 +127,7 @@ def anomalis(request):
         'pagetitle': 'افزودن آنومالی جدید',
         'title': 'افزودن آنومالی جدید',
     })
+
 
 
 
