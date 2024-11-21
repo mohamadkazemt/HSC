@@ -75,20 +75,19 @@ def anomalis(request):
 
                 logger.info(f"Anomaly {anomaly.id} saved successfully by user {request.user.username}")
 
-                # ارسال پیامک به مسئولین پیگیری
-                responsible_users = User.objects.filter(groups__name='مسئول پیگیری')
+                # ارسال پیامک به مسئول پیگیری مرتبط با آنومالی
                 template_id = 684430  # شناسه قالب
-                for user in responsible_users:
-                    try:
-                        profile = UserProfile.objects.get(user=user)
-                        parameters = [
-                            {"Name": "status", "Value": "ثبت شده"},
-                            {"Name": "anomaly_id", "Value": str(anomaly.id)}
-                        ]
-                        send_template_sms(profile.mobile, template_id, parameters)
-                        logger.info(f"SMS sent to {profile.mobile} for anomaly {anomaly.id}")
-                    except UserProfile.DoesNotExist:
-                        logger.warning(f"UserProfile not found for responsible user {user.username}")
+                try:
+                    followup_user = anomaly.followup  # مسئول پیگیری مرتبط با آنومالی
+                    profile = followup_user  # UserProfile کاربر مسئول پیگیری
+                    parameters = [
+                        {"Name": "status", "Value": "ثبت شده"},
+                        {"Name": "anomaly_id", "Value": str(anomaly.id)}
+                    ]
+                    send_template_sms(profile.mobile, template_id, parameters)
+                    logger.info(f"SMS sent to {profile.mobile} for anomaly {anomaly.id}")
+                except UserProfile.DoesNotExist:
+                    logger.warning(f"UserProfile not found for followup user of anomaly {anomaly.id}")
 
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     logger.info(f"Returning success response for AJAX request by user {request.user.username}")
