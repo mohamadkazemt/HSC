@@ -12,7 +12,7 @@ def get_anomaly_stats(user):
         total_anomalies = Anomaly.objects.filter(followup=user_profile).count()
         secured_anomalies = Anomaly.objects.filter(followup=user_profile, action=True).count()
         unsafe_anomalies = Anomaly.objects.filter(followup=user_profile, action=False).count()
-        high_priority_anomalies = Anomaly.objects.filter(followup=user_profile, priority__priority="زیاد").count()
+        high_priority_anomalies = Anomaly.objects.filter(followup=user_profile, priority__priority="زیاد( High)").count()
 
         return {
             'total_anomalies': total_anomalies,

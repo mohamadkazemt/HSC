@@ -4,10 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="convert-to-pdf">
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="log">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -229,7 +227,8 @@
       <workItem from="1731342418831" duration="9444000" />
       <workItem from="1731511957650" duration="1828000" />
       <workItem from="1731515312185" duration="3556000" />
-      <workItem from="1731940021997" duration="6190000" />
+      <workItem from="1731940021997" duration="12381000" />
+      <workItem from="1732159166352" duration="538000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
@@ -399,7 +398,15 @@
       <option name="project" value="LOCAL" />
       <updated>1731940553225</updated>
     </task>
-    <option name="localTasksCounter" value="24" />
+    <task id="LOCAL-00024" summary="log">
+      <option name="closed" value="true" />
+      <created>1732034871770</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1732034871770</updated>
+    </task>
+    <option name="localTasksCounter" value="25" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -434,7 +441,8 @@
     <MESSAGE value="endamaliyat&amp;anomali1" />
     <MESSAGE value="sms.ir" />
     <MESSAGE value="convert-to-pdf" />
-    <option name="LAST_COMMIT_MESSAGE" value="convert-to-pdf" />
+    <MESSAGE value="log" />
+    <option name="LAST_COMMIT_MESSAGE" value="log" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

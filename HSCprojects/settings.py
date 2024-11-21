@@ -178,7 +178,6 @@ SMSIR_LINE_NUMBER = '30007732001185'
 
 # settings.py
 
-
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -194,22 +193,27 @@ LOGGING = {
     },
     'handlers': {
         'file': {
-            'level': 'DEBUG',
+            'level': 'WARNING',  # سطح هشدار برای لاگ‌ها
             'class': 'logging.handlers.TimedRotatingFileHandler',
-            'filename': os.path.join(
-                BASE_DIR, 'logs', f"django_{datetime.now().strftime('%Y-%m-%d')}.log"
-            ),
+            'filename': os.path.join(BASE_DIR, 'logs', 'anomalis.log'),  # مسیر فایل لاگ اختصاصی
             'when': 'midnight',  # چرخش فایل روزانه
-            'interval': 1,       # هر یک روز
-            'backupCount': 28,   # نگهداری لاگ‌ها برای 4 هفته (28 روز)
+            'interval': 1,
+            'backupCount': 28,  # نگهداری لاگ‌ها برای 28 روز
             'formatter': 'verbose',
         },
     },
     'loggers': {
         'django': {
             'handlers': ['file'],
-            'level': 'DEBUG',
+            'level': 'WARNING',
             'propagate': True,
+        },
+        'anomalis': {  # لاگر اختصاصی برای اپلیکیشن anomalis
+            'handlers': ['file'],
+            'level': 'ERROR',  # فقط خطاها ثبت شوند
+            'propagate': False,
         },
     },
 }
+
+
