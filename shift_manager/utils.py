@@ -32,3 +32,38 @@ def get_shift_for_date(input_date):
     }
 
     return shifts
+
+
+
+def get_current_shift_and_group():
+    """
+    شناسایی شیفت جاری و گروه کاری مرتبط
+    """
+    # دریافت تاریخ و ساعت فعلی
+    now = datetime.datetime.now()
+    today = now.date()
+    current_hour = now.hour
+    current_minute = now.minute
+
+    # تعیین شیفت جاری بر اساس ساعت و دقیقه
+    if (current_hour == 6 and current_minute >= 45) or (7 <= current_hour < 14) or (current_hour == 14 and current_minute < 45):
+        current_shift = 'روزکار اول'
+    elif (current_hour == 14 and current_minute >= 45) or (15 <= current_hour < 22) or (current_hour == 22 and current_minute < 45):
+        current_shift = 'عصرکار اول'
+    elif (current_hour == 22 and current_minute >= 45) or (current_hour < 6) or (current_hour == 6 and current_minute < 45):
+        current_shift = 'شب کار اول'
+    else:
+        return None, None  # اگر ساعت نامعتبر باشد
+
+    # گرفتن شیفت‌ها برای امروز
+    shifts = get_shift_for_date(today)
+
+    # یافتن گروه مرتبط با شیفت جاری
+    group = None
+    for grp, shift in shifts.items():
+        if shift == current_shift:
+            group = grp
+            break
+
+    return current_shift, group
+

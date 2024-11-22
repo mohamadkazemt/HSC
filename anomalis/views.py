@@ -32,6 +32,9 @@ from weasyprint import HTML
 from django.conf import settings
 from urllib.parse import urljoin
 import logging
+from shift_manager.utils import get_current_shift_and_group
+
+
 name = 'anomalis'
 
 
@@ -163,8 +166,11 @@ def anomaly_list(request):
     status_filter = request.GET.get('status', 'همه')
     time_filter = request.GET.get('time', 'همه')
     if request.user.groups.filter(name='مسئول پیگیری').exists():
-        user_profile = UserProfile.objects.get(user=request.user)
-        anomalies = Anomaly.objects.filter(followup=user_profile)
+        if request.user.groups.filter(name='مدیر HSE').exists():
+            anomalies = Anomaly.objects.all().order_by('-created_at')
+        else:
+            user_profile = UserProfile.objects.get(user=request.user)
+            anomalies = Anomaly.objects.filter(followup=user_profile)
     else:
         anomalies = Anomaly.objects.all().order_by('-created_at')
 
@@ -344,6 +350,8 @@ def anomaly_detail_view(request, pk):
     return render(request, 'anomalis/anomaly-details.html', context)
 
 
+
+
 @login_required
 def request_safe(request, pk):
     anomaly = get_object_or_404(Anomaly, pk=pk)
@@ -353,23 +361,35 @@ def request_safe(request, pk):
         anomaly.is_request_sent = True
         anomaly.save()
 
-        # ارسال پیامک به مدیران HSE
-        hse_managers = User.objects.filter(groups__name__in=['مدیر HSE', 'افسر HSE'])
-        template_id = 254988  # شناسه قالب برای درخواست ایمنی
-        for manager in hse_managers:
-            try:
-                profile = UserProfile.objects.get(user=manager)
+        # شناسایی شیفت جاری و گروه مرتبط
+        current_shift, group = get_current_shift_and_group()
+        if not current_shift or not group:
+            messages.error(request, "شیفت یا گروه کاری مرتبط یافت نشد.")
+            return redirect('anomalis:anomaly_detail', pk=anomaly.pk)
+
+        # یافتن افسر ایمنی حاضر در گروه و شیفت فعلی
+        try:
+            officer = UserProfile.objects.filter(group=group, user__groups__name='افسر HSE').first()
+            if officer and officer.mobile:
+                # ارسال پیامک به افسر ایمنی حاضر
+                template_id = 254988  # شناسه قالب پیامک
                 parameters = [
                     {"Name": "status", "Value": "در انتظار تایید"},
-                    {"Name": "anomaly_id", "Value": str(anomaly.id)}
+                    {"Name": "anomaly_id", "Value": str(anomaly.id)},
+                    {"Name": "shift", "Value": current_shift}
                 ]
-                send_template_sms(profile.mobile, template_id, parameters)
-            except UserProfile.DoesNotExist:
-                logger.warning(f"پروفایل برای کاربر {manager.username} یافت نشد.")
+                send_template_sms(officer.mobile, template_id, parameters)
+                messages.success(request, "پیامک با موفقیت به افسر ایمنی حاضر ارسال شد.")
+            else:
+                messages.error(request, "افسر ایمنی حاضر یافت نشد.")
+        except Exception as e:
+            logger.error(f"خطا در ارسال پیامک: {str(e)}")
+            messages.error(request, "خطا در ارسال پیامک.")
 
         return redirect('anomalis:anomaly_detail', pk=anomaly.pk)
 
     return redirect('anomalis:anomalis')
+
 
 
 
@@ -385,7 +405,7 @@ def approve_safe(request, pk):
         anomaly.save()
 
         # ارسال پیامک به ایجادکننده و مسئول پیگیری
-        recipients = [anomaly.created_by, anomaly.followup]
+        recipients = [anomaly.followup]
         template_id = 244118  # شناسه قالب تایید ایمنی
         for recipient in recipients:
             parameters = [
@@ -409,7 +429,7 @@ def reject_safe(request, pk):
         anomaly.save()
 
         # ارسال پیامک به ایجادکننده و مسئول پیگیری
-        recipients = [anomaly.created_by, anomaly.followup]
+        recipients = [anomaly.followup]
         template_id = 320925  # شناسه قالب رد ایمنی
         for recipient in recipients:
             parameters = [

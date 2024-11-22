@@ -10,7 +10,9 @@ class LoginForm(AuthenticationForm):
     }))
     password = forms.CharField(widget=forms.PasswordInput(attrs={
         'class': 'form-control',
-        'placeholder': 'رمز عبور'
+        'placeholder': 'رمز عبور',
+        'autocomplete': 'current-password',
+        'id': 'passwordField'
     }))
 
 class UserForm(forms.ModelForm):
@@ -35,3 +37,33 @@ class UserProfileForm(forms.ModelForm):
             'mobile': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'شماره موبایل'}),
             'group': forms.Select(attrs={'class': 'form-control'})
         }
+
+
+class PasswordResetSMSForm(forms.Form):
+    mobile = forms.CharField(max_length=11, widget=forms.TextInput(attrs={
+        'class': 'form-control',
+        'placeholder': 'شماره موبایل'
+    }))
+
+
+class PasswordResetConfirmForm(forms.Form):
+    code = forms.CharField(max_length=6, widget=forms.TextInput(attrs={
+        'class': 'form-control',
+        'placeholder': 'کد تأیید'
+    }))
+    new_password = forms.CharField(widget=forms.PasswordInput(attrs={
+        'class': 'form-control',
+        'placeholder': 'رمز عبور جدید'
+    }))
+    confirm_password = forms.CharField(widget=forms.PasswordInput(attrs={
+        'class': 'form-control',
+        'placeholder': 'تأیید رمز عبور جدید'
+    }))
+
+    def clean(self):
+        cleaned_data = super().clean()
+        new_password = cleaned_data.get("new_password")
+        confirm_password = cleaned_data.get("confirm_password")
+        if new_password != confirm_password:
+            raise forms.ValidationError("رمز عبور و تأیید آن مطابقت ندارند.")
+        return cleaned_data
