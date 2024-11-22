@@ -261,9 +261,15 @@
                                                                     <h3>ارسال کامنت جدید:</h3>
                                                                     <div class="d-flex align-items-center mt-6">
                                                                         <!-- Avatar نویسنده -->
+                                                                        {% if userprofile.image and userprofile.image.url %}
                                                                         <div class="symbol me-3">
                                                                             <img src="{{ userprofile.image.url }}" alt="آواتار" />
                                                                         </div>
+                                                                        {% else %}
+                                                                        <div class="symbol me-3">
+                                                                            <img src="{% static 'assets/media/avatars/blank.png' %}" alt="آواتار" />
+                                                                        </div>
+                                                                        {% endif %}
                                                                         <!-- گروه ورودی -->
                                                                         <div class="position-relative w-100">
                                                                             <form method="POST" action="{% url 'anomalis:anomaly_detail' anomaly.pk %}">
