@@ -82,12 +82,6 @@ def edit_profile(request):
 
 
 
-
-
-
-
-
-
 def send_reset_code(request):
     if request.method == 'POST':
         form = PasswordResetSMSForm(request.POST)
