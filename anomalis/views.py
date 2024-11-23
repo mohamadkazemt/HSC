@@ -40,8 +40,8 @@ name = 'anomalis'
 
 
 
-# تنظیم لاگر
-logger = logging.getLogger(__name__)
+
+logger = logging.getLogger('anomalis')  # لاگر اختصاصی برای اپلیکیشن
 
 @login_required
 def anomalis(request):
@@ -75,22 +75,21 @@ def anomalis(request):
                 anomaly.group = request.user.userprofile.group
                 anomaly.hse_type = anomaly.anomalydescription.hse_type
                 anomaly.save()
-
                 logger.info(f"Anomaly {anomaly.id} saved successfully by user {request.user.username}")
 
-                # ارسال پیامک به مسئول پیگیری مرتبط با آنومالی
+                # ارسال پیامک به مسئول پیگیری
                 template_id = 684430  # شناسه قالب
                 try:
-                    followup_user = anomaly.followup  # مسئول پیگیری مرتبط با آنومالی
-                    profile = followup_user  # UserProfile کاربر مسئول پیگیری
+                    followup_user = anomaly.followup
+                    profile = followup_user
                     parameters = [
                         {"Name": "status", "Value": "ثبت شده"},
                         {"Name": "anomaly_id", "Value": str(anomaly.id)}
                     ]
                     send_template_sms(profile.mobile, template_id, parameters)
                     logger.info(f"SMS sent to {profile.mobile} for anomaly {anomaly.id}")
-                except UserProfile.DoesNotExist:
-                    logger.warning(f"UserProfile not found for followup user of anomaly {anomaly.id}")
+                except Exception as sms_error:
+                    logger.error(f"Error while sending SMS for anomaly {anomaly.id}: {sms_error}")
 
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     logger.info(f"Returning success response for AJAX request by user {request.user.username}")
@@ -129,6 +128,7 @@ def anomalis(request):
         'pagetitle': 'افزودن آنومالی جدید',
         'title': 'افزودن آنومالی جدید',
     })
+
 
 
 

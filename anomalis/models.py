@@ -120,6 +120,7 @@ class Anomaly(models.Model):
         return str(self.description[:30]) + '...'
 
 
+
 class Comment(models.Model):
     anomaly = models.ForeignKey(Anomaly, on_delete=models.CASCADE, related_name='comments', verbose_name="آنومالی")
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, verbose_name="کاربر")
