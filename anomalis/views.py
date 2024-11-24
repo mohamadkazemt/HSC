@@ -306,6 +306,7 @@ def export_anomalies_to_excel(request):
 
     anomalies = Anomaly.objects.all()
 
+    # فیلتر جستجو
     if search_query:
         anomalies = anomalies.filter(
             Q(description__icontains=search_query) |
@@ -315,23 +316,54 @@ def export_anomalies_to_excel(request):
             Q(created_by__user__last_name__icontains=search_query)
         )
 
+    # فیلتر اولویت
     if priority_filter != 'همه':
         anomalies = anomalies.filter(priority__priority=priority_filter)
 
+    # فیلتر وضعیت
     if status_filter == 'ایمن':
         anomalies = anomalies.filter(action=True)
     elif status_filter == 'نا ایمن':
         anomalies = anomalies.filter(action=False)
 
+    # فیلتر زمان (شمسی)
     if time_filter == 'امسال':
-        anomalies = anomalies.filter(created_at__year=timezone.now().year)
+        jalali_now = jdatetime.date.today()
+        start_of_year = jalali_now.replace(month=1, day=1).togregorian()
+        end_of_year = jalali_now.replace(month=12, day=31).togregorian()
+
+        anomalies = anomalies.filter(
+            created_at__gte=make_aware(datetime.combine(start_of_year, datetime.min.time())),
+            created_at__lte=make_aware(datetime.combine(end_of_year, datetime.max.time()))
+        )
     elif time_filter == 'این ماه':
-        anomalies = anomalies.filter(created_at__month=timezone.now().month, created_at__year=timezone.now().year)
+        jalali_now = jdatetime.date.today()
+        start_of_month = jalali_now.replace(day=1).togregorian()
+        end_of_month = (jdatetime.date(jalali_now.year, jalali_now.month, 1) +
+                        jdatetime.timedelta(days=31)).replace(day=1) - jdatetime.timedelta(days=1)
+        end_of_month = end_of_month.togregorian()
+
+        anomalies = anomalies.filter(
+            created_at__gte=make_aware(datetime.combine(start_of_month, datetime.min.time())),
+            created_at__lte=make_aware(datetime.combine(end_of_month, datetime.max.time()))
+        )
     elif time_filter == 'ماه گذشته':
-        last_month = timezone.now().month - 1
-        anomalies = anomalies.filter(created_at__month=last_month, created_at__year=timezone.now().year)
+        jalali_now = jdatetime.date.today()
+        start_of_last_month = (jalali_now.replace(day=1) - jdatetime.timedelta(days=1)).replace(day=1).togregorian()
+        end_of_last_month = (jalali_now.replace(day=1) - jdatetime.timedelta(days=1)).togregorian()
+
+        anomalies = anomalies.filter(
+            created_at__gte=make_aware(datetime.combine(start_of_last_month, datetime.min.time())),
+            created_at__lte=make_aware(datetime.combine(end_of_last_month, datetime.max.time()))
+        )
     elif time_filter == '90 روز اخیر':
-        anomalies = anomalies.filter(created_at__gte=timezone.now() - timezone.timedelta(days=90))
+        end_date = datetime.now()
+        start_date = end_date - jdatetime.timedelta(days=90)
+
+        anomalies = anomalies.filter(
+            created_at__gte=make_aware(start_date),
+            created_at__lte=make_aware(end_date)
+        )
 
     # ایجاد فایل اکسل
     wb = openpyxl.Workbook()
@@ -339,21 +371,21 @@ def export_anomalies_to_excel(request):
     ws.title = "Anomalies"
 
     # اضافه کردن سرفصل‌ها
-    ws.append(['کد آنومالی', 'مسئول پیگیری', 'ایجاد کننده', 'تاریخ', 'سایت','محل شناسایی آنومالی', 'شرح', 'اولویت', 'وضعیت'])
+    ws.append(['کد آنومالی', 'مسئول پیگیری', 'ایجاد کننده', 'تاریخ', 'سایت', 'محل شناسایی آنومالی', 'شرح', 'اولویت', 'وضعیت'])
 
     # اضافه کردن داده‌ها
     for anomaly in anomalies:
-        jalali_date = to_jalali(anomaly.created_at)
+        jalali_date = jdatetime.datetime.fromgregorian(datetime=anomaly.created_at).strftime('%Y/%m/%d')
 
         ws.append([
             anomaly.id,
-            f"{anomaly.followup.user.first_name} {anomaly.followup.user.last_name}",
-            f"{anomaly.created_by.user.first_name} {anomaly.created_by.user.last_name}",
+            f"{anomaly.followup.user.first_name} {anomaly.followup.user.last_name}" if anomaly.followup else '',
+            f"{anomaly.created_by.user.first_name} {anomaly.created_by.user.last_name}" if anomaly.created_by else '',
             jalali_date,
-            anomaly.location.name,
-            anomaly.section.section,
+            anomaly.location.name if anomaly.location else '',
+            anomaly.section.section if anomaly.section else '',
             anomaly.description,
-            anomaly.priority.priority,
+            anomaly.priority.priority if anomaly.priority else 'نامشخص',
             'ایمن' if anomaly.action else 'نا ایمن',
         ])
 
@@ -362,9 +394,6 @@ def export_anomalies_to_excel(request):
     response['Content-Disposition'] = 'attachment; filename=anomalies.xlsx'
     wb.save(response)
     return response
-
-
-
 
 
 
