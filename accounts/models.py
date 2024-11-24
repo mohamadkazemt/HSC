@@ -14,7 +14,6 @@ class UserProfile(models.Model):
         ('G', 'گروه G'),
     ]
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userprofile')
-    # اول بدون unique اضافه میکنیم
     personnel_code = models.CharField(max_length=10, default='', blank=True, verbose_name='کد پرسنلی')
     image = models.ImageField(upload_to='profile_pics', blank=True)
     mobile = models.CharField(max_length=11, blank=True)

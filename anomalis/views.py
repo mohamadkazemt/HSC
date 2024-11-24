@@ -91,6 +91,21 @@ def anomalis(request):
                 except Exception as sms_error:
                     logger.error(f"Error while sending SMS for anomaly {anomaly.id}: {sms_error}")
 
+                # ایجاد اعلان برای مسئول پیگیری
+                Notification.objects.create(
+                    user=anomaly.followup.user,
+                    message=f"آنومالی جدید با شناسه {anomaly.id} برای شما ثبت شد.",
+                    url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
+                )
+
+                hse_group = Group.objects.get(name='مدیر HSE')
+                for user in hse_group.user_set.all():
+                    Notification.objects.create(
+                        user=user,
+                        message=f"آنومالی جدید با شناسه {anomaly.id} ثبت شد.",
+                        url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
+                    )
+
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     logger.info(f"Returning success response for AJAX request by user {request.user.username}")
                     return JsonResponse({
@@ -128,6 +143,7 @@ def anomalis(request):
         'pagetitle': 'افزودن آنومالی جدید',
         'title': 'افزودن آنومالی جدید',
     })
+
 
 
 
@@ -380,6 +396,13 @@ def request_safe(request, pk):
                 ]
                 send_template_sms(officer.mobile, template_id, parameters)
                 messages.success(request, "پیامک با موفقیت به افسر ایمنی حاضر ارسال شد.")
+
+                # ایجاد اعلان برای افسر ایمنی
+                Notification.objects.create(
+                    user=officer.user,
+                    message=f"آنومالی {anomaly.id} در انتظار تأیید وضعیت ایمن است.",
+                    url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
+                )
             else:
                 messages.error(request, "افسر ایمنی حاضر یافت نشد.")
         except Exception as e:
@@ -389,7 +412,6 @@ def request_safe(request, pk):
         return redirect('anomalis:anomaly_detail', pk=anomaly.pk)
 
     return redirect('anomalis:anomalis')
-
 
 
 
@@ -413,6 +435,13 @@ def approve_safe(request, pk):
                 {"Name": "anomaly_id", "Value": str(anomaly.id)}
             ]
             send_template_sms(recipient.mobile, template_id, parameters)
+
+            # ایجاد اعلان
+            Notification.objects.create(
+                user=recipient.user,
+                message=f"آنومالی {anomaly.id} به وضعیت ایمن تغییر یافت.",
+                url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
+            )
 
         return redirect('anomalis:anomaly_detail', pk=anomaly.pk)
 
@@ -438,7 +467,15 @@ def reject_safe(request, pk):
             ]
             send_template_sms(recipient.mobile, template_id, parameters)
 
+            # ایجاد اعلان
+            Notification.objects.create(
+                user=recipient.user,
+                message=f"درخواست ایمن بودن آنومالی {anomaly.id} رد شد.",
+                url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
+            )
+
         return redirect('anomalis:anomaly_detail', pk=anomaly.pk)
+
 
 
 
