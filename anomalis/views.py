@@ -3,7 +3,6 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.template.defaultfilters import title
 from django.urls import reverse
-
 from HSCprojects import settings
 from dashboard.models import Notification
 from dashboard.sms_utils import send_template_sms, logger
@@ -33,6 +32,9 @@ from django.conf import settings
 from urllib.parse import urljoin
 import logging
 from shift_manager.utils import get_current_shift_and_group
+import jdatetime
+from django.utils.timezone import make_aware
+from datetime import datetime
 
 
 name = 'anomalis'
@@ -175,12 +177,15 @@ def get_corrective_action(request, description_id):
 
 
 
+
+
 @login_required
 def anomaly_list(request):
     search_query = request.GET.get('search', '')
     priority_filter = request.GET.get('priority', 'همه')
     status_filter = request.GET.get('status', 'همه')
     time_filter = request.GET.get('time', 'همه')
+
     if request.user.groups.filter(name='مسئول پیگیری').exists():
         if request.user.groups.filter(name='مدیر HSE').exists():
             anomalies = Anomaly.objects.all().order_by('-created_at')
@@ -190,12 +195,7 @@ def anomaly_list(request):
     else:
         anomalies = Anomaly.objects.all().order_by('-created_at')
 
-    # Convert the date fields to Jalali
-    for anomaly in anomalies:
-        anomaly.created_at_jalali = jdatetime.datetime.fromgregorian(datetime=anomaly.created_at)
-        anomaly.updated_at_jalali = jdatetime.datetime.fromgregorian(datetime=anomaly.updated_at)
-
-        # اعمال فیلتر جستجو (در صورت وجود عبارت جستجو)
+    # فیلتر جستجو
     if search_query:
         anomalies = anomalies.filter(
             Q(description__icontains=search_query) |
@@ -205,28 +205,77 @@ def anomaly_list(request):
             Q(created_by__user__last_name__icontains=search_query)
         )
 
-        # فیلتر اولویت (در صورت انتخاب اولویت خاص)
+    # فیلتر اولویت
     if priority_filter != 'همه':
         anomalies = anomalies.filter(priority__priority=priority_filter)
 
-        # فیلتر وضعیت (در صورت انتخاب وضعیت خاص)
+    # فیلتر وضعیت
     if status_filter == 'ایمن':
         anomalies = anomalies.filter(action=True)
     elif status_filter == 'نا ایمن':
         anomalies = anomalies.filter(action=False)
 
-        # فیلتر زمان (در صورت انتخاب زمان خاص)
+    # فیلتر زمان
     if time_filter == 'امسال':
-        anomalies = anomalies.filter(created_at__year=timezone.now().year)
-    elif time_filter == 'این ماه':
-        anomalies = anomalies.filter(created_at__month=timezone.now().month, created_at__year=timezone.now().year)
-    elif time_filter == 'ماه گذشته':
-        last_month = timezone.now().month - 1
-        anomalies = anomalies.filter(created_at__month=last_month, created_at__year=timezone.now().year)
-    elif time_filter == '90 روز اخیر':
-        anomalies = anomalies.filter(created_at__gte=timezone.now() - timezone.timedelta(days=90))
+        jalali_now = jdatetime.date.today()
+        start_of_year = jalali_now.replace(month=1, day=1).togregorian()
+        end_of_year = jalali_now.replace(month=12, day=31).togregorian()
 
-    paginator = Paginator(anomalies, 10)  # 10 anomalies per page
+        start_of_year_aware = make_aware(datetime.combine(start_of_year, datetime.min.time()))
+        end_of_year_aware = make_aware(datetime.combine(end_of_year, datetime.max.time()))
+
+        anomalies = anomalies.filter(
+            created_at__gte=start_of_year_aware,
+            created_at__lte=end_of_year_aware
+        )
+    elif time_filter == 'این ماه':
+        jalali_now = jdatetime.date.today()
+
+        # محاسبه شروع ماه جاری
+        start_of_month = jalali_now.replace(day=1).togregorian()
+
+        # محاسبه پایان ماه جاری
+        end_of_month = (jdatetime.date(jalali_now.year, jalali_now.month, 1) +
+                        jdatetime.timedelta(days=31)).replace(day=1) - jdatetime.timedelta(days=1)
+        end_of_month = end_of_month.togregorian()
+
+        # تبدیل به datetime و افزودن منطقه زمانی
+        start_of_month_aware = make_aware(datetime.combine(start_of_month, datetime.min.time()))
+        end_of_month_aware = make_aware(datetime.combine(end_of_month, datetime.max.time()))
+
+        anomalies = anomalies.filter(
+            created_at__gte=start_of_month_aware,
+            created_at__lte=end_of_month_aware
+        )
+    elif time_filter == 'ماه گذشته':
+        jalali_now = jdatetime.date.today()
+
+        start_of_last_month_jalali = (jalali_now.replace(day=1) - jdatetime.timedelta(days=1)).replace(day=1)
+        end_of_last_month_jalali = jalali_now.replace(day=1) - jdatetime.timedelta(days=1)
+
+        start_of_last_month = start_of_last_month_jalali.togregorian()
+        end_of_last_month = end_of_last_month_jalali.togregorian()
+
+        start_of_last_month_aware = make_aware(datetime.combine(start_of_last_month, datetime.min.time()))
+        end_of_last_month_aware = make_aware(datetime.combine(end_of_last_month, datetime.max.time()))
+
+        anomalies = anomalies.filter(
+            created_at__gte=start_of_last_month_aware,
+            created_at__lte=end_of_last_month_aware
+        )
+    elif time_filter == '90 روز اخیر':
+        end_date = datetime.now()
+        start_date = end_date - jdatetime.timedelta(days=90)
+        start_date_aware = make_aware(start_date)
+        end_date_aware = make_aware(end_date)
+
+        anomalies = anomalies.filter(
+            created_at__gte=start_date_aware,
+            created_at__lte=end_date_aware
+        )
+
+    # صفحه‌بندی
+    paginator = Paginator(anomalies, 10)  # 10 آنومالی در هر صفحه
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -240,7 +289,6 @@ def anomaly_list(request):
         'status_filter': status_filter,
         'time_filter': time_filter,
     })
-
 #خذوجی اکسل
 
 
