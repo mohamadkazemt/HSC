@@ -203,7 +203,8 @@ def anomaly_list(request):
             Q(location__name__icontains=search_query) |
             Q(followup__user__first_name__icontains=search_query) |
             Q(created_by__user__first_name__icontains=search_query) |
-            Q(created_by__user__last_name__icontains=search_query)
+            Q(created_by__user__last_name__icontains=search_query)|
+            Q(followup__mobile__icontains=search_query)
         )
 
     # فیلتر اولویت
@@ -313,7 +314,8 @@ def export_anomalies_to_excel(request):
             Q(location__name__icontains=search_query) |
             Q(followup__user__first_name__icontains=search_query) |
             Q(created_by__user__first_name__icontains=search_query) |
-            Q(created_by__user__last_name__icontains=search_query)
+            Q(created_by__user__last_name__icontains=search_query) |
+            Q(followup__mobile__icontains=search_query)
         )
 
     # فیلتر اولویت
