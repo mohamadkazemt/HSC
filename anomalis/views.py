@@ -186,6 +186,7 @@ def anomaly_list(request):
     status_filter = request.GET.get('status', 'همه')
     time_filter = request.GET.get('time', 'همه')
 
+
     if request.user.groups.filter(name='مسئول پیگیری').exists():
         if request.user.groups.filter(name='مدیر HSE').exists():
             anomalies = Anomaly.objects.all().order_by('-created_at')
@@ -279,6 +280,8 @@ def anomaly_list(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+
+
     return render(request, 'anomalis/list.html', {
         'page_obj': page_obj,
         'anomalies': anomalies,
@@ -289,6 +292,7 @@ def anomaly_list(request):
         'status_filter': status_filter,
         'time_filter': time_filter,
     })
+
 #خذوجی اکسل
 
 
