@@ -14,6 +14,7 @@
             padding: 20px;
             background-color: #f9f9f9;
         }
+
         .container {
             max-width: 900px;
             margin: 0 auto;
@@ -23,6 +24,7 @@
             padding: 20px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
+
         .header {
             display: flex;
             justify-content: space-between;
@@ -36,132 +38,196 @@
             text-align: right;
             font-size: 12px;
         }
+
         .header .info p {
             margin: 0;
             line-height: 1.5;
         }
-        .header .logo {
-            text-align: left;
-        }
+
         .header .logo img {
             width: 50px;
         }
+
         h1 {
             font-size: 18px;
             margin: 20px 0;
             text-align: center;
             color: #333;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
         }
+
         table th, table td {
             border: 1px solid #007bff;
             text-align: center;
             padding: 10px;
             font-size: 12px;
         }
+
         table th {
             background-color: #007bff;
             color: white;
             font-weight: bold;
         }
-    .photo-section {
+
+        .signature-section {
+            margin-top: 30px;
+            padding: 20px;
+            border: 2px solid #007bff;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .signature-section h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .signature-section img {
+            max-width: 150px; /* حداکثر عرض برای امضا */
+            height: 150px; /* ارتفاع ثابت برای امضا */
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+
+        .photo-section {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            border: 2px solid #007bff;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .photo-section img {
+            max-width: 300px;
+            height: auto;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        .company-name span {
+        display: block;
+        }
+            .company-name {
         text-align: center;
-        margin-top: 30px;
-        padding: 20px;
-        border: 2px solid #007bff;
-        border-radius: 10px;
-        background-color: #f9f9f9;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        line-height: 1.5; /* فاصله بین خطوط */
     }
-    .photo-section img {
-        max-width: 30%;
-        height: 150px;
-        border: 2px solid #ccc;
-        border-radius: 10px;
-        margin-top: 15px;
-    }
-    .photo-section h3 {
-        height: auto;
-        width: auto;
-        margin-bottom: 15px;
-        font-size: 16px;
-        color: #333;
-        text-decoration: underline;
+    .company-name p:first-child {
+        font-weight: bold; /* بولد کردن خط اول */
     }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <div class="logo">
-                <img src="{{ static_url }}assets/media/logos/logo-small.png" alt="لوگو شرکت">
-
-            </div>
-            <div class="info">
-                <p>کد فرم: {{ anomaly.id }}</p>
-                <p>تاریخ ایجاد: {{ anomaly.created_at|to_jalali }}</p>
-                <p>تاریخ بروزرسانی: {{ anomaly.updated_at|to_jalali }}</p>
-            </div>
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <img src="{{ static_url }}assets/media/logos/logo-small.png" alt="لوگو شرکت">
         </div>
 
-        <h1>فرم گزارش آنومالی</h1>
 
-        <!-- Table -->
-        <table>
+
+<div class="company-name">
+    <p style="font-weight: bold; margin: 0;">شرکت کاراوران صنعت خاورمیانه</p>
+    <p style="margin: 0;">پروژه معدن سنگ آهن جلال‌آباد - واحد HSEC</p>
+</div>
+
+
+
+
+
+        <div class="info">
+            <p>کد فرم: MIE-HS-M-FR-142-V03</p>
+            <p>تاریخ ایجاد: {{ anomaly.created_at|to_jalali }}</p>
+            <p>تاریخ بروزرسانی: {{ anomaly.updated_at|to_jalali }}</p>
+        </div>
+    </div>
+
+    <h1>فرم گزارش آنومالی</h1>
+
+    <!-- Table -->
+    <table>
+        <tr>
+            <th>عنوان</th>
+            <th>جزئیات</th>
+        </tr>
+        <tr>
+            <td>آنومالی شماره</td>
+            <td>{{ anomaly.anomalydescription }} - {{ anomaly.id }}</td>
+        </tr>
+        <tr>
+            <td>محل آنومالی</td>
+            <td>{{ anomaly.location.name }}</td>
+        </tr>
+        <tr>
+            <td>نوع آنومالی</td>
+            <td>{{ anomaly.anomalytype }}</td>
+        </tr>
+        <tr>
+            <td>وضعیت</td>
+            <td>{% if anomaly.action %}ایمن{% else %}غیر ایمن{% endif %}</td>
+        </tr>
+        <tr>
+            <td>اولویت</td>
+            <td>{{ anomaly.priority }}</td>
+        </tr>
+        <tr>
+            <td>مسئول پیگیری</td>
+            <td>{{ anomaly.followup.user.first_name }} {{ anomaly.followup.user.last_name }}</td>
+        </tr>
+        <tr>
+            <td>عملیات اصلاحی</td>
+            <td>{{ anomaly.correctiveaction }}</td>
+        </tr>
+        <tr>
+            <td>توضیحات</td>
+            <td>{{ anomaly.description }}</td>
+        </tr>
+    </table>
+
+    <!-- Display Signatures Section -->
+    <div class="signature-section">
+        <table style="width: 100%;">
             <tr>
-                <th>عنوان</th>
-                <th>جزئیات</th>
-            </tr>
-            <tr>
-                <td>آنومالی شماره</td>
-                <td>{{ anomaly.anomalydescription }} - {{ anomaly.id }}</td>
-            </tr>
-            <tr>
-                <td>محل آنومالی</td>
-                <td>{{ anomaly.location.name }}</td>
-            </tr>
-            <tr>
-                <td>نوع آنومالی</td>
-                <td>{{ anomaly.anomalytype }}</td>
-            </tr>
-            <tr>
-                <td>وضعیت</td>
-                <td>{% if anomaly.action %}ایمن{% else %}غیر ایمن{% endif %}</td>
-            </tr>
-            <tr>
-                <td>اولویت</td>
-                <td>{{ anomaly.priority }}</td>
-            </tr>
-            <tr>
-                <td>مسئول پیگیری</td>
-                <td>{{ anomaly.followup.user.first_name }} {{ anomaly.followup.user.last_name }}</td>
-            </tr>
-            <tr>
-                <td>عملیات اصلاحی</td>
-                <td>{{ anomaly.correctiveaction }}</td>
-            </tr>
-            <tr>
-                <td>توضیحات</td>
-                <td>{{ anomaly.description }}</td>
+                <td style="text-align: center;">
+                    <h3>امضای مسئول پیگیری</h3>
+                    {% if anomaly.requested_by and anomaly.requested_by.userprofile.signature %}
+                        <img src="{{ media_url }}{{ anomaly.requested_by.userprofile.signature }}" alt="امضای مسئول پیگیری">
+                    {% else %}
+                        <span>هنوز ثبت نشده است</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: center;">
+                    <h3>امضای تاییدکننده</h3>
+                    {% if anomaly.approved_by and anomaly.approved_by.userprofile.signature %}
+                        <img src="{{ media_url }}{{ anomaly.approved_by.userprofile.signature }}" alt="امضای تاییدکننده">
+                    {% else %}
+                        <span>هنوز ثبت نشده است</span>
+                    {% endif %}
+                </td>
             </tr>
         </table>
-
-        <!-- Photo Section -->
-<!-- Photo Section -->
-{% if anomaly.image %}
-    <div class="photo-section">
-        <h3>تصویر آنومالی</h3>
-        <img src="{{ media_url }}{{ anomaly.image }}" alt="تصویر آنومالی">
     </div>
-{% else %}
-    <p style="text-align: center; font-size: 14px; color: #777;">تصویری برای این آنومالی وجود ندارد.</p>
-{% endif %}
 
-    </div>
+    <!-- Photo Section -->
+    {% if anomaly.image %}
+        <div class="photo-section">
+            <h3>تصویر آنومالی</h3>
+            <img src="{{ media_url }}{{ anomaly.image }}" alt="تصویر آنومالی">
+        </div>
+    {% else %}
+        <p style="text-align: center; font-size: 14px; color: #777;">تصویری برای این آنومالی وجود ندارد.</p>
+    {% endif %}
+</div>
 </body>
 </html>

@@ -110,7 +110,22 @@ class Anomaly(models.Model):
     priority = models.ForeignKey(Priority, on_delete=models.CASCADE, verbose_name="اولویت")
     image = models.ImageField(upload_to='anomalies/%Y/%m/%d', verbose_name="تصویر آنومالی", blank=True, null=True)
     is_request_sent = models.BooleanField(default=False)
-
+    requested_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="requested_anomalies",
+        verbose_name="درخواست‌دهنده"
+    )
+    approved_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="approved_anomalies",
+        verbose_name="تأیید‌کننده"
+    )
 
     class Meta:
         verbose_name = "آنومالی"
