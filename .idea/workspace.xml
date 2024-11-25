@@ -5,12 +5,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="fillter-edite3">
-      <change afterPath="$PROJECT_DIR$/accounts/migrations/0004_userprofile_signature.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0004_anomaly_approved_by_anomaly_requested_by.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/detail_view.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/detail_view.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -237,7 +231,6 @@
       <workItem from="1732159166352" duration="18161000" />
       <workItem from="1732387849795" duration="1000" />
       <workItem from="1732456732913" duration="5077000" />
-      <workItem from="1732552382870" duration="6579000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
