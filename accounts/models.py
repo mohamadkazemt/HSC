@@ -16,6 +16,7 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userprofile')
     personnel_code = models.CharField(max_length=10, default='', blank=True, verbose_name='کد پرسنلی')
     image = models.ImageField(upload_to='profile_pics', blank=True)
+    signature = models.ImageField(upload_to='signatures/', blank=True, null=True, verbose_name="امضای کاربر")  # فیلد جدید
     mobile = models.CharField(max_length=11, blank=True)
     group = models.CharField(max_length=1, choices=GROUP_CHOICES, blank=True)
     verification_code = models.CharField(max_length=6, blank=True, null=True)

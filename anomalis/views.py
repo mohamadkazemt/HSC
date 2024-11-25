@@ -458,6 +458,7 @@ def request_safe(request, pk):
     if request.method == 'POST' and request.user == anomaly.followup.user:
         anomaly.action = False
         anomaly.is_request_sent = True
+        anomaly.requested_by = request.user  # ذخیره کاربر درخواست‌دهنده
         anomaly.save()
 
         # شناسایی شیفت جاری و گروه مرتبط
@@ -507,6 +508,7 @@ def approve_safe(request, pk):
     if request.method == 'POST':
         anomaly.action = True
         anomaly.is_request_sent = False
+        anomaly.approved_by = request.user  # ذخیره کاربر تأیید‌کننده
         anomaly.save()
 
         # ارسال پیامک به ایجادکننده و مسئول پیگیری
@@ -574,6 +576,8 @@ def get_sections(request):
 
 
 
+
+
 @login_required
 def anomaly_pdf_view(request, pk):
     anomaly = get_object_or_404(Anomaly, pk=pk)
@@ -583,6 +587,7 @@ def anomaly_pdf_view(request, pk):
     static_url = request.build_absolute_uri(settings.STATIC_URL)
     media_url = request.build_absolute_uri(settings.MEDIA_URL)
 
+    # رندر کردن HTML
     html_content = template.render({
         'anomaly': anomaly,
         'title': 'گزارش آنومالی',
@@ -590,8 +595,11 @@ def anomaly_pdf_view(request, pk):
         'media_url': media_url,
     }, request)
 
+    # ایجاد فایل PDF
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="anomaly_{pk}.pdf"'
-    HTML(string=html_content).write_pdf(response)
-    return response
 
+    # اضافه کردن base_url برای دسترسی به فایل‌های رسانه‌ای
+    HTML(string=html_content, base_url=request.build_absolute_uri('/')).write_pdf(response)
+
+    return response
