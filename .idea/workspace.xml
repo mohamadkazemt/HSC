@@ -4,8 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="fillter-edite3">
-      <change beforePath="$PROJECT_DIR$/anomalis/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/views.py" afterDir="false" />
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="photocoment1">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,7 +43,7 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/mohamadkazemt/HSC.git&quot;,
-    &quot;accountId&quot;: &quot;4a4a0b77-3294-4afc-82ac-479cfd08feaa&quot;
+    &quot;accountId&quot;: &quot;b1049974-7825-44ef-a60c-99f35deafaf1&quot;
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
@@ -114,6 +114,7 @@
         <env name="DJANGO_SETTINGS_MODULE" value="HSCprojects.settings" />
       </envs>
       <option name="SDK_HOME" value="" />
+      <option name="SDK_NAME" value="Python 3.12 (HSC)" />
       <option name="WORKING_DIRECTORY" value="" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
@@ -142,8 +143,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-PY-242.23726.102" />
-        <option value="bundled-python-sdk-5e1850174b45-399fe30bd8c1-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-242.23726.102" />
+        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-PY-242.23339.19" />
+        <option value="bundled-python-sdk-0029f7779945-399fe30bd8c1-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-242.23339.19" />
       </set>
     </attachedChunks>
   </component>
@@ -229,8 +230,8 @@
       <workItem from="1731515312185" duration="3556000" />
       <workItem from="1731940021997" duration="12381000" />
       <workItem from="1732159166352" duration="18161000" />
-      <workItem from="1732387849795" duration="1000" />
-      <workItem from="1732456732913" duration="5077000" />
+      <workItem from="1732355314836" duration="820000" />
+      <workItem from="1732356156782" duration="3335000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
@@ -416,39 +417,21 @@
       <option name="project" value="LOCAL" />
       <updated>1732160082294</updated>
     </task>
-    <task id="LOCAL-00026" summary="Edite-Notification">
+    <task id="LOCAL‎−۰۰۰۲۶" summary="photo">
       <option name="closed" value="true" />
-      <created>1732387801097</created>
-      <option name="number" value="00026" />
-      <option name="presentableId" value="LOCAL-00026" />
-      <option name="project" value="LOCAL" />
-      <updated>1732387801097</updated>
+      <created>1732359505073</created>
+      <option name="number" value="LOCAL‎−۰۰۰۲۶" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۲۶" />
+      <updated>1732359505073</updated>
     </task>
-    <task id="LOCAL-00027" summary="fillter-edite">
+    <task id="LOCAL‎−۰۰۰۲۷" summary="photocoment1">
       <option name="closed" value="true" />
-      <created>1732461956596</created>
-      <option name="number" value="00027" />
-      <option name="presentableId" value="LOCAL-00027" />
-      <option name="project" value="LOCAL" />
-      <updated>1732461956596</updated>
+      <created>1732526726254</created>
+      <option name="number" value="LOCAL‎−۰۰۰۲۷" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۲۷" />
+      <updated>1732526726254</updated>
     </task>
-    <task id="LOCAL-00028" summary="fillter-edite3">
-      <option name="closed" value="true" />
-      <created>1732462737705</created>
-      <option name="number" value="00028" />
-      <option name="presentableId" value="LOCAL-00028" />
-      <option name="project" value="LOCAL" />
-      <updated>1732462737705</updated>
-    </task>
-    <task id="LOCAL-00029" summary="fillter-edite3">
-      <option name="closed" value="true" />
-      <created>1732463005334</created>
-      <option name="number" value="00029" />
-      <option name="presentableId" value="LOCAL-00029" />
-      <option name="project" value="LOCAL" />
-      <updated>1732463005334</updated>
-    </task>
-    <option name="localTasksCounter" value="30" />
+    <option name="localTasksCounter" value="28" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -485,10 +468,9 @@
     <MESSAGE value="convert-to-pdf" />
     <MESSAGE value="log" />
     <MESSAGE value="edite-sms" />
-    <MESSAGE value="Edite-Notification" />
-    <MESSAGE value="fillter-edite" />
-    <MESSAGE value="fillter-edite3" />
-    <option name="LAST_COMMIT_MESSAGE" value="fillter-edite3" />
+    <MESSAGE value="photo" />
+    <MESSAGE value="photocoment1" />
+    <option name="LAST_COMMIT_MESSAGE" value="photocoment1" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -500,7 +482,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="django-line">
           <url>file://$PROJECT_DIR$/anomalis/templates/anomalis/anomaly-details.html</url>
-          <line>265</line>
+          <line>272</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>
