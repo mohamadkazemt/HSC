@@ -192,9 +192,15 @@
                                                                 {% for comment in comments %}
                                                                     <div class="d-flex pt-6 comment-box">
                                                                         <!-- Avatar -->
+                                                                    {% if comment.user.image %}
                                                                         <div class="symbol me-5">
                                                                             <img src="{{ comment.user.image.url }}" alt="آواتار" />
                                                                         </div>
+                                                                    {% else %}
+                                                                        <div class="symbol me-5">
+                                                                            <img src="{% static 'assets/media/avatars/blank.png' %}" alt="آواتار" />
+                                                                        </div>
+                                                                    {% endif %}
                                                                         <!-- Wrapper -->
                                                                         <div class="d-flex flex-column flex-row-fluid">
                                                                             <!-- Info -->
