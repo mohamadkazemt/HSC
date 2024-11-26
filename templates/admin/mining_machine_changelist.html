@@ -1,0 +1,12 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools %}
+<div class="object-tools">
+    <form method="post" enctype="multipart/form-data" action="import-excel/">
+        {% csrf_token %}
+        <input type="file" name="excel_file" accept=".xlsx">
+        <button type="submit" class="button">ایمپورت اکسل</button>
+    </form>
+    <a href="sample-template/" class="button">دانلود نمونه فایل</a>
+</div>
+{% endblock %}
