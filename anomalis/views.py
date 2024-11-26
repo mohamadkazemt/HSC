@@ -183,7 +183,7 @@ def get_corrective_action(request, description_id):
 def anomaly_list(request):
     search_query = request.GET.get('search', '')
     priority_filter = request.GET.get('priority', 'همه')
-    status_filter = request.GET.get('status', 'همه')
+    status_filter = request.GET.get('status', 'نا ایمن')
     time_filter = request.GET.get('time', 'همه')
 
 
@@ -398,6 +398,8 @@ def export_anomalies_to_excel(request):
     return response
 
 
+from dashboard.models import Notification
+from django.urls import reverse
 
 
 @login_required
@@ -411,24 +413,52 @@ def anomaly_detail_view(request, pk):
         pk=pk
     )
 
-    # Remove permission check and just use login_required
+    # چک کردن اینکه آیا کاربر مدیر HSE است
     is_hse_manager = request.user.groups.filter(name__in=['مدیر HSE', 'افسر HSE']).exists()
 
     if request.method == "POST":
         form = CommentForm(request.POST)
         if form.is_valid():
             try:
+                # ذخیره کردن کامنت جدید
                 comment = form.save(commit=False)
                 comment.anomaly = anomaly
                 comment.user = request.user.userprofile
 
-                # Handle reply
+                # بررسی اینکه آیا کامنت جواب به کامنت قبلی است
                 parent_id = request.POST.get('parent_id')
                 if parent_id:
                     parent_comment = get_object_or_404(Comment, id=parent_id)
                     comment.parent = parent_comment
 
                 comment.save()
+
+                # ارسال اعلان به مدیر HSE و ایجاد‌کننده آنومالی برای کامنت جدید
+                if anomaly.created_by:
+                    Notification.objects.create(
+                        user=anomaly.created_by.user,
+                        message=f"یک کامنت جدید برای آنومالی {anomaly.id} ارسال شد.",
+                        url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
+                    )
+
+                # ارسال اعلان به مدیران HSE
+                hse_group = Group.objects.get(name='مدیر HSE')
+                for user in hse_group.user_set.all():
+                    Notification.objects.create(
+                        user=user,
+                        message=f"یک کامنت جدید برای آنومالی {anomaly.id} ارسال شد.",
+                        url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
+                    )
+
+                # اگر کامنت یک پاسخ باشد، ارسال اعلان به نویسنده کامنت قبلی
+                if parent_id:
+                    parent_comment_user = parent_comment.user
+                    Notification.objects.create(
+                        user=parent_comment_user.user,
+                        message=f"پاسخی به کامنت شما در آنومالی {anomaly.id} ارسال شد.",
+                        url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
+                    )
+
                 messages.success(request, "نظر شما با موفقیت ثبت شد")
 
             except UserProfile.DoesNotExist:
@@ -447,8 +477,6 @@ def anomaly_detail_view(request, pk):
     }
 
     return render(request, 'anomalis/anomaly-details.html', context)
-
-
 
 
 @login_required
