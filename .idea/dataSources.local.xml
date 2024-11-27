@@ -73,5 +73,10 @@
         </introspection-scope>
       </schema-mapping>
     </data-source>
+    <data-source name="db [6]" uuid="4ab71289-99a7-4b6f-8d74-666d35f4a8ff">
+      <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" dbms="SQLITE" />
+      <auth-provider>no-auth</auth-provider>
+      <schema-mapping />
+    </data-source>
   </component>
 </project>

@@ -4,9 +4,19 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="detail_view3">
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="importer-Excle">
+      <change afterPath="$PROJECT_DIR$/BaseInfo/migrations/0006_machineryworkgroup_typemachine_and_more.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/BaseInfo/migrations/0007_typemachine_machine_workgroup.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/accounts/migrations/0005_department_position_userprofile_department_and_more.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/accounts/migrations/0006_alter_userprofile_unit.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/admin/user_import_changelist.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BaseInfo/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/BaseInfo/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/BaseInfo/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/BaseInfo/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/accounts/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/accounts/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/models.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -232,7 +242,9 @@
       <workItem from="1732159166352" duration="18161000" />
       <workItem from="1732387849795" duration="1000" />
       <workItem from="1732456732913" duration="5077000" />
-      <workItem from="1732623887379" duration="4091000" />
+      <workItem from="1732623887379" duration="10279000" />
+      <workItem from="1732709996349" duration="10966000" />
+      <workItem from="1732733504448" duration="2713000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
@@ -466,7 +478,23 @@
       <option name="project" value="LOCAL" />
       <updated>1732565972928</updated>
     </task>
-    <option name="localTasksCounter" value="32" />
+    <task id="LOCAL-00032" summary="list&amp;notfi">
+      <option name="closed" value="true" />
+      <created>1732637145018</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1732637145018</updated>
+    </task>
+    <task id="LOCAL-00033" summary="importer-Excle">
+      <option name="closed" value="true" />
+      <created>1732644250651</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1732644250651</updated>
+    </task>
+    <option name="localTasksCounter" value="34" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -507,7 +535,9 @@
     <MESSAGE value="fillter-edite" />
     <MESSAGE value="fillter-edite3" />
     <MESSAGE value="detail_view3" />
-    <option name="LAST_COMMIT_MESSAGE" value="detail_view3" />
+    <MESSAGE value="list&amp;notfi" />
+    <MESSAGE value="importer-Excle" />
+    <option name="LAST_COMMIT_MESSAGE" value="importer-Excle" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -516,6 +546,11 @@
           <url>file://$PROJECT_DIR$/venv/Lib/site-packages/sms_ir/services.py</url>
           <line>105</line>
           <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/BaseInfo/admin.py</url>
+          <line>21</line>
+          <option name="timeStamp" value="4" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="django-line">
           <url>file://$PROJECT_DIR$/anomalis/templates/anomalis/anomaly-details.html</url>

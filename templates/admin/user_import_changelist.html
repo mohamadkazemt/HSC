@@ -1,0 +1,37 @@
+{% extends "admin/change_list.html" %}
+
+{% block content %}
+    <div class="import-section" style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background-color: #f8f9fa;">
+        <h3 class="title" style="margin-bottom: 15px; color: #333;">ایمپورت کاربران</h3>
+        <form method="post" enctype="multipart/form-data" action="import-users/" class="form-row">
+            {% csrf_token %}
+            <div style="margin-bottom: 10px;">
+                <input
+                    type="file"
+                    name="excel_file"
+                    accept=".xlsx"
+                    class="vFileInput"
+                    style="width: 100%;"
+                >
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button
+                    type="submit"
+                    class="button default"
+                >
+                    ایمپورت کاربران
+                </button>
+                <a
+                    href="sample-user-template/"
+                    class="button"
+                    style="background-color: #007bff; color: white; border-radius: 4px; text-decoration: none; padding: 7px 15px;"
+                >
+                    دانلود نمونه فایل
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- نمایش لیست کاربران -->
+    {{ block.super }}
+{% endblock %}
