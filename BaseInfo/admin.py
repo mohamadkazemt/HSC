@@ -3,11 +3,11 @@ import pandas as pd
 from io import BytesIO
 from django.urls import path
 from django.contrib import admin, messages
-from .models import MiningMachine, Contractor, ContractorVehicle, MiningBlock
+from .models import MiningMachine, Contractor, ContractorVehicle, MiningBlock, MachineryWorkGroup, TypeMachine
 
 
 class MiningMachineAdmin(admin.ModelAdmin):
-    list_display = ('machine_name', 'machine_type', 'ownership', 'contractor', 'is_active')
+    list_display = ('workshop_code', 'machine_type', 'ownership', 'is_active')
     change_list_template = "admin/mining_machine_changelist.html"
 
     def get_urls(self):
@@ -27,76 +27,80 @@ class MiningMachineAdmin(admin.ModelAdmin):
                 df = pd.read_excel(excel_file)
                 errors = []  # لیستی برای نگهداری خطاها
 
-                # نگاشت مقادیر فارسی به کلیدهای انگلیسی
-                machine_type_map = {
-                    'بارکننده': 'Loader',
-                    'حمل کننده': 'Transporter',
-                    'جاده سازی': 'RoadBuilder',
-                    'حفاری': 'Driller'
-                }
-                ownership_map = {
-                    'شرکت': 'Company',
-                    'پیمانکار': 'Contractor'
-                }
-
                 for index, row in df.iterrows():
-                    contractor_id = None
-                    if not pd.isna(row['شناسه پیمانکار']):
-                        contractor_id = row['شناسه پیمانکار']
-                        # بررسی وجود پیمانکار با این شناسه
-                        if not Contractor.objects.filter(id=contractor_id).exists():
-                            errors.append(f"ردیف {index + 1}: پیمانکاری با شناسه {contractor_id} وجود ندارد.")
+                    # بررسی وجود فیلدها در فایل اکسل
+                    required_fields = ['گروه کاری', 'نوع دستگاه', 'کد کارگاهی', 'مالکیت', 'فعال']
+                    for field in required_fields:
+                        if field not in row or pd.isna(row[field]):
+                            errors.append(f"ردیف {index + 1}: ستون '{field}' خالی است.")
                             continue
 
-                    # تبدیل مقادیر فارسی به کلیدهای انگلیسی
-                    machine_type = machine_type_map.get(row['نوع دستگاه'], None)
-                    ownership = ownership_map.get(row['مالکیت'], None)
+                    # مقادیر مستقیم از فایل اکسل
+                    machine_workgroup_name = row['گروه کاری']
+                    machine_type_name = row['نوع دستگاه']
+                    ownership_name = row['مالکیت']
+                    workshop_code = row['کد کارگاهی']
 
-                    # بررسی صحت مقادیر نوع دستگاه
-                    if not machine_type:
-                        errors.append(f"ردیف {index + 1}: نوع دستگاه نامعتبر است ({row['نوع دستگاه']}).")
-                        continue
-
-                    # بررسی صحت مقادیر مالکیت
-                    if not ownership:
-                        errors.append(f"ردیف {index + 1}: مالکیت نامعتبر است ({row['مالکیت']}).")
-                        continue
-
-                    # تلاش برای ایجاد رکورد جدید
                     try:
-                        MiningMachine.objects.create(
-                            machine_type=machine_type,
-                            machine_name=row['نام دستگاه'],
-                            workshop_code=row['کد کارگاهی'],
-                            ownership=ownership,
-                            contractor_id=contractor_id,
-                            is_active=row['فعال']
+                        is_active = bool(row['فعال'])
+                    except ValueError:
+                        errors.append(f"ردیف {index + 1}: مقدار 'فعال' باید True یا False باشد.")
+                        continue
+
+                    # بررسی یا ایجاد گروه کاری (MachineryWorkGroup)
+                    workgroup, _ = MachineryWorkGroup.objects.get_or_create(
+                        name=machine_workgroup_name,
+                        defaults={'description': f"گروه کاری ایجاد شده در هنگام ایمپورت: {machine_workgroup_name}"}
+                    )
+
+                    # بررسی یا ایجاد نوع دستگاه (TypeMachine) مرتبط با گروه کاری
+                    machine_type, _ = TypeMachine.objects.get_or_create(
+                        name=machine_type_name,
+                        machine_workgroup=workgroup,  # ارتباط صحیح با گروه کاری
+                        defaults={'description': f"نوع دستگاه ایجاد شده در هنگام ایمپورت: {machine_type_name}"}
+                    )
+
+                    # بررسی یا ایجاد مالکیت (Contractor)
+                    contractor, _ = Contractor.objects.get_or_create(
+                        name=ownership_name,
+                        defaults={'contact_info': f"ایجاد شده در هنگام ایمپورت: {ownership_name}"}
+                    )
+
+                    # ایجاد یا ثبت رکورد MiningMachine
+                    try:
+                        MiningMachine.objects.update_or_create(
+                            workshop_code=workshop_code,
+                            defaults={
+                                'machine_workgroup': workgroup,
+                                'machine_type': machine_type,
+                                'ownership': contractor,
+                                'is_active': is_active
+                            }
                         )
                     except Exception as e:
-                        errors.append(f"ردیف {index + 1}: خطا در ایجاد رکورد - {e}")
+                        errors.append(f"ردیف {index + 1}: خطا در ثبت رکورد - {str(e)}")
 
-                # نمایش خطاها در صورت وجود
+                # نمایش پیام خطا یا موفقیت
                 if errors:
                     for error in errors:
                         self.message_user(request, error, level=messages.ERROR)
                 else:
-                    self.message_user(request, "اطلاعات با موفقیت وارد شدند.", level=messages.SUCCESS)
+                    self.message_user(request, "تمام اطلاعات با موفقیت وارد شدند.", level=messages.SUCCESS)
 
                 return HttpResponseRedirect("../")
 
             except Exception as e:
-                self.message_user(request, f"خطا در پردازش فایل: {e}", level=messages.ERROR)
+                self.message_user(request, f"خطا در پردازش فایل: {str(e)}", level=messages.ERROR)
 
         return HttpResponseRedirect("../")
 
     def sample_template(self, request):
         """ایجاد و ارسال فایل نمونه اکسل."""
         sample_data = {
-            "نوع دستگاه": ["بارکننده", "حمل کننده"],
-            "نام دستگاه": ["دستگاه مثال A", "دستگاه مثال B"],
+            "گروه کاری": ["بارکننده", "حمل کننده"],
+            "نوع دستگاه": ["Loader", "Transporter"],
             "کد کارگاهی": ["101", "102"],
             "مالکیت": ["شرکت", "پیمانکار"],
-            "شناسه پیمانکار": [None, 1],
             "فعال": [True, False],
         }
         df = pd.DataFrame(sample_data)
@@ -117,3 +121,5 @@ admin.site.register(MiningMachine, MiningMachineAdmin)
 admin.site.register(Contractor)
 admin.site.register(ContractorVehicle)
 admin.site.register(MiningBlock)
+admin.site.register(MachineryWorkGroup)
+admin.site.register(TypeMachine)

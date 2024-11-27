@@ -38,41 +38,40 @@ class ContractorVehicle(models.Model):
         verbose_name = "خودرو"
         verbose_name_plural = "خودروها"
 
+class MachineryWorkGroup(models.Model):
+    name = models.CharField(max_length=100, verbose_name="نام گروه")
+    description = models.TextField(blank=True, null=True, verbose_name="توضیحات")
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "گروه کاری"
+        verbose_name_plural = "گروه‌های کاری"
+
+class TypeMachine(models.Model):
+    machine_workgroup = models.ForeignKey(MachineryWorkGroup, on_delete=models.SET_NULL, null=True, blank=True,verbose_name="گروه کاری")
+    name = models.CharField(max_length=100, verbose_name="نوع دستگاه")
+    description = models.TextField(blank=True, null=True, verbose_name="توضیحات")
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "نوع دستگاه"
+        verbose_name_plural = "نوع های دستگاه"
+
 
 # مدل اصلی برای دستگاه‌های معدنی
 class MiningMachine(models.Model):
-    MACHINE_TYPE_CHOICES = [
-        ('Loader', 'بارکننده'),
-        ('Transporter', 'حمل کننده'),
-        ('RoadBuilder', 'جاده سازی'),
-        ('Driller', 'حفاری'),
-    ]
-    OWNERSHIP_CHOICES = [
-        ('Company', 'شرکت'),
-        ('Contractor', 'پیمانکار'),
-    ]
-
-    machine_type = models.CharField(max_length=20, choices=MACHINE_TYPE_CHOICES, verbose_name="نوع دستگاه")
-    machine_name = models.CharField(max_length=100, verbose_name="نام دستگاه")
+    machine_workgroup = models.ForeignKey(MachineryWorkGroup, on_delete=models.SET_NULL, null=True, blank=True,verbose_name="گروه کاری")
+    machine_type = models.ForeignKey(TypeMachine, on_delete=models.SET_NULL, null=True, blank=True,verbose_name="نوع دستگاه")
     workshop_code = models.CharField(max_length=20, verbose_name="کد کارگاهی")  # کد کارگاهی
-    ownership = models.CharField(max_length=10, choices=OWNERSHIP_CHOICES, verbose_name="مالکیت")
-    contractor = models.ForeignKey(Contractor, on_delete=models.SET_NULL, null=True, blank=True,
-                                   verbose_name="پیمانکار",
-                                   help_text="در صورت مالکیت پیمانکار، پیمانکار را انتخاب کنید.")
+    ownership = models.ForeignKey(Contractor, on_delete=models.SET_NULL, null=True, blank=True,verbose_name="مالکیت")
     is_active = models.BooleanField(default=True, verbose_name="فعال")
 
     def __str__(self):
-        return f"{self.machine_name} - {self.get_machine_type_display()}"
-
-
-    def clean(self):
-        # بررسی برای انتخاب پیمانکار در صورت مالکیت پیمانکار
-        if self.ownership == 'Contractor' and not self.contractor:
-            raise ValidationError('لطفاً پیمانکار را برای این دستگاه انتخاب کنید.')
-        # بررسی عدم انتخاب پیمانکار در صورت مالکیت شرکت
-        if self.ownership == 'Company' and self.contractor:
-            raise ValidationError('اگر مالکیت شرکت است، نباید پیمانکار انتخاب شود.')
-
+        return f"{self.workshop_code} - {self.machine_type.name}"
 
     class Meta:
         verbose_name = "دستگاه معدنی"
