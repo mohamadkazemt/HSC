@@ -5,18 +5,20 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="importer-Excle">
-      <change afterPath="$PROJECT_DIR$/BaseInfo/migrations/0006_machineryworkgroup_typemachine_and_more.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/BaseInfo/migrations/0007_typemachine_machine_workgroup.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/accounts/migrations/0005_department_position_userprofile_department_and_more.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/accounts/migrations/0006_alter_userprofile_unit.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/templates/admin/user_import_changelist.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/leave_reports/forms.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/leave_reports/migrations/0001_initial.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/leave_reports/migrations/0002_shiftreport_created_at_shiftreport_work_group.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/leave_reports/migrations/0003_shiftreport_crate_by.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/leave_reports/migrations/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report_list.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/leave_reports/templates/leave_reports/success.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/leave_reports/urls.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/assets/js/custom/leave-report.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BaseInfo/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/BaseInfo/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BaseInfo/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/BaseInfo/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/create_shift_report.html" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/create_shift_report.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -30,9 +32,9 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="CSS File" />
-        <option value="JavaScript File" />
         <option value="Python Script" />
         <option value="HTML File" />
+        <option value="JavaScript File" />
       </list>
     </option>
   </component>
@@ -245,6 +247,8 @@
       <workItem from="1732623887379" duration="10279000" />
       <workItem from="1732709996349" duration="10966000" />
       <workItem from="1732733504448" duration="2713000" />
+      <workItem from="1732795499815" duration="8385000" />
+      <workItem from="1732882502059" duration="16880000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />

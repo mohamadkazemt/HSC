@@ -28,6 +28,7 @@ urlpatterns = [
     path('anomalis/', include('anomalis.urls')),
     path('select2/', include('django_select2.urls')),
     path('OperationsShiftReports/', include('OperationsShiftReports.urls')),
+    path('leave_reports/', include('leave_reports.urls'))
 ]
 
 

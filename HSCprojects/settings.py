@@ -56,7 +56,8 @@ INSTALLED_APPS = [
     'BaseInfo.apps.BaseinfoConfig',
     'OperationsShiftReports.apps.OperationsshiftreportsConfig',
     'formtools',
-    'dailyreport_hse.apps.DailyreportHseConfig'
+    'dailyreport_hse.apps.DailyreportHseConfig',
+    'leave_reports.apps.LeaveReportsConfig'
 ]
 
 MIDDLEWARE = [
