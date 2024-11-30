@@ -1,0 +1,34 @@
+from django.db import models
+from django.contrib.auth.models import User
+
+from accounts.models import UserProfile
+
+
+class ShiftReport(models.Model):
+    LEAVE_TYPE_CHOICES = [
+        ('regular', 'مرخصی'),
+        ('absence', 'غیبت'),
+        ('hourly', 'مرخصی ساعت')
+    ]
+    leave_type = models.CharField(max_length=10, choices=LEAVE_TYPE_CHOICES)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)  # کاربر (پرسنل)
+    shift_date = models.DateField()  # تاریخ شیفت
+    leave_hours = models.IntegerField(null=True, blank=True)  # ساعات مرخصی در صورت نیاز
+    start_time = models.TimeField(null=True, blank=True)  # ساعت شروع در صورت مرخصی ساعتی
+    end_time = models.TimeField(null=True, blank=True)  # ساعت پایان در صورت مرخصی ساعتی
+    status = models.CharField(max_length=10, default='reported')  # وضعیت (گزارش‌شده یا پردازش‌شده)
+    crate_by = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True, blank=True)
+
+    # فیلد جدید گروه کاری
+    work_group = models.CharField(max_length=100)
+
+    # فیلد تاریخ ثبت گزارش
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'گزارش {self.leave_type} - {self.user.username} - {self.shift_date}'
+
+    def save(self, *args, **kwargs):
+        if not self.work_group:  # اگر گروه کاری مشخص نشده باشد
+            self.work_group = self.user.userprofile.group  # گروه کاری بر اساس پروفایل کاربر
+        super(ShiftReport, self).save(*args, **kwargs)
