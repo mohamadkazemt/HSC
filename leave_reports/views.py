@@ -1,7 +1,6 @@
 # app/views.py
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
-
 from accounts.models import UserProfile
 from .forms import ShiftReportForm
 from .models import ShiftReport

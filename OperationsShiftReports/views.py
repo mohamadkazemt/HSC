@@ -8,11 +8,10 @@ from django.http import JsonResponse, Http404
 from django.contrib import messages
 from django.utils import timezone
 from accounts.models import UserProfile
-from BaseInfo.models import ContractorVehicle, MiningMachine, MiningBlock
+from BaseInfo.models import ContractorVehicle, MiningMachine, MiningBlock, MachineryWorkGroup, TypeMachine
 from .models import (
     ShiftReport,
     LoadingOperation,
-    ShiftLeave,
     VehicleReport,
     LoaderStatus
 )
@@ -21,7 +20,6 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from .permissions import operations_required
 from django.contrib.auth.decorators import login_required
-
 
 def convert_to_persian_day(date):
     """تبدیل روز هفته به فارسی برای تاریخ شمسی"""
@@ -70,132 +68,64 @@ def get_shift_details(group, date):
     }
 
 
+
+
+
+
 @login_required
-@operations_required
 def create_shift_report(request):
     if request.method == "POST":
         try:
-            # دریافت داده‌های فرم
-            supervisor_comments = request.POST.get('supervisor_comments')
+            # دریافت توضیحات سرشیفت
+            supervisor_comments = request.POST.get('supervisor_comments', '').strip()
             if not supervisor_comments:
-                return JsonResponse({
-                    'messages': [{'tags': 'error', 'message': 'لطفا توضیحات سرشیفت را وارد کنید.'}]
-                })
+                return JsonResponse({'messages': [{'tags': 'error', 'message': 'توضیحات سرشیفت الزامی است.'}]})
 
-            # دریافت و اعتبارسنجی فایل
-            attached_file = request.FILES.get('attached_file')
-            if attached_file:
-                if attached_file.size > 5 * 1024 * 1024:  # 5MB
-                    return JsonResponse({
-                        'messages': [{'tags': 'error', 'message': 'حجم فایل نباید بیشتر از 5 مگابایت باشد.'}]
-                    })
-
-                allowed_extensions = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png']
-                file_ext = os.path.splitext(attached_file.name)[1].lower()
-                if file_ext not in allowed_extensions:
-                    return JsonResponse({
-                        'messages': [{'tags': 'error', 'message': 'فرمت فایل مجاز نیست.'}]
-                    })
-
-            # استفاده از json.loads
-            try:
-                loading_operations = json.loads(request.POST.get('loading_operations', '[]'))
-                loader_statuses = json.loads(request.POST.get('loader_statuses', '[]'))
-                leaves = json.loads(request.POST.get('leaves', '[]'))
-                vehicles = json.loads(request.POST.get('vehicles', '[]'))
-            except json.JSONDecodeError as e:
-                return JsonResponse({
-                    'messages': [{'tags': 'error', 'message': f'خطا در پردازش داده‌های ورودی: {str(e)}'}]
-                })
-
-            # بررسی وجود حداقل یک مورد در هر بخش
-            if not loading_operations:
-                return JsonResponse({
-                    'messages': [{'tags': 'error', 'message': 'لطفا حداقل یک عملیات بارگیری را اضافه کنید.'}]
-                })
+            # دریافت داده‌های جدول بارکننده‌ها
+            loader_statuses = json.loads(request.POST.get('loader_statuses', '[]'))
             if not loader_statuses:
-                return JsonResponse({
-                    'messages': [{'tags': 'error', 'message': 'لطفا حداقل یک وضعیت بارکننده را اضافه کنید.'}]
-                })
-            if not leaves:
-                return JsonResponse({
-                    'messages': [{'tags': 'error', 'message': 'لطفا حداقل یک مرخصی را اضافه کنید.'}]
-                })
-            if not vehicles:
-                return JsonResponse({
-                    'messages': [{'tags': 'error', 'message': 'لطفا حداقل یک خودرو را اضافه کنید.'}]
-                })
+                return JsonResponse({'messages': [{'tags': 'error', 'message': 'داده‌های بارکننده‌ها خالی است.'}]})
 
-            # دریافت گروه کاربر
+            # بررسی پروفایل کاربری
             try:
                 user_profile = UserProfile.objects.get(user=request.user)
                 current_group = user_profile.group
             except UserProfile.DoesNotExist:
-                return JsonResponse({
-                    'messages': [{'tags': 'error', 'message': 'پروفایل کاربری یافت نشد.'}]
-                })
+                return JsonResponse({'messages': [{'tags': 'error', 'message': 'پروفایل کاربری یافت نشد.'}]})
 
             # ایجاد گزارش شیفت
             shift_report = ShiftReport.objects.create(
                 shift_date=timezone.now().date(),
                 supervisor_comments=supervisor_comments,
                 group=current_group,
-                attached_file=attached_file if attached_file else None,
                 creator=user_profile
             )
 
-            # ذخیره عملیات بارگیری
-            for op in loading_operations:
-                stone_type, load_count = op.split(',')
-                loading_operation = LoadingOperation.objects.create(
-                    stone_type=stone_type,
-                    load_count=int(load_count)
-                )
-                shift_report.loading_operations.add(loading_operation)
-
             # ذخیره وضعیت بارکننده‌ها
-            for status in loader_statuses:
-                loader_id, block_id, status_type, reason = status.split(',')
-                loader = MiningMachine.objects.get(id=loader_id)
-                block = MiningBlock.objects.get(id=block_id)
+            for loader_data in loader_statuses:
+                loader_id, block_id, status, inactive_reason = loader_data.split(',')
+                try:
+                    loader = MiningMachine.objects.get(id=int(loader_id), is_active=True)
+                    block = MiningBlock.objects.get(id=int(block_id))
+                except (MiningMachine.DoesNotExist, MiningBlock.DoesNotExist):
+                    return JsonResponse({'messages': [{'tags': 'error', 'message': 'بارکننده یا بلوک معتبر نیست.'}]})
 
-                loader_status = LoaderStatus.objects.create(
+                LoaderStatus.objects.create(
                     loader=loader,
                     block=block,
-                    status=status_type,
-                    inactive_reason=reason if status_type == 'inactive' else None
+                    status=status,
+                    inactive_reason=inactive_reason if status == 'inactive' else None
                 )
-                shift_report.loader_statuses.add(loader_status)
 
-            # ذخیره مرخصی‌ها
-            for leave in leaves:
-                personnel_id, leave_status = leave.split(',')
-                personnel = UserProfile.objects.get(id=personnel_id)
-                shift_leave = ShiftLeave.objects.create(
-                    personnel_name=personnel,
-                    leave_status=leave_status
-                )
-                shift_report.shift_leaves.add(shift_leave)
-
-            # ذخیره خودروها
-            for vehicle_id in vehicles:
-                vehicle = ContractorVehicle.objects.get(id=vehicle_id)
-                vehicle_report = VehicleReport.objects.create(
-                    vehicle_name=vehicle.vehicle_name
-                )
-                shift_report.vehicle_reports.add(vehicle_report)
-
-            return JsonResponse({
-                'messages': [{'tags': 'success', 'message': 'گزارش شیفت با موفقیت ثبت شد.'}]
-            })
+            return JsonResponse({'messages': [{'tags': 'success', 'message': 'گزارش با موفقیت ثبت شد.'}]})
 
         except Exception as e:
-            return JsonResponse({
-                'messages': [{'tags': 'error', 'message': f'خطا در ثبت گزارش: {str(e)}'}]
-            })
+            return JsonResponse({'messages': [{'tags': 'error', 'message': f'خطا در ثبت گزارش: {str(e)}'}]})
 
-    else:  # GET request
+    else:  # درخواست GET
         today = timezone.now().date()
+
+        # بازیابی شیفت‌های مرتبط
         shifts = get_shift_for_date(today)
         current_group = None
         current_shift = None
@@ -206,36 +136,33 @@ def create_shift_report(request):
                 current_group = user_profile.group
                 current_shift = shifts.get(current_group)
             except UserProfile.DoesNotExist:
-                messages.error(request, 'پروفایل کاربری یافت نشد.')
+                pass
 
         # دریافت لیست پرسنل گروه
         personnels = UserProfile.objects.filter(group=current_group) if current_group else UserProfile.objects.none()
 
-        # دریافت خودروهای فعال
-        vehicles = ContractorVehicle.objects.filter(is_active=True).select_related('contractor')
+        # فیلتر بارکننده‌ها
+        try:
+            loader_workgroup = MachineryWorkGroup.objects.get(name="بارکننده")
+            type_machines = TypeMachine.objects.filter(machine_workgroup=loader_workgroup)
+            mining_machines = MiningMachine.objects.filter(machine_type__in=type_machines, is_active=True)
+        except MachineryWorkGroup.DoesNotExist:
+            mining_machines = MiningMachine.objects.none()
 
-        # دریافت بارکننده‌های فعال
-        mining_machines = MiningMachine.objects.filter(
-            machine_type='Loader',
-            is_active=True
-        ).select_related('contractor')
-
-        # دریافت بلوک‌های در حال بارگیری
-        mining_blocks = MiningBlock.objects.filter(
-            is_active=True,
-            status='loading'
-        )
+        # دریافت بلوک‌های فعال و در حال بارگیری
+        mining_blocks = MiningBlock.objects.filter(is_active=True, status='loading')
 
         context = {
             'shifts': shifts,
-            'personnels': personnels,
-            'vehicles': vehicles,
             'current_shift': current_shift,
-            'mining_machines': mining_machines,
-            'mining_blocks': mining_blocks,
+            'mining_machines': mining_machines,  # دستگاه‌های بارکننده فعال
+            'mining_blocks': mining_blocks,      # بلوک‌های فعال
         }
 
         return render(request, 'OperationsShiftReports/create_shift_report.html', context)
+
+
+
 
 
 @login_required

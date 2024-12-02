@@ -4,7 +4,19 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="importer-Excle" />
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="leave_reports">
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/migrations/0010_remove_shiftreport_shift_leaves_delete_shiftleave.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/migrations/0011_remove_shiftreport_vehicle_reports_and_more.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/create_shift_report.html" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/create_shift_report.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/list.html" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/leave_reports/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/assets/js/custom_forms.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/assets/js/custom_forms.js" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -234,6 +246,9 @@
       <workItem from="1732733504448" duration="2713000" />
       <workItem from="1732795499815" duration="8385000" />
       <workItem from="1732882502059" duration="17597000" />
+      <workItem from="1732991730594" duration="2057000" />
+      <workItem from="1733054098098" duration="2175000" />
+      <workItem from="1733147664689" duration="15313000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
@@ -490,7 +505,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۳۴" />
       <updated>1732902890775</updated>
     </task>
-    <option name="localTasksCounter" value="35" />
+    <task id="LOCAL‎−۰۰۰۳۵" summary="leave_reports">
+      <option name="closed" value="true" />
+      <created>1732991841925</created>
+      <option name="number" value="LOCAL‎−۰۰۰۳۵" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۳۵" />
+      <updated>1732991841925</updated>
+    </task>
+    <option name="localTasksCounter" value="36" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -508,7 +530,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="anomalies" />
     <MESSAGE value="accont" />
     <MESSAGE value="newtemolate" />
     <MESSAGE value="formanomali" />
@@ -533,7 +554,8 @@
     <MESSAGE value="detail_view3" />
     <MESSAGE value="list&amp;notfi" />
     <MESSAGE value="importer-Excle" />
-    <option name="LAST_COMMIT_MESSAGE" value="importer-Excle" />
+    <MESSAGE value="leave_reports" />
+    <option name="LAST_COMMIT_MESSAGE" value="leave_reports" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
