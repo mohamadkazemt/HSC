@@ -24,7 +24,7 @@
                 <!--end::Heading-->
                 {% if user|in_group:"HSE" %}
                     <div class="menu-item mb-2">
-                        <div class="menu-heading text-uppercase fs-7 fw-bold">میانبر</div>
+                        <div class="menu-heading text-uppercase fs-7 fw-bold">میانبر HSEC</div>
                         <!--begin::separator-->
                         <div class="app-sidebar-separator separator"></div>
                         <!--end::separator-->
@@ -64,7 +64,7 @@
                 {% endif %}
                 {% if user|in_group:"operations" %}
                     <div class="menu-item mb-2">
-                        <div class="menu-heading text-uppercase fs-7 fw-bold">میانبر</div>
+                        <div class="menu-heading text-uppercase fs-7 fw-bold">میانبر عملیات</div>
                         <!--begin::separator-->
                         <div class="app-sidebar-separator separator"></div>
                         <!--end::separator-->
@@ -98,8 +98,21 @@
                             <span class="menu-title">لیست گزارشات</span>
                             <!--end::Title-->
                         </a>
-                        <!--end::Menu link-->
                     </div>
+                     <div class="menu-item">
+                        <!--begin::Menu link-->
+                        <a class="menu-link" href="{% url 'leave_reports:shift_report' %}">
+                            <!--begin::Bullet-->
+                            <span class="menu-icon">
+												<span class="bullet bullet-dot bg-danger"></span>
+											</span>
+                            <!--end::Bullet-->
+                            <!--begin::Title-->
+                            <span class="menu-title">ثبت مرخصی</span>
+                            <!--end::Title-->
+                        </a>
+                    </div>
+                        <!--end::Menu link-->
                     <!--end::Menu آیتم-->
                 {% endif %}
                 {% if user|in_group:"admin" %}

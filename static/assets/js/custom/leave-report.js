@@ -5,15 +5,15 @@ function validateCurrentStep(stepIndex) {
     switch(stepIndex) {
         case 1: // مرخصی عادی
             return document.querySelector('#regular_leave_table tbody').children.length > 0 ||
-                   confirm('هیچ مرخصی عادی ثبت نشده است. آیا مایل به ادامه هستید؟');
+                confirm('هیچ مرخصی عادی ثبت نشده است. آیا مایل به ادامه هستید؟');
 
         case 2: // غیبت
             return document.querySelector('#absence_table tbody').children.length > 0 ||
-                   confirm('هیچ غیبتی ثبت نشده است. آیا مایل به ادامه هستید؟');
+                confirm('هیچ غیبتی ثبت نشده است. آیا مایل به ادامه هستید؟');
 
         case 3: // مرخصی ساعتی
             return document.querySelector('#hourly_leave_table tbody').children.length > 0 ||
-                   confirm('هیچ مرخصی ساعتی ثبت نشده است. آیا مایل به ادامه هستید؟');
+                confirm('هیچ مرخصی ساعتی ثبت نشده است. آیا مایل به ادامه هستید؟');
 
         default:
             return true;
@@ -75,14 +75,13 @@ function initializeSelect2() {
 
 function addRegularLeave() {
     const userSelect = document.querySelector('[name="regular_leave_user"]');
-    const dateInput = document.querySelector('[name="regular_leave_date"]');
 
-    if (!userSelect || !dateInput) {
+    if (!userSelect) {
         console.error("Required elements not found");
         return;
     }
 
-    if (!userSelect.value || !dateInput.value) {
+    if (!userSelect.value) {
         showError('لطفا تمامی فیلدها را پر کنید');
         return;
     }
@@ -98,29 +97,28 @@ function addRegularLeave() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
         <td>${userName}</td>
-        <td>${dateInput.value}</td>
+        <td>تاریخ ثبت خودکار</td>
         <td>
             <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">حذف</button>
-            <input type="hidden" name="regular_leaves[]" value="${userSelect.value},${dateInput.value}">
+            <input type="hidden" name="regular_leaves[]" value="${userSelect.value}">
         </td>
     `;
     tbody.appendChild(tr);
 
     userSelect.value = '';
-    dateInput.value = '';
     $(userSelect).trigger('change');
 }
 
+
 function addAbsence() {
     const userSelect = document.querySelector('[name="absence_user"]');
-    const dateInput = document.querySelector('[name="absence_date"]');
 
-    if (!userSelect || !dateInput) {
+    if (!userSelect) {
         console.error("Required elements not found");
         return;
     }
 
-    if (!userSelect.value || !dateInput.value) {
+    if (!userSelect.value) {
         showError('لطفا تمامی فیلدها را پر کنید');
         return;
     }
@@ -136,31 +134,30 @@ function addAbsence() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
         <td>${userName}</td>
-        <td>${dateInput.value}</td>
+        <td>تاریخ ثبت خودکار</td>
         <td>
             <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">حذف</button>
-            <input type="hidden" name="absences[]" value="${userSelect.value},${dateInput.value}">
+            <input type="hidden" name="absences[]" value="${userSelect.value}">
         </td>
     `;
     tbody.appendChild(tr);
 
     userSelect.value = '';
-    dateInput.value = '';
     $(userSelect).trigger('change');
 }
 
+
 function addHourlyLeave() {
     const userSelect = document.querySelector('[name="hourly_leave_user"]');
-    const dateInput = document.querySelector('[name="hourly_leave_date"]');
     const startTime = document.querySelector('[name="start_time"]');
     const endTime = document.querySelector('[name="end_time"]');
 
-    if (!userSelect || !dateInput || !startTime || !endTime) {
+    if (!userSelect || !startTime || !endTime) {
         console.error("Required elements not found");
         return;
     }
 
-    if (!userSelect.value || !dateInput.value || !startTime.value || !endTime.value) {
+    if (!userSelect.value || !startTime.value || !endTime.value) {
         showError('لطفا تمامی فیلدها را پر کنید');
         return;
     }
@@ -176,22 +173,22 @@ function addHourlyLeave() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
         <td>${userName}</td>
-        <td>${dateInput.value}</td>
+        <td>تاریخ ثبت خودکار</td>
         <td>${startTime.value}</td>
         <td>${endTime.value}</td>
         <td>
             <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">حذف</button>
-            <input type="hidden" name="hourly_leaves[]" value="${userSelect.value},${dateInput.value},${startTime.value},${endTime.value}">
+            <input type="hidden" name="hourly_leaves[]" value="${userSelect.value},${startTime.value},${endTime.value}">
         </td>
     `;
     tbody.appendChild(tr);
 
     userSelect.value = '';
-    dateInput.value = '';
     startTime.value = '';
     endTime.value = '';
     $(userSelect).trigger('change');
 }
+
 
 function handleNextStep() {
     console.log('Current step:', stepper.getCurrentStepIndex());
@@ -299,7 +296,12 @@ function submitLeaveReport(form) {
                 leaveData.end_time = values[3];
             }
 
-            leaves.push(leaveData);
+            leaves.push({
+                user: values[0],
+                leave_type: table.type,
+                ...(table.type === 'hourly' && { start_time: values[1], end_time: values[2] })
+            });
+
         });
     }
 

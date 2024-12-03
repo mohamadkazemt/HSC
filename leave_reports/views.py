@@ -10,11 +10,8 @@ from django.forms import formset_factory
 
 @login_required
 def create_shift_report(request):
-
-    # کاربر لاگین شده
     current_user = request.user.userprofile
 
-    # فیلتر کاربران بر اساس گروه کاری، واحد، و بخش
     personnel_list = UserProfile.objects.select_related('user').filter(
         group=current_user.group,
         department=current_user.department,
@@ -23,14 +20,9 @@ def create_shift_report(request):
 
     if request.method == 'POST':
         try:
-            print("POST data:", request.POST)
-
             total_leaves = int(request.POST.get('total_leaves', 0))
             if total_leaves == 0:
-                return JsonResponse({
-                    'success': False,
-                    'error': 'هیچ موردی برای ثبت وجود ندارد'
-                })
+                return JsonResponse({'success': False, 'error': 'هیچ موردی برای ثبت وجود ندارد'})
 
             success_count = 0
             errors = []
@@ -41,7 +33,6 @@ def create_shift_report(request):
                     report_data = {
                         'user': user_id,
                         'leave_type': request.POST.get(f'leave_type_{i}'),
-                        'shift_date': request.POST.get(f'shift_date_{i}'),
                         'status': 'reported'
                     }
 
@@ -51,46 +42,32 @@ def create_shift_report(request):
                             'end_time': request.POST.get(f'end_time_{i}')
                         })
 
-                    print(f"Processing record {i}:", report_data)
-
                     form = ShiftReportForm(report_data)
                     if form.is_valid():
                         report = form.save(commit=False)
                         report.crate_by = request.user.userprofile
                         report.work_group = request.user.userprofile.group
-                        report.save()
+                        report.save()  # تاریخ به‌طور خودکار توسط مدل تنظیم می‌شود
                         success_count += 1
                     else:
-                        print(f"Form validation errors for record {i}:", form.errors)
                         errors.append(f"خطا در مورد {i + 1}: {form.errors}")
                 except Exception as e:
-                    print(f"Error processing record {i}:", str(e))
                     errors.append(f"خطا در پردازش مورد {i + 1}: {str(e)}")
 
             if success_count > 0:
-                return JsonResponse({
-                    'success': True,
-                    'message': f'{success_count} مورد با موفقیت ثبت شد'
-                })
+                return JsonResponse({'success': True, 'message': f'{success_count} مورد با موفقیت ثبت شد'})
             else:
-                return JsonResponse({
-                    'success': False,
-                    'error': 'خطا در ثبت اطلاعات',
-                    'details': errors
-                })
+                return JsonResponse({'success': False, 'error': 'خطا در ثبت اطلاعات', 'details': errors})
 
         except Exception as e:
-            print("Error:", str(e))
-            return JsonResponse({
-                'success': False,
-                'error': f'خطای سیستمی: {str(e)}'
-            })
+            return JsonResponse({'success': False, 'error': f'خطای سیستمی: {str(e)}'})
 
     form = ShiftReportForm()
-    return render(request, 'leave_reports/shift_report.html', {
-        'form': form,
-        'personnels': personnel_list
-    })
+    return render(request, 'leave_reports/shift_report.html', {'form': form, 'personnels': personnel_list})
+
+
+
+
 @login_required
 def shift_report_list(request):
     reports = ShiftReport.objects.all()
