@@ -1,4 +1,5 @@
 # app/views.py
+import datetime
 from django.shortcuts import render, redirect
 from django.http import HttpResponse, JsonResponse
 from accounts.models import UserProfile
@@ -6,6 +7,16 @@ from .forms import ShiftReportForm
 from .models import ShiftReport
 from django.contrib.auth.decorators import login_required
 from django.forms import formset_factory
+from collections import defaultdict
+from django.utils.timezone import localdate
+import jdatetime
+from django.db.models import Count, Q
+import datetime
+
+
+
+
+
 
 
 @login_required
@@ -68,8 +79,58 @@ def create_shift_report(request):
 
 
 
-@login_required
 def shift_report_list(request):
     reports = ShiftReport.objects.all()
-    print(reports)
-    return render(request, 'leave_reports/shift_report_list.html', {'reports': reports})
+
+    year = request.GET.get('year')
+    month = request.GET.get('month')
+    day = request.GET.get('day')
+
+    if year:
+        reports = reports.filter(shift_date__year=int(year))
+    if month:
+        reports = reports.filter(shift_date__month=int(month))
+    if day:
+        reports = reports.filter(shift_date__day=int(day))
+
+    grouped_reports = reports.values('shift_date', 'work_group').annotate(
+        total_count=Count('id'),
+        regular_leaves=Count('id', filter=Q(leave_type='regular')),
+        hourly_leaves=Count('id', filter=Q(leave_type='hourly')),
+        absences=Count('id', filter=Q(leave_type='absence'))
+    )
+
+    # تبدیل تاریخ‌ها به شمسی
+    for report in grouped_reports:
+        try:
+            if isinstance(report['shift_date'], (datetime.date, datetime.datetime)):
+                report['shift_date'] = jdatetime.date.fromgregorian(date=report['shift_date']).strftime('%Y/%m/%d')
+            else:
+                report['shift_date'] = "تاریخ نامعتبر"
+        except Exception as e:
+            print(f"Error converting date: {e}")
+            report['shift_date'] = "تاریخ نامعتبر"
+
+    valid_reports = [r for r in grouped_reports if r['shift_date'] != "تاریخ نامعتبر"]
+
+    all_years = sorted(
+        list({jdatetime.date.fromgregorian(date=r['shift_date']).year for r in valid_reports}),
+        reverse=True
+    )
+    all_months = sorted(
+        list({jdatetime.date.fromgregorian(date=r['shift_date']).month for r in valid_reports})
+    )
+    all_days = sorted(
+        list({jdatetime.date.fromgregorian(date=r['shift_date']).day for r in valid_reports})
+    )
+
+    return render(request, 'leave_reports/shift_report_list.html', {
+        'reports': grouped_reports,
+        'years': all_years,
+        'months': all_months,
+        'days': all_days,
+        'selected_year': year,
+        'selected_month': month,
+        'selected_day': day,
+    })
+
