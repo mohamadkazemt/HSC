@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex flex-column flex-root">
+    <div class="app-page flex-column flex-column-fluid">
+        {% include 'header.html' %}
+        <div class="app-wrapper flex-column flex-row-fluid">
+            {% include 'sidebar.html' %}
+            <div class="app-main flex-column flex-row-fluid">
+                <div class="app-content flex-column-fluid">
+                    <div class="container-fluid">
+                        <div class="card">
+                            <!-- عنوان -->
+                            <div class="card-header">
+                                <h3 class="fw-bold mb-3">جزئیات گزارش شیفت</h3>
+                            </div>
+
+                            <!-- هدر با آیکون‌ها -->
+                            <div class="d-flex align-items-center justify-content-between px-4 py-3" style="border-bottom: 1px solid #ddd;">
+                                <span class="d-flex align-items-center">
+                                    <i class="bi bi-calendar2-event me-2"></i>
+                                    <strong>تاریخ شیفت:</strong> {{ shift_date_jalali }}
+                                </span>
+                                <span class="d-flex align-items-center">
+                                    <i class="bi bi-people me-2"></i>
+                                    <strong>گروه کاری:</strong> {{ report.work_group }}
+                                </span>
+                                <span class="d-flex align-items-center">
+                                    <i class="bi bi-person me-2"></i>
+                                    <strong>ثبت‌کننده:</strong> {{ report.crate_by }}
+                                </span>
+                            </div>
+
+                            <!-- بخش جداول -->
+                            <div class="card-body">
+                                <!-- جدول مرخصی‌ها -->
+                                <h4 class="fw-bold mt-4">مرخصی‌ها</h4>
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>کد پرسنلی</th>
+                                            <th>نام کاربر</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for leave in leaves %}
+                                        <tr>
+                                            <td>{{ leave.user.userprofile.personnel_code }}</td>
+                                            <td>{{ leave.user.get_full_name }}</td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td class="text-center">هیچ مرخصی ثبت نشده است.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+
+                                <!-- جدول غیبت‌ها -->
+                                <h4 class="fw-bold mt-4">غیبت‌ها</h4>
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>کد پرسنلی</th>
+                                            <th>نام کاربر</th>
+                                            <th>توضیحات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for absence in absences %}
+                                        <tr>
+                                            <td>{{ absence.user.userprofile.personnel_code }}</td>
+                                            <td>{{ absence.user.get_full_name }}</td>
+                                            <td>{{ absence.description }}</td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="2" class="text-center">هیچ غیبتی ثبت نشده است.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+
+                                <!-- جدول مرخصی‌های ساعتی -->
+                                <h4 class="fw-bold mt-4">مرخصی‌های ساعتی</h4>
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>کد پرسنلی</th>
+                                            <th>نام کاربر</th>
+                                            <th>ساعت شروع</th>
+                                            <th>ساعت پایان</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for hourly_leave in hourly_leaves %}
+                                        <tr>
+                                            <td>{{ hourly_leave.user.userprofile.personnel_code }}</td>
+                                            <td>{{ hourly_leave.user.get_full_name }}</td>
+                                            <td>{{ hourly_leave.start_time }}</td>
+                                            <td>{{ hourly_leave.end_time }}</td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="3" class="text-center">هیچ مرخصی ساعتی ثبت نشده است.</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            <div class="card-footer d-flex justify-content-end">
+    <a href="{% url 'leave_reports:shift_report_pdf' report.id %}" class="btn btn-success">
+        <i class="bi bi-file-earmark-pdf"></i> خروجی PDF
+    </a>
+</div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

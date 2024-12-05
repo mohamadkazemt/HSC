@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    {% load static %}
+    {% load jalali %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        @font-face {
+            font-family: 'IRANSans';
+            src: url('{% static "assets/fonts/IRANSansWeb.woff2" %}') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+        }
+        body {
+            font-family: 'IRANSans', Tahoma, sans-serif;
+            direction: rtl;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .header .info {
+            text-align: right;
+            font-size: 12px;
+        }
+        .header .info p {
+            margin: 0;
+            line-height: 1.5;
+        }
+        .header .logo img {
+            width: 50px;
+        }
+        .company-name {
+            text-align: center;
+            line-height: 1.5;
+        }
+        .company-name p:first-child {
+            font-weight: bold;
+            font-size: 18px;
+        }
+        h1 {
+            font-size: 18px;
+            margin: 20px 0;
+            text-align: center;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table th, table td {
+            border: 1px solid #007bff;
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+        }
+        table th {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+        .signature-section {
+            margin-top: 30px;
+            padding: 20px;
+            border: 2px solid #007bff;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+            text-align: center;
+        }
+        .signature-section img {
+            max-width: 150px;
+            height: auto;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <img src="{{ static_url }}assets/media/logos/logo-small.png" alt="لوگو شرکت">
+        </div>
+        <div class="company-name">
+            <p>شرکت کاراوران صنعت خاورمیانه</p>
+            <p>پروژه معدن سنگ آهن جلال‌آباد</p>
+        </div>
+        <div class="info">
+            <p>کد فرم: MIE-HS-M-FR-142-V03</p>
+            <p>تاریخ گزارش: {{ shift_report.shift_date|to_jalali }}</p>
+            <p>تاریخ چاپ: {{ today|to_jalali }}</p>
+        </div>
+    </div>
+
+    <h1>گزارش مرخصی شیفت {{ shift_report.work_group }}</h1>
+
+    <!-- Table: Summary -->
+    <table>
+        <tr>
+            <th>تاریخ شیفت</th>
+            <td>{{ shift_report.shift_date|to_jalali }}</td>
+        </tr>
+        <tr>
+            <th>گروه کاری</th>
+            <td>{{ shift_report.work_group }}</td>
+        </tr>
+        <tr>
+            <th>ثبت‌کننده</th>
+            <td>{{ shift_report.crate_by }}</td>
+        </tr>
+    </table>
+
+    <!-- Table: Leaves -->
+    <h4>مرخصی‌ها</h4>
+    <table>
+        <thead>
+        <tr>
+            <th>کد پرسنلی</th>
+            <th>نام کاربر</th>
+
+        </tr>
+        </thead>
+        <tbody>
+        {% for leave in leaves %}
+        <tr>
+            <td>{{ leave.user.userprofile.personnel_code }}</td>
+            <td>{{ leave.user.get_full_name }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td class="text-center">هیچ مرخصی ثبت نشده است.</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Table: Absences -->
+    <h4>غیبت‌ها</h4>
+    <table>
+        <thead>
+        <tr>
+            <th>کد پرسنلی</th>
+            <th>نام کاربر</th>
+            <th>توضیحات</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for absence in absences %}
+        <tr>
+            <td>{{ absence.user.userprofile.personnel_code }}</td>
+            <td>{{ absence.user.get_full_name }}</td>
+            <td>{{ absence.description }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="2" class="text-center">هیچ غیبتی ثبت نشده است.</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Table: Hourly Leaves -->
+    <h4>مرخصی‌های ساعتی</h4>
+    <table>
+        <thead>
+        <tr>
+            <th>کد پرسنلی</th>
+            <th>نام کاربر</th>
+            <th>ساعت شروع</th>
+            <th>ساعت پایان</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for hourly_leave in hourly_leaves %}
+        <tr>
+            <td>{{ hourly_leave.user.userprofile.personnel_code }}</td>
+            <td>{{ hourly_leave.user.get_full_name }}</td>
+            <td>{{ hourly_leave.start_time }}</td>
+            <td>{{ hourly_leave.end_time }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="3" class="text-center">هیچ مرخصی ساعتی ثبت نشده است.</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Signature Section -->
+    <div class="signature-section">
+        <h3>امضای کاربر</h3>
+        {% if shift_report.user.userprofile.signature %}
+            <img src="{{ media_url }}{{ shift_report.user.userprofile.signature }}" alt="امضای کاربر">
+        {% else %}
+            <p>امضای ثبت نشده است</p>
+        {% endif %}
+    </div>
+</div>
+</body>
+</html>
