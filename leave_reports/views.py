@@ -250,6 +250,7 @@ def shift_report_pdf_view(request, pk):
         'media_url': media_url,
     }, request)
 
+
     # تنظیم پاسخ به صورت PDF
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="shift_report_{pk}.pdf"'

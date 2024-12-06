@@ -23,6 +23,7 @@ from HSCprojects import settings
 urlpatterns = [
     path('', include('accounts.urls', namespace='accounts_root')),
     path('accounts/', include('accounts.urls', namespace='accounts')),
+
     path('admin/', admin.site.urls),
     path('dashboard/', include('dashboard.urls')),
     path('anomalis/', include('anomalis.urls')),

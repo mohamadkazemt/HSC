@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     "anomalis.apps.AnomalisConfig",
     'django.contrib.humanize',
 
-    'taggit',
     "django_select2",
     'analytics.apps.AnalyticsConfig',
     'crispy_forms',
@@ -57,7 +56,8 @@ INSTALLED_APPS = [
     'OperationsShiftReports.apps.OperationsshiftreportsConfig',
     'formtools',
     'dailyreport_hse.apps.DailyreportHseConfig',
-    'leave_reports.apps.LeaveReportsConfig'
+    'leave_reports.apps.LeaveReportsConfig',
+    'contractor_management.apps.ContractorManagementConfig'
 ]
 
 MIDDLEWARE = [
