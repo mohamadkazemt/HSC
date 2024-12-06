@@ -1,6 +1,6 @@
 from django import forms
 from django.forms import formset_factory
-from .models import LoadingOperation, ShiftLeave, VehicleReport, LoaderStatus
+from .models import LoadingOperation, LoaderStatus
 from BaseInfo.models import MiningMachine, MiningBlock
 
 class LoadingOperationForm(forms.ModelForm):
@@ -51,47 +51,6 @@ class LoaderStatusForm(forms.ModelForm):
             })
         }
 
-class ShiftLeaveForm(forms.ModelForm):
-    class Meta:
-        model = ShiftLeave
-        fields = ['personnel_name', 'leave_status']
-        widgets = {
-            'personnel_name': forms.Select(attrs={
-                'class': 'form-select form-select-solid select2-hidden-accessible',
-                'data-control': 'select2',
-                'data-placeholder': 'پرسنل را انتخاب کنید'
-            }),
-            'leave_status': forms.Select(attrs={
-                'class': 'form-select form-select-solid select2-hidden-accessible',
-                'data-control': 'select2',
-                'data-placeholder': 'وضعیت مرخصی را انتخاب کنید'
-            })
-        }
-
-class VehicleReportForm(forms.ModelForm):
-    class Meta:
-        model = VehicleReport
-        fields = ['vehicle_name', 'is_active', 'inactive_time_start', 'inactive_time_end']
-        widgets = {
-            'vehicle_name': forms.Select(attrs={
-                'class': 'form-select form-select-solid select2-hidden-accessible',
-                'data-control': 'select2',
-                'data-placeholder': 'خودرو را انتخاب کنید'
-            }),
-            'is_active': forms.Select(attrs={
-                'class': 'form-select form-select-solid select2-hidden-accessible',
-                'data-control': 'select2',
-                'data-placeholder': 'وضعیت را انتخاب کنید'
-            }),
-            'inactive_time_start': forms.TimeInput(attrs={
-                'class': 'form-control form-control-solid',
-                'type': 'time'
-            }),
-            'inactive_time_end': forms.TimeInput(attrs={
-                'class': 'form-control form-control-solid',
-                'type': 'time'
-            })
-        }
 
 class ShiftReportForm(forms.Form):
     supervisor_comments = forms.CharField(

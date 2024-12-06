@@ -23,11 +23,13 @@ from HSCprojects import settings
 urlpatterns = [
     path('', include('accounts.urls', namespace='accounts_root')),
     path('accounts/', include('accounts.urls', namespace='accounts')),
+
     path('admin/', admin.site.urls),
     path('dashboard/', include('dashboard.urls')),
     path('anomalis/', include('anomalis.urls')),
     path('select2/', include('django_select2.urls')),
     path('OperationsShiftReports/', include('OperationsShiftReports.urls')),
+    path('leave_reports/', include('leave_reports.urls'))
 ]
 
 

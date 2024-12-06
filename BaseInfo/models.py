@@ -1,7 +1,16 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 
+class MineralType(models.Model):
+    name = models.CharField(max_length=100, verbose_name="نام سنگ معدنی")
+    description = models.TextField(blank=True, null=True, verbose_name="توضیحات")
 
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "نوع سنگ معدنی"
+        verbose_name_plural = "انواع سنگ‌های معدنی"
 
 class Contractor(models.Model):
     name = models.CharField(max_length=100, verbose_name="نام پیمانکار")
@@ -106,3 +115,21 @@ class MiningBlock(models.Model):
     class Meta:
         verbose_name = "بلوک معدنی"
         verbose_name_plural = "بلوک‌های معدنی"
+
+
+class Dump(models.Model):
+    dump_name = models.CharField(max_length=100, verbose_name="نام دمپ")
+    location = models.CharField(max_length=255, verbose_name="موقعیت دمپ", blank=True)
+    mineral_type = models.ForeignKey(MineralType, on_delete=models.SET_NULL, null=True, blank=True,verbose_name="نوع سنگ معدنی")
+    is_active = models.BooleanField(default=True, verbose_name="فعال")
+
+    def __str__(self):
+        return self.dump_name
+
+    class Meta:
+        verbose_name = "دمپ"
+        verbose_name_plural = "دمپ‌ها"
+
+
+
+

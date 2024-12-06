@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+    <div class="d-flex flex-column flex-root">
+        <div class="app-page flex-column flex-column-fluid">
+            {% include 'header.html' %}
+
+            <div class="app-wrapper flex-column flex-row-fluid">
+                {% include 'sidebar.html' %}
+
+                <div class="app-main flex-column flex-row-fluid">
+                    <div class="d-flex flex-column flex-column-fluid">
+                        {% include 'toolbar.html' %}
+
+                        <div class="app-content flex-column-fluid">
+                            <div class="container-fluid">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div id="kt_leave_stepper" class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid">
+                                            <div class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10" id="kt_create_account_stepper">
+
+                                                <!-- منوی مراحل -->
+                                                <div id="kt_create_account_stepper" class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10">
+                                                    <!-- Stepper Navigation -->
+                                                    <div class="card d-flex justify-content-center justify-content-xl-start flex-row-auto w-100 w-xl-300px w-xxl-400px">
+                                                        <div class="card-body px-6 px-lg-10 px-xxl-15 py-20">
+                                                            <div class="stepper-nav">
+                                                                <!-- مرحله 1: مرخصی عادی -->
+                                                                <div class="stepper-item current" data-kt-stepper-element="nav">
+                                                                    <div class="stepper-wrapper">
+                                                                        <div class="stepper-icon w-40px h-40px">
+                                                                            <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                                            <span class="stepper-number">1</span>
+                                                                        </div>
+                                                                        <div class="stepper-label">
+                                                                            <h3 class="stepper-title">مرخصی عادی</h3>
+                                                                            <div class="stepper-desc fw-semibold">ثبت مرخصی روزانه</div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="stepper-line h-40px"></div>
+
+                                                                </div>
+
+                                                                <!-- مرحله 2: غیبت -->
+                                                                <div class="stepper-item" data-kt-stepper-element="nav">
+                                                                    <div class="stepper-wrapper">
+                                                                        <div class="stepper-icon w-40px h-40px">
+                                                                            <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                                            <span class="stepper-number">2</span>
+                                                                        </div>
+                                                                        <div class="stepper-label">
+                                                                            <h3 class="stepper-title">غیبت</h3>
+                                                                            <div class="stepper-desc fw-semibold">ثبت غیبت</div>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="stepper-line h-40px"></div>
+                                                                </div>
+
+                                                                <!-- مرحله 3: مرخصی ساعتی -->
+                                                                <div class="stepper-item" data-kt-stepper-element="nav">
+                                                                    <div class="stepper-wrapper">
+                                                                        <div class="stepper-icon w-40px h-40px">
+                                                                            <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                                            <span class="stepper-number">3</span>
+                                                                        </div>
+                                                                        <div class="stepper-label">
+                                                                            <h3 class="stepper-title">مرخصی ساعتی</h3>
+                                                                            <div class="stepper-desc fw-semibold">ثبت مرخصی ساعتی</div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- محتوای فرم -->
+                                                    <div class="card d-flex flex-row-fluid">
+                                                        <form class="card-body py-20 w-100 mw-xl-700px px-9" id="kt_leave_form" class="form w-100" novalidate="novalidate">
+                                                            {% csrf_token %}
+
+                                                            <!-- محتوای مرحله 1: مرخصی عادی -->
+                                                            <div class="current" data-kt-stepper-element="content">
+                                                                <div class="w-100">
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label">پرسنل</label>
+                                                                        <select name="regular_leave_user" class="form-select select2">
+                                                                            <option value="">انتخاب کنید...</option>
+                                                                            {% for personnel in personnels %}
+                                                                                <option value="{{ personnel.id }}">
+                                                                                    {{ personnel.user.get_full_name }} - {{ personnel.personnel_code }}
+                                                                                </option>
+                                                                            {% endfor %}
+                                                                        </select>
+                                                                    </div>
+
+                                                                    <button type="button" class="btn btn-primary mt-5" onclick="addRegularLeave()">
+                                                                        <i class="ki-outline ki-plus-square fs-2"></i>
+                                                                        اضافه کردن
+                                                                    </button>
+
+
+                                                                </div>
+
+
+                                                                <div class="table-responsive mt-4">
+                                                                    <table class="table" id="regular_leave_table">
+                                                                        <thead>
+                                                                        <tr>
+                                                                            <th>نام پرسنل</th>
+                                                                            <th>تاریخ</th>
+                                                                            <th>عملیات</th>
+                                                                        </tr>
+                                                                        </thead>
+                                                                        <tbody></tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- محتوای مرحله 2: غیبت -->
+                                                            <div data-kt-stepper-element="content">
+                                                                <div class="row mb-6">
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label">پرسنل</label>
+                                                                        <select name="absence_user" class="form-select select2">
+                                                                            <option value="">انتخاب کنید...</option>
+                                                                            {% for personnel in personnels %}
+                                                                                <option value="{{ personnel.id }}">
+                                                                                    {{ personnel.user.get_full_name }} - {{ personnel.personnel_code }}
+                                                                                </option>
+                                                                            {% endfor %}
+                                                                        </select>
+
+                                                                        <button type="button" class="btn btn-primary mt-5" onclick="addAbsence()">
+                                                                            <i class="ki-outline ki-plus-square fs-2"></i>
+                                                                            اضافه کردن
+                                                                        </button>
+                                                                    </div>
+
+
+
+
+
+                                                                </div>
+
+
+
+                                                                <div class="table-responsive mt-4">
+                                                                    <table class="table" id="absence_table">
+                                                                        <thead>
+                                                                        <tr>
+                                                                            <th>نام پرسنل</th>
+                                                                            <th>تاریخ</th>
+                                                                            <th>عملیات</th>
+                                                                        </tr>
+                                                                        </thead>
+                                                                        <tbody></tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- محتوای مرحله 3: مرخصی ساعتی -->
+                                                            <div data-kt-stepper-element="content">
+                                                                <div class="row mb-6">
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label">پرسنل</label>
+                                                                        <select name="hourly_leave_user" class="form-select select2">
+                                                                            <option value="">انتخاب کنید...</option>
+                                                                            {% for personnel in personnels %}
+                                                                                <option value="{{ personnel.id }}">
+                                                                                    {{ personnel.user.get_full_name }} - {{ personnel.personnel_code }}
+                                                                                </option>
+                                                                            {% endfor %}
+                                                                        </select>
+                                                                    </div>
+
+
+                                                                </div>
+
+                                                                <div class="row mb-6">
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label">ساعت شروع</label>
+                                                                        <input type="time" name="start_time" class="form-control">
+                                                                    </div>
+
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label">ساعت پایان</label>
+                                                                        <input type="time" name="end_time" class="form-control">
+                                                                    </div>
+                                                                </div>
+
+                                                                <button type="button" class="btn btn-primary mt-5" onclick="addHourlyLeave()">
+                                                                    <i class="ki-outline ki-plus-square fs-2"></i>
+                                                                    اضافه کردن
+                                                                </button>
+
+
+                                                                <div class="table-responsive mt-4">
+                                                                    <table class="table" id="hourly_leave_table">
+                                                                        <thead>
+                                                                        <tr>
+                                                                            <th>نام پرسنل</th>
+                                                                            <th>تاریخ</th>
+                                                                            <th>ساعت شروع</th>
+                                                                            <th>ساعت پایان</th>
+                                                                            <th>عملیات</th>
+                                                                        </tr>
+                                                                        </thead>
+                                                                        <tbody></tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- دکمه‌های کنترلی -->
+                                                            <div class="d-flex flex-stack pt-10">
+                                                                <div class="mr-2">
+                                                                    <button type="button" class="btn btn-light" data-kt-stepper-action="previous">
+                                                                        قبلی
+                                                                    </button>
+                                                                </div>
+
+                                                                <div>
+                                                                    <button type="button" class="btn btn-primary" data-kt-stepper-action="next">
+                                                                        بعدی
+                                                                    </button>
+
+                                                                    <button type="submit" class="btn btn-success" data-kt-stepper-action="submit">
+                                                                        ثبت
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% include 'footer.html' %}
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'assets/js/custom/leave-report.js' %}"></script>
+{% endblock %}

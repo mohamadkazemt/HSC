@@ -23,55 +23,79 @@
                                         <div class="card-body pt-0">
                                             <div class="table-responsive">
                                                 <table class="table table-row-bordered table-striped gy-5 gs-7">
-                                                    <thead>
-                                                    <tr class="fw-bold fs-6 text-gray-800">
-                                                        <th style="width: auto">شماره گزارش</th>
-                                                        <th>تاریخ ثبت</th>
-                                                        <th>روز هفته</th>
-                                                        <th>گروه کاری</th>
-                                                        <th>نوع شیفت</th>
-                                                        <th>شماره شیفت</th>
-                                                        <th>ایجاد کننده</th>
-                                                        <th>اقدامات</th>
-                                                    </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                    {% for operation in loading_operations %}
-                                                        <tr>
-                                                            <td>{{ operation.id }}</td>
-                                                            <td>{{ operation.jalali_date }}</td>
-                                                            <td>{{ operation.day_name }}</td>
-                                                            <td>{{ operation.group }}</td>
-                                                            <td>{{ operation.shift_type }}</td>
-                                                            <td>{{ operation.shift_number }}</td>
-                                                            <td>
-                                                                <div class="d-flex align-items-center">
-                                                                    {% if operation.creator.image_url %}
-                                                                        <div class="symbol symbol-35px symbol-circle me-3">
-                                                                            <img src="{{ operation.creator.image_url }}" alt="{{ operation.creator.full_name }}">
+                                                    <table class="table table-row-bordered table-striped gy-5 gs-7">
+                                                        <thead>
+                                                        <tr class="fw-bold fs-6 text-gray-800">
+                                                            <th>شماره گزارش</th>
+                                                            <th>تاریخ ثبت</th>
+                                                            <th>روز هفته</th>
+                                                            <th>گروه کاری</th>
+                                                            <th>نوع شیفت</th>
+                                                            <th>شماره شیفت</th>
+                                                            <th>بارکننده</th>
+                                                            <th>بلوک</th>
+                                                            <th>عملیات بارگیری</th>
+                                                            <th>ایجاد کننده</th>
+                                                            <th>اقدامات</th>
+                                                        </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                        {% for operation in loading_operations %}
+                                                            <tr>
+                                                                <td>{{ operation.id }}</td>
+                                                                <td>{{ operation.jalali_date }}</td>
+                                                                <td>{{ operation.day_name }}</td>
+                                                                <td>{{ operation.group }}</td>
+                                                                <td>{{ operation.shift_type|default:"نامشخص" }}</td>
+                                                                <td>{{ operation.shift_number|default:"-" }}</td>
+                                                                <td>
+                                                                    {% for loader_status in operation.loader_statuses.all %}
+                                                                        {{ loader_status.loader.workshop_code }} - {{ loader_status.status }}<br>
+                                                                    {% endfor %}
+                                                                </td>
+                                                                <td>
+                                                                    {% for loader_status in operation.loader_statuses.all %}
+                                                                        {{ loader_status.block.block_name }} - {{ loader_status.block.get_type_display }}<br>
+                                                                    {% endfor %}
+                                                                </td>
+                                                                <td>
+                                                                    <ul>
+                                                                        {% for loading_operation in operation.loading_operations.all %}
+                                                                            <li>{{ loading_operation.get_stone_type_display }}: {{ loading_operation.load_count }}</li>
+                                                                        {% endfor %}
+                                                                    </ul>
+                                                                </td>
+                                                                <td>
+                                                                    <div class="d-flex align-items-center">
+                                                                        {% if operation.creator.image_url %}
+                                                                            <div class="symbol symbol-35px symbol-circle me-3">
+                                                                                <img src="{{ operation.creator.image_url }}" alt="{{ operation.creator.full_name }}">
+                                                                            </div>
+                                                                        {% else %}
+                                                                            <div class="symbol symbol-35px symbol-circle me-3">
+                                <span class="symbol-label bg-light-primary text-primary fw-bold">
+                                    {{ operation.creator.full_name|slice:":2" }}
+                                </span>
+                                                                            </div>
+                                                                        {% endif %}
+                                                                        <div class="d-flex flex-column">
+                                                                            <span class="text-gray-800 text-hover-primary mb-1">{{ operation.creator.display_name }}</span>
+                                                                            <span class="small">کد پرسنلی: {{ operation.creator.personnel_code }}
+                                                                                {% if operation.creator.group %}
+                                                                                    <span class="mx-2">|</span> {{ operation.creator.group }}
+                                                                                {% endif %}
+                            </span>
                                                                         </div>
-                                                                    {% else %}
-                                                                        <div class="symbol symbol-35px symbol-circle me-3">
-                                                                        <span class="symbol-label bg-light-primary text-primary fw-bold">
-                                                                            {{ operation.creator.full_name|slice:":2" }}
-                                                                        </span>
-                                                                        </div>
-                                                                    {% endif %}
-                                                                    <div class="d-flex flex-column">
-                                                                        <span class="text-gray-800 text-hover-primary mb-1">{{ operation.creator.display_name }}</span>
-                                                                        <span class="small">کد پرسنلی: {{ operation.creator.personnel_code }}
-                                                                            {% if operation.creator.group %}
-                                                                                <span class="mx-2">|</span> {{ operation.creator.group }}
-                                                                            {% endif %}
-                                                                        </span>
                                                                     </div>
-                                                                </div>
+                                                                </td>
+                                                                <td>
+                                                                    <a href="{% url 'operations:operation_detail' pk=operation.id %}" class="btn btn-light btn-sm">نمایش جزئیات</a>
+                                                                </td>
+                                                            </tr>
+                                                        {% endfor %}
+                                                        </tbody>
+                                                    </table>
 
-                                                            </td>
-                                                            <td>
-                                                                <a href="{% url 'operations:operation_detail' pk=operation.id %}" class="btn btn-light btn-sm">نمایش جزئیات</a>                                                        </tr>
-                                                    {% endfor %}
-                                                    </tbody>
                                                 </table>
                                             </div>
                                             <!-- پایین صفحه، بخش pagination -->

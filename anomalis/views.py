@@ -36,7 +36,6 @@ import jdatetime
 from django.utils.timezone import make_aware
 from datetime import datetime
 
-
 name = 'anomalis'
 
 
@@ -398,8 +397,7 @@ def export_anomalies_to_excel(request):
     return response
 
 
-from dashboard.models import Notification
-from django.urls import reverse
+
 
 
 @login_required

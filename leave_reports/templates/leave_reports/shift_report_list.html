@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+        <!--begin::Page-->
+        <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+            <!--begin::Header-->
+            {% include 'header.html' %}
+            <!--end::Header-->
+            <!--begin::Wrapper-->
+            <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+                <!--begin::Sidebar-->
+                {% include 'sidebar.html' %}
+                <!--end::Sidebar-->
+                <!--begin::Main-->
+                <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                    <!--begin::Content wrapper-->
+                    <div class="d-flex flex-column flex-column-fluid">
+                        <!--begin::Toolbar-->
+                        {% include 'toolbar.html' %}
+                        <!--end::Toolbar-->
+                        <!--begin::Content-->
+                        <div id="kt_app_content" class="app-content flex-column-fluid">
+                            <!--begin::Content container-->
+                            <div id="kt_app_content_container" class="app-container container-fluid">
+                                <!--begin::Card-->
+                                <div class="card card-flush mt-6 mt-xl-9">
+                                    <!--begin::Card header-->
+                                    <div class="card-header mt-5">
+                                        <div class="card-title flex-column">
+                                            <h3 class="fw-bold mb-1">گزارش‌های شیفت</h3>
+                                            <div class="fs-6 text-gray-500">گزارش‌های موجود را مشاهده یا فیلتر کنید</div>
+                                        </div>
+                                    </div>
+                                    <!--end::Card header-->
+                                    <!--begin::Card body-->
+                                    <div class="card-body pt-0">
+                                        <form method="get" class="d-flex align-items-center flex-wrap mb-4">
+                                            <div class="me-2">
+                                                <select name="year" class="form-select form-select-solid form-select-sm">
+                                                    <option value="">همه سال‌ها</option>
+                                                    {% for y in years %}
+                                                        <option value="{{ y }}" {% if selected_year == y|stringformat:"s" %}selected{% endif %}>{{ y }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="me-2">
+                                                <select name="month" class="form-select form-select-solid form-select-sm">
+                                                    <option value="">همه ماه‌ها</option>
+                                                    {% for m in months %}
+                                                        <option value="{{ m }}" {% if selected_month == m|stringformat:"s" %}selected{% endif %}>{{ m }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="me-2">
+                                                <select name="day" class="form-select form-select-solid form-select-sm">
+                                                    <option value="">همه روزها</option>
+                                                    {% for d in days %}
+                                                        <option value="{{ d }}" {% if selected_day == d|stringformat:"s" %}selected{% endif %}>{{ d }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="me-2">
+                                                <button type="submit" class="btn btn-primary">اعمال فیلترها</button>
+                                            </div>
+                                        </form>
+
+                                        <div class="table-responsive">
+                                            <table class="table table-row-bordered table-row-dashed gy-4 align-middle fw-bold">
+                                                <thead class="fs-7 text-gray-500 text-uppercase">
+                                                <tr>
+                                                    <th>گروه کاری</th>
+                                                    <th>تاریخ شیفت</th>
+                                                    <th>تعداد افراد</th>
+                                                    <th>مرخصی روزانه</th>
+                                                    <th>مرخصی ساعتی</th>
+                                                    <th>غیبت‌ها</th>
+                                                    <th>جزئیات</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody class="fs-6">
+                                                {% for report in reports %}
+                                                    <tr>
+                                                        <td>{{ report.work_group }}</td>
+                                                        <td>{{ report.shift_date }}</td>
+                                                        <td>{{ report.total_persons }}</td>
+                                                        <td>{{ report.total_regular }}</td>
+                                                        <td>{{ report.total_hourly }}</td>
+                                                        <td>{{ report.total_absence }}</td>
+                                                        <td>
+                                                            <a href="{% url 'leave_reports:shift_report_detail' report.id %}" class="btn btn-light btn-sm">نمایش</a>
+                                                        </td>
+                                                    </tr>
+                                                {% empty %}
+                                                    <tr>
+                                                        <td colspan="7" class="text-center">هیچ گزارشی یافت نشد.</td>
+                                                    </tr>
+                                                {% endfor %}
+                                                </tbody>
+
+
+
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!--end::Card body-->
+                                </div>
+                                <!--end::Card-->
+                            </div>
+                            <!--end::Content container-->
+                        </div>
+                        <!--end::Content-->
+                    </div>
+                    <!--end::Content wrapper-->
+                    <!--begin::Footer-->
+                    {% include 'footer.html' %}
+                    <!--end::Footer-->
+                </div>
+                <!--end::Main-->
+            </div>
+            <!--end::Wrapper-->
+        </div>
+        <!--end::Page-->
+    </div>
+{% endblock %}

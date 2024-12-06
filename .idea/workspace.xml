@@ -4,19 +4,33 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="importer-Excle">
-      <change afterPath="$PROJECT_DIR$/BaseInfo/migrations/0006_machineryworkgroup_typemachine_and_more.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/BaseInfo/migrations/0007_typemachine_machine_workgroup.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/accounts/migrations/0005_department_position_userprofile_department_and_more.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/accounts/migrations/0006_alter_userprofile_unit.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/templates/admin/user_import_changelist.html" afterDir="false" />
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="reports_opr">
+      <change afterPath="$PROJECT_DIR$/BaseInfo/migrations/0008_mineraltype_dump.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/migrations/0012_vehiclereport_shiftleave_shiftreport_shift_leaves_and_more.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/contractor_management/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/contractor_management/admin.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/contractor_management/apps.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/contractor_management/migrations/0001_initial.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/contractor_management/migrations/0002_contractor_hse_plan_file_alter_contractor_hse_plan.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/contractor_management/migrations/0003_employee_number_of_insurance.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/contractor_management/migrations/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/contractor_management/models.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/contractor_management/tests.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/contractor_management/views.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/leave_reports/migrations/0004_alter_shiftreport_shift_date.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/admin/app_list.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BaseInfo/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/BaseInfo/admin.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/BaseInfo/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/BaseInfo/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/accounts/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/apps.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report_detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report_detail.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report_pdf.html" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report_pdf.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/leave_reports/templatetags/jalali.py" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/templatetags/jalali_utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/leave_reports/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/admin/base_site.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/admin/base_site.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/sidebar.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/sidebar.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,9 +43,9 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
+        <option value="Python Script" />
         <option value="CSS File" />
         <option value="JavaScript File" />
-        <option value="Python Script" />
         <option value="HTML File" />
       </list>
     </option>
@@ -69,39 +83,39 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
-    &quot;Django Server.Django.executor&quot;: &quot;Run&quot;,
-    &quot;Django Server.HSCprojects.executor&quot;: &quot;Run&quot;,
-    &quot;Django Server.Unnamed.executor&quot;: &quot;Run&quot;,
-    &quot;HTTP Request.generated-requests | #1.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.OpenDjangoStructureViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.pycharm.django.structure.promotion.once.per.project&quot;: &quot;true&quot;,
-    &quot;com.codeium.enabled&quot;: &quot;true&quot;,
-    &quot;com.codeium.snoozedEndTime&quot;: &quot;0&quot;,
-    &quot;django.template.preview.state&quot;: &quot;SHOW_EDITOR&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/shayan/PycharmProjects/HSC/accounts/templates/accounts&quot;,
-    &quot;list.type.of.created.stylesheet&quot;: &quot;CSS&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultHtmlFileTemplate": "HTML File",
+    "Django Server.Django.executor": "Run",
+    "Django Server.HSCprojects.executor": "Run",
+    "Django Server.Unnamed.executor": "Run",
+    "HTTP Request.generated-requests | #1.executor": "Run",
+    "RunOnceActivity.OpenDjangoStructureViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.pycharm.django.structure.promotion.once.per.project": "true",
+    "com.codeium.enabled": "true",
+    "com.codeium.snoozedEndTime": "0",
+    "django.template.preview.state": "SHOW_EDITOR",
+    "git-widget-placeholder": "master",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "C:/Users/shayan/PycharmProjects/HSC/leave_reports",
+    "list.type.of.created.stylesheet": "CSS",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\shayan\PycharmProjects\HSC\leave_reports" />
+      <recent name="C:\Users\shayan\PycharmProjects\HSC\templates\admin" />
       <recent name="C:\Users\shayan\PycharmProjects\HSC\accounts\templates\accounts" />
       <recent name="C:\Users\MKT\PycharmProjects\HSC\OperationsShiftReports\templates\OperationsShiftReports" />
       <recent name="C:\Users\MKT\PycharmProjects\HSC\templates\admin" />
-      <recent name="C:\Users\MKT\PycharmProjects\HSC\static\assets\media\misc" />
-      <recent name="C:\Users\MKT\PycharmProjects\HSC\static\src\media\logos" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\shayan\PycharmProjects\HSC\accounts\templates\accounts" />
@@ -245,6 +259,13 @@
       <workItem from="1732623887379" duration="10279000" />
       <workItem from="1732709996349" duration="10966000" />
       <workItem from="1732733504448" duration="2713000" />
+      <workItem from="1732795499815" duration="8385000" />
+      <workItem from="1732882502059" duration="17597000" />
+      <workItem from="1732991730594" duration="2057000" />
+      <workItem from="1733054098098" duration="2175000" />
+      <workItem from="1733147664689" duration="15313000" />
+      <workItem from="1733283457305" duration="7312000" />
+      <workItem from="1733461420835" duration="25233000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
@@ -494,7 +515,21 @@
       <option name="project" value="LOCAL" />
       <updated>1732644250651</updated>
     </task>
-    <option name="localTasksCounter" value="34" />
+    <task id="LOCAL‎−۰۰۰۳۴" summary="importer-Excle">
+      <option name="closed" value="true" />
+      <created>1732902890775</created>
+      <option name="number" value="LOCAL‎−۰۰۰۳۴" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۳۴" />
+      <updated>1732902890775</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۳۵" summary="leave_reports">
+      <option name="closed" value="true" />
+      <created>1732991841925</created>
+      <option name="number" value="LOCAL‎−۰۰۰۳۵" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۳۵" />
+      <updated>1732991841925</updated>
+    </task>
+    <option name="localTasksCounter" value="36" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -512,7 +547,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="anomalies" />
     <MESSAGE value="accont" />
     <MESSAGE value="newtemolate" />
     <MESSAGE value="formanomali" />
@@ -537,7 +571,8 @@
     <MESSAGE value="detail_view3" />
     <MESSAGE value="list&amp;notfi" />
     <MESSAGE value="importer-Excle" />
-    <option name="LAST_COMMIT_MESSAGE" value="importer-Excle" />
+    <MESSAGE value="leave_reports" />
+    <option name="LAST_COMMIT_MESSAGE" value="leave_reports" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

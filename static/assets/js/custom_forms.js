@@ -152,9 +152,7 @@ function validateStep(stepNumber) {
     const validationFunctions = {
         1: validateLoadingOperations,
         2: validateMiningMachines,
-        3: validateLeaves,
-        4: validateVehicles,
-        5: validateSupervisorComments
+        3: validateSupervisorComments
     };
 
     return validationFunctions[stepNumber]?.() ?? true;
@@ -163,6 +161,7 @@ function validateStep(stepNumber) {
 function validateCurrentStep(stepIndex) {
     return validateStep(stepIndex);
 }
+
 
 function validateLoadingOperations() {
     const tbody = document.querySelector('#loading_operations_table tbody');
@@ -182,23 +181,6 @@ function validateMiningMachines() {
     return true;
 }
 
-function validateLeaves() {
-    const tbody = document.querySelector('#leaves_table tbody');
-    if (!tbody?.children.length) {
-        showError('لطفا حداقل یک مرخصی را اضافه کنید');
-        return false;
-    }
-    return true;
-}
-
-function validateVehicles() {
-    const tbody = document.querySelector('#vehicles_table tbody');
-    if (!tbody?.children.length) {
-        showError('لطفا حداقل یک خودرو را اضافه کنید');
-        return false;
-    }
-    return true;
-}
 
 function validateSupervisorComments() {
     const commentsTextarea = document.querySelector('[name="supervisor_comments"]');
@@ -285,40 +267,31 @@ function addLoadingOperation() {
     }
 }
 function addMiningMachine() {
-    const machineSelect = $('#mining_machine_id');
-    const blockSelect = $('#mining_block_id');
-    const status = $('#machine_status');
-    const inactiveReason = $('#machine_inactive_reason');
+    const machineSelect = $('#loader_id'); // انتخاب بارکننده
+    const blockSelect = $('#block_id'); // انتخاب بلوک
+    const status = $('#machine_status'); // وضعیت ماشین
+    const inactiveReason = $('#machine_inactive_reason'); // دلیل غیرفعال بودن
 
+    // بررسی مقداردهی بارکننده و بلوک
     if (!machineSelect.val() || !blockSelect.val()) {
-        showError('لطفا ماشین‌آلات و بلوک را انتخاب کنید');
-        return;
-    }
-
-    if (status.val() === 'inactive' && !inactiveReason.val()?.trim()) {
-        showError('لطفا دلیل غیرفعال بودن را وارد کنید');
+        showError('لطفاً بارکننده و بلوک را انتخاب کنید.');
         return;
     }
 
     const tbody = document.querySelector('#mining_machines_table tbody');
     if (!tbody) {
-        showError('جدول ماشین‌آلات یافت نشد');
+        showError('جدول بارکننده‌ها یافت نشد.');
         return;
     }
 
     try {
         const tr = document.createElement('tr');
-        const machineText = machineSelect.find('option:selected').text();
-        const blockText = blockSelect.find('option:selected').text();
-
-        const [machineName, contractorName = '-'] = machineText.split(' - ');
-        const [blockName, blockType = '-'] = blockText.split(' - ');
+        const machineText = machineSelect.find('option:selected').text(); // متن بارکننده
+        const blockText = blockSelect.find('option:selected').text(); // متن بلوک
 
         tr.innerHTML = `
-            <td>${machineName}</td>
-            <td>${contractorName}</td>
-            <td>${blockName}</td>
-            <td>${blockType}</td>
+            <td>${machineText}</td>
+            <td>${blockText}</td>
             <td>${status.val() === 'active' ? 'فعال' : 'غیرفعال'}</td>
             <td>${inactiveReason.val() || '-'}</td>
             <td>
@@ -328,7 +301,7 @@ function addMiningMachine() {
         `;
         tbody.appendChild(tr);
 
-        // Reset fields
+        // ریست کردن فیلدها
         machineSelect.val(null).trigger('change');
         blockSelect.val(null).trigger('change');
         status.val('active');
@@ -337,50 +310,15 @@ function addMiningMachine() {
 
     } catch (error) {
         console.error('Error in addMiningMachine:', error);
-        showError('خطا در افزودن ماشین‌آلات');
+        showError('خطا در افزودن بارکننده.');
     }
 }
 
-function addLeave() {
-    const personnelSelect = $('#personnel_id');
-    const leaveStatus = $('#leave_status');
 
-    if (!personnelSelect.val()) {
-        showError('لطفا پرسنل را انتخاب کنید');
-        return;
-    }
 
-    const tbody = document.querySelector('#leaves_table tbody');
-    if (!tbody) {
-        showError('جدول مرخصی‌ها یافت نشد');
-        return;
-    }
 
-    try {
-        const tr = document.createElement('tr');
-        const personnelText = personnelSelect.find('option:selected').text();
-        const [personnelName, personnelCode = '-'] = personnelText.split(' - ');
 
-        tr.innerHTML = `
-            <td>${personnelName}</td>
-            <td>${personnelCode}</td>
-            <td>${leaveStatus.val() === 'authorized' ? 'مجاز' : 'غیر مجاز'}</td>
-            <td>
-                <button type="button" class="btn btn-sm btn-danger" onclick="removeTableRow(this)">حذف</button>
-                <input type="hidden" name="leaves[]" value="${personnelSelect.val()},${leaveStatus.val()}">
-            </td>
-        `;
-        tbody.appendChild(tr);
 
-        // Reset fields
-        personnelSelect.val(null).trigger('change');
-        leaveStatus.val('unauthorized');
-
-    } catch (error) {
-        console.error('Error in addLeave:', error);
-        showError('خطا در افزودن مرخصی');
-    }
-}
 
 function addVehicle() {
     const vehicleSelect = $('#vehicle_id');
@@ -430,12 +368,12 @@ function removeTableRow(button) {
     }
 }
 
+
 function submitShiftReport(formElement) {
     if (!validateAllSteps()) {
         return false;
     }
 
-    // Validate supervisor comments
     const comments = $('[name="supervisor_comments"]');
     if (!comments.val()?.trim()) {
         showError('لطفا توضیحات سرشیفت را وارد کنید');
@@ -446,26 +384,10 @@ function submitShiftReport(formElement) {
     const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     const submitBtn = document.querySelector('[data-kt-stepper-action="submit"]');
 
-    // Add loading state
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> در حال ارسال...';
-    }
-
-    // Add all form data
-    formData.append('supervisor_comments', comments.val().trim());
-
-    // Add file if exists
-    const fileInput = document.querySelector('input[type="file"]');
-    if (fileInput?.files[0]) {
-        formData.append('attached_file', fileInput.files[0]);
-    }
-
-    // Collect data from all tables
+    // اضافه کردن داده‌های جدول‌ها
     const tables = {
         loading_operations: '#loading_operations_table',
         loader_statuses: '#mining_machines_table',
-        leaves: '#leaves_table',
         vehicles: '#vehicles_table'
     };
 
@@ -474,10 +396,17 @@ function submitShiftReport(formElement) {
         document.querySelectorAll(`${selector} tbody tr input[type="hidden"]`).forEach(input => {
             data.push(input.value);
         });
+
+        // بررسی خالی بودن جدول
+        if (data.length === 0) {
+            showError(`لطفا اطلاعات مربوط به ${key} را وارد کنید.`);
+            return false;
+        }
+
         formData.append(key, JSON.stringify(data));
     });
 
-    // Send AJAX request with jQuery
+    // ارسال درخواست AJAX
     $.ajax({
         url: formElement.action || window.location.href,
         type: 'POST',
@@ -488,14 +417,19 @@ function submitShiftReport(formElement) {
         success: handleSubmitResponse,
         error: handleSubmitError,
         complete: function() {
-            // Reset submit button
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'ثبت گزارش';
-            }
+            resetSubmitButton(submitBtn);
         }
     });
 }
+
+function resetSubmitButton(button) {
+    if (button) {
+        button.disabled = false;
+        button.textContent = 'ثبت گزارش';
+    }
+}
+
+
 
 function handleSubmitResponse(response) {
     if (response.messages?.[0]) {
