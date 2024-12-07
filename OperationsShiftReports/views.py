@@ -8,7 +8,7 @@ from django.http import JsonResponse, Http404
 from django.contrib import messages
 from django.utils import timezone
 from accounts.models import UserProfile
-from BaseInfo.models import ContractorVehicle, MiningMachine, MiningBlock, MachineryWorkGroup, TypeMachine
+from BaseInfo.models import  MiningMachine, MiningBlock, MachineryWorkGroup, TypeMachine
 from .models import (
     ShiftReport,
     LoadingOperation,

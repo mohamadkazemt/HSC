@@ -3,7 +3,7 @@ import pandas as pd
 from io import BytesIO
 from django.urls import path
 from django.contrib import admin, messages
-from .models import MiningMachine, Contractor, ContractorVehicle, MiningBlock, MachineryWorkGroup, TypeMachine
+from .models import MiningMachine, MiningBlock, MachineryWorkGroup, TypeMachine
 
 
 class MiningMachineAdmin(admin.ModelAdmin):
@@ -118,8 +118,6 @@ class MiningMachineAdmin(admin.ModelAdmin):
 
 
 admin.site.register(MiningMachine, MiningMachineAdmin)
-admin.site.register(Contractor)
-admin.site.register(ContractorVehicle)
 admin.site.register(MiningBlock)
 admin.site.register(MachineryWorkGroup)
 admin.site.register(TypeMachine)

@@ -1,6 +1,9 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 
+from contractor_management.models import Contractor
+
+
 class MineralType(models.Model):
     name = models.CharField(max_length=100, verbose_name="نام سنگ معدنی")
     description = models.TextField(blank=True, null=True, verbose_name="توضیحات")
@@ -12,40 +15,8 @@ class MineralType(models.Model):
         verbose_name = "نوع سنگ معدنی"
         verbose_name_plural = "انواع سنگ‌های معدنی"
 
-class Contractor(models.Model):
-    name = models.CharField(max_length=100, verbose_name="نام پیمانکار")
-    contact_info = models.CharField(max_length=255, verbose_name="اطلاعات تماس", blank=True)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        verbose_name = "پیمانکار"
-        verbose_name_plural = "پیمانکاران"
 
 
-class ContractorVehicle(models.Model):
-    OWNERSHIP_CHOICES = [
-        ('Company', 'شرکت'),
-        ('Contractor', 'پیمانکار'),
-    ]
-    number_car = models.CharField(max_length=15, unique=True, null=True, blank=True, verbose_name="شماره خودرو")
-    vehicle_name = models.CharField(max_length=100, verbose_name="نام خودرو")
-    license_plate = models.CharField(max_length=15, unique=True, verbose_name="پلاک خودرو")
-    vehicle_type = models.CharField(max_length=50, choices=[('pickup truck', 'وانت'), ('riding', 'سواری'), ('bus', 'اتوبوس'), ('minibus', 'مینی بوس'), ('van', 'ون')], verbose_name="نوع خودرو")
-    ownership = models.CharField(max_length=10, choices=OWNERSHIP_CHOICES, null=True, blank=True, verbose_name="مالکیت")
-    contractor = models.ForeignKey(Contractor, on_delete=models.SET_NULL, null=True, blank=True,
-                                   verbose_name="پیمانکار",
-                                   help_text="در صورت مالکیت پیمانکار، پیمانکار را انتخاب کنید.")
-    is_active = models.BooleanField(default=True, verbose_name="فعال")
-
-
-    def __str__(self):
-        return f"{self.vehicle_name} - {self.contractor.name}"
-
-    class Meta:
-        verbose_name = "خودرو"
-        verbose_name_plural = "خودروها"
 
 class MachineryWorkGroup(models.Model):
     name = models.CharField(max_length=100, verbose_name="نام گروه")
@@ -76,7 +47,8 @@ class MiningMachine(models.Model):
     machine_workgroup = models.ForeignKey(MachineryWorkGroup, on_delete=models.SET_NULL, null=True, blank=True,verbose_name="گروه کاری")
     machine_type = models.ForeignKey(TypeMachine, on_delete=models.SET_NULL, null=True, blank=True,verbose_name="نوع دستگاه")
     workshop_code = models.CharField(max_length=20, verbose_name="کد کارگاهی")  # کد کارگاهی
-    ownership = models.ForeignKey(Contractor, on_delete=models.SET_NULL, null=True, blank=True,verbose_name="مالکیت")
+    ownership = models.CharField(max_length=10, choices=[('Company', 'شرکت'), ('Contractor', 'پیمانکار')], default='Company', verbose_name="مالکیت")
+    contractor = models.ForeignKey(Contractor, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="پیمانکار")
     is_active = models.BooleanField(default=True, verbose_name="فعال")
 
     def __str__(self):
