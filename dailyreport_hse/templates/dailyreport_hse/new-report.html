@@ -1,0 +1,502 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+    <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+        <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+            {% include 'header.html' %}
+            <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+                {% include 'sidebar.html' %}
+                <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                    <div class="d-flex flex-column flex-column-fluid">
+                        {% include 'toolbar.html' %}
+                        <div id="kt_app_content" class="app-content flex-column-fluid">
+                            <div id="kt_app_content_container" class="app-container container-fluid">
+                                <!-- Stepper -->
+                                <div class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10" id="kt_create_account_stepper">
+                                    <!-- Stepper Navigation -->
+                                    <div class="card d-flex justify-content-center justify-content-xl-start flex-row-auto w-100 w-xl-300px w-xxl-400px">
+                                        <div class="card-body px-6 px-lg-10 px-xxl-15 py-20">
+                                            <div class="stepper-nav">
+                                                <!-- مرحله اول -->
+                                                <div class="stepper-item current" data-kt-stepper-element="nav">
+                                                    <div class="stepper-wrapper">
+                                                        <div class="stepper-icon w-40px h-40px">
+                                                            <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                            <span class="stepper-number">1</span>
+                                                        </div>
+                                                        <div class="stepper-label">
+                                                            <h3 class="stepper-title">وضعیت جبهه‌های کاری</h3>
+                                                            <div class="stepper-desc fw-semibold">اطلاعات جبهه‌های کاری</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="stepper-line h-40px"></div>
+                                                </div>
+                                                <!-- مرحله دوم -->
+                                                <div class="stepper-item" data-kt-stepper-element="nav">
+                                                    <div class="stepper-wrapper">
+                                                        <div class="stepper-icon w-40px h-40px">
+                                                            <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                            <span class="stepper-number">2</span>
+                                                        </div>
+                                                        <div class="stepper-label">
+                                                            <h3 class="stepper-title">وضعیت دمپ‌ها</h3>
+                                                            <div class="stepper-desc fw-semibold">اطلاعات دمپ‌ها</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="stepper-line h-40px"></div>
+                                                </div>
+                                                <!-- مرحله سوم -->
+                                                <div class="stepper-item" data-kt-stepper-element="nav">
+                                                    <div class="stepper-wrapper">
+                                                        <div class="stepper-icon w-40px h-40px">
+                                                            <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                            <span class="stepper-number">3</span>
+                                                        </div>
+                                                        <div class="stepper-label">
+                                                            <h3 class="stepper-title">وضعیت سایت‌های حفاری</h3>
+                                                            <div class="stepper-desc fw-semibold">اطلاعات سایت‌های حفاری</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="stepper-line h-40px"></div>
+                                                </div>
+                                                <!-- مرحله چهارم -->
+                                                <div class="stepper-item" data-kt-stepper-element="nav">
+                                                    <div class="stepper-wrapper">
+                                                        <div class="stepper-icon w-40px h-40px">
+                                                            <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                            <span class="stepper-number">4</span>
+                                                        </div>
+                                                        <div class="stepper-label">
+                                                            <h3 class="stepper-title">حوادث و شبه‌حوادث</h3>
+                                                            <div class="stepper-desc fw-semibold">اطلاعات حوادث</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="stepper-line h-40px"></div>
+                                                </div>
+                                                <!-- مرحله پنجم -->
+                                                <div class="stepper-item" data-kt-stepper-element="nav">
+                                                    <div class="stepper-wrapper">
+                                                        <div class="stepper-icon w-40px h-40px">
+                                                            <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                            <span class="stepper-number">5</span>
+                                                        </div>
+                                                        <div class="stepper-label">
+                                                            <h3 class="stepper-title">اعزام‌ها، تشویق‌ها و تنبیه‌ها</h3>
+                                                            <div class="stepper-desc fw-semibold">اطلاعات پرسنلی</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="stepper-line h-40px"></div>
+                                                </div>
+                                                <!-- مرحله ششم -->
+                                                <div class="stepper-item" data-kt-stepper-element="nav">
+                                                    <div class="stepper-wrapper">
+                                                        <div class="stepper-icon w-40px h-40px">
+                                                            <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                            <span class="stepper-number">6</span>
+                                                        </div>
+                                                        <div class="stepper-label">
+                                                            <h3 class="stepper-title">مشارکت‌ها و توقفات ایمنی</h3>
+                                                            <div class="stepper-desc fw-semibold">اطلاعات ایمنی</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="stepper-line h-40px"></div>
+                                                </div>
+                                                <!-- مرحله هفتم -->
+                                                <div class="stepper-item" data-kt-stepper-element="nav">
+                                                    <div class="stepper-wrapper">
+                                                        <div class="stepper-icon w-40px h-40px">
+                                                            <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                            <span class="stepper-number">7</span>
+                                                        </div>
+                                                        <div class="stepper-label">
+                                                            <h3 class="stepper-title">آتشباری و محل آن</h3>
+                                                            <div class="stepper-desc fw-semibold">اطلاعات آتشباری</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="stepper-line h-40px"></div>
+                                                </div>
+                                                <!-- مرحله هشتم -->
+                                                <div class="stepper-item" data-kt-stepper-element="nav">
+                                                    <div class="stepper-wrapper">
+                                                        <div class="stepper-icon w-40px h-40px">
+                                                            <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                            <span class="stepper-number">8</span>
+                                                        </div>
+                                                        <div class="stepper-label">
+                                                            <h3 class="stepper-title">موارد پیگیری برای شیفت بعد</h3>
+                                                            <div class="stepper-desc fw-semibold">وظایف آینده</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Form Content -->
+                                    <div class="card d-flex flex-row-fluid flex-center">
+                                        <form class="card-body py-20 w-100 mw-xl-700px px-9" method="post" novalidate="novalidate" action="{% url 'hse:submit_report' %}" id="kt_create_account_form" enctype="multipart/form-data">
+                                            {% csrf_token %}
+
+                                            <!-- مرحله 1: وضعیت جبهه‌های کاری -->
+                                            <div class="current" data-kt-stepper-element="content">
+                                                <div class="w-100">
+                                                    <div class="pb-10 pb-lg-15">
+                                                        <h2 class="fw-bold text-gray-900">وضعیت جبهه‌های کاری</h2>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label for="workfront_name" class="required form-label">نام جبهه:</label>
+                                                        <input type="text" id="workfront_name" name="workfront_name[]" class="form-control" placeholder="نام جبهه کاری">
+
+                                                        <label for="workfront_status" class="required form-label mt-5">وضعیت:</label>
+                                                        <select id="workfront_status" name="workfront_status[]" class="form-select select2" data-control="select2" data-placeholder="انتخاب وضعیت">
+                                                            <option></option>
+                                                            <option value="approved">تایید</option>
+                                                            <option value="rejected">رد</option>
+                                                        </select>
+
+                                                        <label for="workfront_comments" class="form-label mt-5">توضیحات:</label>
+                                                        <textarea id="workfront_comments" name="workfront_comments[]" class="form-control" rows="3" placeholder="توضیحات"></textarea>
+
+                                                        <button type="button" class="btn btn-primary mt-5" onclick="addWorkfront()">
+                                                            <i class="ki-outline ki-plus-square fs-2"></i>
+                                                            اضافه کردن
+                                                        </button>
+                                                    </div>
+                                                    <div class="separator separator-dashed my-5"></div>
+                                                    <div class="table-responsive">
+                                                        <table class="table align-middle table-row-dashed fs-6 gy-5" id="workfront_table">
+                                                            <thead>
+                                                            <tr>
+                                                                <th>نام جبهه</th>
+                                                                <th>وضعیت</th>
+                                                                <th>توضیحات</th>
+                                                                <th>عملیات</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody></tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- مرحله 2: وضعیت دمپ‌ها -->
+                                            <div data-kt-stepper-element="content">
+                                                <div class="w-100">
+                                                    <div class="pb-10 pb-lg-15">
+                                                        <h2 class="fw-bold text-gray-900">وضعیت دمپ‌ها</h2>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label for="dump_name" class="required form-label">نام دمپ:</label>
+                                                        <input type="text" id="dump_name" name="dump_name[]" class="form-control" placeholder="نام دمپ">
+
+                                                        <label for="dump_status" class="required form-label mt-5">وضعیت:</label>
+                                                        <select id="dump_status" name="dump_status[]" class="form-select select2" data-control="select2" data-placeholder="انتخاب وضعیت">
+                                                            <option></option>
+                                                            <option value="approved">تایید</option>
+                                                            <option value="rejected">رد</option>
+                                                        </select>
+
+                                                        <label for="dump_comments" class="form-label mt-5">توضیحات:</label>
+                                                        <textarea id="dump_comments" name="dump_comments[]" class="form-control" rows="3" placeholder="توضیحات"></textarea>
+
+                                                        <button type="button" class="btn btn-primary mt-5" onclick="addDump()">
+                                                            <i class="ki-outline ki-plus-square fs-2"></i>
+                                                            اضافه کردن
+                                                        </button>
+                                                    </div>
+                                                    <div class="separator separator-dashed my-5"></div>
+                                                    <div class="table-responsive">
+                                                        <table class="table align-middle table-row-dashed fs-6 gy-5" id="dump_table">
+                                                            <thead>
+                                                            <tr>
+                                                                <th>نام دمپ</th>
+                                                                <th>وضعیت</th>
+                                                                <th>توضیحات</th>
+                                                                <th>عملیات</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody></tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- مرحله 3: وضعیت سایت‌های حفاری -->
+                                            <div data-kt-stepper-element="content">
+                                                <div class="w-100">
+                                                    <div class="pb-10 pb-lg-15">
+                                                        <h2 class="fw-bold text-gray-900">وضعیت سایت‌های حفاری</h2>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label for="drilling_site_name" class="required form-label">نام سایت حفاری:</label>
+                                                        <input type="text" id="drilling_site_name" name="drilling_site_name[]" class="form-control" placeholder="نام سایت حفاری">
+
+                                                        <label for="drilling_status" class="required form-label mt-5">وضعیت:</label>
+                                                        <select id="drilling_status" name="drilling_status[]" class="form-select select2" data-control="select2" data-placeholder="انتخاب وضعیت">
+                                                            <option></option>
+                                                            <option value="approved">تایید</option>
+                                                            <option value="rejected">رد</option>
+                                                        </select>
+
+                                                        <label for="drilling_comments" class="form-label mt-5">توضیحات:</label>
+                                                        <textarea id="drilling_comments" name="drilling_comments[]" class="form-control" rows="3" placeholder="توضیحات"></textarea>
+
+                                                        <button type="button" class="btn btn-primary mt-5" onclick="addDrillingSite()">
+                                                            <i class="ki-outline ki-plus-square fs-2"></i>
+                                                            اضافه کردن
+                                                        </button>
+                                                    </div>
+                                                    <div class="separator separator-dashed my-5"></div>
+                                                    <div class="table-responsive">
+                                                        <table class="table align-middle table-row-dashed fs-6 gy-5" id="drilling_table">
+                                                            <thead>
+                                                            <tr>
+                                                                <th>نام سایت حفاری</th>
+                                                                <th>وضعیت</th>
+                                                                <th>توضیحات</th>
+                                                                <th>عملیات</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody></tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- مرحله 4: حوادث و شبه‌حوادث (شامل اعزام‌ها) -->
+                                            <div data-kt-stepper-element="content">
+                                                <div class="w-100">
+                                                    <div class="pb-10 pb-lg-15">
+                                                        <h2 class="fw-bold text-gray-900">حوادث و شبه‌حوادث</h2>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label for="incident_description" class="required form-label">شرح حادثه:</label>
+                                                        <textarea id="incident_description" name="incident_description[]" class="form-control" rows="4" placeholder="شرح حادثه"></textarea>
+                                                        <button type="button" class="btn btn-primary mt-5" onclick="addIncident()">
+                                                            <i class="ki-outline ki-plus-square fs-2"></i>
+                                                            اضافه کردن
+                                                        </button>
+                                                    </div>
+                                                    <div class="separator separator-dashed my-5"></div>
+                                                    <div class="table-responsive">
+                                                        <table class="table align-middle table-row-dashed fs-6 gy-5" id="incident_table">
+                                                            <thead>
+                                                            <tr>
+                                                                <th>شرح حادثه</th>
+                                                                <th>عملیات</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody></tbody>
+                                                        </table>
+                                                    </div>
+
+                                                    <!-- بخش اعزام‌ها -->
+                                                    <div class="form-group mt-5">
+                                                        <label for="dispatch_description" class="required form-label">شرح اعزام:</label>
+                                                        <textarea id="dispatch_description" name="dispatch_description[]" class="form-control" rows="4" placeholder="شرح اعزام"></textarea>
+                                                        <button type="button" class="btn btn-primary mt-5" onclick="addDispatch()">
+                                                            <i class="ki-outline ki-plus-square fs-2"></i>
+                                                            اضافه کردن
+                                                        </button>
+                                                    </div>
+                                                    <div class="separator separator-dashed my-5"></div>
+                                                    <div class="table-responsive">
+                                                        <table class="table align-middle table-row-dashed fs-6 gy-5" id="dispatch_table">
+                                                            <thead>
+                                                            <tr>
+                                                                <th>شرح اعزام</th>
+                                                                <th>عملیات</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody></tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                             <!-- مرحله 5: تشویق‌ها و تنبیه‌ها -->
+                                            <div data-kt-stepper-element="content">
+                                                <div class="w-100">
+                                                    <div class="pb-10 pb-lg-15">
+                                                        <h2 class="fw-bold text-gray-900">تشویق‌ها و تنبیه‌ها</h2>
+                                                    </div>
+                                                    <!-- فرم تشویق و تنبیه -->
+                                                    <div class="form-group">
+                                                        <label for="reward_penalty_type" class="required form-label">نوع:</label>
+                                                        <select id="reward_penalty_type" name="reward_penalty_type[]" class="form-select select2" data-control="select2" data-placeholder="انتخاب نوع">
+                                                            <option></option>
+                                                            <option value="reward">تشویق</option>
+                                                            <option value="penalty">تنبیه</option>
+                                                        </select>
+
+                                                        <label for="person_type" class="required form-label mt-5">نوع فرد:</label>
+                                                        <select id="person_type" name="person_type[]" class="form-select select2" data-control="select2" data-placeholder="انتخاب نوع فرد">
+                                                            <option></option>
+                                                            <option value="employee">پرسنل شرکت</option>
+                                                            <option value="contractor">پیمانکار</option>
+                                                        </select>
+
+                                                        <label for="person_name" class="required form-label mt-5">نام فرد:</label>
+                                                        <select id="person_name" name="person_name[]" class="form-select select2" data-control="select2" data-placeholder="انتخاب فرد">
+                                                            <!-- داده‌ها به صورت پویا با جاوااسکریپت بارگذاری می‌شوند -->
+                                                        </select>
+
+                                                        <label for="reward_penalty_description" class="form-label mt-5">توضیحات:</label>
+                                                        <textarea id="reward_penalty_description" name="reward_penalty_description[]" class="form-control" rows="3" placeholder="توضیحات"></textarea>
+
+                                                        <button type="button" class="btn btn-primary mt-5" onclick="addRewardPenalty()">
+                                                            <i class="ki-outline ki-plus-square fs-2"></i>
+                                                            اضافه کردن
+                                                        </button>
+                                                    </div>
+
+                                                    <div class="separator separator-dashed my-5"></div>
+                                                    <div class="table-responsive">
+                                                        <table class="table align-middle table-row-dashed fs-6 gy-5" id="reward_penalty_table">
+                                                            <thead>
+                                                            <tr>
+                                                                <th>نوع</th>
+                                                                <th>نوع فرد</th>
+                                                                <th>نام فرد</th>
+                                                                <th>توضیحات</th>
+                                                                <th>عملیات</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody></tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- مرحله 6: مشارکت‌ها و توقفات ایمنی -->
+                                            <div data-kt-stepper-element="content">
+                                                <div class="w-100">
+                                                    <div class="pb-10 pb-lg-15">
+                                                        <h2 class="fw-bold text-gray-900">مشارکت‌ها و توقفات ایمنی</h2>
+                                                    </div>
+                                                    <!-- مشارکت‌های ایمنی -->
+                                                    <div class="form-group">
+                                                        <label for="participation_description" class="required form-label">شرح مشارکت:</label>
+                                                        <textarea id="participation_description" name="participation_description[]" class="form-control" rows="4" placeholder="شرح مشارکت"></textarea>
+                                                        <button type="button" class="btn btn-primary mt-5" onclick="addParticipation()">
+                                                            <i class="ki-outline ki-plus-square fs-2"></i>
+                                                            اضافه کردن
+                                                        </button>
+                                                    </div>
+                                                    <div class="separator separator-dashed my-5"></div>
+                                                    <div class="table-responsive">
+                                                        <table class="table align-middle table-row-dashed fs-6 gy-5" id="participation_table">
+                                                            <thead>
+                                                            <tr>
+                                                                <th>شرح مشارکت</th>
+                                                                <th>عملیات</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody></tbody>
+                                                        </table>
+                                                    </div>
+
+                                                    <!-- توقفات ایمنی -->
+                                                    <div class="form-group mt-5">
+                                                        <label for="stop_description" class="required form-label">شرح توقف:</label>
+                                                        <textarea id="stop_description" name="stop_description[]" class="form-control" rows="4" placeholder="شرح توقف"></textarea>
+                                                        <button type="button" class="btn btn-primary mt-5" onclick="addSafetyStop()">
+                                                            <i class="ki-outline ki-plus-square fs-2"></i>
+                                                            اضافه کردن
+                                                        </button>
+                                                    </div>
+                                                    <div class="separator separator-dashed my-5"></div>
+                                                    <div class="table-responsive">
+                                                        <table class="table align-middle table-row-dashed fs-6 gy-5" id="safety_stop_table">
+                                                            <thead>
+                                                            <tr>
+                                                                <th>شرح توقف</th>
+                                                                <th>عملیات</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody></tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- مرحله 7: آتشباری و محل آن -->
+                                            <div data-kt-stepper-element="content">
+                                                <div class="w-100">
+                                                    <div class="pb-10 pb-lg-15">
+                                                        <h2 class="fw-bold text-gray-900">آتشباری و محل آن</h2>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label for="blasting_location" class="required form-label">محل آتشباری:</label>
+                                                        <textarea id="blasting_location" name="blasting_location[]" class="form-control" rows="4" placeholder="محل آتشباری"></textarea>
+                                                        <button type="button" class="btn btn-primary mt-5" onclick="addBlasting()">
+                                                            <i class="ki-outline ki-plus-square fs-2"></i>
+                                                            اضافه کردن
+                                                        </button>
+                                                    </div>
+                                                    <div class="separator separator-dashed my-5"></div>
+                                                    <div class="table-responsive">
+                                                        <table class="table align-middle table-row-dashed fs-6 gy-5" id="blasting_table">
+                                                            <thead>
+                                                            <tr>
+                                                                <th>محل آتشباری</th>
+                                                                <th>عملیات</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody></tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- مرحله 8: موارد پیگیری برای شیفت بعد -->
+                                            <div data-kt-stepper-element="content">
+                                                <div class="w-100">
+                                                    <div class="pb-10 pb-lg-15">
+                                                        <h2 class="fw-bold text-gray-900">موارد پیگیری برای شیفت بعد</h2>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label for="next_shift_tasks" class="required form-label">وظایف شیفت بعد:</label>
+                                                        <textarea id="next_shift_tasks" name="next_shift_tasks" class="form-control" rows="4" placeholder="شرح وظایف برای شیفت بعد"></textarea>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+
+
+
+                                            <!-- دکمه‌های ناوبری -->
+                                            <div class="d-flex flex-stack pt-10">
+                                                <div class="mr-2">
+                                                    <button type="button" class="btn btn-lg btn-light-primary me-3" data-kt-stepper-action="previous">
+                                                        <i class="ki-duotone ki-arrow-left fs-4 me-1"></i>
+                                                        برگشت
+                                                    </button>
+                                                </div>
+                                                <div>
+                                                    <button type="button" class="btn btn-lg btn-primary" data-kt-stepper-action="next">
+                                                        ادامه
+                                                        <i class="ki-duotone ki-arrow-right fs-4 ms-1"></i>
+                                                    </button>
+                                                    <button type="submit" class="btn btn-lg btn-success" data-kt-stepper-action="submit">
+                                                        ثبت گزارش
+                                                        <i class="ki-duotone ki-check fs-4 ms-1"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+
+                                </div>
+                            </div>
+                            {% include 'footer.html' %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block extra_js %}
+
+    <script src="{% static 'js/dailyreporthse.js' %}"></script>
+{% endblock %}

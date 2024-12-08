@@ -60,7 +60,7 @@ class HSEParticipation(models.Model):
         return f"{self.person or self.user_profile} - {self.description[:50]}"
 
 class SafetyStop(models.Model):
-    report = models.ForeignKey('HSEReport', on_delete=models.CASCADE, related_name="safety_stops", verbose_name="گزارش ایمنی")
+    report = models.ForeignKey('HSEReport', on_delete=models.CASCADE, related_name="safety_stop_reports", verbose_name="گزارش ایمنی")
     reason = models.TextField(verbose_name="دلیل توقف")
     duration_hours = models.FloatField(verbose_name="مدت زمان توقف (ساعت)")
 
