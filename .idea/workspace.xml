@@ -4,16 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="dailyreport_hse">
-      <change afterPath="$PROJECT_DIR$/dailyreport_hse/forms.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dailyreport_hse/migrations/0001_initial.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/new-report.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/stepper.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/workfront.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/dailyreport_hse/urls.py" afterDir="false" />
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="dailyreport_hse1">
+      <change afterPath="$PROJECT_DIR$/dailyreport_hse/steps.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/static/assets/js/custom/dailyreport.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/HSCprojects/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dailyreport_hse/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/forms.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dailyreport_hse/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/new-report.html" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/new-report.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dailyreport_hse/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dailyreport_hse/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -28,9 +26,10 @@
     <option name="RECENT_TEMPLATES">
       <list>
         <option value="CSS File" />
-        <option value="JavaScript File" />
         <option value="Python Script" />
         <option value="HTML File" />
+        <option value="JavaScript File" />
+        <option value="package.json" />
       </list>
     </option>
   </component>
@@ -253,7 +252,9 @@
       <workItem from="1733577577047" duration="12097000" />
       <workItem from="1733673147704" duration="6932000" />
       <workItem from="1733684872454" duration="849000" />
-      <workItem from="1733685817375" duration="4961000" />
+      <workItem from="1733685817375" duration="5118000" />
+      <workItem from="1733764090415" duration="5276000" />
+      <workItem from="1733778441363" duration="453000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
@@ -531,7 +532,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۳۷" />
       <updated>1733601750619</updated>
     </task>
-    <option name="localTasksCounter" value="38" />
+    <task id="LOCAL‎−۰۰۰۳۸" summary="dailyreport_hse1">
+      <option name="closed" value="true" />
+      <created>1733690961003</created>
+      <option name="number" value="LOCAL‎−۰۰۰۳۸" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۳۸" />
+      <updated>1733690961003</updated>
+    </task>
+    <option name="localTasksCounter" value="39" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -549,7 +557,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="formanomali" />
     <MESSAGE value="listnew" />
     <MESSAGE value="listnew2" />
     <MESSAGE value="commentsnew" />
@@ -574,7 +581,8 @@
     <MESSAGE value="leave_reports" />
     <MESSAGE value="reports&amp;contractor" />
     <MESSAGE value="dailyreport_hse" />
-    <option name="LAST_COMMIT_MESSAGE" value="dailyreport_hse" />
+    <MESSAGE value="dailyreport_hse1" />
+    <option name="LAST_COMMIT_MESSAGE" value="dailyreport_hse1" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

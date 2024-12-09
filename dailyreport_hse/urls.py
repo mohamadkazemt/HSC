@@ -1,8 +1,6 @@
 from django.urls import path
-from .views import HSEWizard
-
-app_name = 'hse'
+from . import views
 
 urlpatterns = [
-    path('new-report/', HSEWizard.as_view(), name='new_report'),
+    path('create/', views.create_shift_report, name='create_shift_report'),
 ]
