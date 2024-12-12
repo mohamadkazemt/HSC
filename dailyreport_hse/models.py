@@ -1,110 +1,122 @@
 from django.db import models
 from BaseInfo.models import MiningBlock, MiningMachine, Dump
+from accounts.models import UserProfile  # Import UserProfile from your app
+from django.contrib.auth.models import User
 
-
-class ShiftReport(models.Model):
-    shift_date = models.DateField(verbose_name="تاریخ شیفت")
-    shift_time = models.CharField(
-        max_length=50, choices=[('Day', 'روز'), ('Night', 'شب')], verbose_name="شیفت"
+class DailyReport(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="آخرین به‌روزرسانی")
+    report_time = models.TimeField(auto_now_add=True, verbose_name="زمان ثبت گزارش")
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="daily_reports", verbose_name="کاربر ایجاد کننده"
     )
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد گزارش")
+    user_group = models.CharField(max_length=1,verbose_name="گروه کاری",editable=False)
 
-    def __str__(self):
-        return f"گزارش {self.shift_date} - {self.shift_time}"
+    def save(self, *args, **kwargs):
+        if not self.user_group and self.user:
+            user_profile = UserProfile.objects.get(user=self.user)
+            self.user_group = user_profile.group
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = "گزارش روزانه"
         verbose_name_plural = "گزارش‌های روزانه"
 
+    def __str__(self):
+        return f"گزارش روزانه {self.id}"
 
-class BlastingOperation(models.Model):
-    shift_report = models.ForeignKey(
-        ShiftReport, on_delete=models.CASCADE, related_name="blasting_operations"
-    )
-    blasting_done = models.BooleanField(
-        default=False, verbose_name="آیا انفجار انجام شده است؟"
+
+class BlastingDetail(models.Model):
+    daily_report = models.ForeignKey(
+        DailyReport, on_delete=models.CASCADE, related_name="blasting_details", verbose_name="گزارش روزانه"
     )
     block = models.ForeignKey(
-        MiningBlock, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="بلوک آتش‌باری"
+        MiningBlock, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="بلوک آتشباری"
     )
-
-    class Meta:
-        verbose_name = "عملیات آتش‌باری"
-        verbose_name_plural = "عملیات‌های آتش‌باری"
-
-
-class DrillingOperation(models.Model):
-    shift_report = models.ForeignKey(
-        ShiftReport, on_delete=models.CASCADE, related_name="drilling_operations"
+    status = models.CharField(
+        max_length=10,
+        choices=[('safe', 'ایمن'), ('unsafe', 'غیر ایمن')],
+        verbose_name="وضعیت آتشباری"
     )
-    site = models.ForeignKey(
-        MiningBlock, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="سایت حفاری"
+    description = models.TextField(null=True, blank=True, verbose_name="توضیحات آتشباری")
+
+
+class DrillingDetail(models.Model):
+    daily_report = models.ForeignKey(
+        DailyReport, on_delete=models.CASCADE, related_name="drilling_details", verbose_name="گزارش روزانه"
+    )
+    block = models.ForeignKey(
+        MiningBlock, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="بلوک حفاری"
     )
     machine = models.ForeignKey(
-        MiningMachine,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        verbose_name="دستگاه حفاری",
+        MiningMachine, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="دستگاه حفاری"
     )
-    approved = models.BooleanField(default=True, verbose_name="وضعیت تایید سایت")
-    comments = models.TextField(blank=True, null=True, verbose_name="توضیحات")
-
-    class Meta:
-        verbose_name = "عملیات حفاری"
-        verbose_name_plural = "عملیات‌های حفاری"
-
-
-class LoadingOperation(models.Model):
-    shift_report = models.ForeignKey(
-        ShiftReport, on_delete=models.CASCADE, related_name="loading_operations"
+    status = models.CharField(
+        max_length=10,
+        choices=[('safe', 'ایمن'), ('unsafe', 'غیر ایمن')],
+        verbose_name="وضعیت حفاری"
     )
-    workface = models.ForeignKey(
-        MiningBlock, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="جبهه کاری"
+    description = models.TextField(null=True, blank=True, verbose_name="توضیحات حفاری")
+
+
+class DumpDetail(models.Model):
+    daily_report = models.ForeignKey(
+        DailyReport, on_delete=models.CASCADE, related_name="dump_details", verbose_name="گزارش روزانه"
     )
     dump = models.ForeignKey(
-        Dump, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="دمپ"
+        Dump, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="نام دامپ"
     )
-    approved = models.BooleanField(default=True, verbose_name="وضعیت تایید")
-    comments = models.TextField(blank=True, null=True, verbose_name="توضیحات")
-
-    class Meta:
-        verbose_name = "عملیات بارگیری"
-        verbose_name_plural = "عملیات‌های بارگیری"
-
-
-class WorkshopInspection(models.Model):
-    shift_report = models.ForeignKey(
-        ShiftReport, on_delete=models.CASCADE, related_name="workshop_inspections"
+    status = models.CharField(
+        max_length=10,
+        choices=[('safe', 'ایمن'), ('unsafe', 'غیر ایمن')],
+        verbose_name="وضعیت دامپ"
     )
-    inspection_done = models.BooleanField(
-        default=False, verbose_name="آیا بازدید انجام شده است؟"
+    description = models.TextField(null=True, blank=True, verbose_name="توضیحات دامپ")
+
+
+class LoadingDetail(models.Model):
+    daily_report = models.ForeignKey(
+        DailyReport, on_delete=models.CASCADE, related_name="loading_details", verbose_name="گزارش روزانه"
     )
-    approved = models.BooleanField(default=True, verbose_name="وضعیت تایید")
-    comments = models.TextField(blank=True, null=True, verbose_name="توضیحات")
-
-    class Meta:
-        verbose_name = "بازدید تعمیرگاه"
-        verbose_name_plural = "بازدیدهای تعمیرگاه"
-
-
-class SafetyIssue(models.Model):
-    shift_report = models.ForeignKey(
-        ShiftReport, on_delete=models.CASCADE, related_name="safety_issues"
+    block = models.ForeignKey(
+        MiningBlock, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="بلوک بارگیری"
     )
-    issue_description = models.TextField(verbose_name="توضیحات مشکل ایمنی")
-
-    class Meta:
-        verbose_name = "مشکل ایمنی"
-        verbose_name_plural = "مشکلات ایمنی"
-
-
-class ShiftFollowUp(models.Model):
-    shift_report = models.ForeignKey(
-        ShiftReport, on_delete=models.CASCADE, related_name="follow_ups"
+    machine = models.ForeignKey(
+        MiningMachine, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="دستگاه بارگیری"
     )
-    follow_up_description = models.TextField(verbose_name="شرح موارد پیگیری در شیفت بعد")
+    status = models.CharField(
+        max_length=10,
+        choices=[('safe', 'ایمن'), ('unsafe', 'غیر ایمن')],
+        verbose_name="وضعیت بارگیری"
+    )
+    description = models.TextField(null=True, blank=True, verbose_name="توضیحات بارگیری")
 
-    class Meta:
-        verbose_name = "پیگیری شیفت بعد"
-        verbose_name_plural = "پیگیری‌های شیفت بعد"
+
+class InspectionDetail(models.Model):
+    daily_report = models.ForeignKey(
+        DailyReport, on_delete=models.CASCADE, related_name="inspection_details", verbose_name="گزارش روزانه"
+    )
+    status = models.BooleanField(default=False, verbose_name="بازدید انجام شده")
+    status_detail = models.CharField(
+        max_length=10,
+        choices=[('safe', 'ایمن'), ('unsafe', 'غیر ایمن')],
+        null=True,
+        blank=True,
+        verbose_name="وضعیت بازدید"
+    )
+    description = models.TextField(null=True, blank=True, verbose_name="توضیحات بازدید")
+
+
+class StoppageDetail(models.Model):
+    daily_report = models.ForeignKey(
+        DailyReport, on_delete=models.CASCADE, related_name="stoppage_details", verbose_name="گزارش روزانه"
+    )
+    reason = models.TextField(null=True, blank=True, verbose_name="علت توقف")
+    duration = models.IntegerField(null=True, blank=True, verbose_name="مدت زمان توقف (دقیقه)")
+
+
+class FollowupDetail(models.Model):
+    daily_report = models.ForeignKey(
+        DailyReport, on_delete=models.CASCADE, related_name="followup_details", verbose_name="گزارش روزانه"
+    )
+    description = models.TextField(null=True, blank=True, verbose_name="موارد پیگیری در شیفت بعد")
