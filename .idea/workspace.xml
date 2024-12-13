@@ -5,18 +5,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="dailyreport_hse22">
-      <change afterPath="$PROJECT_DIR$/dailyreport_hse/migrations/0002_followupdetail_files_alter_blastingdetail_status.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/HSCprojects.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/HSCprojects.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dailyreport_hse/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/forms.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dailyreport_hse/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dailyreport_hse/migrations/0001_initial.py" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/migrations/0001_initial.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dailyreport_hse/migrations/0002_followupdetail_files_alter_blastingdetail_status.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/new-report.html" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/new-report.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dailyreport_hse/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dailyreport_hse/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/static/assets/js/custom/dailyreport.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/assets/js/custom/dailyreport.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/assets/js/custom_forms.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/assets/js/custom_forms.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -55,7 +53,7 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/mohamadkazemt/HSC.git&quot;,
-    &quot;accountId&quot;: &quot;b1049974-7825-44ef-a60c-99f35deafaf1&quot;
+    &quot;accountId&quot;: &quot;4a4a0b77-3294-4afc-82ac-479cfd08feaa&quot;
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
@@ -70,32 +68,32 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
-    &quot;Django Server.Django.executor&quot;: &quot;Run&quot;,
-    &quot;Django Server.HSCprojects.executor&quot;: &quot;Run&quot;,
-    &quot;Django Server.Unnamed.executor&quot;: &quot;Run&quot;,
-    &quot;HTTP Request.generated-requests | #1.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.OpenDjangoStructureViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.pycharm.django.structure.promotion.once.per.project&quot;: &quot;true&quot;,
-    &quot;com.codeium.enabled&quot;: &quot;true&quot;,
-    &quot;com.codeium.snoozedEndTime&quot;: &quot;0&quot;,
-    &quot;django.template.preview.state&quot;: &quot;SHOW_EDITOR&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;master&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/shayan/PycharmProjects/HSC/leave_reports&quot;,
-    &quot;list.type.of.created.stylesheet&quot;: &quot;CSS&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultHtmlFileTemplate": "HTML File",
+    "Django Server.Django.executor": "Run",
+    "Django Server.HSCprojects.executor": "Run",
+    "Django Server.Unnamed.executor": "Run",
+    "HTTP Request.generated-requests | #1.executor": "Run",
+    "RunOnceActivity.OpenDjangoStructureViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.pycharm.django.structure.promotion.once.per.project": "true",
+    "com.codeium.enabled": "true",
+    "com.codeium.snoozedEndTime": "0",
+    "django.template.preview.state": "SHOW_EDITOR",
+    "git-widget-placeholder": "master",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "C:/Users/shayan/PycharmProjects/HSC/leave_reports",
+    "list.type.of.created.stylesheet": "CSS",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\shayan\PycharmProjects\HSC\leave_reports" />
@@ -154,8 +152,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-PY-242.24807.21" />
-        <option value="bundled-python-sdk-00717045f1d3-399fe30bd8c1-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-242.24807.21" />
+        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-PY-242.23726.102" />
+        <option value="bundled-python-sdk-5e1850174b45-399fe30bd8c1-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-242.23726.102" />
       </set>
     </attachedChunks>
   </component>
@@ -262,8 +260,6 @@
       <workItem from="1733833106353" duration="4781000" />
       <workItem from="1733926115951" duration="40971000" />
       <workItem from="1734003206764" duration="6901000" />
-      <workItem from="1734066564336" duration="1858000" />
-      <workItem from="1734069396506" duration="8025000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />

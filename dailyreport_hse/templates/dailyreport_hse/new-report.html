@@ -128,168 +128,181 @@
                                             {% csrf_token %}
 
                                             <!-- مرحله اول: آتشباری -->
-                                            <div class="current" data-kt-stepper-element="content">
-                                                <div class="w-100">
-                                                    <div class="pb-10 pb-lg-15">
-                                                        <h2 class="fw-bold text-gray-900">مرحله اول: آتشباری</h2>
-                                                    </div>
-                                                    {{ blasting_form.as_p }}
-                                                    <button type="button" class="btn btn-primary mt-3" onclick="addBlastingDetail()">افزودن آتشباری</button>
+                                            {% if step == 1 %}
+                                                <div class="current">
+                                                    <div class="w-100">
+                                                        <div id="formset-container" class="pb-10 pb-lg-15">
+                                                            <h2 class="fw-bold text-gray-900">مرحله اول: آتشباری</h2>
+                                                        </div>
 
-                                                    <!-- لیست آتشباری‌های اضافه‌شده -->
-                                                    <div id="blasting_list" class="mt-3">
-                                                        <h4>لیست آتشباری‌ها:</h4>
-                                                        <ul id="blasting_items">
-                                                            <!-- آیتم‌های آتشباری در اینجا اضافه می‌شوند -->
-                                                        </ul>
-                                                    </div>
-                                                    <div class="d-flex flex-stack pt-10">
-                                                        <button type="button" class="btn btn-lg btn-primary" data-kt-stepper-action="next">
-                                                            ادامه
-                                                            <i class="ki-outline ki-arrow-left fs-4 me-1"></i>
-                                                        </button>
+                                                        <!-- مدیریت فرمست -->
+                                                        {{ blasting_formset.management_form }}
+
+                                                        <!-- نمایش فرم‌های موجود -->
+                                                        <div id="formset-forms">
+                                                            {% for form in blasting_formset %}
+                                                                <div class="card mb-5 p-4">
+                                                                    {{ form.as_p }}
+                                                                </div>
+                                                            {% endfor %}
+                                                        </div>
+
+                                                        <!-- دکمه‌های کنترل -->
+                                                        <div class="d-flex justify-content-between">
+                                                            <button type="button" id="add-form-btn" class="btn btn-secondary mt-3">افزودن فرم جدید</button>
+                                                            <button type="submit" name="step" value="2" class="btn btn-lg btn-primary">
+                                                                ادامه
+                                                                <i class="ki-outline ki-arrow-left fs-4 me-1"></i>
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            {% endif %}
+
 
                                             <!-- مرحله دوم: حفاری -->
-                                            <div data-kt-stepper-element="content" style="display: none;">
-                                                <div class="w-100">
-                                                    <div class="pb-10 pb-lg-15">
-                                                        <h2 class="fw-bold text-gray-900">مرحله دوم: حفاری</h2>
-                                                    </div>
-                                                    {{ drilling_form.as_p }}
-                                                    <button type="button" class="btn btn-primary mt-3" onclick="addDrillingDetail()">افزودن حفاری</button>
-
-                                                    <!-- لیست حفاری‌های اضافه‌شده -->
-                                                    <div id="drilling_list" class="mt-3">
-                                                        <h4>لیست حفاری‌ها:</h4>
-                                                        <ul id="drilling_items">
-                                                            <!-- آیتم‌های حفاری در اینجا اضافه می‌شوند -->
-                                                        </ul>
-                                                    </div>
-                                                    <div class="d-flex flex-stack pt-10">
-                                                        <button type="button" class="btn btn-lg btn-light-primary me-3" data-kt-stepper-action="previous">
-                                                            <i class="ki-outline ki-arrow-left fs-4 me-1"></i>برگشت
-                                                        </button>
-                                                        <button type="button" class="btn btn-lg btn-primary" data-kt-stepper-action="next">
-                                                            ادامه
-                                                            <i class="ki-outline ki-arrow-left fs-4 ms-1"></i>
-                                                        </button>
+                                            {% if step == 2 %}
+                                                <div class="current">
+                                                    <div class="w-100">
+                                                        <div class="pb-10 pb-lg-15">
+                                                            <h2 class="fw-bold text-gray-900">مرحله دوم: حفاری</h2>
+                                                        </div>
+                                                        {{ drilling_formset.management_form }}
+                                                        {% for form in drilling_formset %}
+                                                            <div class="card mb-5 p-4">
+                                                                {{ form.as_p }}
+                                                            </div>
+                                                        {% endfor %}
+                                                        <div class="d-flex justify-content-between">
+                                                            <button type="submit" name="step" value="1" class="btn btn-lg btn-light-primary">
+                                                                <i class="ki-outline ki-arrow-left fs-4 me-1"></i>برگشت
+                                                            </button>
+                                                            <button type="submit" name="step" value="3" class="btn btn-lg btn-primary">
+                                                                ادامه
+                                                                <i class="ki-outline ki-arrow-left fs-4 ms-1"></i>
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            {% endif %}
 
                                             <!-- مرحله سوم: دامپ‌ها -->
-                                            <div data-kt-stepper-element="content" style="display: none;">
-                                                <div class="w-100">
-                                                    <div class="pb-10 pb-lg-15">
-                                                        <h2 class="fw-bold text-gray-900">مرحله سوم: دامپ‌ها</h2>
+                                            {% if step == 3 %}
+                                                <div class="current">
+                                                    <div class="w-100">
+                                                        <div class="pb-10 pb-lg-15">
+                                                            <h2 class="fw-bold text-gray-900">مرحله سوم: دامپ‌ها</h2>
+                                                        </div>
+                                                        {{ dump_formset.management_form }}
+                                                        {% for form in dump_formset %}
+                                                            <div class="card mb-5 p-4">
+                                                                {{ form.as_p }}
+                                                            </div>
+                                                        {% endfor %}
+                                                        <div class="d-flex justify-content-between">
+                                                            <button type="submit" name="step" value="2" class="btn btn-lg btn-light-primary">
+                                                                <i class="ki-outline ki-arrow-left fs-4 me-1"></i>برگشت
+                                                            </button>
+                                                            <button type="submit" name="step" value="4" class="btn btn-lg btn-primary">
+                                                                ادامه
+                                                                <i class="ki-outline ki-arrow-left fs-4 ms-1"></i>
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                    {{ dump_form.as_p }}
-                                                    <button type="button" class="btn btn-primary mt-3" onclick="addDumpDetail()">افزودن دامپ</button>
+                                                </div>
+                                            {% endif %}
 
-                                                    <!-- لیست دامپ‌های اضافه‌شده -->
-                                                    <div id="dump_list" class="mt-3">
-                                                        <h4>لیست دامپ‌ها:</h4>
-                                                        <ul id="dump_items">
-                                                            <!-- آیتم‌های دامپ در اینجا اضافه می‌شوند -->
-                                                        </ul>
-                                                    </div>
-                                                    <div class="d-flex flex-stack pt-10">
-                                                        <button type="button" class="btn btn-lg btn-light-primary me-3" data-kt-stepper-action="previous">
-                                                            <i class="ki-outline ki-arrow-left fs-4 me-1"></i>برگشت
-                                                        </button>
-                                                        <button type="button" class="btn btn-lg btn-primary" data-kt-stepper-action="next">
-                                                            ادامه
-                                                            <i class="ki-outline ki-arrow-left fs-4 ms-1"></i>
-                                                        </button>
+                                            <!-- مراحل دیگر -->
+                                            {% if step == 4 %}
+                                                <div class="current">
+                                                    <div class="w-100">
+                                                        <div class="pb-10 pb-lg-15">
+                                                            <h2 class="fw-bold text-gray-900">مرحله چهارم: بارگیری</h2>
+                                                        </div>
+                                                        {{ loading_formset.management_form }}
+                                                        {% for form in loading_formset %}
+                                                            <div class="card mb-5 p-4">
+                                                                {{ form.as_p }}
+                                                            </div>
+                                                        {% endfor %}
+                                                        <div class="d-flex justify-content-between">
+                                                            <button type="submit" name="step" value="3" class="btn btn-lg btn-light-primary">
+                                                                <i class="ki-outline ki-arrow-left fs-4 me-1"></i>برگشت
+                                                            </button>
+                                                            <button type="submit" name="step" value="5" class="btn btn-lg btn-primary">
+                                                                ادامه
+                                                                <i class="ki-outline ki-arrow-left fs-4 ms-1"></i>
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            {% endif %}
 
-                                            <!-- مرحله چهارم: بارگیری -->
-                                            <div data-kt-stepper-element="content" style="display: none;">
-                                                <div class="w-100">
-                                                    <div class="pb-10 pb-lg-15">
-                                                        <h2 class="fw-bold text-gray-900">مرحله چهارم: بارگیری</h2>
+                                            <!-- مرحله پنجم: تعمیرگاه -->
+                                            {% if step == 5 %}
+                                                <div class="current">
+                                                    <div class="w-100">
+                                                        <div class="pb-10 pb-lg-15">
+                                                            <h2 class="fw-bold text-gray-900">مرحله پنجم: تعمیرگاه</h2>
+                                                        </div>
+                                                        {{ inspection_form.as_p }}
+                                                        <div class="d-flex justify-content-between">
+                                                            <button type="submit" name="step" value="4" class="btn btn-lg btn-light-primary">
+                                                                <i class="ki-outline ki-arrow-left fs-4 me-1"></i>برگشت
+                                                            </button>
+                                                            <button type="submit" name="step" value="6" class="btn btn-lg btn-primary">
+                                                                ادامه
+                                                                <i class="ki-outline ki-arrow-left fs-4 ms-1"></i>
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                    {{ loading_form.as_p }}
-                                                    <button type="button" class="btn btn-primary mt-3" onclick="addLoadingDetail()">افزودن بارگیری</button>
+                                                </div>
+                                            {% endif %}
 
-                                                    <!-- لیست بارگیری‌های اضافه‌شده -->
-                                                    <div id="loading_list" class="mt-3">
-                                                        <h4>لیست بارگیری‌ها:</h4>
-                                                        <ul id="loading_items">
-                                                            <!-- آیتم‌های بارگیری در اینجا اضافه می‌شوند -->
-                                                        </ul>
-                                                    </div>
-                                                    <div class="d-flex flex-stack pt-10">
-                                                        <button type="button" class="btn btn-lg btn-light-primary me-3" data-kt-stepper-action="previous">
-                                                            <i class="ki-outline ki-arrow-left fs-4 me-1"></i>برگشت
-                                                        </button>
-                                                        <button type="button" class="btn btn-lg btn-primary" data-kt-stepper-action="next">
-                                                            ادامه
-                                                            <i class="ki-outline ki-arrow-left fs-4 ms-1"></i>
-                                                        </button>
+                                            <!-- مرحله ششم: توقفات -->
+                                            {% if step == 6 %}
+                                                <div class="current">
+                                                    <div class="w-100">
+                                                        <div class="pb-10 pb-lg-15">
+                                                            <h2 class="fw-bold text-gray-900">مرحله ششم: توقفات</h2>
+                                                        </div>
+                                                        {{ stoppage_form.as_p }}
+                                                        <div class="d-flex justify-content-between">
+                                                            <button type="submit" name="step" value="5" class="btn btn-lg btn-light-primary">
+                                                                <i class="ki-outline ki-arrow-left fs-4 me-1"></i>برگشت
+                                                            </button>
+                                                            <button type="submit" name="step" value="7" class="btn btn-lg btn-primary">
+                                                                ادامه
+                                                                <i class="ki-outline ki-arrow-left fs-4 ms-1"></i>
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            {% endif %}
 
-                                            <!-- مراحل دیگر (تعمیرگاه، توقفات و پایان) -->
-                                            <div data-kt-stepper-element="content" style="display: none;">
-                                                <div class="w-100">
-                                                    <div class="pb-10 pb-lg-15">
-                                                        <h2 class="fw-bold text-gray-900">مرحله پنجم: تعمیرگاه</h2>
-                                                    </div>
-                                                    {{ inspection_form.as_p }}
-                                                    <div class="d-flex flex-stack pt-10">
-                                                        <button type="button" class="btn btn-lg btn-light-primary me-3" data-kt-stepper-action="previous">
-                                                            <i class="ki-outline ki-arrow-left fs-4 me-1"></i>برگشت
-                                                        </button>
-                                                        <button type="button" class="btn btn-lg btn-primary" data-kt-stepper-action="next">
-                                                            ادامه
-                                                            <i class="ki-outline ki-arrow-left fs-4 ms-1"></i>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div data-kt-stepper-element="content" style="display: none;">
-                                                <div class="w-100">
-                                                    <div class="pb-10 pb-lg-15">
-                                                        <h2 class="fw-bold text-gray-900">مرحله ششم: توقفات</h2>
-                                                    </div>
-                                                    {{ stoppage_form.as_p }}
-                                                    <div class="d-flex flex-stack pt-10">
-                                                        <button type="button" class="btn btn-lg btn-light-primary me-3" data-kt-stepper-action="previous">
-                                                            <i class="ki-outline ki-arrow-left fs-4 me-1"></i>برگشت
-                                                        </button>
-                                                        <button type="button" class="btn btn-lg btn-primary" data-kt-stepper-action="next">
-                                                            ادامه
-                                                            <i class="ki-outline ki-arrow-left fs-4 ms-1"></i>
-                                                        </button>
+                                            <!-- مرحله نهایی -->
+                                            {% if step == 7 %}
+                                                <div class="current">
+                                                    <div class="w-100">
+                                                        <div class="pb-10 pb-lg-15">
+                                                            <h2 class="fw-bold text-gray-900">پایان</h2>
+                                                        </div>
+                                                        {{ followup_form.as_p }}
+                                                        <div class="d-flex justify-content-between">
+                                                            <button type="submit" name="step" value="6" class="btn btn-lg btn-light-primary">
+                                                                <i class="ki-outline ki-arrow-left fs-4 me-1"></i>برگشت
+                                                            </button>
+                                                            <button type="submit" class="btn btn-lg btn-success">
+                                                                ثبت گزارش
+                                                                <i class="ki-outline ki-check fs-4 ms-1"></i>
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                            <div data-kt-stepper-element="content" style="display: none;">
-                                                <div class="w-100">
-                                                    <div class="pb-10 pb-lg-15">
-                                                        <h2 class="fw-bold text-gray-900">پایان</h2>
-                                                    </div>
-                                                    {{ followup_form.as_p }}
-                                                    <div class="d-flex flex-stack pt-10">
-                                                        <button type="button" class="btn btn-lg btn-light-primary me-3" data-kt-stepper-action="previous">
-                                                            <i class="ki-outline ki-arrow-left fs-4 me-1"></i>برگشت
-                                                        </button>
-                                                        <button type="submit" class="btn btn-lg btn-success">
-                                                            ثبت گزارش
-                                                            <i class="ki-outline ki-check fs-4 ms-1"></i>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            {% endif %}
                                         </form>
                                     </div>
+
 
 
 
@@ -301,7 +314,37 @@
             </div>
         </div>
     </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const formsetContainer = document.getElementById("formset-forms");
+            const totalFormsInput = document.querySelector("#id_blasting-TOTAL_FORMS");
 
-    <script src="{% static 'assets/js/custom/dailyreport.js' %}"> </script>
+            if (formsetContainer && totalFormsInput) {
+                document.getElementById("add-form-btn").addEventListener("click", function () {
+                    const currentFormCount = parseInt(totalFormsInput.value);
+
+                    // بررسی وجود عنصر .card
+                    const templateForm = formsetContainer.querySelector(".card");
+                    if (!templateForm) {
+                        console.error("Template form with .card class not found!");
+                        return;
+                    }
+
+                    // اضافه کردن فرم جدید
+                    const newFormHtml = templateForm.outerHTML.replace(/__prefix__/g, currentFormCount);
+                    formsetContainer.insertAdjacentHTML("beforeend", newFormHtml);
+
+                    // به‌روزرسانی تعداد فرم‌ها
+                    totalFormsInput.value = currentFormCount + 1;
+                });
+            } else {
+                console.error("Formset container or total forms input not found!");
+            }
+        });
+
+
+    </script>
+
+    <!--begin::Javascript<script src="{% static 'assets/js/custom/dailyreport.js' %}"> </script>-->
 
 {% endblock %}
