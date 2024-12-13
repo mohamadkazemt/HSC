@@ -27,30 +27,16 @@ class DailyReport(models.Model):
 
 
 class BlastingDetail(models.Model):
-    daily_report = models.ForeignKey(
-        DailyReport, on_delete=models.CASCADE, related_name="blasting_details", verbose_name="گزارش روزانه"
-    )
-    block = models.ForeignKey(
-        MiningBlock, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="بلوک آتشباری"
-    )
-    status = models.CharField(
-        max_length=10,
-        choices=[('safe', 'ایمن'), ('unsafe', 'غیر ایمن')],
-        verbose_name="وضعیت آتشباری"
-    )
+    daily_report = models.ForeignKey(DailyReport, on_delete=models.CASCADE, related_name="blasting_details", verbose_name="گزارش روزانه")
+    block = models.ForeignKey( MiningBlock, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="بلوک آتشباری")
+    status = models.BooleanField(default=False,verbose_name="وضعیت آتشباری" )
     description = models.TextField(null=True, blank=True, verbose_name="توضیحات آتشباری")
 
 
 class DrillingDetail(models.Model):
-    daily_report = models.ForeignKey(
-        DailyReport, on_delete=models.CASCADE, related_name="drilling_details", verbose_name="گزارش روزانه"
-    )
-    block = models.ForeignKey(
-        MiningBlock, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="بلوک حفاری"
-    )
-    machine = models.ForeignKey(
-        MiningMachine, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="دستگاه حفاری"
-    )
+    daily_report = models.ForeignKey(DailyReport, on_delete=models.CASCADE, related_name="drilling_details", verbose_name="گزارش روزانه" )
+    block = models.ForeignKey(MiningBlock, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="بلوک حفاری")
+    machine = models.ForeignKey(MiningMachine, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="دستگاه حفاری" )
     status = models.CharField(
         max_length=10,
         choices=[('safe', 'ایمن'), ('unsafe', 'غیر ایمن')],
@@ -120,3 +106,4 @@ class FollowupDetail(models.Model):
         DailyReport, on_delete=models.CASCADE, related_name="followup_details", verbose_name="گزارش روزانه"
     )
     description = models.TextField(null=True, blank=True, verbose_name="موارد پیگیری در شیفت بعد")
+    files = models.FileField(upload_to='followups/', null=True, blank=True, verbose_name="فایل‌ها")

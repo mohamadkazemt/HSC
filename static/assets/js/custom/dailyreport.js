@@ -1,11 +1,7 @@
+// Enhanced JavaScript Functions for Managing Steps and Dynamic Content
 
-// JavaScript Functions for Managing Steps and Dynamic Content
-
-// Initialize Select2 for dynamic dropdowns
 document.addEventListener('DOMContentLoaded', function() {
     $('.form-select').select2();
-
-    // Initialize step navigation
     handleStepperNavigation();
 });
 
@@ -57,137 +53,86 @@ function handleStepperNavigation() {
     showStep(currentStepIndex);
 }
 
-// Validation Logic for Each Step
+// Enhanced Validation Logic for Each Step
 function validateStep(stepIndex) {
-    // Add custom validation logic for each step if needed
-    // Example: return false if validation fails for the step
-    return true; // Assuming all steps are valid for now
+    const stepForms = document.querySelectorAll('[data-kt-stepper-element="content"]')[stepIndex];
+    const inputs = stepForms.querySelectorAll('input, select, textarea');
+    let isValid = true;
+
+    inputs.forEach(input => {
+        if (input.required && !input.value.trim()) {
+            input.classList.add('is-invalid');
+            isValid = false;
+        } else {
+            input.classList.remove('is-invalid');
+        }
+    });
+
+    return isValid;
 }
 
-// Toggle Blasting Details
-function toggleBlastingDetails() {
-    const blastingStatus = document.getElementById('blasting_status').value;
-    const blastingDetails = document.getElementById('blasting_details');
-    if (blastingStatus === 'yes') {
-        blastingDetails.style.display = 'block';
-    } else {
-        blastingDetails.style.display = 'none';
-    }
-}
+// Generic Function to Add Entries
+function addEntry(formType) {
+    const blockSelect = document.querySelector(`[name="${formType}_block"]`);
+    const machineSelect = document.querySelector(`[name="${formType}_machine"]`);
+    const statusSelect = document.querySelector(`[name="${formType}_status"]`);
+    const descriptionInput = document.querySelector(`[name="${formType}_description"]`);
+    const entryList = document.getElementById(`${formType}_list`);
 
-// Add a new blasting entry
-function addBlasting() {
-    const blockSelect = document.querySelector('[name="blasting_block"]');
-    const description = document.querySelector('[name="blasting_description"]').value;
-    const blastingList = document.getElementById('blasting_list');
+    let description = descriptionInput ? descriptionInput.value.trim() : '';
+    let blockText = blockSelect ? blockSelect.options[blockSelect.selectedIndex]?.text : '';
+    let machineText = machineSelect ? machineSelect.options[machineSelect.selectedIndex]?.text : '';
+    let statusText = statusSelect ? statusSelect.options[statusSelect.selectedIndex]?.text : '';
 
-    if (blockSelect.value && description) {
-        const newEntry = document.createElement('div');
-        newEntry.className = 'alert alert-secondary mt-3 d-flex justify-content-between';
-        newEntry.innerHTML = `${blockSelect.options[blockSelect.selectedIndex].text} - ${description}
-                              <button type="button" class="btn btn-danger btn-sm" onclick="removeEntry(this)">حذف</button>`;
-        blastingList.appendChild(newEntry);
-        blockSelect.selectedIndex = 0;
-        document.querySelector('[name="blasting_description"]').value = '';
-    } else {
+    // Validate Inputs
+    if ((blockSelect && !blockSelect.value) ||
+        (machineSelect && !machineSelect.value) ||
+        (statusSelect && !statusSelect.value) ||
+        (descriptionInput && !description)) {
         alert('لطفاً تمامی اطلاعات را تکمیل کنید.');
+        return;
     }
+
+    // Check for Duplicates
+    const existingEntries = entryList.querySelectorAll('.alert');
+    for (let entry of existingEntries) {
+        if (entry.textContent.includes(blockText) &&
+            (machineText === '' || entry.textContent.includes(machineText)) &&
+            (statusText === '' || entry.textContent.includes(statusText)) &&
+            (description === '' || entry.textContent.includes(description))) {
+            alert('این مورد قبلاً اضافه شده است.');
+            return;
+        }
+    }
+
+    // Create New Entry
+    const newEntry = document.createElement('div');
+    newEntry.className = 'alert alert-secondary mt-3 d-flex justify-content-between align-items-center';
+    newEntry.innerHTML = `
+        <span>${blockText} ${machineText ? `- ${machineText}` : ''} ${statusText ? `- ${statusText}` : ''} ${description ? `- ${description}` : ''}</span>
+        <button type="button" class="btn btn-danger btn-sm" onclick="removeEntry(this)">حذف</button>
+    `;
+
+    // Append Entry
+    entryList.appendChild(newEntry);
+
+    // Clear Inputs
+    if (blockSelect) blockSelect.selectedIndex = 0;
+    if (machineSelect) machineSelect.selectedIndex = 0;
+    if (statusSelect) statusSelect.selectedIndex = 0;
+    if (descriptionInput) descriptionInput.value = '';
 }
 
-// Toggle Inspection Details
-function toggleInspection() {
-    const inspectionStatus = document.getElementById('inspection_status').value;
-    const inspectionDetails = document.getElementById('inspection_status_detail');
-    if (inspectionStatus === 'yes') {
-        inspectionDetails.style.display = 'block';
-    } else {
-        inspectionDetails.style.display = 'none';
-    }
-}
-
-// Toggle Stop Details
-function toggleStop() {
-    const stopStatus = document.getElementById('stoppage_status').value;
-    const stopDetails = document.getElementById('stoppage_details');
-    if (stopStatus === 'yes') {
-        stopDetails.style.display = 'block';
-    } else {
-        stopDetails.style.display = 'none';
-    }
-}
-
-// Add a new drilling entry
-function addDrilling() {
-    const blockSelect = document.querySelector('[name="drilling_block"]');
-    const machineSelect = document.querySelector('[name="drilling_machine"]');
-    const statusSelect = document.querySelector('[name="drilling_status"]');
-    const drillingList = document.getElementById('drilling_list');
-
-    if (blockSelect.value && machineSelect.value && statusSelect.value) {
-        const newEntry = document.createElement('div');
-        newEntry.className = 'alert alert-secondary mt-3 d-flex justify-content-between';
-        newEntry.innerHTML = `${blockSelect.options[blockSelect.selectedIndex].text} -
-                              ${machineSelect.options[machineSelect.selectedIndex].text} -
-                              ${statusSelect.options[statusSelect.selectedIndex].text}
-                              <button type="button" class="btn btn-danger btn-sm" onclick="removeEntry(this)">حذف</button>`;
-        drillingList.appendChild(newEntry);
-        blockSelect.selectedIndex = 0;
-        machineSelect.selectedIndex = 0;
-        statusSelect.selectedIndex = 0;
-    } else {
-        alert('لطفاً تمامی اطلاعات را تکمیل کنید.');
-    }
-}
-
-// Add a new dump entry
-function addDump() {
-    const dumpSelect = document.querySelector('[name="dump_block"]');
-    const statusSelect = document.querySelector('[name="dump_status"]');
-    const description = document.querySelector('[name="dump_description"]').value;
-    const dumpList = document.getElementById('dump_list');
-
-    if (dumpSelect.value && statusSelect.value && description) {
-        const newEntry = document.createElement('div');
-        newEntry.className = 'alert alert-secondary mt-3 d-flex justify-content-between';
-        newEntry.innerHTML = `${dumpSelect.options[dumpSelect.selectedIndex].text} -
-                              ${statusSelect.options[statusSelect.selectedIndex].text} -
-                              ${description}
-                              <button type="button" class="btn btn-danger btn-sm" onclick="removeEntry(this)">حذف</button>`;
-        dumpList.appendChild(newEntry);
-        dumpSelect.selectedIndex = 0;
-        statusSelect.selectedIndex = 0;
-        document.querySelector('[name="dump_description"]').value = '';
-    } else {
-        alert('لطفاً تمامی اطلاعات را تکمیل کنید.');
-    }
-}
-
-// Add a new loading entry
-function addLoading() {
-    const blockSelect = document.querySelector('[name="loading_block"]');
-    const machineSelect = document.querySelector('[name="loading_machine"]');
-    const statusSelect = document.querySelector('[name="loading_status"]');
-    const loadingList = document.getElementById('loading_list');
-
-    if (blockSelect.value && machineSelect.value && statusSelect.value) {
-        const newEntry = document.createElement('div');
-        newEntry.className = 'alert alert-secondary mt-3 d-flex justify-content-between';
-        newEntry.innerHTML = `${blockSelect.options[blockSelect.selectedIndex].text} -
-                              ${machineSelect.options[machineSelect.selectedIndex].text} -
-                              ${statusSelect.options[statusSelect.selectedIndex].text}
-                              <button type="button" class="btn btn-danger btn-sm" onclick="removeEntry(this)">حذف</button>`;
-        loadingList.appendChild(newEntry);
-        blockSelect.selectedIndex = 0;
-        machineSelect.selectedIndex = 0;
-        statusSelect.selectedIndex = 0;
-    } else {
-        alert('لطفاً تمامی اطلاعات را تکمیل کنید.');
-    }
-}
-
-// Remove an entry
+// Remove an Entry
 function removeEntry(button) {
-    button.parentElement.remove();
+    if (confirm('آیا مطمئن هستید که می‌خواهید این مورد را حذف کنید؟')) {
+        button.parentElement.remove();
+    }
 }
 
-
+// Toggle Visibility Functions
+function toggleVisibility(statusId, detailsId) {
+    const status = document.getElementById(statusId).value;
+    const details = document.getElementById(detailsId);
+    details.style.display = status === 'yes' ? 'block' : 'none';
+}

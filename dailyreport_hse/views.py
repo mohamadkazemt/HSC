@@ -1,165 +1,110 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.forms import modelformset_factory
-from django.http import JsonResponse
-from .models import DailyReport, BlastingDetail, DrillingDetail, DumpDetail, LoadingDetail
-from .forms import DailyReportForm, BlastingDetailForm, DrillingDetailForm, DumpDetailForm, LoadingDetailForm
-from BaseInfo.models import MiningBlock, MiningMachine, Dump
-from django.utils import timezone
-from accounts.models import UserProfile
+from django.shortcuts import render, redirect
+from .forms import (
+    DailyReportForm,
+    BlastingDetailFormset,
+    DrillingDetailFormset,
+    DumpDetailFormset,
+    LoadingDetailFormset,
+    InspectionDetailForm,
+    StoppageDetailForm,
+    FollowupDetailForm,
+)
+from .models import DailyReport, BlastingDetail, DrillingDetail, DumpDetail, LoadingDetail, InspectionDetail, StoppageDetail, FollowupDetail
 
 
-@login_required
 def create_daily_report(request):
-    blocks = MiningBlock.objects.all()
-    drilling_machines = MiningMachine.objects.all()
-    loading_machines = MiningMachine.objects.all()
-    dumps = Dump.objects.all()
-
-    if request.method == 'POST':
-        print("Received POST data:", request.POST)
-
+    """
+    مدیریت مراحل گزارش روزانه:
+    1. آتشباری
+    2. حفاری
+    3. دامپ‌ها
+    4. بارگیری
+    5. تعمیرگاه
+    6. توقفات
+    7. پیگیری
+    """
+    if request.method == "POST":
+        # فرم اصلی گزارش
         report_form = DailyReportForm(request.POST)
-        BlastingFormSet = modelformset_factory(BlastingDetail, form=BlastingDetailForm, extra=0)
-        DrillingFormSet = modelformset_factory(DrillingDetail, form=DrillingDetailForm, extra=0)
-        DumpFormSet = modelformset_factory(DumpDetail, form=DumpDetailForm, extra=0)
-        LoadingFormSet = modelformset_factory(LoadingDetail, form=LoadingDetailForm, extra=0)
 
-        blasting_formset = BlastingFormSet(request.POST, queryset=BlastingDetail.objects.none())
-        drilling_formset = DrillingFormSet(request.POST, queryset=DrillingDetail.objects.none())
-        dump_formset = DumpFormSet(request.POST, queryset=DumpDetail.objects.none())
-        loading_formset = LoadingFormSet(request.POST, queryset=LoadingDetail.objects.none())
+        # فرمست‌ها و فرم‌های مراحل
+        blasting_formset = BlastingDetailFormset(request.POST, queryset=BlastingDetail.objects.none(), prefix="blasting")
+        drilling_formset = DrillingDetailFormset(request.POST, queryset=DrillingDetail.objects.none(), prefix="drilling")
+        dump_formset = DumpDetailFormset(request.POST, queryset=DumpDetail.objects.none(), prefix="dump")
+        loading_formset = LoadingDetailFormset(request.POST, queryset=LoadingDetail.objects.none(), prefix="loading")
+        inspection_form = InspectionDetailForm(request.POST, prefix="inspection")
+        stoppage_form = StoppageDetailForm(request.POST, prefix="stoppage")
+        followup_form = FollowupDetailForm(request.POST, request.FILES, prefix="followup")
 
-        print("Validating forms...")
-        print("Report form is valid:", report_form.is_valid())
-        print("Blasting formset is valid:", blasting_formset.is_valid())
-        print("Drilling formset is valid:", drilling_formset.is_valid())
-        print("Dump formset is valid:", dump_formset.is_valid())
-        print("Loading formset is valid:", loading_formset.is_valid())
-
-        if (report_form.is_valid() and
-            blasting_formset.is_valid() and
-            drilling_formset.is_valid() and
-            dump_formset.is_valid() and
-            loading_formset.is_valid()):
-
-            print("Forms are valid. Saving data...")
+        # بررسی اعتبار فرم‌ها
+        if report_form.is_valid() and all([
+            blasting_formset.is_valid(),
+            drilling_formset.is_valid(),
+            dump_formset.is_valid(),
+            loading_formset.is_valid(),
+            inspection_form.is_valid(),
+            stoppage_form.is_valid(),
+            followup_form.is_valid(),
+        ]):
+            # ذخیره گزارش اصلی
             report = report_form.save(commit=False)
-            report.user = request.user
-            user_profile = request.user.userprofile
-            report.user_group = user_profile.group
-            report.created_at = timezone.now()
-            print("Report details before save:", report)
+            report.user = request.user  # اتصال گزارش به کاربر فعلی
             report.save()
 
-            for form in blasting_formset:
-                if form.cleaned_data:
-                    blasting_detail = form.save(commit=False)
-                    blasting_detail.daily_report = report
-                    print("Saving blasting detail:", blasting_detail)
-                    blasting_detail.save()
+            # ذخیره فرمست‌ها
+            def save_details(formset, report_instance):
+                instances = formset.save(commit=False)
+                for instance in instances:
+                    instance.daily_report = report_instance
+                    instance.save()
 
-            for form in drilling_formset:
-                if form.cleaned_data:
-                    drilling_detail = form.save(commit=False)
-                    drilling_detail.daily_report = report
-                    print("Saving drilling detail:", drilling_detail)
-                    drilling_detail.save()
+            save_details(blasting_formset, report)
+            save_details(drilling_formset, report)
+            save_details(dump_formset, report)
+            save_details(loading_formset, report)
 
-            for form in dump_formset:
-                if form.cleaned_data:
-                    dump_detail = form.save(commit=False)
-                    dump_detail.daily_report = report
-                    print("Saving dump detail:", dump_detail)
-                    dump_detail.save()
+            # ذخیره مراحل دیگر
+            inspection = inspection_form.save(commit=False)
+            inspection.daily_report = report
+            inspection.save()
 
-            for form in loading_formset:
-                if form.cleaned_data:
-                    loading_detail = form.save(commit=False)
-                    loading_detail.daily_report = report
-                    print("Saving loading detail:", loading_detail)
-                    loading_detail.save()
+            stoppage = stoppage_form.save(commit=False)
+            stoppage.daily_report = report
+            stoppage.save()
 
-            print("All data saved successfully.")
-            return redirect('report_list')
-        else:
-            print("Form validation errors:")
-            print("Report form errors:", report_form.errors.as_json())
-            print("Blasting formset errors:", blasting_formset.errors)
-            print("Drilling formset errors:", drilling_formset.errors)
-            print("Dump formset errors:", dump_formset.errors)
-            print("Loading formset errors:", loading_formset.errors)
+            followup = followup_form.save(commit=False)
+            followup.daily_report = report
+            followup.save()
 
-            errors = {
-                'report_form_errors': report_form.errors,
-                'blasting_formset_errors': blasting_formset.errors,
-                'drilling_formset_errors': drilling_formset.errors,
-                'dump_formset_errors': dump_formset.errors,
-                'loading_formset_errors': loading_formset.errors,
-            }
-            return render(
-                request,
-                'dailyreport_hse/new-report.html',
-                {
-                    'report_form': report_form,
-                    'blasting_formset': blasting_formset,
-                    'drilling_formset': drilling_formset,
-                    'dump_formset': dump_formset,
-                    'loading_formset': loading_formset,
-                    'blocks': blocks,
-                    'drilling_machines': drilling_machines,
-                    'loading_machines': loading_machines,
-                    'dumps': dumps,
-                    'errors': errors,
-                }
-            )
+            return redirect('hsec:report_success')  # انتقال به صفحه موفقیت
+
     else:
-        print("GET request received. Initializing empty forms.")
+        # فرم‌ها برای درخواست GET
         report_form = DailyReportForm()
-        BlastingFormSet = modelformset_factory(BlastingDetail, form=BlastingDetailForm, extra=1)
-        DrillingFormSet = modelformset_factory(DrillingDetail, form=DrillingDetailForm, extra=1)
-        DumpFormSet = modelformset_factory(DumpDetail, form=DumpDetailForm, extra=1)
-        LoadingFormSet = modelformset_factory(LoadingDetail, form=LoadingDetailForm, extra=1)
+        blasting_formset = BlastingDetailFormset(queryset=BlastingDetail.objects.none(), prefix="blasting")
+        drilling_formset = DrillingDetailFormset(queryset=DrillingDetail.objects.none(), prefix="drilling")
+        dump_formset = DumpDetailFormset(queryset=DumpDetail.objects.none(), prefix="dump")
+        loading_formset = LoadingDetailFormset(queryset=LoadingDetail.objects.none(), prefix="loading")
+        inspection_form = InspectionDetailForm(prefix="inspection")
+        stoppage_form = StoppageDetailForm(prefix="stoppage")
+        followup_form = FollowupDetailForm(prefix="followup")
 
-        blasting_formset = BlastingFormSet(queryset=BlastingDetail.objects.none())
-        drilling_formset = DrillingFormSet(queryset=DrillingDetail.objects.none())
-        dump_formset = DumpFormSet(queryset=DumpDetail.objects.none())
-        loading_formset = LoadingFormSet(queryset=LoadingDetail.objects.none())
+    return render(request, 'dailyreport_hse/new-report.html', {
+        'report_form': report_form,
+        'blasting_formset': blasting_formset,
+        'drilling_formset': drilling_formset,
+        'dump_formset': dump_formset,
+        'loading_formset': loading_formset,
+        'inspection_form': inspection_form,
+        'stoppage_form': stoppage_form,
+        'followup_form': followup_form,
+    })
 
-        return render(
-            request,
-            'dailyreport_hse/new-report.html',
-            {
-                'report_form': report_form,
-                'blasting_formset': blasting_formset,
-                'drilling_formset': drilling_formset,
-                'dump_formset': dump_formset,
-                'loading_formset': loading_formset,
-                'blocks': blocks,
-                'drilling_machines': drilling_machines,
-                'loading_machines': loading_machines,
-                'dumps': dumps,
-            }
-        )
 
-@login_required
-def report_list(request):
-    reports = DailyReport.objects.filter(user=request.user)
-    print("Retrieved reports for user:", request.user, reports)
-    return render(request, 'daily_report/report_list.html', {'reports': reports})
-
-@login_required
-def report_detail(request, pk):
-    report = get_object_or_404(DailyReport, pk=pk, user=request.user)
-    print("Report details for pk:", pk, report)
-    return render(
-        request,
-        'daily_report/report_detail.html',
-        {
-            'report': report,
-            'blasting_details': report.blasting_details.all(),
-            'drilling_details': report.drilling_details.all(),
-            'dump_details': report.dump_details.all(),
-            'loading_details': report.loading_details.all(),
-        }
-    )
+def report_success(request):
+    """
+    صفحه تأیید موفقیت ارسال گزارش
+    """
+    return render(request, 'report_success.html', {
+        'message': 'گزارش شما با موفقیت ثبت شد.',
+    })
