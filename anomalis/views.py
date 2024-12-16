@@ -99,7 +99,7 @@ def anomalis(request):
                     url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
                 )
 
-                hse_group = Group.objects.get(name='مدیر HSE')
+                hse_group = get(name='مدیر HSE')
                 for user in hse_group.user_set.all():
                     Notification.objects.create(
                         user=user,
@@ -440,7 +440,7 @@ def anomaly_detail_view(request, pk):
                     )
 
                 # ارسال اعلان به مدیران HSE
-                hse_group = Group.objects.get(name='مدیر HSE')
+                hse_group = get(name='مدیر HSE')
                 for user in hse_group.user_set.all():
                     Notification.objects.create(
                         user=user,

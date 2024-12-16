@@ -19,7 +19,7 @@ def send_template_sms(mobile_number, template_id, parameters):
             parameters=parameters
         )
         if response.status_code == 200:
-            response_data = response.json()
+            response_data = response
             logger.debug(f"پاسخ SMS.ir: {response_data}")
             if response_data.get("IsSuccessful"):
                 logger.info(f"پیامک با قالب {template_id} به {mobile_number} با موفقیت ارسال شد.")

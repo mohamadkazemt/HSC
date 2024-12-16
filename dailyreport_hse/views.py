@@ -1,128 +1,113 @@
 from django.shortcuts import render, redirect
-from .forms import (
-    DailyReportForm,
-    BlastingDetailFormset,
-    DrillingDetailFormset,
-    DumpDetailFormset,
-    LoadingDetailFormset,
-    InspectionDetailForm,
-    StoppageDetailForm,
-    FollowupDetailForm,
+from django.contrib import messages
+from .models import (
+    DailyReport, BlastingDetail, DrillingDetail, DumpDetail,
+    LoadingDetail, InspectionDetail, StoppageDetail, FollowupDetail
 )
-from .models import DailyReport
+from BaseInfo.models import MiningBlock, MiningMachine, Dump
+from .forms import DailyReportForm
+from django.forms import modelformset_factory
 
 
 def create_daily_report(request):
     """
-    Manage daily report steps.
+    ویوی ایجاد گزارش روزانه برای افسران ایمنی.
     """
-    # Determine current step
-    step = int(request.GET.get("step", 1))
-
     if request.method == "POST":
-        # Update step based on form submission
-        step = int(request.POST.get("step", step))
+        # فرم اصلی DailyReport
+        report_form = DailyReportForm(request.POST)
 
-        if step == 1:
-            blasting_formset = BlastingDetailFormset(request.POST, queryset=None, prefix="blasting")
-            if blasting_formset.is_valid():
-                # Save blasting details
-                blasting_formset.save()
-                return redirect(f"{request.path}?step=2")
+        if report_form.is_valid():
+            # ذخیره گزارش اصلی
+            report = report_form.save(commit=False)
+            report.user = request.user  # تنظیم کاربر ایجاد کننده
+            report.save()
 
-        elif step == 2:
-            drilling_formset = DrillingDetailFormset(request.POST, queryset=None, prefix="drilling")
-            if drilling_formset.is_valid():
-                drilling_formset.save()
-                return redirect(f"{request.path}?step=3")
+            # ذخیره جزئیات آتشباری
+            for i in range(int(request.POST.get('blasting_count', 0))):
+                if request.POST.get(f'blasting_block_{i}'):
+                    BlastingDetail.objects.create(
+                        daily_report=report,
+                        block_id=request.POST.get(f'blasting_block_{i}'),
+                        description=request.POST.get(f'blasting_description_{i}', '')
+                    )
 
-        elif step == 3:
-            dump_formset = DumpDetailFormset(request.POST, queryset=None, prefix="dump")
-            if dump_formset.is_valid():
-                dump_formset.save()
-                return redirect(f"{request.path}?step=4")
+            # ذخیره جزئیات حفاری
+            for i in range(int(request.POST.get('drilling_count', 0))):
+                if request.POST.get(f'drilling_block_{i}') and request.POST.get(f'drilling_machine_{i}'):
+                    DrillingDetail.objects.create(
+                        daily_report=report,
+                        block_id=request.POST.get(f'drilling_block_{i}'),
+                        machine_id=request.POST.get(f'drilling_machine_{i}'),
+                        status=request.POST.get(f'drilling_status_{i}', 'safe')
+                    )
 
-        elif step == 4:
-            loading_formset = LoadingDetailFormset(request.POST, queryset=None, prefix="loading")
-            if loading_formset.is_valid():
-                loading_formset.save()
-                return redirect(f"{request.path}?step=5")
+            # ذخیره جزئیات تخلیه
+            for i in range(int(request.POST.get('dump_count', 0))):
+                if request.POST.get(f'dump_{i}'):
+                    DumpDetail.objects.create(
+                        daily_report=report,
+                        dump_id=request.POST.get(f'dump_{i}'),
+                        status=request.POST.get(f'dump_status_{i}', 'safe'),
+                        description=request.POST.get(f'dump_description_{i}', '')
+                    )
 
-        elif step == 5:
-            inspection_form = InspectionDetailForm(request.POST, prefix="inspection")
-            if inspection_form.is_valid():
-                inspection_form.save()
-                return redirect(f"{request.path}?step=6")
+            # ذخیره جزئیات بارگیری
+            for i in range(int(request.POST.get('loading_count', 0))):
+                if request.POST.get(f'loading_block_{i}') and request.POST.get(f'loading_machine_{i}'):
+                    LoadingDetail.objects.create(
+                        daily_report=report,
+                        block_id=request.POST.get(f'loading_block_{i}'),
+                        machine_id=request.POST.get(f'loading_machine_{i}'),
+                        status=request.POST.get(f'loading_status_{i}', 'safe')
+                    )
 
-        elif step == 6:
-            stoppage_form = StoppageDetailForm(request.POST, prefix="stoppage")
-            if stoppage_form.is_valid():
-                stoppage_form.save()
-                return redirect(f"{request.path}?step=7")
+            # ذخیره جزئیات بازرسی
+            if request.POST.get('inspection_status') == 'yes':
+                InspectionDetail.objects.create(
+                    daily_report=report,
+                    inspection_done=True,
+                    status=request.POST.get('inspection_status_detail', 'safe'),
+                    description=request.POST.get('inspection_description', '')
+                )
 
-        elif step == 7:
-            followup_form = FollowupDetailForm(request.POST, request.FILES, prefix="followup")
-            if followup_form.is_valid():
-                followup_form.save()
-                return redirect("hsec:report_success")
+            # ذخیره جزئیات توقفات
+            for i in range(int(request.POST.get('stoppage_count', 0))):
+                if request.POST.get(f'stoppage_reason_{i}') and request.POST.get(
+                        f'stoppage_start_{i}') and request.POST.get(f'stoppage_end_{i}'):
+                    StoppageDetail.objects.create(
+                        daily_report=report,
+                        reason=request.POST.get(f'stoppage_reason_{i}'),
+                        start_time=request.POST.get(f'stoppage_start_{i}'),
+                        end_time=request.POST.get(f'stoppage_end_{i}'),
+                        description=request.POST.get(f'stoppage_description_{i}', '')
+                    )
 
-    # Render the appropriate step
-    if step == 1:
-        blasting_formset = BlastingDetailFormset(queryset=None, prefix="blasting")
-        return render(request, 'dailyreport_hse/new-report.html', {
-            'step': step,
-            'blasting_formset': blasting_formset,
-        })
+            # ذخیره جزئیات پیگیری
+            for i in range(int(request.POST.get('followup_count', 0))):
+                FollowupDetail.objects.create(
+                    daily_report=report,
+                    description=request.POST.get(f'followup_description_{i}', ''),
+                    files=request.FILES.get(f'followup_files_{i}')
+                )
 
-    elif step == 2:
-        drilling_formset = DrillingDetailFormset(queryset=None, prefix="drilling")
-        return render(request, 'dailyreport_hse/new-report.html', {
-            'step': step,
-            'drilling_formset': drilling_formset,
-        })
+            messages.success(request, "گزارش روزانه با موفقیت ثبت شد!")
+            return redirect('dailyreport_hse:report_list')
 
-    elif step == 3:
-        dump_formset = DumpDetailFormset(queryset=None, prefix="dump")
-        return render(request, 'dailyreport_hse/new-report.html', {
-            'step': step,
-            'dump_formset': dump_formset,
-        })
-
-    elif step == 4:
-        loading_formset = LoadingDetailFormset(queryset=None, prefix="loading")
-        return render(request, 'dailyreport_hse/new-report.html', {
-            'step': step,
-            'loading_formset': loading_formset,
-        })
-
-    elif step == 5:
-        inspection_form = InspectionDetailForm(prefix="inspection")
-        return render(request, 'dailyreport_hse/new-report.html', {
-            'step': step,
-            'inspection_form': inspection_form,
-        })
-
-    elif step == 6:
-        stoppage_form = StoppageDetailForm(prefix="stoppage")
-        return render(request, 'dailyreport_hse/new-report.html', {
-            'step': step,
-            'stoppage_form': stoppage_form,
-        })
-
-    elif step == 7:
-        followup_form = FollowupDetailForm(prefix="followup")
-        return render(request, 'dailyreport_hse/new-report.html', {
-            'step': step,
-            'followup_form': followup_form,
-        })
-
-    return redirect(f"{request.path}?step=1")
+    else:
+        # داده‌های داینامیک برای فرم‌ها
+        report_form = DailyReportForm()
+        mining_blocks = MiningBlock.objects.all()
+        mining_machines = MiningMachine.objects.all()
+        dumps = Dump.objects.all()
+        print(mining_blocks)
+        print(mining_machines)
+        print(dumps)
 
 
-def report_success(request):
-    """
-    Success page
-    """
-    return render(request, 'report_success.html', {
-        'message': 'گزارش با موفقیت ثبت شد.',
+    return render(request, 'dailyreport_hse/create_shift_report.html', {
+        'report_form': report_form,
+        'mining_blocks': mining_blocks,
+        'mining_machines': mining_machines,
+        'dumps': dumps,
     })

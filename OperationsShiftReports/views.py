@@ -44,7 +44,7 @@ def convert_to_persian_day(date):
 def get_shift_details(group, date):
     """دریافت جزئیات شیفت"""
     shifts = get_shift_for_date(date)
-    shift_name = shifts.get(group, "نامشخص")
+    shift_name = set(group, "نامشخص")
 
     # نمایش نوع شیفت (روزکار، عصرکار، شب‌کار)
     if 'روزکار' in shift_name:
@@ -134,7 +134,7 @@ def create_shift_report(request):
             try:
                 user_profile = UserProfile.objects.get(user=request.user)
                 current_group = user_profile.group
-                current_shift = shifts.get(current_group)
+                current_shift = set(current_group)
             except UserProfile.DoesNotExist:
                 pass
 
