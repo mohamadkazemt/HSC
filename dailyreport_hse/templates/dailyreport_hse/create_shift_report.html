@@ -1,0 +1,292 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% block style %}
+
+
+{% endblock %}
+
+{% block content %}
+    <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+        <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+            {% include 'header.html' %}
+            <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+                {% include 'sidebar.html' %}
+                <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                    <div class="d-flex flex-column flex-column-fluid">
+                        {% include 'toolbar.html' %}
+                        <div id="kt_app_content" class="app-content flex-column-fluid">
+                            <div id="kt_app_content_container" class="app-container container-fluid">
+                                <div class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10" id="kt_create_account_stepper">
+                                    <div id="kt_create_account_stepper" class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10">
+
+                                        <!-- ناوبری مراحل -->
+                                        <div class="card d-flex justify-content-center justify-content-xl-start flex-row-auto w-100 w-xl-300px w-xxl-400px">
+                                            <div class="card-body px-6 px-lg-10 px-xxl-15 py-20">
+                                                <div class="stepper-nav">
+                                                    <!-- مرحله 1: جزئیات آتشباری -->
+                                                    <div class="stepper-item current" data-kt-stepper-element="nav">
+                                                        <div class="stepper-wrapper">
+                                                            <div class="stepper-icon w-40px h-40px">
+                                                                <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                                <span class="stepper-number">1</span>
+                                                            </div>
+                                                            <div class="stepper-label">
+                                                                <h3 class="stepper-title">جزئیات آتشباری</h3>
+                                                                <div class="stepper-desc fw-semibold">اطلاعات مربوط به انفجار</div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="stepper-line h-40px"></div>
+                                                    </div>
+
+                                                    <!-- مرحله 2: جزئیات حفاری -->
+                                                    <div class="stepper-item" data-kt-stepper-element="nav">
+                                                        <div class="stepper-wrapper">
+                                                            <div class="stepper-icon w-40px h-40px">
+                                                                <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                                <span class="stepper-number">2</span>
+                                                            </div>
+                                                            <div class="stepper-label">
+                                                                <h3 class="stepper-title">جزئیات حفاری</h3>
+                                                                <div class="stepper-desc fw-semibold">وضعیت بلوک‌ها و دستگاه‌ها</div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="stepper-line h-40px"></div>
+                                                    </div>
+
+                                                    <!-- مرحله 3: جزئیات بارگیری -->
+                                                    <div class="stepper-item" data-kt-stepper-element="nav">
+                                                        <div class="stepper-wrapper">
+                                                            <div class="stepper-icon w-40px h-40px">
+                                                                <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                                <span class="stepper-number">3</span>
+                                                            </div>
+                                                            <div class="stepper-label">
+                                                                <h3 class="stepper-title">جزئیات بارگیری</h3>
+                                                                <div class="stepper-desc fw-semibold">اطلاعات مربوط به بارگیری</div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="stepper-line h-40px"></div>
+                                                    </div>
+
+                                                    <!-- مرحله 4: جزئیات تخلیه -->
+                                                    <div class="stepper-item" data-kt-stepper-element="nav">
+                                                        <div class="stepper-wrapper">
+                                                            <div class="stepper-icon w-40px h-40px">
+                                                                <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                                <span class="stepper-number">4</span>
+                                                            </div>
+                                                            <div class="stepper-label">
+                                                                <h3 class="stepper-title">جزئیات تخلیه</h3>
+                                                                <div class="stepper-desc fw-semibold">اطلاعات تخلیه مواد</div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="stepper-line h-40px"></div>
+                                                    </div>
+
+                                                    <!-- مرحله 5: بازرسی -->
+                                                    <div class="stepper-item" data-kt-stepper-element="nav">
+                                                        <div class="stepper-wrapper">
+                                                            <div class="stepper-icon w-40px h-40px">
+                                                                <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                                <span class="stepper-number">5</span>
+                                                            </div>
+                                                            <div class="stepper-label">
+                                                                <h3 class="stepper-title">بازرسی</h3>
+                                                                <div class="stepper-desc fw-semibold">جزئیات بازدید</div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="stepper-line h-40px"></div>
+                                                    </div>
+
+                                                    <!-- مرحله 6: توقفات -->
+                                                    <div class="stepper-item" data-kt-stepper-element="nav">
+                                                        <div class="stepper-wrapper">
+                                                            <div class="stepper-icon w-40px h-40px">
+                                                                <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                                <span class="stepper-number">6</span>
+                                                            </div>
+                                                            <div class="stepper-label">
+                                                                <h3 class="stepper-title">توقفات</h3>
+                                                                <div class="stepper-desc fw-semibold">علت توقف و زمان‌بندی</div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="stepper-line h-40px"></div>
+                                                    </div>
+
+                                                    <!-- مرحله 7: پیگیری -->
+                                                    <div class="stepper-item" data-kt-stepper-element="nav">
+                                                        <div class="stepper-wrapper">
+                                                            <div class="stepper-icon w-40px h-40px">
+                                                                <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                                <span class="stepper-number">7</span>
+                                                            </div>
+                                                            <div class="stepper-label">
+                                                                <h3 class="stepper-title">پیگیری</h3>
+                                                                <div class="stepper-desc fw-semibold">اطلاعات مربوط به پیگیری</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+
+
+                                        <!-- محتوای فرم -->
+                                        <div class="card d-flex flex-row-fluid flex-center">
+                                            <form class="card-body py-20 w-100 mw-xl-700px px-9" method="post" novalidate="novalidate" action="{% url 'operations:create_shift_report' %}" id="kt_create_account_form" enctype="multipart/form-data">
+
+                                                {% csrf_token %}
+
+                                                <!-- مرحله 1: جزئیات آتشباری -->
+                                                <div class="current" data-kt-stepper-element="content">
+                                                    <h2 class="fw-bold text-gray-900 mb-5">جزئیات آتشباری</h2>
+                                                    <label class="form-label required">آیا انفجار انجام شد؟</label>
+                                                    <select class="form-select mb-5" id="blasting_status" name="explosion_occurred">
+                                                        <option value="no">خیر</option>
+                                                        <option value="yes">بله</option>
+                                                    </select>
+                                                    <div id="blasting_details" style="display: none;">
+                                                        <label class="form-label">بلوک:</label>
+                                                        <select class="form-select mb-5" id="blasting_block" name="blasting_block">
+                                                            <option>انتخاب بلوک</option>
+                                                            {% for block in mining_blocks %}
+                                                                <option value="{{ block.id }}">{{ block.block_name }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                        <label class="form-label">توضیحات:</label>
+                                                        <textarea class="form-control mb-5" id="blasting_description" name="blasting_description" rows="3"></textarea>
+                                                        <button type="button" class="btn btn-primary" id="add_blasting_detail" onclick="addBlastingDetail()">افزودن</button>
+                                                        <ul id="blasting_items"></ul>
+                                                    </div>
+                                                </div>
+
+                                                <!-- مرحله 2: جزئیات حفاری -->
+                                                <div data-kt-stepper-element="content">
+                                                    <h2 class="fw-bold text-gray-900 mb-5">جزئیات حفاری</h2>
+                                                    <label class="form-label required">بلوک حفاری:</label>
+                                                    <select class="form-select mb-5" id="drilling_block" name="drilling_block">
+                                                        {% for block in mining_blocks %}
+                                                            <option value="{{ block.id }}">{{ block.block_name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                    <label class="form-label required">دستگاه حفاری:</label>
+                                                    <select class="form-select mb-5" id="drilling_machine" name="drilling_machine">
+                                                        {% for machine in mining_machines %}
+                                                            <option value="{{ machine.id }}">{{ machine.machine_type.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                    <label class="form-label">وضعیت:</label>
+                                                    <select class="form-select mb-5" id="drilling_status" name="drilling_status">
+                                                        <option value="safe">ایمن</option>
+                                                        <option value="unsafe">ناایمن</option>
+                                                    </select>
+                                                    <button type="button" class="btn btn-primary" id="add_drilling_detail" onclick="addDrillingDetail()">افزودن</button>
+                                                    <ul id="drilling_items"></ul>
+                                                </div>
+
+                                                <!-- مرحله 3: جزئیات بارگیری -->
+                                                <div data-kt-stepper-element="content">
+                                                    <h2 class="fw-bold text-gray-900 mb-5">جزئیات بارگیری</h2>
+                                                    <label class="form-label required">بلوک بارگیری:</label>
+                                                    <select class="form-select mb-5" id="loading_block" name="loading_block">
+                                                        {% for block in mining_blocks %}
+                                                            <option value="{{ block.id }}">{{ block.block_name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                    <label class="form-label required">دستگاه بارگیری:</label>
+                                                    <select class="form-select mb-5" id="loading_machine" name="loading_machine">
+                                                        {% for machine in mining_machines %}
+                                                            <option value="{{ machine.id }}">{{ machine.workshop_code }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                    <label class="form-label required">وضعیت بارگیری:</label>
+                                                    <select class="form-select mb-5" id="loading_status" name="loading_status">
+                                                        <option value="safe">ایمن</option>
+                                                        <option value="unsafe">ناایمن</option>
+                                                    </select>
+                                                    <button type="button" class="btn btn-primary" id="add_loading_detail" onclick="addLoadingDetail()">افزودن</button>
+                                                    <ul id="loading_items"></ul>
+                                                </div>
+
+                                                <!-- مرحله 4: جزئیات تخلیه -->
+                                                <div data-kt-stepper-element="content">
+                                                    <h2 class="fw-bold text-gray-900 mb-5">جزئیات تخلیه</h2>
+                                                    <label class="form-label required">دامپ:</label>
+                                                    <select class="form-select mb-5" id="dump_block" name="dump">
+                                                        {% for dump in dumps %}
+                                                            <option value="{{ dump.id }}">{{ dump.dump_name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                    <label class="form-label required">وضعیت بارگیری:</label>
+                                                    <select class="form-select mb-5" id="dump_status" name="dump_status">
+                                                        <option value="safe">ایمن</option>
+                                                        <option value="unsafe">ناایمن</option>
+                                                    </select>
+                                                    <label class="form-label">توضیحات:</label>
+                                                    <textarea class="form-control mb-5" id="dump_description" name="dump_description" rows="3"></textarea>
+                                                    <button type="button" class="btn btn-primary" id="add_dump_detail" onclick="addDumpDetail()">افزودن</button>
+                                                    <ul id="dump_items"></ul>
+                                                </div>
+
+                                                <!-- مرحله 5: بازرسی -->
+                                                <div data-kt-stepper-element="content">
+                                                    <h2 class="fw-bold text-gray-900 mb-5">جزئیات بازدید از تعمیرگاه</h2>
+                                                    <label class="form-label required">آیا بازدید انجام شد؟</label>
+                                                    <select class="form-select mb-5" id="inspection_status" name="explosion_occurred">
+                                                        <option value="no">خیر</option>
+                                                        <option value="yes">بله</option>
+                                                    </select>
+                                                    <label class="form-label required">وضعیت بازدید:</label>
+                                                    <select class="form-select mb-5" id="inspection_status" name="inspection_status">
+                                                        <option value="safe">ایمن</option>
+                                                        <option value="unsafe">ناایمن</option>
+                                                    </select>
+                                                    <label class="form-label">توضیحات:</label>
+                                                    <textarea class="form-control mb-5" id="inspection_description" name="inspection_description" rows="3"></textarea>
+                                                </div>
+
+                                                <!-- مرحله 6: توقفات -->
+                                                <div data-kt-stepper-element="content">
+                                                    <h2 class="fw-bold text-gray-900 mb-5">توقفات</h2>
+                                                    <label class="form-label required">علت توقف:</label>
+                                                    <textarea class="form-control mb-5" id="stoppage_reason" name="stoppage_reason" rows="3"></textarea>
+                                                    <button type="button" class="btn btn-primary" id="add_stoppage_detail" onclick="addStoppageDetail()">افزودن</button>
+                                                    <ul id="stoppage_items"></ul>
+                                                </div>
+
+                                                <!-- مرحله 7: پیگیری -->
+                                                <div data-kt-stepper-element="content">
+                                                    <h2 class="fw-bold text-gray-900 mb-5">پیگیری</h2>
+                                                    <label class="form-label required">توضیحات:</label>
+                                                    <textarea class="form-control mb-5" id="followup_description" name="followup_description" rows="3"></textarea>
+                                                    <button type="button" class="btn btn-primary" id="add_followup_detail" onclick="addFollowupDetail()">افزودن</button>
+                                                    <ul id="followup_items"></ul>
+                                                </div>
+
+                                                <!-- دکمه‌های کنترل -->
+                                                <div class="d-flex flex-stack pt-10">
+                                                    <button type="button" class="btn btn-light-primary" data-kt-stepper-action="previous">مرحله قبل</button>
+                                                    <button type="button" class="btn btn-primary" data-kt-stepper-action="next">مرحله بعد</button>
+                                                    <button type="submit" class="btn btn-success" data-kt-stepper-action="submit">ثبت گزارش</button>
+                                                </div>
+                                            </form>
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                    {% include 'footer.html' %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'assets/js/dailyreporthse.js' %}"></script>
+{% endblock %}

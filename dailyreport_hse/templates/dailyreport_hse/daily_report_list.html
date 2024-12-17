@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>لیست گزارش‌های روزانه</h1>
+<a href="{% url 'dailyreport_hse:report_create' %}" class="btn btn-primary">ایجاد گزارش جدید</a>
+<ul>
+    {% for report in reports %}
+    <li>
+        <a href="{% url 'dailyreport_hse:report_detail' report.pk %}">
+            گزارش {{ report.id }} - {{ report.created_at }}
+        </a>
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}

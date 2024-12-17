@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>گزارش {{ report.id }}</h1>
+<p>تاریخ ایجاد: {{ report.created_at }}</p>
+<p>گروه: {{ report.user_group }}</p>
+<p>وضعیت کامل: {{ report.is_complete }}</p>
+<hr>
+<h2>جزئیات</h2>
+<a href="{% url 'dailyreport_hse:blasting_add' report.pk %}">افزودن آتشباری</a><br>
+<a href="{% url 'dailyreport_hse:drilling_add' report.pk %}">افزودن حفاری</a><br>
+<a href="{% url 'dailyreport_hse:dump_add' report.pk %}">افزودن دامپ</a><br>
+<a href="{% url 'dailyreport_hse:loading_add' report.pk %}">افزودن بارگیری</a><br>
+<a href="{% url 'dailyreport_hse:followup_add' report.pk %}">افزودن پیگیری</a><br>
+<a href="{% url 'dailyreport_hse:stoppage_add' report.pk %}">افزودن توقف</a><br>
+<a href="{% url 'dailyreport_hse:inspection_add' report.pk %}">افزودن بازرسی</a>
+{% endblock %}
