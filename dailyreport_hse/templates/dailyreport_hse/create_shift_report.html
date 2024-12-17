@@ -135,7 +135,8 @@
 
                                         <!-- محتوای فرم -->
                                         <div class="card d-flex flex-row-fluid flex-center">
-                                            <form class="card-body py-20 w-100 mw-xl-700px px-9" method="post" novalidate="novalidate" action="{% url 'operations:create_shift_report' %}" id="kt_create_account_form" enctype="multipart/form-data">
+                                            <form class="card-body py-20 w-100 mw-xl-700px px-9" method="post" novalidate="novalidate" action="{% url 'dailyreport_hse:create_daily_report' %}" id="kt_create_account_form" enctype="multipart/form-data">
+
 
                                                 {% csrf_token %}
 
@@ -158,7 +159,19 @@
                                                         <label class="form-label">توضیحات:</label>
                                                         <textarea class="form-control mb-5" id="blasting_description" name="blasting_description" rows="3"></textarea>
                                                         <button type="button" class="btn btn-primary" id="add_blasting_detail" onclick="addBlastingDetail()">افزودن</button>
-                                                        <ul id="blasting_items"></ul>
+                                                        <div class="table-responsive mt-3">
+                                                            <table class="table table-striped table-bordered align-middle" id="blasting_table">
+                                                                <thead>
+                                                                <tr class="text-center">
+                                                                    <th>وضعیت</th>
+                                                                    <th>بلوک</th>
+                                                                    <th>توضیحات</th>
+                                                                    <th>عملیات</th>
+                                                                </tr>
+                                                                </thead>
+                                                                <tbody></tbody>
+                                                            </table>
+                                                        </div>
                                                     </div>
                                                 </div>
 
@@ -183,7 +196,19 @@
                                                         <option value="unsafe">ناایمن</option>
                                                     </select>
                                                     <button type="button" class="btn btn-primary" id="add_drilling_detail" onclick="addDrillingDetail()">افزودن</button>
-                                                    <ul id="drilling_items"></ul>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-striped table-bordered align-middle" id="drilling_table">
+                                                            <thead>
+                                                            <tr class="text-center">
+                                                                <th>بلوک</th>
+                                                                <th>دستگاه</th>
+                                                                <th>وضعیت</th>
+                                                                <th>عملیات</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody></tbody>
+                                                        </table>
+                                                    </div>
                                                 </div>
 
                                                 <!-- مرحله 3: جزئیات بارگیری -->
@@ -207,7 +232,20 @@
                                                         <option value="unsafe">ناایمن</option>
                                                     </select>
                                                     <button type="button" class="btn btn-primary" id="add_loading_detail" onclick="addLoadingDetail()">افزودن</button>
-                                                    <ul id="loading_items"></ul>
+                                                    <div class="table-responsive mt-3">
+                                                        <table class="table table-striped table-bordered align-middle" id="loading_table">
+                                                            <thead>
+                                                            <tr class="text-center">
+                                                                <th>بلوک</th>
+                                                                <th>دستگاه</th>
+                                                                <th>وضعیت</th>
+                                                                <th>عملیات</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody></tbody>
+                                                        </table>
+                                                    </div>
+
                                                 </div>
 
                                                 <!-- مرحله 4: جزئیات تخلیه -->
@@ -227,7 +265,20 @@
                                                     <label class="form-label">توضیحات:</label>
                                                     <textarea class="form-control mb-5" id="dump_description" name="dump_description" rows="3"></textarea>
                                                     <button type="button" class="btn btn-primary" id="add_dump_detail" onclick="addDumpDetail()">افزودن</button>
-                                                    <ul id="dump_items"></ul>
+                                                    <div class="table-responsive mt-3">
+                                                        <table class="table table-striped table-bordered align-middle" id="dump_table">
+                                                            <thead>
+                                                            <tr class="text-center">
+                                                                <th>نام دمپ</th>
+                                                                <th>وضعیت</th>
+                                                                <th>توضیحات</th>
+                                                                <th>عملیات</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody></tbody>
+                                                        </table>
+                                                    </div>
+
                                                 </div>
 
                                                 <!-- مرحله 5: بازرسی -->
@@ -250,36 +301,61 @@
                                                     </div>
                                                 </div>
 
-                                                    <!-- مرحله 6: توقفات -->
-                                                    <div data-kt-stepper-element="content">
-                                                        <h2 class="fw-bold text-gray-900 mb-5">توقفات</h2>
-                                                        <label class="form-label required">علت توقف:</label>
-                                                        <textarea class="form-control mb-5" id="stoppage_reason" name="stoppage_reason" rows="3"></textarea>
-                                                        <label class="form-label required">ساعت شروع توقف:</label>
-                                                        <input class="form-control mb-5" id="stoppage_start" name="stoppage_start" type="time" />
-                                                        <label class="form-label required">ساعت پایان توقف:</label>
-                                                        <input class="form-control mb-5" id="stoppage_end" name="stoppage_end" type="time" />
-                                                        <button type="button" class="btn btn-primary" id="add_stoppage_detail" onclick="addStoppageDetail()">افزودن</button>
-                                                        <ul id="stoppage_items"></ul>
+                                                <!-- مرحله 6: توقفات -->
+                                                <div data-kt-stepper-element="content">
+                                                    <h2 class="fw-bold text-gray-900 mb-5">توقفات</h2>
+                                                    <label class="form-label required">علت توقف:</label>
+                                                    <textarea class="form-control mb-5" id="stoppage_reason" name="stoppage_reason" rows="3"></textarea>
+                                                    <label class="form-label required">ساعت شروع توقف:</label>
+                                                    <input class="form-control mb-5" id="stoppage_start" name="stoppage_start" type="time" />
+                                                    <label class="form-label required">ساعت پایان توقف:</label>
+                                                    <input class="form-control mb-5" id="stoppage_end" name="stoppage_end" type="time" />
+                                                    <button type="button" class="btn btn-primary" id="add_stoppage_detail" onclick="addStoppageDetail()">افزودن</button>
+                                                    <div class="table-responsive mt-3">
+                                                        <table class="table table-striped table-bordered align-middle" id="stoppage_table">
+                                                            <thead>
+                                                            <tr class="text-center">
+                                                                <th>علت توقف</th>
+                                                                <th>ساعت شروع</th>
+                                                                <th>ساعت پایان</th>
+                                                                <th>عملیات</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody></tbody>
+                                                        </table>
                                                     </div>
 
-                                                    <!-- مرحله 7: پیگیری -->
-                                                    <div data-kt-stepper-element="content">
-                                                        <h2 class="fw-bold text-gray-900 mb-5">پیگیری</h2>
-                                                        <label class="form-label required">توضیحات:</label>
-                                                        <textarea class="form-control mb-5" id="followup_description" name="followup_description" rows="3"></textarea>
-                                                        <label class="form-label required">فایل‌ها:</label>
-                                                        <input class="form-control mb-5" id="followup_files" name="followup_files" type="file" multiple />
-                                                        <button type="button" class="btn btn-primary" id="add_followup_detail" onclick="addFollowupDetail()">افزودن</button>
-                                                        <ul id="followup_items"></ul>
+                                                </div>
+
+                                                <!-- مرحله 7: پیگیری -->
+                                                <div data-kt-stepper-element="content">
+                                                    <h2 class="fw-bold text-gray-900 mb-5">پیگیری</h2>
+                                                    <label class="form-label required">توضیحات:</label>
+                                                    <textarea class="form-control mb-5" id="followup_description" name="followup_description" rows="3"></textarea>
+                                                    <label class="form-label required">فایل‌ها:</label>
+                                                    <input class="form-control mb-5" id="followup_files" name="followup_files" type="file" multiple />
+                                                    <button type="button" class="btn btn-primary" id="add_followup_detail" onclick="addFollowupDetail()">افزودن</button>
+                                                    <div class="table-responsive mt-3">
+                                                        <table class="table table-striped table-bordered align-middle" id="followup_table">
+                                                            <thead>
+                                                            <tr class="text-center">
+                                                                <th>توضیحات</th>
+                                                                <th>فایل‌ها</th>
+                                                                <th>عملیات</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody></tbody>
+                                                        </table>
                                                     </div>
 
-                                                    <!-- دکمه‌های کنترل -->
-                                                    <div class="d-flex flex-stack pt-10">
-                                                        <button type="button" class="btn btn-light-primary" data-kt-stepper-action="previous">مرحله قبل</button>
-                                                        <button type="button" class="btn btn-primary" data-kt-stepper-action="next">مرحله بعد</button>
-                                                        <button type="submit" class="btn btn-success" data-kt-stepper-action="submit">ثبت گزارش</button>
-                                                    </div>
+                                                </div>
+
+                                                <!-- دکمه‌های کنترل -->
+                                                <div class="d-flex flex-stack pt-10">
+                                                    <button type="button" class="btn btn-light-primary" data-kt-stepper-action="previous">مرحله قبل</button>
+                                                    <button type="button" class="btn btn-primary" data-kt-stepper-action="next">مرحله بعد</button>
+                                                    <button type="submit" class="btn btn-success" data-kt-stepper-action="submit">ثبت گزارش</button>
+                                                </div>
                                             </form>
                                         </div>
 
@@ -297,5 +373,11 @@
 {% endblock %}
 
 {% block extra_js %}
+    <script>
+        const miningBlocks = {{ mining_blocks|safe }};
+        const miningMachines = {{ mining_machines|safe }};
+        const dumps = {{ dumps|safe }};
+    </script>
+
     <script src="{% static 'assets/js/dailyreporthse.js' %}"></script>
 {% endblock %}

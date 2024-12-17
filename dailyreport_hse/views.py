@@ -7,104 +7,160 @@ from .models import (
 )
 from BaseInfo.models import MiningBlock, MiningMachine, Dump
 from .forms import DailyReportForm
-from django.forms import modelformset_factory
+import json
+import logging
+
+# تنظیم لاگر برای مدیریت خطا و دیباگ
+logger = logging.getLogger(__name__)
 
 @login_required
 def create_daily_report(request):
     """
     ویوی ایجاد گزارش روزانه برای افسران ایمنی.
     """
+    # داده‌های داینامیک برای فرم‌ها
+    report_form = DailyReportForm()
+    mining_blocks = list(MiningBlock.objects.filter(is_active=True).values('id', 'block_name'))
+    mining_machines = list(MiningMachine.objects.filter(is_active=True).values('id', 'workshop_code', 'machine_type__name'))
+    dumps = list(Dump.objects.filter(is_active=True).values('id', 'dump_name'))
+
     if request.method == "POST":
-        # فرم اصلی DailyReport
-        report_form = DailyReportForm(request.POST)
+        try:
+            # فرم اصلی DailyReport
+            report_data = request.POST.copy()
+            report_data['shift'] = request.user.profile.shift  # اضافه کردن شیفت کاربر لاگین شده به داده‌ها
+            report_form = DailyReportForm(report_data)
 
-        if report_form.is_valid():
-            # ذخیره گزارش اصلی
-            report = report_form.save(commit=False)
-            report.user = request.user  # تنظیم کاربر ایجاد کننده
-            report.save()
+            logger.debug("POST data: %s", request.POST)
+            logger.debug("FILES data: %s", request.FILES)
 
-            # ذخیره جزئیات آتشباری
-            for i in range(int(request.POST.get('blasting_count', 0))):
-                if request.POST.get(f'blasting_block_{i}'):
-                    BlastingDetail.objects.create(
-                        daily_report=report,
-                        block_id=request.POST.get(f'blasting_block_{i}'),
-                        description=request.POST.get(f'blasting_description_{i}', '')
-                    )
+            if report_form.is_valid():
+                # ذخیره گزارش اصلی
+                report = report_form.save(commit=False)
+                report.user = request.user  # تنظیم کاربر ایجاد کننده
+                report.save()
+                logger.info("گزارش اصلی با موفقیت ذخیره شد. ID: %s", report.id)
 
-            # ذخیره جزئیات حفاری
-            for i in range(int(request.POST.get('drilling_count', 0))):
-                if request.POST.get(f'drilling_block_{i}') and request.POST.get(f'drilling_machine_{i}'):
-                    DrillingDetail.objects.create(
-                        daily_report=report,
-                        block_id=request.POST.get(f'drilling_block_{i}'),
-                        machine_id=request.POST.get(f'drilling_machine_{i}'),
-                        status=request.POST.get(f'drilling_status_{i}', 'safe')
-                    )
+                # ذخیره جزئیات آتشباری از JSON
+                blasting_details_json = request.POST.get('blasting_details')
+                if blasting_details_json:
+                    try:
+                        blasting_details = json.loads(blasting_details_json)
+                        for detail in blasting_details:
+                            BlastingDetail.objects.create(
+                                daily_report=report,
+                                block_id=detail.get('block_id'),
+                                description=detail.get('description', '')
+                            )
+                        logger.info("جزئیات آتشباری ذخیره شد.")
+                    except json.JSONDecodeError as e:
+                        logger.error("خطا در پردازش JSON آتشباری: %s", e)
 
-            # ذخیره جزئیات تخلیه
-            for i in range(int(request.POST.get('dump_count', 0))):
-                if request.POST.get(f'dump_{i}'):
-                    DumpDetail.objects.create(
-                        daily_report=report,
-                        dump_id=request.POST.get(f'dump_{i}'),
-                        status=request.POST.get(f'dump_status_{i}', 'safe'),
-                        description=request.POST.get(f'dump_description_{i}', '')
-                    )
+                # ذخیره جزئیات حفاری از JSON
+                drilling_details_json = request.POST.get('drilling_details')
+                if drilling_details_json:
+                    try:
+                        drilling_details = json.loads(drilling_details_json)
+                        for detail in drilling_details:
+                            DrillingDetail.objects.create(
+                                daily_report=report,
+                                block_id=detail.get('block_id'),
+                                machine_id=detail.get('machine_id'),
+                                status=detail.get('status', 'safe')
+                            )
+                        logger.info("جزئیات حفاری ذخیره شد.")
+                    except json.JSONDecodeError as e:
+                        logger.error("خطا در پردازش JSON حفاری: %s", e)
 
-            # ذخیره جزئیات بارگیری
-            for i in range(int(request.POST.get('loading_count', 0))):
-                if request.POST.get(f'loading_block_{i}') and request.POST.get(f'loading_machine_{i}'):
-                    LoadingDetail.objects.create(
-                        daily_report=report,
-                        block_id=request.POST.get(f'loading_block_{i}'),
-                        machine_id=request.POST.get(f'loading_machine_{i}'),
-                        status=request.POST.get(f'loading_status_{i}', 'safe')
-                    )
+                # ذخیره جزئیات بارگیری از JSON
+                loading_details_json = request.POST.get('loading_details')
+                if loading_details_json:
+                    try:
+                        loading_details = json.loads(loading_details_json)
+                        for detail in loading_details:
+                            LoadingDetail.objects.create(
+                                daily_report=report,
+                                block_id=detail.get('block_id'),
+                                machine_id=detail.get('machine_id'),
+                                status=detail.get('status', 'safe')
+                            )
+                        logger.info("جزئیات بارگیری ذخیره شد.")
+                    except json.JSONDecodeError as e:
+                        logger.error("خطا در پردازش JSON بارگیری: %s", e)
 
-            # ذخیره جزئیات بازرسی
-            if request.POST.get('inspection_status') == 'yes':
-                InspectionDetail.objects.create(
-                    daily_report=report,
-                    inspection_done=True,
-                    status=request.POST.get('inspection_status_detail', 'safe'),
-                    description=request.POST.get('inspection_description', '')
-                )
+                # ذخیره جزئیات تخلیه از JSON
+                dump_details_json = request.POST.get('dump_details')
+                if dump_details_json:
+                    try:
+                        dump_details = json.loads(dump_details_json)
+                        for detail in dump_details:
+                            DumpDetail.objects.create(
+                                daily_report=report,
+                                dump_id=detail.get('dump_id'),
+                                status=detail.get('status', 'safe'),
+                                description=detail.get('description', '')
+                            )
+                        logger.info("جزئیات تخلیه ذخیره شد.")
+                    except json.JSONDecodeError as e:
+                        logger.error("خطا در پردازش JSON تخلیه: %s", e)
 
-            # ذخیره جزئیات توقفات
-            for i in range(int(request.POST.get('stoppage_count', 0))):
-                if request.POST.get(f'stoppage_reason_{i}') and request.POST.get(
-                        f'stoppage_start_{i}') and request.POST.get(f'stoppage_end_{i}'):
-                    StoppageDetail.objects.create(
-                        daily_report=report,
-                        reason=request.POST.get(f'stoppage_reason_{i}'),
-                        start_time=request.POST.get(f'stoppage_start_{i}'),
-                        end_time=request.POST.get(f'stoppage_end_{i}'),
-                        description=request.POST.get(f'stoppage_description_{i}', '')
-                    )
+                # ذخیره جزئیات بازرسی از JSON
+                inspection_details_json = request.POST.get('inspection_details')
+                if inspection_details_json:
+                    try:
+                        inspection_details = json.loads(inspection_details_json)
+                        for detail in inspection_details:
+                            InspectionDetail.objects.create(
+                                daily_report=report,
+                                inspection_done=detail.get('inspection_done', False),
+                                status=detail.get('status', 'safe'),
+                                description=detail.get('description', '')
+                            )
+                        logger.info("جزئیات بازرسی ذخیره شد.")
+                    except json.JSONDecodeError as e:
+                        logger.error("خطا در پردازش JSON بازرسی: %s", e)
 
-            # ذخیره جزئیات پیگیری
-            for i in range(int(request.POST.get('followup_count', 0))):
-                FollowupDetail.objects.create(
-                    daily_report=report,
-                    description=request.POST.get(f'followup_description_{i}', ''),
-                    files=request.FILES.get(f'followup_files_{i}')
-                )
+                # ذخیره جزئیات توقفات از JSON
+                stoppage_details_json = request.POST.get('stoppage_details')
+                if stoppage_details_json:
+                    try:
+                        stoppage_details = json.loads(stoppage_details_json)
+                        for detail in stoppage_details:
+                            StoppageDetail.objects.create(
+                                daily_report=report,
+                                reason=detail.get('reason'),
+                                start_time=detail.get('start_time'),
+                                end_time=detail.get('end_time'),
+                                description=detail.get('description', '')
+                            )
+                        logger.info("جزئیات توقفات ذخیره شد.")
+                    except json.JSONDecodeError as e:
+                        logger.error("خطا در پردازش JSON توقفات: %s", e)
 
-            messages.success(request, "گزارش روزانه با موفقیت ثبت شد!")
-            return redirect('dailyreport_hse:report_list')
+                # ذخیره جزئیات پیگیری از JSON
+                followup_details_json = request.POST.get('followup_details')
+                if followup_details_json:
+                    try:
+                        followup_details = json.loads(followup_details_json)
+                        for detail in followup_details:
+                            FollowupDetail.objects.create(
+                                daily_report=report,
+                                description=detail.get('description', ''),
+                                files=request.FILES.get(detail.get('file_input_name'))
+                            )
+                        logger.info("جزئیات پیگیری ذخیره شد.")
+                    except json.JSONDecodeError as e:
+                        logger.error("خطا در پردازش JSON پیگیری: %s", e)
 
-    else:
-        # داده‌های داینامیک برای فرم‌ها
-        report_form = DailyReportForm()
-        mining_blocks = MiningBlock.objects.all()
-        mining_machines = MiningMachine.objects.all()
-        dumps = Dump.objects.all()
-        print(mining_blocks)
-        print(mining_machines)
-        print(dumps)
+                messages.success(request, "گزارش روزانه با موفقیت ثبت شد!")
+                return redirect('dailyreport_hse:report_list')
+            else:
+                logger.warning("فرم DailyReport نامعتبر است: %s", report_form.errors)
+                messages.error(request, "خطا در ثبت فرم. لطفاً مقادیر را به درستی وارد کنید.")
 
+        except Exception as e:
+            logger.exception("خطای غیرمنتظره در پردازش فرم: %s", e)
+            messages.error(request, "یک خطای غیرمنتظره رخ داد. لطفاً با مدیر سیستم تماس بگیرید.")
 
     return render(request, 'dailyreport_hse/create_shift_report.html', {
         'report_form': report_form,

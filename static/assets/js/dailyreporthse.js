@@ -38,6 +38,7 @@ document.addEventListener("DOMContentLoaded", function () {
         allowClear: true
     });
 
+
     /** جزئیات آتشباری */
     document.getElementById("blasting_status").addEventListener("change", function () {
         const blastingDetails = document.getElementById("blasting_details");
@@ -45,71 +46,166 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     window.addBlastingDetail = function () {
-        const block = document.querySelector('[name="blasting_block"]').value;
-        const description = document.querySelector('[name="blasting_description"]').value;
+        // بررسی مجدد برای اطمینان از نمایش المان
+        const blastingDetails = document.getElementById("blasting_details");
+        if (blastingDetails.style.display !== "block") {
+            alert("لطفاً ابتدا وضعیت آتشباری را روی 'بله' قرار دهید.");
+            return;
+        }
 
-        if (!block) {
+        // انتخاب مقادیر از فرم
+        const explosionOccurred = document.getElementById("blasting_status").value;
+        const explosionStatus = explosionOccurred === "yes" ? "انفجار انجام شد" : "انفجار انجام نشد";
+        const blockSelect = document.getElementById("blasting_block");
+        const blockId = blockSelect.value;
+        const blockName = blockSelect.options[blockSelect.selectedIndex].text;
+        const description = document.getElementById("blasting_description").value;
+
+        if (!blockId || blockId === "انتخاب بلوک") {
             alert("لطفاً بلوک را انتخاب کنید.");
             return;
         }
 
-        const list = document.getElementById("blasting_items");
-        const item = document.createElement("li");
-        item.textContent = `بلوک: ${block} - توضیحات: ${description}`;
-        list.appendChild(item);
+        // اضافه کردن جزئیات به جدول
+        const tableBody = document.querySelector('#blasting_table tbody');
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+        <td>${explosionStatus}</td>
+        <td>${blockName}</td>
+        <td>${description}</td>
+        <td>
+            <button type="button" onclick="removeBlastingDetail(this)" class="btn btn-danger btn-sm">حذف</button>
+        </td>
+    `;
+        tableBody.appendChild(row);
+
+        // پاک کردن مقادیر فرم
+        blockSelect.selectedIndex = 0;
+        document.getElementById("blasting_description").value = "";
     };
+
+// تابع حذف ردیف
+    window.removeBlastingDetail = function (button) {
+        const row = button.closest("tr");
+        row.remove();
+    };
+
+
 
     /** جزئیات حفاری */
     window.addDrillingDetail = function () {
-        const block = document.querySelector('[name="drilling_block"]').value;
-        const machine = document.querySelector('[name="drilling_machine"]').value;
+        const blockId = document.querySelector('[name="drilling_block"]').value;
+        const machineId = document.querySelector('[name="drilling_machine"]').value;
         const status = document.querySelector('[name="drilling_status"]').value;
 
-        if (!block || !machine || !status) {
+        if (!blockId || !machineId || !status) {
             alert("لطفاً تمام فیلدها را پر کنید.");
             return;
         }
 
-        const list = document.getElementById("drilling_items");
-        const item = document.createElement("li");
-        item.textContent = `بلوک: ${block} | دستگاه: ${machine} | وضعیت: ${status}`;
-        list.appendChild(item);
+        // پیدا کردن نام‌ها
+        const blockName = miningBlocks.find(block => block.id === parseInt(blockId))?.block_name || "نامشخص";
+        const machineName = miningMachines.find(machine => machine.id === parseInt(machineId))?.workshop_code || "نامشخص";
+
+        // نمایش در جدول
+        const tableBody = document.querySelector('#drilling_table tbody');
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+        <td>${blockName}</td>
+        <td>${machineName}</td>
+        <td>${status}</td>
+        <td>
+            <button type="button" onclick="removeDrillingDetail(this)" class="btn btn-danger btn-sm">حذف</button>
+        </td>
+    `;
+
+        tableBody.appendChild(row);
     };
 
-       /** جزئیات بارگیری */
+    window.removeDrillingDetail = function (button) {
+        const row = button.closest("tr");
+        row.remove();
+    };
+
+
+
+
+
+    /** جزئیات بارگیری */
     window.addLoadingDetail = function () {
-        const block = document.querySelector('[name="loading_block"]').value;
-        const machine = document.querySelector('[name="loading_machine"]').value;
+        const blockId = document.querySelector('[name="loading_block"]').value;
+        const machineId = document.querySelector('[name="loading_machine"]').value;
         const status = document.querySelector('[name="loading_status"]').value;
 
-        if (!block || !machine || !status) {
+        if (!blockId || !machineId || !status) {
             alert("لطفاً تمام فیلدها را پر کنید.");
             return;
         }
 
-        const list = document.getElementById("loading_items");
-        const item = document.createElement("li");
-        item.textContent = `بلوک: ${block} | دستگاه: ${machine} | وضعیت: ${status}`;
-        list.appendChild(item);
+        // پیدا کردن نام بلوک و دستگاه از داده‌های موجود
+        const blockName = miningBlocks.find(({id}) => id === parseInt(blockId))?.block_name || "نامشخص";
+        const machineName = miningMachines.find(({id}) => id === parseInt(machineId))?.workshop_code || "نامشخص";
+
+        // افزودن جزئیات به جدول
+        const tableBody = document.querySelector('#loading_table tbody');
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+        <td>${blockName}</td>
+        <td>${machineName}</td>
+        <td>${status}</td>
+        <td>
+            <button type="button" onclick="removeLoadingDetail(this)" class="btn btn-danger btn-sm">حذف</button>
+        </td>
+    `;
+        tableBody.appendChild(row);
     };
+
+// تابع حذف ردیف
+    window.removeLoadingDetail = function (button) {
+        const row = button.closest("tr");
+        row.remove();
+    };
+
 
 
     /** جزئیات تخلیه */
     window.addDumpDetail = function () {
-        const dump = document.querySelector('[name="dump"]').value;
+        const dumpid = document.querySelector('[name="dump"]').value;
         const status = document.querySelector('[name="dump_status"]').value;
         const description = document.querySelector('[name="dump_description"]').value;
 
-        if (!dump || !status) {
+        if (!dumpid || !status) {
             alert("لطفاً تمام فیلدها را پر کنید.");
             return;
         }
 
-        const list = document.getElementById("dump_items");
-        const item = document.createElement("li");
-        item.textContent = `دامپ: ${dump} | وضعیت: ${status} | توضیحات: ${description}`;
-        list.appendChild(item);
+        // پیدا کردن نام دامپ از لیست dumps
+        const dump = dumps.find(({id}) => id === parseInt(dumpid))?.dump_name || "نامشخص";
+
+        // اضافه کردن به جدول
+        const tableBody = document.querySelector('#dump_table tbody');
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+        <td>${dump}</td>
+        <td>${status}</td>
+        <td>${description}</td>
+        <td>
+            <button type="button" onclick="removeDumpDetail(this)" class="btn btn-danger btn-sm">حذف</button>
+        </td>
+    `;
+        tableBody.appendChild(row);
     };
+
+    window.removeDumpDetail = function (button) {
+        const row = button.closest("tr");
+        row.remove();
+    };
+
+
 
     /** جزئیات بازرسی */
     document.getElementById("inspection_status").addEventListener("change", function () {
@@ -145,11 +241,25 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        const list = document.getElementById("stoppage_items");
-        const item = document.createElement("li");
-        item.textContent = `علت توقف: ${reason} | زمان: ${start} تا ${end}`;
-        list.appendChild(item);
+        const tableBody = document.querySelector('#stoppage_table tbody');
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+        <td>${reason}</td>
+        <td>${start}</td>
+        <td>${end}</td>
+        <td>
+            <button type="button" onclick="removeStoppageDetail(this)" class="btn btn-danger btn-sm">حذف</button>
+        </td>
+    `;
+        tableBody.appendChild(row);
     };
+
+    window.removeStoppageDetail = function (button) {
+        const row = button.closest("tr");
+        row.remove();
+    };
+
 
     /** پیگیری */
     window.addFollowupDetail = function () {
@@ -161,23 +271,94 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        const list = document.getElementById("followup_items");
-        const item = document.createElement("li");
-        item.textContent = `توضیحات: ${description}`;
-        list.appendChild(item);
+        const tableBody = document.querySelector('#followup_table tbody');
+        const row = document.createElement("tr");
 
-        // نمایش نام فایل‌ها
+        let fileNames = "";
         for (let i = 0; i < files.length; i++) {
-            const fileItem = document.createElement("li");
-            fileItem.textContent = `فایل: ${files[i].name}`;
-            list.appendChild(fileItem);
+            fileNames += `${files[i].name}, `;
         }
+
+        row.innerHTML = `
+        <td>${description}</td>
+        <td>${fileNames || "بدون فایل"}</td>
+        <td>
+            <button type="button" onclick="removeFollowupDetail(this)" class="btn btn-danger btn-sm">حذف</button>
+        </td>
+    `;
+        tableBody.appendChild(row);
     };
+
+    window.removeFollowupDetail = function (button) {
+        const row = button.closest("tr");
+        row.remove();
+    };
+
+// لاگ کردن جزئیات آتشباری
+    console.log("Blasting Details:", JSON.stringify(collectDetailsFromTable('#blasting_table', ['block_id', 'description'])));
+
+// لاگ کردن جزئیات حفاری
+    console.log("Drilling Details:", JSON.stringify(collectDetailsFromTable('#drilling_table', ['block_id', 'machine_id', 'status'])));
+
+// لاگ کردن جزئیات بارگیری
+    console.log("Loading Details:", JSON.stringify(collectDetailsFromTable('#loading_table', ['block_id', 'machine_id', 'status'])));
+
+// لاگ کردن جزئیات تخلیه
+    console.log("Dump Details:", JSON.stringify(collectDetailsFromTable('#dump_table', ['dump_id', 'status', 'description'])));
+
+// لاگ کردن جزئیات بازرسی
+    console.log("Inspection Details:", JSON.stringify(collectDetailsFromTable('#inspection_table', ['inspection', 'inspection_status', 'inspection_description'])));
+
+// لاگ کردن جزئیات توقفات
+    console.log("Stoppage Details:", JSON.stringify(collectDetailsFromTable('#stoppage_table', ['reason', 'start_time', 'end_time'])));
+
+// لاگ کردن جزئیات پیگیری
+    console.log("Followup Details:", JSON.stringify(collectDetailsFromTable('#followup_table', ['description', 'file_input_name'])));
 
     /** ارسال فرم */
     document.querySelector('[data-kt-stepper-action="submit"]').addEventListener("click", function (e) {
         e.preventDefault();
-        alert("فرم با موفقیت ثبت شد!");
+
+        // جمع‌آوری جزئیات از جدول‌ها
+        const blastingDetails = collectDetailsFromTable('#blasting_table', ['block_id', 'description']);
+        const drillingDetails = collectDetailsFromTable('#drilling_table', ['block_id', 'machine_id', 'status']);
+        const loadingDetails = collectDetailsFromTable('#loading_table', ['block_id', 'machine_id', 'status']);
+        const dumpDetails = collectDetailsFromTable('#dump_table', ['dump_id', 'status', 'description']);
+        const stoppageDetails = collectDetailsFromTable('#stoppage_table', ['reason', 'start_time', 'end_time']);
+        const followupDetails = collectDetailsFromTable('#followup_table', ['description', 'file_input_name']);
+
+        // ایجاد hidden inputs برای جزئیات
+        addHiddenInputToForm("blasting_details", JSON.stringify(blastingDetails));
+        addHiddenInputToForm("drilling_details", JSON.stringify(drillingDetails));
+        addHiddenInputToForm("loading_details", JSON.stringify(loadingDetails));
+        addHiddenInputToForm("dump_details", JSON.stringify(dumpDetails));
+        addHiddenInputToForm("stoppage_details", JSON.stringify(stoppageDetails));
+        addHiddenInputToForm("followup_details", JSON.stringify(followupDetails));
+
+        // ارسال فرم
         document.querySelector("#kt_create_account_form").submit();
     });
+
+// توابع کمکی برای جمع‌آوری جزئیات
+    function collectDetailsFromTable(tableId, fields) {
+        const rows = document.querySelectorAll(`${tableId} tbody tr`);
+        const details = [];
+        rows.forEach(row => {
+            const detail = {};
+            fields.forEach((field, index) => {
+                detail[field] = row.children[index].dataset.value || row.children[index].innerText;
+            });
+            details.push(detail);
+        });
+        return details;
+    }
+
+    function addHiddenInputToForm(name, value) {
+        const hiddenInput = document.createElement("input");
+        hiddenInput.type = "hidden";
+        hiddenInput.name = name;
+        hiddenInput.value = value;
+        document.querySelector("#kt_create_account_form").appendChild(hiddenInput);
+    }
 });
+
