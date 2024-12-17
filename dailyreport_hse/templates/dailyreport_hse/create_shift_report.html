@@ -174,7 +174,7 @@
                                                     <label class="form-label required">دستگاه حفاری:</label>
                                                     <select class="form-select mb-5" id="drilling_machine" name="drilling_machine">
                                                         {% for machine in mining_machines %}
-                                                            <option value="{{ machine.id }}">{{ machine.machine_type.name }}</option>
+                                                            <option value="{{ machine.id }}">{{ machine.workshop_code }}</option>
                                                         {% endfor %}
                                                     </select>
                                                     <label class="form-label">وضعیت:</label>
@@ -238,39 +238,48 @@
                                                         <option value="no">خیر</option>
                                                         <option value="yes">بله</option>
                                                     </select>
-                                                    <label class="form-label required">وضعیت بازدید:</label>
-                                                    <select class="form-select mb-5" id="inspection_status" name="inspection_status">
-                                                        <option value="safe">ایمن</option>
-                                                        <option value="unsafe">ناایمن</option>
-                                                    </select>
-                                                    <label class="form-label">توضیحات:</label>
-                                                    <textarea class="form-control mb-5" id="inspection_description" name="inspection_description" rows="3"></textarea>
+                                                    <div id="inspection_details" style="display: none;">
+
+                                                        <label class="form-label required">وضعیت بازدید:</label>
+                                                        <select class="form-select mb-5" id="inspection_safe" name="inspection_safe">
+                                                            <option value="safe">ایمن</option>
+                                                            <option value="unsafe">ناایمن</option>
+                                                        </select>
+                                                        <label class="form-label">توضیحات:</label>
+                                                        <textarea class="form-control mb-5" id="inspection_description" name="inspection_description" rows="3"></textarea>
+                                                    </div>
                                                 </div>
 
-                                                <!-- مرحله 6: توقفات -->
-                                                <div data-kt-stepper-element="content">
-                                                    <h2 class="fw-bold text-gray-900 mb-5">توقفات</h2>
-                                                    <label class="form-label required">علت توقف:</label>
-                                                    <textarea class="form-control mb-5" id="stoppage_reason" name="stoppage_reason" rows="3"></textarea>
-                                                    <button type="button" class="btn btn-primary" id="add_stoppage_detail" onclick="addStoppageDetail()">افزودن</button>
-                                                    <ul id="stoppage_items"></ul>
-                                                </div>
+                                                    <!-- مرحله 6: توقفات -->
+                                                    <div data-kt-stepper-element="content">
+                                                        <h2 class="fw-bold text-gray-900 mb-5">توقفات</h2>
+                                                        <label class="form-label required">علت توقف:</label>
+                                                        <textarea class="form-control mb-5" id="stoppage_reason" name="stoppage_reason" rows="3"></textarea>
+                                                        <label class="form-label required">ساعت شروع توقف:</label>
+                                                        <input class="form-control mb-5" id="stoppage_start" name="stoppage_start" type="time" />
+                                                        <label class="form-label required">ساعت پایان توقف:</label>
+                                                        <input class="form-control mb-5" id="stoppage_end" name="stoppage_end" type="time" />
+                                                        <button type="button" class="btn btn-primary" id="add_stoppage_detail" onclick="addStoppageDetail()">افزودن</button>
+                                                        <ul id="stoppage_items"></ul>
+                                                    </div>
 
-                                                <!-- مرحله 7: پیگیری -->
-                                                <div data-kt-stepper-element="content">
-                                                    <h2 class="fw-bold text-gray-900 mb-5">پیگیری</h2>
-                                                    <label class="form-label required">توضیحات:</label>
-                                                    <textarea class="form-control mb-5" id="followup_description" name="followup_description" rows="3"></textarea>
-                                                    <button type="button" class="btn btn-primary" id="add_followup_detail" onclick="addFollowupDetail()">افزودن</button>
-                                                    <ul id="followup_items"></ul>
-                                                </div>
+                                                    <!-- مرحله 7: پیگیری -->
+                                                    <div data-kt-stepper-element="content">
+                                                        <h2 class="fw-bold text-gray-900 mb-5">پیگیری</h2>
+                                                        <label class="form-label required">توضیحات:</label>
+                                                        <textarea class="form-control mb-5" id="followup_description" name="followup_description" rows="3"></textarea>
+                                                        <label class="form-label required">فایل‌ها:</label>
+                                                        <input class="form-control mb-5" id="followup_files" name="followup_files" type="file" multiple />
+                                                        <button type="button" class="btn btn-primary" id="add_followup_detail" onclick="addFollowupDetail()">افزودن</button>
+                                                        <ul id="followup_items"></ul>
+                                                    </div>
 
-                                                <!-- دکمه‌های کنترل -->
-                                                <div class="d-flex flex-stack pt-10">
-                                                    <button type="button" class="btn btn-light-primary" data-kt-stepper-action="previous">مرحله قبل</button>
-                                                    <button type="button" class="btn btn-primary" data-kt-stepper-action="next">مرحله بعد</button>
-                                                    <button type="submit" class="btn btn-success" data-kt-stepper-action="submit">ثبت گزارش</button>
-                                                </div>
+                                                    <!-- دکمه‌های کنترل -->
+                                                    <div class="d-flex flex-stack pt-10">
+                                                        <button type="button" class="btn btn-light-primary" data-kt-stepper-action="previous">مرحله قبل</button>
+                                                        <button type="button" class="btn btn-primary" data-kt-stepper-action="next">مرحله بعد</button>
+                                                        <button type="submit" class="btn btn-success" data-kt-stepper-action="submit">ثبت گزارش</button>
+                                                    </div>
                                             </form>
                                         </div>
 

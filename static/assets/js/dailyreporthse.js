@@ -117,6 +117,23 @@ document.addEventListener("DOMContentLoaded", function () {
         details.style.display = this.value === "yes" ? "block" : "none";
     });
 
+    window.addInspectionDetail = function () {
+        const inspection = document.querySelector('[name="inspection"]').value;
+        const status = document.querySelector('[name="inspection_status"]').value;
+        const description = document.querySelector('[name="inspection_description"]').value;
+
+        if (!inspection || !status) {
+            alert("لطفاً تمام فیلدها را پر کنید.");
+            return;
+        }
+
+        const list = document.getElementById("inspection_items");
+        const item = document.createElement("li");
+        item.textContent = `بازرسی: ${inspection} | وضعیت: ${status} | توضیحات: ${description}`;
+        list.appendChild(item);
+    };
+
+
     /** توقفات */
     window.addStoppageDetail = function () {
         const reason = document.querySelector('[name="stoppage_reason"]').value;

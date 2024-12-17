@@ -1,3 +1,4 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from .models import (
@@ -8,7 +9,7 @@ from BaseInfo.models import MiningBlock, MiningMachine, Dump
 from .forms import DailyReportForm
 from django.forms import modelformset_factory
 
-
+@login_required
 def create_daily_report(request):
     """
     ویوی ایجاد گزارش روزانه برای افسران ایمنی.
