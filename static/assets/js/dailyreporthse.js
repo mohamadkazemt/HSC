@@ -92,7 +92,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         window.removeBlastingDetail = function (button) {
         const row = button.closest("tr");
-        row.remove();
+        row.remove();1
     };
 
 
