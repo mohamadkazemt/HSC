@@ -2,17 +2,31 @@ from django.db import models
 from BaseInfo.models import MiningBlock, MiningMachine, Dump
 from django.contrib.auth.models import User
 
-# گزارش روزانه
+from django.contrib.auth.models import User
+from django.db import models
+
 class DailyReport(models.Model):
-    SHIFT_CHOICES = [('morning', 'صبح'), ('evening', 'عصر'), ('night', 'شب')]
+    SHIFT_CHOICES = [
+        ('روزکار اول', 'روزکار اول'),
+        ('روزکار دوم', 'روزکار دوم'),
+        ('عصرکار اول', 'عصرکار اول'),
+        ('عصرکار دوم', 'عصرکار دوم'),
+        ('شب کار اول', 'شب کار اول'),
+        ('شب کار دوم', 'شب کار دوم'),
+        ('OFF اول', 'OFF اول'),
+        ('OFF دوم', 'OFF دوم'),
+    ]
+    GROUP_CHOICES = [('A', 'A'), ('B', 'B'), ('C', 'C'), ('D', 'D')]
 
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="افسر ایمنی")
     shift = models.CharField(max_length=10, choices=SHIFT_CHOICES, verbose_name="شیفت کاری")
+    work_group = models.CharField(max_length=1, choices=GROUP_CHOICES, verbose_name="گروه کاری")
     supervisor_comments = models.TextField(blank=True, verbose_name="توضیحات سرشیفت")
 
     def __str__(self):
         return f"گزارش {self.user.username} - {self.shift} - {self.created_at.date()}"
+
 
 # جزئیات آتشباری
 class BlastingDetail(models.Model):

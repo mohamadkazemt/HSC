@@ -4,9 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="dailyreport_hsemami2">
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="dailyreport_hsemami">
+      <change afterPath="$PROJECT_DIR$/dailyreport_hse/migrations/0002_dailyreport_work_group.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/dailyreport_hse/migrations/0003_alter_dailyreport_shift.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dailyreport_hse/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/create_shift_report.html" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/create_shift_report.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dailyreport_hse/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/static/assets/js/dailyreporthse.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/assets/js/dailyreporthse.js" afterDir="false" />
@@ -119,7 +123,6 @@
         <env name="DJANGO_SETTINGS_MODULE" value="HSCprojects.settings" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="SDK_NAME" value="Python 3.12 (HSC)" />
       <option name="WORKING_DIRECTORY" value="" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
@@ -265,7 +268,7 @@
       <workItem from="1734362055412" duration="1528000" />
       <workItem from="1734365673657" duration="2883000" />
       <workItem from="1734368651864" duration="12185000" />
-      <workItem from="1734414778366" duration="2604000" />
+      <workItem from="1734414778366" duration="1329000" />
       <workItem from="1734424149749" duration="7970000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
@@ -572,14 +575,7 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۴۱" />
       <updated>1734381131968</updated>
     </task>
-    <task id="LOCAL‎−۰۰۰۴۲" summary="dailyreport_hsemami2">
-      <option name="closed" value="true" />
-      <created>1734418005479</created>
-      <option name="number" value="LOCAL‎−۰۰۰۴۲" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۴۲" />
-      <updated>1734418005479</updated>
-    </task>
-    <option name="localTasksCounter" value="43" />
+    <option name="localTasksCounter" value="42" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -597,6 +593,7 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
+    <MESSAGE value="notifications" />
     <MESSAGE value="v0.0.1" />
     <MESSAGE value="v0.0.1/2" />
     <MESSAGE value="v0.0.1/3" />
@@ -621,8 +618,7 @@
     <MESSAGE value="dailyreport_hse22" />
     <MESSAGE value="dailyreport_hse232" />
     <MESSAGE value="dailyreport_hsemami" />
-    <MESSAGE value="dailyreport_hsemami2" />
-    <option name="LAST_COMMIT_MESSAGE" value="dailyreport_hsemami2" />
+    <option name="LAST_COMMIT_MESSAGE" value="dailyreport_hsemami" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

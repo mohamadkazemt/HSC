@@ -285,20 +285,34 @@
                                                 <div data-kt-stepper-element="content">
                                                     <h2 class="fw-bold text-gray-900 mb-5">جزئیات بازدید از تعمیرگاه</h2>
                                                     <label class="form-label required">آیا بازدید انجام شد؟</label>
-                                                    <select class="form-select mb-5" id="inspection_status" name="explosion_occurred">
+                                                    <select class="form-select mb-5" id="inspection_status" name="inspection_status">
                                                         <option value="no">خیر</option>
                                                         <option value="yes">بله</option>
                                                     </select>
                                                     <div id="inspection_details" style="display: none;">
+                                                        <label class="form-label">بازرسی:</label>
+                                                        <input type="text" class="form-control mb-3" name="inspection" placeholder="عنوان بازرسی">
 
-                                                        <label class="form-label required">وضعیت بازدید:</label>
-                                                        <select class="form-select mb-5" id="inspection_safe" name="inspection_safe">
-                                                            <option value="safe">ایمن</option>
-                                                            <option value="unsafe">ناایمن</option>
-                                                        </select>
                                                         <label class="form-label">توضیحات:</label>
-                                                        <textarea class="form-control mb-5" id="inspection_description" name="inspection_description" rows="3"></textarea>
+                                                        <textarea class="form-control mb-3" name="inspection_description" rows="3"></textarea>
+
+                                                        <button type="button" class="btn btn-primary" onclick="addInspectionDetail()">افزودن</button>
+
+                                                        <div class="table-responsive mt-3">
+                                                            <table class="table table-striped table-bordered align-middle" id="inspection_table">
+                                                                <thead>
+                                                                <tr class="text-center">
+                                                                    <th>بازرسی</th>
+                                                                    <th>وضعیت</th>
+                                                                    <th>توضیحات</th>
+                                                                    <th>عملیات</th>
+                                                                </tr>
+                                                                </thead>
+                                                                <tbody></tbody>
+                                                            </table>
+                                                        </div>
                                                     </div>
+
                                                 </div>
 
                                                 <!-- مرحله 6: توقفات -->

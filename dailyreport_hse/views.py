@@ -9,6 +9,10 @@ from BaseInfo.models import MiningBlock, MiningMachine, Dump
 from .forms import DailyReportForm
 import json
 import logging
+from shift_manager.utils import get_current_shift_and_group
+from django.db import IntegrityError
+from django.utils.timezone import make_aware
+from datetime import datetime
 
 # تنظیم لاگر برای مدیریت خطا و دیباگ
 logger = logging.getLogger(__name__)
@@ -18,6 +22,12 @@ def create_daily_report(request):
     """
     ویوی ایجاد گزارش روزانه برای افسران ایمنی.
     """
+    # دریافت شیفت و گروه کاری از اپ shift_manager
+    current_shift, current_group = get_current_shift_and_group()
+    if not current_shift or not current_group:
+        messages.error(request, "مشکلی در تعیین شیفت و گروه کاری وجود دارد. لطفاً با مدیر سیستم تماس بگیرید.")
+        return redirect('dashboard')
+
     # داده‌های داینامیک برای فرم‌ها
     report_form = DailyReportForm()
     mining_blocks = list(MiningBlock.objects.filter(is_active=True).values('id', 'block_name'))
@@ -28,7 +38,8 @@ def create_daily_report(request):
         try:
             # فرم اصلی DailyReport
             report_data = request.POST.copy()
-            report_data['shift'] = request.user.profile.shift  # اضافه کردن شیفت کاربر لاگین شده به داده‌ها
+            report_data['shift'] = current_shift  # اضافه کردن شیفت محاسبه شده
+            report_data['work_group'] = current_group  # اضافه کردن گروه کاری محاسبه شده
             report_form = DailyReportForm(report_data)
 
             logger.debug("POST data: %s", request.POST)
@@ -47,6 +58,9 @@ def create_daily_report(request):
                     try:
                         blasting_details = json.loads(blasting_details_json)
                         for detail in blasting_details:
+                            if not MiningBlock.objects.filter(id=detail.get('block_id')).exists():
+                                logger.error("Block ID %s does not exist.", detail.get('block_id'))
+                                continue
                             BlastingDetail.objects.create(
                                 daily_report=report,
                                 block_id=detail.get('block_id'),
@@ -62,6 +76,12 @@ def create_daily_report(request):
                     try:
                         drilling_details = json.loads(drilling_details_json)
                         for detail in drilling_details:
+                            if not MiningBlock.objects.filter(id=detail.get('block_id')).exists():
+                                logger.error("Block ID %s does not exist.", detail.get('block_id'))
+                                continue
+                            if not MiningMachine.objects.filter(id=detail.get('machine_id')).exists():
+                                logger.error("Machine ID %s does not exist.", detail.get('machine_id'))
+                                continue
                             DrillingDetail.objects.create(
                                 daily_report=report,
                                 block_id=detail.get('block_id'),
@@ -78,6 +98,12 @@ def create_daily_report(request):
                     try:
                         loading_details = json.loads(loading_details_json)
                         for detail in loading_details:
+                            if not MiningBlock.objects.filter(id=detail.get('block_id')).exists():
+                                logger.error("Block ID %s does not exist.", detail.get('block_id'))
+                                continue
+                            if not MiningMachine.objects.filter(id=detail.get('machine_id')).exists():
+                                logger.error("Machine ID %s does not exist.", detail.get('machine_id'))
+                                continue
                             LoadingDetail.objects.create(
                                 daily_report=report,
                                 block_id=detail.get('block_id'),
@@ -92,17 +118,33 @@ def create_daily_report(request):
                 dump_details_json = request.POST.get('dump_details')
                 if dump_details_json:
                     try:
-                        dump_details = json.loads(dump_details_json)
+                        dump_details = json.loads(dump_details_json)  # تبدیل JSON به لیست
                         for detail in dump_details:
+                            dump_id = detail.get('dump_id')
+                            status = detail.get('status', 'safe')
+                            description = detail.get('description', '')
+
+                            # بررسی معتبر بودن dump_id
+                            if not dump_id or not Dump.objects.filter(id=dump_id).exists():
+                                logger.error("Dump ID %s does not exist or is invalid.", dump_id)
+                                messages.error(request, f"دامپ با ID {dump_id} وجود ندارد.")
+                                continue  # پرش به جزئیات بعدی
+
+                            # ذخیره جزئیات تخلیه
                             DumpDetail.objects.create(
                                 daily_report=report,
-                                dump_id=detail.get('dump_id'),
-                                status=detail.get('status', 'safe'),
-                                description=detail.get('description', '')
+                                dump_id=dump_id,
+                                status=status,
+                                description=description
                             )
-                        logger.info("جزئیات تخلیه ذخیره شد.")
+                            logger.info("جزئیات تخلیه برای دامپ ID %s ذخیره شد.", dump_id)
+
                     except json.JSONDecodeError as e:
                         logger.error("خطا در پردازش JSON تخلیه: %s", e)
+                        messages.error(request, "خطا در پردازش اطلاعات تخلیه. لطفاً مجدداً تلاش کنید.")
+                    except Exception as e:
+                        logger.exception("خطای غیرمنتظره در ذخیره جزئیات تخلیه: %s", e)
+                        messages.error(request, "یک خطای غیرمنتظره رخ داد.")
 
                 # ذخیره جزئیات بازرسی از JSON
                 inspection_details_json = request.POST.get('inspection_details')
@@ -126,11 +168,13 @@ def create_daily_report(request):
                     try:
                         stoppage_details = json.loads(stoppage_details_json)
                         for detail in stoppage_details:
+                            start_time = make_aware(datetime.strptime(detail.get('start_time'), "%H:%M"))
+                            end_time = make_aware(datetime.strptime(detail.get('end_time'), "%H:%M"))
                             StoppageDetail.objects.create(
                                 daily_report=report,
                                 reason=detail.get('reason'),
-                                start_time=detail.get('start_time'),
-                                end_time=detail.get('end_time'),
+                                start_time=start_time,
+                                end_time=end_time,
                                 description=detail.get('description', '')
                             )
                         logger.info("جزئیات توقفات ذخیره شد.")
@@ -158,6 +202,9 @@ def create_daily_report(request):
                 logger.warning("فرم DailyReport نامعتبر است: %s", report_form.errors)
                 messages.error(request, "خطا در ثبت فرم. لطفاً مقادیر را به درستی وارد کنید.")
 
+        except IntegrityError as e:
+            logger.exception("خطای مربوط به محدودیت FOREIGN KEY: %s", e)
+            messages.error(request, "خطا در ذخیره داده‌ها به دلیل مشکلات کلید خارجی. لطفاً بررسی کنید که همه مقادیر صحیح هستند.")
         except Exception as e:
             logger.exception("خطای غیرمنتظره در پردازش فرم: %s", e)
             messages.error(request, "یک خطای غیرمنتظره رخ داد. لطفاً با مدیر سیستم تماس بگیرید.")
@@ -168,3 +215,4 @@ def create_daily_report(request):
         'mining_machines': mining_machines,
         'dumps': dumps,
     })
+

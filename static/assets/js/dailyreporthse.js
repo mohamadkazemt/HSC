@@ -55,10 +55,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // انتخاب مقادیر از فرم
         const explosionOccurred = document.getElementById("blasting_status").value;
-        const explosionStatus = explosionOccurred === "yes" ? "انفجار انجام شد" : "انفجار انجام نشد";
+        const explosionStatusText = explosionOccurred === "yes" ? "انفجار انجام شد" : "انفجار انجام نشد";
+        const isExplosionStatus = explosionOccurred === "yes"; // مقدار بولی
+
         const blockSelect = document.getElementById("blasting_block");
-        const blockId = blockSelect.value;
+        const blockId = blockSelect.value;  // مقدار عددی id
         const blockName = blockSelect.options[blockSelect.selectedIndex].text;
+
         const description = document.getElementById("blasting_description").value;
 
         if (!blockId || blockId === "انتخاب بلوک") {
@@ -70,11 +73,13 @@ document.addEventListener("DOMContentLoaded", function () {
         const tableBody = document.querySelector('#blasting_table tbody');
         const row = document.createElement("tr");
 
+        // اضافه کردن explosionStatus به عنوان یک مقدار مجزا (hidden attribute)
         row.innerHTML = `
-        <td>${explosionStatus}</td>
-        <td>${blockName}</td>
+        <td>${explosionStatusText}</td>
+        <td data-value="${blockId}">${blockName}</td>
         <td>${description}</td>
         <td>
+            <input type="hidden" name="is_explosion_status" value="${isExplosionStatus}">
             <button type="button" onclick="removeBlastingDetail(this)" class="btn btn-danger btn-sm">حذف</button>
         </td>
     `;
@@ -85,11 +90,6 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("blasting_description").value = "";
     };
 
-// تابع حذف ردیف
-    window.removeBlastingDetail = function (button) {
-        const row = button.closest("tr");
-        row.remove();
-    };
 
 
 
@@ -113,8 +113,8 @@ document.addEventListener("DOMContentLoaded", function () {
         const row = document.createElement("tr");
 
         row.innerHTML = `
-        <td>${blockName}</td>
-        <td>${machineName}</td>
+        <td data-value="${blockId}">${blockName}</td>
+        <td data-value="${machineId}">${machineName}</td>
         <td>${status}</td>
         <td>
             <button type="button" onclick="removeDrillingDetail(this)" class="btn btn-danger btn-sm">حذف</button>
@@ -153,8 +153,8 @@ document.addEventListener("DOMContentLoaded", function () {
         const row = document.createElement("tr");
 
         row.innerHTML = `
-        <td>${blockName}</td>
-        <td>${machineName}</td>
+        <td data-value="${blockId}">${blockName}</td>
+        <td data-value="${machineId}">${machineName}</td>
         <td>${status}</td>
         <td>
             <button type="button" onclick="removeLoadingDetail(this)" class="btn btn-danger btn-sm">حذف</button>
@@ -173,24 +173,25 @@ document.addEventListener("DOMContentLoaded", function () {
 
     /** جزئیات تخلیه */
     window.addDumpDetail = function () {
-        const dumpid = document.querySelector('[name="dump"]').value;
+        const dumpSelect = document.querySelector('[name="dump"]');
+        const dumpId = dumpSelect.value;
+        const dumpName = dumpSelect.options[dumpSelect.selectedIndex].text;
         const status = document.querySelector('[name="dump_status"]').value;
         const description = document.querySelector('[name="dump_description"]').value;
+        console.log("Dump ID:", dumpId);
+        console.log("Dump Name:", dumpName);
 
-        if (!dumpid || !status) {
-            alert("لطفاً تمام فیلدها را پر کنید.");
+
+        if (!dumpId || dumpId === "انتخاب دامپ") {
+            alert("لطفاً دامپ را انتخاب کنید.");
             return;
         }
 
-        // پیدا کردن نام دامپ از لیست dumps
-        const dump = dumps.find(({id}) => id === parseInt(dumpid))?.dump_name || "نامشخص";
-
-        // اضافه کردن به جدول
         const tableBody = document.querySelector('#dump_table tbody');
         const row = document.createElement("tr");
 
         row.innerHTML = `
-        <td>${dump}</td>
+        <td data-value="${dumpId}">${dumpName}</td>
         <td>${status}</td>
         <td>${description}</td>
         <td>
@@ -199,6 +200,7 @@ document.addEventListener("DOMContentLoaded", function () {
     `;
         tableBody.appendChild(row);
     };
+
 
     window.removeDumpDetail = function (button) {
         const row = button.closest("tr");
@@ -223,11 +225,34 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        const list = document.getElementById("inspection_items");
-        const item = document.createElement("li");
-        item.textContent = `بازرسی: ${inspection} | وضعیت: ${status} | توضیحات: ${description}`;
-        list.appendChild(item);
+        // تبدیل وضعیت به متن خوانا
+        const statusText = status === "yes" ? "انجام شد" : "انجام نشد";
+
+        // اضافه کردن جزئیات به جدول
+        const tableBody = document.querySelector('#inspection_table tbody');
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+        <td>${inspection}</td>
+        <td>${statusText}</td>
+        <td>${description}</td>
+        <td>
+            <button type="button" onclick="removeInspectionDetail(this)" class="btn btn-danger btn-sm">حذف</button>
+        </td>
+    `;
+        tableBody.appendChild(row);
+
+        // پاک کردن مقادیر فرم
+        document.querySelector('[name="inspection"]').value = "";
+        document.querySelector('[name="inspection_description"]').value = "";
     };
+
+// تابع حذف ردیف
+    window.removeInspectionDetail = function (button) {
+        const row = button.closest("tr");
+        row.remove();
+    };
+
 
 
     /** توقفات */
@@ -346,12 +371,20 @@ document.addEventListener("DOMContentLoaded", function () {
         rows.forEach(row => {
             const detail = {};
             fields.forEach((field, index) => {
-                detail[field] = row.children[index].dataset.value || row.children[index].innerText;
+                const cell = row.children[index];
+                if (field === 'block_id' || field === 'dump_id') {
+                    detail[field] = cell.dataset.value; // دریافت block_id
+                } else if (field === 'is_explosion_status') {
+                    detail[field] = row.querySelector('input[name="is_explosion_status"]').value;
+                } else {
+                    detail[field] = cell.innerText.trim();
+                }
             });
             details.push(detail);
         });
         return details;
     }
+
 
     function addHiddenInputToForm(name, value) {
         const hiddenInput = document.createElement("input");
