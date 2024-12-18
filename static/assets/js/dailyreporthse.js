@@ -90,6 +90,11 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("blasting_description").value = "";
     };
 
+        window.removeBlastingDetail = function (button) {
+        const row = button.closest("tr");
+        row.remove();
+    };
+
 
 
 
