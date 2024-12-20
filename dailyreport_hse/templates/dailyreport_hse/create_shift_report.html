@@ -285,13 +285,19 @@
                                                 <div data-kt-stepper-element="content">
                                                     <h2 class="fw-bold text-gray-900 mb-5">جزئیات بازدید از تعمیرگاه</h2>
                                                     <label class="form-label required">آیا بازدید انجام شد؟</label>
-                                                    <select class="form-select mb-5" id="inspection_status" name="inspection_status">
+                                                    <select class="form-select mb-5" id="inspection_done" name="inspection_done">
                                                         <option value="no">خیر</option>
                                                         <option value="yes">بله</option>
                                                     </select>
                                                     <div id="inspection_details" style="display: none;">
                                                         <label class="form-label">بازرسی:</label>
                                                         <input type="text" class="form-control mb-3" name="inspection" placeholder="عنوان بازرسی">
+
+                                                        <label class="form-label required">وضعیت:</label>
+                                                        <select class="form-select mb-3" name="inspection_safe">
+                                                            <option value="safe">ایمن</option>
+                                                            <option value="unsafe">ناایمن</option>
+                                                        </select>
 
                                                         <label class="form-label">توضیحات:</label>
                                                         <textarea class="form-control mb-3" name="inspection_description" rows="3"></textarea>

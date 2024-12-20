@@ -13,6 +13,8 @@ import os
 from pathlib import Path
 from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime
+from django.conf.locale.fa import formats as fa_formats
+
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -57,7 +59,9 @@ INSTALLED_APPS = [
     'formtools',
     'dailyreport_hse.apps.DailyreportHseConfig',
     'leave_reports.apps.LeaveReportsConfig',
-    'contractor_management.apps.ContractorManagementConfig'
+    'contractor_management.apps.ContractorManagementConfig',
+    'rest_framework',
+
 ]
 
 MIDDLEWARE = [
@@ -92,6 +96,9 @@ TEMPLATES = [
                 'shift_manager.context_processors.shift_context_processor',
                 'shift_manager.context_processors.shift_data_processor',
 
+            ],
+            'builtins': [
+                'django_jalali.templatetags.jformat',
             ],
         },
     },
@@ -182,7 +189,9 @@ SMSIR_LINE_NUMBER = '30007732001185'
 
 
 
-# settings.py
+
+fa_formats.DATETIME_FORMAT = "Y/m/d H:i"
+fa_formats.DATE_FORMAT = "Y/m/d"
 
 
 

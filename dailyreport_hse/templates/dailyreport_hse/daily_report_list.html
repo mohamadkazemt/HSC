@@ -1,0 +1,178 @@
+﻿{% extends 'base.html' %}
+
+
+{% load static %}
+{% load jalali %}
+
+
+{% block content %}
+    <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+        <!--begin::Page-->
+        <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+            <!--begin::Header-->
+            {% include 'header.html' %}
+            <!--end::Header-->
+            <!--begin::Wrapper-->
+            <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+                <!--begin::Sidebar-->
+                {% include 'sidebar.html' %}
+                <!--end::Sidebar-->
+                <!--begin::اصلی-->
+                <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                    <!--begin::Content wrapper-->
+                    <div class="d-flex flex-column flex-column-fluid">
+                        <!--begin::Toolbar-->
+                        {% include 'toolbar.html' %}
+                        <!--end::Toolbar-->
+                        <!--begin::Content-->
+                        <div id="kt_app_content" class="app-content flex-column-fluid">
+                            <!--begin::Content container-->
+                            <div id="kt_app_content_container" class="app-container container-fluid">
+                                <!--begin::Row-->
+                                <div class="row g-5 g-xl-8">
+
+                                    <div class="card card-flush mt-6 mt-xl-9">
+                                        <!--begin::کارت header-->
+                                        <div class="card-header mt-5">
+                                            <!--begin::کارت title-->
+                                            <div class="card-title flex-column">
+                                                <h3 class="fw-bold mb-1">لیست گزارش‌های روزانه</h3>
+                                                <div class="fs-6 text-gray-500">مجموع گزارش‌های ثبت‌شده</div>
+                                            </div>
+                                            <!--begin::کارت toolbar-->
+                                            <div class="card-toolbar my-1">
+                                                <form method="get" action="{% url 'dailyreport_hse:daily_report_list' %}" class="d-flex align-items-center flex-wrap">
+                                                    <div class="me-2">
+                                                        <select name="shift" class="form-select form-select-solid form-select-sm">
+                                                            <option value="همه" {% if shift_filter == 'همه' %}selected{% endif %}>همه شیفت‌ها</option>
+                                                            <option value="صبح" {% if shift_filter == 'صبح' %}selected{% endif %}>شیفت صبح</option>
+                                                            <option value="عصر" {% if shift_filter == 'عصر' %}selected{% endif %}>شیفت عصر</option>
+                                                            <option value="شب" {% if shift_filter == 'شب' %}selected{% endif %}>شیفت شب</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="me-2">
+                                                        <select name="group" class="form-select form-select-solid form-select-sm">
+                                                            <option value="همه" {% if group_filter == 'همه' %}selected{% endif %}>همه گروه‌ها</option>
+                                                            <option value="گروه A" {% if group_filter == 'گروه A' %}selected{% endif %}>گروه A</option>
+                                                            <option value="گروه B" {% if group_filter == 'گروه B' %}selected{% endif %}>گروه B</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="me-2">
+                                                        <input type="text" name="search" class="form-control form-control-solid form-select-sm" placeholder="جستجو" value="{{ search_query }}">
+                                                    </div>
+                                                    <div class="me-2">
+                                                        <button type="submit" class="btn btn-primary">اعمال فیلترها</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                        <!--begin::کارت body-->
+                                        <div class="card-body pt-0">
+                                            <div class="table-responsive">
+                                                <table id="kt_profile_overview_table" class="table table-row-bordered table-row-dashed gy-4 align-middle fw-bold">
+                                                    <thead class="fs-7 text-gray-500 text-uppercase">
+                                                    <tr>
+                                                        <th class="min-w-30px">ردیف</th>
+                                                        <th class="min-w-250px">افسر ایمنی</th>
+                                                        <th class="min-w-90px">شیفت کاری</th>
+                                                        <th class="min-w-90px">گروه کاری</th>
+                                                        <th class="min-w-150px">تاریخ ایجاد</th>
+                                                        <th class="min-w-50px text-end">عملیات</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody class="fs-6">
+                                                    {% for report in daily_reports %}
+                                                        <tr>
+                                                            <td>{{ forloop.counter }}</td>
+                                                            <td>{{ report.user.username }}</td>
+                                                            <td>{{ report.get_shift_display }}</td>
+                                                            <td>{{ report.get_work_group_display }}</td>
+                                                            <td>{{ report.created_at|to_jalali }}</td>
+                                                            <td class="text-end">
+                                                                <a href="{% url 'dailyreport_hse:daily_report_detail' report.id %}" class="btn btn-light btn-sm">نمایش</a>
+                                                            </td>
+                                                        </tr>
+                                                    {% empty %}
+                                                        <tr>
+                                                            <td colspan="6" class="text-center">گزارشی یافت نشد.</td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                    </tbody>
+                                                </table>
+
+                                                <!--شروع::شماره صفحات-->
+                                                <div class="pagination">
+                                                    <nav aria-label="Page navigation">
+                                                        <ul class="pagination justify-content-center">
+                                                            {% if daily_reports.has_previous %}
+                                                                <li class="page-item">
+                                                                    <a class="page-link" href="?page=1&search={{ search_query }}&shift={{ shift_filter }}&group={{ group_filter }}">&laquo; اول</a>
+                                                                </li>
+                                                                <li class="page-item">
+                                                                    <a class="page-link" href="?page={{ daily_reports.previous_page_number }}&search={{ search_query }}&shift={{ shift_filter }}&group={{ group_filter }}">قبلی</a>
+                                                                </li>
+                                                            {% endif %}
+
+                                                            {% for num in daily_reports.paginator.page_range %}
+                                                                {% if num >= daily_reports.number|add:'-2' and num <= daily_reports.number|add:'2' %}
+                                                                    {% if num == daily_reports.number %}
+                                                                        <li class="page-item active">
+                                                                            <span class="page-link">{{ num }}</span>
+                                                                        </li>
+                                                                    {% else %}
+                                                                        <li class="page-item">
+                                                                            <a class="page-link" href="?page={{ num }}&search={{ search_query }}&shift={{ shift_filter }}&group={{ group_filter }}">{{ num }}</a>
+                                                                        </li>
+                                                                    {% endif %}
+                                                                {% endif %}
+                                                            {% endfor %}
+
+                                                            {% if daily_reports.has_next %}
+                                                                <li class="page-item">
+                                                                    <a class="page-link" href="?page={{ daily_reports.next_page_number }}&search={{ search_query }}&shift={{ shift_filter }}&group={{ group_filter }}">بعدی</a>
+                                                                </li>
+                                                                <li class="page-item">
+                                                                    <a class="page-link" href="?page={{ daily_reports.paginator.num_pages }}&search={{ search_query }}&shift={{ shift_filter }}&group={{ group_filter }}">آخر &raquo;</a>
+                                                                </li>
+                                                            {% endif %}
+                                                        </ul>
+                                                    </nav>
+                                                </div>
+                                                <!--پایان::شماره صفحات-->
+                                            </div>
+                                        </div>
+                                    </div>
+
+
+
+
+
+
+                                    <!--end::جداول Widget 13-->
+                                </div>
+
+                                <!--end::Content container-->
+                            </div>
+                            <!--end::Content-->
+
+                        </div>
+                        <!--end::Content wrapper-->
+                        <!--begin::Footer-->
+                        {% include 'footer.html' %}
+                        <!--end::Footer-->
+                    </div>
+                    <!--end:::اصلی-->
+                </div>
+                <!--end::Wrapper-->
+            </div>
+            <!--end::Page-->
+        </div>
+        <!--begin::notification drawer-->
+        <div id="kt_drawer_chat" class="bg-body" data-kt-drawer="true" data-kt-drawer-name="chat" data-kt-drawer-activate="true" data-kt-drawer-overlay="true" data-kt-drawer-width="{default:'300px', 'md': '500px'}" data-kt-drawer-direction="end" data-kt-drawer-toggle="#kt_drawer_chat_toggle" data-kt-drawer-close="#kt_drawer_chat_close">
+            <!--begin::Messenger-->
+            {% include 'notification.html' %}
+            <!--end::Messenger-->
+        </div>
+        <!--end::notification drawer-->
+
+{% endblock %}

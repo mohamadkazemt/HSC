@@ -1,218 +1,223 @@
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
-from django.contrib import messages
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.shortcuts import get_object_or_404
 from .models import (
-    DailyReport, BlastingDetail, DrillingDetail, DumpDetail,
-    LoadingDetail, InspectionDetail, StoppageDetail, FollowupDetail
+    DailyReport, BlastingDetail, DrillingDetail, LoadingDetail, DumpDetail,
+    StoppageDetail, FollowupDetail, InspectionDetail
 )
 from BaseInfo.models import MiningBlock, MiningMachine, Dump
-from .forms import DailyReportForm
-import json
-import logging
+from django.views.generic import TemplateView, DetailView
+from django.urls import path
 from shift_manager.utils import get_current_shift_and_group
-from django.db import IntegrityError
-from django.utils.timezone import make_aware
-from datetime import datetime
+import logging
+from django.views.generic import ListView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Q
+from django.core.files.base import ContentFile
+import base64
+import json
 
-# تنظیم لاگر برای مدیریت خطا و دیباگ
+
+
 logger = logging.getLogger(__name__)
 
-@login_required
-def create_daily_report(request):
-    """
-    ویوی ایجاد گزارش روزانه برای افسران ایمنی.
-    """
-    # دریافت شیفت و گروه کاری از اپ shift_manager
-    current_shift, current_group = get_current_shift_and_group()
-    if not current_shift or not current_group:
-        messages.error(request, "مشکلی در تعیین شیفت و گروه کاری وجود دارد. لطفاً با مدیر سیستم تماس بگیرید.")
-        return redirect('dashboard')
 
-    # داده‌های داینامیک برای فرم‌ها
-    report_form = DailyReportForm()
-    mining_blocks = list(MiningBlock.objects.filter(is_active=True).values('id', 'block_name'))
-    mining_machines = list(MiningMachine.objects.filter(is_active=True).values('id', 'workshop_code', 'machine_type__name'))
-    dumps = list(Dump.objects.filter(is_active=True).values('id', 'dump_name'))
 
-    if request.method == "POST":
+
+
+
+class CreateDailyReportView(APIView):
+    def post(self, request, *args, **kwargs):
         try:
-            # فرم اصلی DailyReport
-            report_data = request.POST.copy()
-            report_data['shift'] = current_shift  # اضافه کردن شیفت محاسبه شده
-            report_data['work_group'] = current_group  # اضافه کردن گروه کاری محاسبه شده
-            report_form = DailyReportForm(report_data)
+            # دریافت داده‌های اصلی
+            blasting_details = json.loads(request.data.get("blasting_details", "[]"))
+            drilling_details = json.loads(request.data.get("drilling_details", "[]"))
+            loading_details = json.loads(request.data.get("loading_details", "[]"))
+            dump_details = json.loads(request.data.get("dump_details", "[]"))
+            stoppage_details = json.loads(request.data.get("stoppage_details", "[]"))
+            inspection_details = json.loads(request.data.get("inspection_details", "[]"))
+            followup_details = json.loads(request.data.get("followup_details", "[]"))
 
-            logger.debug("POST data: %s", request.POST)
-            logger.debug("FILES data: %s", request.FILES)
+            # دریافت شیفت و گروه کاری جاری
+            current_shift, current_group = get_current_shift_and_group()
 
-            if report_form.is_valid():
-                # ذخیره گزارش اصلی
-                report = report_form.save(commit=False)
-                report.user = request.user  # تنظیم کاربر ایجاد کننده
-                report.save()
-                logger.info("گزارش اصلی با موفقیت ذخیره شد. ID: %s", report.id)
+            if not current_shift or not current_group:
+                return Response({"error": "شیفت یا گروه کاری جاری شناسایی نشد."}, status=status.HTTP_400_BAD_REQUEST)
 
-                # ذخیره جزئیات آتشباری از JSON
-                blasting_details_json = request.POST.get('blasting_details')
-                if blasting_details_json:
-                    try:
-                        blasting_details = json.loads(blasting_details_json)
-                        for detail in blasting_details:
-                            if not MiningBlock.objects.filter(id=detail.get('block_id')).exists():
-                                logger.error("Block ID %s does not exist.", detail.get('block_id'))
-                                continue
-                            BlastingDetail.objects.create(
-                                daily_report=report,
-                                block_id=detail.get('block_id'),
-                                description=detail.get('description', '')
-                            )
-                        logger.info("جزئیات آتشباری ذخیره شد.")
-                    except json.JSONDecodeError as e:
-                        logger.error("خطا در پردازش JSON آتشباری: %s", e)
+            # ایجاد گزارش روزانه
+            daily_report = DailyReport.objects.create(
+                user=request.user,
+                shift=current_shift,  # مقدار شیفت از `get_current_shift_and_group`
+                work_group=current_group,
+                supervisor_comments=request.data.get("supervisor_comments", "")
+            )
 
-                # ذخیره جزئیات حفاری از JSON
-                drilling_details_json = request.POST.get('drilling_details')
-                if drilling_details_json:
-                    try:
-                        drilling_details = json.loads(drilling_details_json)
-                        for detail in drilling_details:
-                            if not MiningBlock.objects.filter(id=detail.get('block_id')).exists():
-                                logger.error("Block ID %s does not exist.", detail.get('block_id'))
-                                continue
-                            if not MiningMachine.objects.filter(id=detail.get('machine_id')).exists():
-                                logger.error("Machine ID %s does not exist.", detail.get('machine_id'))
-                                continue
-                            DrillingDetail.objects.create(
-                                daily_report=report,
-                                block_id=detail.get('block_id'),
-                                machine_id=detail.get('machine_id'),
-                                status=detail.get('status', 'safe')
-                            )
-                        logger.info("جزئیات حفاری ذخیره شد.")
-                    except json.JSONDecodeError as e:
-                        logger.error("خطا در پردازش JSON حفاری: %s", e)
+            # ذخیره جزئیات آتشباری
+            for blasting in blasting_details:
+                if blasting.get("block_id"):
+                    block = get_object_or_404(MiningBlock, id=blasting.get("block_id"))
+                    BlastingDetail.objects.create(
+                        daily_report=daily_report,
+                        explosion_occurred=blasting.get("explosion_occurred", False),
+                        block=block,
+                        description=blasting.get("description", "")
+                    )
 
-                # ذخیره جزئیات بارگیری از JSON
-                loading_details_json = request.POST.get('loading_details')
-                if loading_details_json:
-                    try:
-                        loading_details = json.loads(loading_details_json)
-                        for detail in loading_details:
-                            if not MiningBlock.objects.filter(id=detail.get('block_id')).exists():
-                                logger.error("Block ID %s does not exist.", detail.get('block_id'))
-                                continue
-                            if not MiningMachine.objects.filter(id=detail.get('machine_id')).exists():
-                                logger.error("Machine ID %s does not exist.", detail.get('machine_id'))
-                                continue
-                            LoadingDetail.objects.create(
-                                daily_report=report,
-                                block_id=detail.get('block_id'),
-                                machine_id=detail.get('machine_id'),
-                                status=detail.get('status', 'safe')
-                            )
-                        logger.info("جزئیات بارگیری ذخیره شد.")
-                    except json.JSONDecodeError as e:
-                        logger.error("خطا در پردازش JSON بارگیری: %s", e)
+            # ذخیره جزئیات حفاری
+            for drilling in drilling_details:
+                if drilling.get("block_id") and drilling.get("machine_id"):
+                    block = get_object_or_404(MiningBlock, id=drilling.get("block_id"))
+                    machine = get_object_or_404(MiningMachine, id=drilling.get("machine_id"))
+                    DrillingDetail.objects.create(
+                        daily_report=daily_report,
+                        block=block,
+                        machine=machine,
+                        status=drilling.get("status", "unknown")
+                    )
 
-                # ذخیره جزئیات تخلیه از JSON
-                dump_details_json = request.POST.get('dump_details')
-                if dump_details_json:
-                    try:
-                        dump_details = json.loads(dump_details_json)  # تبدیل JSON به لیست
-                        for detail in dump_details:
-                            dump_id = detail.get('dump_id')
-                            status = detail.get('status', 'safe')
-                            description = detail.get('description', '')
+            # ذخیره جزئیات بارگیری
+            for loading in loading_details:
+                if loading.get("block_id") and loading.get("machine_id"):
+                    block = get_object_or_404(MiningBlock, id=loading.get("block_id"))
+                    machine = get_object_or_404(MiningMachine, id=loading.get("machine_id"))
+                    LoadingDetail.objects.create(
+                        daily_report=daily_report,
+                        block=block,
+                        machine=machine,
+                        status=loading.get("status", "unknown")
+                    )
 
-                            # بررسی معتبر بودن dump_id
-                            if not dump_id or not Dump.objects.filter(id=dump_id).exists():
-                                logger.error("Dump ID %s does not exist or is invalid.", dump_id)
-                                messages.error(request, f"دامپ با ID {dump_id} وجود ندارد.")
-                                continue  # پرش به جزئیات بعدی
+            # ذخیره جزئیات تخلیه
+            for dump_detail in dump_details:
+                if dump_detail.get("dump_id"):
+                    dump = get_object_or_404(Dump, id=dump_detail.get("dump_id"))
+                    DumpDetail.objects.create(
+                        daily_report=daily_report,
+                        dump=dump,
+                        status=dump_detail.get("status", "unknown"),
+                        description=dump_detail.get("description", "")
+                    )
 
-                            # ذخیره جزئیات تخلیه
-                            DumpDetail.objects.create(
-                                daily_report=report,
-                                dump_id=dump_id,
-                                status=status,
-                                description=description
-                            )
-                            logger.info("جزئیات تخلیه برای دامپ ID %s ذخیره شد.", dump_id)
+            # ذخیره جزئیات توقفات
+            for stoppage in stoppage_details:
+                if stoppage.get("reason"):
+                    StoppageDetail.objects.create(
+                        daily_report=daily_report,
+                        reason=stoppage.get("reason"),
+                        start_time=stoppage.get("start_time"),
+                        end_time=stoppage.get("end_time"),
+                        description=stoppage.get("description", "")
+                    )
 
-                    except json.JSONDecodeError as e:
-                        logger.error("خطا در پردازش JSON تخلیه: %s", e)
-                        messages.error(request, "خطا در پردازش اطلاعات تخلیه. لطفاً مجدداً تلاش کنید.")
-                    except Exception as e:
-                        logger.exception("خطای غیرمنتظره در ذخیره جزئیات تخلیه: %s", e)
-                        messages.error(request, "یک خطای غیرمنتظره رخ داد.")
+            # ذخیره جزئیات پیگیری
+            for index, followup in enumerate(followup_details):
+                description = followup.get("description", "")
+                followup_instance = FollowupDetail.objects.create(
+                    daily_report=daily_report,
+                    description=description
+                )
 
-                # ذخیره جزئیات بازرسی از JSON
-                inspection_details_json = request.POST.get('inspection_details')
-                if inspection_details_json:
-                    try:
-                        inspection_details = json.loads(inspection_details_json)
-                        for detail in inspection_details:
-                            InspectionDetail.objects.create(
-                                daily_report=report,
-                                inspection_done=detail.get('inspection_done', False),
-                                status=detail.get('status', 'safe'),
-                                description=detail.get('description', '')
-                            )
-                        logger.info("جزئیات بازرسی ذخیره شد.")
-                    except json.JSONDecodeError as e:
-                        logger.error("خطا در پردازش JSON بازرسی: %s", e)
+                # ذخیره فایل‌ها
+                files = request.FILES.getlist(f"followup_details[{index}][files][]")
+                for file in files:
+                    followup_instance.files.save(file.name, file)
 
-                # ذخیره جزئیات توقفات از JSON
-                stoppage_details_json = request.POST.get('stoppage_details')
-                if stoppage_details_json:
-                    try:
-                        stoppage_details = json.loads(stoppage_details_json)
-                        for detail in stoppage_details:
-                            start_time = make_aware(datetime.strptime(detail.get('start_time'), "%H:%M"))
-                            end_time = make_aware(datetime.strptime(detail.get('end_time'), "%H:%M"))
-                            StoppageDetail.objects.create(
-                                daily_report=report,
-                                reason=detail.get('reason'),
-                                start_time=start_time,
-                                end_time=end_time,
-                                description=detail.get('description', '')
-                            )
-                        logger.info("جزئیات توقفات ذخیره شد.")
-                    except json.JSONDecodeError as e:
-                        logger.error("خطا در پردازش JSON توقفات: %s", e)
+            # ذخیره جزئیات بازرسی
+            for inspection in inspection_details:
+                InspectionDetail.objects.create(
+                    daily_report=daily_report,
+                    inspection_done=inspection.get("inspection_done", False),
+                    status=inspection.get("status", "unknown"),
+                    description=inspection.get("description", "")
+                )
 
-                # ذخیره جزئیات پیگیری از JSON
-                followup_details_json = request.POST.get('followup_details')
-                if followup_details_json:
-                    try:
-                        followup_details = json.loads(followup_details_json)
-                        for detail in followup_details:
-                            FollowupDetail.objects.create(
-                                daily_report=report,
-                                description=detail.get('description', ''),
-                                files=request.FILES.get(detail.get('file_input_name'))
-                            )
-                        logger.info("جزئیات پیگیری ذخیره شد.")
-                    except json.JSONDecodeError as e:
-                        logger.error("خطا در پردازش JSON پیگیری: %s", e)
+            return Response({"message": "گزارش با موفقیت ثبت شد.", "id": daily_report.id}, status=status.HTTP_201_CREATED)
 
-                messages.success(request, "گزارش روزانه با موفقیت ثبت شد!")
-                return redirect('dailyreport_hse:report_list')
-            else:
-                logger.warning("فرم DailyReport نامعتبر است: %s", report_form.errors)
-                messages.error(request, "خطا در ثبت فرم. لطفاً مقادیر را به درستی وارد کنید.")
-
-        except IntegrityError as e:
-            logger.exception("خطای مربوط به محدودیت FOREIGN KEY: %s", e)
-            messages.error(request, "خطا در ذخیره داده‌ها به دلیل مشکلات کلید خارجی. لطفاً بررسی کنید که همه مقادیر صحیح هستند.")
         except Exception as e:
-            logger.exception("خطای غیرمنتظره در پردازش فرم: %s", e)
-            messages.error(request, "یک خطای غیرمنتظره رخ داد. لطفاً با مدیر سیستم تماس بگیرید.")
+            print(f"خطا: {e}")
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    return render(request, 'dailyreport_hse/create_shift_report.html', {
-        'report_form': report_form,
-        'mining_blocks': mining_blocks,
-        'mining_machines': mining_machines,
-        'dumps': dumps,
-    })
 
+
+
+
+class DailyReportFormView(LoginRequiredMixin, TemplateView):
+    template_name = "dailyreport_hse/create_shift_report.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['mining_blocks'] = MiningBlock.objects.all()
+        context['mining_machines'] = MiningMachine.objects.all()
+        context['dumps'] = Dump.objects.all()
+        return context
+
+
+
+
+class DailyReportListView(ListView):
+    model = DailyReport
+    template_name = "dailyreport_hse/daily_report_list.html"  # نام فایل قالب
+    context_object_name = "daily_reports"  # نام متغیر در قالب
+    paginate_by = 10  # تعداد گزارش‌ها در هر صفحه
+
+    def get_queryset(self):
+        # دریافت تمام گزارش‌ها
+        queryset = super().get_queryset()
+
+        # دریافت پارامترهای فیلتر از request
+        shift = self.request.GET.get("shift", "همه")
+        group = self.request.GET.get("group", "همه")
+        search_query = self.request.GET.get("search", "")
+
+        # اعمال فیلتر برای شیفت کاری
+        if shift != "همه":
+            queryset = queryset.filter(shift=shift)
+
+        # اعمال فیلتر برای گروه کاری
+        if group != "همه":
+            queryset = queryset.filter(work_group=group)
+
+        # اعمال فیلتر برای جستجو
+        if search_query:
+            queryset = queryset.filter(
+                Q(user__username__icontains=search_query) |
+                Q(supervisor_comments__icontains=search_query) |
+                Q(shift__icontains=search_query)
+            )
+
+        # مرتب‌سازی بر اساس تاریخ ایجاد
+        return queryset.order_by("-created_at")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # ارسال فیلترهای فعلی به قالب برای نمایش انتخاب‌ها
+        context["shift_filter"] = self.request.GET.get("shift", "همه")
+        context["group_filter"] = self.request.GET.get("group", "همه")
+        context["search_query"] = self.request.GET.get("search", "")
+        return context
+
+
+class DailyReportDetailView(DetailView):
+    model = DailyReport
+    template_name = "dailyreport_hse/daily_report_detail.html"
+    context_object_name = "report"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # گزارش اصلی
+        report = self.object
+
+        # اضافه کردن جزئیات مرتبط به کانتکست
+        context['blasting_details'] = BlastingDetail.objects.filter(daily_report=report)
+        context['drilling_details'] = DrillingDetail.objects.filter(daily_report=report)
+        context['loading_details'] = LoadingDetail.objects.filter(daily_report=report)
+        context['dump_details'] = DumpDetail.objects.filter(daily_report=report)
+        context['stoppage_details'] = StoppageDetail.objects.filter(daily_report=report)
+        context['followup_details'] = FollowupDetail.objects.filter(daily_report=report)
+        context['inspection_details'] = InspectionDetail.objects.filter(daily_report=report)
+
+        return context
