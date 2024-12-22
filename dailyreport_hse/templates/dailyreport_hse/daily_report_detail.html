@@ -224,7 +224,7 @@
                                                                     <td>{{ detail.description }}</td>
                                                                     <td>
                                                                         {% if detail.files %}
-                                                                            <a href="{{ detail.cleaned_file_name }}">دانلود فایل</a>
+                                                                            <a href="{{ detail.files.url }}">دانلود فایل</a>
                                                                         {% else %}
                                                                             ندارد
                                                                         {% endif %}

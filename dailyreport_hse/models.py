@@ -93,7 +93,7 @@ class StoppageDetail(models.Model):
 class FollowupDetail(models.Model):
     daily_report = models.ForeignKey(DailyReport, on_delete=models.CASCADE, related_name="followup_details")
     description = models.TextField(verbose_name="توضیحات")
-    files = models.FileField(upload_to='followups/', null=True, blank=True, verbose_name="فایل‌های پیوست")
+    files = models.FileField(upload_to='followups/%Y/%m/%d//', null=True, blank=True, verbose_name="فایل‌های پیوست")
 
     def __str__(self):
         return f"پیگیری - توضیحات: {self.description[:30]}..."

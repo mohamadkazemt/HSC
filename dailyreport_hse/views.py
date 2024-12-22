@@ -32,6 +32,10 @@ logger = logging.getLogger(__name__)
 class CreateDailyReportView(APIView):
     def post(self, request, *args, **kwargs):
         try:
+            print("Incoming Data:", request.data)
+            print("Incoming Files:", request.FILES)
+
+
             # دریافت داده‌های اصلی
             blasting_details = json.loads(request.data.get("blasting_details", "[]"))
             drilling_details = json.loads(request.data.get("drilling_details", "[]"))
@@ -40,7 +44,8 @@ class CreateDailyReportView(APIView):
             stoppage_details = json.loads(request.data.get("stoppage_details", "[]"))
             inspection_details = json.loads(request.data.get("inspection_details", "[]"))
             followup_details = json.loads(request.data.get("followup_details", "[]"))
-
+            print("Followup Details Received:", followup_details)
+            print("Files Received:", request.FILES)
             # دریافت شیفت و گروه کاری جاری
             current_shift, current_group = get_current_shift_and_group()
 
@@ -101,29 +106,25 @@ class CreateDailyReportView(APIView):
                         description=dump_detail.get("description", "")
                     )
 
-            # ذخیره جزئیات توقفات
-            for stoppage in stoppage_details:
-                if stoppage.get("reason"):
-                    StoppageDetail.objects.create(
-                        daily_report=daily_report,
-                        reason=stoppage.get("reason"),
-                        start_time=stoppage.get("start_time"),
-                        end_time=stoppage.get("end_time"),
-                        description=stoppage.get("description", "")
-                    )
-
             # ذخیره جزئیات پیگیری
-            for index, followup in enumerate(followup_details):
-                description = followup.get("description", "")
+            followup_index = 0
+            while f"followup_description_{followup_index}" in request.POST:
+                description = request.POST.get(f"followup_description_{followup_index}", "")
                 followup_instance = FollowupDetail.objects.create(
                     daily_report=daily_report,
                     description=description
                 )
 
-                # ذخیره فایل‌ها
-                files = request.FILES.getlist(f"followup_details[{index}][files][]")
-                for file in files:
+                # بررسی و ذخیره فایل‌ها
+                file_index = 0
+                while f"followup_file_{followup_index}_{file_index}" in request.FILES:
+                    file = request.FILES[f"followup_file_{followup_index}_{file_index}"]
                     followup_instance.files.save(file.name, file)
+                    file_index += 1
+
+                followup_index += 1
+            print("Followup Description Keys:", [key for key in request.POST.keys() if "followup_description" in key])
+            print("Followup File Keys:", [key for key in request.FILES.keys()])
 
             # ذخیره جزئیات بازرسی
             for inspection in inspection_details:

@@ -345,11 +345,14 @@ document.addEventListener("DOMContentLoaded", function (){
 
         // افزودن جزئیات پیگیری
         followupDetails.forEach((detail, index) => {
-            formData.append(`followup_details[${index}][description]`, detail.description);
+            formData.append(`followup_description_${index}`, detail.description);
+
             detail.files.forEach((file, fileIndex) => {
-                formData.append(`followup_details[${index}][files][${fileIndex}]`, file);
+                formData.append(`followup_file_${index}_${fileIndex}`, file);
             });
         });
+
+
 
         // لاگ گرفتن از داده‌های ارسال‌شده
         console.log("داده‌های ارسالی:", [...formData.entries()]);
