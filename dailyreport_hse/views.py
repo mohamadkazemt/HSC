@@ -21,7 +21,6 @@ import base64
 import json
 
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -106,6 +105,17 @@ class CreateDailyReportView(APIView):
                         description=dump_detail.get("description", "")
                     )
 
+            # ذخیره جزئیات توقفات
+            for stoppage in stoppage_details:
+                if stoppage.get("reason"):
+                     StoppageDetail.objects.create(
+                        daily_report=daily_report,
+                        reason=stoppage.get("reason"),
+                        start_time=stoppage.get("start_time"),
+                        end_time=stoppage.get("end_time"),
+                        description=stoppage.get("description", "")
+                    )
+
             # ذخیره جزئیات پیگیری
             followup_index = 0
             while f"followup_description_{followup_index}" in request.POST:
@@ -158,30 +168,27 @@ class DailyReportFormView(LoginRequiredMixin, TemplateView):
 
 
 
+
 class DailyReportListView(ListView):
     model = DailyReport
-    template_name = "dailyreport_hse/daily_report_list.html"  # نام فایل قالب
-    context_object_name = "daily_reports"  # نام متغیر در قالب
+    template_name = "dailyreport_hse/daily_report_list.html"
+    context_object_name = "daily_reports"
     paginate_by = 10  # تعداد گزارش‌ها در هر صفحه
 
     def get_queryset(self):
-        # دریافت تمام گزارش‌ها
         queryset = super().get_queryset()
 
-        # دریافت پارامترهای فیلتر از request
+        # فیلترها
         shift = self.request.GET.get("shift", "همه")
         group = self.request.GET.get("group", "همه")
         search_query = self.request.GET.get("search", "")
 
-        # اعمال فیلتر برای شیفت کاری
         if shift != "همه":
             queryset = queryset.filter(shift=shift)
 
-        # اعمال فیلتر برای گروه کاری
         if group != "همه":
             queryset = queryset.filter(work_group=group)
 
-        # اعمال فیلتر برای جستجو
         if search_query:
             queryset = queryset.filter(
                 Q(user__username__icontains=search_query) |
@@ -189,16 +196,18 @@ class DailyReportListView(ListView):
                 Q(shift__icontains=search_query)
             )
 
-        # مرتب‌سازی بر اساس تاریخ ایجاد
         return queryset.order_by("-created_at")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # ارسال فیلترهای فعلی به قالب برای نمایش انتخاب‌ها
-        context["shift_filter"] = self.request.GET.get("shift", "همه")
-        context["group_filter"] = self.request.GET.get("group", "همه")
-        context["search_query"] = self.request.GET.get("search", "")
+        context['shift_filter'] = self.request.GET.get("shift", "همه")
+        context['group_filter'] = self.request.GET.get("group", "همه")
+        context['search_query'] = self.request.GET.get("search", "")
         return context
+
+
+
+
 
 
 class DailyReportDetailView(DetailView):

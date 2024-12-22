@@ -46,7 +46,7 @@
                                                         <p><strong>افسر ایمنی:</strong> {{ report.user.username }}</p>
                                                         <p><strong>شیفت کاری:</strong> {{ report.shift }}</p>
                                                         <p><strong>گروه کاری:</strong> {{ report.work_group }}</p>
-                                                        <p><strong>تاریخ ایجاد:</strong> {{ report.created_at|date:"Y/m/d H:i" }}</p>
+                                                        <p><strong>تاریخ ایجاد:</strong> {{ report.created_at|to_jalali }}</p>
                                                         <p><strong>توضیحات سرشیفت:</strong> {{ report.supervisor_comments }}</p>
                                                     </div>
                                                 </div>
