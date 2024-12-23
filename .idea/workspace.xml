@@ -5,11 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="dailyreport_hsemami222">
+      <change afterPath="$PROJECT_DIR$/dailyreport_hse/migrations/0005_alter_dailyreport_user.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/daily_report_detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/daily_report_detail.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/accounts/templates/accounts/settings.html" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/templates/accounts/settings.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dailyreport_hse/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/daily_report_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/daily_report_list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dailyreport_hse/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -135,8 +136,8 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Django Server.Unnamed" />
       <item itemvalue="HTTP Request.generated-requests | #1" />
+      <item itemvalue="Django Server.Unnamed" />
     </list>
     <recent_temporary>
       <list>

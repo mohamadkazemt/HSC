@@ -43,18 +43,26 @@
                                             <div class="card-toolbar my-1">
                                                 <form method="get" action="{% url 'dailyreport_hse:daily_report_list' %}" class="d-flex align-items-center flex-wrap">
                                                     <div class="me-2">
+                                                        <input type="text" id="date_filter" name="date" class="form-control form-control-solid form-control-sm" placeholder="انتخاب تاریخ" data-jdp>
+                                                    </div>
+                                                    <div class="me-2">
                                                         <select name="shift" class="form-select form-select-solid form-select-sm">
                                                             <option value="همه" {% if shift_filter == 'همه' %}selected{% endif %}>همه شیفت‌ها</option>
-                                                            <option value="صبح" {% if shift_filter == 'صبح' %}selected{% endif %}>شیفت صبح</option>
-                                                            <option value="عصر" {% if shift_filter == 'عصر' %}selected{% endif %}>شیفت عصر</option>
-                                                            <option value="شب" {% if shift_filter == 'شب' %}selected{% endif %}>شیفت شب</option>
+                                                            <option value="روزکار اول" {% if shift_filter == 'روزکار اول' %}selected{% endif %}>روزکار اول</option>
+                                                            <option value="روزکار دوم" {% if shift_filter == 'روزکار دوم' %}selected{% endif %}>روزکار دوم</option>
+                                                            <option value="عصرکار اول" {% if shift_filter == 'عصرکار اول' %}selected{% endif %}>عصرکار اول</option>
+                                                            <option value="عصرکار دوم" {% if shift_filter == 'عصرکار دوم' %}selected{% endif %}>عصرکار دوم</option>
+                                                            <option value="شب کار اول" {% if shift_filter == 'شب کار اول' %}selected{% endif %}>شب کار اول</option>
+                                                            <option value="شب کار دوم" {% if shift_filter == 'شب کار دوم' %}selected{% endif %}>شب کار دوم</option>
                                                         </select>
                                                     </div>
                                                     <div class="me-2">
                                                         <select name="group" class="form-select form-select-solid form-select-sm">
                                                             <option value="همه" {% if group_filter == 'همه' %}selected{% endif %}>همه گروه‌ها</option>
-                                                            <option value="گروه A" {% if group_filter == 'گروه A' %}selected{% endif %}>گروه A</option>
-                                                            <option value="گروه B" {% if group_filter == 'گروه B' %}selected{% endif %}>گروه B</option>
+                                                            <option value="A" {% if group_filter == 'A' %}selected{% endif %}>گروه A</option>
+                                                            <option value="B" {% if group_filter == 'B' %}selected{% endif %}>گروه B</option>
+                                                            <option value="C" {% if group_filter == 'C' %}selected{% endif %}>گروه C</option>
+                                                            <option value="D" {% if group_filter == 'D' %}selected{% endif %}>گروه D</option>
                                                         </select>
                                                     </div>
                                                     <div class="me-2">
@@ -84,7 +92,7 @@
                                                     {% for report in daily_reports %}
                                                         <tr>
                                                             <td>{{ forloop.counter }}</td>
-                                                            <td>{{ report.user.username }}</td>
+                                                            <td>{{ report.user.first_name }} {{ report.user.last_name }} {{ report.userprofile.personnel_code }}</td>
                                                             <td>{{ report.get_shift_display }}</td>
                                                             <td>{{ report.get_work_group_display }}</td>
                                                             <td>{{ report.created_at|to_jalali }}</td>
@@ -177,4 +185,17 @@
         </div>
     </div>    <!--end::notification drawer-->
 
+{% endblock %}
+{% block extra_js %}
+
+    <script src="{% static 'path_to_jalali_datepicker.js' %}"></script>
+    <script>
+        $(document).ready(function() {
+            $('#date_filter').persianDatepicker({
+                format: 'YYYY/MM/DD',
+                autoClose: true,
+                initialValue: false
+            });
+        });
+    </script>
 {% endblock %}
