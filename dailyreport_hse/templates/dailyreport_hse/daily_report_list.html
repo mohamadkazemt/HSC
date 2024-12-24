@@ -92,7 +92,7 @@
                                                     {% for report in daily_reports %}
                                                         <tr>
                                                             <td>{{ forloop.counter }}</td>
-                                                            <td>{{ report.user.first_name }} {{ report.user.last_name }} {{ report.userprofile.personnel_code }}</td>
+                                                            <td>{{ report.user.first_name }} {{ report.user.last_name }} {{ report.user.userprofile.personnel_code }}</td>
                                                             <td>{{ report.get_shift_display }}</td>
                                                             <td>{{ report.get_work_group_display }}</td>
                                                             <td>{{ report.created_at|to_jalali }}</td>
@@ -185,17 +185,4 @@
         </div>
     </div>    <!--end::notification drawer-->
 
-{% endblock %}
-{% block extra_js %}
-
-    <script src="{% static 'path_to_jalali_datepicker.js' %}"></script>
-    <script>
-        $(document).ready(function() {
-            $('#date_filter').persianDatepicker({
-                format: 'YYYY/MM/DD',
-                autoClose: true,
-                initialValue: false
-            });
-        });
-    </script>
 {% endblock %}
