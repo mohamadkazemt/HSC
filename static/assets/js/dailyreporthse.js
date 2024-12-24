@@ -61,14 +61,22 @@ document.addEventListener("DOMContentLoaded", function (){
 
     showStep(currentStep);
 
-    $('.select2').select2({
-        placeholder: "لطفاً انتخاب کنید",
-        allowClear: true
+    $('.form-select-solid').select2({
+        placeholder: "انتخاب کنید",
+        allowClear: false,
+        width: '100%', // عرض کامل
+        dir: 'rtl', // جهت راست به چپ
+        dropdownCssClass: 'form-select', // کلاس برای منوی دراپ‌داون
+        containerCssClass: 'form-select' // کلاس برای کادر انتخاب
     });
+
+
+    console.log("Select2 برای همه فیلدها فعال شد.");
+
 
     /** جمع‌آوری و افزودن داده‌ها */
 
-    // مرحله 1: جزئیات آتشباری
+// مرحله 1: جزئیات آتشباری
     document.getElementById("blasting_status").addEventListener("change", function () {
         const blastingDetails = document.getElementById("blasting_details");
         blastingDetails.style.display = this.value === "yes" ? "block" : "none";
@@ -110,7 +118,7 @@ document.addEventListener("DOMContentLoaded", function (){
         console.log("یک جزئیات آتشباری حذف شد.");
     };
 
-    // مرحله 2: جزئیات حفاری
+// مرحله 2: جزئیات حفاری
     window.addDrillingDetail = function () {
         const blockId = document.querySelector('[name="drilling_block"]').value;
         const machineId = document.querySelector('[name="drilling_machine"]').value;
@@ -142,7 +150,7 @@ document.addEventListener("DOMContentLoaded", function (){
         console.log("یک جزئیات حفاری حذف شد.");
     };
 
-    // مرحله 3: جزئیات بارگیری
+// مرحله 3: جزئیات بارگیری
     window.addLoadingDetail = function () {
         const blockId = document.querySelector('[name="loading_block"]').value;
         const machineId = document.querySelector('[name="loading_machine"]').value;
@@ -173,7 +181,7 @@ document.addEventListener("DOMContentLoaded", function (){
         console.log("یک جزئیات بارگیری حذف شد.");
     };
 
-    // مرحله 4: جزئیات تخلیه
+// مرحله 4: جزئیات تخلیه
     window.addDumpDetail = function () {
         const dumpSelect = document.querySelector('[name="dump"]');
         const dumpId = dumpSelect.value;
@@ -206,7 +214,7 @@ document.addEventListener("DOMContentLoaded", function (){
         button.closest("tr").remove();
         console.log("یک جزئیات تخلیه حذف شد.");
     };
-    // مرحله 5: نمایش جزئیات بازرسی
+// مرحله 5: نمایش جزئیات بازرسی
     document.getElementById("inspection_done").addEventListener("change", function () {
         const details = document.getElementById("inspection_details");
         details.style.display = this.value === "yes" ? "block" : "none";
@@ -245,7 +253,7 @@ document.addEventListener("DOMContentLoaded", function (){
         console.log("یک جزئیات بازرسی حذف شد.");
     };
 
-    // مرحله 6: توقفات
+// مرحله 6: توقفات
     window.addStoppageDetail = function () {
         const reason = document.querySelector('[name="stoppage_reason"]').value;
         const start = document.querySelector('[name="stoppage_start"]').value;
@@ -276,7 +284,7 @@ document.addEventListener("DOMContentLoaded", function (){
         console.log("یک جزئیات توقف حذف شد.");
     };
 
-    // مرحله 7: پیگیری
+// مرحله 7: پیگیری
     let followupDetails = [];
 
     window.addFollowupDetail = function () {

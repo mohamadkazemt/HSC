@@ -68,9 +68,14 @@ class MiningBlock(models.Model):
         ('loading', 'در حال بارگیری'),
         ('completed', 'اتمام بلوک'),
     ]
+    BLOCK_TYPE_CHOICES = [
+        ('w', 'باطله'),
+        ('o', 'سنگ پرعیار'),
+        ('w&o', 'ترکیبی')
+    ]
 
     block_name = models.CharField(max_length=100, verbose_name="نام بلوک")
-    type = models.ForeignKey(MineralType, on_delete=models.SET_NULL, null=True, blank=True ,default='w', verbose_name="نوع بلوک سنگ")
+    type = models.CharField(max_length=20, choices=BLOCK_TYPE_CHOICES,default='w', verbose_name="نوع بلوک سنگ")
     status = models.CharField(max_length=20, choices=BLOCK_STATUS_CHOICES, default='initial_preparation',
                               verbose_name="وضعیت بلوک")
     location = models.CharField(max_length=255, verbose_name="موقعیت بلوک", blank=True)
