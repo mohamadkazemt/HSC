@@ -4,23 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="dailyreport_hsemami222">
-      <change afterPath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/daily_report_pdf.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="dailyreport_hseENDmax">
+      <change afterPath="$PROJECT_DIR$/permissions/migrations/0001_initial.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/permissions/migrations/0002_departmentpermission_positionpermission_and_more.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/permissions/migrations/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/permissions/templates/permissions/manage_access.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/permissions/urls.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/permissions/utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BaseInfo/migrations/0012_alter_miningblock_type.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/BaseInfo/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/BaseInfo/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/templates/accounts/settings.html" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/templates/accounts/settings.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/detail_view.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/detail_view.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dailyreport_hse/migrations/0005_alter_dailyreport_user.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dailyreport_hse/migrations/0006_alter_dailyreport_user.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/create_shift_report.html" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/create_shift_report.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/daily_report_detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/daily_report_detail.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/daily_report_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/daily_report_list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dailyreport_hse/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dailyreport_hse/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/assets/js/dailyreporthse.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/assets/js/dailyreporthse.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -35,9 +30,9 @@
       <list>
         <option value="CSS File" />
         <option value="package.json" />
-        <option value="Python Script" />
         <option value="JavaScript File" />
         <option value="HTML File" />
+        <option value="Python Script" />
       </list>
     </option>
   </component>
@@ -632,7 +627,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۴۴" />
       <updated>1734551904372</updated>
     </task>
-    <option name="localTasksCounter" value="45" />
+    <task id="LOCAL‎−۰۰۰۴۵" summary="dailyreport_hseENDmax">
+      <option name="closed" value="true" />
+      <created>1735068620577</created>
+      <option name="number" value="LOCAL‎−۰۰۰۴۵" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۴۵" />
+      <updated>1735068620577</updated>
+    </task>
+    <option name="localTasksCounter" value="46" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -650,7 +652,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="v0.0.1/3" />
     <MESSAGE value="amaliyat1" />
     <MESSAGE value="amalyatend1" />
     <MESSAGE value="endamaliyat&amp;anomali" />
@@ -675,7 +676,8 @@
     <MESSAGE value="dailyreport_hsemami2" />
     <MESSAGE value="dailyreport_hsemami4" />
     <MESSAGE value="dailyreport_hsemami222" />
-    <option name="LAST_COMMIT_MESSAGE" value="dailyreport_hsemami222" />
+    <MESSAGE value="dailyreport_hseENDmax" />
+    <option name="LAST_COMMIT_MESSAGE" value="dailyreport_hseENDmax" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
