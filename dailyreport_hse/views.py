@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.core.checks import messages
 from django.core.exceptions import PermissionDenied
+from django.utils.decorators import method_decorator
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -28,7 +29,7 @@ from weasyprint import HTML
 from django.http import HttpResponse
 from django.conf import settings
 import os
-from permissions.utils import check_permission
+from permissions.utils import class_permission_required, permission_required
 from django.contrib import messages
 import logging
 
@@ -155,19 +156,10 @@ class CreateDailyReportView(APIView):
             print(f"خطا: {e}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-
-
+@class_permission_required("daily_report_form")
 class DailyReportFormView(LoginRequiredMixin, TemplateView):
     template_name = "dailyreport_hse/create_shift_report.html"
 
-    def dispatch(self, request, *args, **kwargs):
-        # بررسی دسترسی
-        if not check_permission(request.user, 'daily_report_form', 'can_add'):
-            logger.warning(f"Access denied for user {request.user} to daily_report_form.")
-            messages.error(request, "شما اجازه دسترسی به این بخش را ندارید.")
-            return redirect("home")  # تغییر به صفحه اصلی یا صفحه مناسب
-        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -177,7 +169,7 @@ class DailyReportFormView(LoginRequiredMixin, TemplateView):
         return context
 
 
-
+@class_permission_required("daily_report_list")
 
 class DailyReportListView(LoginRequiredMixin, ListView):
     model = DailyReport

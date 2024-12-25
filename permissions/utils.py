@@ -1,6 +1,12 @@
 from django.urls import get_resolver
 from django.apps import apps
 from .models import UnitPermission, DepartmentPermission, PositionPermission
+from functools import wraps
+from django.core.exceptions import PermissionDenied
+from django.utils.decorators import method_decorator
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def get_all_views():
@@ -22,6 +28,21 @@ def get_all_views():
 
     return views
 
+def get_all_views_with_labels():
+    """
+    استخراج تمام ویوهای تعریف‌شده در پروژه همراه با لیبل‌ها.
+    """
+    views_with_labels = []
+
+    for app_name in apps.get_app_configs():
+        try:
+            module = __import__(f"{app_name.name}.urls", fromlist=["URLS_WITH_LABELS"])
+            if hasattr(module, "URLS_WITH_LABELS"):
+                views_with_labels.extend(module.URLS_WITH_LABELS)
+        except ModuleNotFoundError:
+            continue
+
+    return views_with_labels
 
 def get_all_models():
     """
@@ -31,46 +52,100 @@ def get_all_models():
     models = apps.get_models()
     return [model._meta.object_name for model in models]
 
-
-def check_permission(user, view_name, permission_type="can_view"):
+def check_permission(user, view_name):
     """
-    بررسی دسترسی کاربر به ویوی مشخص.
-    دسترسی به صورت سلسله‌مراتبی بررسی می‌شود (واحد، بخش، سمت).
+    بررسی تمام انواع دسترسی کاربر به ویوی مشخص به صورت پویا.
 
     Args:
         user: کاربر فعلی
         view_name: نام ویو
-        permission_type: نوع دسترسی (can_view, can_add, can_edit, can_delete)
 
     Returns:
-        True اگر دسترسی وجود داشته باشد، در غیر این صورت False.
+        dict: شامل تمام انواع دسترسی موجود در دیتابیس برای این کاربر و ویو.
     """
     user_profile = getattr(user, 'userprofile', None)
     if not user_profile:
-        return False
+        return {}
+
+    permissions = {}
 
     # بررسی دسترسی واحد
-    if UnitPermission.objects.filter(
+    if user_profile.unit:
+        unit_permissions = UnitPermission.objects.filter(
             unit=user_profile.unit,
-            view_name=view_name,
-            **{permission_type: True}
-    ).exists():
-        return True
+            view_name=view_name
+        ).first()
+        if unit_permissions:
+            permissions.update({
+                field.name: getattr(unit_permissions, field.name)
+                for field in UnitPermission._meta.fields
+                if field.name.startswith("can_")
+            })
 
     # بررسی دسترسی بخش
-    if DepartmentPermission.objects.filter(
+    if user_profile.department:
+        department_permissions = DepartmentPermission.objects.filter(
             department=user_profile.department,
-            view_name=view_name,
-            **{permission_type: True}
-    ).exists():
-        return True
+            view_name=view_name
+        ).first()
+        if department_permissions:
+            permissions.update({
+                field.name: getattr(department_permissions, field.name)
+                for field in DepartmentPermission._meta.fields
+                if field.name.startswith("can_")
+            })
 
     # بررسی دسترسی سمت
-    if PositionPermission.objects.filter(
+    if user_profile.position:
+        position_permissions = PositionPermission.objects.filter(
             position=user_profile.position,
-            view_name=view_name,
-            **{permission_type: True}
-    ).exists():
-        return True
+            view_name=view_name
+        ).first()
+        if position_permissions:
+            permissions.update({
+                field.name: getattr(position_permissions, field.name)
+                for field in PositionPermission._meta.fields
+                if field.name.startswith("can_")
+            })
 
-    return False
+    return permissions
+
+def permission_required(view_name):
+    """
+    دکوریتور برای بررسی دسترسی کاربر به ویوها به صورت پویا.
+
+    Args:
+        view_name (str): نام ویو که دسترسی آن بررسی می‌شود.
+
+    Returns:
+        function: ویوی اصلی در صورت دسترسی.
+    """
+    def decorator(view_func):
+        @wraps(view_func)
+        def _wrapped_view(request, *args, **kwargs):
+            permissions = check_permission(request.user, view_name)
+            if not any(permissions.values()):  # اگر هیچ دسترسی وجود نداشت
+                raise PermissionDenied("شما اجازه دسترسی به این بخش را ندارید.")
+            return view_func(request, *args, **kwargs)
+        return _wrapped_view
+    return decorator
+
+
+
+
+def class_permission_required(view_name):
+    def decorator(cls):
+        original_dispatch = cls.dispatch
+
+        @method_decorator(wraps(original_dispatch), name='dispatch')
+        def new_dispatch(self, *args, **kwargs):
+            # بررسی دسترسی‌ها
+            permissions = check_permission(self.request.user, view_name)
+            if not permissions.get("can_view", False):
+                raise PermissionDenied("شما اجازه دسترسی به این بخش را ندارید.")
+            return original_dispatch(self, *args, **kwargs)
+
+        cls.dispatch = new_dispatch
+        return cls
+
+    return decorator

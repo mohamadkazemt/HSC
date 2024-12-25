@@ -5,17 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="dailyreport_hseENDmax">
-      <change afterPath="$PROJECT_DIR$/permissions/migrations/0001_initial.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/permissions/migrations/0002_departmentpermission_positionpermission_and_more.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/permissions/migrations/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/permissions/templates/permissions/manage_access.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/permissions/urls.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/permissions/utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/HSCprojects/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dailyreport_hse/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dailyreport_hse/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/permissions/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/permissions/admin.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/permissions/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/permissions/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/permissions/templates/permissions/manage_access.html" beforeDir="false" afterPath="$PROJECT_DIR$/permissions/templates/permissions/manage_access.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/permissions/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/permissions/utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/permissions/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/permissions/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -51,12 +48,12 @@
     &quot;assignee&quot;: &quot;mohamadkazemt&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings">{
-  &quot;selectedUrlAndAccountId&quot;: {
-    &quot;url&quot;: &quot;https://github.com/mohamadkazemt/HSC.git&quot;,
-    &quot;accountId&quot;: &quot;b1049974-7825-44ef-a60c-99f35deafaf1&quot;
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/mohamadkazemt/HSC.git",
+    "accountId": "4a4a0b77-3294-4afc-82ac-479cfd08feaa"
   }
-}</component>
+}]]></component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/anomalis/admin.py" root0="FORCE_HIGHLIGHTING" />
   </component>
@@ -178,8 +175,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-PY-242.24807.21" />
-        <option value="bundled-python-sdk-00717045f1d3-399fe30bd8c1-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-242.24807.21" />
+        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-PY-242.23726.102" />
+        <option value="bundled-python-sdk-5e1850174b45-399fe30bd8c1-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-242.23726.102" />
       </set>
     </attachedChunks>
   </component>
@@ -301,6 +298,7 @@
       <workItem from="1734753006936" duration="282000" />
       <workItem from="1734753309906" duration="3439000" />
       <workItem from="1734839913257" duration="8110000" />
+      <workItem from="1735132316060" duration="10984000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
@@ -634,7 +632,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۴۵" />
       <updated>1735068620577</updated>
     </task>
-    <option name="localTasksCounter" value="46" />
+    <task id="LOCAL‎−۰۰۰۴۶" summary="dailyreport_hseENDmax">
+      <option name="closed" value="true" />
+      <created>1735074158325</created>
+      <option name="number" value="LOCAL‎−۰۰۰۴۶" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۴۶" />
+      <updated>1735074158326</updated>
+    </task>
+    <option name="localTasksCounter" value="47" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
