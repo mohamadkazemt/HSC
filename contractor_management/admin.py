@@ -19,3 +19,5 @@ class EmployeeAdmin(admin.ModelAdmin):
 class VehicleAdmin(admin.ModelAdmin):
     list_display = ('vehicle_type', 'license_plate', 'insurance_expiry', 'contractor', 'technical_inspection_expiry', 'driver_name', 'permit_expiry')
     search_fields = ('license_plate', 'vehicle_type')
+
+

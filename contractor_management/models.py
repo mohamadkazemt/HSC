@@ -1,5 +1,6 @@
 from django.db import models
 from django_jalali.db import models as jmodels  # برای تاریخ شمسی
+from django.contrib.auth.models import User
 
 
 
@@ -71,3 +72,27 @@ class Vehicle(models.Model):
     class Meta:
         verbose_name = "خودرو"
         verbose_name_plural = "خودروها"
+
+
+class Report(models.Model):
+    STATUS_CHOICES = [
+        ('full', 'کارکرد کامل (8 ساعت)'),
+        ('partial', 'کارکرد ناقص'),
+        ('inactive', 'غیر فعال'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="کاربر")
+    report_datetime = jmodels.jDateTimeField(auto_now_add=True, verbose_name="تاریخ و زمان ثبت گزارش")
+    contractor = models.ForeignKey(Contractor, on_delete=models.CASCADE, verbose_name="پیمانکار")
+    vehicle = models.ForeignKey('Vehicle', on_delete=models.CASCADE, verbose_name="خودرو")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='full', verbose_name="وضعیت کارکرد")
+    stop_start_time = models.TimeField(null=True, blank=True, verbose_name="ساعت شروع توقف")
+    stop_end_time = models.TimeField(null=True, blank=True, verbose_name="ساعت پایان توقف")
+    description = models.TextField(null=True, blank=True, verbose_name="توضیحات")
+
+    def __str__(self):
+        return f"گزارش {self.report_datetime.strftime('%Y-%m-%d %H:%M:%S')} برای خودرو {self.vehicle.license_plate}"
+
+    class Meta:
+        verbose_name = "گزارش کارکرد خودرو"
+        verbose_name_plural = "گزارش کارکرد خودروها"

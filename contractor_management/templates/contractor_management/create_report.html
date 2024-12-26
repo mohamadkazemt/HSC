@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ایجاد گزارش کارکرد خودرو</title>
+    <style>
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<h2>ایجاد گزارش کارکرد خودرو</h2>
+<form method="post">
+    {% csrf_token %}
+    {{ form.contractor }}<br>
+    {{ form.vehicle }}<br>
+    {{ form.status }}<br>
+
+    <div id="partial_fields" class="hidden">
+        <label for="id_stop_start_time">ساعت شروع توقف:</label>
+        {{ form.stop_start_time }}<br>
+
+        <label for="id_stop_end_time">ساعت پایان توقف:</label>
+        {{ form.stop_end_time }}<br>
+        <label for="id_description">توضیحات:</label>
+        {{ form.description }}<br>
+    </div>
+    <div id="inactive_fields" class="hidden">
+        <label for="id_description">توضیحات:</label>
+        {{ form.description }}<br>
+    </div>
+    <button type="submit">ارسال گزارش</button>
+</form>
+<script>
+    const statusSelect = document.getElementById('id_status');
+    const partialFields = document.getElementById('partial_fields');
+    const inactiveFields = document.getElementById('inactive_fields');
+
+    const partial_stop_start_time = document.getElementById('id_stop_start_time');
+    const partial_stop_end_time = document.getElementById('id_stop_end_time');
+    const partial_description = document.getElementById('id_description');
+    const inactive_description = document.getElementById('id_description');
+
+
+    function toggleFields() {
+        partialFields.classList.add('hidden');
+        inactiveFields.classList.add('hidden');
+
+
+        if (statusSelect.value === 'full') {
+            partial_stop_start_time.value = '';
+            partial_stop_end_time.value = '';
+            partial_description.value = '';
+            inactive_description.value ='';
+        } else if (statusSelect.value === 'partial') {
+            partialFields.classList.remove('hidden');
+            inactive_description.value = '';
+
+        } else if (statusSelect.value === 'inactive') {
+            inactiveFields.classList.remove('hidden');
+            partial_stop_start_time.value = '';
+            partial_stop_end_time.value = '';
+            partial_description.value ='';
+        }
+    }
+
+    statusSelect.addEventListener('change', toggleFields);
+    toggleFields(); // Initial toggle
+</script>
+</body>
+</html>

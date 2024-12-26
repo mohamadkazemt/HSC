@@ -61,7 +61,7 @@ INSTALLED_APPS = [
     'leave_reports.apps.LeaveReportsConfig',
     'contractor_management.apps.ContractorManagementConfig',
     'rest_framework',
-    'permissions.apps.PermissionsConfig'
+    'permissions.apps.PermissionsConfig',
 
 ]
 

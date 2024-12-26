@@ -32,6 +32,7 @@ urlpatterns = [
     path('leave_reports/', include('leave_reports.urls')),
     path('dailyreport_hse/', include('dailyreport_hse.urls')),
     path("permissions/", include("permissions.urls")),
+    path("contractor/", include("contractor_management.urls")),
 
 ]
 

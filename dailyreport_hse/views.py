@@ -213,6 +213,7 @@ class DailyReportListView(LoginRequiredMixin, ListView):
         context["search_query"] = self.request.GET.get("search", "")
         return context
 
+@class_permission_required("daily_report_detail")
 
 class DailyReportDetailView(LoginRequiredMixin, DetailView):
     model = DailyReport
@@ -237,6 +238,7 @@ class DailyReportDetailView(LoginRequiredMixin, DetailView):
 
         return context
 
+@permission_required("daily_report_pdf")
 
 @login_required
 def daily_report_pdf_view(request, pk):
