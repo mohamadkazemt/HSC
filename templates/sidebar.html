@@ -45,6 +45,22 @@
                         <!--end::Menu link-->
                     </div>
                     <!--end::Menu آیتم-->
+                                        <!--begin::Menu آیتم-->
+                    <div class="menu-item">
+                        <!--begin::Menu link-->
+                        <a class="menu-link active" href="{% url 'dailyreport_hse:daily_report_form' %}">
+                            <!--begin::Bullet-->
+                            <span class="menu-icon">
+												<span class="bullet bullet-dot bg-success"></span>
+											</span>
+                            <!--end::Bullet-->
+                            <!--begin::Title-->
+                            <span class="menu-title">ثبت گزارش روزانه</span>
+                            <!--end::Title-->
+                        </a>
+                        <!--end::Menu link-->
+                    </div>
+                    <!--end::Menu آیتم-->
                     <!--begin::Menu آیتم-->
                     <div class="menu-item">
                         <!--begin::Menu link-->
@@ -262,48 +278,48 @@
             <!--end:Menu item-->
 
 
-        {% if user|in_group:"operations" %}
-            <div id="#kt_app_sidebar_menu" data-kt-menu="true" data-kt-menu-expand="false" class="app-sidebar-menu-primary menu menu-column menu-rounded menu-sub-indention menu-state-bullet-primary">
-                <div class="menu-item mb-2">
-                    <div class="menu-heading text-uppercase fs-5 fw-bold">واحد عملیات</div>
-                    <!--begin::separator-->
-                    <div class="app-sidebar-separator separator"></div>
-                    <!--end::separator-->
-                </div>
-                <!--end::Heading-->
-                <!--begin:Menu item-->
+            {% if user|in_group:"operations" %}
+                <div id="#kt_app_sidebar_menu" data-kt-menu="true" data-kt-menu-expand="false" class="app-sidebar-menu-primary menu menu-column menu-rounded menu-sub-indention menu-state-bullet-primary">
+                    <div class="menu-item mb-2">
+                        <div class="menu-heading text-uppercase fs-5 fw-bold">واحد عملیات</div>
+                        <!--begin::separator-->
+                        <div class="app-sidebar-separator separator"></div>
+                        <!--end::separator-->
+                    </div>
+                    <!--end::Heading-->
+                    <!--begin:Menu item-->
 
                     <div data-kt-menu-trigger="click" class="menu-item here show menu-accordion">
-                    <!--begin:Menu link-->
-                    <span class="menu-link">
+                        <!--begin:Menu link-->
+                        <span class="menu-link">
 											<span class="menu-icon">
 												<i class="ki-outline ki-home-2 fs-2"></i>
 											</span>
 											<span class="menu-title">داشبورد ها</span>
 											<span class="menu-arrow"></span>
 										</span>
-                    <!--end:Menu link-->
-                    <!--begin:Menu sub-->
-                    <div class="menu-sub menu-sub-accordion">
-                        <!--begin:Menu item-->
-                        <div class="menu-item">
-                            <!--begin:Menu link-->
-                            <a class="menu-link active" href="{% url 'dashboard:dashboard' %}">
+                        <!--end:Menu link-->
+                        <!--begin:Menu sub-->
+                        <div class="menu-sub menu-sub-accordion">
+                            <!--begin:Menu item-->
+                            <div class="menu-item">
+                                <!--begin:Menu link-->
+                                <a class="menu-link active" href="{% url 'dashboard:dashboard' %}">
 													<span class="menu-bullet">
 														<span class="bullet bullet-dot"></span>
 													</span>
-                                <span class="menu-title">پیش فرض</span>
-                            </a>
-                            <!--end:Menu link-->
+                                    <span class="menu-title">پیش فرض</span>
+                                </a>
+                                <!--end:Menu link-->
+                            </div>
+                            <!--end:Menu item-->
+
+
+
+
                         </div>
-                        <!--end:Menu item-->
-
-
-
-
+                        <!--end:Menu sub-->
                     </div>
-                    <!--end:Menu sub-->
-                </div>
                     <!--end:Menu item-->
                     <!--begin:گزارش شیفت عملیات-->
                     <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
@@ -412,8 +428,8 @@
 
 
 
-            </div>
-        {% endif %}
+                </div>
+            {% endif %}
         </div>
     </div>
 

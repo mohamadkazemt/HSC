@@ -5,7 +5,15 @@ from accounts.models import Unit, Department, Position
 from .utils import get_all_views_with_labels, check_permission
 from django.core.serializers.json import DjangoJSONEncoder
 import json
+from django.db.models import Q
+from django.contrib.auth.decorators import user_passes_test
+from django.contrib import messages
 
+
+
+
+
+@user_passes_test(lambda user: user.is_superuser)
 def manage_access(request):
     """
     ویوی مدیریت دسترسی‌ها.
@@ -14,7 +22,6 @@ def manage_access(request):
     departments = Department.objects.values("id", "name")  # استخراج تمام بخش‌ها
     positions = Position.objects.values("id", "name")  # استخراج تمام سمت‌ها
     views_with_labels = get_all_views_with_labels()  # دریافت ویوها همراه با لیبل‌ها
-    print(views_with_labels)
 
     if request.method == "POST":
         entity_type = request.POST.get("entity_type")
@@ -25,44 +32,49 @@ def manage_access(request):
         can_edit = "can_edit" in request.POST
         can_delete = "can_delete" in request.POST
 
-        print("Entity Type:", entity_type)
-        print("Entity ID:", entity_id)
-        print("View Names:", view_names)
-        print("Permissions:", can_view, can_add, can_edit, can_delete)
-
         for view_name in view_names:
             if entity_type == "unit":
-                if not UnitPermission.objects.filter(unit_id=entity_id, view_name=view_name).exists():
-                    UnitPermission.objects.create(
-                        unit_id=entity_id,
-                        view_name=view_name,
-                        can_view=can_view,
-                        can_add=can_add,
-                        can_edit=can_edit,
-                        can_delete=can_delete,
-                    )
+                # بررسی وجود رکورد
+                if UnitPermission.objects.filter(unit_id=entity_id, view_name=view_name).exists():
+                    messages.warning(request, f"رکورد برای واحد {entity_id} و ویو {view_name} قبلاً ثبت شده است.")
+                    continue
+                UnitPermission.objects.create(
+                    unit_id=entity_id,
+                    view_name=view_name,
+                    can_view=can_view,
+                    can_add=can_add,
+                    can_edit=can_edit,
+                    can_delete=can_delete,
+                )
             elif entity_type == "department":
-                if not DepartmentPermission.objects.filter(department_id=entity_id, view_name=view_name).exists():
-                    DepartmentPermission.objects.create(
-                        department_id=entity_id,
-                        view_name=view_name,
-                        can_view=can_view,
-                        can_add=can_add,
-                        can_edit=can_edit,
-                        can_delete=can_delete,
-                    )
+                # بررسی وجود رکورد
+                if DepartmentPermission.objects.filter(department_id=entity_id, view_name=view_name).exists():
+                    messages.warning(request, f"رکورد برای بخش {entity_id} و ویو {view_name} قبلاً ثبت شده است.")
+                    continue
+                DepartmentPermission.objects.create(
+                    department_id=entity_id,
+                    view_name=view_name,
+                    can_view=can_view,
+                    can_add=can_add,
+                    can_edit=can_edit,
+                    can_delete=can_delete,
+                )
             elif entity_type == "position":
-                if not PositionPermission.objects.filter(position_id=entity_id, view_name=view_name).exists():
-                    PositionPermission.objects.create(
-                        position_id=entity_id,
-                        view_name=view_name,
-                        can_view=can_view,
-                        can_add=can_add,
-                        can_edit=can_edit,
-                        can_delete=can_delete,
-                    )
+                # بررسی وجود رکورد
+                if PositionPermission.objects.filter(position_id=entity_id, view_name=view_name).exists():
+                    messages.warning(request, f"رکورد برای پست {entity_id} و ویو {view_name} قبلاً ثبت شده است.")
+                    continue
+                PositionPermission.objects.create(
+                    position_id=entity_id,
+                    view_name=view_name,
+                    can_view=can_view,
+                    can_add=can_add,
+                    can_edit=can_edit,
+                    can_delete=can_delete,
+                )
 
-        return redirect("manage_access")
+        messages.success(request, "دسترسی‌ها با موفقیت به‌روزرسانی شدند.")
+        return redirect("permissions:manage_access")
 
     return render(request, "permissions/manage_access.html", {
         "units": json.dumps(list(units), cls=DjangoJSONEncoder),
@@ -71,6 +83,10 @@ def manage_access(request):
         "views_with_labels": views_with_labels,
     })
 
+
+
+
+@user_passes_test(lambda user: user.is_superuser)
 def validate_access(request, view_name):
     """
     ویوی بررسی دسترسی کاربر به ویوی مشخص.
@@ -79,32 +95,170 @@ def validate_access(request, view_name):
         return HttpResponseForbidden("شما اجازه دسترسی به این بخش را ندارید.")
     return JsonResponse({"message": "دسترسی مجاز است"})
 
-def list_permissions(request):
-    """
-    نمایش لیست دسترسی‌ها به صورت گرافیکی.
-    """
-    unit_permissions = UnitPermission.objects.all()
-    department_permissions = DepartmentPermission.objects.all()
-    position_permissions = PositionPermission.objects.all()
 
-    return render(request, "permissions/list_permissions.html", {
-        "unit_permissions": unit_permissions,
-        "department_permissions": department_permissions,
-        "position_permissions": position_permissions,
+@user_passes_test(lambda user: user.is_superuser)
+
+def list_permissions(request):
+    # فیلترها
+    unit_filter = request.GET.get('unit')
+    department_filter = request.GET.get('department')
+    position_filter = request.GET.get('position')
+
+    # داده‌ها
+    units = Unit.objects.all()
+    departments = Department.objects.all()
+    positions = Position.objects.all()
+
+    # جمع‌آوری دسترسی‌ها
+    permissions = []
+
+    if unit_filter:
+        unit_permissions = UnitPermission.objects.filter(unit_id=unit_filter)
+        for permission in unit_permissions:
+            permissions.append({
+                'type': 'واحد',
+                'name': permission.unit.name,
+                'view_name': permission.view_name,
+                'can_view': permission.can_view,
+                'can_add': permission.can_add,
+                'can_edit': permission.can_edit,
+                'can_delete': permission.can_delete,
+                'id': permission.id
+            })
+
+    if department_filter:
+        department_permissions = DepartmentPermission.objects.filter(department_id=department_filter)
+        for permission in department_permissions:
+            permissions.append({
+                'type': 'بخش',
+                'name': permission.department.name,
+                'view_name': permission.view_name,
+                'can_view': permission.can_view,
+                'can_add': permission.can_add,
+                'can_edit': permission.can_edit,
+                'can_delete': permission.can_delete,
+                'id': permission.id
+            })
+
+    if position_filter:
+        position_permissions = PositionPermission.objects.filter(position_id=position_filter)
+        for permission in position_permissions:
+            permissions.append({
+                'type': 'پست',
+                'name': permission.position.name,
+                'view_name': permission.view_name,
+                'can_view': permission.can_view,
+                'can_add': permission.can_add,
+                'can_edit': permission.can_edit,
+                'can_delete': permission.can_delete,
+                'id': permission.id
+            })
+
+    if not unit_filter and not department_filter and not position_filter:
+        # بدون فیلتر همه موارد را نمایش بده
+        unit_permissions = UnitPermission.objects.all()
+        department_permissions = DepartmentPermission.objects.all()
+        position_permissions = PositionPermission.objects.all()
+
+        for permission in unit_permissions:
+            permissions.append({
+                'type': 'واحد',
+                'name': permission.unit.name,
+                'view_name': permission.view_name,
+                'can_view': permission.can_view,
+                'can_add': permission.can_add,
+                'can_edit': permission.can_edit,
+                'can_delete': permission.can_delete,
+                'id': permission.id
+            })
+
+        for permission in department_permissions:
+            permissions.append({
+                'type': 'بخش',
+                'name': permission.department.name,
+                'view_name': permission.view_name,
+                'can_view': permission.can_view,
+                'can_add': permission.can_add,
+                'can_edit': permission.can_edit,
+                'can_delete': permission.can_delete,
+                'id': permission.id
+            })
+
+        for permission in position_permissions:
+            permissions.append({
+                'type': 'پست',
+                'name': permission.position.name,
+                'view_name': permission.view_name,
+                'can_view': permission.can_view,
+                'can_add': permission.can_add,
+                'can_edit': permission.can_edit,
+                'can_delete': permission.can_delete,
+                'id': permission.id
+            })
+
+    context = {
+        'permissions': permissions,
+        'units': units,
+        'departments': departments,
+        'positions': positions,
+    }
+
+    return render(request, 'permissions/list_permissions.html', context)
+
+
+@user_passes_test(lambda user: user.is_superuser)
+
+def edit_permission(request, permission_id):
+    permission_type = request.GET.get('type')  # دریافت نوع دسترسی از پارامتر GET
+    permission = None
+
+    # بررسی نوع دسترسی و بازیابی داده
+    if permission_type == 'واحد':
+        permission = get_object_or_404(UnitPermission, id=permission_id)
+    elif permission_type == 'بخش':
+        permission = get_object_or_404(DepartmentPermission, id=permission_id)
+    elif permission_type == 'پست':
+        permission = get_object_or_404(PositionPermission, id=permission_id)
+    else:
+        return HttpResponseForbidden("نوع دسترسی نامعتبر است.")
+
+    if request.method == 'POST':
+        # دریافت اطلاعات از فرم
+        can_view = request.POST.get('can_view') == 'on'
+        can_add = request.POST.get('can_add') == 'on'
+        can_edit = request.POST.get('can_edit') == 'on'
+        can_delete = request.POST.get('can_delete') == 'on'
+
+        # به‌روزرسانی اطلاعات
+        permission.can_view = can_view
+        permission.can_add = can_add
+        permission.can_edit = can_edit
+        permission.can_delete = can_delete
+        permission.save()
+
+        return redirect('permissions:list_permissions')
+
+    # ارسال اطلاعات به قالب
+    return render(request, 'permissions/edit_permission.html', {
+        'permission': permission,
+        'permission_type': permission_type  # ارسال نوع دسترسی به قالب
     })
 
-def delete_permission(request, permission_type, permission_id):
-    """
-    حذف یک دسترسی خاص بر اساس نوع و ID.
-    """
-    if permission_type == "unit":
+
+
+@user_passes_test(lambda user: user.is_superuser)
+
+def delete_permission(request, permission_id):
+    permission_type = request.GET.get('type')  # نوع دسترسی
+
+    if permission_type == 'واحد':
         permission = get_object_or_404(UnitPermission, id=permission_id)
-    elif permission_type == "department":
+    elif permission_type == 'بخش':
         permission = get_object_or_404(DepartmentPermission, id=permission_id)
-    elif permission_type == "position":
+    elif permission_type == 'پست':
         permission = get_object_or_404(PositionPermission, id=permission_id)
     else:
         return HttpResponseForbidden("نوع دسترسی نامعتبر است.")
 
     permission.delete()
-    return redirect("list_permissions")
+    return redirect('permissions:list_permissions')

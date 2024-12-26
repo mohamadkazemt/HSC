@@ -1,0 +1,161 @@
+
+{% extends 'base.html' %}
+
+
+{% load static %}
+{% load jalali %}
+
+
+{% block content %}
+    <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+        <!--begin::Page-->
+        <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+            <!--begin::Header-->
+            {% include 'header.html' %}
+            <!--end::Header-->
+            <!--begin::Wrapper-->
+            <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+                <!--begin::Sidebar-->
+                {% include 'sidebar.html' %}
+                <!--end::Sidebar-->
+                <!--begin::اصلی-->
+                <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                    <!--begin::Content wrapper-->
+                    <div class="d-flex flex-column flex-column-fluid">
+                        <!--begin::Toolbar-->
+                        {% include 'toolbar.html' %}
+                        <!--end::Toolbar-->
+                        <!--begin::Content-->
+                        <div id="kt_app_content" class="app-content flex-column-fluid">
+                            <!--begin::Content container-->
+                            <div id="kt_app_content_container" class="app-container container-fluid">
+                                <!--begin::Row-->
+                                <div class="row g-5 g-xl-8">
+
+                                    <div class="card card-flush mt-6 mt-xl-9">
+                                        <!--begin::کارت header-->
+
+                                        <div class="container mt-5">
+                                            <h3 class="mb-4">لیست دسترسی‌ها</h3>
+
+                                            <!-- فیلترها -->
+                                            <form method="get" class="mb-4">
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <label for="unit" class="form-label">واحد:</label>
+                                                        <select name="unit" id="unit" class="form-select">
+                                                            <option value="">همه</option>
+                                                            {% for unit in units %}
+                                                                <option value="{{ unit.id }}" {% if request.GET.unit == unit.id|stringformat:"s" %}selected{% endif %}>
+                                                                    {{ unit.name }}
+                                                                </option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label for="department" class="form-label">بخش:</label>
+                                                        <select name="department" id="department" class="form-select">
+                                                            <option value="">همه</option>
+                                                            {% for department in departments %}
+                                                                <option value="{{ department.id }}" {% if request.GET.department == department.id|stringformat:"s" %}selected{% endif %}>
+                                                                    {{ department.name }}
+                                                                </option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label for="position" class="form-label">سمت:</label>
+                                                        <select name="position" id="position" class="form-select">
+                                                            <option value="">همه</option>
+                                                            {% for position in positions %}
+                                                                <option value="{{ position.id }}" {% if request.GET.position == position.id|stringformat:"s" %}selected{% endif %}>
+                                                                    {{ position.name }}
+                                                                </option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="mt-3 text-end">
+                                                    <button type="submit" class="btn btn-primary">اعمال فیلتر</button>
+                                                </div>
+                                            </form>
+
+                                            <!-- جدول دسترسی‌ها -->
+                                            <div class="table-responsive">
+                                                <table class="table table-bordered">
+                                                    <thead>
+                                                    <tr>
+                                                        <th>ردیف</th>
+                                                        <th>نوع</th>
+                                                        <th>نام</th>
+                                                        <th>ویو</th>
+                                                        <th>مشاهده</th>
+                                                        <th>افزودن</th>
+                                                        <th>ویرایش</th>
+                                                        <th>حذف</th>
+                                                        <th>عملیات</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    {% for permission in permissions %}
+                                                        <tr>
+                                                            <td>{{ forloop.counter }}</td>
+                                                            <td>{{ permission.type }}</td>
+                                                            <td>{{ permission.name }}</td>
+                                                            <td>{{ permission.view_name }}</td>
+                                                            <td>{{ permission.can_view|yesno:"بله,خیر" }}</td>
+                                                            <td>{{ permission.can_add|yesno:"بله,خیر" }}</td>
+                                                            <td>{{ permission.can_edit|yesno:"بله,خیر" }}</td>
+                                                            <td>{{ permission.can_delete|yesno:"بله,خیر" }}</td>
+                                                            <td>
+                                                                <a href="{% url 'permissions:edit_permission' permission.id %}?type={{ permission.type }}" class="btn btn-warning btn-sm">ویرایش</a>
+                                                                <a href="{% url 'permissions:delete_permission' permission.id %}?type={{ permission.type }}"
+                                                                   class="btn btn-danger btn-sm"
+                                                                   onclick="return confirm('آیا مطمئن هستید؟')">حذف</a>
+                                                            </td>
+                                                        </tr>
+                                                    {% empty %}
+                                                        <tr>
+                                                            <td colspan="9" class="text-center">هیچ دسترسی‌ای یافت نشد.</td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+
+
+
+
+
+                                    <!--end::جداول Widget 13-->
+                                </div>
+
+                                <!--end::Content container-->
+                            </div>
+                            <!--end::Content-->
+
+                        </div>
+                        <!--end::Content wrapper-->
+                        <!--begin::Footer-->
+                        {% include 'footer.html' %}
+                        <!--end::Footer-->
+                    </div>
+                    <!--end:::اصلی-->
+                </div>
+                <!--end::Wrapper-->
+            </div>
+            <!--end::Page-->
+        </div>
+        <!--begin::notification drawer-->
+        <div id="kt_drawer_chat" class="bg-body" data-kt-drawer="true" data-kt-drawer-name="chat" data-kt-drawer-activate="true" data-kt-drawer-overlay="true" data-kt-drawer-width="{default:'300px', 'md': '500px'}" data-kt-drawer-direction="end" data-kt-drawer-toggle="#kt_drawer_chat_toggle" data-kt-drawer-close="#kt_drawer_chat_close">
+            <!--begin::Messenger-->
+            {% include 'notification.html' %}
+            <!--end::Messenger-->
+        </div>
+        <!--end::notification drawer-->
+
+{% endblock %}

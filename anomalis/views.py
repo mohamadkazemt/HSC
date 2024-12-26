@@ -6,6 +6,7 @@ from django.urls import reverse
 from HSCprojects import settings
 from dashboard.models import Notification
 from dashboard.sms_utils import send_template_sms, logger
+from permissions.utils import permission_required
 from .forms import AnomalyForm, CommentForm
 from django.http import JsonResponse
 from .models import AnomalyDescription, CorrectiveAction, Comment, LocationSection, Anomaly
@@ -44,6 +45,8 @@ name = 'anomalis'
 
 logger = logging.getLogger('anomalis')  # لاگر اختصاصی برای اپلیکیشن
 
+
+@permission_required("views.anomalis")
 @login_required
 def anomalis(request):
     if request.method == 'POST':
@@ -149,6 +152,7 @@ def anomalis(request):
 
 
 
+@permission_required("get_anomalydescription")
 
 def get_anomalydescription(request):
     anomalytype_id = request.GET.get('anomalytype_id')
@@ -177,6 +181,7 @@ def get_corrective_action(request, description_id):
 
 
 
+@permission_required("list")
 
 @login_required
 def anomaly_list(request):
@@ -399,7 +404,7 @@ def export_anomalies_to_excel(request):
 
 
 
-
+@permission_required("anomaly_detail")
 @login_required
 def anomaly_detail_view(request, pk):
     anomaly = get_object_or_404(
@@ -603,7 +608,7 @@ def get_sections(request):
 
 
 
-
+@permission_required("anomaly_pdf")
 @login_required
 def anomaly_pdf_view(request, pk):
     anomaly = get_object_or_404(Anomaly, pk=pk)

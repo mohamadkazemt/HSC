@@ -14,31 +14,31 @@ URLS_WITH_LABELS = [
         "path": "API/",
         "view": CreateDailyReportView.as_view(),
         "name": "create_daily_report",
-        "label": "ایجاد گزارش روزانه",
+        "label": "گزارش روزانه HSE_ایجاد گزارش روزانه",
     },
     {
         "path": "create/",
         "view": DailyReportFormView.as_view(),
         "name": "daily_report_form",
-        "label": "فرم گزارش روزانه",
+        "label": "گزارش روزانه HSE_فرم گزارش روزانه",
     },
     {
         "path": "list/",
         "view": DailyReportListView.as_view(),
         "name": "daily_report_list",
-        "label": "لیست گزارش‌ها",
+        "label": "گزارش روزانه HSE_لیست گزارش‌ها",
     },
     {
         "path": "detail/<int:pk>/",
         "view": DailyReportDetailView.as_view(),
         "name": "daily_report_detail",
-        "label": "جزئیات گزارش",
+        "label": "گزارش روزانه HSE_جزئیات گزارش",
     },
     {
         "path": "detail/<int:pk>/pdf/",
         "view": daily_report_pdf_view,
         "name": "daily_report_pdf",
-        "label": "دریافت PDF گزارش",
+        "label": "گزارش روزانه HSE_دریافت PDF گزارش",
     },
 ]
 
