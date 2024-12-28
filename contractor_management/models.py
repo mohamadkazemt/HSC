@@ -1,8 +1,13 @@
 from django.db import models
-from django_jalali.db import models as jmodels  # برای تاریخ شمسی
+from django_jalali.db import models as jmodels
 from django.contrib.auth.models import User
 
-
+# اضافه کردن ایمپورت ها
+from shift_manager.utils import get_current_shift_and_group
+from accounts.models import UserProfile # ایمپورت مدل پروفایل کاربر
+from django.db.models.signals import pre_save
+from django.dispatch import receiver
+from django.core.exceptions import ValidationError
 
 class Contractor(models.Model):
     company_name = models.CharField(max_length=255, verbose_name="نام شرکت/پیمانکار")
@@ -89,10 +94,26 @@ class Report(models.Model):
     stop_start_time = models.TimeField(null=True, blank=True, verbose_name="ساعت شروع توقف")
     stop_end_time = models.TimeField(null=True, blank=True, verbose_name="ساعت پایان توقف")
     description = models.TextField(null=True, blank=True, verbose_name="توضیحات")
+    shift = models.CharField(max_length=20, blank=True, null=True, verbose_name="شیفت کاری") # فیلد جدید
+    group = models.CharField(max_length=1, blank=True, null=True, verbose_name="گروه کاری")  # فیلد جدید
 
     def __str__(self):
         return f"گزارش {self.report_datetime.strftime('%Y-%m-%d %H:%M:%S')} برای خودرو {self.vehicle.license_plate}"
 
+
     class Meta:
         verbose_name = "گزارش کارکرد خودرو"
         verbose_name_plural = "گزارش کارکرد خودروها"
+        # یونیک کردن خودرو، تاریخ گزارش و شیفت
+        unique_together = ['vehicle', 'report_datetime', 'shift']
+    def clean(self):
+      if self.pk is None:
+        if self.report_datetime and self.shift: # چک میکنیم شیفت و تاریخ مقدار داشته باشند
+            existing_report = Report.objects.filter(
+              vehicle = self.vehicle,
+              report_datetime__date=self.report_datetime.date(),
+              shift = self.shift
+            ).exists()
+            if existing_report:
+               raise ValidationError("برای این خودرو در این شیفت و تاریخ یک گزارش ثبت شده است.")
+      super().clean()

@@ -4,15 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="contractor_vehicle">
-      <change afterPath="$PROJECT_DIR$/contractor_management/migrations/0007_report_shift.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/contractor_management/migrations/0008_report_user_group_report_work_day.py" afterDir="false" />
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="contractor_vehicle2">
+      <change afterPath="$PROJECT_DIR$/contractor_management/migrations/0007_report_group_report_shift.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/contractor_management/migrations/0008_alter_report_unique_together.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/contractor_management/signals.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/contractor_management/templates/contractor_management/reports/all_reports.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/contractor_management/utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/contractor_management/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/apps.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/contractor_management/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/forms.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/contractor_management/migrations/0006_report.py" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/migrations/0006_report.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/contractor_management/migrations/0007_remove_report_restart_time_remove_report_stop_active_and_more.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/contractor_management/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/contractor_management/templates/contractor_management/create_report.html" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/templates/contractor_management/create_report.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/contractor_management/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/contractor_management/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shift_manager/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/shift_manager/utils.py" afterDir="false" />
@@ -31,8 +33,8 @@
         <option value="CSS File" />
         <option value="package.json" />
         <option value="JavaScript File" />
-        <option value="HTML File" />
         <option value="Python Script" />
+        <option value="HTML File" />
       </list>
     </option>
   </component>
@@ -107,11 +109,11 @@
       <recent name="C:\Users\MKT\PycharmProjects\HSC\OperationsShiftReports\templates\OperationsShiftReports" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\shayan\PycharmProjects\HSC\contractor_management\templates\contractor_management" />
       <recent name="C:\Users\shayan\PycharmProjects\HSC\static\assets\js" />
       <recent name="C:\Users\shayan\PycharmProjects\HSC\static\assets" />
       <recent name="C:\Users\shayan\PycharmProjects\HSC\accounts\templates\accounts" />
       <recent name="C:\Users\shayan\PycharmProjects\HSC\anomalis\migrations" />
-      <recent name="C:\Users\shayan\PycharmProjects\HSC\anomalis\templates\anomalis" />
     </key>
   </component>
   <component name="RunManager" selected="Django Server.Unnamed">
@@ -307,7 +309,8 @@
       <workItem from="1734839913257" duration="8110000" />
       <workItem from="1735132316060" duration="10984000" />
       <workItem from="1735312199369" duration="3653000" />
-      <workItem from="1735315909790" duration="7658000" />
+      <workItem from="1735315909790" duration="8016000" />
+      <workItem from="1735393347349" duration="11134000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
@@ -655,7 +658,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۴۷" />
       <updated>1735241694659</updated>
     </task>
-    <option name="localTasksCounter" value="48" />
+    <task id="LOCAL‎−۰۰۰۴۸" summary="contractor_vehicle2">
+      <option name="closed" value="true" />
+      <created>1735330705090</created>
+      <option name="number" value="LOCAL‎−۰۰۰۴۸" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۴۸" />
+      <updated>1735330705090</updated>
+    </task>
+    <option name="localTasksCounter" value="49" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -673,7 +683,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="amalyatend1" />
     <MESSAGE value="endamaliyat&amp;anomali" />
     <MESSAGE value="endamaliyat&amp;anomali1" />
     <MESSAGE value="sms.ir" />
@@ -698,7 +707,8 @@
     <MESSAGE value="dailyreport_hsemami222" />
     <MESSAGE value="dailyreport_hseENDmax" />
     <MESSAGE value="contractor_vehicle" />
-    <option name="LAST_COMMIT_MESSAGE" value="contractor_vehicle" />
+    <MESSAGE value="contractor_vehicle2" />
+    <option name="LAST_COMMIT_MESSAGE" value="contractor_vehicle2" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

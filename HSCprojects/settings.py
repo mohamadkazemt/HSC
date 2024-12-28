@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'crispy_bootstrap5',
     'shift_manager.apps.ShiftManagerConfig',
     'django_jalali',
+    'jalali_date',
     'import_export',
     'BaseInfo.apps.BaseinfoConfig',
     'OperationsShiftReports.apps.OperationsshiftreportsConfig',
@@ -100,6 +101,7 @@ TEMPLATES = [
             ],
             'builtins': [
                 'django_jalali.templatetags.jformat',
+
             ],
         },
     },
