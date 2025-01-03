@@ -290,12 +290,13 @@
 {% if user_signature %}
     <div class="signature">
         <img src="{{ user_signature }}" alt="امضای کاربر" style="width: 200px; height: auto;">
+         {{ report.user.first_name }} {{ report.user.last_name }}
+            {{ report.created_at|jformat:"%Y/%m/%d" }}
     </div>
 {% endif %}
 
 
 <div class="footer">
-    این گزارش به صورت خودکار تولید شده است.
 </div>
 </body>
 </html>

@@ -5,123 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="contractor_vehicle3">
-      <change afterPath="$PROJECT_DIR$/dailyreport_hse/migrations/0007_drillingdetail_description_loadingdetail_description.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/css/bootstrap-datepicker.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/css/bootstrap-datepicker.css.map" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/css/bootstrap-datepicker.min.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/css/bootstrap-datepicker.standalone.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/css/bootstrap-datepicker.standalone.css.map" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/css/bootstrap-datepicker.standalone.min.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/css/bootstrap-datepicker3.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/css/bootstrap-datepicker3.css.map" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/css/bootstrap-datepicker3.min.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/css/bootstrap-datepicker3.standalone.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/css/bootstrap-datepicker3.standalone.css.map" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/css/bootstrap-datepicker3.standalone.min.css" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/js/bootstrap-datepicker.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/js/bootstrap-datepicker.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker-en-CA.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.ar-tn.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.ar.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.az.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.bg.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.bm.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.bn.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.br.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.bs.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.ca.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.cs.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.cy.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.da.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.de.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.el.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.en-AU.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.en-CA.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.en-GB.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.en-IE.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.en-NZ.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.en-ZA.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.eo.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.es.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.et.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.eu.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.fa.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.fi.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.fo.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.fr-CH.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.fr.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.gl.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.he.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.hi.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.hr.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.hu.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.hy.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.id.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.is.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.it-CH.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.it.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.ja.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.ka.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.kh.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.kk.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.km.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.ko.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.kr.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.lt.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.lv.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.me.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.mk.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.mn.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.ms.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.nl-BE.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.nl.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.no.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.oc.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.pl.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.pt-BR.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.pt.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.ro.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.rs-latin.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.rs.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.ru.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.si.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.sk.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.sl.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.sq.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.sr-latin.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.sr.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.sv.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.sw.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.ta.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.tg.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.th.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.tk.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.tr.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.uk.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.uz-cyrl.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.uz-latn.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.vi.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.zh-CN.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/bootstrap-datepicker/locales/bootstrap-datepicker.zh-TW.min.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/moment/moment-jalaali.js" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/static/moment/moment.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/contractor_management/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/forms.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/contractor_management/templates/contractor_management/create_report.html" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/templates/contractor_management/report_form.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/contractor_management/templates/contractor_management/reports/all_reports.html" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/templates/contractor_management/reports/all_reports.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/contractor_management/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/contractor_management/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dailyreport_hse/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/create_shift_report.html" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/create_shift_report.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/daily_report_detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/daily_report_detail.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dailyreport_hse/migrations/0001_initial.py" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/migrations/0001_initial.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dailyreport_hse/migrations/0002_dailyreport_work_group.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dailyreport_hse/migrations/0003_alter_dailyreport_shift.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dailyreport_hse/migrations/0004_alter_followupdetail_files.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/dailyreport_hse/migrations/0007_drillingdetail_description_loadingdetail_description.py" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/daily_report_pdf.html" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/templates/dailyreport_hse/daily_report_pdf.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dailyreport_hse/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/permissions/templates/permissions/manage_access.html" beforeDir="false" afterPath="$PROJECT_DIR$/permissions/templates/permissions/manage_access.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/permissions/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/permissions/utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/assets/js/dailyreporthse.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/assets/js/dailyreporthse.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/leave_reports/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -160,7 +52,7 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/mohamadkazemt/HSC.git&quot;,
-    &quot;accountId&quot;: &quot;4a4a0b77-3294-4afc-82ac-479cfd08feaa&quot;
+    &quot;accountId&quot;: &quot;b1049974-7825-44ef-a60c-99f35deafaf1&quot;
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
@@ -288,8 +180,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-PY-242.23726.102" />
-        <option value="bundled-python-sdk-5e1850174b45-399fe30bd8c1-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-242.23726.102" />
+        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-PY-242.24807.21" />
+        <option value="bundled-python-sdk-00717045f1d3-399fe30bd8c1-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-242.24807.21" />
       </set>
     </attachedChunks>
   </component>
@@ -420,6 +312,8 @@
       <workItem from="1735716988485" duration="14674000" />
       <workItem from="1735749747663" duration="9321000" />
       <workItem from="1735817073832" duration="1740000" />
+      <workItem from="1735885281345" duration="841000" />
+      <workItem from="1735886149292" duration="4236000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
       <option name="closed" value="true" />
