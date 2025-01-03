@@ -78,7 +78,7 @@
                                     <div class="col-md-6 mb-4">
                                         <div class="card">
                                             <div class="card-header">
-                                                <h3 class="card-title">جزئیات آتشباری</h3>
+                                                <h3 class="card-title">جزئیات عملیات آتشباری</h3>
                                             </div>
                                             <div class="card-body">
                                                 <table class="table table-bordered">
@@ -108,7 +108,7 @@
                                     <div class="col-md-6 mb-4">
                                         <div class="card">
                                             <div class="card-header">
-                                                <h3 class="card-title">جزئیات حفاری</h3>
+                                                <h3 class="card-title">جزئیات عملیات حفاری</h3>
                                             </div>
                                             <div class="card-body">
                                                 <table class="table table-bordered">
@@ -117,6 +117,7 @@
                                                         <th>بلوک</th>
                                                         <th>دستگاه</th>
                                                         <th>وضعیت</th>
+                                                        <th>توضیحات</th>
                                                     </tr>
                                                     </thead>
                                                     <tbody>
@@ -125,6 +126,7 @@
                                                             <td>{{ detail.block }}</td>
                                                             <td>{{ detail.machine }}</td>
                                                             <td>{% if detail.status == 'safe' %}ایمن{% else %}غیر ایمن{% endif %}</td>
+                                                            <td>{{ detail.description }}</td>
                                                         </tr>
                                                     {% empty %}
                                                         <tr><td colspan="3">اطلاعاتی موجود نیست.</td></tr>
@@ -138,7 +140,7 @@
                                     <div class="col-md-6 mb-4">
                                         <div class="card">
                                             <div class="card-header">
-                                                <h3 class="card-title">جزئیات بارگیری</h3>
+                                                <h3 class="card-title">جزئیات عملیات بارگیری</h3>
                                             </div>
                                             <div class="card-body">
                                                 <table class="table table-bordered">
@@ -147,6 +149,7 @@
                                                         <th>بلوک</th>
                                                         <th>دستگاه</th>
                                                         <th>وضعیت</th>
+                                                        <th>توضیحات</th>
                                                     </tr>
                                                     </thead>
                                                     <tbody>
@@ -155,6 +158,7 @@
                                                             <td>{{ detail.block }}</td>
                                                             <td>{{ detail.machine }}</td>
                                                             <td>{% if detail.status == 'safe' %}ایمن{% else %}غیر ایمن{% endif %}</td>
+                                                            <td>{{ detail.description }}</td>
                                                         </tr>
                                                     {% empty %}
                                                         <tr><td colspan="3">اطلاعاتی موجود نیست.</td></tr>
@@ -168,7 +172,7 @@
                                     <div class="col-md-6 mb-4">
                                         <div class="card">
                                             <div class="card-header">
-                                                <h3 class="card-title">جزئیات تخلیه</h3>
+                                                <h3 class="card-title">جزئیات عملیات تخلیه</h3>
                                             </div>
                                             <div class="card-body">
                                                 <table class="table table-bordered">
@@ -198,7 +202,7 @@
                                     <div class="col-md-6 mb-4">
                                         <div class="card">
                                             <div class="card-header">
-                                                <h3 class="card-title">جزئیات توقفات</h3>
+                                                <h3 class="card-title">جزئیات توقفات ناشی از عدم رعایت مسائل HSE</h3>
                                             </div>
                                             <div class="card-body">
                                                 <table class="table table-bordered">
@@ -226,11 +230,42 @@
                                             </div>
                                         </div>
                                     </div>
+                                                                    <div class="col-md-6 mb-4">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h3 class="card-title">جزئیات بازدید از مجموعه تعمیرگاه</h3>
+                                            </div>
+                                            <div class="card-body">
+                                                <table class="table table-bordered">
+                                                    <thead>
+                                                    <tr>
+                                                        <th>بازدید انجام شد؟</th>
+                                                        <th>وضعیت</th>
+                                                        <th>توضیحات</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    {% for detail in inspection_details %}
+                                                        <tr>
+                                                            <td>{{ detail.inspection_done|yesno:"بله,خیر" }}</td>
+                                                            <td>{% if detail.status == 'safe' %}ایمن{% else %}غیر ایمن{% endif %}</td>
+                                                            <td>{{ detail.description }}</td>
+                                                        </tr>
+                                                    {% empty %}
+                                                        <tr><td colspan="3">اطلاعاتی موجود نیست.</td></tr>
+                                                    {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                                     <div class="col-md-6 mb-4">
                                         <div class="card">
                                             <div class="card-header">
-                                                <h3 class="card-title">جزئیات پیگیری</h3>
+                                                <h3 class="card-title">موارد مستلزم پیگیری در شیفت های بعد</h3>
                                             </div>
                                             <div class="card-body">
                                                 <table class="table table-bordered">
@@ -261,37 +296,7 @@
                                         </div>
                                     </div>
 
-                                    <div class="col-md-6 mb-4">
-                                        <div class="card">
-                                            <div class="card-header">
-                                                <h3 class="card-title">جزئیات بازرسی</h3>
-                                            </div>
-                                            <div class="card-body">
-                                                <table class="table table-bordered">
-                                                    <thead>
-                                                    <tr>
-                                                        <th>بازدید انجام شد؟</th>
-                                                        <th>وضعیت</th>
-                                                        <th>توضیحات</th>
-                                                    </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                    {% for detail in inspection_details %}
-                                                        <tr>
-                                                            <td>{{ detail.inspection_done|yesno:"بله,خیر" }}</td>
-                                                            <td>{% if detail.status == 'safe' %}ایمن{% else %}غیر ایمن{% endif %}</td>
-                                                            <td>{{ detail.description }}</td>
-                                                        </tr>
-                                                    {% empty %}
-                                                        <tr><td colspan="3">اطلاعاتی موجود نیست.</td></tr>
-                                                    {% endfor %}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+
 
 
                             <!--end::جداول Widget 13-->

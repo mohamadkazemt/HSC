@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function (){
+document.addEventListener("DOMContentLoaded", function () {
     function collectDetailsFromTable(tableId, fields) {
         const rows = document.querySelectorAll(`${tableId} tbody tr`);
         const details = [];
@@ -17,6 +17,10 @@ document.addEventListener("DOMContentLoaded", function (){
                 if (field.endsWith("_occurred") || field === "inspection_done") {
                     value = value === "true" || value === "بله"; // تبدیل به true/false
                 }
+                 if (field === 'description') {
+                        value = cell.dataset.description || cell.innerText.trim();
+                    }
+
 
                 detail[field] = value;
             });
@@ -24,9 +28,6 @@ document.addEventListener("DOMContentLoaded", function (){
         });
         return details;
     }
-
-
-
 
     const steps = document.querySelectorAll("[data-kt-stepper-element='content']");
     const nextButtons = document.querySelectorAll("[data-kt-stepper-action='next']");
@@ -102,15 +103,16 @@ document.addEventListener("DOMContentLoaded", function (){
         row.innerHTML = `
         <td data-value="${blockId}">${blockName}</td>
         <td data-value="${explosionOccurred}">${explosionOccurred ? "بله" : "خیر"}</td>
-        <td>${description}</td>
+        <td data-description="${description}">${description}</td>
         <td>
             <button type="button" onclick="removeBlastingDetail(this)" class="btn btn-danger btn-sm">حذف</button>
         </td>`;
         tableBody.appendChild(row);
 
         console.log("جزئیات آتشباری اضافه شد:", { blockId, blockName, explosionOccurred, description });
+        document.getElementById("blasting_block").value = "";
+        document.getElementById("blasting_description").value = "";
     };
-
 
 
     window.removeBlastingDetail = function (button) {
@@ -120,9 +122,23 @@ document.addEventListener("DOMContentLoaded", function (){
 
 // مرحله 2: جزئیات حفاری
     window.addDrillingDetail = function () {
-        const blockId = document.querySelector('[name="drilling_block"]').value;
-        const machineId = document.querySelector('[name="drilling_machine"]').value;
+        const blockSelect = document.querySelector('[name="drilling_block"]');
+        const blockId = blockSelect.value;
+         if (!blockId || isNaN(blockId)) {
+            alert("لطفاً یک بلوک معتبر انتخاب کنید.");
+            return;
+        }
+        const blockName = blockSelect.options[blockSelect.selectedIndex].text;
+        const machineSelect = document.querySelector('[name="drilling_machine"]');
+        const machineId = machineSelect.value;
+        if (!machineId || isNaN(machineId)) {
+            alert("لطفاً یک دستگاه معتبر انتخاب کنید.");
+            return;
+        }
+        const machineName = machineSelect.options[machineSelect.selectedIndex].text;
         const status = document.querySelector('[name="drilling_status"]').value;
+        const description = document.querySelector('[name="drilling_description"]').value;
+
 
         if (!blockId || isNaN(blockId) || !machineId || isNaN(machineId) || !status) {
             alert("لطفاً تمام فیلدهای موردنیاز را پر کنید.");
@@ -133,15 +149,20 @@ document.addEventListener("DOMContentLoaded", function (){
         const row = document.createElement("tr");
 
         row.innerHTML = `
-        <td data-value="${blockId}">${blockId}</td>
-        <td data-value="${machineId}">${machineId}</td>
-        <td>${status}</td>
+        <td data-value="${blockId}">${blockName}</td>
+        <td data-value="${machineId}">${machineName}</td>
+        <td data-value="${status}">${status}</td>
+         <td data-description="${description}">${description}</td>
         <td>
             <button type="button" onclick="removeDrillingDetail(this)" class="btn btn-danger btn-sm">حذف</button>
         </td>`;
         tableBody.appendChild(row);
 
-        console.log("جزئیات حفاری اضافه شد:", { blockId, machineId, status });
+        console.log("جزئیات حفاری اضافه شد:", { blockId, machineId, status,description });
+        document.querySelector('[name="drilling_block"]').value = "";
+        document.querySelector('[name="drilling_machine"]').value ="";
+        document.querySelector('[name="drilling_status"]').value ="";
+        document.querySelector('[name="drilling_description"]').value ="";
     };
 
 
@@ -152,28 +173,47 @@ document.addEventListener("DOMContentLoaded", function (){
 
 // مرحله 3: جزئیات بارگیری
     window.addLoadingDetail = function () {
-        const blockId = document.querySelector('[name="loading_block"]').value;
-        const machineId = document.querySelector('[name="loading_machine"]').value;
+      const blockSelect = document.querySelector('[name="loading_block"]');
+        const blockId = blockSelect.value;
+         if (!blockId || isNaN(blockId)) {
+            alert("لطفاً یک بلوک معتبر انتخاب کنید.");
+            return;
+        }
+        const blockName = blockSelect.options[blockSelect.selectedIndex].text;
+        const machineSelect = document.querySelector('[name="loading_machine"]');
+        const machineId = machineSelect.value;
+        if (!machineId || isNaN(machineId)) {
+            alert("لطفاً یک دستگاه معتبر انتخاب کنید.");
+            return;
+        }
+        const machineName = machineSelect.options[machineSelect.selectedIndex].text;
         const status = document.querySelector('[name="loading_status"]').value;
+        const description = document.querySelector('[name="loading_description"]').value;
 
         if (!blockId || !machineId || !status) {
             alert("لطفاً تمام فیلدهای موردنیاز را پر کنید.");
             return;
         }
 
+
         const tableBody = document.querySelector('#loading_table tbody');
         const row = document.createElement("tr");
 
         row.innerHTML = `
-        <td data-value="${blockId}">${blockId}</td>
-        <td data-value="${machineId}">${machineId}</td>
-        <td>${status}</td>
+         <td data-value="${blockId}">${blockName}</td>
+        <td data-value="${machineId}">${machineName}</td>
+        <td data-value="${status}">${status}</td>
+        <td data-description="${description}">${description}</td>
         <td>
             <button type="button" onclick="removeLoadingDetail(this)" class="btn btn-danger btn-sm">حذف</button>
         </td>`;
         tableBody.appendChild(row);
 
-        console.log("جزئیات بارگیری اضافه شد:", { blockId, machineId, status });
+        console.log("جزئیات بارگیری اضافه شد:", { blockId, machineId, status , description});
+       document.querySelector('[name="loading_block"]').value = "";
+       document.querySelector('[name="loading_machine"]').value = "";
+       document.querySelector('[name="loading_status"]').value = "";
+        document.querySelector('[name="loading_description"]').value ="";
     };
 
     window.removeLoadingDetail = function (button) {
@@ -207,6 +247,10 @@ document.addEventListener("DOMContentLoaded", function (){
         tableBody.appendChild(row);
 
         console.log("جزئیات تخلیه اضافه شد:", { dumpId, dumpName, status, description });
+          document.querySelector('[name="dump"]').value = "";
+        document.querySelector('[name="dump_status"]').value ="";
+        document.querySelector('[name="dump_description"]').value ="";
+
     };
 
 
@@ -236,7 +280,7 @@ document.addEventListener("DOMContentLoaded", function (){
         const row = document.createElement("tr");
 
         row.innerHTML = `
-        <td>${inspection_done ? "بله" : "خیر"}</td>
+          <td data-value="${inspection_done}">${inspection_done ? "بله" : "خیر"}</td>
         <td>${inspection}</td>
         <td>${status}</td>
         <td>${description}</td>
@@ -246,6 +290,9 @@ document.addEventListener("DOMContentLoaded", function (){
         tableBody.appendChild(row);
 
         console.log("جزئیات بازرسی اضافه شد:", { inspection, status, description });
+    document.querySelector('[name="inspection"]').value ="";
+      document.querySelector('[name="inspection_safe"]').value ="";
+         document.querySelector('[name="inspection_description"]').value = "";
     };
 
     window.removeInspectionDetail = function (button) {
@@ -277,6 +324,10 @@ document.addEventListener("DOMContentLoaded", function (){
         tableBody.appendChild(row);
 
         console.log("جزئیات توقفات اضافه شد:", { reason, start, end });
+           document.querySelector('[name="stoppage_reason"]').value ="";
+        document.querySelector('[name="stoppage_start"]').value ="";
+         document.querySelector('[name="stoppage_end"]').value ="";
+
     };
 
     window.removeStoppageDetail = function (button) {
@@ -327,7 +378,6 @@ document.addEventListener("DOMContentLoaded", function (){
         button.closest("tr").remove(); // حذف سطر از جدول
     };
 
-
     /** ارسال فرم */
     document.querySelector('[data-kt-stepper-action="submit"]').addEventListener("click", function (e) {
         e.preventDefault();
@@ -337,11 +387,13 @@ document.addEventListener("DOMContentLoaded", function (){
 
         // جمع‌آوری جزئیات جداول
         const blastingDetails = collectDetailsFromTable('#blasting_table', ['block_id', 'explosion_occurred', 'description']);
-        const drillingDetails = collectDetailsFromTable('#drilling_table', ['block_id', 'machine_id', 'status']);
-        const loadingDetails = collectDetailsFromTable('#loading_table', ['block_id', 'machine_id', 'status']);
+        const drillingDetails = collectDetailsFromTable('#drilling_table', ['block_id', 'machine_id', 'status', 'description']);
+        const loadingDetails = collectDetailsFromTable('#loading_table', ['block_id', 'machine_id', 'status', 'description']);
         const dumpDetails = collectDetailsFromTable('#dump_table', ['dump_id', 'status', 'description']);
         const stoppageDetails = collectDetailsFromTable('#stoppage_table', ['reason', 'start_time', 'end_time']);
-        const inspectionDetails = collectDetailsFromTable('#inspection_table', ['inspection_done', 'inspection', 'status', 'description']);
+        const inspectionDetails = collectDetailsFromTable('#inspection_table', ['inspection_done','inspection','status', 'description']);
+
+
 
         // افزودن داده‌ها به FormData
         formData.append("blasting_details", JSON.stringify(blastingDetails));
@@ -399,6 +451,4 @@ document.addEventListener("DOMContentLoaded", function (){
                 console.error("خطا در ارسال داده‌ها:", error);
             });
     });
-
 });
-

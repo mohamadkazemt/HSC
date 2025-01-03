@@ -1,62 +1,75 @@
 from django.contrib import messages
 from django.shortcuts import render, redirect
+
+from permissions.utils import permission_required
 from .forms import ReportForm, ReportFilterForm
 from django.contrib.auth.decorators import login_required
 from .models import Report
 from django.utils import timezone
 from django.db.models import Q
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from .utils import get_current_user_shift_and_group, SHIFT_PATTERN
 
 
+@permission_required("create_report")
 @login_required
 def create_report(request):
     if request.method == 'POST':
         form = ReportForm(request.POST)
         if form.is_valid():
-          report = form.save(commit=False)
-          report.user = request.user  # اختصاص کاربر به گزارش
-          report.report_datetime = timezone.now() # اضافه کردن زمان گزارش
-          from .utils import get_current_user_shift_and_group
-          current_shift, current_group = get_current_user_shift_and_group(report.user)
-          if current_shift and current_group:
-            report.shift = current_shift
-            report.group = current_group
-          else:
-              messages.error(request, 'امکان ثبت گزارش در این بازه زمانی وجود ندارد.')
-              return render(request, 'contractor_management/create_report.html', {
-                  'form': form,
-                  'messages': messages.get_messages(request)
-              })
+            report = form.save(commit=False)
+            report.user = request.user
+            report.report_datetime = timezone.now()
 
-          if report.report_datetime: # چک کردن برای وجود تاریخ
-              existing_report = Report.objects.filter(
-                vehicle = report.vehicle,
-                report_datetime__date=report.report_datetime.date(),
-                shift = report.shift
-              ).exists()
-              if existing_report:
-                messages.error(request, 'برای این خودرو در این شیفت و تاریخ یک گزارش ثبت شده است.')
-                return render(request, 'contractor_management/create_report.html', {
+            from .utils import get_current_user_shift_and_group
+            user_shift, user_group = get_current_user_shift_and_group(report.user)
+
+            if user_shift and user_group:
+                report.shift = user_shift
+                report.group = user_group
+            else:
+                messages.error(request, 'امکان ثبت گزارش در این بازه زمانی وجود ندارد.')
+                return render(request, 'contractor_management/report_form.html', {
                     'form': form,
                     'messages': messages.get_messages(request)
                 })
-              else:
-                  report.save()
-                  messages.success(request, 'گزارش با موفقیت ثبت شد.')
-                  return redirect('contractor_management:create_report')
-
+            if report.report_datetime:
+                existing_report = Report.objects.filter(
+                    user=report.user,
+                    vehicle=report.vehicle,
+                    report_datetime__date=report.report_datetime.date(),
+                    shift = report.shift,
+                    group = report.group
+                ).exists()
+                if existing_report:
+                    messages.error(request, 'شما قبلاً برای این خودرو در این شیفت و گروه گزارش ثبت کرده‌اید.')
+                    return render(request, 'contractor_management/report_form.html', {
+                        'form': form,
+                        'messages': messages.get_messages(request)
+                    })
+                else:
+                    try:
+                        report.save()
+                        messages.success(request, 'گزارش با موفقیت ثبت شد.')
+                        return redirect('contractor_management:create_report')
+                    except Exception as e:
+                        messages.error(request, f'خطا در ثبت گزارش: {e}')
         else:
-            messages.error(request, 'خطا در ثبت گزارش. لطفاً خطا ها رو برطرف کنید.')
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"خطا در فیلد {form[field].label} : {error}")
+
+
     else:
         form = ReportForm()
 
-    return render(request, 'contractor_management/create_report.html', {
+    return render(request, 'contractor_management/report_form.html', {
         'form': form,
         'messages': messages.get_messages(request)
     })
 
 
-
+@permission_required("all_reports")
 @login_required
 def all_reports(request):
     form = ReportFilterForm(request.GET)

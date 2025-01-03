@@ -46,7 +46,7 @@ name = 'anomalis'
 logger = logging.getLogger('anomalis')  # لاگر اختصاصی برای اپلیکیشن
 
 
-@permission_required("views.anomalis")
+@permission_required("anomalis")
 @login_required
 def anomalis(request):
     if request.method == 'POST':

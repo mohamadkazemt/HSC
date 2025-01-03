@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "anomalis.apps.AnomalisConfig",
     'django.contrib.humanize',
 
+
     "django_select2",
     'analytics.apps.AnalyticsConfig',
     'crispy_forms',
@@ -198,4 +199,54 @@ fa_formats.DATE_FORMAT = "Y/m/d"
 
 
 
-
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'permissions': {  # این قسمت رو بر اساس اسم اپ خودتون تنظیم کنید
+            'handlers': ['console'],
+            'level': 'DEBUG',  # Set the level to DEBUG or lower for verbose logging
+            'propagate': True,
+        },
+        'accounts': {
+           'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+         },
+         'anomalis':{
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+         }
+    },
+}
+JALALI_DATE_DEFAULTS = {
+   # if change it to true then all dates of the list_display will convert to the Jalali.
+   'LIST_DISPLAY_AUTO_CONVERT': False,
+   'Strftime': {
+        'date': '%y/%m/%d',
+        'datetime': '%H:%M:%S _ %y/%m/%d',
+    },
+    'Static': {
+        'js': [
+            # loading datepicker
+            'admin/js/django_jalali.min.js',
+            # OR
+            # 'admin/jquery.ui.datepicker.jalali/scripts/jquery.ui.core.js',
+            # 'admin/jquery.ui.datepicker.jalali/scripts/calendar.js',
+            # 'admin/jquery.ui.datepicker.jalali/scripts/jquery.ui.datepicker-cc.js',
+            # 'admin/jquery.ui.datepicker.jalali/scripts/jquery.ui.datepicker-cc-fa.js',
+            # 'admin/js/main.js',
+        ],
+        'css': {
+            'all': [
+                'admin/jquery.ui.datepicker.jalali/themes/base/jquery-ui.min.css',
+            ]
+        }
+    },
+}

@@ -2,7 +2,9 @@ from django import forms
 from .models import Report
 from django.core.exceptions import ValidationError
 from django.forms import Select
-from django_jalali.forms import jDateField
+from jalali_date.fields import JalaliDateField
+from jalali_date.widgets import AdminJalaliDateWidget
+
 
 class ReportForm(forms.ModelForm):
     class Meta:
@@ -27,9 +29,7 @@ class ReportForm(forms.ModelForm):
         self.fields['stop_start_time'].required = False
         self.fields['stop_end_time'].required = False
         self.fields['description'].required = False
-        # حذف فیلدهای شیفت و گروه از فرم
-        # self.fields['shift'].widget = forms.HiddenInput()
-        # self.fields['group'].widget = forms.HiddenInput()
+
 
     def clean(self):
         cleaned_data = super().clean()
@@ -63,41 +63,46 @@ class ReportForm(forms.ModelForm):
         return cleaned_data
 
 
+
 class ReportFilterForm(forms.Form):
-    start_date = jDateField(
+    start_date = JalaliDateField(
         label="تاریخ شروع",
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        widget=AdminJalaliDateWidget(),
         required=False
     )
-    end_date = jDateField(
+    end_date = JalaliDateField(
         label="تاریخ پایان",
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        widget=AdminJalaliDateWidget(),
         required=False
     )
     contractor = forms.ModelChoiceField(
-         queryset=Report.objects.values_list('contractor__company_name',flat=True).distinct(),
+        queryset=Report.objects.values_list('contractor__company_name',flat=True).distinct(),
         label="پیمانکار",
-        widget=Select(attrs={'class': 'form-control'}),
+        widget=Select(attrs={'class': 'form-control django-select2'}),
         required=False,
         empty_label='همه پیمانکاران'
     )
     vehicle = forms.ModelChoiceField(
-         queryset=Report.objects.values_list('vehicle__license_plate',flat=True).distinct(),
+        queryset=Report.objects.values_list('vehicle__license_plate',flat=True).distinct(),
         label="خودرو",
-        widget=Select(attrs={'class': 'form-control'}),
+        widget=Select(attrs={'class': 'form-control django-select2'}),
         required=False,
-         empty_label='همه خودروها'
+        empty_label='همه خودروها'
     )
     shift = forms.CharField(
         label="شیفت",
         widget=forms.Select(choices=[('', 'همه شیفت ها'), ('روزکار اول', 'روزکار اول'), ('روزکار دوم', 'روزکار دوم'), ('عصرکار اول', 'عصرکار اول'),
                                      ('عصرکار دوم', 'عصرکار دوم'), ('شب کار اول', 'شب کار اول'), ('شب کار دوم', 'شب کار دوم'),
-                                     ('OFF اول', 'OFF اول'), ('OFF دوم', 'OFF دوم')]),
-        required=False
+                                     ('OFF اول', 'OFF دوم'), ('OFF دوم', 'OFF دوم')],
+                            attrs={'class': 'form-control django-select2'}),
+        required=False,
     )
 
     group = forms.CharField(
         label="گروه",
-        widget=forms.Select(choices=[('', 'همه گروه ها'), ('A', 'A'), ('B', 'B'), ('C', 'C'), ('D', 'D')]),
-        required=False
-    )
+        widget=forms.Select(choices=[('', 'همه گروه ها'), ('A', 'A'), ('B', 'B'), ('C', 'C'), ('D', 'D')],
+                            attrs = {'class': 'form-control django-select2'}),
+
+
+    required=False,
+)

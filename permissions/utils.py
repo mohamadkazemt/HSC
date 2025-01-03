@@ -5,6 +5,7 @@ from functools import wraps
 from django.core.exceptions import PermissionDenied
 from django.utils.decorators import method_decorator
 import logging
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,8 @@ def get_all_models():
     models = apps.get_models()
     return [model._meta.object_name for model in models]
 
+
+
 def check_permission(user, view_name):
     """
     بررسی تمام انواع دسترسی کاربر به ویوی مشخص به صورت پویا.
@@ -64,8 +67,14 @@ def check_permission(user, view_name):
         dict: شامل تمام انواع دسترسی موجود در دیتابیس برای این کاربر و ویو.
     """
     user_profile = getattr(user, 'userprofile', None)
+
+    logger.debug(f"Checking permissions for user: {user.username} (ID: {user.id}), view: {view_name}")
+
     if not user_profile:
+        logger.debug(f"User {user.username} does not have a user profile.")
         return {}
+
+    logger.debug(f"User profile found: Unit={user_profile.unit}, Department={user_profile.department}, Position={user_profile.position}")
 
     permissions = {}
 
@@ -76,11 +85,17 @@ def check_permission(user, view_name):
             view_name=view_name
         ).first()
         if unit_permissions:
-            permissions.update({
+            unit_permission_values = {
                 field.name: getattr(unit_permissions, field.name)
                 for field in UnitPermission._meta.fields
                 if field.name.startswith("can_")
-            })
+            }
+            logger.debug(f"Unit permissions found: {unit_permission_values}")
+            permissions.update(unit_permission_values)
+        else:
+           logger.debug(f"No unit permissions found for unit: {user_profile.unit} and view: {view_name}")
+
+
 
     # بررسی دسترسی بخش
     if user_profile.department:
@@ -89,11 +104,16 @@ def check_permission(user, view_name):
             view_name=view_name
         ).first()
         if department_permissions:
-            permissions.update({
+            department_permission_values = {
                 field.name: getattr(department_permissions, field.name)
                 for field in DepartmentPermission._meta.fields
                 if field.name.startswith("can_")
-            })
+            }
+            logger.debug(f"Department permissions found: {department_permission_values}")
+            permissions.update(department_permission_values)
+        else:
+            logger.debug(f"No department permissions found for department: {user_profile.department} and view: {view_name}")
+
 
     # بررسی دسترسی سمت
     if user_profile.position:
@@ -102,11 +122,17 @@ def check_permission(user, view_name):
             view_name=view_name
         ).first()
         if position_permissions:
-            permissions.update({
+            position_permission_values = {
                 field.name: getattr(position_permissions, field.name)
                 for field in PositionPermission._meta.fields
                 if field.name.startswith("can_")
-            })
+            }
+            logger.debug(f"Position permissions found: {position_permission_values}")
+            permissions.update(position_permission_values)
+        else:
+             logger.debug(f"No position permissions found for position: {user_profile.position} and view: {view_name}")
+
+    logger.debug(f"Final permissions for user {user.username} and view {view_name}: {permissions}")
 
     return permissions
 

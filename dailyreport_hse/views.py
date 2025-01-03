@@ -95,7 +95,8 @@ class CreateDailyReportView(APIView):
                         daily_report=daily_report,
                         block=block,
                         machine=machine,
-                        status=drilling.get("status", "unknown")
+                        status=drilling.get("status", "unknown"),
+                        description=drilling.get("description", "")
                     )
 
             # ذخیره جزئیات بارگیری
@@ -107,7 +108,8 @@ class CreateDailyReportView(APIView):
                         daily_report=daily_report,
                         block=block,
                         machine=machine,
-                        status=loading.get("status", "unknown")
+                        status=loading.get("status", "unknown"),
+                        description=loading.get("description", "")
                     )
 
             # ذخیره جزئیات تخلیه

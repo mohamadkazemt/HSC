@@ -10,32 +10,25 @@ from .models import UserProfile, Department, Unit, Position
 
 
 class UserImportAdmin(admin.ModelAdmin):
-    # نمایش ستون‌ها در جدول ادمین
     list_display = (
-        'user',             # نام کاربری
-        'first_name',       # نام
-        'last_name',        # نام خانوادگی
-        'personnel_code',   # کد پرسنلی
-        'national_id',      # کد ملی
-        'position',         # سمت
-        'unit',             # واحد
-        'department',       # بخش
-        'mobile',           # موبایل
-        'group',            # گروه کاری
+        'user',
+        'first_name',
+        'last_name',
+        'personnel_code',
+        'national_id',
+        'position',
+        'unit',
+        'department',
+        'mobile',
+        'group',
     )
 
-    # فیلترهای سمت راست پنل
-    list_filter = (
-        'department',  # فیلتر بر اساس واحد
-        'unit',    # فیلتر بر اساس بخش
-        'group',   # فیلتر بر اساس گروه کاری
-        'position' # فیلتر بر اساس سمت
-    )
+    list_filter = ('department', 'unit', 'group', 'position')
 
-    # قابلیت جستجو بر اساس برخی فیلدها
     search_fields = ('user__username', 'personnel_code', 'mobile', 'user__first_name', 'user__last_name')
 
-    # نام‌گذاری فیلدها برای نمایش بهتر
+    change_list_template = "admin/user_import_changelist.html"
+
     def first_name(self, obj):
         return obj.user.first_name
     first_name.short_description = "نام"
@@ -48,10 +41,6 @@ class UserImportAdmin(admin.ModelAdmin):
         return obj.user.username
     national_id.short_description = "کد ملی"
 
-    def mobile(self, obj):
-        return obj.user.username
-    change_list_template = "admin/user_import_changelist.html"
-
     def get_urls(self):
         """اضافه کردن مسیرهای سفارشی برای ایمپورت و دانلود فایل نمونه."""
         urls = super().get_urls()
@@ -62,12 +51,11 @@ class UserImportAdmin(admin.ModelAdmin):
         return custom_urls + urls
 
     def import_users_view(self, request):
-        """پردازش فایل اکسل کاربران آپلود شده."""
         if request.method == 'POST' and 'excel_file' in request.FILES:
             excel_file = request.FILES['excel_file']
             try:
                 df = pd.read_excel(excel_file)
-                errors = []  # لیستی برای نگهداری خطاها
+                errors = []
 
                 # بررسی ستون‌های ضروری
                 required_columns = [
@@ -85,59 +73,91 @@ class UserImportAdmin(admin.ModelAdmin):
 
                 for index, row in df.iterrows():
                     try:
-                        # ایجاد یا بررسی واحد (Department)
+                        # استانداردسازی مقادیر
+                        mobile = str(row['موبایل']).strip()
+                        if not mobile.startswith('0'):
+                            mobile = '0' + mobile
+
+                        department_name = str(row['واحد']).strip().lower()
+                        unit_name = str(row['بخش']).strip().lower()
+                        position_name = str(row['سمت']).strip().lower()
+                        personnel_code = str(row['کد پرسنلی']).strip()
+                        national_id = str(row['کد ملی']).strip()
+                        first_name = str(row['نام']).strip()
+                        last_name = str(row['نام خانوادگی']).strip()
+
+                        # جلوگیری از ایجاد واحد تکراری
                         department, _ = Department.objects.get_or_create(
-                            name=row['واحد'],
-                            defaults={'description': f"واحد ایجاد شده در ایمپورت: {row['واحد']}"}
+                            name=department_name
                         )
 
-                        # ایجاد یا بررسی بخش (Unit) مرتبط با واحد
+                        # جلوگیری از ایجاد بخش تکراری
                         unit, _ = Unit.objects.get_or_create(
-                            name=row['بخش'],
-                            department=department,  # ارتباط صحیح با واحد
-                            defaults={'description': f"بخش ایجاد شده در ایمپورت: {row['بخش']}"}
+                            name=unit_name,
+                            department=department
                         )
 
-                        # ایجاد یا بررسی سمت (Position) مرتبط با بخش
+                        # جلوگیری از ایجاد سمت تکراری
                         position, _ = Position.objects.get_or_create(
-                            name=row['سمت'],
-                            unit=unit,  # ارتباط صحیح با بخش
-                            defaults={'description': f"سمت ایجاد شده در ایمپورت: {row['سمت']}"}
+                            name=position_name,
+                            unit=unit
                         )
 
-                        # تولید رمز عبور تصادفی
-                        random_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+                        # بررسی تکراری بودن کد پرسنلی
+                        user_profile = UserProfile.objects.filter(personnel_code=personnel_code).first()
+                        if user_profile:
+                            updates = []
+                            if user_profile.user.first_name != first_name:
+                                user_profile.user.first_name = first_name
+                                updates.append("نام")
+                            if user_profile.user.last_name != last_name:
+                                user_profile.user.last_name = last_name
+                                updates.append("نام خانوادگی")
+                            if user_profile.mobile != mobile:
+                                user_profile.mobile = mobile
+                                updates.append("شماره موبایل")
+                            if user_profile.department != department:
+                                user_profile.department = department
+                                updates.append("واحد")
+                            if user_profile.unit != unit:
+                                user_profile.unit = unit
+                                updates.append("بخش")
+                            if user_profile.position != position:
+                                user_profile.position = position
+                                updates.append("سمت")
+                            if updates:
+                                user_profile.user.save()
+                                user_profile.save()
+                                errors.append(f"ردیف {index + 1}: اطلاعات زیر به‌روزرسانی شد: {', '.join(updates)}")
+                            continue
 
-                        # ایجاد یا به‌روزرسانی کاربر
+                        # ایجاد کاربر جدید در صورت عدم وجود
                         user, created = User.objects.update_or_create(
-                            username=row['کد ملی'],  # کد ملی به عنوان نام کاربری
+                            username=national_id,
                             defaults={
-                                'first_name': row['نام'],
-                                'last_name': row['نام خانوادگی'],
-                                'email': f"{row['کد ملی']}@example.com",  # ایمیل فرضی
+                                'first_name': first_name,
+                                'last_name': last_name,
+                                'email': f"{national_id}@example.com",
                             }
                         )
                         if created:
+                            random_password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
                             user.set_password(random_password)
                             user.save()
 
-                        # ایجاد یا به‌روزرسانی پروفایل کاربر
-                        UserProfile.objects.update_or_create(
+                        # ایجاد پروفایل کاربر
+                        UserProfile.objects.create(
                             user=user,
-                            defaults={
-                                'personnel_code': row['کد پرسنلی'],
-                                'mobile': row['موبایل'],
-                                'group': row['گروه کاری'],
-                                'department': department,  # واحد مرتبط
-                                'unit': unit,  # بخش مرتبط
-                                'position': position  # سمت مرتبط
-                            }
+                            personnel_code=personnel_code,
+                            mobile=mobile,
+                            group=str(row['گروه کاری']).strip(),
+                            department=department,
+                            unit=unit,
+                            position=position
                         )
-
                     except Exception as e:
                         errors.append(f"ردیف {index + 1}: خطا در ذخیره‌سازی کاربر - {str(e)}")
 
-                # نمایش پیام خطا یا موفقیت
                 if errors:
                     for error in errors:
                         self.message_user(request, error, level=messages.ERROR)
@@ -150,7 +170,6 @@ class UserImportAdmin(admin.ModelAdmin):
         return HttpResponseRedirect("../")
 
     def sample_user_template(self, request):
-        """ایجاد و ارسال فایل نمونه اکسل برای کاربران."""
         sample_data = {
             "کد پرسنلی": ["12345", "67890"],
             "نام": ["علی", "زهرا"],
@@ -172,6 +191,7 @@ class UserImportAdmin(admin.ModelAdmin):
         response = HttpResponse(buffer, content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename=نمونه_کاربران.xlsx'
         return response
+
 
 
 admin.site.register(UserProfile, UserImportAdmin)

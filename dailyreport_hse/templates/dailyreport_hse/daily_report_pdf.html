@@ -74,25 +74,24 @@
     <div class="company-name" style="flex: 2; text-align: center;">
         <p style="font-weight: bold; margin: 0; font-size: 20px;">شرکت کاراوران صنعت خاورمیانه</p>
         <p style="margin: 0; font-size: 14px;">پروژه معدن سنگ آهن جلال‌آباد - واحد HSEC</p>
+        <div class="title">{{ title }}</div>
     </div>
 
     <!-- بخش اطلاعات -->
     <div class="info" style="flex: 1; text-align: right; font-size: 12px; direction: rtl;">
         <p style="margin: 0;">کد فرم: MIE-HS-M-FR-142-V03</p>
-        <p style="margin: 0;">تاریخ ایجاد: {{ report.created_at|to_jalali }}</p>
     </div>
 
 </div>
 
 
 
-
-<div class="title">{{ title }}</div>
+<h2 class="title">مشخصات گزارش دهنده</h2>
 
 <!-- جزئیات اصلی -->
 <table class="details-table">
     <tr>
-        <th>افسر ایمنی</th>
+        <th>بازرس ایمنی</th>
         <td>{{ report.user.first_name }} {{ report.user.last_name }} ({{ report.user.userprofile.personnel_code }})</td>
     </tr>
     <tr>
@@ -140,6 +139,7 @@
         <th>بلوک</th>
         <th>دستگاه</th>
         <th>وضعیت</th>
+        <th>توضیحات</th>
     </tr>
     </thead>
     <tbody>
@@ -148,6 +148,7 @@
             <td>{{ detail.block }}</td>
             <td>{{ detail.machine }}</td>
             <td>{% if detail.status == 'safe' %}ایمن{% else %}غیر ایمن{% endif %}</td>
+            <td>{{ detail.description }}</td>
         </tr>
     {% empty %}
         <tr><td colspan="3">اطلاعاتی موجود نیست.</td></tr>
@@ -163,6 +164,7 @@
         <th>بلوک</th>
         <th>دستگاه</th>
         <th>وضعیت</th>
+        <th>توضیحات</th>
     </tr>
     </thead>
     <tbody>
@@ -171,6 +173,7 @@
             <td>{{ detail.block }}</td>
             <td>{{ detail.machine }}</td>
             <td>{% if detail.status == 'safe' %}ایمن{% else %}غیر ایمن{% endif %}</td>
+            <td>{{ detail.description }}</td>
         </tr>
     {% empty %}
         <tr><td colspan="3">اطلاعاتی موجود نیست.</td></tr>
@@ -202,7 +205,7 @@
 </table>
 
 <!-- جزئیات توقفات -->
-<h2>جزئیات توقفات</h2>
+<h2>جزئیات توقفات ناشی از عدم رعایت مسائل HSE</h2>
 <table class="details-table">
     <thead>
     <tr>
@@ -226,8 +229,32 @@
     </tbody>
 </table>
 
+
+
+<h2>جزئیات بازدید از مجموعه تعمیرگاه</h2>
+<table class="details-table">
+    <thead>
+    <tr>
+        <th>بازرسی انجام شده</th>
+        <th>وضعیت</th>
+        <th>توضیحات</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for detail in inspection_details %}
+        <tr>
+            <td>{{ detail.inspection_done|yesno:"بله,خیر" }}</td>
+            <td>{% if detail.status == 'safe' %}ایمن{% else %}غیر ایمن{% endif %}</td>
+            <td>{{ detail.description }}</td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="3">اطلاعاتی موجود نیست.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+
 <!-- جزئیات پیگیری -->
-<h2>جزئیات پیگیری</h2>
+<h2>موارد مستلزم پیگیری در شیفت های بعد</h2>
 <table class="details-table">
     <thead>
     <tr>
@@ -258,27 +285,7 @@
 
 
 <!-- جزئیات بازرسی -->
-<h2>جزئیات بازرسی</h2>
-<table class="details-table">
-    <thead>
-    <tr>
-        <th>بازرسی انجام شده</th>
-        <th>وضعیت</th>
-        <th>توضیحات</th>
-    </tr>
-    </thead>
-    <tbody>
-    {% for detail in inspection_details %}
-        <tr>
-            <td>{{ detail.inspection_done|yesno:"بله,خیر" }}</td>
-            <td>{% if detail.status == 'safe' %}ایمن{% else %}غیر ایمن{% endif %}</td>
-            <td>{{ detail.description }}</td>
-        </tr>
-    {% empty %}
-        <tr><td colspan="3">اطلاعاتی موجود نیست.</td></tr>
-    {% endfor %}
-    </tbody>
-</table>
+
 
 {% if user_signature %}
     <div class="signature">

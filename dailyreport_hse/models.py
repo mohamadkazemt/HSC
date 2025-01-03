@@ -44,6 +44,8 @@ class DrillingDetail(models.Model):
     block = models.ForeignKey(MiningBlock, on_delete=models.SET_NULL, null=True, verbose_name="بلوک حفاری")
     machine = models.ForeignKey(MiningMachine, on_delete=models.SET_NULL, null=True, verbose_name="دستگاه حفاری")
     status = models.CharField(max_length=10, choices=[('safe', 'ایمن'), ('unsafe', 'ناایمن')], verbose_name="وضعیت حفاری")
+    description = models.TextField(blank=True, verbose_name="توضیحات")
+
 
     def __str__(self):
         return f"حفاری - بلوک: {self.block} - دستگاه: {self.machine} - {self.status}"
@@ -64,6 +66,8 @@ class LoadingDetail(models.Model):
     block = models.ForeignKey(MiningBlock, on_delete=models.SET_NULL, null=True, verbose_name="بلوک بارگیری")
     machine = models.ForeignKey(MiningMachine, on_delete=models.SET_NULL, null=True, verbose_name="دستگاه بارگیری")
     status = models.CharField(max_length=10, choices=[('safe', 'ایمن'), ('unsafe', 'ناایمن')], verbose_name="وضعیت بارگیری")
+    description = models.TextField(blank=True, verbose_name="توضیحات")
+
 
     def __str__(self):
         return f"بارگیری - بلوک: {self.block} - دستگاه: {self.machine} - {self.status}"
