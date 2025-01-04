@@ -1,4 +1,3 @@
-
 {% extends 'base.html' %}
 
 
@@ -41,35 +40,57 @@
                                             <!-- فیلترها -->
                                             <form method="get" class="mb-4">
                                                 <div class="row">
-                                                    <div class="col-md-4">
-                                                        <label for="unit" class="form-label">واحد:</label>
-                                                        <select name="unit" id="unit" class="form-select">
+                                                    <div class="col-md-3">
+                                                        <label for="part" class="form-label">قسمت:</label>
+                                                        <select name="part" id="part" class="form-select">
                                                             <option value="">همه</option>
-                                                            {% for unit in units %}
-                                                                <option value="{{ unit.id }}" {% if request.GET.unit == unit.id|stringformat:"s" %}selected{% endif %}>
-                                                                    {{ unit.name }}
+                                                            {% for part in parts %}
+                                                                <option value="{{ part.id }}" {% if request.GET.part == part.id|stringformat:"s" %}selected{% endif %}>
+                                                                    {{ part.name }}
                                                                 </option>
                                                             {% endfor %}
                                                         </select>
                                                     </div>
-                                                    <div class="col-md-4">
-                                                        <label for="department" class="form-label">بخش:</label>
-                                                        <select name="department" id="department" class="form-select">
+                                                    <div class="col-md-3">
+                                                        <label for="section" class="form-label">بخش:</label>
+                                                        <select name="section" id="section" class="form-select">
                                                             <option value="">همه</option>
-                                                            {% for department in departments %}
-                                                                <option value="{{ department.id }}" {% if request.GET.department == department.id|stringformat:"s" %}selected{% endif %}>
-                                                                    {{ department.name }}
+                                                            {% for section in sections %}
+                                                                <option value="{{ section.id }}" {% if request.GET.section == section.id|stringformat:"s" %}selected{% endif %}>
+                                                                    {{ section.name }}
                                                                 </option>
                                                             {% endfor %}
                                                         </select>
                                                     </div>
-                                                    <div class="col-md-4">
+                                                    <div class="col-md-3">
+                                                        <label for="unit_group" class="form-label">گروه:</label>
+                                                        <select name="unit_group" id="unit_group" class="form-select">
+                                                            <option value="">همه</option>
+                                                            {% for unit_group in unit_groups %}
+                                                                <option value="{{ unit_group.id }}" {% if request.GET.unit_group == unit_group.id|stringformat:"s" %}selected{% endif %}>
+                                                                    {{ unit_group.name }}
+                                                                </option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-3">
                                                         <label for="position" class="form-label">سمت:</label>
                                                         <select name="position" id="position" class="form-select">
                                                             <option value="">همه</option>
                                                             {% for position in positions %}
                                                                 <option value="{{ position.id }}" {% if request.GET.position == position.id|stringformat:"s" %}selected{% endif %}>
                                                                     {{ position.name }}
+                                                                </option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                     <div class="col-md-3">
+                                                        <label for="user" class="form-label">کاربر:</label>
+                                                        <select name="user" id="user" class="form-select">
+                                                            <option value="">همه</option>
+                                                            {% for user in users %}
+                                                                <option value="{{ user.id }}" {% if request.GET.user == user.id|stringformat:"s" %}selected{% endif %}>
+                                                                    {{ user.username }}
                                                                 </option>
                                                             {% endfor %}
                                                         </select>

@@ -1,6 +1,6 @@
 from django.urls import get_resolver
 from django.apps import apps
-from .models import UnitPermission, DepartmentPermission, PositionPermission
+from .models import PartPermission, SectionPermission, PositionPermission, UnitGroupPermission, UserPermission
 from functools import wraps
 from django.core.exceptions import PermissionDenied
 from django.utils.decorators import method_decorator
@@ -29,6 +29,7 @@ def get_all_views():
 
     return views
 
+
 def get_all_views_with_labels():
     """
     استخراج تمام ویوهای تعریف‌شده در پروژه همراه با لیبل‌ها.
@@ -45,6 +46,7 @@ def get_all_views_with_labels():
 
     return views_with_labels
 
+
 def get_all_models():
     """
     استخراج تمام مدل‌های تعریف‌شده در پروژه.
@@ -52,7 +54,6 @@ def get_all_models():
     """
     models = apps.get_models()
     return [model._meta.object_name for model in models]
-
 
 
 def check_permission(user, view_name):
@@ -72,48 +73,79 @@ def check_permission(user, view_name):
 
     if not user_profile:
         logger.debug(f"User {user.username} does not have a user profile.")
+
+        user_permissions = UserPermission.objects.filter(
+            user=user,
+            view_name=view_name
+        ).first()
+        if user_permissions:
+            user_permission_values = {
+                field.name: getattr(user_permissions, field.name)
+                for field in UserPermission._meta.fields
+                if field.name.startswith("can_")
+            }
+            logger.debug(f"user permissions found: {user_permission_values}")
+            return user_permission_values
+        else:
+            logger.debug(f"No user permissions found for user: {user} and view: {view_name}")
         return {}
 
-    logger.debug(f"User profile found: Unit={user_profile.unit}, Department={user_profile.department}, Position={user_profile.position}")
+    logger.debug(
+        f"User profile found: Unit={user_profile.part}, Department={user_profile.section}, Position={user_profile.position},UnitGroup={user_profile.unit_group}")
 
     permissions = {}
 
-    # بررسی دسترسی واحد
-    if user_profile.unit:
-        unit_permissions = UnitPermission.objects.filter(
-            unit=user_profile.unit,
+    # بررسی دسترسی قسمت
+    if user_profile.part:
+        part_permissions = PartPermission.objects.filter(
+            part=user_profile.part,
             view_name=view_name
         ).first()
-        if unit_permissions:
-            unit_permission_values = {
-                field.name: getattr(unit_permissions, field.name)
-                for field in UnitPermission._meta.fields
+        if part_permissions:
+            part_permission_values = {
+                field.name: getattr(part_permissions, field.name)
+                for field in PartPermission._meta.fields
                 if field.name.startswith("can_")
             }
-            logger.debug(f"Unit permissions found: {unit_permission_values}")
-            permissions.update(unit_permission_values)
+            logger.debug(f"part permissions found: {part_permission_values}")
+            permissions.update(part_permission_values)
         else:
-           logger.debug(f"No unit permissions found for unit: {user_profile.unit} and view: {view_name}")
-
-
+            logger.debug(f"No part permissions found for part: {user_profile.part} and view: {view_name}")
 
     # بررسی دسترسی بخش
-    if user_profile.department:
-        department_permissions = DepartmentPermission.objects.filter(
-            department=user_profile.department,
+    if user_profile.section:
+        section_permissions = SectionPermission.objects.filter(
+            section=user_profile.section,
             view_name=view_name
         ).first()
-        if department_permissions:
-            department_permission_values = {
-                field.name: getattr(department_permissions, field.name)
-                for field in DepartmentPermission._meta.fields
+        if section_permissions:
+            section_permission_values = {
+                field.name: getattr(section_permissions, field.name)
+                for field in SectionPermission._meta.fields
                 if field.name.startswith("can_")
             }
-            logger.debug(f"Department permissions found: {department_permission_values}")
-            permissions.update(department_permission_values)
+            logger.debug(f"section permissions found: {section_permission_values}")
+            permissions.update(section_permission_values)
         else:
-            logger.debug(f"No department permissions found for department: {user_profile.department} and view: {view_name}")
+            logger.debug(f"No section permissions found for section: {user_profile.section} and view: {view_name}")
 
+    # بررسی دسترسی گروه
+    if user_profile.unit_group:
+        unit_group_permissions = UnitGroupPermission.objects.filter(
+            unit_group=user_profile.unit_group,
+            view_name=view_name
+        ).first()
+        if unit_group_permissions:
+            unit_group_permission_values = {
+                field.name: getattr(unit_group_permissions, field.name)
+                for field in UnitGroupPermission._meta.fields
+                if field.name.startswith("can_")
+            }
+            logger.debug(f"unit_group permissions found: {unit_group_permission_values}")
+            permissions.update(unit_group_permission_values)
+        else:
+            logger.debug(
+                f"No unit_group permissions found for unit_group: {user_profile.unit_group} and view: {view_name}")
 
     # بررسی دسترسی سمت
     if user_profile.position:
@@ -130,11 +162,25 @@ def check_permission(user, view_name):
             logger.debug(f"Position permissions found: {position_permission_values}")
             permissions.update(position_permission_values)
         else:
-             logger.debug(f"No position permissions found for position: {user_profile.position} and view: {view_name}")
+            logger.debug(f"No position permissions found for position: {user_profile.position} and view: {view_name}")
+    # بررسی دسترسی کاربر
+    user_permissions = UserPermission.objects.filter(
+        user=user,
+        view_name=view_name
+    ).first()
+    if user_permissions:
+        user_permission_values = {
+            field.name: getattr(user_permissions, field.name)
+            for field in UserPermission._meta.fields
+            if field.name.startswith("can_")
+        }
+        logger.debug(f"user permissions found: {user_permission_values}")
+        permissions.update(user_permission_values)
 
     logger.debug(f"Final permissions for user {user.username} and view {view_name}: {permissions}")
 
     return permissions
+
 
 def permission_required(view_name):
     """
@@ -146,6 +192,7 @@ def permission_required(view_name):
     Returns:
         function: ویوی اصلی در صورت دسترسی.
     """
+
     def decorator(view_func):
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
@@ -153,10 +200,10 @@ def permission_required(view_name):
             if not any(permissions.values()):  # اگر هیچ دسترسی وجود نداشت
                 raise PermissionDenied("شما اجازه دسترسی به این بخش را ندارید.")
             return view_func(request, *args, **kwargs)
+
         return _wrapped_view
+
     return decorator
-
-
 
 
 def class_permission_required(view_name):

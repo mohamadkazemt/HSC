@@ -85,7 +85,7 @@ class LoaderStatus(models.Model):
 class ShiftReport(models.Model):
     shift_date = models.DateField(verbose_name="تاریخ شیفت")
     supervisor_comments = models.TextField(blank=True, verbose_name="توضیحات سرشیفت")
-    group = models.CharField(max_length=1, choices=UserProfile.GROUP_CHOICES, verbose_name="گروه کاری")
+    group = models.CharField(max_length=2, choices=UserProfile.GROUP_CHOICES, verbose_name="گروه کاری")
     # اضافه کردن فیلد فایل
     attached_file = models.FileField(
         upload_to='shift_reports/%Y/%m/%d/',

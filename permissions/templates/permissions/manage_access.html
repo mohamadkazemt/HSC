@@ -45,14 +45,16 @@
                                             <label for="entity_type" class="form-label">انتخاب نوع:</label>
                                             <select name="entity_type" id="entity_type" class="form-select">
                                                 <option value="" disabled selected>نوع را انتخاب کنید</option>
-                                                <option value="department">واحد</option>
-                                                <option value="unit">بخش</option>
-                                                <option value="position">پست</option>
+                                                <option value="section">بخش</option>
+                                                <option value="part">قسمت</option>
+                                                <option value="unit_group">گروه</option>
+                                                <option value="position">سمت</option>
+                                                 <option value="user">کاربر</option>
                                             </select>
                                         </div>
 
                                         <div class="mb-3">
-                                            <label for="entity_id" class="form-label">انتخاب واحد/بخش/پست:</label>
+                                            <label for="entity_id" class="form-label">انتخاب بخش/قسمت/گروه/سمت/کاربر:</label>
                                             <select name="entity_id" id="entity_id" class="form-select">
                                                 <!-- گزینه‌ها با جاوااسکریپت تغییر می‌کنند -->
                                             </select>
@@ -108,35 +110,40 @@
         <!--end::Page-->
     </div>
 
-
-
     <script>
         const entityTypeSelect = document.getElementById('entity_type');
         const entityIdSelect = document.getElementById('entity_id');
 
-        const units = {{ units|safe }};
-        const departments = {{ departments|safe }};
+        const parts = {{ parts|safe }};
+        const sections = {{ sections|safe }};
         const positions = {{ positions|safe }};
+        const unit_groups = {{ unit_groups|safe }};
+        const users = {{ users|safe }};
+
 
         entityTypeSelect.addEventListener('change', function () {
             const type = this.value;
             entityIdSelect.innerHTML = '';
             let options = [];
 
-            if (type === 'unit') {
-                options = units.map(unit => `<option value="${unit.id}">${unit.name}</option>`);
-            } else if (type === 'department') {
-                options = departments.map(dept => `<option value="${dept.id}">${dept.name}</option>`);
-            } else if (type === 'position') {
+            if (type === 'part') {
+                options = parts.map(unit => `<option value="${unit.id}">${unit.name}</option>`);
+            } else if (type === 'section') {
+                options = sections.map(dept => `<option value="${dept.id}">${dept.name}</option>`);
+            }  else if (type === 'unit_group') {
+                options = unit_groups.map(unit_group => `<option value="${unit_group.id}">${unit_group.name}</option>`);
+             }else if (type === 'position') {
                 options = positions.map(pos => `<option value="${pos.id}">${pos.name}</option>`);
+              }else if (type === 'user') {
+                options = users.map(user => `<option value="${user.id}">${user.name}</option>`);
             }
+
 
             entityIdSelect.innerHTML = options.join('');
         });
     </script>
 {% endblock %}
 {% block extra_js %}
-
     <script>
         $(document).ready(function() {
             $('#view_name').select2({
@@ -145,7 +152,7 @@
                 width: '100%' // تنظیم عرض مناسب
             });
             $('#entity_id').select2({
-                placeholder: "واحد/بخش/پست را انتخاب کنید",
+                placeholder: "بخش/قسمت/گروه/سمت/کاربر را انتخاب کنید",
                 allowClear: false,
                 width: '100%' // تنظیم عرض مناسب
             });
