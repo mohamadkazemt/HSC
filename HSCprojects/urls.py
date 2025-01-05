@@ -33,6 +33,7 @@ urlpatterns = [
     path('dailyreport_hse/', include('dailyreport_hse.urls')),
     path("permissions/", include("permissions.urls")),
     path("contractor/", include("contractor_management.urls")),
+    path('hse_incidents/', include(('hse_incidents.urls', 'hse_incidents'), namespace='hse_incidents')),
 
 ]
 

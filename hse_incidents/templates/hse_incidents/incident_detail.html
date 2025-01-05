@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+    <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+        <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+            {% include 'header.html' %}
+            <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+                {% include 'sidebar.html' %}
+                <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                    <div class="d-flex flex-column flex-column-fluid">
+                        {% include 'toolbar.html' %}
+                        <div id="kt_app_content" class="app-content flex-column-fluid">
+                            <div id="kt_app_content_container" class="app-container container-fluid">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h3 class="card-title">جزئیات گزارش حادثه</h3>
+                                    </div>
+                                    <div class="card-body">
+                                          <p><strong>شناسه:</strong> {{ report.id }}</p>
+                                         <p><strong>تاریخ وقوع:</strong> {{ report.incident_date }}</p>
+                                          <p><strong>ساعت وقوع:</strong> {{ report.incident_time }}</p>
+                                        <p><strong>محل وقوع:</strong> {{ report.incident_location }}</p>
+                                          <p><strong>شخص/اشخاص مرتبط با حادثه:</strong>
+                                                {% for person in report.involved_person.all %}
+                                                   {{person.user.first_name}} {{person.user.last_name}}
+                                                    {% if not forloop.last %}, {% endif %}
+                                                {% endfor %}
+                                            </p>
+                                         <p><strong>تجهیزات مرتبط با حادثه:</strong> {{ report.involved_equipment|default:"-" }}</p>
+                                         <p><strong>نوع جراحت:</strong>
+                                             {% for injury_type in report.injury_type.all %}
+                                                {{injury_type.name}}
+                                                 {% if not forloop.last %}, {% endif %}
+                                                 {% endfor %}
+                                         </p>
+                                        <p><strong>عضو آسیب دیده:</strong> {{ report.affected_body_part }}</p>
+                                          <p><strong>شرح آسیب وارده:</strong> {{ report.damage_description }}</p>
+                                       <p><strong>نوع ارتباط:</strong> {{ report.related_entity }}</p>
+                                          <p><strong>پیمانکار:</strong> {{ report.related_contractor.name|default:"-" }}</p>
+                                          <p><strong>خودرو آتش نشانی اعزام گردید؟:</strong> {% if report.fire_truck_needed %}بله{% else %}خیر{% endif %}</p>
+                                        <p><strong>آمبولانس اعزام گردید؟:</strong> {% if report.ambulance_needed %}بله{% else %}خیر{% endif %}</p>
+                                          <p><strong>فرد حادثه به بیمارستان اعزام گردید؟:</strong> {% if report.hospitalized %}بله{% else %}خیر{% endif %}</p>
+                                          <p><strong>نوع وسیله نقلیه جهت اعزام:</strong> {{ report.transportation_type|default:"-" }}</p>
+                                          <p><strong>شرح کامل حادثه با ذکر جزئیات:</strong> {{ report.full_description }}</p>
+                                          <p><strong>علت وقوع حادثه در بررسی های اولیه انجام شده:</strong> {{ report.initial_cause }}</p>
+                                          <p><strong>فرد گزارش دهنده:</strong> {{ report.report_author.user.first_name }} {{ report.report_author.user.last_name }}</p>
+                                         <p><strong>تاریخ ثبت گزارش:</strong> {{ report.report_date }}</p>
+                                            <p><strong>شیفت ثبت گزارش:</strong> {{ report.report_shift }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                         </div>
+                           {% include 'footer.html' %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

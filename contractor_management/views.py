@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.shortcuts import render, redirect
+from django.http import HttpResponseForbidden, JsonResponse
 
 from permissions.utils import permission_required
 from .forms import ReportForm, ReportFilterForm
@@ -9,7 +10,10 @@ from django.utils import timezone
 from django.db.models import Q
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .utils import get_current_user_shift_and_group, SHIFT_PATTERN
-
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Contractor
+from django.contrib.auth.decorators import user_passes_test
+import json
 
 @permission_required("create_report")
 @login_required
@@ -113,3 +117,13 @@ def all_reports(request):
         'reports': reports,
         'form': form,
     })
+
+
+def get_contractors_ajax(request):
+    contractors = []
+    search_term = request.GET.get('term', '')
+    if search_term:
+      contractors = Contractor.objects.filter(Q(name__icontains=search_term)).values("id","name")
+    else:
+      contractors = Contractor.objects.values("id","name")
+    return JsonResponse(list(contractors), safe=False)

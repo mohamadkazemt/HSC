@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'contractor_management.apps.ContractorManagementConfig',
     'rest_framework',
     'permissions.apps.PermissionsConfig',
+    'hse_incidents.apps.HseIncidentsConfig'
 
 ]
 

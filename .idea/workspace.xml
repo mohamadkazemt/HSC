@@ -4,28 +4,30 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="contractor_vehicle3">
-      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/migrations/0013_alter_shiftreport_group.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/accounts/migrations/0007_part_section_remove_unit_department_and_more.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/accounts/migrations/0008_delete_department_delete_unit.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0005_alter_anomaly_group.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/permissions/migrations/0003_remove_unitpermission_unit_and_more.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/permissions/migrations/0004_userpermission.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="end-permission-accounts">
+      <change afterPath="$PROJECT_DIR$/hse_incidents/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hse_incidents/admin.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hse_incidents/apps.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hse_incidents/forms.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hse_incidents/migrations/0001_initial.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hse_incidents/migrations/0002_injurytype_remove_incidentreport_injury_type_and_more.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hse_incidents/migrations/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hse_incidents/models.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/incident_detail.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/incident_list.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/incident_report_form.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hse_incidents/templatetags/form_filters.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hse_incidents/tests.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hse_incidents/urls.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hse_incidents/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/permissions/admin.py" beforeDir="false" afterPath="$PROJECT_DIR$/permissions/admin.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/permissions/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/permissions/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/permissions/templates/permissions/edit_permission.html" beforeDir="false" afterPath="$PROJECT_DIR$/permissions/templates/permissions/edit_permission.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/permissions/templates/permissions/list_permissions.html" beforeDir="false" afterPath="$PROJECT_DIR$/permissions/templates/permissions/list_permissions.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/permissions/templates/permissions/manage_access.html" beforeDir="false" afterPath="$PROJECT_DIR$/permissions/templates/permissions/manage_access.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/permissions/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/permissions/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/permissions/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/permissions/utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/permissions/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/permissions/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/accounts/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/accounts/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/contractor_management/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/contractor_management/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,9 +42,9 @@
       <list>
         <option value="CSS File" />
         <option value="package.json" />
-        <option value="HTML File" />
         <option value="JavaScript File" />
         <option value="Python Script" />
+        <option value="HTML File" />
       </list>
     </option>
   </component>
@@ -324,14 +326,8 @@
       <workItem from="1735716988485" duration="14674000" />
       <workItem from="1735749747663" duration="9321000" />
       <workItem from="1735817073832" duration="1740000" />
-      <workItem from="1736001296249" duration="6168000" />
-    </task>
-    <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
-      <option name="closed" value="true" />
-      <created>1727641402120</created>
-      <option name="number" value="LOCAL‎−۰۰۰۰۱" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۰۱" />
-      <updated>1727641402121</updated>
+      <workItem from="1736001296249" duration="6698000" />
+      <workItem from="1736082189666" duration="15502000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۲" summary="accont">
       <option name="closed" value="true" />
@@ -686,7 +682,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۴۹" />
       <updated>1735414732029</updated>
     </task>
-    <option name="localTasksCounter" value="50" />
+    <task id="LOCAL‎−۰۰۰۵۰" summary="end-permission-accounts">
+      <option name="closed" value="true" />
+      <created>1736009428607</created>
+      <option name="number" value="LOCAL‎−۰۰۰۵۰" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۵۰" />
+      <updated>1736009428607</updated>
+    </task>
+    <option name="localTasksCounter" value="51" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -704,7 +707,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="endamaliyat&amp;anomali1" />
     <MESSAGE value="sms.ir" />
     <MESSAGE value="convert-to-pdf" />
     <MESSAGE value="log" />
@@ -729,7 +731,8 @@
     <MESSAGE value="contractor_vehicle" />
     <MESSAGE value="contractor_vehicle2" />
     <MESSAGE value="contractor_vehicle3" />
-    <option name="LAST_COMMIT_MESSAGE" value="contractor_vehicle3" />
+    <MESSAGE value="end-permission-accounts" />
+    <option name="LAST_COMMIT_MESSAGE" value="end-permission-accounts" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -748,6 +751,10 @@
           <url>file://$PROJECT_DIR$/anomalis/views.py</url>
           <line>535</line>
           <option name="timeStamp" value="7" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/accounts/views.py</url>
+          <option name="timeStamp" value="8" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="django-line">
           <url>file://$PROJECT_DIR$/anomalis/templates/anomalis/anomaly-details.html</url>

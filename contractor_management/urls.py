@@ -16,9 +16,19 @@ URLS_WITH_LABELS = [
         "name": "all_reports",
         "label": "پیمانکاران-گزارشگیری خودرو ها",
     },
+
+    {
+        "path": "get_contractors_ajax/",
+        "view": views.get_contractors_ajax,
+        "name" : "get_contractors_ajax",
+
+
+    },
+
 ]
 
 
 urlpatterns = [
     path(url["path"], url["view"], name=url["name"]) for url in URLS_WITH_LABELS
+
 ]

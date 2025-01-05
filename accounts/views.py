@@ -12,6 +12,7 @@ from dashboard.sms_utils import send_template_sms
 from .forms import UserForm, UserProfileForm,PasswordResetConfirmForm
 from django.utils.timezone import now
 from datetime import timedelta
+from django.db.models import Q # اضافه کردن این خط
 
 name = 'accounts'
 
@@ -142,3 +143,23 @@ def confirm_reset_code(request):
         form = PasswordResetConfirmForm()
 
     return render(request, 'accounts/new-password.html', {'form': form})
+
+
+def get_users_ajax(request):
+    users = []
+    search_term = request.GET.get('term', '')
+    if search_term:
+        for user in User.objects.filter(Q(first_name__icontains=search_term) | Q(last_name__icontains=search_term) | Q(userprofile__personnel_code__icontains=search_term)):
+          user_profile = getattr(user, 'userprofile', None)
+          if user_profile:
+               users.append({"id": user.id, "name": f"{user.first_name} {user.last_name} ({user_profile.personnel_code})"})
+          else:
+               users.append({"id": user.id, "name": f"{user.first_name} {user.last_name}"})
+    else:
+         for user in User.objects.all():
+             user_profile = getattr(user, 'userprofile', None)
+             if user_profile:
+                users.append({"id": user.id, "name": f"{user.first_name} {user.last_name} ({user_profile.personnel_code})"})
+             else:
+                users.append({"id": user.id, "name": f"{user.first_name} {user.last_name}"})
+    return JsonResponse(users, safe=False)
