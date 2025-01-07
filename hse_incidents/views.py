@@ -5,7 +5,6 @@ from .models import IncidentReport, InjuryType
 from accounts.models import UserProfile
 from django.contrib import messages
 from django.http import JsonResponse
-from contractor_management.models import Contractor
 from datetime import datetime
 import jdatetime
 from django.db.models import Q
@@ -14,6 +13,13 @@ from django.http import HttpResponse
 import pandas as pd
 from io import BytesIO
 from django.utils import timezone
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from contractor_management.models import Contractor, Employee
+from django.template.loader import render_to_string
+from django.conf import settings
+import os
+from weasyprint import HTML, CSS
+
 
 @login_required
 def report_incident(request):
@@ -21,7 +27,7 @@ def report_incident(request):
         user_profile = UserProfile.objects.get(user=request.user)
     except UserProfile.DoesNotExist:
         messages.error(request, "پروفایل کاربری شما یافت نشد. لطفا با مدیر سیستم تماس بگیرید.")
-        return render(request, 'hse_incidents/no_userprofile.html')
+        return render(request, 'hse_incidents/incident_report_form.html')
 
     if request.method == 'POST':
         incident_date_str = request.POST.get('incident_date')
@@ -34,6 +40,7 @@ def report_incident(request):
         damage_description = request.POST.get('damage_description')
         related_entity = request.POST.get('related_entity')
         related_contractor_id = request.POST.get('related_contractor')
+        related_contractor_employees_ids = request.POST.getlist('related_contractor_employees')
         fire_truck_needed = request.POST.get('fire_truck_needed') == 'on'
         ambulance_needed = request.POST.get('ambulance_needed') == 'on'
         hospitalized = request.POST.get('hospitalized') == 'on'
@@ -68,16 +75,16 @@ def report_incident(request):
 
             incident.involved_person.set(UserProfile.objects.filter(id__in=involved_person_ids))
             incident.injury_type.set(InjuryType.objects.filter(id__in=injury_type_ids))
+            incident.related_contractor_employees.set(Employee.objects.filter(id__in=related_contractor_employees_ids))
             messages.success(request, "گزارش حادثه با موفقیت ثبت شد.")
-            return redirect('hse_incidents:incident_success')
-
         except Exception as e:
             messages.error(request, f"خطا در ثبت گزارش: {e}")
-            return render(request, 'hse_incidents/incident_report_form.html')
     return render(request, 'hse_incidents/incident_report_form.html')
 
 def incident_success(request):
-    return render(request, 'hse_incidents/incident_success.html')
+    # دیگر این ویو استفاده نمی شود
+    pass
+
 def get_injury_types_ajax(request):
     injury_types = []
     search_term = request.GET.get('term', '')
@@ -87,154 +94,160 @@ def get_injury_types_ajax(request):
        injury_types = InjuryType.objects.values("id","name")
     return JsonResponse(list(injury_types), safe=False)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 @login_required
 def list_reports(request):
-    """
-    ویو لیست گزارشات با قابلیت جستجو.
-    """
+    search_query = request.GET.get('search', '')
+    from_date_str = request.GET.get('from_date', '')
+    to_date_str = request.GET.get('to_date', '')
+
     reports = IncidentReport.objects.all()
-      # فیلتر پیشرفته
-    search_term = request.GET.get('search', '')
-    if search_term:
+
+    if search_query:
         reports = reports.filter(
-            Q(incident_location__icontains=search_term) |
-            Q(affected_body_part__icontains=search_term) |
-            Q(damage_description__icontains=search_term) |
-            Q(full_description__icontains=search_term) |
-            Q(initial_cause__icontains=search_term) |
-            Q(report_author__user__first_name__icontains=search_term) |
-            Q(report_author__user__last_name__icontains=search_term)
+            Q(incident_location__icontains=search_query) |
+            Q(full_description__icontains=search_query) |
+            Q(initial_cause__icontains=search_query)
+            |Q(report_author__user__first_name__icontains=search_query)
+            |Q(report_author__user__last_name__icontains=search_query)
         )
 
-    incident_date_start = request.GET.get('incident_date_start')
-    incident_date_end = request.GET.get('incident_date_end')
-
-    if incident_date_start:
+    if from_date_str:
         try:
-            incident_date_start_date_parts = list(map(int, incident_date_start.split('-')))
-            incident_date_start_date_gregorian = jdatetime.date(incident_date_start_date_parts[0],incident_date_start_date_parts[1], incident_date_start_date_parts[2]).togregorian()
-            incident_date_start_date = incident_date_start_date_gregorian
-            reports = reports.filter(incident_date__gte=incident_date_start_date)
-        except:
+           from_date_parts = list(map(int, from_date_str.split('-')))
+           from_date_gregorian = jdatetime.date(from_date_parts[0], from_date_parts[1], from_date_parts[2]).togregorian()
+           reports = reports.filter(incident_date__gte=from_date_gregorian)
+        except ValueError:
+            pass
+
+
+    if to_date_str:
+        try:
+           to_date_parts = list(map(int, to_date_str.split('-')))
+           to_date_gregorian = jdatetime.date(to_date_parts[0], to_date_parts[1], to_date_parts[2]).togregorian()
+           reports = reports.filter(incident_date__lte=to_date_gregorian)
+        except ValueError:
              pass
 
-    if incident_date_end:
-        try:
-              incident_date_end_date_parts = list(map(int, incident_date_end.split('-')))
-              incident_date_end_date_gregorian = jdatetime.date(incident_date_end_date_parts[0], incident_date_end_date_parts[1],incident_date_end_date_parts[2]).togregorian()
-              incident_date_end_date = incident_date_end_date_gregorian
-              reports = reports.filter(incident_date__lte=incident_date_end_date)
-        except:
-              pass
+    reports = reports.order_by('-incident_date')
 
-    data = []
-    for report in reports:
-        injury_types = ", ".join([str(injury_type) for injury_type in report.injury_type.all()])
-        involved_persons = ", ".join([str(person) for person in report.involved_person.all()])
-        incident_date_shamsi = jdatetime.date.fromgregorian(date=report.incident_date).strftime('%Y/%m/%d')
+    page = request.GET.get('page', 1)
+    paginator = Paginator(reports, 10)
+    try:
+        reports = paginator.page(page)
+    except PageNotAnInteger:
+        reports = paginator.page(1)
+    except EmptyPage:
+        reports = paginator.page(paginator.num_pages)
 
 
-        data.append({
-            'id': report.id,
-            'incident_date': incident_date_shamsi,  # تاریخ شمسی
-            'incident_time': str(report.incident_time),
-             'incident_location': report.incident_location,
-            'involved_persons': involved_persons,
-           })
-    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        return JsonResponse({'reports':data})
-    return render(request, 'hse_incidents/incident_list.html', {'reports': reports,
-        'search_term': search_term,
-        'incident_date_start': incident_date_start,
-        'incident_date_end': incident_date_end,
-    })
+    return render(request, 'hse_incidents/report_list.html', {'reports': reports, 'search_query':search_query,'from_date':from_date_str, 'to_date': to_date_str})
 
 
 @login_required
 def report_details(request, report_id):
-    """
-    ویو صفحه جزئیات یک گزارش.
-    """
     report = get_object_or_404(IncidentReport, id=report_id)
     return render(request, 'hse_incidents/report_details.html', {'report': report})
 
 @login_required
 def export_reports_excel(request):
-    """
-    ویو برای خروجی اکسل گزارشات.
-    """
+    search_query = request.GET.get('search', '')
+    from_date_str = request.GET.get('from_date', '')
+    to_date_str = request.GET.get('to_date', '')
+
     reports = IncidentReport.objects.all()
-  # فیلتر پیشرفته
-    search_term = request.GET.get('search', '')
-    if search_term:
+
+    if search_query:
         reports = reports.filter(
-            Q(incident_location__icontains=search_term) |
-            Q(affected_body_part__icontains=search_term) |
-            Q(damage_description__icontains=search_term) |
-            Q(full_description__icontains=search_term) |
-            Q(initial_cause__icontains=search_term) |
-            Q(report_author__user__first_name__icontains=search_term) |
-            Q(report_author__user__last_name__icontains=search_term)
+            Q(incident_location__icontains=search_query) |
+            Q(full_description__icontains=search_query) |
+            Q(initial_cause__icontains=search_query)
+            |Q(report_author__user__first_name__icontains=search_query)
+            |Q(report_author__user__last_name__icontains=search_query)
         )
 
-    incident_date_start = request.GET.get('incident_date_start')
-    incident_date_end = request.GET.get('incident_date_end')
+    if from_date_str:
+       try:
+          from_date_parts = list(map(int, from_date_str.split('-')))
+          from_date_gregorian = jdatetime.date(from_date_parts[0], from_date_parts[1], from_date_parts[2]).togregorian()
+          reports = reports.filter(incident_date__gte=from_date_gregorian)
+       except ValueError:
+           pass
 
-    if incident_date_start:
+
+    if to_date_str:
         try:
-            incident_date_start_date_parts = list(map(int, incident_date_start.split('-')))
-            incident_date_start_date_gregorian = jdatetime.date(incident_date_start_date_parts[0],incident_date_start_date_parts[1], incident_date_start_date_parts[2]).togregorian()
-            incident_date_start_date = incident_date_start_date_gregorian
-            reports = reports.filter(incident_date__gte=incident_date_start_date)
-        except:
+           to_date_parts = list(map(int, to_date_str.split('-')))
+           to_date_gregorian = jdatetime.date(to_date_parts[0], to_date_parts[1], to_date_parts[2]).togregorian()
+           reports = reports.filter(incident_date__lte=to_date_gregorian)
+        except ValueError:
              pass
 
-
-    if incident_date_end:
-        try:
-              incident_date_end_date_parts = list(map(int, incident_date_end.split('-')))
-              incident_date_end_date_gregorian = jdatetime.date(incident_date_end_date_parts[0], incident_date_end_date_parts[1],incident_date_end_date_parts[2]).togregorian()
-              incident_date_end_date = incident_date_end_date_gregorian
-              reports = reports.filter(incident_date__lte=incident_date_end_date)
-        except:
-            pass
-
-    data = []
+    reports = reports.order_by('-incident_date')
+    df_data = []
     for report in reports:
-        injury_types = ", ".join([str(injury_type) for injury_type in report.injury_type.all()])
-        involved_persons = ", ".join([str(person) for person in report.involved_person.all()])
-        report_date = timezone.make_naive(report.report_date)
-        data.append({
-             'تاریخ وقوع حادثه': jdatetime.date.fromgregorian(date=report.incident_date).strftime('%Y/%m/%d'),
-            'ساعت وقوع حادثه': report.incident_time,
+         incident_date_jalali = jdatetime.date.fromgregorian(date=report.incident_date).strftime('%Y/%m/%d') if report.incident_date else ''
+         df_data.append({
+             'تاریخ وقوع حادثه': incident_date_jalali,
+             'ساعت وقوع حادثه': report.incident_time.strftime('%H:%M') if report.incident_time else '',
             'محل وقوع حادثه': report.incident_location,
-            'شخص/اشخاص مرتبط با حادثه': involved_persons,
-            'تجهیزات مرتبط با حادثه': report.involved_equipment,
-            'نوع جراحت': injury_types,
+             'اشخاص مرتبط با حادثه': ', '.join([str(person) for person in report.involved_person.all()]),
+             'تجهیزات مرتبط با حادثه': report.involved_equipment,
+             'نوع جراحت': ', '.join([str(injury) for injury in report.injury_type.all()]),
             'عضو آسیب دیده': report.affected_body_part,
             'شرح آسیب وارده': report.damage_description,
             'نوع ارتباط': report.related_entity,
-            'پیمانکار': report.related_contractor.name if report.related_contractor else '',
-            'خودرو آتش نشانی اعزام گردید؟': report.fire_truck_needed,
-            'آمبولانس اعزام گردید؟': report.ambulance_needed,
-            'فرد حادثه به بیمارستان اعزام گردید؟': report.hospitalized,
-            'نوع وسیله نقلیه جهت اعزام': report.transportation_type,
+             'پیمانکار مرتبط': str(report.related_contractor) if report.related_contractor else '',
+             'خودرو آتش نشانی': 'بله' if report.fire_truck_needed else 'خیر',
+             'آمبولانس اعزام شده': 'بله' if report.ambulance_needed else 'خیر',
+             'اعزام به بیمارستان': 'بله' if report.hospitalized else 'خیر',
+              'نوع وسیله اعزام': report.transportation_type,
             'شرح کامل حادثه': report.full_description,
-            'علت وقوع حادثه': report.initial_cause,
-            'فرد گزارش دهنده': report.report_author,
-            'تاریخ ثبت گزارش': jdatetime.datetime.fromgregorian(datetime=report_date).strftime('%Y/%m/%d'),
-             'شیفت ثبت گزارش': report.report_shift,
-        })
-    df = pd.DataFrame(data)
-    buffer = BytesIO()
-    with pd.ExcelWriter(buffer, engine='xlsxwriter', engine_kwargs={'options': {'strings_to_urls': False}}) as writer:
-        df.to_excel(writer, sheet_name='گزارشات', index=False)
-        writer.close()
-    buffer.seek(0)
+             'علت حادثه': report.initial_cause,
+             'نویسنده گزارش': str(report.report_author)
+          })
+    df = pd.DataFrame(df_data)
+    excel_file = BytesIO()
+    writer = pd.ExcelWriter(excel_file, engine='xlsxwriter')
+    df.to_excel(writer, sheet_name='گزارشات حوادث', index=False)
+    writer.close()
+    excel_file.seek(0)
+    response = HttpResponse(excel_file.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=incident_reports.xlsx'
+    return response
 
-    response = HttpResponse(
-       buffer,
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
-    response['Content-Disposition'] = 'attachment; filename=reports.xlsx'
+
+@login_required
+def report_details_pdf(request, report_id):
+    report = get_object_or_404(IncidentReport, id=report_id)
+    user_signature_path = None
+    if report.report_author and report.report_author.signature:
+         user_signature_path = os.path.join(settings.MEDIA_ROOT, str(report.report_author.signature))
+
+    title = f"گزارش حادثه شماره {report.id}"
+
+    context = {
+            'report': report,
+             'title': title,
+            'user_signature': user_signature_path,
+        }
+    html = render_to_string('hse_incidents/daily_report_pdf.html', context)
+    # font_config = FontConfiguration()
+    css = CSS(string='@page { size: A4; margin: 10mm; }')
+    pdf_file = HTML(string=html,base_url=request.build_absolute_uri('/')).write_pdf(stylesheets=[css]) # base_url رو درست تنظیم کردیم
+    response = HttpResponse(pdf_file, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="incident_report_{report.id}.pdf"'
     return response

@@ -192,9 +192,13 @@
                       </div>
                     <div class="col-md-6 mb-3">
                       <label class="form-label">پیمانکار</label>
-                        <select name="related_contractor" class="form-control select2"></select>
+                        <select name="related_contractor" id="related_contractor" class="form-control select2" multiple></select>
                     </div>
                     </div>
+                       <div class="mb-3">
+                           <label class="form-label">پرسنل پیمانکار مرتبط با حادثه</label>
+                           <select name="related_contractor_employees" id="related_contractor_employees" class="form-control select2" multiple></select>
+                       </div>
                     <div class="row">
                     <div class="col-md-4 mb-3">
                        <label class="form-label">خودرو آتش نشانی اعزام گردید؟</label>
@@ -273,14 +277,30 @@
                             url: '{% url "contractor_management:get_contractors_ajax" %}',
                             dataType: 'json',
                              delay: 250,
-                            processResults: function (data) {
+                             processResults: function (data) {
                             return {
-                                results: data.map(contractor => ({ id: contractor.id, text: contractor.name }))
+                                results: data.map(contractor => ({ id: contractor.id, text: contractor.company_name }))
                             };
                         },
                             cache: true
                       }
                  });
+            $('#incident-form select[name="related_contractor_employees"]').select2({
+                    placeholder: 'انتخاب پرسنل پیمانکار',
+                    width: '100%',
+                     dir: 'rtl',
+                    ajax: {
+                         url: '{% url "contractor_management:get_contractor_employees_ajax" %}',
+                            dataType: 'json',
+                            delay: 250,
+                            processResults: function (data) {
+                                return {
+                                    results: data.map(employee => ({id: employee.id, text: employee.name}))
+                                };
+                            },
+                            cache: true
+                       }
+                    });
         }
     </script>
 {% endblock %}

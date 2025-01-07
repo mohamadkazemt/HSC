@@ -4,30 +4,20 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="end-permission-accounts">
-      <change afterPath="$PROJECT_DIR$/hse_incidents/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hse_incidents/admin.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hse_incidents/apps.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hse_incidents/forms.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hse_incidents/migrations/0001_initial.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hse_incidents/migrations/0002_injurytype_remove_incidentreport_injury_type_and_more.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hse_incidents/migrations/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hse_incidents/models.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/incident_detail.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/incident_list.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/incident_report_form.html" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hse_incidents/templatetags/form_filters.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hse_incidents/tests.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hse_incidents/urls.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hse_incidents/views.py" afterDir="false" />
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="incident_report">
+      <change afterPath="$PROJECT_DIR$/hse_incidents/migrations/0003_alter_incidentreport_options_and_more.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/daily_report_pdf.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/HSCprojects/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/contractor_management/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/contractor_management/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hse_incidents/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/hse_incidents/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/incident_detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/report_details.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/incident_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/report_list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/incident_report_form.html" beforeDir="false" afterPath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/incident_report_form.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hse_incidents/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/hse_incidents/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hse_incidents/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/hse_incidents/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -327,14 +317,8 @@
       <workItem from="1735749747663" duration="9321000" />
       <workItem from="1735817073832" duration="1740000" />
       <workItem from="1736001296249" duration="6698000" />
-      <workItem from="1736082189666" duration="15502000" />
-    </task>
-    <task id="LOCAL‎−۰۰۰۰۲" summary="accont">
-      <option name="closed" value="true" />
-      <created>1727641532891</created>
-      <option name="number" value="LOCAL‎−۰۰۰۰۲" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۰۲" />
-      <updated>1727641532891</updated>
+      <workItem from="1736082189666" duration="15814000" />
+      <workItem from="1736261651731" duration="16661000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۳" summary="formanomali">
       <option name="closed" value="true" />
@@ -689,7 +673,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۵۰" />
       <updated>1736009428607</updated>
     </task>
-    <option name="localTasksCounter" value="51" />
+    <task id="LOCAL‎−۰۰۰۵۱" summary="incident_report">
+      <option name="closed" value="true" />
+      <created>1736108556152</created>
+      <option name="number" value="LOCAL‎−۰۰۰۵۱" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۵۱" />
+      <updated>1736108556152</updated>
+    </task>
+    <option name="localTasksCounter" value="52" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -707,7 +698,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="sms.ir" />
     <MESSAGE value="convert-to-pdf" />
     <MESSAGE value="log" />
     <MESSAGE value="edite-sms" />
@@ -732,7 +722,8 @@
     <MESSAGE value="contractor_vehicle2" />
     <MESSAGE value="contractor_vehicle3" />
     <MESSAGE value="end-permission-accounts" />
-    <option name="LAST_COMMIT_MESSAGE" value="end-permission-accounts" />
+    <MESSAGE value="incident_report" />
+    <option name="LAST_COMMIT_MESSAGE" value="incident_report" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

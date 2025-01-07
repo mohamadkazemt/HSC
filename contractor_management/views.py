@@ -11,7 +11,7 @@ from django.db.models import Q
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .utils import get_current_user_shift_and_group, SHIFT_PATTERN
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Contractor
+from .models import Contractor, Employee
 from django.contrib.auth.decorators import user_passes_test
 import json
 
@@ -120,10 +120,37 @@ def all_reports(request):
 
 
 def get_contractors_ajax(request):
-    contractors = []
+
+    contractors = []  # لیست پیمانکاران
+    search_term = request.GET.get('term', '')  # دریافت عبارت جستجو از کوئری پارامترها
+
+    if search_term:
+        # اگر عبارت جستجو وجود داشت، پیمانکارانی را که نام شرکت آنها شامل عبارت جستجو است، فیلتر کن
+        contractors = Contractor.objects.filter(
+            Q(company_name__icontains=search_term)  # فیلتر بر اساس نام شرکت (حساس به بزرگی و کوچکی حروف نیست)
+        ).values("id", "company_name")  # انتخاب فیلدهای id و company_name برای بازگشت
+    else:
+        # اگر عبارت جستجو وجود نداشت، همه پیمانکاران را انتخاب کن
+        contractors = Contractor.objects.values("id", "company_name")  # انتخاب فیلدهای id و company_name برای بازگشت
+
+    # تبدیل لیست به JSON و بازگرداندن
+    return JsonResponse(list(contractors), safe=False)
+
+
+def get_contractor_employees_ajax(request):
+    employees = []
     search_term = request.GET.get('term', '')
     if search_term:
-      contractors = Contractor.objects.filter(Q(name__icontains=search_term)).values("id","name")
+        employees = Employee.objects.filter(
+            Q(first_name__icontains=search_term) |
+            Q(last_name__icontains=search_term)
+        ).values("id", "first_name", "last_name")
     else:
-      contractors = Contractor.objects.values("id","name")
-    return JsonResponse(list(contractors), safe=False)
+        employees = Employee.objects.values("id", "first_name", "last_name")
+    formatted_employees = []
+    for employee in employees:
+         formatted_employees.append({
+             "id": employee['id'],
+            "name": f"{employee['first_name']} {employee['last_name']}"
+        })
+    return JsonResponse(list(formatted_employees), safe=False)

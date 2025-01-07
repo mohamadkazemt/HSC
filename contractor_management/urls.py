@@ -24,6 +24,13 @@ URLS_WITH_LABELS = [
 
 
     },
+    {
+        "path": "get_contractor_employees_ajax/",
+        "view": views.get_contractor_employees_ajax,
+        "name": "get_contractor_employees_ajax",
+
+    },
+
 
 ]
 

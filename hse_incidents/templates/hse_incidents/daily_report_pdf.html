@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    {% load static %}
+    {% load jalali %}
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <style>
+        @page {
+            size: A4; /* تنظیم اندازه صفحه به A4 */
+            margin: 10mm; /* تنظیم حاشیه‌ها (میلی‌متر) */
+        }
+        @font-face {
+            font-family: 'IRANSans';
+            src: url('{% static "assets/fonts/IRANSansWeb.woff2" %}') format('woff2');
+        }
+        body {
+            font-family: 'IRANSans', Tahoma, sans-serif;
+            direction: rtl;
+            margin: 0;
+            padding: 20px;
+            background-color: #fff;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header img {
+            max-width: 150px;
+        }
+        .title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .details-table th, .details-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        .details-table th {
+            background-color: #f2f2f2;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+        }
+        .signature {
+            margin-top: 50px;
+            text-align: center;
+        }
+        .signature img {
+            max-width: 150px;
+        }
+    </style>
+</head>
+<body>
+
+
+
+<div class="header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
+    <!-- بخش لوگو -->
+    <div class="logo" style="flex: 1;">
+        <img src="{% static 'assets/media/logos/logo-small.png' %}" alt="لوگو شرکت" style="max-height: 70px;">
+    </div>
+
+    <!-- بخش نام شرکت -->
+    <div class="company-name" style="flex: 2; text-align: center;">
+        <p style="font-weight: bold; margin: 0; font-size: 20px;">شرکت کاراوران صنعت خاورمیانه</p>
+        <p style="margin: 0; font-size: 14px;">پروژه معدن سنگ آهن جلال‌آباد - واحد HSEC</p>
+        <div class="title">{{ title }}</div>
+    </div>
+
+    <!-- بخش اطلاعات -->
+    <div class="info" style="flex: 1; text-align: right; font-size: 12px; direction: rtl;">
+        <p style="margin: 0;">کد فرم: MIE-HS-M-FR-142-V03</p>
+    </div>
+
+</div>
+
+
+
+<h2 class="title">مشخصات گزارش دهنده</h2>
+
+<!-- جزئیات اصلی -->
+<table class="details-table">
+    <tr>
+        <th>نویسنده گزارش</th>
+        <td>{{ report.report_author.first_name }} {{ report.report_author.last_name }} ({{ report.report_author.personnel_code }})</td>
+    </tr>
+    <tr>
+        <th>تاریخ وقوع حادثه</th>
+       <td>{{ report.incident_date|jformat:"%Y/%m/%d" }}</td>
+    </tr>
+     <tr>
+        <th>ساعت وقوع حادثه</th>
+        <td>{{ report.incident_time|date:"H:i" }}</td>
+    </tr>
+
+</table>
+
+<!-- جزئیات حادثه -->
+<h2>جزئیات حادثه</h2>
+<table class="details-table">
+      <tr>
+          <th>محل وقوع حادثه</th>
+          <td>{{ report.incident_location }}</td>
+      </tr>
+      <tr>
+          <th>اشخاص مرتبط با حادثه</th>
+           <td>
+                {% for person in report.involved_person.all %}
+                    {{ person }}{% if not forloop.last %}, {% endif %}
+                {% empty %}
+                    ندارد
+                {% endfor %}
+            </td>
+        </tr>
+        <tr>
+          <th>پرسنل پیمانکار مرتبط با حادثه</th>
+           <td>
+               {% for employee in report.related_contractor_employees.all %}
+                   {{ employee }}{% if not forloop.last %}, {% endif %}
+               {% empty %}
+                   ندارد
+               {% endfor %}
+           </td>
+        </tr>
+        <tr>
+            <th>تجهیزات مرتبط با حادثه</th>
+            <td>{{ report.involved_equipment }}</td>
+        </tr>
+        <tr>
+            <th>نوع جراحت</th>
+            <td>
+                {% for injury in report.injury_type.all %}
+                    {{ injury }}{% if not forloop.last %}, {% endif %}
+                {% empty %}
+                    ندارد
+                {% endfor %}
+            </td>
+        </tr>
+        <tr>
+             <th>عضو آسیب دیده</th>
+             <td>{{ report.affected_body_part }}</td>
+         </tr>
+        <tr>
+           <th>شرح آسیب وارده</th>
+           <td>{{ report.damage_description }}</td>
+        </tr>
+</table>
+<!-- جزئیات اعزام -->
+<h2>جزئیات اعزام</h2>
+<table class="details-table">
+     <tr>
+         <th>نوع ارتباط</th>
+           <td>{{ report.related_entity }}</td>
+      </tr>
+      <tr>
+        <th>پیمانکار مرتبط</th>
+        <td>{{ report.related_contractor|default:"-" }}</td>
+      </tr>
+       <tr>
+        <th>خودرو آتش نشانی اعزام شد؟</th>
+         <td>{{ report.fire_truck_needed|yesno:"بله,خیر" }}</td>
+      </tr>
+      <tr>
+        <th>آمبولانس اعزام شد؟</th>
+        <td>{{ report.ambulance_needed|yesno:"بله,خیر" }}</td>
+     </tr>
+       <tr>
+           <th>فرد به بیمارستان اعزام شد؟</th>
+           <td>{{ report.hospitalized|yesno:"بله,خیر" }}</td>
+      </tr>
+      <tr>
+         <th>نوع وسیله اعزام</th>
+           <td>{{ report.transportation_type }}</td>
+      </tr>
+</table>
+<!-- شرح و علت حادثه -->
+ <h2>شرح و علت حادثه</h2>
+<table class="details-table">
+    <tr>
+        <th>شرح کامل حادثه</th>
+        <td>{{ report.full_description }}</td>
+    </tr>
+    <tr>
+       <th>علت اولیه حادثه</th>
+        <td>{{ report.initial_cause }}</td>
+     </tr>
+</table>
+
+
+{% if user_signature %}
+    <div class="signature">
+        <img src="{{ user_signature }}" alt="امضای کاربر" style="width: 200px; height: auto;">
+            <p>{{ report.report_author.first_name }} {{ report.report_author.last_name }}</p>
+             <p>{{ report.created_at|jformat:"%Y/%m/%d" }}</p>
+    </div>
+{% endif %}
+
+
+<div class="footer">
+</div>
+</body>
+</html>

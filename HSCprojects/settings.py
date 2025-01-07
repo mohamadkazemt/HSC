@@ -207,25 +207,23 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
         },
+        'file': {
+           'level': 'DEBUG',
+           'class': 'logging.FileHandler',
+           'filename': 'hse_incidents.log',
+        },
     },
     'loggers': {
-        'permissions': {  # این قسمت رو بر اساس اسم اپ خودتون تنظیم کنید
-            'handlers': ['console'],
-            'level': 'DEBUG',  # Set the level to DEBUG or lower for verbose logging
+        'hse_incidents': {
+            'handlers': ['console','file'],
+            'level': 'DEBUG',
             'propagate': True,
         },
-        'accounts': {
-           'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': True,
-         },
-         'anomalis':{
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': True,
-         }
     },
 }
+
+
+
 JALALI_DATE_DEFAULTS = {
    # if change it to true then all dates of the list_display will convert to the Jalali.
    'LIST_DISPLAY_AUTO_CONVERT': False,
