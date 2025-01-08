@@ -4,20 +4,20 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="incident_report">
-      <change afterPath="$PROJECT_DIR$/hse_incidents/migrations/0003_alter_incidentreport_options_and_more.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/daily_report_pdf.html" afterDir="false" />
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="incident_report_end">
+      <change afterPath="$PROJECT_DIR$/machine_checklist/forms.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/machine_checklist/migrations/0001_initial.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/machine_checklist/migrations/0002_alter_checklist_user.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/machine_checklist/migrations/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/machine_checklist/templates/machine_checklist/checklist_detail.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/machine_checklist/templates/machine_checklist/checklist_form.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/machine_checklist/templates/machine_checklist/checklist_list.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/machine_checklist/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/contractor_management/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/contractor_management/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dailyreport_hse/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/dailyreport_hse/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hse_incidents/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/hse_incidents/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/incident_detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/report_details.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/incident_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/report_list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/incident_report_form.html" beforeDir="false" afterPath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/incident_report_form.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hse_incidents/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/hse_incidents/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/hse_incidents/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/hse_incidents/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -61,6 +61,10 @@
 }</component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/anomalis/admin.py" root0="FORCE_HIGHLIGHTING" />
+  </component>
+  <component name="MigrationScriptOptions">
+    <option name="ignoreImplicitObjects" value="true" />
+    <option name="ignoreSourceCode" value="false" />
   </component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
@@ -318,14 +322,8 @@
       <workItem from="1735817073832" duration="1740000" />
       <workItem from="1736001296249" duration="6698000" />
       <workItem from="1736082189666" duration="15814000" />
-      <workItem from="1736261651731" duration="16661000" />
-    </task>
-    <task id="LOCAL‎−۰۰۰۰۳" summary="formanomali">
-      <option name="closed" value="true" />
-      <created>1728036855616</created>
-      <option name="number" value="LOCAL‎−۰۰۰۰۳" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۰۳" />
-      <updated>1728036855616</updated>
+      <workItem from="1736261651731" duration="17126000" />
+      <workItem from="1736318791941" duration="25495000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۴" summary="formanomali">
       <option name="closed" value="true" />
@@ -680,7 +678,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۵۱" />
       <updated>1736108556152</updated>
     </task>
-    <option name="localTasksCounter" value="52" />
+    <task id="LOCAL‎−۰۰۰۵۲" summary="incident_report_end">
+      <option name="closed" value="true" />
+      <created>1736280714939</created>
+      <option name="number" value="LOCAL‎−۰۰۰۵۲" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۵۲" />
+      <updated>1736280714940</updated>
+    </task>
+    <option name="localTasksCounter" value="53" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -698,7 +703,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="convert-to-pdf" />
     <MESSAGE value="log" />
     <MESSAGE value="edite-sms" />
     <MESSAGE value="Edite-Notification" />
@@ -723,7 +727,8 @@
     <MESSAGE value="contractor_vehicle3" />
     <MESSAGE value="end-permission-accounts" />
     <MESSAGE value="incident_report" />
-    <option name="LAST_COMMIT_MESSAGE" value="incident_report" />
+    <MESSAGE value="incident_report_end" />
+    <option name="LAST_COMMIT_MESSAGE" value="incident_report_end" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

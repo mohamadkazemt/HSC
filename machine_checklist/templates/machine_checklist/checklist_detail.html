@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load form_filters %}
+{% load jformat %}
+
+
+{% block style %}
+    <style>
+         .hidden {
+            display: none !important
+         }
+        .select2-container {
+            width: 100% !important;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+        <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+            {% include 'header.html' %}
+            <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+                {% include 'sidebar.html' %}
+                <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                    <div class="d-flex flex-column flex-column-fluid">
+                        {% include 'toolbar.html' %}
+                        <div id="kt_app_content" class="app-content flex-column-fluid">
+                            <div id="kt_app_content_container" class="app-container container-fluid">
+                                <div class="alert-messages">
+                                    {% if messages %}
+                                        {% for message in messages %}
+                                            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-danger{% endif %} alert-dismissible fade show" role="alert">
+                                                {{ message }}
+                                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-body">
+                                       <h2 class="card-title">جزئیات چک لیست</h2>
+                                         <p><strong>کاربر:</strong>
+                                               {% if checklist.user.first_name or checklist.user.last_name %}
+                                                   {{ checklist.user.first_name }} {{ checklist.user.last_name }}
+                                               {% else %}
+                                                    {{ checklist.user.username }}
+                                               {% endif %}
+                                               {% if checklist.user.userprofile.personnel_code %}
+                                                   ({{ checklist.user.userprofile.personnel_code }})
+                                               {% endif %}
+                                          </p>
+
+                                        <p><strong>ماشین:</strong> {{ checklist.machine.workshop_code }} - {{ checklist.machine.machine_type.name }}</p>
+                                        <p><strong>تاریخ:</strong> {{ checklist.date|jformat:"%Y/%m/%d %H:%M:%S" }}</p>
+                                         <p><strong>شیفت:</strong> {{ checklist.shift }}</p>
+                                         <p><strong>گروه شیفت:</strong> {{ checklist.shift_group }}</p>
+
+                                         <hr>
+                                           <h3>پاسخ ها:</h3>
+                                           <ul class="list-group">
+                                           {% for answer in answers %}
+                                                <li class="list-group-item">
+                                                   <p><strong>{{ forloop.counter }}. {{ answer.question.text }}</strong></p>
+                                                    {% if answer.question.question_type == 'text' %}
+                                                       <p><strong>پاسخ:</strong> {{ answer.answer_text|default:"---" }}</p>
+                                                     {% elif answer.question.question_type == 'option' %}
+                                                      <p><strong>پاسخ:</strong> {{ answer.selected_option|default:"---" }}</p>
+                                                   {% endif %}
+                                                     {% if answer.description %}
+                                                        <p><strong>توضیحات:</strong> {{ answer.description }}</p>
+                                                   {% endif %}
+                                                </li>
+                                            {% empty %}
+                                                 <li class="list-group-item">هیچ پاسخی برای این چک لیست ثبت نشده است.</li>
+                                            {% endfor %}
+                                          </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                          {% include 'footer.html' %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -34,6 +34,7 @@ urlpatterns = [
     path("permissions/", include("permissions.urls")),
     path("contractor/", include("contractor_management.urls")),
     path('hse_incidents/', include(('hse_incidents.urls', 'hse_incidents'), namespace='hse_incidents')),
+    path('machine-checklist/', include(('machine_checklist.urls', 'machine_checklist'), namespace='machine_checklist')),
 
 ]
 
