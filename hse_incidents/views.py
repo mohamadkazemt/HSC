@@ -1,6 +1,7 @@
-# views.py (در اپلیکیشن hse_incidents)
+# views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from permissions.utils import permission_required
 from .models import IncidentReport, InjuryType
 from accounts.models import UserProfile
 from django.contrib import messages
@@ -20,7 +21,7 @@ from django.conf import settings
 import os
 from weasyprint import HTML, CSS
 
-
+@permission_required("incident_report")
 @login_required
 def report_incident(request):
     try:
@@ -42,11 +43,15 @@ def report_incident(request):
         related_contractor_id = request.POST.get('related_contractor')
         related_contractor_employees_ids = request.POST.getlist('related_contractor_employees')
         fire_truck_needed = request.POST.get('fire_truck_needed') == 'on'
+        fire_truck_arrival_time = request.POST.get('fire_truck_arrival_time')
         ambulance_needed = request.POST.get('ambulance_needed') == 'on'
+        ambulance_arrival_time = request.POST.get('ambulance_arrival_time')
         hospitalized = request.POST.get('hospitalized') == 'on'
+        hospitalized_time = request.POST.get('hospitalized_time')
         transportation_type = request.POST.get('transportation_type')
         full_description = request.POST.get('full_description')
         initial_cause = request.POST.get('initial_cause')
+
         try:
             # تبدیل تاریخ شمسی به میلادی
             incident_date_parts = list(map(int, incident_date_str.split('-')))
@@ -61,8 +66,11 @@ def report_incident(request):
                 damage_description=damage_description,
                 related_entity=related_entity,
                 fire_truck_needed=fire_truck_needed,
+                fire_truck_arrival_time = fire_truck_arrival_time,
                 ambulance_needed=ambulance_needed,
+                ambulance_arrival_time = ambulance_arrival_time,
                 hospitalized=hospitalized,
+                hospitalized_time = hospitalized_time,
                 transportation_type=transportation_type,
                 full_description=full_description,
                 initial_cause=initial_cause,
@@ -81,10 +89,7 @@ def report_incident(request):
             messages.error(request, f"خطا در ثبت گزارش: {e}")
     return render(request, 'hse_incidents/incident_report_form.html')
 
-def incident_success(request):
-    # دیگر این ویو استفاده نمی شود
-    pass
-
+@permission_required("get_injury_types_ajax")
 def get_injury_types_ajax(request):
     injury_types = []
     search_term = request.GET.get('term', '')
@@ -94,20 +99,7 @@ def get_injury_types_ajax(request):
        injury_types = InjuryType.objects.values("id","name")
     return JsonResponse(list(injury_types), safe=False)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+@permission_required("list_reports")
 @login_required
 def list_reports(request):
     search_query = request.GET.get('search', '')
@@ -133,7 +125,6 @@ def list_reports(request):
         except ValueError:
             pass
 
-
     if to_date_str:
         try:
            to_date_parts = list(map(int, to_date_str.split('-')))
@@ -153,15 +144,15 @@ def list_reports(request):
     except EmptyPage:
         reports = paginator.page(paginator.num_pages)
 
-
     return render(request, 'hse_incidents/report_list.html', {'reports': reports, 'search_query':search_query,'from_date':from_date_str, 'to_date': to_date_str})
 
-
+@permission_required("report_details")
 @login_required
 def report_details(request, report_id):
     report = get_object_or_404(IncidentReport, id=report_id)
     return render(request, 'hse_incidents/report_details.html', {'report': report})
 
+@permission_required("export_reports_excel")
 @login_required
 def export_reports_excel(request):
     search_query = request.GET.get('search', '')
@@ -187,7 +178,6 @@ def export_reports_excel(request):
        except ValueError:
            pass
 
-
     if to_date_str:
         try:
            to_date_parts = list(map(int, to_date_str.split('-')))
@@ -212,8 +202,11 @@ def export_reports_excel(request):
             'نوع ارتباط': report.related_entity,
              'پیمانکار مرتبط': str(report.related_contractor) if report.related_contractor else '',
              'خودرو آتش نشانی': 'بله' if report.fire_truck_needed else 'خیر',
+             'زمان رسیدن خودرو آتش نشانی': report.fire_truck_arrival_time.strftime('%H:%M') if report.fire_truck_arrival_time else '',
              'آمبولانس اعزام شده': 'بله' if report.ambulance_needed else 'خیر',
+             'زمان رسیدن آمبولانس': report.ambulance_arrival_time.strftime('%H:%M') if report.ambulance_arrival_time else '',
              'اعزام به بیمارستان': 'بله' if report.hospitalized else 'خیر',
+             'زمان اعزام به بیمارستان': report.hospitalized_time.strftime('%H:%M') if report.hospitalized_time else '',
               'نوع وسیله اعزام': report.transportation_type,
             'شرح کامل حادثه': report.full_description,
              'علت حادثه': report.initial_cause,
@@ -229,7 +222,7 @@ def export_reports_excel(request):
     response['Content-Disposition'] = 'attachment; filename=incident_reports.xlsx'
     return response
 
-
+@permission_required("report_details_pdf")
 @login_required
 def report_details_pdf(request, report_id):
     report = get_object_or_404(IncidentReport, id=report_id)

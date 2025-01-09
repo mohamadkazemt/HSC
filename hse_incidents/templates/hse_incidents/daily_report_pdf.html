@@ -74,7 +74,7 @@
     <div class="company-name" style="flex: 2; text-align: center;">
         <p style="font-weight: bold; margin: 0; font-size: 20px;">شرکت کاراوران صنعت خاورمیانه</p>
         <p style="margin: 0; font-size: 14px;">پروژه معدن سنگ آهن جلال‌آباد - واحد HSEC</p>
-        <div class="title">{{ title }}</div>
+        <div class="title">گزارش حادثه </div>
     </div>
 
     <!-- بخش اطلاعات -->
@@ -91,7 +91,7 @@
 <!-- جزئیات اصلی -->
 <table class="details-table">
     <tr>
-        <th>نویسنده گزارش</th>
+        <th>گزارش دهند حادثه </th>
         <td>{{ report.report_author.first_name }} {{ report.report_author.last_name }} ({{ report.report_author.personnel_code }})</td>
     </tr>
     <tr>
@@ -170,14 +170,32 @@
         <th>خودرو آتش نشانی اعزام شد؟</th>
          <td>{{ report.fire_truck_needed|yesno:"بله,خیر" }}</td>
       </tr>
+    {% if report.fire_truck_needed %}
+       <tr>
+          <th>زمان رسیدن خودرو آتش نشانی</th>
+           <td>{{ report.fire_truck_arrival_time|date:"H:i" }}</td>
+       </tr>
+    {% endif %}
       <tr>
         <th>آمبولانس اعزام شد؟</th>
         <td>{{ report.ambulance_needed|yesno:"بله,خیر" }}</td>
      </tr>
+      {% if report.ambulance_needed %}
+        <tr>
+            <th>زمان رسیدن آمبولانس</th>
+            <td>{{ report.ambulance_arrival_time|date:"H:i" }}</td>
+        </tr>
+     {% endif %}
        <tr>
            <th>فرد به بیمارستان اعزام شد؟</th>
            <td>{{ report.hospitalized|yesno:"بله,خیر" }}</td>
       </tr>
+    {% if report.hospitalized %}
+         <tr>
+            <th>زمان اعزام به بیمارستان</th>
+            <td>{{ report.hospitalized_time|date:"H:i" }}</td>
+       </tr>
+    {% endif %}
       <tr>
          <th>نوع وسیله اعزام</th>
            <td>{{ report.transportation_type }}</td>

@@ -12,6 +12,40 @@
         .select2-container {
             width: 100% !important;
         }
+       .checklist-detail-header {
+           display: flex;
+           flex-wrap: wrap; /* Allow wrapping for smaller screens */
+           gap: 15px;
+           align-items: center;
+       }
+        .checklist-detail-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .checklist-detail-item i {
+           margin-left: 5px;
+           color: #28a745; /* Green color */
+        }
+        .checklist-detail-item span {
+          margin-left: 3px; /* small spacing */
+        }
+         @media (max-width: 768px) {
+            .checklist-detail-header {
+              justify-content: flex-start;
+            }
+             .checklist-detail-item {
+                flex: 1 0 45%; /* Adjust for smaller screens */
+                margin-bottom: 5px;
+            }
+         }
+        .answer-box {
+           border: 1px solid #dee2e6;
+           border-radius: 0.25rem;
+           padding: 15px;
+           margin-bottom: 15px;
+           background-color: #f8f9fa;
+        }
     </style>
 {% endblock %}
 
@@ -37,44 +71,66 @@
                                     {% endif %}
                                 </div>
 
-                                <div class="card">
+                                <div class="card shadow-sm">
                                     <div class="card-body">
                                        <h2 class="card-title">جزئیات چک لیست</h2>
-                                         <p><strong>کاربر:</strong>
-                                               {% if checklist.user.first_name or checklist.user.last_name %}
-                                                   {{ checklist.user.first_name }} {{ checklist.user.last_name }}
-                                               {% else %}
-                                                    {{ checklist.user.username }}
-                                               {% endif %}
-                                               {% if checklist.user.userprofile.personnel_code %}
-                                                   ({{ checklist.user.userprofile.personnel_code }})
-                                               {% endif %}
-                                          </p>
+                                         <div class="checklist-detail-header mb-4">
+                                             <div class="checklist-detail-item">
+                                               <i class="fas fa-user"></i>
+                                               <span>
+                                                   {% if checklist.user.first_name or checklist.user.last_name %}
+                                                       {{ checklist.user.first_name }} {{ checklist.user.last_name }}
+                                                   {% else %}
+                                                        {{ checklist.user.username }}
+                                                   {% endif %}
+                                                   {% if checklist.user.userprofile.personnel_code %}
+                                                        <span class="text-muted">({{ checklist.user.userprofile.personnel_code }})</span>
+                                                    {% endif %}
+                                                </span>
+                                           </div>
 
-                                        <p><strong>ماشین:</strong> {{ checklist.machine.workshop_code }} - {{ checklist.machine.machine_type.name }}</p>
-                                        <p><strong>تاریخ:</strong> {{ checklist.date|jformat:"%Y/%m/%d %H:%M:%S" }}</p>
-                                         <p><strong>شیفت:</strong> {{ checklist.shift }}</p>
-                                         <p><strong>گروه شیفت:</strong> {{ checklist.shift_group }}</p>
+                                              <div class="checklist-detail-item">
+                                                <i class="fas fa-cogs"></i>
+                                                   <span>{{ checklist.machine.workshop_code }} - {{ checklist.machine.machine_type.name }}</span>
+                                            </div>
+
+                                             <div class="checklist-detail-item">
+                                                <i class="fas fa-calendar"></i>
+                                                <span>{{ checklist.date|jformat:"%Y/%m/%d %H:%M:%S" }}</span>
+                                            </div>
+
+                                           <div class="checklist-detail-item">
+                                                 <i class="fas fa-clock"></i>
+                                                <span>{{ checklist.shift }}</span>
+                                           </div>
+                                            <div class="checklist-detail-item">
+                                                 <i class="fas fa-users"></i>
+                                                <span>{{ checklist.shift_group }}</span>
+                                           </div>
+                                        </div>
+
 
                                          <hr>
                                            <h3>پاسخ ها:</h3>
-                                           <ul class="list-group">
+                                           <div class="row">
                                            {% for answer in answers %}
-                                                <li class="list-group-item">
-                                                   <p><strong>{{ forloop.counter }}. {{ answer.question.text }}</strong></p>
-                                                    {% if answer.question.question_type == 'text' %}
-                                                       <p><strong>پاسخ:</strong> {{ answer.answer_text|default:"---" }}</p>
-                                                     {% elif answer.question.question_type == 'option' %}
-                                                      <p><strong>پاسخ:</strong> {{ answer.selected_option|default:"---" }}</p>
-                                                   {% endif %}
-                                                     {% if answer.description %}
-                                                        <p><strong>توضیحات:</strong> {{ answer.description }}</p>
-                                                   {% endif %}
-                                                </li>
+                                                <div class="col-md-4">
+                                                      <div class="answer-box">
+                                                            <p><strong>{{ forloop.counter }}. {{ answer.question.text }}</strong></p>
+                                                            {% if answer.question.question_type == 'text' %}
+                                                                <p><strong>پاسخ:</strong> {{ answer.answer_text|default:"---" }}</p>
+                                                              {% elif answer.question.question_type == 'option' %}
+                                                                <p><strong>پاسخ:</strong> {{ answer.selected_option|default:"---" }}</p>
+                                                            {% endif %}
+                                                            {% if answer.description %}
+                                                                <p><strong>توضیحات:</strong> {{ answer.description }}</p>
+                                                            {% endif %}
+                                                       </div>
+                                                  </div>
                                             {% empty %}
-                                                 <li class="list-group-item">هیچ پاسخی برای این چک لیست ثبت نشده است.</li>
+                                                  <div class="col-12 text-center">هیچ پاسخی برای این چک لیست ثبت نشده است.</div>
                                             {% endfor %}
-                                          </ul>
+                                           </div>
                                     </div>
                                 </div>
                             </div>

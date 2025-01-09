@@ -1,5 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponse
+
+from permissions.utils import permission_required
 from .models import Checklist, Question, Answer
 from BaseInfo.models import MiningMachine, TypeMachine
 from accounts.models import UserProfile
@@ -11,13 +13,14 @@ from django_jalali.db import models as jmodels
 import jdatetime
 import openpyxl
 from openpyxl.utils import get_column_letter
+from shift_manager.utils import get_current_shift_and_group  # حذف import اضافی
 
-
+@permission_required("checklist_form")
 def checklist_form_view(request):
     machines = MiningMachine.objects.filter(is_active=True)
     return render(request, 'machine_checklist/checklist_form.html', {'machines': machines})
 
-
+@permission_required("get_questions")
 def get_questions(request, machine_id):
     machine = get_object_or_404(MiningMachine, id=machine_id)
     questions = Question.objects.filter(machine_type=machine.machine_type)
@@ -39,8 +42,21 @@ def submit_checklist(request):
         machine_id = request.POST.get('machine')
         try:
             machine = MiningMachine.objects.get(id=machine_id)
-            checklist = Checklist.objects.create(user=request.user if request.user.is_authenticated else None,
-                                               machine=machine)
+            if request.user and request.user.is_authenticated:
+                 current_shift, current_group = get_current_shift_and_group(request.user)
+                 if hasattr(request.user, 'userprofile'):
+                     shift_group = request.user.userprofile.group
+                 else:
+                     shift_group = current_group
+            else:
+                current_shift, current_group = get_current_shift_and_group()
+                shift_group = current_group
+            checklist = Checklist.objects.create(
+                                               user=request.user if request.user.is_authenticated else None,
+                                               machine=machine,
+                                               shift=current_shift,
+                                                shift_group=shift_group
+                                               )
         except MiningMachine.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'ماشین مورد نظر یافت نشد.'})
 
@@ -58,7 +74,7 @@ def submit_checklist(request):
         return JsonResponse({'success': True})
     return JsonResponse({'success': False, 'error': 'متد نامعتبر.'})
 
-
+@permission_required("checklist_list")
 def checklist_list_view(request):
     query = request.GET.get('q')
     from_date_str = request.GET.get('start_date', '')
@@ -111,14 +127,14 @@ def checklist_list_view(request):
         checklists = paginator.page(paginator.num_pages)
     return render(request, 'machine_checklist/checklist_list.html', {'checklists': checklists, 'from_date': from_date_str, 'to_date': to_date_str, 'query': query, 'groups': groups, 'shifts': shifts, 'machine_types': machine_types })
 
-
+@permission_required("checklist_detail")
 def checklist_detail_view(request, checklist_id):
     checklist = get_object_or_404(Checklist, id=checklist_id)
     answers = Answer.objects.filter(checklist=checklist)
     return render(request, 'machine_checklist/checklist_detail.html', {'checklist': checklist, 'answers': answers})
 
 
-
+@permission_required("export_checklists_excel")
 def export_checklists_excel(request):
     query = request.GET.get('q')
     from_date_str = request.GET.get('start_date', '')

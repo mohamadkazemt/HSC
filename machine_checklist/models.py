@@ -2,7 +2,8 @@ from django.db import models
 from django.contrib.auth.models import User
 from accounts.models import UserProfile
 from BaseInfo.models import MiningMachine, TypeMachine
-from shift_manager.utils import get_current_shift_and_group, get_current_shift_and_group_without_user
+# حذف import اضافی
+# from shift_manager.utils import get_current_shift_and_group, get_current_shift_and_group_without_user
 
 
 class Checklist(models.Model):
@@ -12,19 +13,6 @@ class Checklist(models.Model):
     shift = models.CharField(max_length=20, blank=True, null=True, verbose_name='شیفت کاری')
     shift_group = models.CharField(max_length=2, blank=True, null=True, verbose_name='گروه شیفت')
 
-    def save(self, *args, **kwargs):
-        if self.user and self.user.is_authenticated:
-             current_shift, current_group = get_current_shift_and_group(self.user)
-             if hasattr(self.user, 'userprofile'):
-                self.shift_group = self.user.userprofile.group
-             else:
-                 self.shift_group = current_group
-        else:
-            current_shift, current_group = get_current_shift_and_group_without_user()
-            self.shift_group = current_group
-
-        self.shift = current_shift
-        super(Checklist, self).save(*args, **kwargs)
 
     def __str__(self):
         return f"چک لیست {self.machine.machine_type.name} - {self.date}"

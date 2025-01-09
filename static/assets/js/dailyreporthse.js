@@ -379,39 +379,64 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     /** ارسال فرم */
-    document.querySelector('[data-kt-stepper-action="submit"]').addEventListener("click", function (e) {
+ document.querySelector('[data-kt-stepper-action="submit"]').addEventListener("click", function (e) {
         e.preventDefault();
 
         const form = document.querySelector("#kt_create_account_form");
         const formData = new FormData(form);
 
         // جمع‌آوری جزئیات جداول
-        const blastingDetails = collectDetailsFromTable('#blasting_table', ['block_id', 'explosion_occurred', 'description']);
+         const blastingDetails = collectDetailsFromTable('#blasting_table', ['block_id', 'explosion_occurred', 'description']);
         const drillingDetails = collectDetailsFromTable('#drilling_table', ['block_id', 'machine_id', 'status', 'description']);
         const loadingDetails = collectDetailsFromTable('#loading_table', ['block_id', 'machine_id', 'status', 'description']);
         const dumpDetails = collectDetailsFromTable('#dump_table', ['dump_id', 'status', 'description']);
         const stoppageDetails = collectDetailsFromTable('#stoppage_table', ['reason', 'start_time', 'end_time']);
-        const inspectionDetails = collectDetailsFromTable('#inspection_table', ['inspection_done','inspection','status', 'description']);
+       const inspectionDetails = collectDetailsFromTable('#inspection_table', ['inspection_done','inspection','status', 'description']);
+
+        // تبدیل مقادیر بولی به true/false
+         const blastingDetailsConverted = blastingDetails.map(item => ({
+            ...item,
+            explosion_occurred: item.explosion_occurred === true || item.explosion_occurred === 'true',
+        }));
+
+
+          const inspectionDetailsConverted = inspectionDetails.map(item => ({
+            ...item,
+            inspection_done: item.inspection_done === true || item.inspection_done === 'true',
+
+        }));
 
 
 
-        // افزودن داده‌ها به FormData
-        formData.append("blasting_details", JSON.stringify(blastingDetails));
-        formData.append("drilling_details", JSON.stringify(drillingDetails));
-        formData.append("loading_details", JSON.stringify(loadingDetails));
-        formData.append("dump_details", JSON.stringify(dumpDetails));
-        formData.append("stoppage_details", JSON.stringify(stoppageDetails));
-        formData.append("inspection_details", JSON.stringify(inspectionDetails));
+        // ایجاد یک شیء برای داده‌ها
+        const data = {
+            blasting_details: blastingDetailsConverted,
+            drilling_details: drillingDetails,
+            loading_details: loadingDetails,
+            dump_details: dumpDetails,
+            stoppage_details: stoppageDetails,
+            inspection_details: inspectionDetailsConverted,
+            followups:[]
+        };
+
 
         // افزودن جزئیات پیگیری
+          let followupCounter = 0;
         followupDetails.forEach((detail, index) => {
-            formData.append(`followup_description_${index}`, detail.description);
 
-            detail.files.forEach((file, fileIndex) => {
-                formData.append(`followup_file_${index}_${fileIndex}`, file);
+
+            data.followups.push({
+                followup_description: detail.description,
+                //فایلها دیگر در آبجکت data  قرار ندارند
             });
+             formData.append(`followup_description_${followupCounter}`, detail.description);
+             detail.files.forEach((file, fileIndex) => {
+                 formData.append(`followup_file_${followupCounter}_${fileIndex}`, file);
+             });
+                followupCounter++;
         });
 
+      formData.append("data",JSON.stringify(data))
 
 
         // لاگ گرفتن از داده‌های ارسال‌شده
@@ -420,14 +445,18 @@ document.addEventListener("DOMContentLoaded", function () {
         // ارسال داده‌ها به سمت سرور
         fetch(form.action, {
             method: "POST",
-            body: formData,
+             body: formData,
             headers: {
-                "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value,
+                 "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value,
             },
         })
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`خطا در پاسخ سرور: ${response.status}`);
+                    return response.json().then(errorData => {
+                         throw new Error(JSON.stringify(errorData));
+                    });
+                   // throw new Error(`خطا در پاسخ سرور: ${response.status}`);
+
                 }
                 return response.json();
             })
@@ -441,14 +470,39 @@ document.addEventListener("DOMContentLoaded", function () {
                     window.location.href = `/dailyreport_hse/detail/${data.id}/`;
                 });
             })
-            .catch(error => {
-                Swal.fire({
-                    title: 'خطا!',
-                    text: 'مشکلی در ثبت گزارش رخ داد. لطفاً دوباره تلاش کنید.',
-                    icon: 'error',
-                    confirmButtonText: 'باشه'
-                });
-                console.error("خطا در ارسال داده‌ها:", error);
-            });
+           .catch(error => {
+
+               try {
+                   const errorData = JSON.parse(error.message);
+                   let errorMessage = 'مشکلی در ثبت گزارش رخ داد:';
+
+                     if (errorData.errors) {
+                      errorMessage = 'مشکلات زیر در ثبت گزارش وجود دارد:<ul>';
+                        for (const field in errorData.errors) {
+                          errorMessage += `<li>${field}: ${errorData.errors[field].join(", ")}</li>`;
+                        }
+                        errorMessage += '</ul>';
+                     } else if (errorData.error){
+                          errorMessage = `مشکلی در ثبت گزارش رخ داد: ${errorData.error}`
+                     } else {
+                         errorMessage = 'مشکلی در ثبت گزارش رخ داد. لطفا دوباره تلاش کنید'
+                     }
+
+                    Swal.fire({
+                        title: 'خطا!',
+                        html: errorMessage,
+                        icon: 'error',
+                        confirmButtonText: 'باشه'
+                    });
+                } catch(e){
+                  Swal.fire({
+                      title: 'خطا!',
+                      text: 'مشکلی در ثبت گزارش رخ داد. لطفاً دوباره تلاش کنید.',
+                      icon: 'error',
+                      confirmButtonText: 'باشه'
+                  });
+                 console.error("خطا در ارسال داده‌ها:", error);
+               }
+           });
     });
 });

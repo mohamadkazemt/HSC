@@ -32,6 +32,7 @@ import os
 from permissions.utils import class_permission_required, permission_required
 from django.contrib import messages
 import logging
+from django.core.exceptions import ValidationError
 
 
 
@@ -50,30 +51,40 @@ class CreateDailyReportView(APIView):
             print("Incoming Data:", request.data)
             print("Incoming Files:", request.FILES)
 
-
             # دریافت داده‌های اصلی
-            blasting_details = json.loads(request.data.get("blasting_details", "[]"))
-            drilling_details = json.loads(request.data.get("drilling_details", "[]"))
-            loading_details = json.loads(request.data.get("loading_details", "[]"))
-            dump_details = json.loads(request.data.get("dump_details", "[]"))
-            stoppage_details = json.loads(request.data.get("stoppage_details", "[]"))
-            inspection_details = json.loads(request.data.get("inspection_details", "[]"))
-            followup_details = json.loads(request.data.get("followup_details", "[]"))
-            print("Followup Details Received:", followup_details)
+            received_data = json.loads(request.data.get("data", "{}"))
+            blasting_details = received_data.get("blasting_details", [])
+            drilling_details = received_data.get("drilling_details", [])
+            loading_details = received_data.get("loading_details", [])
+            dump_details = received_data.get("dump_details", [])
+            stoppage_details = received_data.get("stoppage_details", [])
+            inspection_details = received_data.get("inspection_details", [])
+            followups_data = received_data.get("followups", [])
+            print("Followup Details Received:", followups_data)
             print("Files Received:", request.FILES)
             # دریافت شیفت و گروه کاری جاری
-            current_shift, current_group = get_current_shift_and_group()
+            current_shift, current_group = get_current_shift_and_group(request.user)
+
 
             if not current_shift or not current_group:
                 return Response({"error": "شیفت یا گروه کاری جاری شناسایی نشد."}, status=status.HTTP_400_BAD_REQUEST)
 
-            # ایجاد گزارش روزانه
-            daily_report = DailyReport.objects.create(
+             # ساختن گزارش روزانه
+            daily_report = DailyReport(
                 user=request.user,
-                shift=current_shift,  # مقدار شیفت از `get_current_shift_and_group`
+                shift=current_shift,
                 work_group=current_group,
                 supervisor_comments=request.data.get("supervisor_comments", "")
             )
+
+
+            # اعتبارسنجی گزارش روزانه
+            try:
+                daily_report.full_clean()
+            except ValidationError as e:
+               return Response({"error": "Validation Error","errors": e.message_dict}, status=status.HTTP_400_BAD_REQUEST)
+
+            daily_report.save()
 
             # ذخیره جزئیات آتشباری
             for blasting in blasting_details:
@@ -123,25 +134,21 @@ class CreateDailyReportView(APIView):
                         description=dump_detail.get("description", "")
                     )
 
-            # ذخیره جزئیات پیگیری
-            followup_index = 0
-            while f"followup_description_{followup_index}" in request.POST:
-                description = request.POST.get(f"followup_description_{followup_index}", "")
+             # ذخیره جزئیات پیگیری
+            for index,followup in enumerate(followups_data):
+                description = followup.get("followup_description")
+                files = request.FILES.getlist(f"followup_file_{index}_0")
+
                 followup_instance = FollowupDetail.objects.create(
                     daily_report=daily_report,
                     description=description
                 )
 
                 # بررسی و ذخیره فایل‌ها
-                file_index = 0
-                while f"followup_file_{followup_index}_{file_index}" in request.FILES:
-                    file = request.FILES[f"followup_file_{followup_index}_{file_index}"]
+                for file in files:
                     followup_instance.files.save(file.name, file)
-                    file_index += 1
 
-                followup_index += 1
-            print("Followup Description Keys:", [key for key in request.POST.keys() if "followup_description" in key])
-            print("Followup File Keys:", [key for key in request.FILES.keys()])
+
 
             # ذخیره جزئیات بازرسی
             for inspection in inspection_details:
@@ -156,7 +163,7 @@ class CreateDailyReportView(APIView):
 
         except Exception as e:
             print(f"خطا: {e}")
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": str(e), "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 @class_permission_required("daily_report_form")
 class DailyReportFormView(LoginRequiredMixin, TemplateView):
