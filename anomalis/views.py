@@ -27,7 +27,6 @@ from django.db.models import Q
 import openpyxl
 from .templatetags.jalali import to_jalali
 from django.template.loader import get_template
-from django.http import HttpResponse
 from weasyprint import HTML
 from django.conf import settings
 from urllib.parse import urljoin
@@ -36,6 +35,9 @@ from shift_manager.utils import get_current_shift_and_group
 import jdatetime
 from django.utils.timezone import make_aware
 from datetime import datetime
+from .models import Location, LocationSection
+
+
 
 name = 'anomalis'
 
@@ -634,3 +636,18 @@ def anomaly_pdf_view(request, pk):
     HTML(string=html_content, base_url=request.build_absolute_uri('/')).write_pdf(response)
 
     return response
+
+
+
+
+@permission_required("get_locations_ajax")
+@login_required
+def get_locations_ajax(request):
+     locations = Location.objects.all().values("id", "name")
+     return JsonResponse(list(locations), safe=False)
+
+@permission_required("get_all_sections_ajax")
+@login_required
+def get_all_sections_ajax(request):
+     sections = LocationSection.objects.all().values("id","section", "location_id")
+     return JsonResponse(list(sections), safe=False)

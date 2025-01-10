@@ -73,9 +73,14 @@
                                                      </div>
                                                      <div class="detail-item">
                                                        <span class="icon"><i class="fas fa-map-marker-alt"></i></span>
-                                                     <span class="label">محل وقوع حادثه:</span>
-                                                       <span>{{ report.incident_location }}</span>
-                                                     </div>
+                                                     <span class="label">سایت:</span>
+                                                         <span>{{ report.location.name|default:"-" }}</span>
+                                                   </div>
+                                                    <div class="detail-item">
+                                                      <span class="icon"><i class="fas fa-map-marker-alt"></i></span>
+                                                    <span class="label">محل شناسایی آنومالی:</span>
+                                                        <span>{{ report.section.section|default:"-" }}</span>
+                                                  </div>
                                             </div>
                                         </div>
                                         <div class="row">

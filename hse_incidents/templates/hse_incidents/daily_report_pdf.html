@@ -109,9 +109,13 @@
 <h2>جزئیات حادثه</h2>
 <table class="details-table">
       <tr>
-          <th>محل وقوع حادثه</th>
-          <td>{{ report.incident_location }}</td>
+          <th>سایت</th>
+          <td>{{ report.location.name if report.location else '-' }}</td>
       </tr>
+      <tr>
+        <th>محل شناسایی آنومالی</th>
+          <td>{{ report.section.section if report.section else '-' }}</td>
+        </tr>
       <tr>
           <th>اشخاص مرتبط با حادثه</th>
            <td>

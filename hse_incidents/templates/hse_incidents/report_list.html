@@ -2,27 +2,27 @@
 {% load static %}
 {% load jformat %}
 {% block style %}
-<link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.css">
-<style>
- .search-container {
-        margin-bottom: 20px;
-    }
+    <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.css">
+    <style>
+        .search-container {
+            margin-bottom: 20px;
+        }
 
-    .search-input {
-        width: 300px;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        margin-left: 10px;
-    }
-     .date-input {
-        width: 150px;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        margin-left: 10px;
-    }
-    .search-button {
+        .search-input {
+            width: 300px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+        .date-input {
+            width: 150px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-left: 10px;
+        }
+        .search-button {
             padding: 10px 15px;
             background-color: #007bff;
             color: white;
@@ -31,16 +31,16 @@
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
-      .search-button:hover {
+        .search-button:hover {
             background-color: #0056b3;
         }
         .table-container {
             overflow-x: auto;
         }
-      .report-table {
+        .report-table {
             width: 100%;
             border-collapse: collapse;
-             margin-top: 10px;
+            margin-top: 10px;
         }
 
         .report-table th, .report-table td {
@@ -49,35 +49,35 @@
             border: 1px solid #ddd;
         }
 
-         .report-table th {
+        .report-table th {
             background-color: #f0f0f0;
-             font-weight: bold;
+            font-weight: bold;
         }
-    .pagination {
-        margin-top: 20px;
-        display: flex;
-        justify-content: center;
-    }
+        .pagination {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
 
-    .pagination a, .pagination span {
-        padding: 8px 12px;
-        margin: 0 5px;
-        border: 1px solid #ddd;
-        text-decoration: none;
-        color: #333;
-         border-radius: 4px;
-    }
+        .pagination a, .pagination span {
+            padding: 8px 12px;
+            margin: 0 5px;
+            border: 1px solid #ddd;
+            text-decoration: none;
+            color: #333;
+            border-radius: 4px;
+        }
 
-    .pagination a:hover {
-        background-color: #f0f0f0;
-    }
+        .pagination a:hover {
+            background-color: #f0f0f0;
+        }
 
-    .pagination .current {
-        background-color: #007bff;
-        color: white;
-         border-color: #007bff;
-    }
-</style>
+        .pagination .current {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+    </style>
 {% endblock %}
 {% block content %}
     <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
@@ -90,75 +90,79 @@
                         {% include 'toolbar.html' %}
                         <div id="kt_app_content" class="app-content flex-column-fluid">
                             <div id="kt_app_content_container" class="app-container container-fluid">
-                                 <div class="card">
+                                <div class="card">
                                     <div class="card-body">
-                                       <div class="d-flex justify-content-between align-items-center mb-3">
-                                           <h2>لیست گزارشات حادثه</h2>
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h2>لیست گزارشات حادثه</h2>
                                             <a href="{% url 'hse_incidents:export_reports_excel' %}?search={{search_query}}&from_date={{from_date}}&to_date={{to_date}}" class="btn btn-primary">خروجی اکسل</a>
 
-                                       </div>
+                                        </div>
                                         <div class="search-container">
                                             <form method="get" action="">
-                                                  <input type="text" class="search-input" name="search" placeholder="جستجو در گزارشات..." value="{{search_query}}">
-                                                    <input type="text" class="date-input persian-date-picker" id="from_date_picker"   placeholder="از تاریخ"  >
-                                                      <input type="hidden"  name="from_date"  id="from_date" value="{{ from_date }}">
-                                                    <input type="text" class="date-input persian-date-picker"  id="to_date_picker"  placeholder="تا تاریخ" >
-                                                     <input type="hidden" name="to_date"  id="to_date" value="{{ to_date }}">
+                                                <input type="text" class="search-input" name="search" placeholder="جستجو در گزارشات..." value="{{search_query}}">
+                                                <input type="text" class="date-input persian-date-picker" id="from_date_picker"   placeholder="از تاریخ"  >
+                                                <input type="hidden"  name="from_date"  id="from_date" value="{{ from_date }}">
+                                                <input type="text" class="date-input persian-date-picker"  id="to_date_picker"  placeholder="تا تاریخ" >
+                                                <input type="hidden" name="to_date"  id="to_date" value="{{ to_date }}">
                                                 <button type="submit" class="search-button">جستجو</button>
                                             </form>
                                         </div>
-                                         <div class="table-container">
-                                               <table class="report-table">
+                                        <div class="table-container">
+                                            <table class="report-table">
                                                 <thead>
-                                                     <tr>
-                                                        <th>تاریخ</th>
-                                                        <th>محل حادثه</th>
-                                                        <th>شرح حادثه</th>
-                                                        <th>نویسنده گزارش</th>
-                                                        <th>جزئیات</th>
-                                                    </tr>
+                                                <tr>
+                                                    <th>تاریخ</th>
+                                                    <th>سایت</th>
+                                                    <th>محل شناسایی آنومالی</th>
+                                                    <th>شرح حادثه</th>
+                                                    <th>نویسنده گزارش</th>
+                                                    <th>جزئیات</th>
+                                                </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {% for report in reports %}
-                                                        <tr>
-                                                            <td>{{ report.incident_date|jformat:"%Y/%m/%d" }}</td>
-                                                             <td>{{ report.incident_location }}</td>
-                                                            <td>{{ report.full_description|truncatechars:100 }}</td>
-                                                            <td>{{ report.report_author }}</td>
-                                                            <td>
-                                                                 <a href="{% url 'hse_incidents:report_details' report.id %}" class="btn btn-sm btn-primary">جزئیات</a>
-                                                            </td>
-                                                        </tr>
-                                                    {% empty %}
-                                                       <tr><td colspan="5">هیچ گزارشی یافت نشد.</td></tr>
-                                                    {% endfor %}
+                                                {% for report in reports %}
+                                                    <tr>
+                                                        <td>{{ report.incident_date|jformat:"%Y/%m/%d" }}</td>
+                                                        <td>{{ report.location.name|default:"-" }}</td>
+                                                        <td>{{ report.section.section|default:"-" }}</td>
+                                                        <td>{{ report.full_description|truncatechars:100 }}</td>
+                                                        <td>{{ report.report_author }}</td>
+                                                        <td>
+                                                            <a href="{% url 'hse_incidents:report_details' report.id %}" class="btn btn-sm btn-primary">جزئیات</a>
+                                                        </td>
+                                                    </tr>
+                                                {% empty %}
+                                                    <tr>
+                                                        <td colspan="6">هیچ گزارشی یافت نشد.</td>
+                                                    </tr>
+                                                {% endfor %}
                                                 </tbody>
                                             </table>
-                                         </div>
-                                           <div class="pagination">
-                                                {% if reports.has_previous %}
-                                                    <a href="?page=1&search={{search_query}}&from_date={{from_date}}&to_date={{to_date}}">« اول</a>
-                                                    <a href="?page={{ reports.previous_page_number }}&search={{search_query}}&from_date={{from_date}}&to_date={{to_date}}">قبلی</a>
-                                                {% endif %}
+                                        </div>
+                                        <div class="pagination">
+                                            {% if reports.has_previous %}
+                                                <a href="?page=1&search={{search_query}}&from_date={{from_date}}&to_date={{to_date}}">« اول</a>
+                                                <a href="?page={{ reports.previous_page_number }}&search={{search_query}}&from_date={{from_date}}&to_date={{to_date}}">قبلی</a>
+                                            {% endif %}
 
-                                                {% for i in reports.paginator.page_range %}
-                                                    {% if reports.number == i %}
-                                                        <span class="current">{{ i }}</span>
-                                                    {% else %}
-                                                        <a href="?page={{ i }}&search={{search_query}}&from_date={{from_date}}&to_date={{to_date}}">{{ i }}</a>
-                                                    {% endif %}
-                                                {% endfor %}
-
-                                                {% if reports.has_next %}
-                                                    <a href="?page={{ reports.next_page_number }}&search={{search_query}}&from_date={{from_date}}&to_date={{to_date}}">بعدی</a>
-                                                    <a href="?page={{ reports.paginator.num_pages }}&search={{search_query}}&from_date={{from_date}}&to_date={{to_date}}">آخر »</a>
+                                            {% for i in reports.paginator.page_range %}
+                                                {% if reports.number == i %}
+                                                    <span class="current">{{ i }}</span>
+                                                {% else %}
+                                                    <a href="?page={{ i }}&search={{search_query}}&from_date={{from_date}}&to_date={{to_date}}">{{ i }}</a>
                                                 {% endif %}
-                                          </div>
+                                            {% endfor %}
+
+                                            {% if reports.has_next %}
+                                                <a href="?page={{ reports.next_page_number }}&search={{search_query}}&from_date={{from_date}}&to_date={{to_date}}">بعدی</a>
+                                                <a href="?page={{ reports.paginator.num_pages }}&search={{search_query}}&from_date={{from_date}}&to_date={{to_date}}">آخر »</a>
+                                            {% endif %}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                         {% include 'footer.html' %}
+                        {% include 'footer.html' %}
                     </div>
                 </div>
             </div>
@@ -167,20 +171,20 @@
 
 {% endblock %}
 {% block extra_js %}
-  <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
+    <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
     <script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
     <script>
-       $(document).ready(function() {
+        $(document).ready(function() {
             $('#from_date_picker').persianDatepicker({
-                  format: 'YYYY/MM/DD',
-                  altField: '#from_date',
-                  altFormat: 'YYYY-MM-DD',
-                 });
-             $('#to_date_picker').persianDatepicker({
-                  format: 'YYYY/MM/DD',
-                 altField: '#to_date',
-                  altFormat: 'YYYY-MM-DD',
-                 });
+                format: 'YYYY/MM/DD',
+                altField: '#from_date',
+                altFormat: 'YYYY-MM-DD',
+            });
+            $('#to_date_picker').persianDatepicker({
+                format: 'YYYY/MM/DD',
+                altField: '#to_date',
+                altFormat: 'YYYY-MM-DD',
+            });
         });
     </script>
 {% endblock %}
