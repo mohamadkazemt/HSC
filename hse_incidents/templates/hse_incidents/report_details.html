@@ -1,45 +1,109 @@
 {% extends 'base.html' %}
 {% load jformat %}
+{% load static %}
 {% block style %}
-<style>
-    .detail-section {
-        margin-bottom: 20px;
-         border: 1px solid #ddd;
-        padding: 15px;
-         border-radius: 8px;
-         text-align: right;
-    }
+    <style>
+        .detail-section {
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: right;
+        }
 
-    .detail-item {
-        display: flex;
-        align-items: center;
-        margin-bottom: 10px;
-    }
+        .detail-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
 
-    .detail-item .icon {
-        margin-left: 5px;
-        color: #007bff;
-        font-size: 1.2em; /* سایز آیکون */
-    }
-     .detail-item .label {
+        .detail-item .icon {
+            margin-left: 5px;
+            color: #007bff;
+            font-size: 1.2em; /* سایز آیکون */
+        }
+
+        .detail-item .label {
             font-weight: bold;
             margin-left: 5px;
-    }
-     .detail-section h3 {
-        margin-bottom: 15px;
-          text-align: right;
-    }
-    .general-info {
+        }
+
+        .detail-section h3 {
+            margin-bottom: 15px;
+            text-align: right;
+        }
+
+        .general-info {
             display: flex;
             flex-wrap: wrap; /* Allows items to wrap to the next line */
             align-items: center;
             gap: 20px; /* Creates some space between the items */
         }
-      .general-info .detail-item {
+
+        .general-info .detail-item {
             margin-bottom: 0; /* Removes bottom margin for inline layout */
         }
 
-</style>
+        .form-section {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .form-section h3 {
+            margin-bottom: 15px;
+            text-align: right;
+        }
+
+        .hidden {
+            display: none !important
+        }
+
+        .modal-dialog {
+            max-width: 1000px !important;
+        }
+
+        .custom-select2-container {
+            width: 100% !important;
+        }
+
+        .custom-select2-selection {
+            border: 1px solid #ced4da !important;
+            border-radius: 0.25rem !important;
+            padding: 0.375rem 0.75rem !important;
+            height: auto !important;
+        }
+
+        .custom-select2-selection__rendered {
+            padding-right: 0.75rem !important;
+            line-height: 1.5 !important;
+        }
+
+        .custom-select2-selection__arrow {
+            right: 0.75rem !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+        }
+
+        .custom-select2-dropdown {
+            border: 1px solid #ced4da !important;
+            border-radius: 0.25rem !important;
+        }
+
+        .custom-select2-search__field {
+            border: 1px solid #ced4da !important;
+            border-radius: 0.25rem !important;
+            padding: 0.375rem 0.75rem !important;
+            margin-bottom: 0.25rem !important;
+        }
+         .conditional-section > div {
+            display: none;
+        }
+        .conditional-section:has(input[type="checkbox"]:checked) > div {
+             display: block;
+        }
+    </style>
 {% endblock %}
 {% block content %}
     <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
@@ -54,39 +118,60 @@
                             <div id="kt_app_content_container" class="app-container container-fluid">
                                 <div class="card">
                                     <div class="card-body" dir="rtl">
-                                      <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <h2>جزئیات گزارش حادثه</h2>
-                                       <a href="{% url 'hse_incidents:report_details_pdf' report.id %}" class="btn btn-primary">خروجی PDF</a>
-                                      </div>
-                                       <div class="detail-section">
-                                           <h3>اطلاعات کلی</h3>
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h2>جزئیات گزارش حادثه</h2>
+                                            <div>
+                                                <button type="button" class="btn btn-primary"
+                                                        id="openHseCompletionModalBtn">
+                                                    تکمیل گزارش HSE
+                                                </button>
+                                                <a href="{% url 'hse_incidents:report_details_pdf' report.id %}"
+                                                   class="btn btn-primary">خروجی PDF</a>
+                                            </div>
+                                        </div>
+                                        <div class="detail-section">
+                                            <h3>وضعیت تکمیل گزارش</h3>
+                                            <div class="detail-item">
+                                                <span class="icon"><i class="fas fa-check-circle"></i></span>
+                                                <span class="label">وضعیت تکمیل :</span>
+                                                <span>
+                                                    {% if report.is_completed %}
+                                                        تکمیل شده
+                                                    {% else %}
+                                                        تکمیل نشده
+                                                    {% endif %}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="detail-section">
+                                            <h3>اطلاعات کلی</h3>
                                             <div class="general-info">
-                                                 <div class="detail-item">
+                                                <div class="detail-item">
                                                     <span class="icon"><i class="fas fa-calendar-alt"></i></span>
-                                                      <span class="label">تاریخ وقوع حادثه:</span>
-                                                       <span>{{ report.incident_date|jformat:"%Y/%m/%d" }}</span>
-                                                 </div>
-                                                    <div class="detail-item">
-                                                     <span class="icon"><i class="fas fa-clock"></i></span>
-                                                      <span class="label">ساعت وقوع حادثه:</span>
-                                                       <span>{{ report.incident_time|date:"H:i" }}</span>
-                                                     </div>
-                                                     <div class="detail-item">
-                                                       <span class="icon"><i class="fas fa-map-marker-alt"></i></span>
-                                                     <span class="label">سایت:</span>
-                                                         <span>{{ report.location.name|default:"-" }}</span>
-                                                   </div>
-                                                    <div class="detail-item">
-                                                      <span class="icon"><i class="fas fa-map-marker-alt"></i></span>
+                                                    <span class="label">تاریخ وقوع حادثه:</span>
+                                                    <span>{{ report.incident_date|jformat:"%Y/%m/%d" }}</span>
+                                                </div>
+                                                <div class="detail-item">
+                                                    <span class="icon"><i class="fas fa-clock"></i></span>
+                                                    <span class="label">ساعت وقوع حادثه:</span>
+                                                    <span>{{ report.incident_time|date:"H:i" }}</span>
+                                                </div>
+                                                <div class="detail-item">
+                                                    <span class="icon"><i class="fas fa-map-marker-alt"></i></span>
+                                                    <span class="label">سایت:</span>
+                                                    <span>{{ report.location.name|default:"-" }}</span>
+                                                </div>
+                                                <div class="detail-item">
+                                                    <span class="icon"><i class="fas fa-map-marker-alt"></i></span>
                                                     <span class="label">محل شناسایی آنومالی:</span>
-                                                        <span>{{ report.section.section|default:"-" }}</span>
-                                                  </div>
+                                                    <span>{{ report.section.section|default:"-" }}</span>
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="row">
                                             <div class="col-md-4">
                                                 <div class="detail-section">
-                                                     <h3>افراد مرتبط با حادثه</h3>
+                                                    <h3>افراد مرتبط با حادثه</h3>
                                                     <div class="detail-item">
                                                         <span class="icon"><i class="fas fa-users"></i></span>
                                                         <span class="label">اشخاص مرتبط با حادثه:</span>
@@ -97,10 +182,10 @@
                                                                 ندارد
                                                             {% endfor %}
                                                         </span>
-                                                      </div>
-                                                      <div class="detail-item">
-                                                         <span class="icon"><i class="fas fa-user-tie"></i></span>
-                                                          <span class="label">پرسنل پیمانکار مرتبط با حادثه:</span>
+                                                    </div>
+                                                    <div class="detail-item">
+                                                        <span class="icon"><i class="fas fa-user-tie"></i></span>
+                                                        <span class="label">پرسنل پیمانکار مرتبط با حادثه:</span>
                                                         <span>
                                                             {% for employee in report.related_contractor_employees.all %}
                                                                 {{ employee }}{% if not forloop.last %}, {% endif %}
@@ -108,116 +193,269 @@
                                                                 ندارد
                                                             {% endfor %}
                                                         </span>
-                                                      </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div class="col-md-4">
-                                                   <div class="detail-section">
-                                                      <h3>جزئیات آسیب و تجهیزات</h3>
-                                                         <div class="detail-item">
-                                                           <span class="icon"><i class="fas fa-tools"></i></span>
-                                                          <span class="label">تجهیزات مرتبط با حادثه:</span>
-                                                         <span> {{ report.involved_equipment }}</span>
-                                                         </div>
-                                                          <div class="detail-item">
-                                                              <span class="icon"><i class="fas fa-briefcase-medical"></i></span>
-                                                               <span class="label">نوع جراحت:</span>
-                                                                   <span>
-                                                                    {% for injury in report.injury_type.all %}
-                                                                        {{ injury }}{% if not forloop.last %}, {% endif %}
-                                                                    {% empty %}
-                                                                        ندارد
-                                                                    {% endfor %}
-                                                                 </span>
-                                                            </div>
-                                                             <div class="detail-item">
-                                                              <span class="icon"><i class="fas fa-user-injured"></i></span>
-                                                               <span class="label">عضو آسیب دیده:</span>
-                                                                  <span>{{ report.affected_body_part }}</span>
-                                                            </div>
-                                                             <div class="detail-item">
-                                                               <span class="icon"><i class="fas fa-notes-medical"></i></span>
-                                                              <span class="label">شرح آسیب وارده:</span>
-                                                                 <span>{{ report.damage_description }}</span>
-                                                            </div>
+                                                <div class="detail-section">
+                                                    <h3>جزئیات آسیب و تجهیزات</h3>
+                                                    <div class="detail-item">
+                                                        <span class="icon"><i class="fas fa-tools"></i></span>
+                                                        <span class="label">تجهیزات مرتبط با حادثه:</span>
+                                                        <span> {{ report.involved_equipment }}</span>
                                                     </div>
+                                                    <div class="detail-item">
+                                                        <span class="icon"><i class="fas fa-briefcase-medical"></i></span>
+                                                        <span class="label">نوع جراحت:</span>
+                                                        <span>
+                                                            {% for injury in report.injury_type.all %}
+                                                                {{ injury }}{% if not forloop.last %}, {% endif %}
+                                                            {% empty %}
+                                                                ندارد
+                                                            {% endfor %}
+                                                        </span>
+                                                    </div>
+                                                    <div class="detail-item">
+                                                        <span class="icon"><i class="fas fa-user-injured"></i></span>
+                                                        <span class="label">عضو آسیب دیده:</span>
+                                                        <span>{{ report.affected_body_part }}</span>
+                                                    </div>
+                                                    <div class="detail-item">
+                                                        <span class="icon"><i class="fas fa-notes-medical"></i></span>
+                                                        <span class="label">شرح آسیب وارده:</span>
+                                                        <span>{{ report.damage_description }}</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                             <div class="col-md-4">
-                                                   <div class="detail-section">
-                                                        <h3>اطلاعات مربوط به اعزام</h3>
+                                            <div class="col-md-4">
+                                                <div class="detail-section">
+                                                    <h3>اطلاعات مربوط به اعزام</h3>
+                                                    <div class="detail-item">
+                                                        <span class="icon"><i class="fas fa-link"></i></span>
+                                                        <span class="label">نوع ارتباط:</span>
+                                                        <span>{{ report.related_entity }}</span>
+                                                    </div>
+                                                    <div class="detail-item">
+                                                        <span class="icon"><i class="fas fa-user-tie"></i></span>
+                                                        <span class="label">پیمانکار مرتبط:</span>
+                                                        <span>{{ report.related_contractor|default:"-" }}</span>
+                                                    </div>
+                                                    <div class="detail-item">
+                                                        <span class="icon"><i class="fas fa-truck-medical"></i></span>
+                                                        <span class="label">خودرو آتش نشانی اعزام شد؟</span>
+                                                        <span>{{ report.fire_truck_needed|yesno:"بله,خیر" }}</span>
+                                                    </div>
+                                                    {% if report.fire_truck_needed %}
                                                         <div class="detail-item">
-                                                            <span class="icon"><i class="fas fa-link"></i></span>
-                                                            <span class="label">نوع ارتباط:</span>
-                                                                <span>{{ report.related_entity }}</span>
+                                                            <span class="icon"><i class="fas fa-clock"></i></span>
+                                                            <span class="label">زمان رسیدن خودرو آتش نشانی:</span>
+                                                            <span>{{ report.fire_truck_arrival_time|date:"H:i" }}</span>
                                                         </div>
+                                                    {% endif %}
+                                                    <div class="detail-item">
+                                                        <span class="icon"><i class="fas fa-ambulance"></i></span>
+                                                        <span class="label">آمبولانس اعزام شد؟</span>
+                                                        <span>{{ report.ambulance_needed|yesno:"بله,خیر" }}</span>
+                                                    </div>
+                                                    {% if report.ambulance_needed %}
                                                         <div class="detail-item">
-                                                            <span class="icon"><i class="fas fa-user-tie"></i></span>
-                                                            <span class="label">پیمانکار مرتبط:</span>
-                                                            <span>{{ report.related_contractor|default:"-" }}</span>
+                                                            <span class="icon"><i class="fas fa-clock"></i></span>
+                                                            <span class="label">زمان رسیدن آمبولانس:</span>
+                                                            <span>{{ report.ambulance_arrival_time|date:"H:i" }}</span>
                                                         </div>
-                                                          <div class="detail-item">
-                                                            <span class="icon"><i class="fas fa-truck-medical"></i></span>
-                                                            <span class="label">خودرو آتش نشانی اعزام شد؟</span>
-                                                                <span>{{ report.fire_truck_needed|yesno:"بله,خیر" }}</span>
-                                                        </div>
-                                                        {% if report.fire_truck_needed %}
-                                                            <div class="detail-item">
-                                                              <span class="icon"><i class="fas fa-clock"></i></span>
-                                                                <span class="label">زمان رسیدن خودرو آتش نشانی:</span>
-                                                                 <span>{{ report.fire_truck_arrival_time|date:"H:i" }}</span>
-                                                            </div>
-                                                        {% endif %}
+                                                    {% endif %}
+                                                    <div class="detail-item">
+                                                        <span class="icon"><i class="fas fa-hospital-user"></i></span>
+                                                        <span class="label">فرد به بیمارستان اعزام شد؟</span>
+                                                        <span>{{ report.hospitalized|yesno:"بله,خیر" }}</span>
+                                                    </div>
+                                                    {% if report.hospitalized %}
                                                         <div class="detail-item">
-                                                          <span class="icon"><i class="fas fa-ambulance"></i></span>
-                                                          <span class="label">آمبولانس اعزام شد؟</span>
-                                                          <span>{{ report.ambulance_needed|yesno:"بله,خیر" }}</span>
+                                                            <span class="icon"><i class="fas fa-clock"></i></span>
+                                                            <span class="label">زمان اعزام به بیمارستان:</span>
+                                                            <span>{{ report.hospitalized_time|date:"H:i" }}</span>
                                                         </div>
-                                                      {% if report.ambulance_needed %}
-                                                            <div class="detail-item">
-                                                              <span class="icon"><i class="fas fa-clock"></i></span>
-                                                                <span class="label">زمان رسیدن آمبولانس:</span>
-                                                                 <span>{{ report.ambulance_arrival_time|date:"H:i" }}</span>
-                                                            </div>
-                                                       {% endif %}
-                                                        <div class="detail-item">
-                                                          <span class="icon"><i class="fas fa-hospital-user"></i></span>
-                                                          <span class="label">فرد به بیمارستان اعزام شد؟</span>
-                                                          <span>{{ report.hospitalized|yesno:"بله,خیر" }}</span>
-                                                        </div>
-                                                          {% if report.hospitalized %}
-                                                                <div class="detail-item">
-                                                                 <span class="icon"><i class="fas fa-clock"></i></span>
-                                                                    <span class="label">زمان اعزام به بیمارستان:</span>
-                                                                     <span>{{ report.hospitalized_time|date:"H:i" }}</span>
-                                                                </div>
-                                                          {% endif %}
-                                                        <div class="detail-item">
-                                                          <span class="icon"><i class="fas fa-car-side"></i></span>
-                                                          <span class="label">نوع وسیله اعزام:</span>
-                                                          <span>{{ report.transportation_type }}</span>
-                                                        </div>
-                                                  </div>
-                                             </div>
+                                                    {% endif %}
+                                                    <div class="detail-item">
+                                                        <span class="icon"><i class="fas fa-car-side"></i></span>
+                                                        <span class="label">نوع وسیله اعزام:</span>
+                                                        <span>{{ report.transportation_type }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                            <div class="detail-section">
-                                                   <h3>شرح و علت حادثه</h3>
-                                                   <div class="detail-item">
-                                                      <span class="icon"><i class="fas fa-file-alt"></i></span>
-                                                       <span class="label">شرح کامل حادثه:</span>
-                                                        <span>{{ report.full_description }}</span>
-                                                     </div>
-                                                   <div class="detail-item">
-                                                       <span class="icon"><i class="fas fa-exclamation-triangle"></i></span>
-                                                       <span class="label">علت اولیه حادثه:</span>
-                                                      <span>{{ report.initial_cause }}</span>
-                                                     </div>
-                                                   <div class="detail-item">
-                                                        <span class="icon"><i class="fas fa-user"></i></span>
-                                                        <span class="label">نویسنده گزارش:</span>
-                                                          <span>{{ report.report_author }}</span>
-                                                   </div>
+                                        <div class="detail-section">
+                                            <h3>شرح و علت حادثه</h3>
+                                            <div class="detail-item">
+                                                <span class="icon"><i class="fas fa-file-alt"></i></span>
+                                                <span class="label">شرح کامل حادثه:</span>
+                                                <span>{{ report.full_description }}</span>
                                             </div>
-                                          <a href="{% url 'hse_incidents:list_reports' %}" class="btn btn-secondary">بازگشت به لیست</a>
+                                            <div class="detail-item">
+                                                <span class="icon"><i class="fas fa-exclamation-triangle"></i></span>
+                                                <span class="label">علت اولیه حادثه:</span>
+                                                <span>{{ report.initial_cause }}</span>
+                                            </div>
+                                            <div class="detail-item">
+                                                <span class="icon"><i class="fas fa-user"></i></span>
+                                                <span class="label">نویسنده گزارش:</span>
+                                                <span>{{ report.report_author }}</span>
+                                            </div>
+                                        </div>
+                                        {% if hse_completion %}
+                                        <div class="detail-section">
+                                              <h3>تکمیل گزارش HSE</h3>
+                                                <div class="detail-item">
+                                                  <span class="icon"><i class="fas fa-clock"></i></span>
+                                                    <span class="label">ساعت اعلام حادثه:</span>
+                                                     <span>{{ hse_completion.incident_report_time|date:"H:i"|default:"-" }}</span>
+                                               </div>
+                                                <div class="detail-item">
+                                                    <span class="icon"><i class="fas fa-clock"></i></span>
+                                                    <span class="label">ساعت پذیرش در بیمارستان:</span>
+                                                    <span>{{ hse_completion.hospital_admission_time|date:"H:i"|default:"-"  }}</span>
+                                                </div>
+                                              <div class="detail-item">
+                                                  <span class="icon"><i class="fas fa-thermometer-half"></i></span>
+                                                   <span class="label">دمای بدن (T):</span>
+                                                  <span>{{ hse_completion.patient_condition_temperature|default:"-"  }}</span>
+                                               </div>
+                                              <div class="detail-item">
+                                                  <span class="icon"><i class="fas fa-lungs"></i></span>
+                                                   <span class="label">تعداد تنفس (R):</span>
+                                                    <span>{{ hse_completion.patient_condition_respiration|default:"-"  }}</span>
+                                              </div>
+                                               <div class="detail-item">
+                                                 <span class="icon"><i class="fas fa-heartbeat"></i></span>
+                                                 <span class="label">نبض (P):</span>
+                                                  <span>{{ hse_completion.patient_condition_pulse|default:"-"  }}</span>
+                                               </div>
+                                                <div class="detail-item">
+                                                  <span class="icon"><i class="fas fa-heart-broken"></i></span>
+                                                   <span class="label">فشار خون (BP):</span>
+                                                   <span>{{ hse_completion.patient_condition_blood_pressure|default:"-"  }}</span>
+                                               </div>
+                                              <div class="detail-item">
+                                                  <span class="icon"><i class="fas fa-brain"></i></span>
+                                                  <span class="label">وضعیت هوشیاری (Sop):</span>
+                                                 <span>{{ hse_completion.patient_condition_sop|default:"-"  }}</span>
+                                               </div>
+                                                 <div class="detail-item">
+                                                      <span class="icon"><i class="fas fa-arrow-right"></i></span>
+                                                       <span class="label">علل مستقیم بروز حادثه:</span>
+                                                      <span>{{ hse_completion.direct_causes|default:"-"  }}</span>
+                                                   </div>
+                                                   <div class="detail-item">
+                                                     <span class="icon"><i class="fas fa-arrow-left"></i></span>
+                                                      <span class="label">علل غیر مستقیم بروز حادثه:</span>
+                                                       <span>{{ hse_completion.indirect_causes|default:"-"  }}</span>
+                                                 </div>
+                                                <div class="detail-item">
+                                                     <span class="icon"><i class="fas fa-exclamation-circle"></i></span>
+                                                      <span class="label">علل ریشه ای بروز حادثه:</span>
+                                                     <span>{{ hse_completion.root_causes|default:"-"  }}</span>
+                                                   </div>
+                                                <div class="detail-item">
+                                                   <span class="icon"><i class="fas fa-check-square"></i></span>
+                                                    <span class="label">اعلام به بیمه تامین اجتماعی:</span>
+                                                    <span>{{ hse_completion.social_security_notification|yesno:"بله,خیر"|default:"-" }}
+                                                    {% if hse_completion.social_security_file %}
+                                                          ( <a href="{{ hse_completion.social_security_file.url }}">پیوست فایل</a>)
+                                                    {% endif %}
+                                                    </span>
+                                                </div>
+                                                <div class="detail-item">
+                                                    <span class="icon"><i class="fas fa-check-square"></i></span>
+                                                    <span class="label">اعلام به شرکت های بیمه ای:</span>
+                                                    <span>{{ hse_completion.insurance_notification|yesno:"بله,خیر"|default:"-" }}
+                                                     {% if hse_completion.insurance_file %}
+                                                          (<a href="{{ hse_completion.insurance_file.url }}">پیوست فایل</a>)
+                                                     {% endif %}
+                                                    </span>
+                                                </div>
+                                                 <div class="detail-item">
+                                                   <span class="icon"><i class="fas fa-check-square"></i></span>
+                                                   <span class="label">اعلام به نیروی انتظامی:</span>
+                                                     <span>{{ hse_completion.police_notification|yesno:"بله,خیر"|default:"-" }}
+                                                     {% if hse_completion.police_file %}
+                                                          (<a href="{{ hse_completion.police_file.url }}">پیوست فایل</a>)
+                                                     {% endif %}
+                                                    </span>
+                                                </div>
+                                               <div class="detail-item">
+                                                   <span class="icon"><i class="fas fa-check-square"></i></span>
+                                                   <span class="label">اعلام به راهنمایی و رانندگی:</span>
+                                                     <span>{{ hse_completion.traffic_police_notification|yesno:"بله,خیر"|default:"-" }}
+                                                        {% if hse_completion.traffic_police_file %}
+                                                            (<a href="{{ hse_completion.traffic_police_file.url }}">پیوست فایل</a>)
+                                                      {% endif %}
+                                                      </span>
+                                                </div>
+                                               <div class="detail-item">
+                                                   <span class="icon"><i class="fas fa-check-square"></i></span>
+                                                    <span class="label">اعلام به اداره کار:</span>
+                                                    <span>{{ hse_completion.labor_office_notification|yesno:"بله,خیر"|default:"-" }}</span>
+                                               </div>
+                                                <div class="detail-item">
+                                                  <span class="icon"><i class="fas fa-file-medical-alt"></i></span>
+                                                   <span class="label">نتیجه نهایی آسیب های ناشی از حادثه:</span>
+                                                  <span>{{ hse_completion.final_injury_outcome|default:"-"  }}</span>
+                                                </div>
+                                                <div class="detail-item">
+                                                    <span class="icon"><i class="fas fa-money-bill-alt"></i></span>
+                                                   <span class="label">برآورد هزینه تقریبی:</span>
+                                                    <span>{{ hse_completion.estimated_cost|default:"-"  }}</span>
+                                                  </div>
+                                               <div class="detail-item">
+                                                    <span class="icon"><i class="fas fa-calendar-times"></i></span>
+                                                   <span class="label">روزهای کاری از دست رفته:</span>
+                                                    <span>{{ hse_completion.lost_workdays|default:"-"  }}</span>
+                                              </div>
+                                                <div class="detail-item">
+                                                     <span class="icon"><i class="fas fa-exclamation-triangle"></i></span>
+                                                       <span class="label">آسیب به محیط زیست دارد؟:</span>
+                                                     <span>{{ hse_completion.environmental_damage|yesno:"بله,خیر"|default:"-"  }}
+                                                     {% if hse_completion.environmental_damage  %}
+                                                        <p>نوع:{{ hse_completion.environmental_damage_type|default:"-" }}</p>
+                                                        <p>شرح:{{ hse_completion.environmental_damage_description|default:"-" }}</p>
+                                                        {% endif %}
+                                                     </span>
+                                                </div>
+                                               <div class="detail-item">
+                                                   <span class="icon"><i class="fas fa-users"></i></span>
+                                                   <span class="label">کمیته حوادث تشکیل گردید؟:</span>
+                                                      <span>{{ hse_completion.incident_committee_formed|yesno:"بله,خیر"|default:"-"  }}
+                                                          {% if hse_completion.incident_committee_formed %}
+                                                               <p>تاریخ برگزاری:{{ hse_completion.incident_committee_date|jformat:"%Y/%m/%d"|default:"-" }}</p>
+                                                               <p>شرح:{{ hse_completion.incident_committee_details|default:"-" }} </p>
+                                                             {% if hse_completion.incident_committee_file %}
+                                                                  (<a href="{{ hse_completion.incident_committee_file.url }}">پیوست فایل</a>)
+                                                            {% endif %}
+                                                           {% endif %}
+                                                        </span>
+                                                </div>
+                                               <div class="detail-item">
+                                                    <span class="icon"><i class="fas fa-tools"></i></span>
+                                                    <span class="label">اقدامات اصلاحی و پیشگیرانه:</span>
+                                                   <span>{{ hse_completion.corrective_actions|default:"-"  }}</span>
+                                               </div>
+                                                <div class="detail-item">
+                                                      <span class="icon"><i class="fas fa-graduation-cap"></i></span>
+                                                      <span class="label">درس آموزی از حادثه دارد؟:</span>
+                                                      <span>{{ hse_completion.lessons_learned|yesno:"بله,خیر"|default:"-"  }}
+                                                      {% if hse_completion.lessons_learned and hse_completion.lessons_learned_file %}
+                                                            (<a href="{{ hse_completion.lessons_learned_file.url }}">پیوست فایل</a>)
+                                                      {% endif %}
+                                                      </span>
+                                                 </div>
+
+                                        </div>
+                                        {% endif %}
+                                        <div id="hseCompletionModalContainer">
+
+                                        </div>
+                                        <a href="{% url 'hse_incidents:list_reports' %}"
+                                           class="btn btn-secondary">بازگشت به لیست</a>
                                     </div>
                                 </div>
                             </div>
@@ -228,4 +466,116 @@
             </div>
         </div>
     </div>
+    <div class="modal fade" id="hseCompletionModal" tabindex="-1" aria-labelledby="hseCompletionModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="hseCompletionModalLabel">تکمیل گزارش حادثه</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="hseCompletionModalBody">
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">بستن</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block extra_js %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function () {
+              function toggleFields(checkboxId, containerId) {
+                 var checkbox = $('#' + checkboxId);
+                 var container = $('#' + containerId);
+                 container.toggleClass('hidden', !checkbox.is(':checked'));
+              }
+
+                function updateToggleFields(){
+                  toggleFields('social_security_notification', 'social_security_file_container');
+                    toggleFields('insurance_notification', 'insurance_file_container');
+                     toggleFields('police_notification', 'police_file_container');
+                    toggleFields('traffic_police_notification', 'traffic_police_file_container');
+                    toggleFields('environmental_damage', 'environmental_damage_container');
+                   toggleFields('incident_committee_formed', 'incident_committee_container');
+                    toggleFields('lessons_learned', 'lessons_learned_file_container');
+                }
+            updateToggleFields();
+                 $('#social_security_notification').change(function () {
+                     toggleFields('social_security_notification', 'social_security_file_container');
+                   });
+
+                   $('#insurance_notification').change(function () {
+                      toggleFields('insurance_notification', 'insurance_file_container');
+                 });
+
+                   $('#police_notification').change(function () {
+                        toggleFields('police_notification', 'police_file_container');
+                    });
+
+                  $('#traffic_police_notification').change(function () {
+                       toggleFields('traffic_police_notification', 'traffic_police_file_container');
+                    });
+
+                 $('#environmental_damage').change(function () {
+                      toggleFields('environmental_damage', 'environmental_damage_container');
+                    });
+
+                 $('#incident_committee_formed').change(function () {
+                       toggleFields('incident_committee_formed', 'incident_committee_container');
+                    });
+                  $('#lessons_learned').change(function () {
+                    toggleFields('lessons_learned', 'lessons_learned_file_container');
+                     });
+
+            $('#openHseCompletionModalBtn').click(function () {
+                $.ajax({
+                    url: '{% url "hse_incidents:report_details" report.id %}?form=true', // اضافه کردن پارامتر برای تشخیص درخواست فرم
+                    type: 'GET',
+                    success: function (data) {
+                         $('#hseCompletionModalBody').html(data);
+                       $('#hseCompletionModal').modal('show');
+
+                     $('#hseCompletionModalBody select').select2({
+                       containerCssClass: 'custom-select2-container',
+                       selectionCssClass: 'custom-select2-selection',
+                       dropdownCssClass: 'custom-select2-dropdown',
+                       searchCssClass: 'custom-select2-search',
+                      dir:'rtl'
+                    });
+                    },
+                    error: function (xhr, status, error) {
+                      console.log(error)
+                        alert('خطا در بارگیری فرم.');
+                    }
+                });
+            });
+                $('#hseCompletionModal').on('submit', '#hseCompletionForm', function (e) {
+                  e.preventDefault();
+                  var form = $(this);
+                 var formData = new FormData(form[0]);
+                    $.ajax({
+                      type: 'POST',
+                        url: '{% url "hse_incidents:report_details" report.id %}',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                    success: function (data) {
+                        $('#hseCompletionModal').modal('hide');
+                         location.reload();
+                       alert('فرم با موفقیت ذخیره شد');
+
+
+                    },
+                      error: function(xhr, status, error) {
+                       console.log(xhr.responseText)
+                          alert('خطایی رخ داده است، لطفا مجددا تلاش کنید');
+                    }
+                 });
+            });
+        });
+    </script>
 {% endblock %}

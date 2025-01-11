@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from permissions.utils import permission_required
-from .models import IncidentReport, InjuryType
+from .models import IncidentReport, InjuryType, HseCompletionReport
 from accounts.models import UserProfile
 from django.contrib import messages
 from django.http import JsonResponse
@@ -20,6 +20,7 @@ from django.conf import settings
 import os
 from weasyprint import HTML, CSS
 from anomalis.models import Location, LocationSection
+from .forms import HseCompletionReportForm, IncidentReportForm
 
 
 @permission_required("incident_report")
@@ -167,11 +168,35 @@ def list_reports(request):
                    'to_date': to_date_str})
 
 
+# hse_incidents/views.py
 @permission_required("report_details")
 @login_required
 def report_details(request, report_id):
     report = get_object_or_404(IncidentReport, id=report_id)
-    return render(request, 'hse_incidents/report_details.html', {'report': report})
+    try:
+        hse_completion = HseCompletionReport.objects.get(incident_report=report)
+    except HseCompletionReport.DoesNotExist:
+        hse_completion = None
+
+    if request.method == 'POST':
+        form = HseCompletionReportForm(request.POST, request.FILES, instance=hse_completion)
+        if form.is_valid():
+            hse_completion = form.save(commit=False)
+            hse_completion.incident_report = report
+            hse_completion.save()
+            report.is_completed = True
+            report.save()
+            messages.success(request, "گزارش حادثه با موفقیت تکمیل شد.")
+            return redirect('hse_incidents:report_details', report_id=report_id)
+        else:
+            messages.error(request, "خطا در ثبت اطلاعات، فرم را بررسی کنید")
+    else:
+         if request.GET.get('form'): # چک کردن پارامتر فرم
+            form = HseCompletionReportForm(instance=hse_completion)
+            return render(request, 'hse_incidents/hse_completion_form.html', {'form': form})
+         else:
+              form = HseCompletionReportForm(instance=hse_completion)
+    return render(request, 'hse_incidents/report_details.html', {'report': report, 'form': form,'hse_completion':hse_completion})
 
 
 @permission_required("export_reports_excel")
@@ -252,10 +277,16 @@ def export_reports_excel(request):
     return response
 
 
+# hse_incidents/views.py
 @permission_required("report_details_pdf")
 @login_required
 def report_details_pdf(request, report_id):
     report = get_object_or_404(IncidentReport, id=report_id)
+    try:
+        hse_completion = HseCompletionReport.objects.get(incident_report=report)
+    except HseCompletionReport.DoesNotExist:
+        hse_completion = None
+
     user_signature_path = None
     if report.report_author and report.report_author.signature:
         user_signature_path = os.path.join(settings.MEDIA_ROOT, str(report.report_author.signature))
@@ -266,6 +297,7 @@ def report_details_pdf(request, report_id):
         'report': report,
         'title': title,
         'user_signature': user_signature_path,
+        'hse_completion': hse_completion,  # ارسال hse_completion به تمپلیت
     }
     html = render_to_string('hse_incidents/daily_report_pdf.html', context)
     # font_config = FontConfiguration()

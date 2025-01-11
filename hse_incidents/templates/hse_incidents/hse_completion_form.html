@@ -1,0 +1,134 @@
+<!-- hse_incidents/hse_completion_form.html -->
+{% load form_filters %}
+<form method="post" id="hseCompletionForm" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">ساعت اعلام حادثه</label>
+            {{ form.incident_report_time|add_class:"form-control" }}
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">ساعت پذیرش در بیمارستان</label>
+            {{ form.hospital_admission_time|add_class:"form-control" }}
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <label class="form-label">دمای بدن (T)</label>
+            {{ form.patient_condition_temperature|add_class:"form-control form-control-sm" }}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">تعداد تنفس (R)</label>
+            {{ form.patient_condition_respiration|add_class:"form-control form-control-sm" }}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">نبض (P)</label>
+            {{ form.patient_condition_pulse|add_class:"form-control form-control-sm" }}
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">فشار خون (BP)</label>
+            {{ form.patient_condition_blood_pressure|add_class:"form-control form-control-sm" }}
+        </div>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">وضعیت هوشیاری (Sop)</label>
+        {{ form.patient_condition_sop|add_class:"form-control" }}
+    </div>
+    <div class="mb-3">
+        <label class="form-label">علل مستقیم بروز حادثه</label>
+        {{ form.direct_causes|add_class:"form-control" }}
+    </div>
+    <div class="mb-3">
+        <label class="form-label">علل غیر مستقیم بروز حادثه</label>
+        {{ form.indirect_causes|add_class:"form-control" }}
+    </div>
+    <div class="mb-3">
+        <label class="form-label">علل ریشه ای بروز حادثه</label>
+        {{ form.root_causes|add_class:"form-control" }}
+    </div>
+  <div class="conditional-section">
+    <label class="form-label">اعلام به بیمه تامین اجتماعی</label>
+     <input type="checkbox" class="form-check-input" id="social_security_notification" name="social_security_notification" {% if form.social_security_notification.value %}checked{% endif %}>
+    <div class="mt-2">
+        <label class="form-label">پیوست فایل بیمه تامین اجتماعی</label>
+        {{ form.social_security_file|add_class:"form-control" }}
+        </div>
+</div>
+     <div class="conditional-section">
+       <label class="form-label">اعلام به شرکت های بیمه ای</label>
+        <input type="checkbox" class="form-check-input" id="insurance_notification" name="insurance_notification" {% if form.insurance_notification.value %}checked{% endif %}>
+        <div class="mt-2">
+            <label class="form-label">پیوست فایل شرکت های بیمه ای</label>
+            {{ form.insurance_file|add_class:"form-control" }}
+        </div>
+    </div>
+       <div class="conditional-section">
+       <label class="form-label">اعلام به نیروی انتظامی</label>
+         <input type="checkbox" class="form-check-input" id="police_notification" name="police_notification" {% if form.police_notification.value %}checked{% endif %}>
+        <div class="mt-2">
+            <label class="form-label">پیوست فایل نیروی انتظامی</label>
+            {{ form.police_file|add_class:"form-control" }}
+        </div>
+    </div>
+    <div class="conditional-section">
+      <label class="form-label">اعلام به راهنمایی و رانندگی</label>
+       <input type="checkbox" class="form-check-input" id="traffic_police_notification" name="traffic_police_notification" {% if form.traffic_police_notification.value %}checked{% endif %}>
+        <div class="mt-2">
+            <label class="form-label">پیوست فایل راهنمایی و رانندگی</label>
+            {{ form.traffic_police_file|add_class:"form-control" }}
+        </div>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">اعلام به اداره کار</label>
+        {{ form.labor_office_notification|add_class:"form-check-input" }}
+    </div>
+    <div class="mb-3">
+        <label class="form-label">نتیجه نهایی آسیب های ناشی از حادثه</label>
+        {{ form.final_injury_outcome|add_class:"form-control" }}
+    </div>
+    <div class="mb-3">
+        <label class="form-label">برآورد هزینه تقریبی</label>
+        {{ form.estimated_cost|add_class:"form-control" }}
+    </div>
+    <div class="mb-3">
+        <label class="form-label">روزهای کاری از دست رفته</label>
+        {{ form.lost_workdays|add_class:"form-control" }}
+    </div>
+    <div class="conditional-section">
+        <label class="form-label">آسیب به محیط زیست دارد؟</label>
+        <input type="checkbox" class="form-check-input" id="environmental_damage"  name="environmental_damage" {% if form.environmental_damage.value %}checked{% endif %}>
+        <div class="mt-2">
+            <label class="form-label">نوع آسیب به محیط زیست</label>
+            {{ form.environmental_damage_type|add_class:"form-control" }}
+            <div class="mt-2">
+                <label class="form-label">شرح مختصر آسیب وارد شده به محیط زیست</label>
+                {{ form.environmental_damage_description|add_class:"form-control" }}
+            </div>
+        </div>
+    </div>
+ <div class="conditional-section">
+        <label class="form-label">کمیته حوادث تشکیل گردید؟</label>
+          <input type="checkbox" class="form-check-input" id="incident_committee_formed" name="incident_committee_formed" {% if form.incident_committee_formed.value %}checked{% endif %}>
+        <div class="mt-2">
+            <label class="form-label">تاریخ برگزاری کمیته حوادث</label>
+            {{ form.incident_committee_date|add_class:"form-control" }}
+           <div class="mt-2">
+                 <label class="form-label">شرح مختصر جزئیات کمیته حوادث</label>
+                    {{ form.incident_committee_details|add_class:"form-control" }}
+              </div>
+              <div class="mt-2">
+                 <label class="form-label">پیوست صورتجلسه کمیته حوادث</label>
+                    {{ form.incident_committee_file|add_class:"form-control" }}
+              </div>
+        </div>
+    </div>
+    <div class="conditional-section">
+        <label class="form-label">درس آموزی از حادثه دارد؟</label>
+         <input type="checkbox" class="form-check-input" id="lessons_learned" name="lessons_learned"  {% if form.lessons_learned.value %}checked{% endif %}>
+        <div class="mt-2">
+            <label class="form-label">پیوست درس آموزی حادثه</label>
+            {{ form.lessons_learned_file|add_class:"form-control" }}
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary">ارسال</button>
+</form>
