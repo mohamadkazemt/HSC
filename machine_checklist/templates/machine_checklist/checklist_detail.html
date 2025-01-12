@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load form_filters %}
+{% load jformat %}
+
+
+{% block style %}
+    <style>
+         .hidden {
+            display: none !important
+         }
+        .select2-container {
+            width: 100% !important;
+        }
+       .checklist-detail-header {
+           display: flex;
+           flex-wrap: wrap; /* Allow wrapping for smaller screens */
+           gap: 15px;
+           align-items: center;
+       }
+        .checklist-detail-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .checklist-detail-item i {
+           margin-left: 5px;
+           color: #28a745; /* Green color */
+        }
+        .checklist-detail-item span {
+          margin-left: 3px; /* small spacing */
+        }
+         @media (max-width: 768px) {
+            .checklist-detail-header {
+              justify-content: flex-start;
+            }
+             .checklist-detail-item {
+                flex: 1 0 45%; /* Adjust for smaller screens */
+                margin-bottom: 5px;
+            }
+         }
+        .answer-box {
+           border: 1px solid #dee2e6;
+           border-radius: 0.25rem;
+           padding: 15px;
+           margin-bottom: 15px;
+           background-color: #f8f9fa;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+        <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+            {% include 'header.html' %}
+            <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+                {% include 'sidebar.html' %}
+                <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                    <div class="d-flex flex-column flex-column-fluid">
+                        {% include 'toolbar.html' %}
+                        <div id="kt_app_content" class="app-content flex-column-fluid">
+                            <div id="kt_app_content_container" class="app-container container-fluid">
+                                <div class="alert-messages">
+                                    {% if messages %}
+                                        {% for message in messages %}
+                                            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-danger{% endif %} alert-dismissible fade show" role="alert">
+                                                {{ message }}
+                                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+
+                                <div class="card shadow-sm">
+                                    <div class="card-body">
+                                       <h2 class="card-title">جزئیات چک لیست</h2>
+                                         <div class="checklist-detail-header mb-4">
+                                             <div class="checklist-detail-item">
+                                               <i class="fas fa-user"></i>
+                                               <span>
+                                                   {% if checklist.user.first_name or checklist.user.last_name %}
+                                                       {{ checklist.user.first_name }} {{ checklist.user.last_name }}
+                                                   {% else %}
+                                                        {{ checklist.user.username }}
+                                                   {% endif %}
+                                                   {% if checklist.user.userprofile.personnel_code %}
+                                                        <span class="text-muted">({{ checklist.user.userprofile.personnel_code }})</span>
+                                                    {% endif %}
+                                                </span>
+                                           </div>
+
+                                              <div class="checklist-detail-item">
+                                                <i class="fas fa-cogs"></i>
+                                                   <span>{{ checklist.machine.workshop_code }} - {{ checklist.machine.machine_type.name }}</span>
+                                            </div>
+
+                                             <div class="checklist-detail-item">
+                                                <i class="fas fa-calendar"></i>
+                                                <span>{{ checklist.date|jformat:"%Y/%m/%d %H:%M:%S" }}</span>
+                                            </div>
+
+                                           <div class="checklist-detail-item">
+                                                 <i class="fas fa-clock"></i>
+                                                <span>{{ checklist.shift }}</span>
+                                           </div>
+                                            <div class="checklist-detail-item">
+                                                 <i class="fas fa-users"></i>
+                                                <span>{{ checklist.shift_group }}</span>
+                                           </div>
+                                        </div>
+
+
+                                         <hr>
+                                           <h3>پاسخ ها:</h3>
+                                           <div class="row">
+                                           {% for answer in answers %}
+                                                <div class="col-md-4">
+                                                      <div class="answer-box">
+                                                            <p><strong>{{ forloop.counter }}. {{ answer.question.text }}</strong></p>
+                                                            {% if answer.question.question_type == 'text' %}
+                                                                <p><strong>پاسخ:</strong> {{ answer.answer_text|default:"---" }}</p>
+                                                              {% elif answer.question.question_type == 'option' %}
+                                                                <p><strong>پاسخ:</strong> {{ answer.selected_option|default:"---" }}</p>
+                                                            {% endif %}
+                                                            {% if answer.description %}
+                                                                <p><strong>توضیحات:</strong> {{ answer.description }}</p>
+                                                            {% endif %}
+                                                       </div>
+                                                  </div>
+                                            {% empty %}
+                                                  <div class="col-12 text-center">هیچ پاسخی برای این چک لیست ثبت نشده است.</div>
+                                            {% endfor %}
+                                           </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                          {% include 'footer.html' %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

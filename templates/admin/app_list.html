@@ -42,6 +42,9 @@
     justify-content: space-between;
     align-items: center;
   }
+  a:link, a:visited {
+    color: var(--text-color);
+}
 
   .app-title:hover {
     background-color: var(--hover-bg-color);
@@ -78,15 +81,21 @@
 
   .btn-add,
   .btn-edit {
+    display: inline-block;
     padding: 5px 15px;
     font-size: 0.9rem;
     color: var(--btn-text-color);
+    background-color: var(--btn-add-bg);
     border: none;
     border-radius: 4px;
+    text-decoration: none; /* حذف خط زیر لینک */
+    text-align: center;
+    cursor: pointer;
   }
 
   .btn-add {
     background-color: var(--btn-add-bg);
+    color: #fff;
   }
 
   .btn-add:hover {
@@ -144,10 +153,10 @@
                 </span>
                 <div>
                   {% if model.add_url %}
-                    <button class="btn btn-add">{% translate 'Add' %}</button>
+                    <a href="{{ model.add_url }}" class="btn btn-add">{% translate 'اضافه کردن' %}</a>
                   {% endif %}
                   {% if model.admin_url and show_changelinks %}
-                    <button class="btn btn-edit">{% translate 'Change' %}</button>
+                    <a href="{{ model.admin_url }}" class="btn btn-edit">{% translate 'تغییر' %}</a>
                   {% endif %}
                 </div>
               </div>
@@ -158,5 +167,5 @@
     {% endfor %}
   </div>
 {% else %}
-  <p class="text-muted">{% translate 'You don’t have permission to view or edit anything.' %}</p>
+  <p class="text-muted">{% translate 'شما دسترسی ندارید.' %}</p>
 {% endif %}

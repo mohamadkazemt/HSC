@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% block style %}
+
+    <style>
+        /* محل قرارگیری پیام ها */
+        .alert-messages {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 400px;
+            z-index: 1000;
+        }
+
+        /* استایل پایه برای همه پیام ها */
+        .alert {
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 5px;
+            position: relative;
+            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+        }
+
+        /* استایل پیام های موفقیت */
+        .alert-success {
+            background-color: #d4edda; /* سبز روشن */
+            color: #155724; /* سبز تیره */
+            border-color: #c3e6cb; /* سبز روشن */
+        }
+
+        /* استایل پیام های خطا */
+        .alert-error, .alert-danger {
+            background-color: #f8d7da; /* قرمز روشن */
+            color: #721c24; /* قرمز تیره */
+            border-color: #f5c6cb; /* قرمز روشن */
+        }
+
+        /* استایل پیام های هشدار */
+        .alert-warning {
+            background-color: #fff3cd; /* زرد روشن */
+            color: #856404; /* زرد تیره */
+            border-color: #ffeeba; /* زرد روشن */
+        }
+
+        /* استایل پیام های اطلاع رسانی */
+        .alert-info {
+            background-color: #cff4fc; /* آبی روشن */
+            color: #084298; /* آبی تیره */
+            border-color: #b6effb; /* آبی روشن */
+        }
+
+        /* استایل دکمه بستن */
+        .alert-dismissible .btn-close {
+            position: absolute;
+            top: 0;
+            left: 0;
+            padding: 10px;
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            opacity: 0.5;
+        }
+
+        .alert-dismissible .btn-close:hover{
+            opacity: 1;
+        }
+        .hidden {
+            display: none !important;
+        }
+
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+        <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+            {% include 'header.html' %}
+            <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+                {% include 'sidebar.html' %}
+                <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                    <div class="d-flex flex-column flex-column-fluid">
+                        {% include 'toolbar.html' %}
+                        <div id="kt_app_content" class="app-content flex-column-fluid">
+                            <div id="kt_app_content_container" class="app-container container-fluid">
+                                <div class="alert-messages">
+                                    {% if messages %}
+                                        {% for message in messages %}
+                                            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-danger{% endif %} alert-dismissible fade show" role="alert">
+                                                {{ message }}
+                                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                <div class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10" id="kt_create_account_stepper">
+                                    <div id="kt_create_account_stepper" class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10">
+                                        <div class="card d-flex flex-row-fluid flex-center">
+
+                                            <div class="form-header"></div>
+                                            <form class="card-body py-20 w-100 mw-xl-700px px-9" method="post">
+                                                {% csrf_token %}
+                                                <h2 class="fw-bold text-gray-900 mb-5"> کارکرد خودرو پیمانکاران</h2>
+
+
+                                                <div class="form-group">
+                                                    <label for="id_contractor" class="form-label">پیمانکار</label>
+                                                    {{ form.contractor }}
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="id_vehicle" class="form-label">خودرو</label>
+                                                    {{ form.vehicle }}
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="id_status" class="form-label">وضعیت</label>
+                                                    {{ form.status }}
+                                                </div>
+
+                                                <div id="stop_time_fields" class="hidden">
+                                                    <div class="form-group-inline">
+                                                        <div class="form-group">
+                                                            <label for="id_stop_start_time" class="form-label">ساعت شروع توقف</label>
+                                                            {{ form.stop_start_time }}
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label for="id_stop_end_time" class="form-label">ساعت پایان توقف</label>
+                                                            {{ form.stop_end_time }}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div id="description_field" class="form-group hidden">
+                                                    <label for="id_description" class="form-label">توضیحات</label>
+                                                    {{ form.description }}
+                                                </div>
+
+                                                <br><br>
+                                                <button type="submit" class="btn btn-primary me-auto">ارسال گزارش</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% include 'footer.html' %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const statusField = document.getElementById("id_status");
+            const descriptionField = document.getElementById("description_field");
+            const stopTimeFields = document.getElementById("stop_time_fields");
+
+            function toggleFields() {
+                const statusValue = statusField.value;
+
+                // مخفی کردن همه فیلدها به صورت پیش‌فرض
+                descriptionField.classList.add("hidden");
+                stopTimeFields.classList.add("hidden");
+
+                // نمایش فیلدها بر اساس وضعیت
+                if (statusValue === "partial") {
+                    descriptionField.classList.remove("hidden");
+                    stopTimeFields.classList.remove("hidden");
+                } else if (statusValue === "inactive") {
+                    descriptionField.classList.remove("hidden");
+                }
+            }
+
+            // افزودن رویداد تغییر به فیلد وضعیت
+            statusField.addEventListener("change", toggleFields);
+
+            // تنظیم اولیه فیلدها بر اساس مقدار پیش‌فرض
+            toggleFields();
+        });
+        document.addEventListener('DOMContentLoaded', function () {
+            const alerts = document.querySelectorAll('.alert.fade.show'); // انتخاب همه پیام ها
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    alert.classList.remove('show');
+                    alert.classList.add('fade');
+
+                    // افزودن رویداد transitionend برای حذف کامل عنصر
+                    alert.addEventListener('transitionend', function() {
+                        alert.remove();
+                    });
+                }, 3000); // زمان 3000 میلی ثانیه (3 ثانیه). می توانید این مقدار را تغییر دهید.
+            });
+        });
+           $(document).ready(function() {
+        $('#id_contractor').select2({
+            placeholder: 'انتخاب پیمانکار',
+            width: '100%',
+            dir: 'rtl'
+        });
+       $('#id_vehicle').select2({
+            placeholder: 'انتخاب خودرو',
+           width: '100%',
+            dir: 'rtl'
+        });
+
+       $('.django-select2').select2({
+            width: '100%',
+            dir: 'rtl'
+       });
+           });
+    </script>
+{% endblock %}

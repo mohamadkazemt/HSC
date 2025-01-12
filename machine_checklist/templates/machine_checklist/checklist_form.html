@@ -1,0 +1,293 @@
+{% extends 'base.html' %}
+
+{% load static %}
+{% load form_filters %}
+
+{% block style %}
+    <style>
+       .hidden {
+            display: none !important
+         }
+        .select2-container {
+            width: 100% !important;
+        }
+         .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+
+        .form-control, .form-select {
+            display: block;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #495057;
+            background-color: #fff;
+            background-clip: padding-box;
+            border: 1px solid #ced4da;
+            border-radius: 0.25rem;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        .form-control:focus, .form-select:focus {
+            color: #495057;
+            background-color: #fff;
+            border-color: #80bdff;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+        .btn-primary {
+           color: #fff;
+            background-color: #007bff;
+            border-color: #007bff;
+            border: 1px solid transparent;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            border-radius: 0.25rem;
+        }
+
+        .btn-primary:hover {
+             color: #fff;
+            background-color: #0069d9;
+            border-color: #0062cc;
+            border: 1px solid transparent;
+        }
+
+        .btn-primary:focus {
+           color: #fff;
+            background-color: #007bff;
+            border-color: #007bff;
+            border: 1px solid transparent;
+        }
+        .form-check-label {
+             font-weight: normal;
+        }
+        .form-check-input {
+            margin-left: 0;
+            margin-right: 0.25em;
+        }
+       .question-item {
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            background-color: #f8f9fa; /* set background color */
+        }
+        .form-check {
+            margin-top: 10px; /* Add margin to create space between select and checkbox */
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+        <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+            {% include 'header.html' %}
+            <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+                {% include 'sidebar.html' %}
+                <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                    <div class="d-flex flex-column flex-column-fluid">
+                        {% include 'toolbar.html' %}
+                        <div id="kt_app_content" class="app-content flex-column-fluid">
+                            <div id="kt_app_content_container" class="app-container container-fluid">
+                                <div class="alert-messages">
+                                    {% if messages %}
+                                        {% for message in messages %}
+                                            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-danger{% endif %} alert-dismissible fade show" role="alert">
+                                                {{ message }}
+                                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h2 class="card-title">فرم چک لیست</h2>
+                                        <form id="machine-form" class="form-group">
+                                            <div class="form-group">
+                                                <label for="machine-select" class="form-label">انتخاب ماشین:</label>
+                                                <select id="machine-select" name="machine" class="form-select">
+                                                    <option value="">---------</option>
+                                                    {% for machine in machines %}
+                                                        <option value="{{ machine.id }}">{{ machine.workshop_code }} - {{ machine.machine_type.name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <button type="button" id="load-questions" class="btn btn-primary">بارگیری سوالات</button>
+                                        </form>
+
+                                        <div id="questions-container" class="hidden">
+                                            <form id="checklist-form">
+                                              <div class="row" id="question-list">
+                                                    <!-- سوالات در اینجا نمایش داده می شوند -->
+                                                </div>
+                                                <button type="button" id="submit-checklist" class="btn btn-primary">ثبت چک لیست</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% include 'footer.html' %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const machineSelect = document.getElementById('machine-select');
+            const loadQuestionsButton = document.getElementById('load-questions');
+            const questionsContainer = document.getElementById('questions-container');
+            const questionList = document.getElementById('question-list');
+            const checklistForm = document.getElementById('checklist-form')
+            const submitChecklistButton = document.getElementById('submit-checklist')
+
+            loadQuestionsButton.addEventListener('click', function() {
+                const selectedMachineId = machineSelect.value;
+                if (selectedMachineId) {
+                     // AJAX request for loading questions
+                     fetch(`/machine-checklist/get_questions/${selectedMachineId}/`)
+                        .then(response => response.json())
+                        .then(data => {
+                         questionList.innerHTML = ''; // Clear previous questions
+                            data.questions.forEach((question, index) => {
+
+                                const questionItemCol = document.createElement('div')
+                                questionItemCol.classList.add('col-md-4')
+
+                                const questionItem = document.createElement('div');
+                                questionItem.classList.add('question-item');
+
+                                const questionLabel = document.createElement('label');
+                                questionLabel.textContent = `${index + 1}. ${question.text} ${question.is_required ? '(اجباری)' : ''}`;
+                                questionItem.appendChild(questionLabel);
+
+                                let inputElement;
+
+                                if (question.question_type === 'text') {
+                                    inputElement = document.createElement('textarea');
+                                    inputElement.name = `answer_${question.id}`;
+                                    inputElement.classList.add('form-control');
+
+                                } else if (question.question_type === 'option') {
+                                    inputElement = document.createElement('select');
+                                    inputElement.name = `answer_${question.id}`;
+                                    inputElement.classList.add('form-select');
+                                    const defaultOption = document.createElement('option');
+                                    defaultOption.value = "";
+                                    defaultOption.textContent = "---------"
+                                    inputElement.appendChild(defaultOption);
+                                    question.options.split(',').forEach(option => {
+                                        const optionElement = document.createElement('option');
+                                        optionElement.value = option.trim();
+                                        optionElement.textContent = option.trim();
+                                        inputElement.appendChild(optionElement);
+                                    });
+                                }
+                                questionItem.appendChild(inputElement);
+
+                                const descriptionCheckbox = document.createElement('div');
+                                descriptionCheckbox.classList.add('form-check');
+
+                                const descriptionCheckboxInput = document.createElement('input');
+                                descriptionCheckboxInput.type = 'checkbox';
+                                descriptionCheckboxInput.id = `show-description-${question.id}`;
+                                descriptionCheckboxInput.classList.add('form-check-input');
+
+
+                                const descriptionLabelCheck = document.createElement('label');
+                                descriptionLabelCheck.textContent = 'توضیحات';
+                                descriptionLabelCheck.htmlFor = `show-description-${question.id}`
+                                descriptionLabelCheck.classList.add('form-check-label');
+
+                                descriptionCheckbox.appendChild(descriptionCheckboxInput);
+                                descriptionCheckbox.appendChild(descriptionLabelCheck);
+                                questionItem.appendChild(descriptionCheckbox)
+
+
+                                const descriptionDiv = document.createElement('div')
+                                descriptionDiv.classList.add('hidden')
+                                descriptionDiv.id = `description-container-${question.id}`;
+
+                                const descriptionLabel = document.createElement('label');
+                                descriptionLabel.textContent = 'توضیحات: ';
+
+                                const descriptionTextarea = document.createElement('textarea');
+                                descriptionTextarea.name = `description_${question.id}`;
+                                descriptionTextarea.classList.add('form-control');
+                                descriptionDiv.appendChild(descriptionLabel);
+                                descriptionDiv.appendChild(descriptionTextarea);
+
+                                questionItem.appendChild(descriptionDiv);
+
+                                 descriptionCheckboxInput.addEventListener('change', function() {
+                                     if (this.checked) {
+                                         descriptionDiv.classList.remove('hidden')
+                                     }else {
+                                          descriptionDiv.classList.add('hidden')
+                                     }
+                                    });
+
+                                questionItemCol.appendChild(questionItem)
+                                questionList.appendChild(questionItemCol)
+                            });
+                            questionsContainer.classList.remove('hidden');
+                        });
+
+                } else {
+                     alert('لطفاً یک ماشین انتخاب کنید.');
+                }
+            });
+            submitChecklistButton.addEventListener('click', function () {
+                const formData = new FormData(checklistForm);
+                const selectedMachineId = machineSelect.value;
+                formData.append('machine', selectedMachineId)
+                fetch('/machine-checklist/submit_checklist/', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                          'X-CSRFToken': getCookie('csrftoken'),
+                       },
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('چک لیست با موفقیت ثبت شد.');
+                            window.location.href = '/machine-checklist/checklist_form/';
+                        } else {
+                           alert('خطا در ثبت چک لیست: ' + data.error);
+                        }
+                    })
+                });
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                       const cookie = cookies[i].trim();
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.startsWith(name + '=')) {
+                        cookieValue = cookie.substring(name.length + 1);
+                        break;
+                    }
+                  }
+                 }
+              return cookieValue;
+            }
+          });
+        </script>
+{% endblock %}

@@ -4,33 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="reports_opr">
-      <change afterPath="$PROJECT_DIR$/BaseInfo/migrations/0008_mineraltype_dump.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/OperationsShiftReports/migrations/0012_vehiclereport_shiftleave_shiftreport_shift_leaves_and_more.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/contractor_management/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/contractor_management/admin.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/contractor_management/apps.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/contractor_management/migrations/0001_initial.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/contractor_management/migrations/0002_contractor_hse_plan_file_alter_contractor_hse_plan.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/contractor_management/migrations/0003_employee_number_of_insurance.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/contractor_management/migrations/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/contractor_management/models.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/contractor_management/tests.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/contractor_management/views.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/leave_reports/migrations/0004_alter_shiftreport_shift_date.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/templates/admin/app_list.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="incident_report-end_location">
+      <change afterPath="$PROJECT_DIR$/hse_incidents/migrations/0006_alter_incidentreport_options_and_more.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hse_incidents/migrations/0007_remove_hsecompletionreport_patient_condition_on_dispatch_and_more.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/hse_completion_form.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BaseInfo/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/BaseInfo/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/HSCprojects/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/urls.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/apps.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report_detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report_detail.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report_pdf.html" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report_pdf.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/leave_reports/templatetags/jalali.py" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/templatetags/jalali_utils.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/leave_reports/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/views.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/admin/base_site.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/admin/base_site.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/sidebar.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/sidebar.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hse_incidents/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/hse_incidents/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hse_incidents/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/hse_incidents/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/daily_report_pdf.html" beforeDir="false" afterPath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/daily_report_pdf.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/report_details.html" beforeDir="false" afterPath="$PROJECT_DIR$/hse_incidents/templates/hse_incidents/report_details.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hse_incidents/templatetags/form_filters.py" beforeDir="false" afterPath="$PROJECT_DIR$/hse_incidents/templatetags/form_filters.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/hse_incidents/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/hse_incidents/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -43,9 +28,10 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Python Script" />
         <option value="CSS File" />
+        <option value="package.json" />
         <option value="JavaScript File" />
+        <option value="Python Script" />
         <option value="HTML File" />
       </list>
     </option>
@@ -74,6 +60,13 @@
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/anomalis/admin.py" root0="FORCE_HIGHLIGHTING" />
   </component>
+  <component name="MigrationScriptOptions">
+    <option name="ignoreImplicitObjects" value="true" />
+    <option name="ignoreSourceCode" value="false" />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 5
 }</component>
@@ -98,7 +91,7 @@
     "django.template.preview.state": "SHOW_EDITOR",
     "git-widget-placeholder": "master",
     "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "C:/Users/shayan/PycharmProjects/HSC/leave_reports",
+    "last_opened_file_path": "C:/Users/shayan/PycharmProjects/HSC/static",
     "list.type.of.created.stylesheet": "CSS",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
@@ -111,18 +104,18 @@
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\shayan\PycharmProjects\HSC\static" />
+      <recent name="C:\Users\shayan\PycharmProjects\HSC\dailyreport_hse\templates\dailyreport_hse" />
       <recent name="C:\Users\shayan\PycharmProjects\HSC\leave_reports" />
       <recent name="C:\Users\shayan\PycharmProjects\HSC\templates\admin" />
       <recent name="C:\Users\shayan\PycharmProjects\HSC\accounts\templates\accounts" />
-      <recent name="C:\Users\MKT\PycharmProjects\HSC\OperationsShiftReports\templates\OperationsShiftReports" />
-      <recent name="C:\Users\MKT\PycharmProjects\HSC\templates\admin" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\shayan\PycharmProjects\HSC\static\moment" />
+      <recent name="C:\Users\shayan\PycharmProjects\HSC\contractor_management\templates\contractor_management" />
+      <recent name="C:\Users\shayan\PycharmProjects\HSC\static\assets\js" />
+      <recent name="C:\Users\shayan\PycharmProjects\HSC\static\assets" />
       <recent name="C:\Users\shayan\PycharmProjects\HSC\accounts\templates\accounts" />
-      <recent name="C:\Users\shayan\PycharmProjects\HSC\anomalis\migrations" />
-      <recent name="C:\Users\shayan\PycharmProjects\HSC\anomalis\templates\anomalis" />
-      <recent name="C:\Users\shayan\PycharmProjects\HSC" />
-      <recent name="C:\Users\MKT\PycharmProjects\HSC\static\assets\media\logos" />
     </key>
   </component>
   <component name="RunManager" selected="Django Server.Unnamed">
@@ -139,6 +132,32 @@
         <env name="DJANGO_SETTINGS_MODULE" value="HSCprojects.settings" />
       </envs>
       <option name="SDK_HOME" value="" />
+      <option name="SDK_NAME" value="Python 3.12 (HSC)" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="launchJavascriptDebuger" value="false" />
+      <option name="port" value="8000" />
+      <option name="host" value="localhost" />
+      <option name="additionalOptions" value="" />
+      <option name="browserUrl" value="" />
+      <option name="runTestServer" value="false" />
+      <option name="runNoReload" value="false" />
+      <option name="useCustomRunCommand" value="false" />
+      <option name="customRunCommand" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="Python.DjangoServer" factoryName="Django server">
+      <module name="HSCprojects" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="SDK_NAME" value="Python 3.12 (HSC)" />
       <option name="WORKING_DIRECTORY" value="" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
@@ -265,42 +284,48 @@
       <workItem from="1733054098098" duration="2175000" />
       <workItem from="1733147664689" duration="15313000" />
       <workItem from="1733283457305" duration="7312000" />
-      <workItem from="1733461420835" duration="25233000" />
-    </task>
-    <task id="LOCAL‎−۰۰۰۰۱" summary="accont">
-      <option name="closed" value="true" />
-      <created>1727641402120</created>
-      <option name="number" value="LOCAL‎−۰۰۰۰۱" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۰۱" />
-      <updated>1727641402121</updated>
-    </task>
-    <task id="LOCAL‎−۰۰۰۰۲" summary="accont">
-      <option name="closed" value="true" />
-      <created>1727641532891</created>
-      <option name="number" value="LOCAL‎−۰۰۰۰۲" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۰۲" />
-      <updated>1727641532891</updated>
-    </task>
-    <task id="LOCAL‎−۰۰۰۰۳" summary="formanomali">
-      <option name="closed" value="true" />
-      <created>1728036855616</created>
-      <option name="number" value="LOCAL‎−۰۰۰۰۳" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۰۳" />
-      <updated>1728036855616</updated>
-    </task>
-    <task id="LOCAL‎−۰۰۰۰۴" summary="formanomali">
-      <option name="closed" value="true" />
-      <created>1728108211534</created>
-      <option name="number" value="LOCAL‎−۰۰۰۰۴" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۰۴" />
-      <updated>1728108211535</updated>
-    </task>
-    <task id="LOCAL‎−۰۰۰۰۵" summary="listnew">
-      <option name="closed" value="true" />
-      <created>1728674478573</created>
-      <option name="number" value="LOCAL‎−۰۰۰۰۵" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۰۵" />
-      <updated>1728674478573</updated>
+      <workItem from="1733461420835" duration="26599000" />
+      <workItem from="1733577577047" duration="12097000" />
+      <workItem from="1733673147704" duration="6932000" />
+      <workItem from="1733684872454" duration="849000" />
+      <workItem from="1733685817375" duration="5118000" />
+      <workItem from="1733764090415" duration="5276000" />
+      <workItem from="1733778441363" duration="709000" />
+      <workItem from="1733833106353" duration="4781000" />
+      <workItem from="1733926115951" duration="40971000" />
+      <workItem from="1734003206764" duration="6901000" />
+      <workItem from="1734185932766" duration="11572000" />
+      <workItem from="1734252645849" duration="2000" />
+      <workItem from="1734252665055" duration="2000" />
+      <workItem from="1734252890689" duration="29000" />
+      <workItem from="1734261640903" duration="2000" />
+      <workItem from="1734268912165" duration="15044000" />
+      <workItem from="1734362055412" duration="1528000" />
+      <workItem from="1734365673657" duration="2883000" />
+      <workItem from="1734368651864" duration="12185000" />
+      <workItem from="1734414778366" duration="2604000" />
+      <workItem from="1734424149749" duration="7970000" />
+      <workItem from="1734673286661" duration="31754000" />
+      <workItem from="1734753006936" duration="282000" />
+      <workItem from="1734753309906" duration="3439000" />
+      <workItem from="1734839913257" duration="8110000" />
+      <workItem from="1735132316060" duration="10984000" />
+      <workItem from="1735312199369" duration="3653000" />
+      <workItem from="1735315909790" duration="8016000" />
+      <workItem from="1735393347349" duration="11273000" />
+      <workItem from="1735486200964" duration="12045000" />
+      <workItem from="1735658224112" duration="12281000" />
+      <workItem from="1735716988485" duration="14674000" />
+      <workItem from="1735749747663" duration="9321000" />
+      <workItem from="1735817073832" duration="1740000" />
+      <workItem from="1736001296249" duration="6698000" />
+      <workItem from="1736082189666" duration="15814000" />
+      <workItem from="1736261651731" duration="17126000" />
+      <workItem from="1736318791941" duration="25495000" />
+      <workItem from="1736431890658" duration="13917000" />
+      <workItem from="1736484005729" duration="12692000" />
+      <workItem from="1736536173905" duration="246000" />
+      <workItem from="1736599643107" duration="11554000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۶" summary="listnew2">
       <option name="closed" value="true" />
@@ -529,7 +554,140 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۳۵" />
       <updated>1732991841925</updated>
     </task>
-    <option name="localTasksCounter" value="36" />
+    <task id="LOCAL‎−۰۰۰۳۶" summary="reports&amp;contractor">
+      <option name="closed" value="true" />
+      <created>1733513583522</created>
+      <option name="number" value="LOCAL‎−۰۰۰۳۶" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۳۶" />
+      <updated>1733513583522</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۳۷" summary="dailyreport_hse">
+      <option name="closed" value="true" />
+      <created>1733601750619</created>
+      <option name="number" value="LOCAL‎−۰۰۰۳۷" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۳۷" />
+      <updated>1733601750619</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۳۸" summary="dailyreport_hse1">
+      <option name="closed" value="true" />
+      <created>1733690961003</created>
+      <option name="number" value="LOCAL‎−۰۰۰۳۸" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۳۸" />
+      <updated>1733690961003</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۳۹" summary="dailyreport_hse22">
+      <option name="closed" value="true" />
+      <created>1733779136601</created>
+      <option name="number" value="LOCAL‎−۰۰۰۳۹" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۳۹" />
+      <updated>1733779136601</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۴۰" summary="dailyreport_hse232">
+      <option name="closed" value="true" />
+      <created>1734121771889</created>
+      <option name="number" value="LOCAL‎−۰۰۰۴۰" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۴۰" />
+      <updated>1734121771889</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۴۱" summary="dailyreport_hsemami">
+      <option name="closed" value="true" />
+      <created>1734381131968</created>
+      <option name="number" value="LOCAL‎−۰۰۰۴۱" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۴۱" />
+      <updated>1734381131968</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۴۲" summary="dailyreport_hsemami2">
+      <option name="closed" value="true" />
+      <created>1734418005479</created>
+      <option name="number" value="LOCAL‎−۰۰۰۴۲" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۴۲" />
+      <updated>1734418005479</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۴۳" summary="dailyreport_hsemami222">
+      <option name="closed" value="true" />
+      <created>1734551866579</created>
+      <option name="number" value="LOCAL‎−۰۰۰۴۳" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۴۳" />
+      <updated>1734551866579</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۴۴" summary="dailyreport_hsemami222">
+      <option name="closed" value="true" />
+      <created>1734551904372</created>
+      <option name="number" value="LOCAL‎−۰۰۰۴۴" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۴۴" />
+      <updated>1734551904372</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۴۵" summary="dailyreport_hseENDmax">
+      <option name="closed" value="true" />
+      <created>1735068620577</created>
+      <option name="number" value="LOCAL‎−۰۰۰۴۵" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۴۵" />
+      <updated>1735068620577</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۴۶" summary="dailyreport_hseENDmax">
+      <option name="closed" value="true" />
+      <created>1735074158325</created>
+      <option name="number" value="LOCAL‎−۰۰۰۴۶" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۴۶" />
+      <updated>1735074158326</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۴۷" summary="contractor_vehicle">
+      <option name="closed" value="true" />
+      <created>1735241694659</created>
+      <option name="number" value="LOCAL‎−۰۰۰۴۷" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۴۷" />
+      <updated>1735241694659</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۴۸" summary="contractor_vehicle2">
+      <option name="closed" value="true" />
+      <created>1735330705090</created>
+      <option name="number" value="LOCAL‎−۰۰۰۴۸" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۴۸" />
+      <updated>1735330705090</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۴۹" summary="contractor_vehicle3">
+      <option name="closed" value="true" />
+      <created>1735414732029</created>
+      <option name="number" value="LOCAL‎−۰۰۰۴۹" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۴۹" />
+      <updated>1735414732029</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۵۰" summary="end-permission-accounts">
+      <option name="closed" value="true" />
+      <created>1736009428607</created>
+      <option name="number" value="LOCAL‎−۰۰۰۵۰" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۵۰" />
+      <updated>1736009428607</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۵۱" summary="incident_report">
+      <option name="closed" value="true" />
+      <created>1736108556152</created>
+      <option name="number" value="LOCAL‎−۰۰۰۵۱" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۵۱" />
+      <updated>1736108556152</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۵۲" summary="incident_report_end">
+      <option name="closed" value="true" />
+      <created>1736280714939</created>
+      <option name="number" value="LOCAL‎−۰۰۰۵۲" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۵۲" />
+      <updated>1736280714940</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۵۳" summary="checklist_end">
+      <option name="closed" value="true" />
+      <created>1736452738905</created>
+      <option name="number" value="LOCAL‎−۰۰۰۵۳" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۵۳" />
+      <updated>1736452738905</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۵۴" summary="incident_report-end_location">
+      <option name="closed" value="true" />
+      <created>1736536319460</created>
+      <option name="number" value="LOCAL‎−۰۰۰۵۴" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۵۴" />
+      <updated>1736536319460</updated>
+    </task>
+    <option name="localTasksCounter" value="55" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -547,24 +705,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="accont" />
-    <MESSAGE value="newtemolate" />
-    <MESSAGE value="formanomali" />
-    <MESSAGE value="listnew" />
-    <MESSAGE value="listnew2" />
-    <MESSAGE value="commentsnew" />
-    <MESSAGE value="notifications" />
-    <MESSAGE value="v0.0.1" />
-    <MESSAGE value="v0.0.1/2" />
-    <MESSAGE value="v0.0.1/3" />
-    <MESSAGE value="amaliyat1" />
-    <MESSAGE value="amalyatend1" />
-    <MESSAGE value="endamaliyat&amp;anomali" />
-    <MESSAGE value="endamaliyat&amp;anomali1" />
-    <MESSAGE value="sms.ir" />
-    <MESSAGE value="convert-to-pdf" />
-    <MESSAGE value="log" />
-    <MESSAGE value="edite-sms" />
     <MESSAGE value="Edite-Notification" />
     <MESSAGE value="fillter-edite" />
     <MESSAGE value="fillter-edite3" />
@@ -572,7 +712,25 @@
     <MESSAGE value="list&amp;notfi" />
     <MESSAGE value="importer-Excle" />
     <MESSAGE value="leave_reports" />
-    <option name="LAST_COMMIT_MESSAGE" value="leave_reports" />
+    <MESSAGE value="reports&amp;contractor" />
+    <MESSAGE value="dailyreport_hse" />
+    <MESSAGE value="dailyreport_hse1" />
+    <MESSAGE value="dailyreport_hse22" />
+    <MESSAGE value="dailyreport_hse232" />
+    <MESSAGE value="dailyreport_hsemami" />
+    <MESSAGE value="dailyreport_hsemami2" />
+    <MESSAGE value="dailyreport_hsemami4" />
+    <MESSAGE value="dailyreport_hsemami222" />
+    <MESSAGE value="dailyreport_hseENDmax" />
+    <MESSAGE value="contractor_vehicle" />
+    <MESSAGE value="contractor_vehicle2" />
+    <MESSAGE value="contractor_vehicle3" />
+    <MESSAGE value="end-permission-accounts" />
+    <MESSAGE value="incident_report" />
+    <MESSAGE value="incident_report_end" />
+    <MESSAGE value="checklist_end" />
+    <MESSAGE value="incident_report-end_location" />
+    <option name="LAST_COMMIT_MESSAGE" value="incident_report-end_location" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -587,9 +745,18 @@
           <line>21</line>
           <option name="timeStamp" value="4" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/anomalis/views.py</url>
+          <line>537</line>
+          <option name="timeStamp" value="7" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/accounts/views.py</url>
+          <option name="timeStamp" value="8" />
+        </line-breakpoint>
         <line-breakpoint enabled="true" type="django-line">
           <url>file://$PROJECT_DIR$/anomalis/templates/anomalis/anomaly-details.html</url>
-          <line>277</line>
+          <line>280</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>

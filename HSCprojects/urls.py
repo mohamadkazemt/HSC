@@ -29,7 +29,13 @@ urlpatterns = [
     path('anomalis/', include('anomalis.urls')),
     path('select2/', include('django_select2.urls')),
     path('OperationsShiftReports/', include('OperationsShiftReports.urls')),
-    path('leave_reports/', include('leave_reports.urls'))
+    path('leave_reports/', include('leave_reports.urls')),
+    path('dailyreport_hse/', include('dailyreport_hse.urls')),
+    path("permissions/", include("permissions.urls")),
+    path("contractor/", include("contractor_management.urls")),
+    path('hse_incidents/', include(('hse_incidents.urls', 'hse_incidents'), namespace='hse_incidents')),
+    path('machine-checklist/', include(('machine_checklist.urls', 'machine_checklist'), namespace='machine_checklist')),
+
 ]
 
 

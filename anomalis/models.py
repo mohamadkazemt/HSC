@@ -102,7 +102,7 @@ class Anomaly(models.Model):
                                    verbose_name="ایجاد کننده")
     followup = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='followup_anomalies',
                                  verbose_name="پیگیری")
-    group = models.CharField(max_length=1, choices=UserProfile.GROUP_CHOICES, verbose_name="گروه کاری")
+    group = models.CharField(max_length=2, choices=UserProfile.GROUP_CHOICES, verbose_name="گروه کاری")
     description = models.TextField(verbose_name="توضیحات")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="تاریخ بروزرسانی")

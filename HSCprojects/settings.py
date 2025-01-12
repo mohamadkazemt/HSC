@@ -13,6 +13,8 @@ import os
 from pathlib import Path
 from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime
+from django.conf.locale.fa import formats as fa_formats
+
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -45,19 +47,26 @@ INSTALLED_APPS = [
     "anomalis.apps.AnomalisConfig",
     'django.contrib.humanize',
 
+
     "django_select2",
     'analytics.apps.AnalyticsConfig',
     'crispy_forms',
     'crispy_bootstrap5',
     'shift_manager.apps.ShiftManagerConfig',
     'django_jalali',
+    'jalali_date',
     'import_export',
     'BaseInfo.apps.BaseinfoConfig',
     'OperationsShiftReports.apps.OperationsshiftreportsConfig',
     'formtools',
     'dailyreport_hse.apps.DailyreportHseConfig',
     'leave_reports.apps.LeaveReportsConfig',
-    'contractor_management.apps.ContractorManagementConfig'
+    'contractor_management.apps.ContractorManagementConfig',
+    'rest_framework',
+    'permissions.apps.PermissionsConfig',
+    'hse_incidents.apps.HseIncidentsConfig',
+    'machine_checklist.apps.MachineChecklistConfig'
+
 ]
 
 MIDDLEWARE = [
@@ -91,6 +100,10 @@ TEMPLATES = [
                 'dashboard.context_processors.notification_context_processor',
                 'shift_manager.context_processors.shift_context_processor',
                 'shift_manager.context_processors.shift_data_processor',
+
+            ],
+            'builtins': [
+                'django_jalali.templatetags.jformat',
 
             ],
         },
@@ -177,44 +190,58 @@ SMSIR_LINE_NUMBER = '30007732001185'
 
 
 
-# settings.py
+
+fa_formats.DATETIME_FORMAT = "Y/m/d H:i"
+fa_formats.DATE_FORMAT = "Y/m/d"
+
+
 
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {message}',
-            'style': '{',
-        },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
-    },
     'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
         'file': {
-            'level': 'WARNING',  # سطح هشدار برای لاگ‌ها
-            'class': 'logging.handlers.TimedRotatingFileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'anomalis.log'),  # مسیر فایل لاگ اختصاصی
-            'when': 'midnight',  # چرخش فایل روزانه
-            'interval': 1,
-            'backupCount': 28,  # نگهداری لاگ‌ها برای 28 روز
-            'formatter': 'verbose',
+           'level': 'DEBUG',
+           'class': 'logging.FileHandler',
+           'filename': 'hse_incidents.log',
         },
     },
     'loggers': {
-        'django': {
-            'handlers': ['file'],
-            'level': 'WARNING',
+        'hse_incidents': {
+            'handlers': ['console','file'],
+            'level': 'DEBUG',
             'propagate': True,
-        },
-        'anomalis': {  # لاگر اختصاصی برای اپلیکیشن anomalis
-            'handlers': ['file'],
-            'level': 'ERROR',  # فقط خطاها ثبت شوند
-            'propagate': False,
         },
     },
 }
 
 
+
+JALALI_DATE_DEFAULTS = {
+   # if change it to true then all dates of the list_display will convert to the Jalali.
+   'LIST_DISPLAY_AUTO_CONVERT': False,
+   'Strftime': {
+        'date': '%y/%m/%d',
+        'datetime': '%H:%M:%S _ %y/%m/%d',
+    },
+    'Static': {
+        'js': [
+            # loading datepicker
+            'admin/js/django_jalali.min.js',
+            # OR
+            # 'admin/jquery.ui.datepicker.jalali/scripts/jquery.ui.core.js',
+            # 'admin/jquery.ui.datepicker.jalali/scripts/calendar.js',
+            # 'admin/jquery.ui.datepicker.jalali/scripts/jquery.ui.datepicker-cc.js',
+            # 'admin/jquery.ui.datepicker.jalali/scripts/jquery.ui.datepicker-cc-fa.js',
+            # 'admin/js/main.js',
+        ],
+        'css': {
+            'all': [
+                'admin/jquery.ui.datepicker.jalali/themes/base/jquery-ui.min.css',
+            ]
+        }
+    },
+}

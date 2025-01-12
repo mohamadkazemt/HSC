@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load form_filters %}
+{% load jformat %}
+
+{% block style %}
+    <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.css">
+    <style>
+        .hidden {
+            display: none !important;
+        }
+
+        .select2-container {
+            width: 100% !important;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+        .date-input {
+            width: 120px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-left: 5px;
+            font-size: 0.9rem;
+        }
+        .filter-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            width: 100%;
+            flex-direction: column;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+
+        }
+        .filter-container > div {
+            margin-bottom: 5px;
+            margin-left: 5px;
+            display: flex;
+            align-items: center;
+        }
+
+        .filter-container > div select{
+            padding: 8px;
+            font-size: 0.9rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-width: 100px;
+        }
+        .filter-icon {
+            cursor: pointer;
+            margin-right: 5px;
+            display: inline-block;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            transition: transform 0.3s ease;
+        }
+        .filter-icon.active{
+            transform: rotate(90deg);
+        }
+        .search-button {
+            padding: 8px 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-left: 5px;
+        }
+        .search-button:hover {
+            background-color: #0056b3;
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
+            margin-left: 10px;
+
+        }
+        #advanced-filters {
+            overflow: hidden;
+            transition: opacity 0.3s ease-out, transform 0.3s ease-out, height 0.3s ease-out;
+            opacity: 0;
+            transform: translateY(-10px);
+            height: 0;
+            display: none;
+        }
+
+        #advanced-filters.open {
+            opacity: 1;
+            transform: translateY(0);
+            height: auto;
+            display: flex;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+        <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+            {% include 'header.html' %}
+            <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+                {% include 'sidebar.html' %}
+                <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                    <div class="d-flex flex-column flex-column-fluid">
+                        <div id="kt_app_content" class="app-content flex-column-fluid">
+                            <div id="kt_app_content_container" class="app-container container-fluid">
+                                <div class="alert-messages">
+                                    {% if messages %}
+                                        {% for message in messages %}
+                                            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-danger{% endif %} alert-dismissible fade show" role="alert">
+                                                {{ message }}
+                                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h2>لیست چک لیست های ثبت شده</h2>
+                                            <div>
+                                                <a href="{% url 'machine_checklist:export_checklists_excel' %}?q={{ request.GET.q }}&start_date={{ request.GET.start_date }}&end_date={{ request.GET.end_date }}&group_filter={{ request.GET.group_filter }}&shift_filter={{ request.GET.shift_filter }}&machine_type_filter={{ request.GET.machine_type_filter }}" class="btn btn-primary">خروجی اکسل</a>                                           </div>
+                                        </div>
+                                        <form method="get" class="mb-3" id="filter-form">
+                                            <div class="row align-items-center">
+                                                <div class="col-md-8">
+                                                    <div class="input-group">
+                                                        <input type="text" name="q" class="form-control" placeholder="جستجو..."
+                                                               value="{{ request.GET.q }}">
+                                                        <span class="input-group-text">از</span>
+                                                        <input type="text" class="form-control persian-date-picker" id="from_date_picker" placeholder="از تاریخ">
+                                                        <input type="hidden" name="start_date" id="from_date" value="{{ request.GET.start_date }}">
+                                                        <span class="input-group-text">تا</span>
+                                                        <input type="text" class="form-control persian-date-picker" id="to_date_picker" placeholder="تا تاریخ">
+                                                        <input type="hidden" name="end_date" id="to_date" value="{{ request.GET.end_date }}">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-4 d-flex justify-content-end">
+                                                    <button type="submit" class="btn btn-primary me-2">جستجو</button>
+                                                    <button type="button" class="btn btn-outline-secondary" id="toggle-filters">☰</button>
+                                                </div>
+                                            </div>
+                                            <div class="collapse mt-3" id="advanced-filters">
+                                                <div class="card card-body">
+                                                    <div class="row">
+                                                        <div class="col-md-4">
+                                                            <label for="group_filter" class="form-label">گروه کاری:</label>
+                                                            <select name="group_filter" id="group_filter" class="form-select">
+                                                                <option value="">همه</option>
+                                                                {% for group in groups %}
+                                                                    <option value="{{ group.0 }}" {% if request.GET.group_filter == group.0 %}selected{% endif %}>{{ group.1 }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label for="shift_filter" class="form-label">شیفت کاری:</label>
+                                                            <select name="shift_filter" id="shift_filter" class="form-select">
+                                                                <option value="">همه</option>
+                                                                {% for shift in shifts %}
+                                                                    <option value="{{ shift }}" {% if request.GET.shift_filter == shift %}selected{% endif %}>{{ shift }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label for="machine_type_filter" class="form-label">نوع دستگاه:</label>
+                                                            <select name="machine_type_filter" id="machine_type_filter" class="form-select">
+                                                                <option value="">همه</option>
+                                                                {% for machine_type in machine_types %}
+                                                                    <option value="{{ machine_type.id }}" {% if request.GET.machine_type_filter == machine_type.id|stringformat:"s" %}selected{% endif %}>{{ machine_type.name }}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </form>
+
+                                        <div class="table-responsive">
+                                            <table class="table table-striped table-bordered">
+                                                <thead>
+                                                <tr>
+                                                    <th>ردیف</th>
+                                                    <th>کاربر</th>
+                                                    <th>ماشین</th>
+                                                    <th>تاریخ</th>
+                                                    <th>شیفت</th>
+                                                    <th>گروه شیفت</th>
+                                                    <th>اقدامات</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                {% for checklist in checklists %}
+                                                    <tr>
+                                                        <td>{{ forloop.counter }}</td>
+                                                        <td>
+                                                            {% if checklist.user.first_name or checklist.user.last_name %}
+                                                                {{ checklist.user.first_name }} {{ checklist.user.last_name }}
+                                                            {% else %}
+                                                                {{ checklist.user.username }}
+                                                            {% endif %}
+                                                            {% if checklist.user.userprofile.personnel_code %}
+                                                                ({{ checklist.user.userprofile.personnel_code }})
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>{{ checklist.machine.workshop_code }} - {{ checklist.machine.machine_type.name }}</td>
+                                                        <td>{{ checklist.date|jformat:"%Y/%m/%d %H:%M:%S" }}</td>
+                                                        <td>{{ checklist.shift }}</td>
+                                                        <td>{{ checklist.shift_group }}</td>
+                                                        <td>
+                                                            <a href="{% url 'machine_checklist:checklist_detail' checklist.id %}"
+                                                               class="btn btn-sm btn-info">جزئیات</a>
+                                                        </td>
+                                                    </tr>
+                                                {% empty %}
+                                                    <tr>
+                                                        <td colspan="7" class="text-center">هیچ چک لیستی ثبت نشده است.</td>
+                                                    </tr>
+                                                {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        {% if checklists.has_other_pages %}
+                                            <nav aria-label="Page navigation example">
+                                                <ul class="pagination">
+                                                    {% if checklists.has_previous %}
+                                                        <li class="page-item">
+                                                            <a class="page-link"
+                                                               href="?page={{ checklists.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.group_filter %}&group_filter={{ request.GET.group_filter }}{% endif %}{% if request.GET.shift_filter %}&shift_filter={{ request.GET.shift_filter }}{% endif %}{% if request.GET.machine_type_filter %}&machine_type_filter={{ request.GET.machine_type_filter }}{% endif %}"
+                                                               aria-label="Previous">
+                                                                <span aria-hidden="true">«</span>
+                                                                <span class="sr-only">Previous</span>
+                                                            </a>
+                                                        </li>
+                                                    {% endif %}
+
+                                                    {% for i in checklists.paginator.page_range %}
+                                                        <li class="page-item {% if checklists.number == i %}active{% endif %}">
+                                                            <a class="page-link"
+                                                               href="?page={{ i }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.group_filter %}&group_filter={{ request.GET.group_filter }}{% endif %}{% if request.GET.shift_filter %}&shift_filter={{ request.GET.shift_filter }}{% endif %}{% if request.GET.machine_type_filter %}&machine_type_filter={{ request.GET.machine_type_filter }}{% endif %}">{{ i }}</a>
+                                                        </li>
+                                                    {% endfor %}
+
+                                                    {% if checklists.has_next %}
+                                                        <li class="page-item">
+                                                            <a class="page-link"
+                                                               href="?page={{ checklists.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}{% if request.GET.group_filter %}&group_filter={{ request.GET.group_filter }}{% endif %}{% if request.GET.shift_filter %}&shift_filter={{ request.GET.shift_filter }}{% endif %}{% if request.GET.machine_type_filter %}&machine_type_filter={{ request.GET.machine_type_filter }}{% endif %}"
+                                                               aria-label="Next">
+                                                                <span aria-hidden="true">»</span>
+                                                                <span class="sr-only">Next</span>
+                                                            </a>
+                                                        </li>
+                                                    {% endif %}
+                                                </ul>
+                                            </nav>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% include 'footer.html' %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block extra_js %}
+    <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
+    <script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#from_date_picker').persianDatepicker({
+                format: 'YYYY/MM/DD',
+                altField: '#from_date',
+                altFormat: 'YYYY-MM-DD',
+            });
+            $('#to_date_picker').persianDatepicker({
+                format: 'YYYY/MM/DD',
+                altField: '#to_date',
+                altFormat: 'YYYY-MM-DD',
+            });
+            const filterForm = document.getElementById('filter-form');
+            const advancedFilters = document.getElementById('advanced-filters');
+            const toggleFiltersButton = document.getElementById('toggle-filters');
+
+
+            toggleFiltersButton.addEventListener('click', function () {
+                advancedFilters.classList.toggle('open');
+                toggleFiltersButton.classList.toggle('active')
+            });
+            filterForm.addEventListener('change', function() {
+                filterForm.submit();
+            });
+            filterForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                filterForm.submit();
+            });
+        });
+    </script>
+{% endblock %}

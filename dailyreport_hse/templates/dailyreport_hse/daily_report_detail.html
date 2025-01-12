@@ -1,0 +1,329 @@
+﻿{% extends 'base.html' %}
+
+
+{% load static %}
+{% load jalali %}
+
+
+{% block content %}
+    <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+        <!--begin::Page-->
+        <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+            <!--begin::Header-->
+            {% include 'header.html' %}
+            <!--end::Header-->
+            <!--begin::Wrapper-->
+            <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+                <!--begin::Sidebar-->
+                {% include 'sidebar.html' %}
+                <!--end::Sidebar-->
+                <!--begin::اصلی-->
+                <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                    <!--begin::Content wrapper-->
+                    <div class="d-flex flex-column flex-column-fluid">
+                        <!--begin::Toolbar-->
+                        {% include 'toolbar.html' %}
+                        <!--end::Toolbar-->
+                        <!--begin::Content-->
+                        <div id="kt_app_content" class="app-content flex-column-fluid">
+                            <!--begin::Content container-->
+                            <div id="kt_app_content_container" class="app-container container-fluid">
+                                <!--begin::Row-->
+                                <div class="row g-5 g-xl-8">
+
+
+
+                                    <div class="col-12 mb-4">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h3 class="card-title">اطلاعات کلی</h3>
+                                                <div class="card-header d-flex justify-content-between align-items-center">
+                                                    <a href="{% url 'dailyreport_hse:daily_report_pdf' report.id %}" class="btn btn-primary btn-sm">
+                                                        <i class="fas fa-file-pdf"></i> دانلود PDF
+                                                    </a>
+                                                </div>
+                                            </div>
+
+                                            <div class="card-body">
+                                                <div class="d-flex flex-wrap align-items-center">
+                                                    <div class="d-flex align-items-center me-4">
+                                                        <i class="fas fa-user-shield me-2 text-primary"></i>
+                                                        <strong>افسر ایمنی:</strong>
+                                                        <span class="ms-1">{{ report.user.username }}</span>
+                                                    </div>
+                                                    <div class="d-flex align-items-center me-4">
+                                                        <i class="fas fa-clock me-2 text-primary"></i>
+                                                        <strong>شیفت کاری:</strong>
+                                                        <span class="ms-1">{{ report.shift }}</span>
+                                                    </div>
+                                                    <div class="d-flex align-items-center me-4">
+                                                        <i class="fas fa-users me-2 text-primary"></i>
+                                                        <strong>گروه کاری:</strong>
+                                                        <span class="ms-1">{{ report.work_group }}</span>
+                                                    </div>
+                                                    <div class="d-flex align-items-center me-4">
+                                                        <i class="fas fa-calendar-alt me-2 text-primary"></i>
+                                                        <strong>تاریخ ایجاد:</strong>
+                                                        <span class="ms-1">{{ report.created_at|to_jalali }}</span>
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+
+
+                                    <!-- بخش‌های جزئیات -->
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h3 class="card-title">جزئیات عملیات آتشباری</h3>
+                                            </div>
+                                            <div class="card-body">
+                                                <table class="table table-bordered">
+                                                    <thead>
+                                                    <tr>
+                                                        <th>بلوک</th>
+                                                        <th>انفجار انجام شد؟</th>
+                                                        <th>توضیحات</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    {% for detail in blasting_details %}
+                                                        <tr>
+                                                            <td>{{ detail.block }}</td>
+                                                            <td>{{ detail.explosion_occurred|yesno:"بله,خیر" }}</td>
+                                                            <td>{{ detail.description }}</td>
+                                                        </tr>
+                                                    {% empty %}
+                                                        <tr><td colspan="3">اطلاعاتی موجود نیست.</td></tr>
+                                                    {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h3 class="card-title">جزئیات عملیات حفاری</h3>
+                                            </div>
+                                            <div class="card-body">
+                                                <table class="table table-bordered">
+                                                    <thead>
+                                                    <tr>
+                                                        <th>بلوک</th>
+                                                        <th>دستگاه</th>
+                                                        <th>وضعیت</th>
+                                                        <th>توضیحات</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    {% for detail in drilling_details %}
+                                                        <tr>
+                                                            <td>{{ detail.block }}</td>
+                                                            <td>{{ detail.machine }}</td>
+                                                            <td>{% if detail.status == 'safe' %}ایمن{% else %}غیر ایمن{% endif %}</td>
+                                                            <td>{{ detail.description }}</td>
+                                                        </tr>
+                                                    {% empty %}
+                                                        <tr><td colspan="3">اطلاعاتی موجود نیست.</td></tr>
+                                                    {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h3 class="card-title">جزئیات عملیات بارگیری</h3>
+                                            </div>
+                                            <div class="card-body">
+                                                <table class="table table-bordered">
+                                                    <thead>
+                                                    <tr>
+                                                        <th>بلوک</th>
+                                                        <th>دستگاه</th>
+                                                        <th>وضعیت</th>
+                                                        <th>توضیحات</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    {% for detail in loading_details %}
+                                                        <tr>
+                                                            <td>{{ detail.block }}</td>
+                                                            <td>{{ detail.machine }}</td>
+                                                            <td>{% if detail.status == 'safe' %}ایمن{% else %}غیر ایمن{% endif %}</td>
+                                                            <td>{{ detail.description }}</td>
+                                                        </tr>
+                                                    {% empty %}
+                                                        <tr><td colspan="3">اطلاعاتی موجود نیست.</td></tr>
+                                                    {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h3 class="card-title">جزئیات عملیات تخلیه</h3>
+                                            </div>
+                                            <div class="card-body">
+                                                <table class="table table-bordered">
+                                                    <thead>
+                                                    <tr>
+                                                        <th>دامپ</th>
+                                                        <th>وضعیت</th>
+                                                        <th>توضیحات</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    {% for detail in dump_details %}
+                                                        <tr>
+                                                            <td>{{ detail.dump }}</td>
+                                                            <td>{% if detail.status == 'safe' %}ایمن{% else %}غیر ایمن{% endif %}</td>
+                                                            <td>{{ detail.description }}</td>
+                                                        </tr>
+                                                    {% empty %}
+                                                        <tr><td colspan="3">اطلاعاتی موجود نیست.</td></tr>
+                                                    {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h3 class="card-title">جزئیات توقفات ناشی از عدم رعایت مسائل HSE</h3>
+                                            </div>
+                                            <div class="card-body">
+                                                <table class="table table-bordered">
+                                                    <thead>
+                                                    <tr>
+                                                        <th>علت</th>
+                                                        <th>زمان شروع</th>
+                                                        <th>زمان پایان</th>
+                                                        <th>توضیحات</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    {% for detail in stoppage_details %}
+                                                        <tr>
+                                                            <td>{{ detail.reason }}</td>
+                                                            <td>{{ detail.start_time }}</td>
+                                                            <td>{{ detail.end_time }}</td>
+                                                            <td>{{ detail.description }}</td>
+                                                        </tr>
+                                                    {% empty %}
+                                                        <tr><td colspan="4">اطلاعاتی موجود نیست.</td></tr>
+                                                    {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                                                    <div class="col-md-6 mb-4">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h3 class="card-title">جزئیات بازدید از مجموعه تعمیرگاه</h3>
+                                            </div>
+                                            <div class="card-body">
+                                                <table class="table table-bordered">
+                                                    <thead>
+                                                    <tr>
+                                                        <th>بازدید انجام شد؟</th>
+                                                        <th>وضعیت</th>
+                                                        <th>توضیحات</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    {% for detail in inspection_details %}
+                                                        <tr>
+                                                            <td>{{ detail.inspection_done|yesno:"بله,خیر" }}</td>
+                                                            <td>{% if detail.status == 'safe' %}ایمن{% else %}غیر ایمن{% endif %}</td>
+                                                            <td>{{ detail.description }}</td>
+                                                        </tr>
+                                                    {% empty %}
+                                                        <tr><td colspan="3">اطلاعاتی موجود نیست.</td></tr>
+                                                    {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                                    <div class="col-md-6 mb-4">
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h3 class="card-title">موارد مستلزم پیگیری در شیفت های بعد</h3>
+                                            </div>
+                                            <div class="card-body">
+                                                <table class="table table-bordered">
+                                                    <thead>
+                                                    <tr>
+                                                        <th>توضیحات</th>
+                                                        <th>فایل</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    {% for detail in followup_details %}
+                                                        <tr>
+                                                            <td>{{ detail.description }}</td>
+                                                            <td>
+                                                                {% if detail.files %}
+                                                                    <a href="{{ detail.files.url }}">دانلود فایل</a>
+                                                                {% else %}
+                                                                    ندارد
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                    {% empty %}
+                                                        <tr><td colspan="2">اطلاعاتی موجود نیست.</td></tr>
+                                                    {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+
+
+
+
+                            <!--end::جداول Widget 13-->
+                        </div>
+
+                        <!--end::Content container-->
+                    </div>
+                    <!--end::Content-->
+
+                </div>
+                <!--end::Content wrapper-->
+                <!--begin::Footer-->
+                {% include 'footer.html' %}
+                <!--end::Footer-->
+            </div>
+            <!--end:::اصلی-->
+        </div>
+        <!--end::Wrapper-->
+    </div>
+    <!--end::Page-->
+    </div>
+    <!--begin::notification drawer-->
+    <div id="kt_drawer_chat" class="bg-body" data-kt-drawer="true" data-kt-drawer-name="chat" data-kt-drawer-activate="true" data-kt-drawer-overlay="true" data-kt-drawer-width="{default:'300px', 'md': '500px'}" data-kt-drawer-direction="end" data-kt-drawer-toggle="#kt_drawer_chat_toggle" data-kt-drawer-close="#kt_drawer_chat_close">
+        <!--begin::Messenger-->
+        {% include 'notification.html' %}
+        <!--end::Messenger-->
+    </div>
+    <!--end::notification drawer-->
+
+{% endblock %}

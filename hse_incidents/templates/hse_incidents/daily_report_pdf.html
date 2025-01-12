@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    {% load static %}
+    {% load jalali %}
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <style>
+        @page {
+            size: A4; /* تنظیم اندازه صفحه به A4 */
+            margin: 10mm; /* تنظیم حاشیه‌ها (میلی‌متر) */
+        }
+        @font-face {
+            font-family: 'IRANSans';
+            src: url('{% static "assets/fonts/IRANSansWeb.woff2" %}') format('woff2');
+        }
+        body {
+            font-family: 'IRANSans', Tahoma, sans-serif;
+            direction: rtl;
+            margin: 0;
+            padding: 20px;
+            background-color: #fff;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header img {
+            max-width: 150px;
+        }
+        .title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .details-table th, .details-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            word-break: break-word;
+        }
+        .details-table th {
+            background-color: #f2f2f2;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+        }
+        .signature {
+            margin-top: 50px;
+            text-align: center;
+        }
+        .signature img {
+            max-width: 150px;
+        }
+         .detail-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+             flex-wrap: wrap;
+         }
+          .detail-item .icon {
+            margin-left: 5px;
+            color: #007bff;
+            font-size: 1.2em; /* سایز آیکون */
+        }
+        .detail-item .label {
+            font-weight: bold;
+            margin-left: 5px;
+           width: auto;
+        }
+           .detail-item span {
+            width: calc(100% - 110px)
+         }
+    </style>
+</head>
+<body>
+
+
+
+<div class="header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
+    <!-- بخش لوگو -->
+    <div class="logo" style="flex: 1;">
+        <img src="{% static 'assets/media/logos/logo-small.png' %}" alt="لوگو شرکت" style="max-height: 70px;">
+    </div>
+
+    <!-- بخش نام شرکت -->
+    <div class="company-name" style="flex: 2; text-align: center;">
+        <p style="font-weight: bold; margin: 0; font-size: 20px;">شرکت کاراوران صنعت خاورمیانه</p>
+        <p style="margin: 0; font-size: 14px;">پروژه معدن سنگ آهن جلال‌آباد - واحد HSEC</p>
+        <div class="title">گزارش حادثه </div>
+    </div>
+
+    <!-- بخش اطلاعات -->
+    <div class="info" style="flex: 1; text-align: right; font-size: 12px; direction: rtl;">
+        <p style="margin: 0;">کد فرم: MIE-HS-M-FR-142-V03</p>
+    </div>
+
+</div>
+
+
+
+<h2 class="title">مشخصات گزارش دهنده</h2>
+
+<!-- جزئیات اصلی -->
+<table class="details-table">
+    <tr>
+        <th>گزارش دهند حادثه </th>
+        <td>{{ report.report_author.first_name }} {{ report.report_author.last_name }} ({{ report.report_author.personnel_code }})</td>
+    </tr>
+    <tr>
+        <th>تاریخ وقوع حادثه</th>
+       <td>{{ report.incident_date|jformat:"%Y/%m/%d" }}</td>
+    </tr>
+     <tr>
+        <th>ساعت وقوع حادثه</th>
+        <td>{{ report.incident_time|date:"H:i" }}</td>
+    </tr>
+
+</table>
+
+<!-- جزئیات حادثه -->
+<h2>جزئیات حادثه</h2>
+<table class="details-table">
+      <tr>
+          <th>سایت وقوع حادثه</th>
+          <td>{{ report.location.name }}</td>
+      </tr>
+      <tr>
+        <th>محل وقوع حادثه</th>
+          <td>{{ report.section.section }}</td>
+        </tr>
+      <tr>
+          <th>اشخاص مرتبط با حادثه</th>
+           <td>
+                {% for person in report.involved_person.all %}
+                    {{ person }}{% if not forloop.last %}, {% endif %}
+                {% empty %}
+                    ندارد
+                {% endfor %}
+            </td>
+        </tr>
+        <tr>
+          <th>پرسنل پیمانکار مرتبط با حادثه</th>
+           <td>
+               {% for employee in report.related_contractor_employees.all %}
+                   {{ employee }}{% if not forloop.last %}, {% endif %}
+               {% empty %}
+                   ندارد
+               {% endfor %}
+           </td>
+        </tr>
+        <tr>
+            <th>تجهیزات مرتبط با حادثه</th>
+            <td>{{ report.involved_equipment }}</td>
+        </tr>
+        <tr>
+            <th>نوع جراحت</th>
+            <td>
+                {% for injury in report.injury_type.all %}
+                    {{ injury }}{% if not forloop.last %}, {% endif %}
+                {% empty %}
+                    ندارد
+                {% endfor %}
+            </td>
+        </tr>
+        <tr>
+             <th>عضو آسیب دیده</th>
+             <td>{{ report.affected_body_part }}</td>
+         </tr>
+        <tr>
+           <th>شرح آسیب وارده</th>
+           <td>{{ report.damage_description }}</td>
+        </tr>
+</table>
+<!-- جزئیات اعزام -->
+<h2>جزئیات اعزام</h2>
+<table class="details-table">
+     <tr>
+         <th>نوع ارتباط</th>
+           <td>{{ report.related_entity }}</td>
+      </tr>
+      <tr>
+        <th>پیمانکار مرتبط</th>
+        <td>{{ report.related_contractor|default:"-" }}</td>
+      </tr>
+       <tr>
+        <th>خودرو آتش نشانی اعزام شد؟</th>
+         <td>{{ report.fire_truck_needed|yesno:"بله,خیر" }}</td>
+      </tr>
+    {% if report.fire_truck_needed %}
+       <tr>
+          <th>زمان رسیدن خودرو آتش نشانی</th>
+           <td>{{ report.fire_truck_arrival_time|date:"H:i" }}</td>
+       </tr>
+    {% endif %}
+      <tr>
+        <th>آمبولانس اعزام شد؟</th>
+        <td>{{ report.ambulance_needed|yesno:"بله,خیر" }}</td>
+     </tr>
+      {% if report.ambulance_needed %}
+        <tr>
+            <th>زمان رسیدن آمبولانس</th>
+            <td>{{ report.ambulance_arrival_time|date:"H:i" }}</td>
+        </tr>
+     {% endif %}
+       <tr>
+           <th>فرد به بیمارستان اعزام شد؟</th>
+           <td>{{ report.hospitalized|yesno:"بله,خیر" }}</td>
+      </tr>
+    {% if report.hospitalized %}
+         <tr>
+            <th>زمان اعزام به بیمارستان</th>
+            <td>{{ report.hospitalized_time|date:"H:i" }}</td>
+       </tr>
+    {% endif %}
+      <tr>
+         <th>نوع وسیله اعزام</th>
+           <td>{{ report.transportation_type }}</td>
+      </tr>
+</table>
+<!-- شرح و علت حادثه -->
+ <h2>شرح و علت حادثه</h2>
+<table class="details-table">
+    <tr>
+        <th>شرح کامل حادثه</th>
+        <td>{{ report.full_description }}</td>
+    </tr>
+    <tr>
+       <th>علت اولیه حادثه</th>
+        <td>{{ report.initial_cause }}</td>
+     </tr>
+</table>
+
+{% if hse_completion %}
+    <h2>تکمیل گزارش HSE</h2>
+    <table class="details-table">
+       <tr>
+          <td>
+             <div class="detail-item">
+                  <span class="icon"><i class="fas fa-clock"></i></span>
+                   <span class="label">ساعت اعلام حادثه:</span>
+                  <span>{{ hse_completion.incident_report_time|date:"H:i"|default:"-"  }}</span>
+             </div>
+          </td>
+            <td>
+                   <div class="detail-item">
+                        <span class="icon"><i class="fas fa-clock"></i></span>
+                         <span class="label">ساعت پذیرش در بیمارستان:</span>
+                        <span>{{ hse_completion.hospital_admission_time|date:"H:i"|default:"-"  }}</span>
+                     </div>
+            </td>
+       </tr>
+           <tr>
+               <td>
+                  <div class="detail-item">
+                       <span class="icon"><i class="fas fa-thermometer-half"></i></span>
+                       <span class="label">دمای بدن (T):</span>
+                     <span>{{ hse_completion.patient_condition_temperature|default:"-"  }}</span>
+                 </div>
+               </td>
+             <td>
+                 <div class="detail-item">
+                       <span class="icon"><i class="fas fa-lungs"></i></span>
+                        <span class="label">تعداد تنفس (R):</span>
+                        <span>{{ hse_completion.patient_condition_respiration|default:"-"  }}</span>
+                    </div>
+             </td>
+          </tr>
+       <tr>
+                <td>
+                       <div class="detail-item">
+                           <span class="icon"><i class="fas fa-heartbeat"></i></span>
+                           <span class="label">نبض (P):</span>
+                         <span>{{ hse_completion.patient_condition_pulse|default:"-"  }}</span>
+                      </div>
+                  </td>
+                 <td>
+                     <div class="detail-item">
+                         <span class="icon"><i class="fas fa-heart-broken"></i></span>
+                         <span class="label">فشار خون (BP):</span>
+                        <span>{{ hse_completion.patient_condition_blood_pressure|default:"-"  }}</span>
+                     </div>
+                 </td>
+       </tr>
+           <tr>
+               <td>
+                 <div class="detail-item">
+                     <span class="icon"><i class="fas fa-brain"></i></span>
+                        <span class="label">وضعیت هوشیاری (Sop):</span>
+                       <span>{{ hse_completion.patient_condition_sop|default:"-"  }}</span>
+                 </div>
+              </td>
+              <td>
+                   <div class="detail-item">
+                    <span class="icon"><i class="fas fa-arrow-right"></i></span>
+                       <span class="label">علل مستقیم بروز حادثه:</span>
+                       <span>{{ hse_completion.direct_causes|default:"-"  }}</span>
+                  </div>
+              </td>
+           </tr>
+       <tr>
+           <td>
+              <div class="detail-item">
+                   <span class="icon"><i class="fas fa-arrow-left"></i></span>
+                     <span class="label">علل غیر مستقیم بروز حادثه:</span>
+                     <span>{{ hse_completion.indirect_causes|default:"-"  }}</span>
+                 </div>
+             </td>
+            <td>
+                  <div class="detail-item">
+                        <span class="icon"><i class="fas fa-exclamation-circle"></i></span>
+                         <span class="label">علل ریشه ای بروز حادثه:</span>
+                          <span>{{ hse_completion.root_causes|default:"-"  }}</span>
+                    </div>
+           </td>
+       </tr>
+
+        <tr>
+            <td>
+                   <div class="detail-item">
+                     <span class="icon"><i class="fas fa-check-square"></i></span>
+                      <span class="label">اعلام به بیمه تامین اجتماعی:</span>
+                      <span>{{ hse_completion.social_security_notification|yesno:"بله,خیر"|default:"-" }}
+                          {% if hse_completion.social_security_file %}
+                               <p>پیوست فایل وجود دارد</p>
+                         {% endif %}
+                      </span>
+                  </div>
+            </td>
+            <td>
+                 <div class="detail-item">
+                     <span class="icon"><i class="fas fa-check-square"></i></span>
+                      <span class="label">اعلام به شرکت های بیمه ای:</span>
+                    <span>{{ hse_completion.insurance_notification|yesno:"بله,خیر"|default:"-" }}
+                            {% if hse_completion.insurance_file %}
+                                <p>پیوست فایل وجود دارد</p>
+                            {% endif %}
+                     </span>
+                  </div>
+           </td>
+        </tr>
+         <tr>
+             <td>
+                  <div class="detail-item">
+                    <span class="icon"><i class="fas fa-check-square"></i></span>
+                      <span class="label">اعلام به نیروی انتظامی:</span>
+                      <span>{{ hse_completion.police_notification|yesno:"بله,خیر"|default:"-" }}
+                          {% if hse_completion.police_file %}
+                            <p>پیوست فایل وجود دارد</p>
+                        {% endif %}
+                      </span>
+                   </div>
+             </td>
+              <td>
+                   <div class="detail-item">
+                        <span class="icon"><i class="fas fa-check-square"></i></span>
+                        <span class="label">اعلام به راهنمایی و رانندگی:</span>
+                         <span>{{ hse_completion.traffic_police_notification|yesno:"بله,خیر"|default:"-" }}
+                            {% if hse_completion.traffic_police_file %}
+                              <p>پیوست فایل وجود دارد</p>
+                            {% endif %}
+                           </span>
+                    </div>
+             </td>
+         </tr>
+       <tr>
+              <td>
+                      <div class="detail-item">
+                          <span class="icon"><i class="fas fa-check-square"></i></span>
+                           <span class="label">اعلام به اداره کار:</span>
+                           <span>{{ hse_completion.labor_office_notification|yesno:"بله,خیر"|default:"-" }}</span>
+                       </div>
+              </td>
+               <td>
+                        <div class="detail-item">
+                             <span class="icon"><i class="fas fa-file-medical-alt"></i></span>
+                           <span class="label">نتیجه نهایی آسیب های ناشی از حادثه:</span>
+                           <span>{{ hse_completion.final_injury_outcome|default:"-"  }}</span>
+                         </div>
+                </td>
+        </tr>
+        <tr>
+            <td>
+                 <div class="detail-item">
+                     <span class="icon"><i class="fas fa-money-bill-alt"></i></span>
+                       <span class="label">برآورد هزینه تقریبی:</span>
+                     <span>{{ hse_completion.estimated_cost|default:"-"  }}</span>
+                </div>
+            </td>
+             <td>
+                <div class="detail-item">
+                   <span class="icon"><i class="fas fa-calendar-times"></i></span>
+                     <span class="label">روزهای کاری از دست رفته:</span>
+                      <span>{{ hse_completion.lost_workdays|default:"-"  }}</span>
+                   </div>
+            </td>
+        </tr>
+         <tr>
+             <td>
+                 <div class="detail-item">
+                     <span class="icon"><i class="fas fa-exclamation-triangle"></i></span>
+                        <span class="label">آسیب به محیط زیست دارد؟:</span>
+                         <span>{{ hse_completion.environmental_damage|yesno:"بله,خیر"|default:"-"  }}
+                             {% if hse_completion.environmental_damage  %}
+                                 <p>نوع:{{ hse_completion.environmental_damage_type|default:"-" }}</p>
+                                  <p>شرح:{{ hse_completion.environmental_damage_description|default:"-" }}</p>
+                               {% endif %}
+                         </span>
+                   </div>
+             </td>
+             <td>
+                   <div class="detail-item">
+                        <span class="icon"><i class="fas fa-users"></i></span>
+                         <span class="label">کمیته حوادث تشکیل گردید؟:</span>
+                         <span>{{ hse_completion.incident_committee_formed|yesno:"بله,خیر"|default:"-"  }}
+                           {% if hse_completion.incident_committee_formed %}
+                               <p>تاریخ برگزاری:{{ hse_completion.incident_committee_date|jformat:"%Y/%m/%d"|default:"-" }}</p>
+                                <p>شرح:{{ hse_completion.incident_committee_details|default:"-" }}</p>
+                                {% if hse_completion.incident_committee_file %}
+                                   <p>پیوست فایل وجود دارد</p>
+                                 {% endif %}
+                           {% endif %}
+                        </span>
+                    </div>
+             </td>
+         </tr>
+        <tr>
+            <td>
+                 <div class="detail-item">
+                     <span class="icon"><i class="fas fa-tools"></i></span>
+                      <span class="label">اقدامات اصلاحی و پیشگیرانه:</span>
+                        <span>{{ hse_completion.corrective_actions|default:"-"  }}</span>
+                    </div>
+             </td>
+            <td>
+                    <div class="detail-item">
+                         <span class="icon"><i class="fas fa-graduation-cap"></i></span>
+                            <span class="label">درس آموزی از حادثه دارد؟:</span>
+                            <span>{{ hse_completion.lessons_learned|yesno:"بله,خیر"|default:"-"  }}
+                                {% if hse_completion.lessons_learned and hse_completion.lessons_learned_file %}
+                                    <p>پیوست فایل وجود دارد</p>
+                                {% endif %}
+                            </span>
+                       </div>
+             </td>
+         </tr>
+
+    </table>
+{% endif %}
+
+{% if user_signature %}
+    <div class="signature">
+        <img src="{{ user_signature }}" alt="امضای کاربر" style="width: 200px; height: auto;">
+            <p>{{ report.report_author.first_name }} {{ report.report_author.last_name }}</p>
+             <p>{{ report.created_at|jformat:"%Y/%m/%d" }}</p>
+    </div>
+{% endif %}
+
+
+<div class="footer">
+</div>
+</body>
+</html>

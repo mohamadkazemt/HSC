@@ -35,8 +35,8 @@
                         <a class="menu-link active" href="{% url 'anomalis:anomalis' %}">
                             <!--begin::Bullet-->
                             <span class="menu-icon">
-												<span class="bullet bullet-dot bg-success"></span>
-											</span>
+                                <span class="bullet bullet-dot bg-success"></span>
+                            </span>
                             <!--end::Bullet-->
                             <!--begin::Title-->
                             <span class="menu-title">ثبت آنومالی</span>
@@ -48,14 +48,30 @@
                     <!--begin::Menu آیتم-->
                     <div class="menu-item">
                         <!--begin::Menu link-->
-                        <a class="menu-link" href="{% url 'anomalis:list' %}">
+                        <a class="menu-link active" href="{% url 'dailyreport_hse:daily_report_form' %}">
                             <!--begin::Bullet-->
                             <span class="menu-icon">
-												<span class="bullet bullet-dot bg-danger"></span>
-											</span>
+                                <span class="bullet bullet-dot bg-success"></span>
+                            </span>
                             <!--end::Bullet-->
                             <!--begin::Title-->
-                            <span class="menu-title">لیست آنومالی</span>
+                            <span class="menu-title">ثبت گزارش روزانه</span>
+                            <!--end::Title-->
+                        </a>
+                        <!--end::Menu link-->
+                    </div>
+                    <!--end::Menu آیتم-->
+                    <!--begin::Menu آیتم-->
+                    <div class="menu-item">
+                        <!--begin::Menu link-->
+                        <a class="menu-link" href="{% url 'hse_incidents:incident_report' %}">
+                            <!--begin::Bullet-->
+                            <span class="menu-icon">
+                                <span class="bullet bullet-dot bg-danger"></span>
+                            </span>
+                            <!--end::Bullet-->
+                            <!--begin::Title-->
+                            <span class="menu-title">ثبت گزارش حوادث</span>
                             <!--end::Title-->
                         </a>
                         <!--end::Menu link-->
@@ -75,8 +91,8 @@
                         <a class="menu-link active" href="{% url 'operations:create_shift_report' %}">
                             <!--begin::Bullet-->
                             <span class="menu-icon">
-												<span class="bullet bullet-dot bg-success"></span>
-											</span>
+                                <span class="bullet bullet-dot bg-success"></span>
+                            </span>
                             <!--end::Bullet-->
                             <!--begin::Title-->
                             <span class="menu-title">ثبت گزارش</span>
@@ -86,14 +102,13 @@
                     </div>
                     <!--end::Menu آیتم-->
                     <!--begin::Menu عملیات-->
-
                     <div class="menu-item">
                         <!--begin::Menu link-->
                         <a class="menu-link active" href="{% url 'leave_reports:shift_report' %}">
                             <!--begin::Bullet-->
                             <span class="menu-icon">
-												<span class="bullet bullet-dot bg-success"></span>
-											</span>
+                                <span class="bullet bullet-dot bg-success"></span>
+                            </span>
                             <!--end::Bullet-->
                             <!--begin::Title-->
                             <span class="menu-title">ثبت مرخصی</span>
@@ -103,8 +118,6 @@
                     <!--end::Menu link-->
                     <!--end::Menu آیتم-->
                 {% endif %}
-
-
             </div>
             <!--end::team-->
             <!--begin::Sidebar menu-->
@@ -121,12 +134,12 @@
                 <div data-kt-menu-trigger="click" class="menu-item here show menu-accordion">
                     <!--begin:Menu link-->
                     <span class="menu-link">
-											<span class="menu-icon">
-												<i class="ki-outline ki-home-2 fs-2"></i>
-											</span>
-											<span class="menu-title">داشبورد ها</span>
-											<span class="menu-arrow"></span>
-										</span>
+                        <span class="menu-icon">
+                            <i class="ki-outline ki-home-2 fs-2"></i>
+                        </span>
+                        <span class="menu-title">داشبورد ها</span>
+                        <span class="menu-arrow"></span>
+                    </span>
                     <!--end:Menu link-->
                     <!--begin:Menu sub-->
                     <div class="menu-sub menu-sub-accordion">
@@ -134,18 +147,14 @@
                         <div class="menu-item">
                             <!--begin:Menu link-->
                             <a class="menu-link active" href="{% url 'dashboard:dashboard' %}">
-													<span class="menu-bullet">
-														<span class="bullet bullet-dot"></span>
-													</span>
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
                                 <span class="menu-title">پیش فرض</span>
                             </a>
                             <!--end:Menu link-->
                         </div>
                         <!--end:Menu item-->
-
-
-
-
                     </div>
                     <!--end:Menu sub-->
                 </div>
@@ -154,12 +163,12 @@
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
                     <!--begin:Menu link-->
                     <span class="menu-link">
-											<span class="menu-icon">
-												<i class="ki-outline ki-gift fs-2"></i>
-											</span>
-											<span class="menu-title">گزارشات</span>
-											<span class="menu-arrow"></span>
-										</span>
+                        <span class="menu-icon">
+                            <i class="ki-outline ki-gift fs-2"></i>
+                        </span>
+                        <span class="menu-title">گزارشات</span>
+                        <span class="menu-arrow"></span>
+                    </span>
                     <!--end:Menu link-->
                     <!--begin:Menu sub-->
                     <div class="menu-sub menu-sub-accordion">
@@ -167,12 +176,12 @@
                         <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
                             <!--begin:Menu link-->
                             <span class="menu-link">
-													<span class="menu-bullet">
-														<span class="bullet bullet-dot"></span>
-													</span>
-													<span class="menu-title">آنومالی</span>
-													<span class="menu-arrow"></span>
-												</span>
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">آنومالی</span>
+                                <span class="menu-arrow"></span>
+                            </span>
                             <!--end:Menu link-->
                             <!--begin:Menu sub-->
                             <div class="menu-sub menu-sub-accordion">
@@ -180,9 +189,9 @@
                                 <div class="menu-item">
                                     <!--begin:Menu link-->
                                     <a class="menu-link" href="{% url 'anomalis:anomalis' %}">
-															<span class="menu-bullet">
-																<span class="bullet bullet-dot"></span>
-															</span>
+                                        <span class="menu-bullet">
+                                            <span class="bullet bullet-dot"></span>
+                                        </span>
                                         <span class="menu-title">ثبت آنومالی جدید</span>
                                     </a>
                                     <!--end:Menu link-->
@@ -192,35 +201,122 @@
                                 <div class="menu-item">
                                     <!--begin:Menu link-->
                                     <a class="menu-link" href="{% url 'anomalis:list' %}">
-															<span class="menu-bullet">
-																<span class="bullet bullet-dot"></span>
-															</span>
+                                        <span class="menu-bullet">
+                                            <span class="bullet bullet-dot"></span>
+                                        </span>
                                         <span class="menu-title"> لیست آنومالی ها</span>
                                     </a>
                                     <!--end:Menu link-->
-
                                 </div>
                                 <!--end:Menu item-->
                             </div>
                             <!--end:Menu sub-->
                         </div>
                         <!--end:Menu item-->
-
                     </div>
                     <!--end:Menu sub-->
+                    <!--begin:Menu گزارش روزانه'-->
+                    <div class="menu-sub menu-sub-accordion">
+                        <!--begin:Menu item-->
+                        <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
+                            <!--begin:Menu link-->
+                            <span class="menu-link">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">گزارش روزانه</span>
+                                <span class="menu-arrow"></span>
+                            </span>
+                            <!--end:Menu link-->
+                            <!--begin:Menu sub-->
+                            <div class="menu-sub menu-sub-accordion">
+                                <!--begin:Menu item-->
+                                <div class="menu-item">
+                                    <!--begin:Menu link-->
+                                    <a class="menu-link" href="{% url 'dailyreport_hse:daily_report_form' %}">
+                                        <span class="menu-bullet">
+                                            <span class="bullet bullet-dot"></span>
+                                        </span>
+                                        <span class="menu-title">ثبت گزارش جدید</span>
+                                    </a>
+                                    <!--end:Menu link-->
+                                </div>
+                                <!--end:Menu item-->
+                                <!--begin:Menu item-->
+                                <div class="menu-item">
+                                    <!--begin:Menu link-->
+                                    <a class="menu-link" href="{% url 'dailyreport_hse:daily_report_list' %}">
+                                        <span class="menu-bullet">
+                                            <span class="bullet bullet-dot"></span>
+                                        </span>
+                                        <span class="menu-title"> لیست گزارش ها</span>
+                                    </a>
+                                    <!--end:Menu link-->
+                                </div>
+                                <!--end:Menu item-->
+                            </div>
+                            <!--end:Menu sub-->
+                        </div>
+                        <!--end:Menu item-->
+                    </div>
+                    <!--end:Menu گزارش روزانه-->
+                    <!--begin:Menu گزارش حوادث'-->
+                    <div class="menu-sub menu-sub-accordion">
+                        <!--begin:Menu item-->
+                        <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
+                            <!--begin:Menu link-->
+                            <span class="menu-link">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">گزارش حوادث</span>
+                                <span class="menu-arrow"></span>
+                            </span>
+                            <!--end:Menu link-->
+                            <!--begin:Menu sub-->
+                            <div class="menu-sub menu-sub-accordion">
+                                <!--begin:Menu item-->
+                                <div class="menu-item">
+                                    <!--begin:Menu link-->
+                                    <a class="menu-link" href="{% url 'hse_incidents:incident_report' %}">
+                                        <span class="menu-bullet">
+                                            <span class="bullet bullet-dot"></span>
+                                        </span>
+                                        <span class="menu-title">ثبت گزارش جدید</span>
+                                    </a>
+                                    <!--end:Menu link-->
+                                </div>
+                                <!--end:Menu item-->
+                                <!--begin:Menu item-->
+                                <div class="menu-item">
+                                    <!--begin:Menu link-->
+                                    <a class="menu-link" href="{% url 'hse_incidents:list_reports' %}">
+                                        <span class="menu-bullet">
+                                            <span class="bullet bullet-dot"></span>
+                                        </span>
+                                        <span class="menu-title"> لیست گزارش ها</span>
+                                    </a>
+                                    <!--end:Menu link-->
+                                </div>
+                                <!--end:Menu item-->
+                            </div>
+                            <!--end:Menu sub-->
+                        </div>
+                        <!--end:Menu item-->
+                    </div>
+                    <!--end:Menu گزارش حوادث-->
                     <!--end:مرخصی-->
-
                     <div class="menu-sub menu-sub-accordion">
                         <!--begin:مرخصی-->
                         <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
                             <!--begin:مرخصی-->
                             <span class="menu-link">
-													<span class="menu-bullet">
-														<span class="bullet bullet-dot"></span>
-													</span>
-													<span class="menu-title">مرخصی</span>
-													<span class="menu-arrow"></span>
-												</span>
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">مرخصی</span>
+                                <span class="menu-arrow"></span>
+                            </span>
                             <!--end:Menu link-->
                             <!--begin:مرخصی-->
                             <div class="menu-sub menu-sub-accordion">
@@ -228,9 +324,9 @@
                                 <div class="menu-item">
                                     <!--begin:Menu link-->
                                     <a class="menu-link" href="{% url 'leave_reports:shift_report' %}">
-															<span class="menu-bullet">
-																<span class="bullet bullet-dot"></span>
-															</span>
+                                        <span class="menu-bullet">
+                                            <span class="bullet bullet-dot"></span>
+                                        </span>
                                         <span class="menu-title">ثبت مرخصی شیفت</span>
                                     </a>
                                     <!--end:Menu link-->
@@ -240,9 +336,9 @@
                                 <div class="menu-item">
                                     <!--begin:Menu link-->
                                     <a class="menu-link" href="{% url 'leave_reports:shift_report_list' %}">
-															<span class="menu-bullet">
-																<span class="bullet bullet-dot"></span>
-															</span>
+                                        <span class="menu-bullet">
+                                            <span class="bullet bullet-dot"></span>
+                                        </span>
                                         <span class="menu-title"> لیست مرخصی</span>
                                     </a>
                                     <!--end:Menu link-->
@@ -252,69 +348,59 @@
                             <!--end:مرخصی-->
                         </div>
                         <!--end:مرخصی-->
-
                     </div>
-
-
                 </div>
                 <!--end:مرخصی-->
             </div>
             <!--end:Menu item-->
-
-
-        {% if user|in_group:"operations" %}
-            <div id="#kt_app_sidebar_menu" data-kt-menu="true" data-kt-menu-expand="false" class="app-sidebar-menu-primary menu menu-column menu-rounded menu-sub-indention menu-state-bullet-primary">
-                <div class="menu-item mb-2">
-                    <div class="menu-heading text-uppercase fs-5 fw-bold">واحد عملیات</div>
-                    <!--begin::separator-->
-                    <div class="app-sidebar-separator separator"></div>
-                    <!--end::separator-->
-                </div>
-                <!--end::Heading-->
-                <!--begin:Menu item-->
-
-                    <div data-kt-menu-trigger="click" class="menu-item here show menu-accordion">
-                    <!--begin:Menu link-->
-                    <span class="menu-link">
-											<span class="menu-icon">
-												<i class="ki-outline ki-home-2 fs-2"></i>
-											</span>
-											<span class="menu-title">داشبورد ها</span>
-											<span class="menu-arrow"></span>
-										</span>
-                    <!--end:Menu link-->
-                    <!--begin:Menu sub-->
-                    <div class="menu-sub menu-sub-accordion">
-                        <!--begin:Menu item-->
-                        <div class="menu-item">
-                            <!--begin:Menu link-->
-                            <a class="menu-link active" href="{% url 'dashboard:dashboard' %}">
-													<span class="menu-bullet">
-														<span class="bullet bullet-dot"></span>
-													</span>
-                                <span class="menu-title">پیش فرض</span>
-                            </a>
-                            <!--end:Menu link-->
-                        </div>
-                        <!--end:Menu item-->
-
-
-
-
+            {% if user|in_group:"operations" %}
+                <div id="#kt_app_sidebar_menu" data-kt-menu="true" data-kt-menu-expand="false" class="app-sidebar-menu-primary menu menu-column menu-rounded menu-sub-indention menu-state-bullet-primary">
+                    <div class="menu-item mb-2">
+                        <div class="menu-heading text-uppercase fs-5 fw-bold">واحد عملیات</div>
+                        <!--begin::separator-->
+                        <div class="app-sidebar-separator separator"></div>
+                        <!--end::separator-->
                     </div>
-                    <!--end:Menu sub-->
-                </div>
+                    <!--end::Heading-->
+                    <!--begin:Menu item-->
+                    <div data-kt-menu-trigger="click" class="menu-item here show menu-accordion">
+                        <!--begin:Menu link-->
+                        <span class="menu-link">
+                            <span class="menu-icon">
+                                <i class="ki-outline ki-home-2 fs-2"></i>
+                            </span>
+                            <span class="menu-title">داشبورد ها</span>
+                            <span class="menu-arrow"></span>
+                        </span>
+                        <!--end:Menu link-->
+                        <!--begin:Menu sub-->
+                        <div class="menu-sub menu-sub-accordion">
+                            <!--begin:Menu item-->
+                            <div class="menu-item">
+                                <!--begin:Menu link-->
+                                <a class="menu-link active" href="{% url 'dashboard:dashboard' %}">
+                                    <span class="menu-bullet">
+                                        <span class="bullet bullet-dot"></span>
+                                    </span>
+                                    <span class="menu-title">پیش فرض</span>
+                                </a>
+                                <!--end:Menu link-->
+                            </div>
+                            <!--end:Menu item-->
+                        </div>
+                        <!--end:Menu sub-->
+                    </div>
                     <!--end:Menu item-->
                     <!--begin:گزارش شیفت عملیات-->
                     <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
                         <!--begin:Menu link-->
                         <span class="menu-link">
-											<span class="menu-icon">
-												<i class="ki-outline ki-gift fs-2"></i>
-											</span>
-											<span class="menu-title">گزارشات</span>
-											<span class="menu-arrow"></span>
-										</span>
+                            <span class="menu-icon">
+                                <i class="ki-outline ki-gift fs-2"></i>
+                            </span>
+                            <span class="menu-title">گزارشات</span>
+                            <span class="menu-arrow"></span>
+                        </span>
                         <!--end:Menu link-->
                         <!--begin:Menu sub-->
                         <div class="menu-sub menu-sub-accordion">
@@ -322,12 +408,12 @@
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
                                 <!--begin:Menu link-->
                                 <span class="menu-link">
-													<span class="menu-bullet">
-														<span class="bullet bullet-dot"></span>
-													</span>
-													<span class="menu-title">دفتر گزارش شیفت</span>
-													<span class="menu-arrow"></span>
-												</span>
+                                    <span class="menu-bullet">
+                                        <span class="bullet bullet-dot"></span>
+                                    </span>
+                                    <span class="menu-title">دفتر گزارش شیفت</span>
+                                    <span class="menu-arrow"></span>
+                                </span>
                                 <!--end:Menu link-->
                                 <!--begin:Menu sub-->
                                 <div class="menu-sub menu-sub-accordion">
@@ -335,9 +421,9 @@
                                     <div class="menu-item">
                                         <!--begin:Menu link-->
                                         <a class="menu-link" href="{% url 'operations:create_shift_report' %}">
-															<span class="menu-bullet">
-																<span class="bullet bullet-dot"></span>
-															</span>
+                                            <span class="menu-bullet">
+                                                <span class="bullet bullet-dot"></span>
+                                            </span>
                                             <span class="menu-title">ثبت گزارش جدید</span>
                                         </a>
                                         <!--end:Menu link-->
@@ -347,9 +433,9 @@
                                     <div class="menu-item">
                                         <!--begin:Menu link-->
                                         <a class="menu-link" href="{% url 'operations:loading_operations_list' %}">
-															<span class="menu-bullet">
-																<span class="bullet bullet-dot"></span>
-															</span>
+                                            <span class="menu-bullet">
+                                                <span class="bullet bullet-dot"></span>
+                                            </span>
                                             <span class="menu-title"> لیست گزارش</span>
                                         </a>
                                         <!--end:Menu link-->
@@ -359,7 +445,6 @@
                                 <!--end:Menu sub-->
                             </div>
                             <!--end:Menu item-->
-
                         </div>
                         <!--end:مرخصی-->
                         <div class="menu-sub menu-sub-accordion">
@@ -367,12 +452,12 @@
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
                                 <!--begin:مرخصی-->
                                 <span class="menu-link">
-													<span class="menu-bullet">
-														<span class="bullet bullet-dot"></span>
-													</span>
-													<span class="menu-title">مرخصی</span>
-													<span class="menu-arrow"></span>
-												</span>
+                                    <span class="menu-bullet">
+                                        <span class="bullet bullet-dot"></span>
+                                    </span>
+                                    <span class="menu-title">مرخصی</span>
+                                    <span class="menu-arrow"></span>
+                                </span>
                                 <!--end:Menu link-->
                                 <!--begin:مرخصی-->
                                 <div class="menu-sub menu-sub-accordion">
@@ -380,9 +465,9 @@
                                     <div class="menu-item">
                                         <!--begin:Menu link-->
                                         <a class="menu-link" href="{% url 'leave_reports:shift_report' %}">
-															<span class="menu-bullet">
-																<span class="bullet bullet-dot"></span>
-															</span>
+                                            <span class="menu-bullet">
+                                                <span class="bullet bullet-dot"></span>
+                                            </span>
                                             <span class="menu-title">ثبت مرخصی شیفت</span>
                                         </a>
                                         <!--end:Menu link-->
@@ -392,9 +477,9 @@
                                     <div class="menu-item">
                                         <!--begin:Menu link-->
                                         <a class="menu-link" href="{% url 'leave_reports:shift_report_list' %}">
-															<span class="menu-bullet">
-																<span class="bullet bullet-dot"></span>
-															</span>
+                                            <span class="menu-bullet">
+                                                <span class="bullet bullet-dot"></span>
+                                            </span>
                                             <span class="menu-title"> لیست مرخصی</span>
                                         </a>
                                         <!--end:Menu link-->
@@ -404,16 +489,11 @@
                                 <!--end:مرخصی-->
                             </div>
                             <!--end:مرخصی-->
-
                         </div>
                         <!--end:مرخصی-->
-
                     </div>
-
-
-
-            </div>
-        {% endif %}
+                </div>
+            {% endif %}
         </div>
     </div>
 

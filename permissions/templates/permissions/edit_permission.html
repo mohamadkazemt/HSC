@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h3 class="mb-4">ویرایش دسترسی</h3>
+
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="type" class="form-label">نوع دسترسی:</label>
+            <input type="text" id="type" name="type" class="form-control" value="{{ permission_type }}" readonly>
+        </div>
+        <div class="mb-3">
+            <label for="view_name" class="form-label">نام ویو:</label>
+            <input type="text" id="view_name" name="view_name" class="form-control" value="{{ permission.view_name }}" readonly>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">سطح دسترسی:</label><br>
+            <div class="form-check form-check-inline">
+                <input type="checkbox" class="form-check-input" id="can_view" name="can_view" {% if permission.can_view %}checked{% endif %}>
+                <label for="can_view" class="form-check-label">مشاهده</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input type="checkbox" class="form-check-input" id="can_add" name="can_add" {% if permission.can_add %}checked{% endif %}>
+                <label for="can_add" class="form-check-label">افزودن</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input type="checkbox" class="form-check-input" id="can_edit" name="can_edit" {% if permission.can_edit %}checked{% endif %}>
+                <label for="can_edit" class="form-check-label">ویرایش</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input type="checkbox" class="form-check-input" id="can_delete" name="can_delete" {% if permission.can_delete %}checked{% endif %}>
+                <label for="can_delete" class="form-check-label">حذف</label>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">ذخیره تغییرات</button>
+        <a href="{% url 'permissions:list_permissions' %}" class="btn btn-secondary">بازگشت</a>
+    </form>
+</div>
+{% endblock %}

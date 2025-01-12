@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    {% load static %}
+    {% load jalali %}
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+    <style>
+        @page {
+            size: A4; /* تنظیم اندازه صفحه به A4 */
+            margin: 10mm; /* تنظیم حاشیه‌ها (میلی‌متر) */
+        }
+        @font-face {
+            font-family: 'IRANSans';
+            src: url('{% static "assets/fonts/IRANSansWeb.woff2" %}') format('woff2');
+        }
+        body {
+            font-family: 'IRANSans', Tahoma, sans-serif;
+            direction: rtl;
+            margin: 0;
+            padding: 20px;
+            background-color: #fff;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header img {
+            max-width: 150px;
+        }
+        .title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        .details-table th, .details-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        .details-table th {
+            background-color: #f2f2f2;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+        }
+        .signature {
+            margin-top: 50px;
+            text-align: center;
+        }
+        .signature img {
+            max-width: 150px;
+        }
+    </style>
+</head>
+<body>
+
+
+
+<div class="header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
+    <!-- بخش لوگو -->
+    <div class="logo" style="flex: 1;">
+        <img src="{% static 'assets/media/logos/logo-small.png' %}" alt="لوگو شرکت" style="max-height: 70px;">
+    </div>
+
+    <!-- بخش نام شرکت -->
+    <div class="company-name" style="flex: 2; text-align: center;">
+        <p style="font-weight: bold; margin: 0; font-size: 20px;">شرکت کاراوران صنعت خاورمیانه</p>
+        <p style="margin: 0; font-size: 14px;">پروژه معدن سنگ آهن جلال‌آباد - واحد HSEC</p>
+        <div class="title">{{ title }}</div>
+    </div>
+
+    <!-- بخش اطلاعات -->
+    <div class="info" style="flex: 1; text-align: right; font-size: 12px; direction: rtl;">
+        <p style="margin: 0;">کد فرم: MIE-HS-M-FR-142-V03</p>
+    </div>
+
+</div>
+
+
+
+<h2 class="title">مشخصات گزارش دهنده</h2>
+
+<!-- جزئیات اصلی -->
+<table class="details-table">
+    <tr>
+        <th>بازرس ایمنی</th>
+        <td>{{ report.user.first_name }} {{ report.user.last_name }} ({{ report.user.userprofile.personnel_code }})</td>
+    </tr>
+    <tr>
+        <th>شیفت کاری</th>
+        <td>{{ report.shift }}</td>
+    </tr>
+    <tr>
+        <th>گروه کاری</th>
+        <td>{{ report.work_group }}</td>
+    </tr>
+    <tr>
+        <th>تاریخ ایجاد</th>
+        <td>{{ report.created_at|to_jalali}}</td>
+    </tr>
+</table>
+
+<!-- جزئیات آتشباری -->
+<h2>جزئیات آتشباری</h2>
+<table class="details-table">
+    <thead>
+    <tr>
+        <th>بلوک</th>
+        <th>انفجار انجام شد؟</th>
+        <th>توضیحات</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for detail in blasting_details %}
+        <tr>
+            <td>{{ detail.block }}</td>
+            <td>{{ detail.explosion_occurred|yesno:"بله,خیر" }}</td>
+            <td>{{ detail.description }}</td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="3">اطلاعاتی موجود نیست.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<!-- جزئیات حفاری -->
+<h2>جزئیات حفاری</h2>
+<table class="details-table">
+    <thead>
+    <tr>
+        <th>بلوک</th>
+        <th>دستگاه</th>
+        <th>وضعیت</th>
+        <th>توضیحات</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for detail in drilling_details %}
+        <tr>
+            <td>{{ detail.block }}</td>
+            <td>{{ detail.machine }}</td>
+            <td>{% if detail.status == 'safe' %}ایمن{% else %}غیر ایمن{% endif %}</td>
+            <td>{{ detail.description }}</td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="3">اطلاعاتی موجود نیست.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<!-- جزئیات بارگیری -->
+<h2>جزئیات بارگیری</h2>
+<table class="details-table">
+    <thead>
+    <tr>
+        <th>بلوک</th>
+        <th>دستگاه</th>
+        <th>وضعیت</th>
+        <th>توضیحات</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for detail in loading_details %}
+        <tr>
+            <td>{{ detail.block }}</td>
+            <td>{{ detail.machine }}</td>
+            <td>{% if detail.status == 'safe' %}ایمن{% else %}غیر ایمن{% endif %}</td>
+            <td>{{ detail.description }}</td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="3">اطلاعاتی موجود نیست.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<!-- جزئیات تخلیه -->
+<h2>جزئیات تخلیه</h2>
+<table class="details-table">
+    <thead>
+    <tr>
+        <th>محل تخلیه</th>
+        <th>وضعیت</th>
+        <th>توضیحات</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for detail in dump_details %}
+        <tr>
+            <td>{{ detail.dump }}</td>
+            <td>{% if detail.status == 'safe' %}ایمن{% else %}غیر ایمن{% endif %}</td>
+            <td>{{ detail.description }}</td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="3">اطلاعاتی موجود نیست.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<!-- جزئیات توقفات -->
+<h2>جزئیات توقفات ناشی از عدم رعایت مسائل HSE</h2>
+<table class="details-table">
+    <thead>
+    <tr>
+        <th>علت توقف</th>
+        <th>شروع</th>
+        <th>پایان</th>
+        <th>توضیحات</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for detail in stoppage_details %}
+        <tr>
+            <td>{{ detail.reason }}</td>
+            <td>{{ detail.start_time }}</td>
+            <td>{{ detail.end_time }}</td>
+            <td>{{ detail.description }}</td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="4">اطلاعاتی موجود نیست.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+
+
+<h2>جزئیات بازدید از مجموعه تعمیرگاه</h2>
+<table class="details-table">
+    <thead>
+    <tr>
+        <th>بازرسی انجام شده</th>
+        <th>وضعیت</th>
+        <th>توضیحات</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for detail in inspection_details %}
+        <tr>
+            <td>{{ detail.inspection_done|yesno:"بله,خیر" }}</td>
+            <td>{% if detail.status == 'safe' %}ایمن{% else %}غیر ایمن{% endif %}</td>
+            <td>{{ detail.description }}</td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="3">اطلاعاتی موجود نیست.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<!-- جزئیات پیگیری -->
+<h2>موارد مستلزم پیگیری در شیفت های بعد</h2>
+<table class="details-table">
+    <thead>
+    <tr>
+        <th>توضیحات</th>
+        <th>وضعیت پیوست</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for detail in followup_details %}
+        <tr>
+            <td>{{ detail.description }}</td>
+            <td>
+                {% if detail.has_attachment %}
+                    پیوست وجود دارد
+                {% else %}
+                    پیوست ندارد
+                {% endif %}
+            </td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="2">اطلاعاتی موجود نیست.</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+
+
+
+
+<!-- جزئیات بازرسی -->
+
+
+{% if user_signature %}
+    <div class="signature">
+        <img src="{{ user_signature }}" alt="امضای کاربر" style="width: 200px; height: auto;">
+         {{ report.user.first_name }} {{ report.user.last_name }}
+            {{ report.created_at|jformat:"%Y/%m/%d" }}
+    </div>
+{% endif %}
+
+
+<div class="footer">
+</div>
+</body>
+</html>

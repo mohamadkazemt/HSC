@@ -27,7 +27,6 @@ def create_shift_report(request):
     personnel_list = UserProfile.objects.select_related('user').filter(
         group=current_user.group,
         department=current_user.department,
-        unit=current_user.unit
     )
 
     if request.method == 'POST':

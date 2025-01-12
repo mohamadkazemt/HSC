@@ -12,14 +12,16 @@ class UserProfile(models.Model):
         ('C', 'گروه C'),
         ('D', 'گروه D'),
         ('G', 'گروه G'),
+        ('G2', 'گروه G2'),
     ]
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userprofile')
     personnel_code = models.CharField(max_length=10, default='', blank=True, verbose_name='کد پرسنلی')
-    department = models.ForeignKey('Department', on_delete=models.SET_NULL, null=True, blank=True, verbose_name="واحد")
-    unit = models.ForeignKey('Unit', on_delete=models.SET_NULL, null=True, blank=True, verbose_name="بخش")
-    position = models.ForeignKey('Position', on_delete=models.SET_NULL, null=True, blank=True, verbose_name="پست")
+    section = models.ForeignKey('Section', on_delete=models.SET_NULL, null=True, blank=True, verbose_name="بخش")
+    part = models.ForeignKey('Part', on_delete=models.SET_NULL, null=True, blank=True, verbose_name="قسمت")
+    unit_group = models.ForeignKey('UnitGroup', on_delete=models.SET_NULL, null=True, blank=True, verbose_name="گروه")
+    position = models.ForeignKey('Position', on_delete=models.SET_NULL, null=True, blank=True, verbose_name="سمت")
+    group = models.CharField(max_length=2, choices=GROUP_CHOICES, blank=True, verbose_name="گروه کاری")
     mobile = models.CharField(max_length=11, blank=True)
-    group = models.CharField(max_length=1, choices=GROUP_CHOICES, blank=True)
     verification_code = models.CharField(max_length=6, blank=True, null=True)
     code_generated_at = models.DateTimeField(blank=True, null=True)
     image = models.ImageField(upload_to='profile_pics', blank=True)
@@ -38,24 +40,7 @@ class UserProfile(models.Model):
         verbose_name_plural = 'پروفایل کاربران'
 
 
-
-
-
-class Department(models.Model):
-    name = models.CharField(max_length=50, verbose_name="نام واحد")
-    description = models.TextField(blank=True, null=True, verbose_name="توضیحات")
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        verbose_name = "واحد"
-        verbose_name_plural = "واحدها"
-
-
-
-class Unit(models.Model):
-    department = models.ForeignKey(Department, on_delete=models.CASCADE, verbose_name="واحد")
+class Section(models.Model):
     name = models.CharField(max_length=50, verbose_name="نام بخش")
     description = models.TextField(blank=True, null=True, verbose_name="توضیحات")
 
@@ -67,15 +52,39 @@ class Unit(models.Model):
         verbose_name_plural = "بخش‌ها"
 
 
-class Position(models.Model):
-    unit = models.ForeignKey(Unit, on_delete=models.CASCADE, verbose_name="واحد")
-    name = models.CharField(max_length=50, verbose_name="نام پست")
+class Part(models.Model):
+    section = models.ForeignKey(Section, on_delete=models.CASCADE, verbose_name="بخش",null=True, blank=True)
+    name = models.CharField(max_length=50, verbose_name="نام قسمت")
     description = models.TextField(blank=True, null=True, verbose_name="توضیحات")
 
     def __str__(self):
         return self.name
 
     class Meta:
-        verbose_name = "پست"
-        verbose_name_plural = "پست‌ها"
+        verbose_name = "قسمت"
+        verbose_name_plural = "قسمت‌ها"
 
+class UnitGroup(models.Model):
+    part = models.ForeignKey(Part, on_delete=models.CASCADE, verbose_name="قسمت",null=True, blank=True)
+    name = models.CharField(max_length=50, verbose_name="نام گروه")
+    description = models.TextField(blank=True, null=True, verbose_name="توضیحات")
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "گروه"
+        verbose_name_plural = "گروه‌ها"
+
+
+class Position(models.Model):
+    unit_group = models.ForeignKey(UnitGroup, on_delete=models.CASCADE, verbose_name="گروه", blank=True, null=True)
+    name = models.CharField(max_length=50, verbose_name="نام سمت")
+    description = models.TextField(blank=True, null=True, verbose_name="توضیحات")
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = "سمت"
+        verbose_name_plural = "سمت‌ها"

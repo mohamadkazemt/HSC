@@ -60,22 +60,22 @@ class AnomalyForm(forms.ModelForm):
         return description
 
     def clean(self):
-        cleaned_data = super().clean()
+        cleaned_data = super()
 
         # بررسی ارتباط بین location و section
         location = cleaned_data.get('location')
-        section = cleaned_data.get('section')
+        section = get('section')
         if location and section and section.location != location:
             self.add_error('section', 'بخش انتخاب شده باید متعلق به محل انتخاب شده باشد')
 
         # بررسی ارتباط بین anomalytype و anomalydescription
-        anomalytype = cleaned_data.get('anomalytype')
-        anomalydescription = cleaned_data.get('anomalydescription')
+        anomalytype = get('anomalytype')
+        anomalydescription = get('anomalydescription')
         if anomalytype and anomalydescription and anomalydescription.anomalytype != anomalytype:
             self.add_error('anomalydescription', 'شرح آنومالی باید مرتبط با نوع آنومالی انتخاب شده باشد')
 
         # بررسی ارتباط بین anomalydescription و correctiveaction
-        correctiveaction = cleaned_data.get('correctiveaction')
+        correctiveaction = get('correctiveaction')
         if anomalydescription and correctiveaction and correctiveaction.anomali_type != anomalydescription:
             self.add_error('correctiveaction', 'اقدام اصلاحی باید مرتبط با شرح آنومالی باشد')
 

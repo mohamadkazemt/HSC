@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load jalali_tags %}
+{% block style %}
+    <link rel="stylesheet" href="{% static 'admin/jquery.ui.datepicker.jalali/themes/base/jquery-ui.min.css' %}">
+    <link rel="stylesheet" href="{% static 'bootstrap-datepicker/css/bootstrap-datepicker.min.css' %}">
+    class="jalali_date-date hasDatepicker"
+    <style>
+        .datepicker {
+            z-index: 10000 !important;
+        }
+        .date-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .jalali_date-date .form-control{
+            display: block;
+            width: 100%;
+            padding: 0.375rem 0.75rem;
+            font-size: 1rem;
+            font-weight: 400;
+            line-height: 1.5;
+            color: #212529;
+            background-color: #fff;
+            background-clip: padding-box;
+            border: 1px solid #ced4da;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            border-radius: 0.375rem;
+            transition: border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+        }
+        .jalali_date-date input {
+            padding-left: 30px; /* Adjust as needed */
+        }
+    </style>
+{% endblock %}
+{% block content %}
+    <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+        <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+            {% include 'header.html' %}
+            <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+                {% include 'sidebar.html' %}
+                <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                    <div class="d-flex flex-column flex-column-fluid">
+                        {% include 'toolbar.html' %}
+                        <div id="kt_app_content" class="app-content flex-column-fluid">
+                            <div id="kt_app_content_container" class="app-container container-fluid">
+                                <div class="card">
+                                    <div class="card-header border-0 pt-5">
+                                        <h3 class="card-title align-items-start flex-column">
+                                            <span class="card-label fw-bold fs-3 mb-1">گزارش ها</span>
+                                        </h3>
+                                        <div class="card-toolbar">
+                                            <form method="get">
+                                                <div class="row">
+                                                    <div class="col-md-2">
+                                                        {{ form.start_date }}
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        {{ form.end_date }}
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        {{ form.contractor }}
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        {{ form.vehicle }}
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        {{ form.shift }}
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        {{ form.group }}
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <button type="submit" class="btn btn-sm btn-primary mt-3">فیلتر</button>
+                                                    </div>
+
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                    <div class="card-body py-3">
+                                        <div class="table-responsive">
+                                            <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
+                                                <thead>
+                                                <tr class="fw-bold text-muted">
+
+                                                    <th class="min-w-100px">تاریخ گزارش</th>
+                                                    <th class="min-w-15px">تایید کننده(کدپرسنلی)</th>
+                                                    <th class="min-w-140px">خودرو</th>
+                                                    <th class="min-w-140px">پیمانکار</th>
+                                                    <th class="min-w-140px">شیفت</th>
+                                                    <th class="min-w-140px">گروه</th>
+                                                    <th class="min-w-140px">وضعیت</th>
+                                                    <th class="min-w-100px">ساعت شروع توقف</th>
+                                                    <th class="min-w-100px">ساعت پایان توقف</th>
+                                                    <th class="min-w-100px">جزییات</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                {% for report in reports %}
+                                                    <tr>
+
+                                                        <td>{{ report.report_datetime|jformat:"%Y/%m/%d %H:%M:%S" }}</td>
+                                                        <td>{{ report.user.get_full_name }}({{ report.user.userprofile.personnel_code }})</td>
+                                                        <td>{{ report.vehicle.license_plate }}</td>
+                                                        <td>{{ report.contractor.company_name }}</td>
+                                                        <td>{{ report.shift }}</td>
+                                                        <td>{{ report.group }}</td>
+                                                        <td>{{ report.get_status_display }}</td>
+                                                        <td>{{ report.stop_start_time }}</td>
+                                                        <td>{{ report.stop_end_time }}</td>
+                                                        <td>{{ report.description }}</td>
+                                                    </tr>
+                                                {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="d-flex justify-content-center">
+                                            <div class="d-flex justify-content-center mt-5">
+                                                {% if reports.has_other_pages %}
+                                                    <ul class="pagination">
+                                                        {% if reports.has_previous %}
+                                                            <li class="page-item">
+                                                                <a class="page-link"
+                                                                   href="?page={{ reports.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">قبلی</a>
+                                                            </li>
+                                                        {% else %}
+                                                            <li class="page-item disabled"><span class="page-link">قبلی</span>
+                                                            </li>
+                                                        {% endif %}
+                                                        {% for i in reports.paginator.page_range %}
+                                                            {% if reports.number == i %}
+                                                                <li class="page-item active"><span
+                                                                        class="page-link">{{ i }}</span></li>
+                                                            {% else %}
+                                                                <li class="page-item"><a class="page-link"
+                                                                                         href="?page={{ i }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ i }}</a>
+                                                                </li>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                        {% if reports.has_next %}
+                                                            <li class="page-item">
+                                                                <a class="page-link"
+                                                                   href="?page={{ reports.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">بعدی</a>
+                                                            </li>
+                                                        {% else %}
+                                                            <li class="page-item disabled"><span class="page-link">بعدی</span>
+                                                            </li>
+                                                        {% endif %}
+                                                    </ul>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% include 'footer.html' %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'admin/js/django_jalali.min.js' %}"></script>
+
+{% endblock %}

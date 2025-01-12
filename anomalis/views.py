@@ -6,6 +6,7 @@ from django.urls import reverse
 from HSCprojects import settings
 from dashboard.models import Notification
 from dashboard.sms_utils import send_template_sms, logger
+from permissions.utils import permission_required
 from .forms import AnomalyForm, CommentForm
 from django.http import JsonResponse
 from .models import AnomalyDescription, CorrectiveAction, Comment, LocationSection, Anomaly
@@ -26,7 +27,6 @@ from django.db.models import Q
 import openpyxl
 from .templatetags.jalali import to_jalali
 from django.template.loader import get_template
-from django.http import HttpResponse
 from weasyprint import HTML
 from django.conf import settings
 from urllib.parse import urljoin
@@ -35,6 +35,9 @@ from shift_manager.utils import get_current_shift_and_group
 import jdatetime
 from django.utils.timezone import make_aware
 from datetime import datetime
+from .models import Location, LocationSection
+
+
 
 name = 'anomalis'
 
@@ -44,6 +47,8 @@ name = 'anomalis'
 
 logger = logging.getLogger('anomalis')  # لاگر اختصاصی برای اپلیکیشن
 
+
+@permission_required("anomalis")
 @login_required
 def anomalis(request):
     if request.method == 'POST':
@@ -99,7 +104,7 @@ def anomalis(request):
                     url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
                 )
 
-                hse_group = Group.objects.get(name='مدیر HSE')
+                hse_group = get(name='مدیر HSE')
                 for user in hse_group.user_set.all():
                     Notification.objects.create(
                         user=user,
@@ -149,6 +154,7 @@ def anomalis(request):
 
 
 
+@permission_required("get_anomalydescription")
 
 def get_anomalydescription(request):
     anomalytype_id = request.GET.get('anomalytype_id')
@@ -177,6 +183,7 @@ def get_corrective_action(request, description_id):
 
 
 
+@permission_required("list")
 
 @login_required
 def anomaly_list(request):
@@ -399,7 +406,7 @@ def export_anomalies_to_excel(request):
 
 
 
-
+@permission_required("anomaly_detail")
 @login_required
 def anomaly_detail_view(request, pk):
     anomaly = get_object_or_404(
@@ -440,7 +447,7 @@ def anomaly_detail_view(request, pk):
                     )
 
                 # ارسال اعلان به مدیران HSE
-                hse_group = Group.objects.get(name='مدیر HSE')
+                hse_group = get(name='مدیر HSE')
                 for user in hse_group.user_set.all():
                     Notification.objects.create(
                         user=user,
@@ -603,7 +610,7 @@ def get_sections(request):
 
 
 
-
+@permission_required("anomaly_pdf")
 @login_required
 def anomaly_pdf_view(request, pk):
     anomaly = get_object_or_404(Anomaly, pk=pk)
@@ -629,3 +636,18 @@ def anomaly_pdf_view(request, pk):
     HTML(string=html_content, base_url=request.build_absolute_uri('/')).write_pdf(response)
 
     return response
+
+
+
+
+@permission_required("get_locations_ajax")
+@login_required
+def get_locations_ajax(request):
+     locations = Location.objects.all().values("id", "name")
+     return JsonResponse(list(locations), safe=False)
+
+@permission_required("get_all_sections_ajax")
+@login_required
+def get_all_sections_ajax(request):
+     sections = LocationSection.objects.all().values("id","section", "location_id")
+     return JsonResponse(list(sections), safe=False)

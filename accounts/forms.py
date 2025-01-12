@@ -61,9 +61,9 @@ class PasswordResetConfirmForm(forms.Form):
     }))
 
     def clean(self):
-        cleaned_data = super().clean()
+        cleaned_data = super()
         new_password = cleaned_data.get("new_password")
-        confirm_password = cleaned_data.get("confirm_password")
+        confirm_password = get("confirm_password")
         if new_password != confirm_password:
             raise forms.ValidationError("رمز عبور و تأیید آن مطابقت ندارند.")
         return cleaned_data

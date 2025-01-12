@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block content %}
+    <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+        <!--begin::Page-->
+        <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+            <!--begin::Header-->
+            {% include 'header.html' %}
+            <!--end::Header-->
+            <!--begin::Wrapper-->
+            <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+                <!--begin::Sidebar-->
+                {% include 'sidebar.html' %}
+                <!--end::Sidebar-->
+                <!--begin::Main-->
+                <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                    <!--begin::Content wrapper-->
+                    <div class="d-flex flex-column flex-column-fluid">
+                        <!--begin::Toolbar-->
+                        {% include 'toolbar.html' %}
+                        <!--end::Toolbar-->
+                        {% if messages %}
+                            <div class="messages mt-4">
+                                {% for message in messages %}
+                                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+                                        <i class="bi bi-info-circle-fill me-2"></i> <!-- آیکون زیبا -->
+                                        {{ message }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10" id="kt_create_account_stepper">
+                            <div id="kt_create_account_stepper" class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10">
+                                <div class="card d-flex flex-row-fluid flex-center">
+
+                                    <div class="form-header"></div>
+                                    <form method="post" class="card-body py-20 w-100 mw-xl-700px px-9">
+                                        {% csrf_token %}
+                                        <h2 class="text-center mb-4">مدیریت دسترسی‌ها</h2>
+
+                                        <div class="mb-3">
+                                            <label for="entity_type" class="form-label">انتخاب نوع:</label>
+                                            <select name="entity_type" id="entity_type" class="form-select">
+                                                <option value="" disabled selected>نوع را انتخاب کنید</option>
+                                                <option value="section">بخش</option>
+                                                <option value="part">قسمت</option>
+                                                <option value="unit_group">گروه</option>
+                                                <option value="position">سمت</option>
+                                                 <option value="user">کاربر</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="entity_id" class="form-label">انتخاب بخش/قسمت/گروه/سمت/کاربر:</label>
+                                            <select name="entity_id" id="entity_id" class="form-select">
+                                                <!-- گزینه‌ها با جاوااسکریپت تغییر می‌کنند -->
+                                            </select>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="view_name" class="form-label">انتخاب ویوها:</label>
+                                            <select name="view_name" id="view_name" class="form-select select2" multiple>
+                                                {% for view in views_with_labels %}
+                                                    <option value="{{ view.name }}">{{ view.label }}</option>
+                                                {% endfor %}
+                                            </select>
+
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label class="form-label">سطح دسترسی:</label><br>
+                                            <div class="form-check form-check-inline">
+                                                <input type="checkbox" class="form-check-input" name="can_view" id="can_view">
+                                                <label class="form-check-label" for="can_view">مشاهده</label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input type="checkbox" class="form-check-input" name="can_add" id="can_add">
+                                                <label class="form-check-label" for="can_add">افزودن</label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input type="checkbox" class="form-check-input" name="can_edit" id="can_edit">
+                                                <label class="form-check-label" for="can_edit">ویرایش</label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input type="checkbox" class="form-check-input" name="can_delete" id="can_delete">
+                                                <label class="form-check-label" for="can_delete">حذف</label>
+                                            </div>
+                                        </div>
+
+                                        <button type="submit" class="btn btn-primary">ذخیره</button>
+                                    </form>
+                                </div>
+                            </div>
+                            <!--end::Content container-->
+                        </div>
+                        <!--end::Content-->
+                    </div>
+                    <!--end::Content wrapper-->
+                    <!--begin::Footer-->
+                    {% include 'footer.html' %}
+                    <!--end::Footer-->
+                </div>
+                <!--end::Main-->
+            </div>
+            <!--end::Wrapper-->
+        </div>
+        <!--end::Page-->
+    </div>
+
+    <script>
+        const entityTypeSelect = document.getElementById('entity_type');
+        const entityIdSelect = document.getElementById('entity_id');
+
+        const parts = {{ parts|safe }};
+        const sections = {{ sections|safe }};
+        const positions = {{ positions|safe }};
+        const unit_groups = {{ unit_groups|safe }};
+        const users = {{ users|safe }};
+
+
+        entityTypeSelect.addEventListener('change', function () {
+            const type = this.value;
+            entityIdSelect.innerHTML = '';
+            let options = [];
+
+            if (type === 'part') {
+                options = parts.map(unit => `<option value="${unit.id}">${unit.name}</option>`);
+            } else if (type === 'section') {
+                options = sections.map(dept => `<option value="${dept.id}">${dept.name}</option>`);
+            }  else if (type === 'unit_group') {
+                options = unit_groups.map(unit_group => `<option value="${unit_group.id}">${unit_group.name}</option>`);
+             }else if (type === 'position') {
+                options = positions.map(pos => `<option value="${pos.id}">${pos.name}</option>`);
+              }else if (type === 'user') {
+                options = users.map(user => `<option value="${user.id}">${user.name}</option>`);
+            }
+
+
+            entityIdSelect.innerHTML = options.join('');
+        });
+    </script>
+{% endblock %}
+{% block extra_js %}
+    <script>
+        $(document).ready(function() {
+            $('#view_name').select2({
+                placeholder: "ویوها را انتخاب کنید", // متن راهنما
+                allowClear: true, // امکان پاک کردن انتخاب‌ها
+                width: '100%' // تنظیم عرض مناسب
+            });
+            $('#entity_id').select2({
+                placeholder: "بخش/قسمت/گروه/سمت/کاربر را انتخاب کنید",
+                allowClear: false,
+                width: '100%' // تنظیم عرض مناسب
+            });
+        });
+    </script>
+{% endblock %}
