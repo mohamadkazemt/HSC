@@ -48,7 +48,7 @@ class MiningMachine(models.Model):
     machine_type = models.ForeignKey(TypeMachine, on_delete=models.SET_NULL, null=True, blank=True,verbose_name="نوع دستگاه")
     workshop_code = models.CharField(max_length=20, verbose_name="کد کارگاهی")  # کد کارگاهی
     ownership = models.CharField(max_length=10, choices=[('Company', 'شرکت'), ('Contractor', 'پیمانکار')], default='Company', verbose_name="مالکیت")
-    contractor = models.ForeignKey(Contractor, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="پیمانکار")
+    contractor = models.ForeignKey(Contractor, on_delete=models.CASCADE, null=True, blank=True, verbose_name="پیمانکار")
     is_active = models.BooleanField(default=True, verbose_name="فعال")
 
     def __str__(self):
