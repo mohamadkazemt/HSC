@@ -25,8 +25,8 @@ def create_shift_report(request):
     current_user = request.user.userprofile
 
     personnel_list = UserProfile.objects.select_related('user').filter(
-        group=current_user.group,
-        department=current_user.department,
+        unit_group=current_user.unit_group,
+        section=current_user.section,
     )
 
     if request.method == 'POST':
@@ -258,7 +258,3 @@ def shift_report_pdf_view(request, pk):
     HTML(string=html_content, base_url=request.build_absolute_uri('/')).write_pdf(response)
 
     return response
-
-
-
-
