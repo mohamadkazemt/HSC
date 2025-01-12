@@ -203,21 +203,20 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
         },
-        'file': {
-           'level': 'DEBUG',
-           'class': 'logging.FileHandler',
-           'filename': 'hse_incidents.log',
-        },
+         'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+         },
     },
     'loggers': {
-        'hse_incidents': {
-            'handlers': ['console','file'],
+        'leave_reports': {
+            'handlers': ['console', 'file'],
             'level': 'DEBUG',
             'propagate': True,
         },
     },
 }
-
 
 
 JALALI_DATE_DEFAULTS = {

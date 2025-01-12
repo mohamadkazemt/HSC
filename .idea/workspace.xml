@@ -4,8 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="incident_report-end_location">
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="leaveedite">
+      <change afterPath="$PROJECT_DIR$/static/assets/js/custom/HSEReport_forms.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/leave_reports/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report.html" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/leave_reports/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -316,14 +321,7 @@
       <workItem from="1736484005729" duration="12692000" />
       <workItem from="1736536173905" duration="246000" />
       <workItem from="1736599643107" duration="11682000" />
-      <workItem from="1736683426298" duration="3916000" />
-    </task>
-    <task id="LOCAL‎−۰۰۰۰۷" summary="commentsnew">
-      <option name="closed" value="true" />
-      <created>1729092892636</created>
-      <option name="number" value="LOCAL‎−۰۰۰۰۷" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۰۷" />
-      <updated>1729092892636</updated>
+      <workItem from="1736683426298" duration="7454000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۸" summary="commentsnew">
       <option name="closed" value="true" />
@@ -678,7 +676,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۵۵" />
       <updated>1736626131848</updated>
     </task>
-    <option name="localTasksCounter" value="56" />
+    <task id="LOCAL‎−۰۰۰۵۶" summary="leaveedite">
+      <option name="closed" value="true" />
+      <created>1736696367637</created>
+      <option name="number" value="LOCAL‎−۰۰۰۵۶" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۵۶" />
+      <updated>1736696367637</updated>
+    </task>
+    <option name="localTasksCounter" value="57" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -696,7 +701,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="Edite-Notification" />
     <MESSAGE value="fillter-edite" />
     <MESSAGE value="fillter-edite3" />
     <MESSAGE value="detail_view3" />
@@ -721,7 +725,8 @@
     <MESSAGE value="incident_report_end" />
     <MESSAGE value="checklist_end" />
     <MESSAGE value="incident_report-end_location" />
-    <option name="LAST_COMMIT_MESSAGE" value="incident_report-end_location" />
+    <MESSAGE value="leaveedite" />
+    <option name="LAST_COMMIT_MESSAGE" value="leaveedite" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
