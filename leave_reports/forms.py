@@ -11,10 +11,10 @@ class ShiftReportForm(forms.ModelForm):
         }
 
     def clean(self):
-        cleaned_data = super()
+        cleaned_data = super().clean()  # Get cleaned data from parent
         leave_type = cleaned_data.get('leave_type')  # دریافت نوع مرخصی
-        start_time = get('start_time')  # دریافت ساعت شروع
-        end_time = get('end_time')  # دریافت ساعت پایان
+        start_time = cleaned_data.get('start_time')  # دریافت ساعت شروع
+        end_time = cleaned_data.get('end_time')  # دریافت ساعت پایان
 
         # اعتبارسنجی برای مرخصی ساعتی
         if leave_type == 'hourly' and (not start_time or not end_time):

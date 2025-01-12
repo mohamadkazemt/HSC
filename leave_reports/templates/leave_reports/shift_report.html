@@ -17,6 +17,15 @@
                             <div class="container-fluid">
                                 <div class="card">
                                     <div class="card-body">
+                                         {% if errors %}
+                                            <div class="alert alert-danger">
+                                                <ul>
+                                                    {% for error in errors %}
+                                                        <li>{{ error }}</li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </div>
+                                        {% endif %}
                                         <div id="kt_leave_stepper" class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid">
                                             <div class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10" id="kt_create_account_stepper">
 

@@ -17,64 +17,75 @@ import tempfile
 from django.template.loader import get_template
 from django.conf import settings
 from jdatetime import date as jdate
+import logging
 
-
+logger = logging.getLogger(__name__)
 
 @login_required
 def create_shift_report(request):
     current_user = request.user.userprofile
-
     personnel_list = UserProfile.objects.select_related('user').filter(
         unit_group=current_user.unit_group,
         section=current_user.section,
     )
 
+    errors = []
     if request.method == 'POST':
+        logger.info("POST request received for create_shift_report")
         try:
             total_leaves = int(request.POST.get('total_leaves', 0))
+            logger.info(f"Total leaves from request: {total_leaves}")
             if total_leaves == 0:
-                return JsonResponse({'success': False, 'error': 'هیچ موردی برای ثبت وجود ندارد'})
-
-            success_count = 0
-            errors = []
-
-            for i in range(total_leaves):
-                try:
-                    user_id = request.POST.get(f'user_{i}')
-                    report_data = {
-                        'user': user_id,
-                        'leave_type': request.POST.get(f'leave_type_{i}'),
-                        'status': 'reported'
-                    }
-
-                    if report_data['leave_type'] == 'hourly':
-                        report_data.update({
-                            'start_time': request.POST.get(f'start_time_{i}'),
-                            'end_time': request.POST.get(f'end_time_{i}')
-                        })
-
-                    form = ShiftReportForm(report_data)
-                    if form.is_valid():
-                        report = form.save(commit=False)
-                        report.crate_by = request.user.userprofile
-                        report.work_group = request.user.userprofile.group
-                        report.save()  # تاریخ به‌طور خودکار توسط مدل تنظیم می‌شود
-                        success_count += 1
-                    else:
-                        errors.append(f"خطا در مورد {i + 1}: {form.errors}")
-                except Exception as e:
-                    errors.append(f"خطا در پردازش مورد {i + 1}: {str(e)}")
-
-            if success_count > 0:
-                return JsonResponse({'success': True, 'message': f'{success_count} مورد با موفقیت ثبت شد'})
+                errors.append('هیچ موردی برای ثبت وجود ندارد')
+                logger.warning("No leaves to process")
             else:
-                return JsonResponse({'success': False, 'error': 'خطا در ثبت اطلاعات', 'details': errors})
+                success_count = 0
+                for i in range(total_leaves):
+                    try:
+                        user_id = request.POST.get(f'user_{i}')
+                        report_data = {
+                            'user': user_id,
+                            'leave_type': request.POST.get(f'leave_type_{i}'),
+                            'status': 'reported'
+                        }
+
+                        if report_data['leave_type'] == 'hourly':
+                            report_data.update({
+                                'start_time': request.POST.get(f'start_time_{i}'),
+                                'end_time': request.POST.get(f'end_time_{i}')
+                            })
+                        logger.info(f"Processing leave {i + 1} with data: {report_data}")
+                        form = ShiftReportForm(report_data)
+                        if form.is_valid():
+                            report = form.save(commit=False)
+                            report.crate_by = request.user.userprofile
+                            report.work_group = request.user.userprofile.group
+                            report.save()
+                            logger.info(f"Leave {i+1} saved successfully. Report: {report.__dict__}")
+                            success_count += 1
+                        else:
+                           errors.append(f"خطا در مورد {i + 1}: {form.errors}")
+                           logger.warning(f"Form not valid for leave {i + 1}: {form.errors}")
+                    except Exception as e:
+                        errors.append(f"خطا در پردازش مورد {i + 1}: {str(e)}")
+                        logger.error(f"Error processing leave {i+1}: {e}", exc_info=True)
+
+
+                if success_count > 0 and not errors:
+                    logger.info(f"{success_count} leaves saved successfully")
+                    return JsonResponse({'success': True, 'message': f'{success_count} مورد با موفقیت ثبت شد'})
+                elif errors:
+                     logger.warning(f"Errors found, not saving. Errors:{errors}")
+                     return JsonResponse({'success': False, 'error': 'خطا در ثبت اطلاعات', 'details': errors})
 
         except Exception as e:
+            errors.append(f'خطای سیستمی: {str(e)}')
+            logger.error(f"System error: {e}", exc_info=True)
             return JsonResponse({'success': False, 'error': f'خطای سیستمی: {str(e)}'})
 
+
     form = ShiftReportForm()
-    return render(request, 'leave_reports/shift_report.html', {'form': form, 'personnels': personnel_list})
+    return render(request, 'leave_reports/shift_report.html', {'form': form, 'personnels': personnel_list, 'errors': errors})
 
 
 
