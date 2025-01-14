@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" href="{% static 'assets/media/logos/favicon.ico' %}" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>403 - دسترسی غیر مجاز</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            direction: rtl; /* اطمینان از راست به چپ بودن کلی */
+        }
+        .error-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            text-align: right; /* راست چین کردن متن به صورت کلی */
+        }
+        .error-code {
+            font-size: 10rem;
+            font-weight: bold;
+            color: #dc3545;
+        }
+        .error-message {
+            font-size: 1.5rem;
+            color: #343a40;
+            margin-bottom: 20px;
+        }
+        ul {
+            padding-right: 0; /* حذف padding پیش فرض برای RTL */
+            list-style-position: inside; /* قرارگیری نشانگرهای لیست در داخل متن */
+        }
+    </style>
+</head>
+<body>
+    <div class="container error-container">
+        <h1 class="error-code">403</h1>
+        <p class="error-message">متاسفیم، شما اجازه دسترسی به این صفحه را ندارید.</p>
+        <p>ممکن است به دلایل زیر با این خطا مواجه شده باشید:</p>
+        <ul>
+            <li>شما مجوزهای لازم برای مشاهده این صفحه را ندارید.</li>
+            <li>احتمالاً وارد حساب کاربری خود نشده‌اید.</li>
+            <li>آدرس صفحه مورد نظر اشتباه است.</li>
+        </ul>
+        <div>
+            <a href="{% url 'dashboard:dashboard' %}" class="btn btn-primary">بازگشت به صفحه اصلی</a>
+            <button class="btn btn-outline-secondary mt-2 mr-2">تماس با مدیر سایت</button>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

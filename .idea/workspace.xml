@@ -4,12 +4,21 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="leaveedite2">
-      <change afterPath="$PROJECT_DIR$/static/assets/js/sidebar_search.js" afterDir="false" />
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="sidebar_search">
+      <change afterPath="$PROJECT_DIR$/core/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/admin.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/apps.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/migrations/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/models.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/templates/core/403.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/tests.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/urls.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/contractor_management/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dashboard/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/dashboard/models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/sidebar.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/sidebar.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -24,9 +33,9 @@
       <list>
         <option value="CSS File" />
         <option value="package.json" />
+        <option value="JavaScript File" />
         <option value="HTML File" />
         <option value="Python Script" />
-        <option value="JavaScript File" />
       </list>
     </option>
   </component>
@@ -321,14 +330,8 @@
       <workItem from="1736536173905" duration="246000" />
       <workItem from="1736599643107" duration="11682000" />
       <workItem from="1736683426298" duration="8143000" />
-      <workItem from="1736833633362" duration="6659000" />
-    </task>
-    <task id="LOCAL‎−۰۰۰۰۹" summary="v0.0.1">
-      <option name="closed" value="true" />
-      <created>1729454555557</created>
-      <option name="number" value="LOCAL‎−۰۰۰۰۹" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۰۹" />
-      <updated>1729454555557</updated>
+      <workItem from="1736833633362" duration="8940000" />
+      <workItem from="1736870795606" duration="2699000" />
     </task>
     <task id="LOCAL‎−۰۰۰۱۰" summary="v0.0.1">
       <option name="closed" value="true" />
@@ -683,7 +686,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۵۷" />
       <updated>1736699324694</updated>
     </task>
-    <option name="localTasksCounter" value="58" />
+    <task id="LOCAL‎−۰۰۰۵۸" summary="sidebar_search">
+      <option name="closed" value="true" />
+      <created>1736842942900</created>
+      <option name="number" value="LOCAL‎−۰۰۰۵۸" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۵۸" />
+      <updated>1736842942900</updated>
+    </task>
+    <option name="localTasksCounter" value="59" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -701,7 +711,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="fillter-edite3" />
     <MESSAGE value="detail_view3" />
     <MESSAGE value="list&amp;notfi" />
     <MESSAGE value="importer-Excle" />
@@ -726,7 +735,8 @@
     <MESSAGE value="incident_report-end_location" />
     <MESSAGE value="leaveedite" />
     <MESSAGE value="leaveedite2" />
-    <option name="LAST_COMMIT_MESSAGE" value="leaveedite2" />
+    <MESSAGE value="sidebar_search" />
+    <option name="LAST_COMMIT_MESSAGE" value="sidebar_search" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
