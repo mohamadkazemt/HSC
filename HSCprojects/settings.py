@@ -86,28 +86,31 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates']
-        ,
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-                'accounts.context_processors.user_profile_processor',
-                'analytics.context_processors.anomaly_stats_context',
-                'dashboard.context_processors.notification_context_processor',
-                'shift_manager.context_processors.shift_context_processor',
-                'shift_manager.context_processors.shift_data_processor',
+        'DIRS': [
+            BASE_DIR / 'templates',
+            BASE_DIR / 'core' / 'templates',
+        ]
+,
+'APP_DIRS': True,
+'OPTIONS': {
+    'context_processors': [
+        'django.template.context_processors.debug',
+        'django.template.context_processors.request',
+        'django.contrib.auth.context_processors.auth',
+        'django.contrib.messages.context_processors.messages',
+        'accounts.context_processors.user_profile_processor',
+        'analytics.context_processors.anomaly_stats_context',
+        'dashboard.context_processors.notification_context_processor',
+        'shift_manager.context_processors.shift_context_processor',
+        'shift_manager.context_processors.shift_data_processor',
 
-            ],
-            'builtins': [
-                'django_jalali.templatetags.jformat',
+    ],
+    'builtins': [
+        'django_jalali.templatetags.jformat',
 
-            ],
-        },
-    },
+    ],
+},
+},
 ]
 
 WSGI_APPLICATION = 'HSCprojects.wsgi.application'
@@ -116,6 +119,19 @@ WSGI_APPLICATION = 'HSCprojects.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+<<<<<<< HEAD
+=======
+#DATABASES = {
+#'default': {
+#    'ENGINE': 'django.db.backends.postgresql',
+#     'NAME': 'hsc_db',
+#      'USER': 'hsc_user',
+#       'PASSWORD': 'Znmk@0900',
+#        'HOST': 'localhost',
+#         'PORT': '5432',
+#      }
+#   }
+>>>>>>> bd5bb8157698eeef218f3191339f0e48d1021aa1
 DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -203,11 +219,11 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
         },
-         'file': {
+        'file': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
             'filename': 'debug.log',
-         },
+        },
     },
     'loggers': {
         'leave_reports': {
@@ -220,9 +236,9 @@ LOGGING = {
 
 
 JALALI_DATE_DEFAULTS = {
-   # if change it to true then all dates of the list_display will convert to the Jalali.
-   'LIST_DISPLAY_AUTO_CONVERT': False,
-   'Strftime': {
+    # if change it to true then all dates of the list_display will convert to the Jalali.
+    'LIST_DISPLAY_AUTO_CONVERT': False,
+    'Strftime': {
         'date': '%y/%m/%d',
         'datetime': '%H:%M:%S _ %y/%m/%d',
     },

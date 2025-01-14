@@ -17,8 +17,10 @@ Including another URLconf
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
-
 from HSCprojects import settings
+from core import views  # وارد کردن views از اپلیکیشن core
+
+handler403 = views.custom_403_handler  # استفاده از هندلر از core
 
 urlpatterns = [
     path('', include('accounts.urls', namespace='accounts_root')),
