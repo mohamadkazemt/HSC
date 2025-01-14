@@ -4,13 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="leaveedite">
-      <change afterPath="$PROJECT_DIR$/static/assets/js/custom/HSEReport_forms.js" afterDir="false" />
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="leaveedite2">
+      <change afterPath="$PROJECT_DIR$/static/assets/js/sidebar_search.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/leave_reports/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/forms.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report.html" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/leave_reports/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/contractor_management/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/sidebar.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/sidebar.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,9 +24,9 @@
       <list>
         <option value="CSS File" />
         <option value="package.json" />
-        <option value="JavaScript File" />
-        <option value="Python Script" />
         <option value="HTML File" />
+        <option value="Python Script" />
+        <option value="JavaScript File" />
       </list>
     </option>
   </component>
@@ -321,14 +320,8 @@
       <workItem from="1736484005729" duration="12692000" />
       <workItem from="1736536173905" duration="246000" />
       <workItem from="1736599643107" duration="11682000" />
-      <workItem from="1736683426298" duration="7454000" />
-    </task>
-    <task id="LOCAL‎−۰۰۰۰۸" summary="commentsnew">
-      <option name="closed" value="true" />
-      <created>1729092918799</created>
-      <option name="number" value="LOCAL‎−۰۰۰۰۸" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۰۸" />
-      <updated>1729092918799</updated>
+      <workItem from="1736683426298" duration="8143000" />
+      <workItem from="1736833633362" duration="6659000" />
     </task>
     <task id="LOCAL‎−۰۰۰۰۹" summary="v0.0.1">
       <option name="closed" value="true" />
@@ -683,7 +676,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۵۶" />
       <updated>1736696367637</updated>
     </task>
-    <option name="localTasksCounter" value="57" />
+    <task id="LOCAL‎−۰۰۰۵۷" summary="leaveedite2">
+      <option name="closed" value="true" />
+      <created>1736699324694</created>
+      <option name="number" value="LOCAL‎−۰۰۰۵۷" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۵۷" />
+      <updated>1736699324694</updated>
+    </task>
+    <option name="localTasksCounter" value="58" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -701,7 +701,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="fillter-edite" />
     <MESSAGE value="fillter-edite3" />
     <MESSAGE value="detail_view3" />
     <MESSAGE value="list&amp;notfi" />
@@ -726,7 +725,8 @@
     <MESSAGE value="checklist_end" />
     <MESSAGE value="incident_report-end_location" />
     <MESSAGE value="leaveedite" />
-    <option name="LAST_COMMIT_MESSAGE" value="leaveedite" />
+    <MESSAGE value="leaveedite2" />
+    <option name="LAST_COMMIT_MESSAGE" value="leaveedite2" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
