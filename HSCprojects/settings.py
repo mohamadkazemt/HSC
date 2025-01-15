@@ -28,7 +28,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-ygf6#b*bj-ko2fimc)sg=u2vo6c)5a1#c5#zr=@#8&o7nd*tpt'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['127.0.0.1','mtorkzadeh.ir','miepcoj.ir', 'localhost']
 
@@ -119,8 +119,7 @@ WSGI_APPLICATION = 'HSCprojects.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-<<<<<<< HEAD
-=======
+
 #DATABASES = {
 #'default': {
 #    'ENGINE': 'django.db.backends.postgresql',
@@ -131,7 +130,7 @@ WSGI_APPLICATION = 'HSCprojects.wsgi.application'
 #         'PORT': '5432',
 #      }
 #   }
->>>>>>> bd5bb8157698eeef218f3191339f0e48d1021aa1
+
 DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',

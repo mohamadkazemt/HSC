@@ -1,5 +1,6 @@
 ﻿<!DOCTYPE html>
 <html direction="rtl" dir="rtl" style="direction: rtl" >
+{% load static %}
 	<!--begin::Head-->
 	<head>
 <base href="../../" />
@@ -14,13 +15,13 @@
 		<meta property="og:url" content="https://keenthemes.com/metronic" />
 		<meta property="og:site_name" content="مترونیک by ساتراس وب" />
 		<link rel="canonical" href="http://authentication/general/error-404.html" />
-		<link rel="shortcut icon" href="assets/media/logos/favicon.ico" />
+    <link rel="shortcut icon" href="{% static 'assets/media/logos/favicon.ico' %}" />
 		<!--begin::Fonts(mandatory for all pages)-->
 		<link rel="stylesheet" href="https://fonts.googleapis.com/cssfamily=Inter:300,400,500,600,700" />
 		<!--end::Fonts-->
 		<!--begin::Global Stylesheets Bundle(mandatory for all pages)-->
-		<link href="assets/plugins/global/plugins.bundle.rtl.css" rel="stylesheet" type="text/css" />
-		<link href="assets/css/style.bundle.rtl.css" rel="stylesheet" type="text/css" />
+		<link href="{% static 'assets/plugins/global/plugins.bundle.rtl.css' %}" rel="stylesheet" type="text/css" />
+		<link href="{% Static 'assets/css/style.bundle.rtl.css' %}" rel="stylesheet" type="text/css" />
 		<!--end::Global Stylesheets Bundle-->
 		<script>// Frame-busting to prevent site from being loaded within a frame without permission (click-jacking) if (window.top != window.self) { window.top.location.replace(window.self.location.href); }</script>
 	</head>
@@ -33,7 +34,7 @@
 		<!--begin::Root-->
 		<div class="d-flex flex-column flex-root" id="kt_app_root">
 			<!--begin::Page bg image-->
-			<style>body { background-image: url('assets/media/auth/bg1.jpg'); } [data-bs-theme="dark"] body { background-image: url('assets/media/auth/bg1-dark.jpg'); }</style>
+			<style>body { background-image: url('{% static 'assets/media/auth/bg1.jpg'%}); } [data-bs-theme="dark"] body { background-image: url('{% static 'assets/media/auth/bg1-dark.jpg'%}); }</style>
 			<!--end::Page bg image-->
 			<!--begin::احراز هویت - Signup پیام خوش امد گویی -->
 			<div class="d-flex flex-column flex-center flex-column-fluid">
@@ -50,13 +51,13 @@
 							<!--end::Text-->
 							<!--begin::Illustration-->
 							<div class="mb-3">
-								<img src="assets/media/auth/404-errیا.png" class="mw-100 mh-300px theme-light-show" alt="" />
-								<img src="assets/media/auth/404-error-dark.png" class="mw-100 mh-300px theme-dark-show" alt="" />
+								<img src="{% static 'assets/media/auth/404-error.png' %}" class="mw-100 mh-300px theme-light-show" alt="" />
+								<img src="{% static 'assets/media/auth/404-error-dark.png' %}" class="mw-100 mh-300px theme-dark-show" alt="" />
 							</div>
 							<!--end::Illustration-->
 							<!--begin::Link-->
 							<div class="mb-0">
-								<a href="index.html" class="btn btn-sm btn-primary">برو به صفحه اصلی</a>
+								<a href="{% url 'dashboard:dashboard' %}" class="btn btn-sm btn-primary">برو به صفحه اصلی</a>
 							</div>
 							<!--end::Link-->
 						</div>
@@ -71,10 +72,10 @@
 		<!--begin::Javascript-->
 		<script>var hostUrl = "assets/";</script>
 		<!--begin::Global Javascript Bundle(mandatory for all pages)-->
-		<script src="assets/plugins/global/plugins.bundle.js"></script>
-		<script src="assets/js/scripts.bundle.js"></script>
+		<script src="{% static 'assets/plugins/global/plugins.bundle.js' %}"></script>
+		<script src="{% static 'assets/js/scripts.bundle.js' %}"></script>
 		<!--end::Global Javascript Bundle-->
 		<!--end::Javascript-->
 	</body>
 	<!--end::Body-->
-</html>
+ </html>

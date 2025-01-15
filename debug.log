@@ -1,0 +1,10 @@
+POST request received for create_shift_report
+Total leaves from request: 1
+Processing leave 1 with data: {'user': '1', 'leave_type': 'regular', 'status': 'reported'}
+Leave 1 saved successfully. Report: {'_state': <django.db.models.base.ModelState object at 0x73abd82c7aa0>, 'id': 18, 'leave_type': 'regular', 'user_id': 1, 'shift_date': datetime.datetime(2025, 1, 12, 16, 30, 27, 624174, tzinfo=datetime.timezone.utc), 'leave_hours': None, 'start_time': None, 'end_time': None, 'status': 'reported', 'crate_by_id': 1, 'work_group': 'G', 'created_at': datetime.datetime(2025, 1, 12, 16, 30, 27, 631639, tzinfo=datetime.timezone.utc)}
+1 leaves saved successfully
+POST request received for create_shift_report
+Total leaves from request: 1
+Processing leave 1 with data: {'user': '1', 'leave_type': 'regular', 'status': 'reported'}
+Leave 1 saved successfully. Report: {'_state': <django.db.models.base.ModelState object at 0x73abd50eda60>, 'id': 19, 'leave_type': 'regular', 'user_id': 1, 'shift_date': datetime.datetime(2025, 1, 12, 16, 31, 42, 477270, tzinfo=datetime.timezone.utc), 'leave_hours': None, 'start_time': None, 'end_time': None, 'status': 'reported', 'crate_by_id': 1, 'work_group': 'G', 'created_at': datetime.datetime(2025, 1, 12, 16, 31, 42, 484435, tzinfo=datetime.timezone.utc)}
+1 leaves saved successfully
