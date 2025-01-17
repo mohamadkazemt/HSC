@@ -27,6 +27,7 @@ def create_shift_report(request):
     personnel_list = UserProfile.objects.select_related('user').filter(
         unit_group=current_user.unit_group,
         section=current_user.section,
+
     )
 
     errors = []

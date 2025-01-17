@@ -4,11 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="sidebar_search">
-      <change beforePath="$PROJECT_DIR$/.idea/HSCprojects.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/HSCprojects.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="mkt-update1">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -376,14 +373,7 @@
       <workItem from="1736833633362" duration="8940000" />
       <workItem from="1736870795606" duration="2699000" />
       <workItem from="1737032470328" duration="1446000" />
-      <workItem from="1737033966196" duration="333000" />
-    </task>
-    <task id="LOCAL‎−۰۰۰۱۰" summary="v0.0.1">
-      <option name="closed" value="true" />
-      <created>1729616823056</created>
-      <option name="number" value="LOCAL‎−۰۰۰۱۰" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۱۰" />
-      <updated>1729616823056</updated>
+      <workItem from="1737033966196" duration="891000" />
     </task>
     <task id="LOCAL‎−۰۰۰۱۱" summary="v0.0.1/2">
       <option name="closed" value="true" />
@@ -738,7 +728,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۵۸" />
       <updated>1736842942900</updated>
     </task>
-    <option name="localTasksCounter" value="59" />
+    <task id="LOCAL‎−۰۰۰۵۹" summary="mkt-update1">
+      <option name="closed" value="true" />
+      <created>1737034727961</created>
+      <option name="number" value="LOCAL‎−۰۰۰۵۹" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۵۹" />
+      <updated>1737034727962</updated>
+    </task>
+    <option name="localTasksCounter" value="60" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -756,7 +753,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="detail_view3" />
     <MESSAGE value="list&amp;notfi" />
     <MESSAGE value="importer-Excle" />
     <MESSAGE value="leave_reports" />
@@ -781,7 +777,8 @@
     <MESSAGE value="leaveedite" />
     <MESSAGE value="leaveedite2" />
     <MESSAGE value="sidebar_search" />
-    <option name="LAST_COMMIT_MESSAGE" value="sidebar_search" />
+    <MESSAGE value="mkt-update1" />
+    <option name="LAST_COMMIT_MESSAGE" value="mkt-update1" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
