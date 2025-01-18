@@ -25,9 +25,7 @@ logger = logging.getLogger(__name__)
 def create_shift_report(request):
     current_user = request.user.userprofile
     personnel_list = UserProfile.objects.select_related('user').filter(
-        unit_group=current_user.unit_group,
         section=current_user.section,
-
     )
 
     errors = []
