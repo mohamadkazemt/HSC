@@ -4,8 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="mkt-update1">
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="mkt-update2">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/machine_checklist/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/machine_checklist/apps.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/permissions/apps.py" beforeDir="false" afterPath="$PROJECT_DIR$/permissions/apps.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/sidebar.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/sidebar.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -374,13 +378,8 @@
       <workItem from="1736870795606" duration="2699000" />
       <workItem from="1737032470328" duration="1446000" />
       <workItem from="1737033966196" duration="891000" />
-    </task>
-    <task id="LOCAL‎−۰۰۰۱۱" summary="v0.0.1/2">
-      <option name="closed" value="true" />
-      <created>1729618272628</created>
-      <option name="number" value="LOCAL‎−۰۰۰۱۱" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۱۱" />
-      <updated>1729618272628</updated>
+      <workItem from="1737127876992" duration="1284000" />
+      <workItem from="1737210978942" duration="1734000" />
     </task>
     <task id="LOCAL‎−۰۰۰۱۲" summary="v0.0.1/3">
       <option name="closed" value="true" />
@@ -735,7 +734,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۵۹" />
       <updated>1737034727962</updated>
     </task>
-    <option name="localTasksCounter" value="60" />
+    <task id="LOCAL‎−۰۰۰۶۰" summary="mkt-update2">
+      <option name="closed" value="true" />
+      <created>1737127950425</created>
+      <option name="number" value="LOCAL‎−۰۰۰۶۰" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۶۰" />
+      <updated>1737127950425</updated>
+    </task>
+    <option name="localTasksCounter" value="61" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -753,7 +759,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="list&amp;notfi" />
     <MESSAGE value="importer-Excle" />
     <MESSAGE value="leave_reports" />
     <MESSAGE value="reports&amp;contractor" />
@@ -778,7 +783,8 @@
     <MESSAGE value="leaveedite2" />
     <MESSAGE value="sidebar_search" />
     <MESSAGE value="mkt-update1" />
-    <option name="LAST_COMMIT_MESSAGE" value="mkt-update1" />
+    <MESSAGE value="mkt-update2" />
+    <option name="LAST_COMMIT_MESSAGE" value="mkt-update2" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

@@ -458,7 +458,7 @@
                             <span class="menu-arrow"></span>
                         </span>
                         <!--end:Menu link-->
-                        <!--begin:Menu sub-->
+                        <!--begin:گزارش روزانه-->
                         <div class="menu-sub menu-sub-accordion">
                             <!--begin:Menu item-->
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
@@ -502,7 +502,8 @@
                             </div>
                             <!--end:Menu item-->
                         </div>
-                        <!--end:مرخصی-->
+                        <!--end:گزارش روزانه-->
+                        <!--begin:مرخصی-->
                         <div class="menu-sub menu-sub-accordion">
                             <!--begin:مرخصی-->
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
@@ -592,6 +593,51 @@
                             <!--end:مرخصی-->
                         </div>
                         <!--end:خودرو پیمانکاران-->
+                         <!--end:چک لیست-->
+                        <div class="menu-sub menu-sub-accordion">
+                            <!--begin:چک لیست-->
+                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
+                                <!--begin:چک لیست-->
+                                <span class="menu-link">
+                                    <span class="menu-bullet">
+                                        <span class="bullet bullet-dot"></span>
+                                    </span>
+                                    <span class="menu-title">چک لیست ماشن آلات</span>
+                                    <span class="menu-arrow"></span>
+                                </span>
+                                <!--end:Menu link-->
+                                <!--begin:مرخصی-->
+                                <div class="menu-sub menu-sub-accordion">
+                                    <!--begin:Menu item-->
+                                    <div class="menu-item">
+                                        <!--begin:Menu link-->
+                                        <a class="menu-link" href="{% url 'machine_checklist:checklist_form' %}">
+                                            <span class="menu-bullet">
+                                                <span class="bullet bullet-dot"></span>
+                                            </span>
+                                            <span class="menu-title">ثبت چک لیست</span>
+                                        </a>
+                                        <!--end:Menu link-->
+                                    </div>
+                                    <!--end:Menu item-->
+                                    <!--begin:Menu item-->
+                                    <div class="menu-item">
+                                        <!--begin:Menu link-->
+                                        <a class="menu-link" href="{% url 'machine_checklist:checklist_list' %}">
+                                            <span class="menu-bullet">
+                                                <span class="bullet bullet-dot"></span>
+                                            </span>
+                                            <span class="menu-title"> لیست چک لیست ها</span>
+                                        </a>
+                                        <!--end:Menu link-->
+                                    </div>
+                                    <!--end:Menu item-->
+                                </div>
+                                <!--end:مرخصی-->
+                            </div>
+                            <!--end:مرخصی-->
+                        </div>
+                        <!--end:چک لیست-->
                     </div>
                 </div>
             {% endif %}
