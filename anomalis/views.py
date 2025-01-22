@@ -37,9 +37,16 @@ from django.utils.timezone import make_aware
 from datetime import datetime
 from .models import Location, LocationSection
 
+
+
 name = 'anomalis'
 
+
+
+
+
 logger = logging.getLogger('anomalis')  # لاگر اختصاصی برای اپلیکیشن
+
 
 @permission_required("anomalis")
 @login_required
@@ -76,7 +83,55 @@ def anomalis(request):
                 anomaly.save()
                 logger.info(f"Anomaly {anomaly.id} saved successfully by user {request.user.username}")
 
-                # ادامه کد ارسال پیامک و ایجاد نوتیفیکیشن
+                # ارسال پیامک به مسئول پیگیری
+                template_id = 684430  # شناسه قالب
+                try:
+                    followup_user = anomaly.followup
+                    profile = followup_user
+                    parameters = [
+                        {"Name": "status", "Value": "ثبت شده"},
+                        {"Name": "anomaly_id", "Value": str(anomaly.id)}
+                    ]
+                    send_template_sms(profile.mobile, template_id, parameters)
+                    logger.info(f"SMS sent to {profile.mobile} for anomaly {anomaly.id}")
+                except Exception as sms_error:
+                    logger.error(f"Error while sending SMS for anomaly {anomaly.id}: {sms_error}")
+
+                # ایجاد اعلان برای مسئول پیگیری
+                if anomaly.followup and anomaly.followup.user:
+                     logger.debug(f"Attempting to create notification for user: {anomaly.followup.user.username}")
+                     Notification.objects.create(
+                       user=anomaly.followup.user,
+                       message=f"آنومالی جدید با شناسه {anomaly.id} برای شما ثبت شد.",
+                       url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
+                     )
+                     logger.debug(f"Notification created successfully for user: {anomaly.followup.user.username}")
+                else:
+                   logger.warning("Followup user or user object is missing for anomaly. Skipping notification.")
+
+
+                try:
+                     hse_group = Group.objects.get(name='مدیر HSE')
+                except Group.DoesNotExist:
+                    logger.error("Group 'مدیر HSE' does not exist.")
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                         return JsonResponse({
+                            'status': 'error',
+                            'message': 'گروه مدیر HSE یافت نشد',
+                           })
+                    messages.error(request, 'گروه مدیر HSE یافت نشد')
+                    return redirect('anomalis:anomalis')
+
+
+                for user in hse_group.user_set.all():
+                    logger.debug(f"Attempting to create notification for HSE manager: {user.username}")
+                    Notification.objects.create(
+                        user=user,
+                        message=f"آنومالی جدید با شناسه {anomaly.id} ثبت شد.",
+                        url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
+                    )
+                    logger.debug(f"Notification created successfully for HSE manager: {user.username}")
+
 
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     logger.info(f"Returning success response for AJAX request by user {request.user.username}")
@@ -95,7 +150,7 @@ def anomalis(request):
                     return JsonResponse({
                         'status': 'error',
                         'message': f'خطا در ثبت آنومالی: {str(e)}',
-                        'errors': {}  # برگرداندن خطاها خالی است، چون خطای نامشخص است
+                        'errors': {}
                     })
                 messages.error(request, f'خطا در ثبت آنومالی: {str(e)}')
         else:
@@ -104,7 +159,7 @@ def anomalis(request):
                 return JsonResponse({
                     'status': 'error',
                     'message': 'فرم نامعتبر است',
-                    'errors': form.errors  # برگرداندن خطاهای فرم
+                    'errors': form.errors
                 })
             messages.error(request, 'فرم نامعتبر است. لطفاً مقادیر را به درستی وارد کنید')
     else:
