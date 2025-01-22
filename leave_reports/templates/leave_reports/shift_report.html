@@ -96,7 +96,7 @@
                                                                         <select name="regular_leave_user" class="form-select select2">
                                                                             <option value="">انتخاب کنید...</option>
                                                                             {% for personnel in personnels %}
-                                                                                <option value="{{ personnel.id }}">
+                                                                                <option value="{{ personnel.user.id }}">
                                                                                     {{ personnel.user.get_full_name }} - {{ personnel.personnel_code }}
                                                                                 </option>
                                                                             {% endfor %}
@@ -134,7 +134,7 @@
                                                                         <select name="absence_user" class="form-select select2">
                                                                             <option value="">انتخاب کنید...</option>
                                                                             {% for personnel in personnels %}
-                                                                                <option value="{{ personnel.id }}">
+                                                                                <option value="{{ personnel.user.id }}">
                                                                                     {{ personnel.user.get_full_name }} - {{ personnel.personnel_code }}
                                                                                 </option>
                                                                             {% endfor %}
@@ -176,7 +176,7 @@
                                                                         <select name="hourly_leave_user" class="form-select select2">
                                                                             <option value="">انتخاب کنید...</option>
                                                                             {% for personnel in personnels %}
-                                                                                <option value="{{ personnel.id }}">
+                                                                                <option value="{{ personnel.user.id }}">
                                                                                     {{ personnel.user.get_full_name }} - {{ personnel.personnel_code }}
                                                                                 </option>
                                                                             {% endfor %}
