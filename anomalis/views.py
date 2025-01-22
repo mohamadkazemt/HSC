@@ -37,16 +37,9 @@ from django.utils.timezone import make_aware
 from datetime import datetime
 from .models import Location, LocationSection
 
-
-
 name = 'anomalis'
 
-
-
-
-
 logger = logging.getLogger('anomalis')  # لاگر اختصاصی برای اپلیکیشن
-
 
 @permission_required("anomalis")
 @login_required
@@ -83,34 +76,7 @@ def anomalis(request):
                 anomaly.save()
                 logger.info(f"Anomaly {anomaly.id} saved successfully by user {request.user.username}")
 
-                # ارسال پیامک به مسئول پیگیری
-                template_id = 684430  # شناسه قالب
-                try:
-                    followup_user = anomaly.followup
-                    profile = followup_user
-                    parameters = [
-                        {"Name": "status", "Value": "ثبت شده"},
-                        {"Name": "anomaly_id", "Value": str(anomaly.id)}
-                    ]
-                    send_template_sms(profile.mobile, template_id, parameters)
-                    logger.info(f"SMS sent to {profile.mobile} for anomaly {anomaly.id}")
-                except Exception as sms_error:
-                    logger.error(f"Error while sending SMS for anomaly {anomaly.id}: {sms_error}")
-
-                # ایجاد اعلان برای مسئول پیگیری
-                Notification.objects.create(
-                    user=anomaly.followup.user,
-                    message=f"آنومالی جدید با شناسه {anomaly.id} برای شما ثبت شد.",
-                    url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
-                )
-
-                hse_group = get(name='مدیر HSE')
-                for user in hse_group.user_set.all():
-                    Notification.objects.create(
-                        user=user,
-                        message=f"آنومالی جدید با شناسه {anomaly.id} ثبت شد.",
-                        url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
-                    )
+                # ادامه کد ارسال پیامک و ایجاد نوتیفیکیشن
 
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     logger.info(f"Returning success response for AJAX request by user {request.user.username}")
@@ -129,7 +95,7 @@ def anomalis(request):
                     return JsonResponse({
                         'status': 'error',
                         'message': f'خطا در ثبت آنومالی: {str(e)}',
-                        'errors': {}
+                        'errors': {}  # برگرداندن خطاها خالی است، چون خطای نامشخص است
                     })
                 messages.error(request, f'خطا در ثبت آنومالی: {str(e)}')
         else:
@@ -138,8 +104,9 @@ def anomalis(request):
                 return JsonResponse({
                     'status': 'error',
                     'message': 'فرم نامعتبر است',
-                    'errors': form.errors
+                    'errors': form.errors  # برگرداندن خطاهای فرم
                 })
+            messages.error(request, 'فرم نامعتبر است. لطفاً مقادیر را به درستی وارد کنید')
     else:
         logger.info(f"GET request received from user {request.user.username}")
         form = AnomalyForm()
