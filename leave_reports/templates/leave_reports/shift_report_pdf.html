@@ -202,6 +202,29 @@
         {% endfor %}
         </tbody>
     </table>
+        <!-- Table: sick Leaves -->
+        <h4>مرخصی استعلاجی</h4>
+        <table>
+            <thead>
+            <tr>
+                <th>کد پرسنلی</th>
+                <th>نام کاربر</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for sick_leave in sick_leaves %}
+                <tr>
+                    <td>{{ sick_leave.user.userprofile.personnel_code }}</td>
+                    <td>{{ sick_leave.user.get_full_name }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td class="text-center">هیچ مرخصی استعلاجی ثبت نشده است.</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
 
     <!-- Table: Hourly Leaves -->
     <h4>مرخصی‌های ساعتی</h4>
@@ -229,6 +252,7 @@
         {% endfor %}
         </tbody>
     </table>
+
 
     <!-- Signature Section -->
     <div class="signature-section">

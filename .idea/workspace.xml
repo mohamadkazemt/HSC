@@ -4,14 +4,14 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="mkt-update3">
-      <change beforePath="$PROJECT_DIR$/.idea/HSCprojects.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/HSCprojects.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="mkt-update6">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/leave_reports/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/models.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report.html" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report_detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report_detail.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report_list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/leave_reports/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/assets/js/custom/leave-report.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/assets/js/custom/leave-report.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,12 +47,12 @@
     &quot;assignee&quot;: &quot;mohamadkazemt&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/mohamadkazemt/HSC.git",
-    "accountId": "b1049974-7825-44ef-a60c-99f35deafaf1"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/mohamadkazemt/HSC.git&quot;,
+    &quot;accountId&quot;: &quot;b1049974-7825-44ef-a60c-99f35deafaf1&quot;
   }
-}]]></component>
+}</component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/anomalis/admin.py" root0="FORCE_HIGHLIGHTING" />
   </component>
@@ -382,14 +382,8 @@
       <workItem from="1737033966196" duration="891000" />
       <workItem from="1737127876992" duration="1284000" />
       <workItem from="1737210978942" duration="3062000" />
-      <workItem from="1737526000783" duration="4494000" />
-    </task>
-    <task id="LOCAL‎−۰۰۰۱۳" summary="amaliyat1">
-      <option name="closed" value="true" />
-      <created>1729886361186</created>
-      <option name="number" value="LOCAL‎−۰۰۰۱۳" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۱۳" />
-      <updated>1729886361186</updated>
+      <workItem from="1737526000783" duration="4884000" />
+      <workItem from="1737602483348" duration="749000" />
     </task>
     <task id="LOCAL‎−۰۰۰۱۴" summary="amaliyat1">
       <option name="closed" value="true" />
@@ -744,7 +738,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۶۱" />
       <updated>1737215947626</updated>
     </task>
-    <option name="localTasksCounter" value="62" />
+    <task id="LOCAL‎−۰۰۰۶۲" summary="mkt-update6">
+      <option name="closed" value="true" />
+      <created>1737533719640</created>
+      <option name="number" value="LOCAL‎−۰۰۰۶۲" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۶۲" />
+      <updated>1737533719641</updated>
+    </task>
+    <option name="localTasksCounter" value="63" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -762,7 +763,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="leave_reports" />
     <MESSAGE value="reports&amp;contractor" />
     <MESSAGE value="dailyreport_hse" />
     <MESSAGE value="dailyreport_hse1" />
@@ -787,7 +787,8 @@
     <MESSAGE value="mkt-update1" />
     <MESSAGE value="mkt-update2" />
     <MESSAGE value="mkt-update3" />
-    <option name="LAST_COMMIT_MESSAGE" value="mkt-update3" />
+    <MESSAGE value="mkt-update6" />
+    <option name="LAST_COMMIT_MESSAGE" value="mkt-update6" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

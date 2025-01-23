@@ -66,12 +66,27 @@
                                                                     <div class="stepper-line h-40px"></div>
                                                                 </div>
 
-                                                                <!-- مرحله 3: مرخصی ساعتی -->
+                                                               <!-- مرحله 3: مرخصی استعلاجی -->
                                                                 <div class="stepper-item" data-kt-stepper-element="nav">
                                                                     <div class="stepper-wrapper">
                                                                         <div class="stepper-icon w-40px h-40px">
                                                                             <i class="ki-outline ki-check fs-2 stepper-check"></i>
                                                                             <span class="stepper-number">3</span>
+                                                                        </div>
+                                                                        <div class="stepper-label">
+                                                                            <h3 class="stepper-title">مرخصی استعلاجی</h3>
+                                                                            <div class="stepper-desc fw-semibold">ثبت مرخصی استعلاجی</div>
+                                                                        </div>
+                                                                    </div>
+                                                                     <div class="stepper-line h-40px"></div>
+                                                                </div>
+
+                                                                <!-- مرحله 4: مرخصی ساعتی -->
+                                                                <div class="stepper-item" data-kt-stepper-element="nav">
+                                                                    <div class="stepper-wrapper">
+                                                                        <div class="stepper-icon w-40px h-40px">
+                                                                            <i class="ki-outline ki-check fs-2 stepper-check"></i>
+                                                                            <span class="stepper-number">4</span>
                                                                         </div>
                                                                         <div class="stepper-label">
                                                                             <h3 class="stepper-title">مرخصی ساعتی</h3>
@@ -167,8 +182,41 @@
                                                                     </table>
                                                                 </div>
                                                             </div>
+                                                            <!-- محتوای مرحله 3: مرخصی استعلاجی -->
+                                                            <div data-kt-stepper-element="content">
+                                                               <div class="row mb-6">
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label">پرسنل</label>
+                                                                        <select name="sick_leave_user" class="form-select select2">
+                                                                            <option value="">انتخاب کنید...</option>
+                                                                            {% for personnel in personnels %}
+                                                                                <option value="{{ personnel.user.id }}">
+                                                                                    {{ personnel.user.get_full_name }} - {{ personnel.personnel_code }}
+                                                                                </option>
+                                                                            {% endfor %}
+                                                                        </select>
 
-                                                            <!-- محتوای مرحله 3: مرخصی ساعتی -->
+                                                                        <button type="button" class="btn btn-primary mt-5" onclick="addSickLeave()">
+                                                                            <i class="ki-outline ki-plus-square fs-2"></i>
+                                                                            اضافه کردن
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="table-responsive mt-4">
+                                                                    <table class="table" id="sick_leave_table">
+                                                                        <thead>
+                                                                        <tr>
+                                                                             <th>نام پرسنل</th>
+                                                                            <th>تاریخ</th>
+                                                                            <th>عملیات</th>
+                                                                        </tr>
+                                                                        </thead>
+                                                                        <tbody></tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- محتوای مرحله 4: مرخصی ساعتی -->
                                                             <div data-kt-stepper-element="content">
                                                                 <div class="row mb-6">
                                                                     <div class="col-md-6">

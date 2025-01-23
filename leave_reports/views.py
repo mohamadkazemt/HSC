@@ -137,6 +137,7 @@ def shift_report_list(request):
         total_regular=Count('id', filter=Q(leave_type='regular')),
         total_hourly=Count('id', filter=Q(leave_type='hourly')),
         total_absence=Count('id', filter=Q(leave_type='absence')),
+        total_sick_leave=Count('id', filter=Q(leave_type='sick_leave')), # مرخصی استعلاجی
         total_persons=Count('user', distinct=True)  # تعداد افراد یکتا
     )
 
@@ -195,6 +196,8 @@ def shift_report_detail(request, report_id):
     leaves = ShiftReport.objects.filter(work_group=report.work_group, leave_type='regular', shift_date=report.shift_date)
     absences = ShiftReport.objects.filter(work_group=report.work_group, leave_type='absence', shift_date=report.shift_date)
     hourly_leaves = ShiftReport.objects.filter(work_group=report.work_group, leave_type='hourly', shift_date=report.shift_date)
+    sick_leaves = ShiftReport.objects.filter(work_group=report.work_group, leave_type='sick_leave', shift_date=report.shift_date)
+
 
     context = {
         'report': report,
@@ -202,6 +205,7 @@ def shift_report_detail(request, report_id):
         'leaves': leaves,
         'absences': absences,
         'hourly_leaves': hourly_leaves,
+        'sick_leaves': sick_leaves,
     }
 
     return render(request, 'leave_reports/shift_report_detail.html', context)
@@ -234,6 +238,11 @@ def shift_report_pdf_view(request, pk):
         leave_type='hourly',
         shift_date=shift_report.shift_date
     )
+    sick_leaves = ShiftReport.objects.filter(
+        work_group=shift_report.work_group,
+        leave_type='sick_leave',
+        shift_date=shift_report.shift_date
+    )
 
     # تبدیل تاریخ شیفت به شمسی
     try:
@@ -253,6 +262,7 @@ def shift_report_pdf_view(request, pk):
         'leaves': leaves,
         'absences': absences,
         'hourly_leaves': hourly_leaves,
+        'sick_leaves': sick_leaves, # مرخصی استعلاجی
         'shift_date_jalali': shift_date_jalali,
         'today': jdate.today().strftime('%Y/%m/%d'),
         'static_url': static_url,

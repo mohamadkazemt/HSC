@@ -6,19 +6,20 @@ function validateCurrentStep(stepIndex) {
         case 1: // مرخصی عادی
             return document.querySelector('#regular_leave_table tbody').children.length > 0 ||
                 confirm('هیچ مرخصی عادی ثبت نشده است. آیا مایل به ادامه هستید؟');
-
         case 2: // غیبت
             return document.querySelector('#absence_table tbody').children.length > 0 ||
                 confirm('هیچ غیبتی ثبت نشده است. آیا مایل به ادامه هستید؟');
-
-        case 3: // مرخصی ساعتی
+        case 3: // مرخصی استعلاجی
+            return document.querySelector('#sick_leave_table tbody').children.length > 0 ||
+                confirm('هیچ مرخصی استعلاجی ثبت نشده است. آیا مایل به ادامه هستید؟');
+        case 4: // مرخصی ساعتی
             return document.querySelector('#hourly_leave_table tbody').children.length > 0 ||
                 confirm('هیچ مرخصی ساعتی ثبت نشده است. آیا مایل به ادامه هستید؟');
-
         default:
             return true;
     }
 }
+
 
 document.addEventListener('DOMContentLoaded', function() {
     initializeStepper();
@@ -145,6 +146,41 @@ function addAbsence() {
     userSelect.value = '';
     $(userSelect).trigger('change');
 }
+function addSickLeave() {
+        const userSelect = document.querySelector('[name="sick_leave_user"]');
+
+        if (!userSelect) {
+            console.error("Required elements not found");
+            return;
+        }
+
+        if (!userSelect.value) {
+            showError('لطفا تمامی فیلدها را پر کنید');
+            return;
+        }
+
+        const tbody = document.querySelector('#sick_leave_table tbody');
+        if (!tbody) {
+            console.error("Table body not found");
+            return;
+        }
+
+        const userName = userSelect.options[userSelect.selectedIndex].text;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${userName}</td>
+            <td>تاریخ ثبت خودکار</td>
+             <td>
+                <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">حذف</button>
+                <input type="hidden" name="sick_leaves[]" value="${userSelect.value}">
+             </td>
+        `;
+         tbody.appendChild(tr);
+
+        userSelect.value = '';
+        $(userSelect).trigger('change');
+    }
 
 
 function addHourlyLeave() {
@@ -245,10 +281,12 @@ function updateNavigationButtons(stepIndex) {
 function validateAllSteps() {
     const regularLeaveCount = document.querySelector('#regular_leave_table tbody').children.length;
     const absenceCount = document.querySelector('#absence_table tbody').children.length;
+    const sickLeaveCount = document.querySelector('#sick_leave_table tbody').children.length;
     const hourlyLeaveCount = document.querySelector('#hourly_leave_table tbody').children.length;
 
-    if (!regularLeaveCount && !absenceCount && !hourlyLeaveCount) {
-        showError('لطفا حداقل یک مورد مرخصی را ثبت کنید');
+
+    if (!regularLeaveCount && !absenceCount && !hourlyLeaveCount && !sickLeaveCount) {
+         showError('لطفا حداقل یک مورد مرخصی را ثبت کنید');
         return false;
     }
     return true;
@@ -272,6 +310,10 @@ function submitLeaveReport(form) {
         'absence': {
             selector: '[name="absences[]"]',
             type: 'absence'
+        },
+         'sick_leave': {
+            selector: '[name="sick_leaves[]"]',
+            type: 'sick_leave'
         },
         'hourly': {
             selector: '[name="hourly_leaves[]"]',
@@ -297,14 +339,12 @@ function submitLeaveReport(form) {
             }
 
             leaves.push({
-                user: values[0],
+                 user: values[0],
                 leave_type: table.type,
-                ...(table.type === 'hourly' && { start_time: values[1], end_time: values[2] })
+                 ...(table.type === 'hourly' && { start_time: values[1], end_time: values[2] })
             });
-
         });
     }
-
     // چک کردن اگر هیچ موردی ثبت نشده
     if (leaves.length === 0) {
         showError('لطفا حداقل یک مورد را ثبت کنید');

@@ -7,7 +7,8 @@ class ShiftReport(models.Model):
     LEAVE_TYPE_CHOICES = [
         ('regular', 'مرخصی'),
         ('absence', 'غیبت'),
-        ('hourly', 'مرخصی ساعت')
+        ('hourly', 'مرخصی ساعتی'),
+        ('sick_leave', 'مرخصی استعلاجی') # اضافه شدن مرخصی استعلاجی
     ]
     leave_type = models.CharField(max_length=10, choices=LEAVE_TYPE_CHOICES)
     user = models.ForeignKey(User, on_delete=models.CASCADE)  # کاربر (پرسنل)
