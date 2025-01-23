@@ -172,6 +172,7 @@ def export_checklists_excel(request):
     if machine_type_filter:
        checklists = checklists.filter(machine__machine_type_id = machine_type_filter)
 
+
     # Create Excel workbook
     workbook = openpyxl.Workbook()
 
@@ -184,51 +185,53 @@ def export_checklists_excel(request):
         grouped_checklists[machine_type].append(checklist)
 
     for machine_type, checklists_for_type in grouped_checklists.items():
-        sheet = workbook.create_sheet(title=machine_type.name)
+        if checklists_for_type: # Only create sheet if there are checklists for this machine type
+            sheet = workbook.create_sheet(title=machine_type.name)
 
-        # Add headers
-        headers = [
-            "کاربر", "کد پرسنلی", "ماشین", "نوع ماشین", "تاریخ", "شیفت", "گروه شیفت"
-        ]
-        # Fetch all unique questions for headers for this machine type
-        questions = Question.objects.filter(machine_type=machine_type)
-        question_headers = [question.text for question in questions]
-        headers.extend(question_headers)
-        headers.extend(["توضیحات " + q.text for q in questions])
-        sheet.append(headers)
-
-        # Add data
-        for checklist in checklists_for_type:
-            row = [
-                f"{checklist.user.first_name} {checklist.user.last_name}" if (checklist.user.first_name or checklist.user.last_name) else checklist.user.username,
-                checklist.user.userprofile.personnel_code if checklist.user.userprofile.personnel_code else "",
-                checklist.machine.workshop_code,
-                checklist.machine.machine_type.name,
-                checklist.date.strftime("%Y/%m/%d %H:%M:%S"),
-                checklist.shift,
-                checklist.shift_group,
+            # Add headers
+            headers = [
+                "کاربر", "کد پرسنلی", "ماشین", "نوع ماشین", "تاریخ", "شیفت", "گروه شیفت"
             ]
-            answers = Answer.objects.filter(checklist=checklist)
-            answer_dict = {answer.question.id: answer for answer in answers}
-            for question in questions:
-                answer = answer_dict.get(question.id)
-                if answer:
-                    if question.question_type == 'text':
-                        row.append(answer.answer_text if answer.answer_text else '')
-                    elif question.question_type == 'option':
-                         row.append(answer.selected_option if answer.selected_option else '')
-                else:
-                   row.append('')
-            for question in questions:
-               answer = answer_dict.get(question.id)
-               if answer:
-                   row.append(answer.description if answer.description else '')
-               else:
-                   row.append('')
-            sheet.append(row)
-        for column_letter in range(1, len(headers) + 1):
-            column_letter = get_column_letter(column_letter)
-            sheet.column_dimensions[column_letter].width = 25
+            # Fetch all unique questions for headers for this machine type
+            questions = Question.objects.filter(machine_type=machine_type)
+            question_headers = [question.text for question in questions]
+            headers.extend(question_headers)
+            headers.extend(["توضیحات " + q.text for q in questions])
+            sheet.append(headers)
+
+            # Add data
+            for checklist in checklists_for_type:
+                row = [
+                    f"{checklist.user.first_name} {checklist.user.last_name}" if (checklist.user.first_name or checklist.user.last_name) else checklist.user.username,
+                    checklist.user.userprofile.personnel_code if checklist.user.userprofile.personnel_code else "",
+                    checklist.machine.workshop_code,
+                    checklist.machine.machine_type.name,
+                    checklist.date.strftime("%Y/%m/%d %H:%M:%S"),
+                    checklist.shift,
+                    checklist.shift_group,
+                ]
+                answers = Answer.objects.filter(checklist=checklist)
+                answer_dict = {answer.question.id: answer for answer in answers}
+                for question in questions:
+                    answer = answer_dict.get(question.id)
+                    if answer:
+                        if question.question_type == 'text':
+                            row.append(answer.answer_text if answer.answer_text else '')
+                        elif question.question_type == 'option':
+                             row.append(answer.selected_option if answer.selected_option else '')
+                    else:
+                       row.append('')
+                for question in questions:
+                   answer = answer_dict.get(question.id)
+                   if answer:
+                       row.append(answer.description if answer.description else '')
+                   else:
+                       row.append('')
+                sheet.append(row)
+            for column_letter in range(1, len(headers) + 1):
+                column_letter = get_column_letter(column_letter)
+                sheet.column_dimensions[column_letter].width = 25
+
 
     # Prepare the response
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')

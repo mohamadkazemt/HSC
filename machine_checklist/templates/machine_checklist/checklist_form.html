@@ -149,6 +149,7 @@
 {% block extra_js %}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            $('#machine-select').select2();
             const machineSelect = document.getElementById('machine-select');
             const loadQuestionsButton = document.getElementById('load-questions');
             const questionsContainer = document.getElementById('questions-container');

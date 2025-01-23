@@ -98,19 +98,40 @@ def anomalis(request):
                     logger.error(f"Error while sending SMS for anomaly {anomaly.id}: {sms_error}")
 
                 # ایجاد اعلان برای مسئول پیگیری
-                Notification.objects.create(
-                    user=anomaly.followup.user,
-                    message=f"آنومالی جدید با شناسه {anomaly.id} برای شما ثبت شد.",
-                    url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
-                )
+                if anomaly.followup and anomaly.followup.user:
+                     logger.debug(f"Attempting to create notification for user: {anomaly.followup.user.username}")
+                     Notification.objects.create(
+                       user=anomaly.followup.user,
+                       message=f"آنومالی جدید با شناسه {anomaly.id} برای شما ثبت شد.",
+                       url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
+                     )
+                     logger.debug(f"Notification created successfully for user: {anomaly.followup.user.username}")
+                else:
+                   logger.warning("Followup user or user object is missing for anomaly. Skipping notification.")
 
-                hse_group = get(name='مدیر HSE')
+
+                try:
+                     hse_group = Group.objects.get(name='مدیر HSE')
+                except Group.DoesNotExist:
+                    logger.error("Group 'مدیر HSE' does not exist.")
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                         return JsonResponse({
+                            'status': 'error',
+                            'message': 'گروه مدیر HSE یافت نشد',
+                           })
+                    messages.error(request, 'گروه مدیر HSE یافت نشد')
+                    return redirect('anomalis:anomalis')
+
+
                 for user in hse_group.user_set.all():
+                    logger.debug(f"Attempting to create notification for HSE manager: {user.username}")
                     Notification.objects.create(
                         user=user,
                         message=f"آنومالی جدید با شناسه {anomaly.id} ثبت شد.",
                         url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
                     )
+                    logger.debug(f"Notification created successfully for HSE manager: {user.username}")
+
 
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     logger.info(f"Returning success response for AJAX request by user {request.user.username}")
@@ -140,6 +161,7 @@ def anomalis(request):
                     'message': 'فرم نامعتبر است',
                     'errors': form.errors
                 })
+            messages.error(request, 'فرم نامعتبر است. لطفاً مقادیر را به درستی وارد کنید')
     else:
         logger.info(f"GET request received from user {request.user.username}")
         form = AnomalyForm()
