@@ -131,11 +131,14 @@ function addAbsence() {
     }
 
     const userName = userSelect.options[userSelect.selectedIndex].text;
-
     const tr = document.createElement('tr');
     tr.innerHTML = `
         <td>${userName}</td>
         <td>تاریخ ثبت خودکار</td>
+         <td>
+            <label class="form-label">توضیحات</label>
+             <input type="text" class="form-control" name="absence_description[]" required>
+        </td>
         <td>
             <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">حذف</button>
             <input type="hidden" name="absences[]" value="${userSelect.value}">
@@ -171,6 +174,10 @@ function addSickLeave() {
         tr.innerHTML = `
             <td>${userName}</td>
             <td>تاریخ ثبت خودکار</td>
+            <td>
+                <label class="form-label">توضیحات</label>
+                <input type="text" class="form-control" name="sick_leave_description[]" required>
+            </td>
              <td>
                 <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">حذف</button>
                 <input type="hidden" name="sick_leaves[]" value="${userSelect.value}">
@@ -279,7 +286,7 @@ function updateNavigationButtons(stepIndex) {
 }
 
 function validateAllSteps() {
-    const regularLeaveCount = document.querySelector('#regular_leave_table tbody').children.length;
+     const regularLeaveCount = document.querySelector('#regular_leave_table tbody').children.length;
     const absenceCount = document.querySelector('#absence_table tbody').children.length;
     const sickLeaveCount = document.querySelector('#sick_leave_table tbody').children.length;
     const hourlyLeaveCount = document.querySelector('#hourly_leave_table tbody').children.length;
@@ -309,11 +316,13 @@ function submitLeaveReport(form) {
         },
         'absence': {
             selector: '[name="absences[]"]',
-            type: 'absence'
+            type: 'absence',
+            descriptionSelector: '[name="absence_description[]"]'
         },
          'sick_leave': {
             selector: '[name="sick_leaves[]"]',
-            type: 'sick_leave'
+            type: 'sick_leave',
+            descriptionSelector: '[name="sick_leave_description[]"]'
         },
         'hourly': {
             selector: '[name="hourly_leaves[]"]',
@@ -322,29 +331,34 @@ function submitLeaveReport(form) {
     };
 
     // جمع‌آوری داده‌ها از هر جدول
-    for (const [key, table] of Object.entries(tables)) {
-        document.querySelectorAll(table.selector).forEach(input => {
-            const values = input.value.split(',');
-            console.log(`Processing ${key} leave:`, values); // برای دیباگ
-
-            const leaveData = {
+     for (const [key, table] of Object.entries(tables)) {
+            const elements = document.querySelectorAll(table.selector);
+            elements.forEach((input, index) => {
+                const values = input.value.split(',');
+                 const leaveData = {
                 user: values[0],
                 leave_type: table.type,
-                shift_date: values[1]
             };
 
-            if (table.type === 'hourly') {
-                leaveData.start_time = values[2];
-                leaveData.end_time = values[3];
-            }
+                 if (table.type === 'hourly') {
+                    leaveData.start_time = values[1];
+                    leaveData.end_time = values[2];
+                }
+                if (table.descriptionSelector) {
+                    const descriptionInputs = document.querySelectorAll(table.descriptionSelector);
+                     if (descriptionInputs[index] && descriptionInputs[index].value) {
+                        leaveData.description = descriptionInputs[index].value;
+                    } else {
+                         showError('لطفا توضیحات مربوط به مرخصی غیبت یا استعلاجی را وارد کنید');
+                           return;
+                    }
+                }
 
-            leaves.push({
-                 user: values[0],
-                leave_type: table.type,
-                 ...(table.type === 'hourly' && { start_time: values[1], end_time: values[2] })
+              leaves.push(leaveData);
+
             });
-        });
-    }
+        }
+
     // چک کردن اگر هیچ موردی ثبت نشده
     if (leaves.length === 0) {
         showError('لطفا حداقل یک مورد را ثبت کنید');
@@ -381,13 +395,17 @@ function submitLeaveReport(form) {
         processData: false,
         contentType: false,
         headers: { 'X-CSRFToken': csrftoken },
-        success: function(response) {
+         success: function(response) {
             console.log('Response:', response); // برای دیباگ
-            handleSubmitResponse(response);
+            if (response.success) {
+                handleSubmitResponse(response);
+            } else {
+                 handleSubmitError(response.details || response.error || 'خطا در ثبت اطلاعات');
+            }
         },
-        error: function(xhr, status, error) {
+         error: function(xhr, status, error) {
             console.error('Error:', error); // برای دیباگ
-            handleSubmitError(xhr);
+            handleSubmitError('خطا در ارسال اطلاعات. لطفا دوباره تلاش کنید.');
         },
         complete: function() {
             if (submitBtn) {
@@ -397,6 +415,7 @@ function submitLeaveReport(form) {
         }
     });
 }
+
 
 function handleSubmitResponse(response) {
     if (response.success) {
@@ -409,12 +428,30 @@ function handleSubmitResponse(response) {
             window.location.href = '/leave_reports/shift_report_list/';
         });
     } else {
-        showError(response.error || 'خطا در ثبت اطلاعات');
+         handleSubmitError(response.details || response.error || 'خطا در ثبت اطلاعات');
     }
 }
 
-function handleSubmitError(xhr) {
-    showError('خطا در ارسال اطلاعات. لطفا دوباره تلاش کنید.');
+
+function handleSubmitError(error) {
+    let message = 'خطا در ثبت اطلاعات';
+     if (typeof error === 'string') {
+        message = error;
+    } else if (Array.isArray(error)) {
+        message = error.join('<br>');
+    }
+      Swal.fire({
+        title: 'خطا',
+        html: message,
+        icon: 'error',
+        confirmButtonText: 'باشه',
+         customClass: {
+            container: 'rtl-alert',
+            popup: 'rtl-alert',
+            title: 'rtl-alert',
+            confirmButton: 'rtl-alert btn btn-primary'
+        }
+    });
 }
 
 function showError(message) {

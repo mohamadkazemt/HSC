@@ -18,8 +18,11 @@ from django.template.loader import get_template
 from django.conf import settings
 from jdatetime import date as jdate
 import logging
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
+
 
 @login_required
 def create_shift_report(request):
@@ -45,67 +48,77 @@ def create_shift_report(request):
                         report_data = {
                             'user': user_id,
                             'leave_type': request.POST.get(f'leave_type_{i}'),
-                            'status': 'reported'
+                            'status': 'reported',
+                            'description': request.POST.get(f'description_{i}'),
                         }
-
                         if report_data['leave_type'] == 'hourly':
                             report_data.update({
                                 'start_time': request.POST.get(f'start_time_{i}'),
                                 'end_time': request.POST.get(f'end_time_{i}')
                             })
+
                         logger.info(f"Processing leave {i + 1} with data: {report_data}")
+
                         form = ShiftReportForm(report_data)
                         if form.is_valid():
                             report = form.save(commit=False)
                             report.crate_by = request.user.userprofile
                             report.work_group = request.user.userprofile.group
-                            report.save()
-                            logger.info(f"Leave {i+1} saved successfully. Report: {report.__dict__}")
-                            success_count += 1
+
+                            try:
+                                report.save()
+                                logger.info(f"Leave {i + 1} saved successfully. Report: {report.__dict__}")
+                                success_count += 1
+                            except ValidationError as e:
+                                errors.append(f"{e}")
+                                logger.warning(f"Validation error for leave {i + 1}: {e}")
+
+
                         else:
-                           errors.append(f"خطا در مورد {i + 1}: {form.errors}")
-                           logger.warning(f"Form not valid for leave {i + 1}: {form.errors}")
+                            for field, error_list in form.errors.items():
+                                for error in error_list:
+                                    errors.append(f"خطا در فیلد {field}: {error}")
+
+                        logger.warning(f"Form not valid for leave {i + 1}: {form.errors}")
                     except Exception as e:
                         errors.append(f"خطا در پردازش مورد {i + 1}: {str(e)}")
-                        logger.error(f"Error processing leave {i+1}: {e}", exc_info=True)
-
+                        logger.error(f"Error processing leave {i + 1}: {e}", exc_info=True)
 
                 if success_count > 0 and not errors:
                     logger.info(f"{success_count} leaves saved successfully")
                     return JsonResponse({'success': True, 'message': f'{success_count} مورد با موفقیت ثبت شد'})
                 elif errors:
-                     logger.warning(f"Errors found, not saving. Errors:{errors}")
-                     return JsonResponse({'success': False, 'error': 'خطا در ثبت اطلاعات', 'details': errors})
+                    logger.warning(f"Errors found, not saving. Errors:{errors}")
+                    return JsonResponse({'success': False, 'error': 'خطا در ثبت اطلاعات', 'details': errors})
 
         except Exception as e:
             errors.append(f'خطای سیستمی: {str(e)}')
             logger.error(f"System error: {e}", exc_info=True)
             return JsonResponse({'success': False, 'error': f'خطای سیستمی: {str(e)}'})
 
-
     form = ShiftReportForm()
-    return render(request, 'leave_reports/shift_report.html', {'form': form, 'personnels': personnel_list, 'errors': errors})
+    return render(request, 'leave_reports/shift_report.html',
+                  {'form': form, 'personnels': personnel_list, 'errors': errors})
 
 
-
-
-
-
-
-
-
-from django.db.models import Count, Q
-import jdatetime
-from django.shortcuts import render
-import datetime
-
+@login_required
 def shift_report_list(request):
-    reports = ShiftReport.objects.all()
+    reports = ShiftReport.objects.all().order_by('-created_at')  # مرتب سازی بر اساس زمان ایجاد نزولی
 
     # دریافت فیلترهای سال، ماه و روز
     year = request.GET.get('year')
     month = request.GET.get('month')
     day = request.GET.get('day')
+
+    # فیلتر گروه کاری
+    work_group = request.GET.get('work_group')
+    if work_group:
+        reports = reports.filter(work_group=work_group)
+
+    # فیلتر امروز
+    today_filter = request.GET.get('today')
+    if today_filter == 'true':
+        reports = reports.filter(shift_date=datetime.date.today())
 
     # تبدیل تاریخ شمسی به میلادی برای فیلتر
     if year and month and day:
@@ -137,7 +150,7 @@ def shift_report_list(request):
         total_regular=Count('id', filter=Q(leave_type='regular')),
         total_hourly=Count('id', filter=Q(leave_type='hourly')),
         total_absence=Count('id', filter=Q(leave_type='absence')),
-        total_sick_leave=Count('id', filter=Q(leave_type='sick_leave')), # مرخصی استعلاجی
+        total_sick_leave=Count('id', filter=Q(leave_type='sick_leave')),  # مرخصی استعلاجی
         total_persons=Count('user', distinct=True)  # تعداد افراد یکتا
     )
 
@@ -154,6 +167,16 @@ def shift_report_list(request):
         report['shift_date'] = jdatetime.date.fromgregorian(date=report['shift_date']).strftime('%Y/%m/%d')
         report_with_ids.append(report)
 
+    # پیاده سازی صفحه بندی
+    page = request.GET.get('page', 1)
+    paginator = Paginator(report_with_ids, 10)  # نمایش 10 گزارش در هر صفحه
+    try:
+        reports_page = paginator.page(page)
+    except PageNotAnInteger:
+        reports_page = paginator.page(1)
+    except EmptyPage:
+        reports_page = paginator.page(paginator.num_pages)
+
     # استخراج سال‌ها، ماه‌ها و روزها به شمسی
     all_years = sorted(
         list({int(r['shift_date'].split('/')[0]) for r in report_with_ids}),
@@ -166,22 +189,22 @@ def shift_report_list(request):
         list({int(r['shift_date'].split('/')[2]) for r in report_with_ids})
     )
 
+    # استخراج گروه های کاری
+    all_work_groups = sorted(list({r.work_group for r in ShiftReport.objects.all()}))
+
     return render(request, 'leave_reports/shift_report_list.html', {
-        'reports': report_with_ids,
+        'reports': reports_page,  # تغییر نام متغیر
         'years': all_years,
         'months': all_months,
         'days': all_days,
         'selected_year': year,
         'selected_month': month,
         'selected_day': day,
+        'page_obj': reports_page,
+        'work_groups': all_work_groups,
+        'selected_work_group': work_group,
+        'today_filter': today_filter,
     })
-
-
-
-
-
-
-
 
 
 @login_required
@@ -193,11 +216,14 @@ def shift_report_detail(request, report_id):
     shift_date_jalali = jdatetime.date.fromgregorian(date=report.shift_date).strftime('%Y/%m/%d')
 
     # دسته‌بندی داده‌ها
-    leaves = ShiftReport.objects.filter(work_group=report.work_group, leave_type='regular', shift_date=report.shift_date)
-    absences = ShiftReport.objects.filter(work_group=report.work_group, leave_type='absence', shift_date=report.shift_date)
-    hourly_leaves = ShiftReport.objects.filter(work_group=report.work_group, leave_type='hourly', shift_date=report.shift_date)
-    sick_leaves = ShiftReport.objects.filter(work_group=report.work_group, leave_type='sick_leave', shift_date=report.shift_date)
-
+    leaves = ShiftReport.objects.filter(work_group=report.work_group, leave_type='regular',
+                                        shift_date=report.shift_date)
+    absences = ShiftReport.objects.filter(work_group=report.work_group, leave_type='absence',
+                                          shift_date=report.shift_date)
+    hourly_leaves = ShiftReport.objects.filter(work_group=report.work_group, leave_type='hourly',
+                                               shift_date=report.shift_date)
+    sick_leaves = ShiftReport.objects.filter(work_group=report.work_group, leave_type='sick_leave',
+                                             shift_date=report.shift_date)
 
     context = {
         'report': report,
@@ -209,12 +235,6 @@ def shift_report_detail(request, report_id):
     }
 
     return render(request, 'leave_reports/shift_report_detail.html', context)
-
-
-
-
-
-
 
 
 @login_required
@@ -262,13 +282,12 @@ def shift_report_pdf_view(request, pk):
         'leaves': leaves,
         'absences': absences,
         'hourly_leaves': hourly_leaves,
-        'sick_leaves': sick_leaves, # مرخصی استعلاجی
+        'sick_leaves': sick_leaves,  # مرخصی استعلاجی
         'shift_date_jalali': shift_date_jalali,
         'today': jdate.today().strftime('%Y/%m/%d'),
         'static_url': static_url,
         'media_url': media_url,
     }, request)
-
 
     # تنظیم پاسخ به صورت PDF
     response = HttpResponse(content_type='application/pdf')
