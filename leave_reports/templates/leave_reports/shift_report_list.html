@@ -60,6 +60,26 @@
                                                     {% endfor %}
                                                 </select>
                                             </div>
+
+                                            <div class="me-2">
+                                                <select name="work_group" class="form-select form-select-solid form-select-sm">
+                                                    <option value="">همه گروه ها</option>
+                                                     {% for group in work_groups %}
+                                                        <option value="{{ group }}" {% if selected_work_group == group %}selected{% endif %}>{{ group }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="me-2">
+                                                 <div class="form-check form-check-custom form-check-solid me-5">
+                                                    <input class="form-check-input" type="checkbox" value="true" id="today_filter" name="today"  {% if today_filter == 'true' %}checked{% endif %}>
+                                                    <label class="form-check-label" for="today_filter">
+                                                        فقط امروز
+                                                    </label>
+                                                </div>
+                                            </div>
+
+
+
                                             <div class="me-2">
                                                 <button type="submit" class="btn btn-primary">اعمال فیلترها</button>
                                             </div>
@@ -80,7 +100,7 @@
                                                 </tr>
                                                 </thead>
                                                 <tbody class="fs-6">
-                                                {% for report in reports %}
+                                                {% for report in reports.object_list %}
                                                     <tr>
                                                         <td>{{ report.work_group }}</td>
                                                         <td>{{ report.shift_date }}</td>
@@ -99,11 +119,48 @@
                                                     </tr>
                                                 {% endfor %}
                                                 </tbody>
-
-
-
                                             </table>
                                         </div>
+                                        <!-- Pagination -->
+                                            <div class="d-flex justify-content-center mt-5">
+                                                <nav aria-label="Page navigation">
+                                                    <ul class="pagination">
+                                                        {% if page_obj.has_previous %}
+                                                            <li class="page-item">
+                                                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&year={{selected_year}}&month={{selected_month}}&day={{selected_day}}&work_group={{selected_work_group}}&today={{today_filter}}" aria-label="Previous">
+                                                                    <span aria-hidden="true">«</span>
+                                                                </a>
+                                                            </li>
+                                                        {% else %}
+                                                            <li class="page-item disabled">
+                                                                <a class="page-link" href="#" aria-label="Previous">
+                                                                    <span aria-hidden="true">«</span>
+                                                                </a>
+                                                            </li>
+                                                        {% endif %}
+                                                        {% for i in page_obj.paginator.page_range %}
+                                                            {% if page_obj.number == i %}
+                                                                <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
+                                                            {% else %}
+                                                                <li class="page-item"><a class="page-link" href="?page={{ i }}&year={{selected_year}}&month={{selected_month}}&day={{selected_day}}&work_group={{selected_work_group}}&today={{today_filter}}">{{ i }}</a></li>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                        {% if page_obj.has_next %}
+                                                            <li class="page-item">
+                                                                <a class="page-link" href="?page={{ page_obj.next_page_number }}&year={{selected_year}}&month={{selected_month}}&day={{selected_day}}&work_group={{selected_work_group}}&today={{today_filter}}" aria-label="Next">
+                                                                    <span aria-hidden="true">»</span>
+                                                                </a>
+                                                            </li>
+                                                        {% else %}
+                                                            <li class="page-item disabled">
+                                                                <a class="page-link" href="#" aria-label="Next">
+                                                                    <span aria-hidden="true">»</span>
+                                                                </a>
+                                                            </li>
+                                                        {% endif %}
+                                                    </ul>
+                                                </nav>
+                                            </div>
                                     </div>
 
                                     <!--end::Card body-->

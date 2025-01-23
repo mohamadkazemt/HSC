@@ -5,13 +5,18 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="mkt-update3">
+      <change afterPath="$PROJECT_DIR$/dashboard/migrations/0002_pushsubscription.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/leave_reports/migrations/0005_shiftreport_description_alter_shiftreport_leave_type.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/HSCprojects.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/HSCprojects.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report.html" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report_detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report_detail.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/leave_reports/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/leave_reports/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report_list.html" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report_list.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/leave_reports/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/assets/js/custom/leave-report.js" beforeDir="false" afterPath="$PROJECT_DIR$/static/assets/js/custom/leave-report.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,12 +52,12 @@
     &quot;assignee&quot;: &quot;mohamadkazemt&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/mohamadkazemt/HSC.git",
-    "accountId": "b1049974-7825-44ef-a60c-99f35deafaf1"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/mohamadkazemt/HSC.git&quot;,
+    &quot;accountId&quot;: &quot;b1049974-7825-44ef-a60c-99f35deafaf1&quot;
   }
-}]]></component>
+}</component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/anomalis/admin.py" root0="FORCE_HIGHLIGHTING" />
   </component>
@@ -804,7 +809,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/anomalis/views.py</url>
-          <line>537</line>
+          <line>559</line>
           <option name="timeStamp" value="7" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
