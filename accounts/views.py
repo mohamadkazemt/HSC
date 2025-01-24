@@ -17,7 +17,8 @@ from django.db.models import Q # اضافه کردن این خط
 name = 'accounts'
 
 
-
+import logging
+logger = logging.getLogger(__name__)
 
 def user_login(request):
     if request.user.is_authenticated:
@@ -83,14 +84,22 @@ def edit_profile(request):
 
 
 
+
+
 def send_reset_code(request):
-    if request.method == 'POST':
-        form = PasswordResetSMSForm(request.POST)
-        if form.is_valid():
-            mobile = form.cleaned_data['mobile']
-            try:
+   logger.info("send_reset_code called")
+   if request.method == 'POST':
+       logger.info("request method is POST")
+       form = PasswordResetSMSForm(request.POST)
+       if form.is_valid():
+           logger.info("form is valid")
+           mobile = form.cleaned_data['mobile']
+           logger.info(f"mobile number: {mobile}")
+           try:
                 user_profile = UserProfile.objects.get(mobile=mobile)
+                logger.info(f"user profile found: {user_profile}")
                 user_profile.generate_verification_code()
+                logger.info(f"verification code generated: {user_profile.verification_code}")
 
                 # ارسال پیامک
                 template_id = 857178  # شناسه قالب پیامک
@@ -100,13 +109,17 @@ def send_reset_code(request):
                 ]
                 send_template_sms(mobile, template_id, parameters)
                 messages.success(request, "کد تأیید به شماره موبایل ارسال شد.")
+                logger.info("sms sent successfully")
                 return redirect('accounts:reset_password_confirm')
-            except UserProfile.DoesNotExist:
+           except UserProfile.DoesNotExist:
                 messages.error(request, "شماره موبایل وارد شده یافت نشد.")
-    else:
-        form = PasswordResetSMSForm()
-
-    return render(request, 'accounts/reset-password.html', {'form': form})
+                logger.error(f"user profile not found for mobile: {mobile}")
+       else:
+            logger.error(f"form is not valid, errors:{form.errors}")
+   else:
+       form = PasswordResetSMSForm()
+       logger.info("request method is GET")
+   return render(request, 'accounts/reset-password.html', {'form': form})
 
 
 

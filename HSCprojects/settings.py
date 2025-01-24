@@ -211,16 +211,11 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
         },
-        'file': {
-            'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': 'debug.log',
-        },
     },
     'loggers': {
-        'leave_reports': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
+        'accounts': { # نام اپلیکیشن
+            'handlers': ['console'],
+            'level': 'INFO', # یا DEBUG
             'propagate': True,
         },
     },
