@@ -4,11 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="mkt-leave-Edite">
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="mkt-anomali-error">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report_detail.html" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report_detail.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report_pdf.html" beforeDir="false" afterPath="$PROJECT_DIR$/leave_reports/templates/leave_reports/shift_report_pdf.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/sidebar.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/sidebar.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,7 +44,7 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/mohamadkazemt/HSC.git&quot;,
-    &quot;accountId&quot;: &quot;b1049974-7825-44ef-a60c-99f35deafaf1&quot;
+    &quot;accountId&quot;: &quot;4a4a0b77-3294-4afc-82ac-479cfd08feaa&quot;
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
@@ -153,8 +150,9 @@
         <env name="DJANGO_SETTINGS_MODULE" value="HSCprojects.settings" />
       </envs>
       <option name="SDK_HOME" value="" />
+      <option name="SDK_NAME" value="Python 3.12 (HSC) (2)" />
       <option name="WORKING_DIRECTORY" value="" />
-      <option name="IS_MODULE_SDK" value="true" />
+      <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <option name="launchJavascriptDebuger" value="false" />
@@ -232,8 +230,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-PY-242.24807.21" />
-        <option value="bundled-python-sdk-00717045f1d3-399fe30bd8c1-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-242.24807.21" />
+        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-PY-242.23726.102" />
+        <option value="bundled-python-sdk-5e1850174b45-399fe30bd8c1-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-242.23726.102" />
       </set>
     </attachedChunks>
   </component>
@@ -379,7 +377,6 @@
       <workItem from="1737033966196" duration="891000" />
       <workItem from="1737127876992" duration="1284000" />
       <workItem from="1737210978942" duration="3062000" />
-      <workItem from="1737526000783" duration="4494000" />
     </task>
     <task id="LOCAL‎−۰۰۰۱۴" summary="amaliyat1">
       <option name="closed" value="true" />
@@ -734,12 +731,12 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۶۱" />
       <updated>1737215947626</updated>
     </task>
-    <task id="LOCAL‎−۰۰۰۶۲" summary="mkt-leave-Edite">
+    <task id="LOCAL‎−۰۰۰۶۲" summary="mkt-anomali-error">
       <option name="closed" value="true" />
-      <created>1737609806942</created>
+      <created>1737557691911</created>
       <option name="number" value="LOCAL‎−۰۰۰۶۲" />
       <option name="presentableId" value="LOCAL‎−۰۰۰۶۲" />
-      <updated>1737609806942</updated>
+      <updated>1737557691912</updated>
     </task>
     <option name="localTasksCounter" value="63" />
     <servers />
@@ -783,8 +780,8 @@
     <MESSAGE value="mkt-update1" />
     <MESSAGE value="mkt-update2" />
     <MESSAGE value="mkt-update3" />
-    <MESSAGE value="mkt-leave-Edite" />
-    <option name="LAST_COMMIT_MESSAGE" value="mkt-leave-Edite" />
+    <MESSAGE value="mkt-anomali-error" />
+    <option name="LAST_COMMIT_MESSAGE" value="mkt-anomali-error" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -801,7 +798,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/anomalis/views.py</url>
-          <line>559</line>
+          <line>504</line>
           <option name="timeStamp" value="7" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
