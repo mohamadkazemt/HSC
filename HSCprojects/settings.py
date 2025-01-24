@@ -207,15 +207,31 @@ fa_formats.DATE_FORMAT = "Y/m/d"
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+        'file': {  # Handler برای فایل لاگ
+            'class': 'logging.FileHandler',
+            'filename': 'accounts.log',  # مسیر و نام فایل لاگ (میتوانید تغییر دهید)
+            'formatter': 'verbose',
         },
     },
     'loggers': {
-        'accounts': { # نام اپلیکیشن
-            'handlers': ['console'],
-            'level': 'INFO', # یا DEBUG
+        'accounts': {  # نام اپلیکیشن
+            'handlers': ['file', 'console'],  # استفاده از هر دو هندلر فایل و کنسول
+            'level': 'INFO',  # یا DEBUG
             'propagate': True,
         },
     },

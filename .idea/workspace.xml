@@ -4,8 +4,11 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="mkt-anomali-error">
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="mkt-accountes-resetpass">
+      <change beforePath="$PROJECT_DIR$/.idea/HSCprojects.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/HSCprojects.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -378,13 +381,6 @@
       <workItem from="1737127876992" duration="1284000" />
       <workItem from="1737210978942" duration="3062000" />
     </task>
-    <task id="LOCAL‎−۰۰۰۱۴" summary="amaliyat1">
-      <option name="closed" value="true" />
-      <created>1729963968933</created>
-      <option name="number" value="LOCAL‎−۰۰۰۱۴" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۱۴" />
-      <updated>1729963968934</updated>
-    </task>
     <task id="LOCAL‎−۰۰۰۱۵" summary="amalyatend1">
       <option name="closed" value="true" />
       <created>1730710634254</created>
@@ -738,7 +734,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۶۲" />
       <updated>1737557691912</updated>
     </task>
-    <option name="localTasksCounter" value="63" />
+    <task id="LOCAL‎−۰۰۰۶۳" summary="mkt-accountes-resetpass">
+      <option name="closed" value="true" />
+      <created>1737707038152</created>
+      <option name="number" value="LOCAL‎−۰۰۰۶۳" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۶۳" />
+      <updated>1737707038153</updated>
+    </task>
+    <option name="localTasksCounter" value="64" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -756,7 +759,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="reports&amp;contractor" />
     <MESSAGE value="dailyreport_hse" />
     <MESSAGE value="dailyreport_hse1" />
     <MESSAGE value="dailyreport_hse22" />
@@ -781,7 +783,8 @@
     <MESSAGE value="mkt-update2" />
     <MESSAGE value="mkt-update3" />
     <MESSAGE value="mkt-anomali-error" />
-    <option name="LAST_COMMIT_MESSAGE" value="mkt-anomali-error" />
+    <MESSAGE value="mkt-accountes-resetpass" />
+    <option name="LAST_COMMIT_MESSAGE" value="mkt-accountes-resetpass" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
