@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="dashbord-NT">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/dashboard/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/dashboard/views.py" afterDir="false" />
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="dashbord-NT0.1">
       <change beforePath="$PROJECT_DIR$/templates/notification.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/notification.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -380,14 +378,6 @@
       <workItem from="1737127876992" duration="1284000" />
       <workItem from="1737210978942" duration="3062000" />
     </task>
-    <task id="LOCAL-00019" summary="endamaliyat&amp;anomali">
-      <option name="closed" value="true" />
-      <created>1731248066115</created>
-      <option name="number" value="00019" />
-      <option name="presentableId" value="LOCAL-00019" />
-      <option name="project" value="LOCAL" />
-      <updated>1731248066115</updated>
-    </task>
     <task id="LOCAL-00020" summary="endamaliyat&amp;anomali1">
       <option name="closed" value="true" />
       <created>1731557275820</created>
@@ -738,7 +728,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۶۷" />
       <updated>1737733488727</updated>
     </task>
-    <option name="localTasksCounter" value="68" />
+    <task id="LOCAL‎−۰۰۰۶۸" summary="dashbord-NT0.1">
+      <option name="closed" value="true" />
+      <created>1737733846867</created>
+      <option name="number" value="LOCAL‎−۰۰۰۶۸" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۶۸" />
+      <updated>1737733846867</updated>
+    </task>
+    <option name="localTasksCounter" value="69" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -756,7 +753,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="dailyreport_hse1" />
     <MESSAGE value="dailyreport_hse22" />
     <MESSAGE value="dailyreport_hse232" />
     <MESSAGE value="dailyreport_hsemami" />
@@ -781,7 +777,8 @@
     <MESSAGE value="mkt-anomali-error" />
     <MESSAGE value="mkt-accountes-resetpass" />
     <MESSAGE value="dashbord-NT" />
-    <option name="LAST_COMMIT_MESSAGE" value="dashbord-NT" />
+    <MESSAGE value="dashbord-NT0.1" />
+    <option name="LAST_COMMIT_MESSAGE" value="dashbord-NT0.1" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

@@ -14,13 +14,6 @@
         <div class="notifications-list" id="newNotificationsList">
             <h4 class="fw-bold text-primary">اعلان‌های جدید</h4>
 
-            <!-- Pagination for New Notifications -->
-            <div class="pagination-controls mb-3 d-flex justify-content-center" id="newNotificationsPagination">
-                <button class="btn btn-outline-secondary me-2" id="prevNewPage" disabled>قبلی</button>
-                <span id="newNotificationsPageNumber" class="align-self-center">صفحه 1</span>
-                <button class="btn btn-outline-secondary ms-2" id="nextNewPage">بعدی</button>
-            </div>
-
             <div id="newNotificationsContainer">
             {% if unread_notifications %}
                 {% for notification in unread_notifications %}
@@ -50,9 +43,13 @@
 
         <!-- Pagination for Read Notifications -->
         <div class="pagination-controls mb-3 d-flex justify-content-center" id="readNotificationsPagination">
-            <button class="btn btn-outline-secondary me-2" id="prevReadPage" disabled>قبلی</button>
+            {% if read_notifications.has_previous %}
+            <a href="?page={{ read_notifications.previous_page_number }}" class="btn btn-outline-secondary me-2">قبلی</a>
+            {% endif %}
             <span id="readNotificationsPageNumber" class="align-self-center">صفحه {{ read_notifications.number }} از {{ read_notifications.paginator.num_pages }}</span>
-            <button class="btn btn-outline-secondary ms-2" id="nextReadPage">بعدی</button>
+            {% if read_notifications.has_next %}
+            <a href="?page={{ read_notifications.next_page_number }}" class="btn btn-outline-secondary ms-2">بعدی</a>
+            {% endif %}
         </div>
 
             <div id="readNotificationsContainer">
@@ -84,109 +81,6 @@
 <div class="text-muted text-center">برای مشاهده اعلان‌ها ابتدا وارد شوید.</div>
 {% endif %}
 
-<script>
-
-    const notificationsPerPage = 5;
-
-    // New Notifications Pagination
-    let currentNewPage = 1;
-    const newNotifications = Array.from(document.querySelectorAll('#newNotificationsContainer .d-flex.justify-content-start'));
-    const newPageNumberEl = document.getElementById('newNotificationsPageNumber');
-    const prevNewPageBtn = document.getElementById('prevNewPage');
-    const nextNewPageBtn = document.getElementById('nextNewPage');
-
-
-    function showNewPage(page) {
-        const start = (page - 1) * notificationsPerPage;
-        const end = start + notificationsPerPage;
-
-        newNotifications.forEach((notification, index) => {
-            if (index >= start && index < end) {
-                notification.classList.remove('d-none');
-            } else {
-                notification.classList.add('d-none');
-            }
-        });
-
-        newPageNumberEl.textContent = `صفحه ${page}`;
-        prevNewPageBtn.disabled = page === 1;
-        nextNewPageBtn.disabled = end >= newNotifications.length;
-    }
-
-
-    prevNewPageBtn.addEventListener('click', () => {
-        if (currentNewPage > 1) {
-            currentNewPage--;
-            showNewPage(currentNewPage);
-        }
-    });
-
-    nextNewPageBtn.addEventListener('click', () => {
-        if (currentNewPage * notificationsPerPage < newNotifications.length) {
-            currentNewPage++;
-            showNewPage(currentNewPage);
-        }
-    });
-
-    if(newNotifications.length > 0){
-    showNewPage(currentNewPage);
-    }
-
-
-
-    // Read Notifications Pagination
-    let currentReadPage = 1;
-    const readNotifications = Array.from(document.querySelectorAll('#readNotificationsContainer .d-flex.justify-content-start'));
-    const readPageNumberEl = document.getElementById('readNotificationsPageNumber');
-    const prevReadPageBtn = document.getElementById('prevReadPage');
-    const nextReadPageBtn = document.getElementById('nextReadPage');
-
-    function showReadPage(page) {
-        const start = (page - 1) * notificationsPerPage;
-        const end = start + notificationsPerPage;
-
-        readNotifications.forEach((notification, index) => {
-            if (index >= start && index < end) {
-                notification.classList.remove('d-none');
-            } else {
-                notification.classList.add('d-none');
-            }
-        });
-
-         // Get the page number from the server-side pagination
-        const serverPageNumber = parseInt('{{ read_notifications.number }}');
-
-        readPageNumberEl.textContent = `صفحه ${serverPageNumber} از {{ read_notifications.paginator.num_pages }}`;
-
-        prevReadPageBtn.disabled = serverPageNumber === 1;
-        nextReadPageBtn.disabled = serverPageNumber === {{ read_notifications.paginator.num_pages }};
-
-        // Update currentReadPage to server page number
-        currentReadPage = serverPageNumber;
-    }
-
-
-     prevReadPageBtn.addEventListener('click', () => {
-        const serverPageNumber = parseInt('{{ read_notifications.number }}');
-        if (serverPageNumber > 1) {
-            const newPage = serverPageNumber - 1;
-             window.location.href = "?page=" + newPage;
-        }
-    });
-
-
-    nextReadPageBtn.addEventListener('click', () => {
-       const serverPageNumber = parseInt('{{ read_notifications.number }}');
-        if (serverPageNumber < {{ read_notifications.paginator.num_pages }}) {
-             const newPage = serverPageNumber + 1;
-            window.location.href = "?page=" + newPage;
-        }
-    });
-
-    if(readNotifications.length > 0){
-        showReadPage(currentReadPage);
-    }
-</script>
 <script>
     document.getElementById('newNotificationsTab').addEventListener('click', function() {
         document.getElementById('newNotificationsList').classList.remove('d-none');
