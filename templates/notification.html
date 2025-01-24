@@ -51,7 +51,7 @@
         <!-- Pagination for Read Notifications -->
         <div class="pagination-controls mb-3 d-flex justify-content-center" id="readNotificationsPagination">
             <button class="btn btn-outline-secondary me-2" id="prevReadPage" disabled>قبلی</button>
-            <span id="readNotificationsPageNumber" class="align-self-center">صفحه 1</span>
+            <span id="readNotificationsPageNumber" class="align-self-center">صفحه {{ read_notifications.number }} از {{ read_notifications.paginator.num_pages }}</span>
             <button class="btn btn-outline-secondary ms-2" id="nextReadPage">بعدی</button>
         </div>
 
@@ -153,7 +153,11 @@
             }
         });
 
-        readPageNumberEl.textContent = `صفحه ${page}`;
+         // Get the page number from the server-side pagination
+        const serverPageNumber = parseInt('{{ read_notifications.number }}');
+
+        readPageNumberEl.textContent = `صفحه ${serverPageNumber} از {{ read_notifications.paginator.num_pages }}`;
+
         prevReadPageBtn.disabled = page === 1;
         nextReadPageBtn.disabled = end >= readNotifications.length;
     }
@@ -162,6 +166,9 @@
         if (currentReadPage > 1) {
             currentReadPage--;
             showReadPage(currentReadPage);
+            const serverPageNumber = parseInt('{{ read_notifications.number }}')
+            const newPage = serverPageNumber - 1;
+            window.location.href = "?page=" + newPage;
         }
     });
 
@@ -169,6 +176,9 @@
         if (currentReadPage * notificationsPerPage < readNotifications.length) {
             currentReadPage++;
             showReadPage(currentReadPage);
+                const serverPageNumber = parseInt('{{ read_notifications.number }}')
+                const newPage = serverPageNumber + 1;
+               window.location.href = "?page=" + newPage;
         }
     });
 
