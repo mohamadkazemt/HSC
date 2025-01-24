@@ -5,10 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="mkt-accountes-resetpass">
-      <change beforePath="$PROJECT_DIR$/.idea/HSCprojects.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/HSCprojects.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/HSCprojects/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/HSCprojects/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/accounts/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/accounts/templates/accounts/new-password.html" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/templates/accounts/new-password.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/accounts/templates/accounts/reset-password.html" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/templates/accounts/reset-password.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/accounts/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -381,13 +383,6 @@
       <workItem from="1737127876992" duration="1284000" />
       <workItem from="1737210978942" duration="3062000" />
     </task>
-    <task id="LOCAL‎−۰۰۰۱۵" summary="amalyatend1">
-      <option name="closed" value="true" />
-      <created>1730710634254</created>
-      <option name="number" value="LOCAL‎−۰۰۰۱۵" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۱۵" />
-      <updated>1730710634254</updated>
-    </task>
     <task id="LOCAL‎−۰۰۰۱۶" summary="amalyatend1">
       <option name="closed" value="true" />
       <created>1730711348312</created>
@@ -741,7 +736,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۶۳" />
       <updated>1737707038153</updated>
     </task>
-    <option name="localTasksCounter" value="64" />
+    <task id="LOCAL‎−۰۰۰۶۴" summary="mkt-accountes-resetpass">
+      <option name="closed" value="true" />
+      <created>1737707550119</created>
+      <option name="number" value="LOCAL‎−۰۰۰۶۴" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۶۴" />
+      <updated>1737707550119</updated>
+    </task>
+    <option name="localTasksCounter" value="65" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">

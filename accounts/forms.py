@@ -40,9 +40,9 @@ class UserProfileForm(forms.ModelForm):
 
 
 class PasswordResetSMSForm(forms.Form):
-    mobile = forms.CharField(max_length=11, widget=forms.TextInput(attrs={
+    username = forms.CharField(widget=forms.TextInput(attrs={
         'class': 'form-control',
-        'placeholder': 'شماره موبایل'
+        'placeholder': 'نام کاربری'
     }))
 
 
