@@ -1,84 +1,84 @@
 {% load static %}
 {% if request.user.is_authenticated %}
-<div class="card w-100 border-0 rounded-0" id="kt_drawer_chat_messenger">
+    <div class="card w-100 border-0 rounded-0" id="kt_drawer_chat_messenger">
     <!--begin::کارت body-->
     <div class="card-body">
-        <!--begin::Tabs-->
-        <div class="d-flex justify-content-center mb-5">
-            <button class="btn btn-primary me-2" id="newNotificationsTab">اعلان‌های جدید</button>
-            <button class="btn btn-secondary" id="readNotificationsTab">اعلان‌های خوانده شده</button>
-        </div>
-        <!--end::Tabs-->
+    <!--begin::Tabs-->
+    <div class="d-flex justify-content-center mb-5">
+        <button class="btn btn-primary me-2" id="newNotificationsTab">اعلان‌های جدید</button>
+        <button class="btn btn-secondary" id="readNotificationsTab">اعلان‌های خوانده شده</button>
+    </div>
+    <!--end::Tabs-->
 
-        <!-- جدید اعلان ها -->
-        <div class="notifications-list" id="newNotificationsList">
-            <h4 class="fw-bold text-primary">اعلان‌های جدید</h4>
+    <!-- جدید اعلان ها -->
+    <div class="notifications-list" id="newNotificationsList">
+        <h4 class="fw-bold text-primary">اعلان‌های جدید</h4>
 
-            <div id="newNotificationsContainer">
+        <div id="newNotificationsContainer">
             {% if unread_notifications %}
                 {% for notification in unread_notifications %}
-                <div class="d-flex justify-content-start mb-10 new-notification-item">
-                    <div class="d-flex flex-column align-items-start">
-                        <div class="p-5 rounded bg-light-info text-gray-900 fw-semibold mw-lg-400px text-start">
-                            <form method="get" action="{% url 'dashboard:mark_notification_and_redirect' notification.id %}">
-                                <button type="submit" class="btn btn-link text-hover-primary p-0">{{ notification.message }}</button>
-                            </form>
-                            <br>
-                            <span class="text-muted fs-7">ایجاد شده: {{ notification.created_at|timesince }} پیش</span>
+                    <div class="d-flex justify-content-start mb-10 new-notification-item">
+                        <div class="d-flex flex-column align-items-start">
+                            <div class="p-5 rounded bg-light-info text-gray-900 fw-semibold mw-lg-400px text-start">
+                                <form method="get" action="{% url 'dashboard:mark_notification_and_redirect' notification.id %}">
+                                    <button type="submit" class="btn btn-link text-hover-primary p-0">{{ notification.message }}</button>
+                                </form>
+                                <br>
+                                <span class="text-muted fs-7">ایجاد شده: {{ notification.created_at|timesince }} پیش</span>
+                            </div>
                         </div>
                     </div>
-                </div>
                 {% endfor %}
             {% else %}
-            <div class="text-muted text-center">
+                <div class="text-muted text-center">
                     هیچ اعلان جدیدی وجود ندارد.
-            </div>
+                </div>
             {% endif %}
         </div>
     </div>
 
     <!-- خوانده شده اعلان ها -->
-        <div class="notifications-list d-none" id="readNotificationsList">
-            <h4 class="fw-bold text-secondary">اعلان‌های خوانده شده</h4>
+    <div class="notifications-list d-none" id="readNotificationsList">
+        <h4 class="fw-bold text-secondary">اعلان‌های خوانده شده</h4>
 
         <!-- Pagination for Read Notifications -->
         <div class="pagination-controls mb-3 d-flex justify-content-center" id="readNotificationsPagination">
             {% if read_notifications.has_previous %}
-            <a href="?page={{ read_notifications.previous_page_number }}" class="btn btn-outline-secondary me-2">قبلی</a>
+                <a href="?page={{ read_notifications.previous_page_number }}" class="btn btn-outline-secondary me-2">قبلی</a>
             {% endif %}
             <span id="readNotificationsPageNumber" class="align-self-center">صفحه {{ read_notifications.number }} از {{ read_notifications.paginator.num_pages }}</span>
             {% if read_notifications.has_next %}
-            <a href="?page={{ read_notifications.next_page_number }}" class="btn btn-outline-secondary ms-2">بعدی</a>
+                <a href="?page={{ read_notifications.next_page_number }}" class="btn btn-outline-secondary ms-2">بعدی</a>
             {% endif %}
         </div>
 
-            <div id="readNotificationsContainer">
+        <div id="readNotificationsContainer">
             {% if read_notifications %}
                 {% for notification in read_notifications %}
-                <div class="d-flex justify-content-start mb-10 read-notification-item">
-                    <div class="d-flex flex-column align-items-start">
-                        <div class="p-5 rounded bg-light-secondary text-gray-900 fw-semibold mw-lg-400px text-start">
-                            <a href="{{ notification.url }}" class="text-hover-primary">{{ notification.message }}</a>
+                    <div class="d-flex justify-content-start mb-10 read-notification-item">
+                        <div class="d-flex flex-column align-items-start">
+                            <div class="p-5 rounded bg-light-secondary text-gray-900 fw-semibold mw-lg-400px text-start">
+                                <a href="{{ notification.url }}" class="text-hover-primary">{{ notification.message }}</a>
                                 <br>
                                 <span class="text-muted fs-7">ایجاد شده: {{ notification.created_at|timesince }} پیش</span>
                                 {% if notification.read_at %}
-                                <br>
-                                <span class="text-muted fs-7">خوانده شده: {{ notification.read_at|timesince }} پیش</span>
+                                    <br>
+                                    <span class="text-muted fs-7">خوانده شده: {{ notification.read_at|timesince }} پیش</span>
                                 {% endif %}
+                            </div>
                         </div>
                     </div>
-                    </div>
                 {% endfor %}
-                {% else %}
+            {% else %}
                 <div class="text-muted text-center">
-                        هیچ اعلان خوانده‌شده‌ای وجود ندارد.
+                    هیچ اعلان خوانده‌شده‌ای وجود ندارد.
                 </div>
             {% endif %}
         </div>
     </div>
 
 {% else %}
-<div class="text-muted text-center">برای مشاهده اعلان‌ها ابتدا وارد شوید.</div>
+    <div class="text-muted text-center">برای مشاهده اعلان‌ها ابتدا وارد شوید.</div>
 {% endif %}
 
 <script>
@@ -101,5 +101,5 @@
     });
 </script>
 </div>
-    <!--end::کارت body-->
+<!--end::کارت body-->
 </div>
