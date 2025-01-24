@@ -1,3 +1,4 @@
+{# dashboard/templates/notification.html #}
 {% load static %}
 {% if request.user.is_authenticated %}
     <div class="card w-100 border-0 rounded-0" id="kt_drawer_chat_messenger">
@@ -13,6 +14,17 @@
     <!-- جدید اعلان ها -->
     <div class="notifications-list" id="newNotificationsList">
         <h4 class="fw-bold text-primary">اعلان‌های جدید</h4>
+
+        <!-- Pagination for Unread Notifications -->
+        <div class="pagination-controls mb-3 d-flex justify-content-center" id="unreadNotificationsPagination">
+            {% if unread_notifications.has_previous %}
+                <a href="?page_unread={{ unread_notifications.previous_page_number }}" class="btn btn-outline-secondary me-2">قبلی</a>
+            {% endif %}
+            <span id="unreadNotificationsPageNumber" class="align-self-center">صفحه {{ unread_notifications.number }} از {{ unread_notifications.paginator.num_pages }}</span>
+            {% if unread_notifications.has_next %}
+                <a href="?page_unread={{ unread_notifications.next_page_number }}" class="btn btn-outline-secondary ms-2">بعدی</a>
+            {% endif %}
+        </div>
 
         <div id="newNotificationsContainer">
             {% if unread_notifications %}
@@ -44,11 +56,11 @@
         <!-- Pagination for Read Notifications -->
         <div class="pagination-controls mb-3 d-flex justify-content-center" id="readNotificationsPagination">
             {% if read_notifications.has_previous %}
-                <a href="?page={{ read_notifications.previous_page_number }}" class="btn btn-outline-secondary me-2">قبلی</a>
+                <a href="?page_read={{ read_notifications.previous_page_number }}" class="btn btn-outline-secondary me-2">قبلی</a>
             {% endif %}
             <span id="readNotificationsPageNumber" class="align-self-center">صفحه {{ read_notifications.number }} از {{ read_notifications.paginator.num_pages }}</span>
             {% if read_notifications.has_next %}
-                <a href="?page={{ read_notifications.next_page_number }}" class="btn btn-outline-secondary ms-2">بعدی</a>
+                <a href="?page_read={{ read_notifications.next_page_number }}" class="btn btn-outline-secondary ms-2">بعدی</a>
             {% endif %}
         </div>
 
