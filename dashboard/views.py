@@ -6,6 +6,7 @@ import jdatetime
 from collections import Counter
 from django.shortcuts import render
 from anomalis.models import Anomaly
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 name = 'dashboard'
 
@@ -34,13 +35,23 @@ def dashboard(request):
     return render(request, 'dashboard/dashboard.html', context)
 
 
-
-
-
 @login_required
 def notification_list(request):
-    unread_notifications = request.user.notifications.filter(is_read=False)
-    read_notifications = request.user.notifications.filter(is_read=True)
+    # دریافت تمام اعلان های خوانده نشده و مرتب کردن بر اساس created_at (جدیدترین اول)
+    unread_notifications = request.user.notifications.filter(is_read=False).order_by('-created_at')
+
+    # دریافت تمام اعلان های خوانده شده و مرتب کردن بر اساس created_at (جدیدترین اول)
+    read_notifications_list = request.user.notifications.filter(is_read=True).order_by('-created_at')
+
+    # صفحه بندی برای اعلان های خوانده شده
+    page = request.GET.get('page', 1)
+    paginator = Paginator(read_notifications_list, 5)  # 5 اعلان در هر صفحه
+    try:
+        read_notifications = paginator.page(page)
+    except PageNotAnInteger:
+        read_notifications = paginator.page(1)
+    except EmptyPage:
+        read_notifications = paginator.page(paginator.num_pages)
 
     return render(request, 'notification.html', {
         'unread_notifications': unread_notifications,
@@ -66,9 +77,6 @@ def mark_notification_and_redirect(request, notification_id):
 
     # هدایت به URL مقصد نوتیفیکیشن
     return redirect(notification.url if notification.url else 'dashboard')
-
-
-
 
 
 @login_required
