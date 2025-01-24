@@ -1,3 +1,4 @@
+# dashboard/views.py
 from django.utils import timezone
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
@@ -38,20 +39,30 @@ def dashboard(request):
 @login_required
 def notification_list(request):
     # دریافت تمام اعلان های خوانده نشده و مرتب کردن بر اساس created_at (جدیدترین اول)
-    unread_notifications = request.user.notifications.filter(is_read=False).order_by('-created_at')
+    unread_notifications_list = request.user.notifications.filter(is_read=False).order_by('-created_at')
 
     # دریافت تمام اعلان های خوانده شده و مرتب کردن بر اساس created_at (جدیدترین اول)
     read_notifications_list = request.user.notifications.filter(is_read=True).order_by('-created_at')
 
-    # صفحه بندی برای اعلان های خوانده شده
-    page = request.GET.get('page', 1)
-    paginator = Paginator(read_notifications_list, 5)  # 5 اعلان در هر صفحه
+    # صفحه بندی برای اعلان های خوانده نشده
+    page_unread = request.GET.get('page_unread', 1)
+    paginator_unread = Paginator(unread_notifications_list, 5)  # 5 اعلان در هر صفحه
     try:
-        read_notifications = paginator.get_page(page)
+        unread_notifications = paginator_unread.get_page(page_unread)
     except PageNotAnInteger:
-        read_notifications = paginator.get_page(1)
+        unread_notifications = paginator_unread.get_page(1)
     except EmptyPage:
-        read_notifications = paginator.get_page(paginator.num_pages)
+        unread_notifications = paginator_unread.get_page(paginator_unread.num_pages)
+
+    # صفحه بندی برای اعلان های خوانده شده
+    page_read = request.GET.get('page_read', 1)
+    paginator_read = Paginator(read_notifications_list, 5)  # 5 اعلان در هر صفحه
+    try:
+        read_notifications = paginator_read.get_page(page_read)
+    except PageNotAnInteger:
+        read_notifications = paginator_read.get_page(1)
+    except EmptyPage:
+        read_notifications = paginator_read.get_page(paginator_read.num_pages)
 
     return render(request, 'notification.html', {
         'unread_notifications': unread_notifications,
