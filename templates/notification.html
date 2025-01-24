@@ -11,80 +11,137 @@
         <!--end::Tabs-->
 
         <!-- جدید اعلان ها -->
-        {% if request.user.is_authenticated %}
-<div class="notifications-list" id="newNotificationsList">
+        <div class="notifications-list" id="newNotificationsList">
             <h4 class="fw-bold text-primary">اعلان‌های جدید</h4>
-            {% for notification in unread_notifications %}
-            <div class="d-flex justify-content-start mb-10">
-                <div class="d-flex flex-column align-items-start">
-                    <div class="p-5 rounded bg-light-info text-gray-900 fw-semibold mw-lg-400px text-start">
-                        <form method="get" action="{% url 'dashboard:mark_notification_and_redirect' notification.id %}">
-                            <button type="submit" class="btn btn-link text-hover-primary p-0">{{ notification.message }}</button>
-                        </form>
-                        <br>
-                        <span class="text-muted fs-7">ایجاد شده: {{ notification.created_at|timesince }} پیش</span>
+
+            <!-- Pagination for New Notifications -->
+            <div class="pagination-controls mb-3 d-flex justify-content-center" id="newNotificationsPagination">
+                <button class="btn btn-outline-secondary me-2" id="prevNewPage" disabled>قبلی</button>
+                <span id="newNotificationsPageNumber" class="align-self-center">صفحه 1</span>
+                <button class="btn btn-outline-secondary ms-2" id="nextNewPage">بعدی</button>
+            </div>
+
+            <div id="newNotificationsContainer">
+            {% if unread_notifications %}
+                {% for notification in unread_notifications %}
+                <div class="d-flex justify-content-start mb-10 new-notification-item">
+                    <div class="d-flex flex-column align-items-start">
+                        <div class="p-5 rounded bg-light-info text-gray-900 fw-semibold mw-lg-400px text-start">
+                            <form method="get" action="{% url 'dashboard:mark_notification_and_redirect' notification.id %}">
+                                <button type="submit" class="btn btn-link text-hover-primary p-0">{{ notification.message }}</button>
+                            </form>
+                            <br>
+                            <span class="text-muted fs-7">ایجاد شده: {{ notification.created_at|timesince }} پیش</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-            {% empty %}
+                {% endfor %}
+            {% else %}
             <div class="text-muted text-center">
-                هیچ اعلان جدیدی وجود ندارد.
+                    هیچ اعلان جدیدی وجود ندارد.
             </div>
-            {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- خوانده شده اعلان ها -->
+        <div class="notifications-list d-none" id="readNotificationsList">
+            <h4 class="fw-bold text-secondary">اعلان‌های خوانده شده</h4>
+
+        <!-- Pagination for Read Notifications -->
+        <div class="pagination-controls mb-3 d-flex justify-content-center" id="readNotificationsPagination">
+            <button class="btn btn-outline-secondary me-2" id="prevReadPage" disabled>قبلی</button>
+            <span id="readNotificationsPageNumber" class="align-self-center">صفحه 1</span>
+            <button class="btn btn-outline-secondary ms-2" id="nextReadPage">بعدی</button>
         </div>
 
-        <!-- خوانده شده اعلان ها -->
-        <div class="notifications-list d-none" id="readNotificationsList">
-    <div class="pagination-controls mb-3 d-flex justify-content-center">
-        {% if read_notifications.has_previous %}
-            <a href="?page={{ read_notifications.previous_page_number }}" class="btn btn-outline-secondary me-2">قبلی</a>
-        {% endif %}
-        <span id="pageNumber" class="align-self-center">صفحه {{ read_notifications.number }} از {{ read_notifications.paginator.num_pages }}</span>
-        {% if read_notifications.has_next %}
-            <a href="?page={{ read_notifications.next_page_number }}" class="btn btn-outline-secondary ms-2">بعدی</a>
-        {% endif %}
+            <div id="readNotificationsContainer">
+            {% if read_notifications %}
+                {% for notification in read_notifications %}
+                <div class="d-flex justify-content-start mb-10 read-notification-item">
+                    <div class="d-flex flex-column align-items-start">
+                        <div class="p-5 rounded bg-light-secondary text-gray-900 fw-semibold mw-lg-400px text-start">
+                            <a href="{{ notification.url }}" class="text-hover-primary">{{ notification.message }}</a>
+                                <br>
+                                <span class="text-muted fs-7">ایجاد شده: {{ notification.created_at|timesince }} پیش</span>
+                                {% if notification.read_at %}
+                                <br>
+                                <span class="text-muted fs-7">خوانده شده: {{ notification.read_at|timesince }} پیش</span>
+                                {% endif %}
+                        </div>
+                    </div>
+                    </div>
+                {% endfor %}
+                {% else %}
+                <div class="text-muted text-center">
+                        هیچ اعلان خوانده‌شده‌ای وجود ندارد.
+                </div>
+            {% endif %}
+        </div>
     </div>
-            <div class="pagination-controls mb-3 d-flex justify-content-center">
-                <button class="btn btn-outline-secondary me-2" id="prevPage">قبلی</button>
-                <span id="pageNumber" class="align-self-center">صفحه 1</span>
-                <button class="btn btn-outline-secondary ms-2" id="nextPage">بعدی</button>
-            </div>
+
 {% else %}
 <div class="text-muted text-center">برای مشاهده اعلان‌ها ابتدا وارد شوید.</div>
 {% endif %}
-            <h4 class="fw-bold text-secondary">اعلان‌های خوانده شده</h4>
-            {% for notification in read_notifications %}
-            <div class="d-flex justify-content-start mb-10">
-                <div class="d-flex flex-column align-items-start">
-                    <div class="p-5 rounded bg-light-secondary text-gray-900 fw-semibold mw-lg-400px text-start">
-                        <a href="{{ notification.url }}" class="text-hover-primary">{{ notification.message }}</a>
-                        <br>
-                        <span class="text-muted fs-7">ایجاد شده: {{ notification.created_at|timesince }} پیش</span>
-                        {% if notification.read_at %}
-                        <br>
-                        <span class="text-muted fs-7">خوانده شده: {{ notification.read_at|timesince }} پیش</span>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-            {% empty %}
-            <div class="text-muted text-center">
-                هیچ اعلان خوانده‌شده‌ای وجود ندارد.
-            </div>
-            {% endfor %}
-        </div>
-
-{% endif %}
 
 <script>
-    let currentPage = 1;
-    const notificationsPerPage = 5;
-    const readNotifications = Array.from(document.querySelectorAll('#readNotificationsList .d-flex.justify-content-start'));
-    const pageNumberEl = document.getElementById('pageNumber');
-    const prevPageBtn = document.getElementById('prevPage');
-    const nextPageBtn = document.getElementById('nextPage');
 
-    function showPage(page) {
+    const notificationsPerPage = 5;
+
+    // New Notifications Pagination
+    let currentNewPage = 1;
+    const newNotifications = Array.from(document.querySelectorAll('#newNotificationsContainer .d-flex.justify-content-start'));
+    const newPageNumberEl = document.getElementById('newNotificationsPageNumber');
+    const prevNewPageBtn = document.getElementById('prevNewPage');
+    const nextNewPageBtn = document.getElementById('nextNewPage');
+
+
+    function showNewPage(page) {
+        const start = (page - 1) * notificationsPerPage;
+        const end = start + notificationsPerPage;
+
+        newNotifications.forEach((notification, index) => {
+            if (index >= start && index < end) {
+                notification.classList.remove('d-none');
+            } else {
+                notification.classList.add('d-none');
+            }
+        });
+
+        newPageNumberEl.textContent = `صفحه ${page}`;
+        prevNewPageBtn.disabled = page === 1;
+        nextNewPageBtn.disabled = end >= newNotifications.length;
+    }
+
+
+    prevNewPageBtn.addEventListener('click', () => {
+        if (currentNewPage > 1) {
+            currentNewPage--;
+            showNewPage(currentNewPage);
+        }
+    });
+
+    nextNewPageBtn.addEventListener('click', () => {
+        if (currentNewPage * notificationsPerPage < newNotifications.length) {
+            currentNewPage++;
+            showNewPage(currentNewPage);
+        }
+    });
+
+    if(newNotifications.length > 0){
+    showNewPage(currentNewPage);
+    }
+
+
+
+    // Read Notifications Pagination
+    let currentReadPage = 1;
+    const readNotifications = Array.from(document.querySelectorAll('#readNotificationsContainer .d-flex.justify-content-start'));
+    const readPageNumberEl = document.getElementById('readNotificationsPageNumber');
+    const prevReadPageBtn = document.getElementById('prevReadPage');
+    const nextReadPageBtn = document.getElementById('nextReadPage');
+
+    function showReadPage(page) {
         const start = (page - 1) * notificationsPerPage;
         const end = start + notificationsPerPage;
 
@@ -96,31 +153,29 @@
             }
         });
 
-        pageNumberEl.textContent = `صفحه ${page}`;
-        prevPageBtn.disabled = page === 1;
-        nextPageBtn.disabled = end >= readNotifications.length;
+        readPageNumberEl.textContent = `صفحه ${page}`;
+        prevReadPageBtn.disabled = page === 1;
+        nextReadPageBtn.disabled = end >= readNotifications.length;
     }
 
-    prevPageBtn.addEventListener('click', () => {
-        if (currentPage > 1) {
-            currentPage--;
-            showPage(currentPage);
+    prevReadPageBtn.addEventListener('click', () => {
+        if (currentReadPage > 1) {
+            currentReadPage--;
+            showReadPage(currentReadPage);
         }
     });
 
-    nextPageBtn.addEventListener('click', () => {
-        if (currentPage * notificationsPerPage < readNotifications.length) {
-            currentPage++;
-            showPage(currentPage);
+    nextReadPageBtn.addEventListener('click', () => {
+        if (currentReadPage * notificationsPerPage < readNotifications.length) {
+            currentReadPage++;
+            showReadPage(currentReadPage);
         }
     });
 
-    showPage(currentPage);
+    if(readNotifications.length > 0){
+        showReadPage(currentReadPage);
+    }
 </script>
-</div>
-    <!--end::کارت body-->
-</div>
-
 <script>
     document.getElementById('newNotificationsTab').addEventListener('click', function() {
         document.getElementById('newNotificationsList').classList.remove('d-none');
@@ -140,3 +195,6 @@
         document.getElementById('newNotificationsTab').classList.remove('btn-primary');
     });
 </script>
+</div>
+    <!--end::کارت body-->
+</div>
