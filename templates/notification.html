@@ -158,27 +158,28 @@
 
         readPageNumberEl.textContent = `صفحه ${serverPageNumber} از {{ read_notifications.paginator.num_pages }}`;
 
-        prevReadPageBtn.disabled = page === 1;
-        nextReadPageBtn.disabled = end >= readNotifications.length;
+        prevReadPageBtn.disabled = serverPageNumber === 1;
+        nextReadPageBtn.disabled = serverPageNumber === {{ read_notifications.paginator.num_pages }};
+
+        // Update currentReadPage to server page number
+        currentReadPage = serverPageNumber;
     }
 
-    prevReadPageBtn.addEventListener('click', () => {
-        if (currentReadPage > 1) {
-            currentReadPage--;
-            showReadPage(currentReadPage);
-            const serverPageNumber = parseInt('{{ read_notifications.number }}')
+
+     prevReadPageBtn.addEventListener('click', () => {
+        const serverPageNumber = parseInt('{{ read_notifications.number }}');
+        if (serverPageNumber > 1) {
             const newPage = serverPageNumber - 1;
-            window.location.href = "?page=" + newPage;
+             window.location.href = "?page=" + newPage;
         }
     });
 
+
     nextReadPageBtn.addEventListener('click', () => {
-        if (currentReadPage * notificationsPerPage < readNotifications.length) {
-            currentReadPage++;
-            showReadPage(currentReadPage);
-                const serverPageNumber = parseInt('{{ read_notifications.number }}')
-                const newPage = serverPageNumber + 1;
-               window.location.href = "?page=" + newPage;
+       const serverPageNumber = parseInt('{{ read_notifications.number }}');
+        if (serverPageNumber < {{ read_notifications.paginator.num_pages }}) {
+             const newPage = serverPageNumber + 1;
+            window.location.href = "?page=" + newPage;
         }
     });
 

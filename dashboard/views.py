@@ -47,11 +47,11 @@ def notification_list(request):
     page = request.GET.get('page', 1)
     paginator = Paginator(read_notifications_list, 5)  # 5 اعلان در هر صفحه
     try:
-        read_notifications = paginator.page(page)
+        read_notifications = paginator.get_page(page)
     except PageNotAnInteger:
-        read_notifications = paginator.page(1)
+        read_notifications = paginator.get_page(1)
     except EmptyPage:
-        read_notifications = paginator.page(paginator.num_pages)
+        read_notifications = paginator.get_page(paginator.num_pages)
 
     return render(request, 'notification.html', {
         'unread_notifications': unread_notifications,
