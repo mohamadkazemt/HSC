@@ -13,11 +13,15 @@ from .forms import UserForm, UserProfileForm,PasswordResetConfirmForm
 from django.utils.timezone import now
 from datetime import timedelta
 from django.db.models import Q # اضافه کردن این خط
+import logging
+
+
+
+
 
 name = 'accounts'
 
 
-import logging
 logger = logging.getLogger(__name__)
 
 def user_login(request):
@@ -83,80 +87,93 @@ def edit_profile(request):
 
 
 
-
-
-
 def send_reset_code(request):
-   logger.info("send_reset_code called")
-   if request.method == 'POST':
-       logger.info("request method is POST")
-       form = PasswordResetSMSForm(request.POST)
-       if form.is_valid():
-           logger.info("form is valid")
-           mobile = form.cleaned_data['mobile']
-           logger.info(f"mobile number: {mobile}")
-           try:
-                user_profile = UserProfile.objects.get(mobile=mobile)
+    logger.info("send_reset_code called")
+    if request.method == 'POST':
+        logger.info("request method is POST")
+        form = PasswordResetSMSForm(request.POST)
+        if form.is_valid():
+            logger.info("form is valid")
+            username = form.cleaned_data['username']
+            logger.info(f"username: {username}")
+            try:
+                user = User.objects.get(username=username)
+                user_profile = UserProfile.objects.get(user=user)
                 logger.info(f"user profile found: {user_profile}")
                 user_profile.generate_verification_code()
                 logger.info(f"verification code generated: {user_profile.verification_code}")
 
-                # ارسال پیامک
-                template_id = 857178  # شناسه قالب پیامک
+                # نمایش 3 رقم اول و 3 رقم آخر شماره موبایل
+                mobile = user_profile.mobile
+                masked_mobile = f"{mobile[:3]}******{mobile[-3:]}"
+                request.session['masked_mobile'] = masked_mobile # شماره را در سشن ذخیره می کنیم
+
+                 # ارسال پیامک
+                template_id = 857178
                 parameters = [
                     {"Name": "code", "Value": user_profile.verification_code},
                     {"Name": "username", "Value": user_profile.user.username}
-                ]
+                 ]
                 send_template_sms(mobile, template_id, parameters)
-                messages.success(request, "کد تأیید به شماره موبایل ارسال شد.")
                 logger.info("sms sent successfully")
                 return redirect('accounts:reset_password_confirm')
-           except UserProfile.DoesNotExist:
-                messages.error(request, "شماره موبایل وارد شده یافت نشد.")
-                logger.error(f"user profile not found for mobile: {mobile}")
-       else:
+
+            except User.DoesNotExist:
+                logger.error(f"user not found for username: {username}")
+                form.add_error('username',"نام کاربری وارد شده یافت نشد.")
+                return render(request, 'accounts/reset-password.html', {'form': form})
+            except UserProfile.DoesNotExist:
+                 logger.error(f"user profile not found for user: {user}")
+                 form.add_error(None,"خطایی رخ داده است.")
+                 return render(request, 'accounts/reset-password.html', {'form': form})
+            except Exception as e:
+                 logger.error(f"an error occurred {e}")
+                 form.add_error(None,"خطایی رخ داده است.")
+                 return render(request, 'accounts/reset-password.html', {'form': form})
+        else:
             logger.error(f"form is not valid, errors:{form.errors}")
-   else:
-       form = PasswordResetSMSForm()
-       logger.info("request method is GET")
-   return render(request, 'accounts/reset-password.html', {'form': form})
-
-
-
+            return render(request, 'accounts/reset-password.html', {'form': form})
+    else:
+        form = PasswordResetSMSForm()
+        logger.info("request method is GET")
+    return render(request, 'accounts/reset-password.html', {'form': form})
 
 
 def confirm_reset_code(request):
-    if request.method == 'POST':
-        form = PasswordResetConfirmForm(request.POST)
-        if form.is_valid():
-            code = form.cleaned_data['code']
-            new_password = form.cleaned_data['new_password']
-            try:
-                user_profile = UserProfile.objects.get(verification_code=code)
-                # بررسی اعتبار کد (مثلاً ۵ دقیقه)
-                if user_profile.code_generated_at + timedelta(minutes=5) < now():
-                    messages.error(request, "کد تأیید منقضی شده است.")
-                    return redirect('accounts:send_reset_code')
+ masked_mobile = request.session.get('masked_mobile')
+ if request.method == 'POST':
+     form = PasswordResetConfirmForm(request.POST)
+     if form.is_valid():
+         code = form.cleaned_data['code']
+         new_password = form.cleaned_data['new_password']
+         try:
+             user_profile = UserProfile.objects.get(verification_code=code)
+             # بررسی اعتبار کد (مثلاً ۵ دقیقه)
+             if user_profile.code_generated_at + timedelta(minutes=5) < now():
+                 form.add_error('code', "کد تأیید منقضی شده است.")
+                 return render(request, 'accounts/new-password.html', {'form': form,'masked_mobile':masked_mobile})
 
-                # تغییر رمز عبور
-                user = user_profile.user
-                user.set_password(new_password)
-                user.save()
 
-                # پاک‌سازی کد تأیید
-                user_profile.verification_code = None
-                user_profile.code_generated_at = None
-                user_profile.save()
+             # تغییر رمز عبور
+             user = user_profile.user
+             user.set_password(new_password)
+             user.save()
 
-                messages.success(request, "رمز عبور با موفقیت تغییر یافت.")
-                return redirect('accounts:login')
-            except UserProfile.DoesNotExist:
-                messages.error(request, "کد تأیید اشتباه است.")
-    else:
-        form = PasswordResetConfirmForm()
-
-    return render(request, 'accounts/new-password.html', {'form': form})
-
+             # پاک‌سازی کد تأیید
+             user_profile.verification_code = None
+             user_profile.code_generated_at = None
+             user_profile.save()
+             messages.success(request, "رمز عبور با موفقیت تغییر یافت.")
+             del request.session['masked_mobile']
+             return redirect('accounts:login')
+         except UserProfile.DoesNotExist:
+             form.add_error('code', "کد تأیید اشتباه است.")
+             return render(request, 'accounts/new-password.html', {'form': form,'masked_mobile':masked_mobile})
+     else:
+         return render(request, 'accounts/new-password.html', {'form': form,'masked_mobile':masked_mobile})
+ else:
+     form = PasswordResetConfirmForm()
+     return render(request, 'accounts/new-password.html', {'form': form,'masked_mobile':masked_mobile})
 
 def get_users_ajax(request):
     users = []
