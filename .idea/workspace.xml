@@ -5,12 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="mkt-leave-Edite">
-      <change beforePath="$PROJECT_DIR$/.idea/HSCprojects.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/HSCprojects.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/accounts/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/forms.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/machine_checklist/templates/machine_checklist/checklist_form.html" beforeDir="false" afterPath="$PROJECT_DIR$/machine_checklist/templates/machine_checklist/checklist_form.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/sidebar.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/sidebar.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -384,13 +382,6 @@
       <workItem from="1737210978942" duration="3062000" />
       <workItem from="1737526000783" duration="4494000" />
     </task>
-    <task id="LOCAL‎−۰۰۰۱۴" summary="amaliyat1">
-      <option name="closed" value="true" />
-      <created>1729963968933</created>
-      <option name="number" value="LOCAL‎−۰۰۰۱۴" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۱۴" />
-      <updated>1729963968934</updated>
-    </task>
     <task id="LOCAL‎−۰۰۰۱۵" summary="amalyatend1">
       <option name="closed" value="true" />
       <created>1730710634254</created>
@@ -744,7 +735,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۶۲" />
       <updated>1737609806942</updated>
     </task>
-    <option name="localTasksCounter" value="63" />
+    <task id="LOCAL‎−۰۰۰۶۳" summary="mkt-leave-Edite">
+      <option name="closed" value="true" />
+      <created>1737951181919</created>
+      <option name="number" value="LOCAL‎−۰۰۰۶۳" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۶۳" />
+      <updated>1737951181921</updated>
+    </task>
+    <option name="localTasksCounter" value="64" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
