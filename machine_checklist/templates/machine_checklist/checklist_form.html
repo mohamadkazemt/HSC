@@ -6,7 +6,7 @@
 {% block style %}
     <style>
        .hidden {
-            display: none !important
+            display: none !important;
          }
         .select2-container {
             width: 100% !important;
@@ -19,6 +19,7 @@
             display: block;
             margin-bottom: 0.5rem;
             font-weight: bold;
+            color: #343a40; /* Keep text legible, adjust as needed for dark modes */
         }
 
         .form-control, .form-select {
@@ -27,26 +28,27 @@
             padding: 0.75rem 1rem;
             font-size: 1rem;
             line-height: 1.5;
-            color: #495057;
-            background-color: #fff;
+            color: #495057; /* Keep text legible, adjust as needed for dark modes */
+            background-color: #fff;  /* Default light background */
             background-clip: padding-box;
-            border: 1px solid #ced4da;
+            border: 1px solid #ced4da; /* Default border color */
             border-radius: 0.25rem;
             transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
         }
 
         .form-control:focus, .form-select:focus {
-            color: #495057;
-            background-color: #fff;
-            border-color: #80bdff;
+            color: #495057; /*  Keep text legible, adjust as needed for dark modes */
+            background-color: #fff; /* Default light background */
+            border-color: #80bdff; /* Default focus color */
             outline: 0;
-            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25); /* Default focus shadow */
         }
+
 
         .btn-primary {
            color: #fff;
-            background-color: #007bff;
-            border-color: #007bff;
+            background-color: #007bff; /*Default button background */
+            border-color: #007bff; /* Default button border */
             border: 1px solid transparent;
             padding: 0.75rem 1rem;
             font-size: 1rem;
@@ -55,19 +57,21 @@
 
         .btn-primary:hover {
              color: #fff;
-            background-color: #0069d9;
-            border-color: #0062cc;
+            background-color: #0069d9; /*Default button hover background*/
+            border-color: #0062cc; /* Default button hover border */
             border: 1px solid transparent;
         }
 
         .btn-primary:focus {
            color: #fff;
-            background-color: #007bff;
-            border-color: #007bff;
+            background-color: #007bff; /* Default button focus background */
+            border-color: #007bff; /* Default button focus border */
             border: 1px solid transparent;
         }
+
         .form-check-label {
              font-weight: normal;
+             color: #343a40; /* keep text legible */
         }
         .form-check-input {
             margin-left: 0;
@@ -84,6 +88,54 @@
         }
         .form-check {
             margin-top: 10px; /* Add margin to create space between select and checkbox */
+        }
+
+       /* Dark Mode Overrides */
+        @media (prefers-color-scheme: dark) {
+            .form-label {
+                 color: #fff; /* Adjust for dark mode */
+            }
+
+             .form-control, .form-select {
+                color: #fff; /* Dark mode text color */
+                background-color: #343a40; /* Dark background for form elements */
+                border-color: #6c757d; /* Dark border color */
+            }
+            .form-control:focus, .form-select:focus {
+                color: #fff;
+                background-color: #495057; /* Darker background on focus */
+                border-color: #6c757d; /* Adjusted border color for focus*/
+                box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25); /* Dark shadow for focus */
+            }
+
+            .btn-primary {
+                color: #fff;
+                 background-color: #495057; /* Darker button background for dark mode */
+                border-color: #495057; /* Darker button border color for dark mode*/
+            }
+
+             .btn-primary:hover {
+                color: #fff;
+                background-color: #6c757d; /* Darker button hover color for dark mode*/
+                border-color: #6c757d; /* Darker button hover color for dark mode*/
+            }
+
+            .btn-primary:focus {
+                 color: #fff;
+                 background-color: #495057; /* Darker button focus color for dark mode*/
+                border-color: #495057; /* Darker button focus color for dark mode*/
+
+            }
+
+
+            .form-check-label {
+                color: #fff; /* Adjust label text color for dark mode */
+             }
+
+           .question-item {
+                background-color: #343a40;
+                border: 1px solid #6c757d;
+            }
         }
     </style>
 {% endblock %}
