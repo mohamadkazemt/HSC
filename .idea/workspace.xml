@@ -4,8 +4,13 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="dashbord-NT0.2">
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="mkt-leave-Edite">
+      <change beforePath="$PROJECT_DIR$/.idea/HSCprojects.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/HSCprojects.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/accounts/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/accounts/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,7 +49,7 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/mohamadkazemt/HSC.git&quot;,
-    &quot;accountId&quot;: &quot;4a4a0b77-3294-4afc-82ac-479cfd08feaa&quot;
+    &quot;accountId&quot;: &quot;b1049974-7825-44ef-a60c-99f35deafaf1&quot;
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
@@ -150,7 +155,7 @@
         <env name="DJANGO_SETTINGS_MODULE" value="HSCprojects.settings" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="SDK_NAME" value="Python 3.12 (HSC) (2)" />
+      <option name="SDK_NAME" value="Python 3.12 (karavaran)" />
       <option name="WORKING_DIRECTORY" value="" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
@@ -230,8 +235,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-PY-242.23726.102" />
-        <option value="bundled-python-sdk-5e1850174b45-399fe30bd8c1-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-242.23726.102" />
+        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-PY-242.24807.21" />
+        <option value="bundled-python-sdk-00717045f1d3-399fe30bd8c1-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-242.24807.21" />
       </set>
     </attachedChunks>
   </component>
@@ -377,6 +382,68 @@
       <workItem from="1737033966196" duration="891000" />
       <workItem from="1737127876992" duration="1284000" />
       <workItem from="1737210978942" duration="3062000" />
+      <workItem from="1737526000783" duration="4494000" />
+    </task>
+    <task id="LOCAL‎−۰۰۰۱۴" summary="amaliyat1">
+      <option name="closed" value="true" />
+      <created>1729963968933</created>
+      <option name="number" value="LOCAL‎−۰۰۰۱۴" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۱۴" />
+      <updated>1729963968934</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۱۵" summary="amalyatend1">
+      <option name="closed" value="true" />
+      <created>1730710634254</created>
+      <option name="number" value="LOCAL‎−۰۰۰۱۵" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۱۵" />
+      <updated>1730710634254</updated>
+    </task>
+    <task id="LOCAL‎−۰۰۰۱۶" summary="amalyatend1">
+      <option name="closed" value="true" />
+      <created>1730711348312</created>
+      <option name="number" value="LOCAL‎−۰۰۰۱۶" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۱۶" />
+      <updated>1730711348312</updated>
+    </task>
+    <task id="LOCAL-00017" summary="endamaliyat&amp;anomali">
+      <option name="closed" value="true" />
+      <created>1731170137050</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1731170137050</updated>
+    </task>
+    <task id="LOCAL-00018" summary="endamaliyat&amp;anomali">
+      <option name="closed" value="true" />
+      <created>1731173519478</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1731173519478</updated>
+    </task>
+    <task id="LOCAL-00019" summary="endamaliyat&amp;anomali">
+      <option name="closed" value="true" />
+      <created>1731248066115</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1731248066115</updated>
+    </task>
+    <task id="LOCAL-00020" summary="endamaliyat&amp;anomali1">
+      <option name="closed" value="true" />
+      <created>1731557275820</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1731557275820</updated>
+    </task>
+    <task id="LOCAL-00021" summary="sms.ir">
+      <option name="closed" value="true" />
+      <created>1731867563508</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1731867563508</updated>
     </task>
     <task id="LOCAL-00022" summary="convert-to-pdf">
       <option name="closed" value="true" />
@@ -670,70 +737,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۶۱" />
       <updated>1737215947626</updated>
     </task>
-    <task id="LOCAL‎−۰۰۰۶۲" summary="mkt-anomali-error">
+    <task id="LOCAL‎−۰۰۰۶۲" summary="mkt-leave-Edite">
       <option name="closed" value="true" />
-      <created>1737557691911</created>
+      <created>1737609806942</created>
       <option name="number" value="LOCAL‎−۰۰۰۶۲" />
       <option name="presentableId" value="LOCAL‎−۰۰۰۶۲" />
-      <updated>1737557691912</updated>
+      <updated>1737609806942</updated>
     </task>
-    <task id="LOCAL‎−۰۰۰۶۳" summary="mkt-accountes-resetpass">
-      <option name="closed" value="true" />
-      <created>1737707038152</created>
-      <option name="number" value="LOCAL‎−۰۰۰۶۳" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۶۳" />
-      <updated>1737707038153</updated>
-    </task>
-    <task id="LOCAL‎−۰۰۰۶۴" summary="mkt-accountes-resetpass">
-      <option name="closed" value="true" />
-      <created>1737707550119</created>
-      <option name="number" value="LOCAL‎−۰۰۰۶۴" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۶۴" />
-      <updated>1737707550119</updated>
-    </task>
-    <task id="LOCAL‎−۰۰۰۶۵" summary="mkt-accountes-resetpass">
-      <option name="closed" value="true" />
-      <created>1737711470992</created>
-      <option name="number" value="LOCAL‎−۰۰۰۶۵" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۶۵" />
-      <updated>1737711470992</updated>
-    </task>
-    <task id="LOCAL‎−۰۰۰۶۶" summary="dashbord-NT">
-      <option name="closed" value="true" />
-      <created>1737733134278</created>
-      <option name="number" value="LOCAL‎−۰۰۰۶۶" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۶۶" />
-      <updated>1737733134278</updated>
-    </task>
-    <task id="LOCAL‎−۰۰۰۶۷" summary="dashbord-NT">
-      <option name="closed" value="true" />
-      <created>1737733488727</created>
-      <option name="number" value="LOCAL‎−۰۰۰۶۷" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۶۷" />
-      <updated>1737733488727</updated>
-    </task>
-    <task id="LOCAL‎−۰۰۰۶۸" summary="dashbord-NT0.1">
-      <option name="closed" value="true" />
-      <created>1737733846867</created>
-      <option name="number" value="LOCAL‎−۰۰۰۶۸" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۶۸" />
-      <updated>1737733846867</updated>
-    </task>
-    <task id="LOCAL‎−۰۰۰۶۹" summary="dashbord-NT0.2">
-      <option name="closed" value="true" />
-      <created>1737734054671</created>
-      <option name="number" value="LOCAL‎−۰۰۰۶۹" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۶۹" />
-      <updated>1737734054671</updated>
-    </task>
-    <task id="LOCAL‎−۰۰۰۷۰" summary="dashbord-NT0.2">
-      <option name="closed" value="true" />
-      <created>1737734305670</created>
-      <option name="number" value="LOCAL‎−۰۰۰۷۰" />
-      <option name="presentableId" value="LOCAL‎−۰۰۰۷۰" />
-      <updated>1737734305670</updated>
-    </task>
-    <option name="localTasksCounter" value="71" />
+    <option name="localTasksCounter" value="63" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -751,6 +762,10 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
+    <MESSAGE value="reports&amp;contractor" />
+    <MESSAGE value="dailyreport_hse" />
+    <MESSAGE value="dailyreport_hse1" />
+    <MESSAGE value="dailyreport_hse22" />
     <MESSAGE value="dailyreport_hse232" />
     <MESSAGE value="dailyreport_hsemami" />
     <MESSAGE value="dailyreport_hsemami2" />
@@ -771,12 +786,8 @@
     <MESSAGE value="mkt-update1" />
     <MESSAGE value="mkt-update2" />
     <MESSAGE value="mkt-update3" />
-    <MESSAGE value="mkt-anomali-error" />
-    <MESSAGE value="mkt-accountes-resetpass" />
-    <MESSAGE value="dashbord-NT" />
-    <MESSAGE value="dashbord-NT0.1" />
-    <MESSAGE value="dashbord-NT0.2" />
-    <option name="LAST_COMMIT_MESSAGE" value="dashbord-NT0.2" />
+    <MESSAGE value="mkt-leave-Edite" />
+    <option name="LAST_COMMIT_MESSAGE" value="mkt-leave-Edite" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -793,7 +804,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/anomalis/views.py</url>
-          <line>504</line>
+          <line>559</line>
           <option name="timeStamp" value="7" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
