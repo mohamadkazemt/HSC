@@ -102,7 +102,7 @@
                     </div>
                     <!--end::Menu آیتم-->
                 {% endif %}
-                {% if user|in_group:"operations" %}
+                {% if user|in_group:"عملیات" or user|in_group:"اپراتور" %}
                     <div class="menu-item mb-2">
                         <div class="menu-heading text-uppercase fs-7 fw-bold">میانبر عملیات</div>
                         <!--begin::separator-->
@@ -151,6 +151,19 @@
                             <!--end::Bullet-->
                             <!--begin::Title-->
                             <span class="menu-title">چک لیست ماشن آلات</span>
+                            <!--end::Title-->
+                        </a>
+                    </div>
+                    <div class="menu-item">
+                        <!--begin::Menu link-->
+                        <a class="menu-link active" href="{% url 'machine_checklist:checklist_list' %}">
+                            <!--begin::Bullet-->
+                            <span class="menu-icon">
+                                <span class="bullet bullet-dot bg-success"></span>
+                            </span>
+                            <!--end::Bullet-->
+                            <!--begin::Title-->
+                            <span class="menu-title">لیست چک لیستها</span>
                             <!--end::Title-->
                         </a>
                     </div>
@@ -440,7 +453,7 @@
                 </div>
                 <!--end:Menu item-->
             {% endif %}
-            {% if user|in_group:"operations" %}
+            {% if user|in_group:"عملیات" %}
                 <div id="#kt_app_sidebar_menu" data-kt-menu="true" data-kt-menu-expand="false" class="app-sidebar-menu-primary menu menu-column menu-rounded menu-sub-indention menu-state-bullet-primary">
                     <div class="menu-item mb-2">
                         <div class="menu-heading text-uppercase fs-5 fw-bold">واحد عملیات</div>
