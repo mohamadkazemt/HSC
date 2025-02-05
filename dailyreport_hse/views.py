@@ -33,8 +33,7 @@ from permissions.utils import class_permission_required, permission_required
 from django.contrib import messages
 import logging
 from django.core.exceptions import ValidationError
-
-
+from django.shortcuts import render
 
 logger = logging.getLogger(__name__)
 
@@ -52,37 +51,45 @@ class CreateDailyReportView(APIView):
             print("Incoming Files:", request.FILES)
 
             # دریافت داده‌های اصلی
-            received_data = json.loads(request.data.get("data", "{}"))
-            blasting_details = received_data.get("blasting_details", [])
-            drilling_details = received_data.get("drilling_details", [])
-            loading_details = received_data.get("loading_details", [])
-            dump_details = received_data.get("dump_details", [])
-            stoppage_details = received_data.get("stoppage_details", [])
-            inspection_details = received_data.get("inspection_details", [])
-            followups_data = received_data.get("followups", [])
-            print("Followup Details Received:", followups_data)
+            received_data = request.data
+            # تجزیه رشته‌های JSON به لیست های پایتون
+            blasting_details = json.loads(received_data.get("blasting_details", "[]"))
+            drilling_details = json.loads(received_data.get("drilling_details", "[]"))
+            loading_details = json.loads(received_data.get("loading_details", "[]"))
+            dump_details = json.loads(received_data.get("dump_details", "[]"))
+            stoppage_details = json.loads(received_data.get("stoppage_details", "[]"))
+            inspection_details = json.loads(
+                received_data.get("inspection_details", "[]")
+            )
+
+            # followups_data = received_data.get("followups", []) # دیگه نیازی به این نداریم
+
             print("Files Received:", request.FILES)
             # دریافت شیفت و گروه کاری جاری
             current_shift, current_group = get_current_shift_and_group(request.user)
 
-
             if not current_shift or not current_group:
-                return Response({"error": "شیفت یا گروه کاری جاری شناسایی نشد."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "شیفت یا گروه کاری جاری شناسایی نشد."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
-             # ساختن گزارش روزانه
+            # ساختن گزارش روزانه
             daily_report = DailyReport(
                 user=request.user,
                 shift=current_shift,
                 work_group=current_group,
-                supervisor_comments=request.data.get("supervisor_comments", "")
+                supervisor_comments=received_data.get("supervisor_comments", ""),
             )
-
 
             # اعتبارسنجی گزارش روزانه
             try:
                 daily_report.full_clean()
             except ValidationError as e:
-               return Response({"error": "Validation Error","errors": e.message_dict}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {"error": "Validation Error", "errors": e.message_dict},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
             daily_report.save()
 
@@ -94,33 +101,37 @@ class CreateDailyReportView(APIView):
                         daily_report=daily_report,
                         explosion_occurred=blasting.get("explosion_occurred", False),
                         block=block,
-                        description=blasting.get("description", "")
+                        description=blasting.get("description", ""),
                     )
 
             # ذخیره جزئیات حفاری
             for drilling in drilling_details:
                 if drilling.get("block_id") and drilling.get("machine_id"):
                     block = get_object_or_404(MiningBlock, id=drilling.get("block_id"))
-                    machine = get_object_or_404(MiningMachine, id=drilling.get("machine_id"))
+                    machine = get_object_or_404(
+                        MiningMachine, id=drilling.get("machine_id")
+                    )
                     DrillingDetail.objects.create(
                         daily_report=daily_report,
                         block=block,
                         machine=machine,
                         status=drilling.get("status", "unknown"),
-                        description=drilling.get("description", "")
+                        description=drilling.get("description", ""),
                     )
 
             # ذخیره جزئیات بارگیری
             for loading in loading_details:
                 if loading.get("block_id") and loading.get("machine_id"):
                     block = get_object_or_404(MiningBlock, id=loading.get("block_id"))
-                    machine = get_object_or_404(MiningMachine, id=loading.get("machine_id"))
+                    machine = get_object_or_404(
+                        MiningMachine, id=loading.get("machine_id")
+                    )
                     LoadingDetail.objects.create(
                         daily_report=daily_report,
                         block=block,
                         machine=machine,
                         status=loading.get("status", "unknown"),
-                        description=loading.get("description", "")
+                        description=loading.get("description", ""),
                     )
 
             # ذخیره جزئیات تخلیه
@@ -131,23 +142,31 @@ class CreateDailyReportView(APIView):
                         daily_report=daily_report,
                         dump=dump,
                         status=dump_detail.get("status", "unknown"),
-                        description=dump_detail.get("description", "")
+                        description=dump_detail.get("description", ""),
                     )
 
-             # ذخیره جزئیات پیگیری
-            for index,followup in enumerate(followups_data):
-                description = followup.get("followup_description")
-                files = request.FILES.getlist(f"followup_file_{index}_0")
-
-                followup_instance = FollowupDetail.objects.create(
+            # ذخیره جزئیات توقف
+            for stoppage in stoppage_details:  # Iterate through stoppage details
+                StoppageDetail.objects.create(
                     daily_report=daily_report,
-                    description=description
+                    reason=stoppage.get("reason", ""),
+                    start_time=stoppage.get("start_time", None),
+                    end_time=stoppage.get("end_time", None),
                 )
 
-                # بررسی و ذخیره فایل‌ها
-                for file in files:
-                    followup_instance.files.save(file.name, file)
+            # ذخیره جزئیات پیگیری
+            # for index, followup in enumerate(followups_data): #دیگه لازم نیست روی followup_data حلقه بزنیم
+            index = 0 # فقط یک پیگیری در این مثال داریم، برای توسعه میتونید حلقه بزنید
+            description = received_data.get(f"followups[{index}][followup_description]")
+            files = request.FILES.getlist(f"followups[{index}][followup_file]")
 
+            followup_instance = FollowupDetail.objects.create(
+                daily_report=daily_report, description=description
+            )
+
+            # بررسی و ذخیره فایل‌ها
+            for file in files:
+                followup_instance.files.save(file.name, file)
 
 
             # ذخیره جزئیات بازرسی
@@ -155,28 +174,58 @@ class CreateDailyReportView(APIView):
                 InspectionDetail.objects.create(
                     daily_report=daily_report,
                     inspection_done=inspection.get("inspection_done", False),
+                    inspection=inspection.get("inspection", ""),  # فیلد inspection رو اضافه کنید
                     status=inspection.get("status", "unknown"),
-                    description=inspection.get("description", "")
+                    description=inspection.get("description", ""),
                 )
 
-            return Response({"message": "گزارش با موفقیت ثبت شد.", "id": daily_report.id}, status=status.HTTP_201_CREATED)
+            return Response(
+                {"message": "گزارش با موفقیت ثبت شد.", "id": daily_report.id},
+                status=status.HTTP_201_CREATED,
+            )
 
         except Exception as e:
             print(f"خطا: {e}")
-            return Response({"error": str(e), "message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": str(e), "message": str(e)},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+
+from django.shortcuts import render
+from django.views.generic import TemplateView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from permissions.utils import class_permission_required
+from BaseInfo.models import MiningBlock, MiningMachine, Dump
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 @class_permission_required("daily_report_form")
 class DailyReportFormView(LoginRequiredMixin, TemplateView):
     template_name = "dailyreport_hse/create_shift_report.html"
 
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['mining_blocks'] = MiningBlock.objects.all()
-        context['mining_machines'] = MiningMachine.objects.all()
+
+        # فیلتر کردن MiningMachine ها بر اساس اسم گروه کاری
+        drilling_machines = MiningMachine.objects.filter(machine_type__machine_workgroup__name="حفاری")
+        loading_machines = MiningMachine.objects.filter(machine_type__machine_workgroup__name="بارکننده")
+
+        # لاگ کوئری ها
+        logger.info(f"Drilling Machines Query: {drilling_machines.query}")
+        logger.info(f"Loading Machines Query: {loading_machines.query}")
+
+        # لاگ تعداد نتایج
+        logger.info(f"Number of Drilling Machines: {drilling_machines.count()}")
+        logger.info(f"Number of Loading Machines: {loading_machines.count()}")
+
+        context['drilling_machines'] = drilling_machines
+        context['loading_machines'] = loading_machines
         context['dumps'] = Dump.objects.all()
         return context
-
 
 @class_permission_required("daily_report_list")
 

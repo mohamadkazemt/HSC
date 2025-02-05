@@ -76,9 +76,10 @@ class LoadingDetailForm(forms.ModelForm):
 class InspectionDetailForm(forms.ModelForm):
     class Meta:
         model = InspectionDetail
-        fields = ['inspection_done', 'status', 'description']
+        fields = ['inspection_done', 'inspection', 'status', 'description'] # فیلد inspection رو اضافه کردیم
         labels = {
             'inspection_done': 'آیا بازدید انجام شد؟',
+            'inspection': 'عنوان بازرسی',
             'status': 'وضعیت بازدید',
             'description': 'توضیحات'
         }

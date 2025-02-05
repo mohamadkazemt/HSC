@@ -203,7 +203,7 @@
                                                     </select>
                                                     <label class="form-label required">دستگاه حفاری:</label>
                                                     <select class="form-select mb-5 form-select-solid" id="drilling_machine" name="drilling_machine">
-                                                        {% for machine in mining_machines %}
+                                                        {% for machine in drilling_machines %}
                                                             <option value="{{ machine.id }}">{{ machine.workshop_code }}</option>
                                                         {% endfor %}
                                                     </select>
@@ -242,7 +242,7 @@
                                                     </select>
                                                     <label class="form-label required">دستگاه بارگیری:</label>
                                                     <select class="form-select mb-5 form-select-solid" id="loading_machine" name="loading_machine">
-                                                        {% for machine in mining_machines %}
+                                                        {% for machine in loading_machines %}
                                                             <option value="{{ machine.id }}">{{ machine.workshop_code }}</option>
                                                         {% endfor %}
                                                     </select>

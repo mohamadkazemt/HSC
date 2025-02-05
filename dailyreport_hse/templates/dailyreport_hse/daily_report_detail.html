@@ -1,9 +1,7 @@
 ﻿{% extends 'base.html' %}
 
-
 {% load static %}
 {% load jalali %}
-
 
 {% block content %}
     <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
@@ -30,9 +28,6 @@
                             <div id="kt_app_content_container" class="app-container container-fluid">
                                 <!--begin::Row-->
                                 <div class="row g-5 g-xl-8">
-
-
-
                                     <div class="col-12 mb-4">
                                         <div class="card">
                                             <div class="card-header">
@@ -49,7 +44,7 @@
                                                     <div class="d-flex align-items-center me-4">
                                                         <i class="fas fa-user-shield me-2 text-primary"></i>
                                                         <strong>افسر ایمنی:</strong>
-                                                        <span class="ms-1">{{ report.user.username }}</span>
+                                                        <span class="ms-1">{{ report.user.userprofile.personnel_code }} - {{ report.user.first_name }} {{ report.user.last_name }}</span>
                                                     </div>
                                                     <div class="d-flex align-items-center me-4">
                                                         <i class="fas fa-clock me-2 text-primary"></i>
@@ -66,13 +61,10 @@
                                                         <strong>تاریخ ایجاد:</strong>
                                                         <span class="ms-1">{{ report.created_at|to_jalali }}</span>
                                                     </div>
-
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-
-
 
                                     <!-- بخش‌های جزئیات -->
                                     <div class="col-md-6 mb-4">
@@ -230,7 +222,8 @@
                                             </div>
                                         </div>
                                     </div>
-                                                                    <div class="col-md-6 mb-4">
+
+                                    <div class="col-md-6 mb-4">
                                         <div class="card">
                                             <div class="card-header">
                                                 <h3 class="card-title">جزئیات بازدید از مجموعه تعمیرگاه</h3>
@@ -240,6 +233,7 @@
                                                     <thead>
                                                     <tr>
                                                         <th>بازدید انجام شد؟</th>
+                                                        <th>عنوان بازرسی</th>
                                                         <th>وضعیت</th>
                                                         <th>توضیحات</th>
                                                     </tr>
@@ -248,11 +242,12 @@
                                                     {% for detail in inspection_details %}
                                                         <tr>
                                                             <td>{{ detail.inspection_done|yesno:"بله,خیر" }}</td>
+                                                             <td>{{ detail.inspection }}</td>
                                                             <td>{% if detail.status == 'safe' %}ایمن{% else %}غیر ایمن{% endif %}</td>
                                                             <td>{{ detail.description }}</td>
                                                         </tr>
                                                     {% empty %}
-                                                        <tr><td colspan="3">اطلاعاتی موجود نیست.</td></tr>
+                                                        <tr><td colspan="4">اطلاعاتی موجود نیست.</td></tr>
                                                     {% endfor %}
                                                     </tbody>
                                                 </table>
@@ -262,50 +257,45 @@
                                 </div>
                             </div>
 
-                                    <div class="col-md-6 mb-4">
-                                        <div class="card">
-                                            <div class="card-header">
-                                                <h3 class="card-title">موارد مستلزم پیگیری در شیفت های بعد</h3>
-                                            </div>
-                                            <div class="card-body">
-                                                <table class="table table-bordered">
-                                                    <thead>
-                                                    <tr>
-                                                        <th>توضیحات</th>
-                                                        <th>فایل</th>
-                                                    </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                    {% for detail in followup_details %}
-                                                        <tr>
-                                                            <td>{{ detail.description }}</td>
-                                                            <td>
-                                                                {% if detail.files %}
-                                                                    <a href="{{ detail.files.url }}">دانلود فایل</a>
-                                                                {% else %}
-                                                                    ندارد
-                                                                {% endif %}
-                                                            </td>
-                                                        </tr>
-                                                    {% empty %}
-                                                        <tr><td colspan="2">اطلاعاتی موجود نیست.</td></tr>
-                                                    {% endfor %}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
+                            <div class="col-md-6 mb-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h3 class="card-title">موارد مستلزم پیگیری در شیفت های بعد</h3>
                                     </div>
-
-
-
+                                    <div class="card-body">
+                                        <table class="table table-bordered">
+                                            <thead>
+                                            <tr>
+                                                <th>توضیحات</th>
+                                                <th>فایل</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            {% for detail in followup_details %}
+                                                <tr>
+                                                    <td>{{ detail.description }}</td>
+                                                    <td>
+                                                        {% if detail.files %}
+                                                            <a href="{{ detail.files.url }}">دانلود فایل</a>
+                                                        {% else %}
+                                                            ندارد
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                            {% empty %}
+                                                <tr><td colspan="2">اطلاعاتی موجود نیست.</td></tr>
+                                            {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
 
                             <!--end::جداول Widget 13-->
                         </div>
-
                         <!--end::Content container-->
                     </div>
                     <!--end::Content-->
-
                 </div>
                 <!--end::Content wrapper-->
                 <!--begin::Footer-->
@@ -325,5 +315,4 @@
         <!--end::Messenger-->
     </div>
     <!--end::notification drawer-->
-
 {% endblock %}

@@ -17,10 +17,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (field.endsWith("_occurred") || field === "inspection_done") {
                     value = value === "true" || value === "بله"; // تبدیل به true/false
                 }
-                 if (field === 'description') {
-                        value = cell.dataset.description || cell.innerText.trim();
-                    }
 
+                // **تغییرات اینجا اعمال شد**
+                if (field === 'description' || field === 'inspection') {
+                    value = cell.dataset[field] || cell.innerText.trim(); // از dataset برای description و inspection استفاده میکنیم
+                }
 
                 detail[field] = value;
             });
@@ -379,65 +380,47 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     /** ارسال فرم */
- document.querySelector('[data-kt-stepper-action="submit"]').addEventListener("click", function (e) {
+    document.querySelector('[data-kt-stepper-action="submit"]').addEventListener("click", function (e) {
         e.preventDefault();
 
         const form = document.querySelector("#kt_create_account_form");
         const formData = new FormData(form);
 
         // جمع‌آوری جزئیات جداول
-         const blastingDetails = collectDetailsFromTable('#blasting_table', ['block_id', 'explosion_occurred', 'description']);
+        const blastingDetails = collectDetailsFromTable('#blasting_table', ['block_id', 'explosion_occurred', 'description']);
         const drillingDetails = collectDetailsFromTable('#drilling_table', ['block_id', 'machine_id', 'status', 'description']);
         const loadingDetails = collectDetailsFromTable('#loading_table', ['block_id', 'machine_id', 'status', 'description']);
         const dumpDetails = collectDetailsFromTable('#dump_table', ['dump_id', 'status', 'description']);
         const stoppageDetails = collectDetailsFromTable('#stoppage_table', ['reason', 'start_time', 'end_time']);
-       const inspectionDetails = collectDetailsFromTable('#inspection_table', ['inspection_done','inspection','status', 'description']);
+        const inspectionDetails = collectDetailsFromTable('#inspection_table', ['inspection_done', 'inspection', 'status', 'description']);
 
         // تبدیل مقادیر بولی به true/false
-         const blastingDetailsConverted = blastingDetails.map(item => ({
+        const blastingDetailsConverted = blastingDetails.map(item => ({
             ...item,
             explosion_occurred: item.explosion_occurred === true || item.explosion_occurred === 'true',
         }));
 
-
-          const inspectionDetailsConverted = inspectionDetails.map(item => ({
+        const inspectionDetailsConverted = inspectionDetails.map(item => ({
             ...item,
             inspection_done: item.inspection_done === true || item.inspection_done === 'true',
-
         }));
 
-
-
-        // ایجاد یک شیء برای داده‌ها
-        const data = {
-            blasting_details: blastingDetailsConverted,
-            drilling_details: drillingDetails,
-            loading_details: loadingDetails,
-            dump_details: dumpDetails,
-            stoppage_details: stoppageDetails,
-            inspection_details: inspectionDetailsConverted,
-            followups:[]
-        };
-
+        // افزودن جزئیات به FormData
+        formData.append('blasting_details', JSON.stringify(blastingDetailsConverted));
+        formData.append('drilling_details', JSON.stringify(drillingDetails));
+        formData.append('loading_details', JSON.stringify(loadingDetails));
+        formData.append('dump_details', JSON.stringify(dumpDetails));
+        formData.append('stoppage_details', JSON.stringify(stoppageDetails));
+        formData.append('inspection_details', JSON.stringify(inspectionDetailsConverted));
 
         // افزودن جزئیات پیگیری
-          let followupCounter = 0;
         followupDetails.forEach((detail, index) => {
-
-
-            data.followups.push({
-                followup_description: detail.description,
-                //فایلها دیگر در آبجکت data  قرار ندارند
+            formData.append(`followups[${index}][followup_description]`, detail.description);
+             // افزودن هر فایل به formData
+            detail.files.forEach((file, fileIndex) => {
+                formData.append(`followups[${index}][followup_file]`, file);
             });
-             formData.append(`followup_description_${followupCounter}`, detail.description);
-             detail.files.forEach((file, fileIndex) => {
-                 formData.append(`followup_file_${followupCounter}_${fileIndex}`, file);
-             });
-                followupCounter++;
         });
-
-      formData.append("data",JSON.stringify(data))
-
 
         // لاگ گرفتن از داده‌های ارسال‌شده
         console.log("داده‌های ارسالی:", [...formData.entries()]);
@@ -445,64 +428,61 @@ document.addEventListener("DOMContentLoaded", function () {
         // ارسال داده‌ها به سمت سرور
         fetch(form.action, {
             method: "POST",
-             body: formData,
+            body: formData,
             headers: {
-                 "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value,
+                "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value,
             },
         })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(errorData => {
-                         throw new Error(JSON.stringify(errorData));
-                    });
-                   // throw new Error(`خطا در پاسخ سرور: ${response.status}`);
-
-                }
-                return response.json();
-            })
-            .then(data => {
-                Swal.fire({
-                    title: 'گزارش با موفقیت ثبت شد!',
-                    text: 'شما به صفحه جزئیات گزارشات هدایت می‌شوید.',
-                    icon: 'success',
-                    confirmButtonText: 'باشه'
-                }).then(() => {
-                    window.location.href = `/dailyreport_hse/detail/${data.id}/`;
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(errorData => {
+                    throw new Error(JSON.stringify(errorData));
                 });
-            })
-           .catch(error => {
+            }
+            return response.json();
+        })
+        .then(data => {
+            Swal.fire({
+                title: 'گزارش با موفقیت ثبت شد!',
+                text: 'شما به صفحه جزئیات گزارشات هدایت می‌شوید.',
+                icon: 'success',
+                confirmButtonText: 'باشه'
+            }).then(() => {
+                window.location.href = `/dailyreport_hse/detail/${data.id}/`;
+            });
+        })
+        .catch(error => {
+            try {
+                const errorData = JSON.parse(error.message);
+                let errorMessage = 'مشکلی در ثبت گزارش رخ داد:';
 
-               try {
-                   const errorData = JSON.parse(error.message);
-                   let errorMessage = 'مشکلی در ثبت گزارش رخ داد:';
+                if (errorData.errors) {
+                    errorMessage = 'مشکلات زیر در ثبت گزارش وجود دارد:<ul>';
+                    for (const field in errorData.errors) {
+                        errorMessage += `<li>${field}: ${errorData.errors[field].join(", ")}</li>`;
+                    }
+                    errorMessage += '</ul>';
+                } else if (errorData.error) {
+                    errorMessage = `مشکلی در ثبت گزارش رخ داد: ${errorData.error}`;
+                } else {
+                    errorMessage = 'مشکلی در ثبت گزارش رخ داد. لطفا دوباره تلاش کنید';
+                }
 
-                     if (errorData.errors) {
-                      errorMessage = 'مشکلات زیر در ثبت گزارش وجود دارد:<ul>';
-                        for (const field in errorData.errors) {
-                          errorMessage += `<li>${field}: ${errorData.errors[field].join(", ")}</li>`;
-                        }
-                        errorMessage += '</ul>';
-                     } else if (errorData.error){
-                          errorMessage = `مشکلی در ثبت گزارش رخ داد: ${errorData.error}`
-                     } else {
-                         errorMessage = 'مشکلی در ثبت گزارش رخ داد. لطفا دوباره تلاش کنید'
-                     }
-
-                    Swal.fire({
-                        title: 'خطا!',
-                        html: errorMessage,
-                        icon: 'error',
-                        confirmButtonText: 'باشه'
-                    });
-                } catch(e){
-                  Swal.fire({
-                      title: 'خطا!',
-                      text: 'مشکلی در ثبت گزارش رخ داد. لطفاً دوباره تلاش کنید.',
-                      icon: 'error',
-                      confirmButtonText: 'باشه'
-                  });
-                 console.error("خطا در ارسال داده‌ها:", error);
-               }
-           });
+                Swal.fire({
+                    title: 'خطا!',
+                    html: errorMessage,
+                    icon: 'error',
+                    confirmButtonText: 'باشه'
+                });
+            } catch (e) {
+                Swal.fire({
+                    title: 'خطا!',
+                    text: 'مشکلی در ثبت گزارش رخ داد. لطفاً دوباره تلاش کنید.',
+                    icon: 'error',
+                    confirmButtonText: 'باشه'
+                });
+                console.error("خطا در ارسال داده‌ها:", error);
+            }
+        });
     });
 });
