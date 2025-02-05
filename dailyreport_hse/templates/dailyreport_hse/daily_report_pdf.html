@@ -62,8 +62,6 @@
 </head>
 <body>
 
-
-
 <div class="header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
     <!-- بخش لوگو -->
     <div class="logo" style="flex: 1;">
@@ -83,8 +81,6 @@
     </div>
 
 </div>
-
-
 
 <h2 class="title">مشخصات گزارش دهنده</h2>
 
@@ -229,13 +225,13 @@
     </tbody>
 </table>
 
-
-
+<!-- جزئیات بازدید از مجموعه تعمیرگاه -->
 <h2>جزئیات بازدید از مجموعه تعمیرگاه</h2>
 <table class="details-table">
     <thead>
     <tr>
         <th>بازرسی انجام شده</th>
+        <th>عنوان بازرسی</th>
         <th>وضعیت</th>
         <th>توضیحات</th>
     </tr>
@@ -244,11 +240,12 @@
     {% for detail in inspection_details %}
         <tr>
             <td>{{ detail.inspection_done|yesno:"بله,خیر" }}</td>
+            <td>{{ detail.inspection }}</td> <!-- نمایش عنوان بازرسی -->
             <td>{% if detail.status == 'safe' %}ایمن{% else %}غیر ایمن{% endif %}</td>
             <td>{{ detail.description }}</td>
         </tr>
     {% empty %}
-        <tr><td colspan="3">اطلاعاتی موجود نیست.</td></tr>
+        <tr><td colspan="4">اطلاعاتی موجود نیست.</td></tr>
     {% endfor %}
     </tbody>
 </table>
@@ -280,13 +277,6 @@
     </tbody>
 </table>
 
-
-
-
-
-<!-- جزئیات بازرسی -->
-
-
 {% if user_signature %}
     <div class="signature">
         <img src="{{ user_signature }}" alt="امضای کاربر" style="width: 200px; height: auto;">
@@ -295,8 +285,8 @@
     </div>
 {% endif %}
 
-
 <div class="footer">
 </div>
+
 </body>
 </html>

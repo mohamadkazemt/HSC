@@ -76,6 +76,7 @@ class LoadingDetail(models.Model):
 class InspectionDetail(models.Model):
     daily_report = models.ForeignKey(DailyReport, on_delete=models.CASCADE, related_name="inspection_details")
     inspection_done = models.BooleanField(default=False, verbose_name="بازدید انجام شد؟")
+    inspection = models.CharField(max_length=255, verbose_name="عنوان بازرسی", blank=True, null=True) # فیلد جدید
     status = models.CharField(max_length=10, choices=[('safe', 'ایمن'), ('unsafe', 'ناایمن')], null=True, blank=True, verbose_name="وضعیت بازدید")
     description = models.TextField(blank=True, verbose_name="توضیحات")
 

@@ -208,10 +208,6 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
-        },
         'simple': {
             'format': '{levelname} {message}',
             'style': '{',
@@ -219,19 +215,15 @@ LOGGING = {
     },
     'handlers': {
         'console': {
+            'level': 'INFO',
             'class': 'logging.StreamHandler',
             'formatter': 'simple'
         },
-        'file': {  # Handler برای فایل لاگ
-            'class': 'logging.FileHandler',
-            'filename': 'accounts.log',  # مسیر و نام فایل لاگ (میتوانید تغییر دهید)
-            'formatter': 'verbose',
-        },
     },
     'loggers': {
-        'accounts': {  # نام اپلیکیشن
-            'handlers': ['file', 'console'],  # استفاده از هر دو هندلر فایل و کنسول
-            'level': 'INFO',  # یا DEBUG
+        'dailyreport_hse': {  # اسم اپلیکیشن خودتون رو اینجا وارد کنید
+            'handlers': ['console'],
+            'level': 'INFO',
             'propagate': True,
         },
     },
