@@ -681,11 +681,8 @@ def get_all_sections_ajax(request):
 
 
 
-# views.py
-# views.py
-
 from django.shortcuts import render
-from django.db.models import Count, Q, F, CharField, Value  # تغییر در اینجا
+from django.db.models import Count, Q, F, CharField, Value
 from .models import Anomaly, Location, LocationSection
 from django.db.models.functions import TruncDate, Concat
 from django.contrib.auth.decorators import login_required
@@ -712,6 +709,10 @@ def anomaly_reports(request):
         unsafe=Count('id', filter=Q(action=False))
     ).order_by('unit')
 
+    for item in anomalies_by_unit:
+        total = item['total']
+        item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
+        item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
     # Paginate anomalies_by_unit
     paginator_unit = Paginator(anomalies_by_unit, items_per_page)
     page_unit = request.GET.get('page_unit')
@@ -723,10 +724,7 @@ def anomaly_reports(request):
     except EmptyPage:
         anomalies_by_unit_paginated = paginator_unit.page(paginator_unit.num_pages)
 
-    for item in anomalies_by_unit:
-        total = item['total']
-        item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
-        item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
+
 
     # 2. Anomalies by Location (Mine Pit & Workshop)
     anomalies_by_location = anomalies.values('location__name').annotate(
@@ -734,6 +732,10 @@ def anomaly_reports(request):
         safe=Count('id', filter=Q(action=True)),
         unsafe=Count('id', filter=Q(action=False))
     ).order_by('location__name')
+    for item in anomalies_by_location:
+        total = item['total']
+        item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
+        item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
 
     # Paginate anomalies_by_location
     paginator_location = Paginator(anomalies_by_location, items_per_page)
@@ -746,10 +748,7 @@ def anomaly_reports(request):
     except EmptyPage:
         anomalies_by_location_paginated = paginator_location.page(paginator_location.num_pages)
 
-    for item in anomalies_by_location:
-        total = item['total']
-        item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
-        item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
+
 
     # 3. Anomalies by Shift (Using Group as Shift Information)
     anomalies_by_shift = anomalies.values(shift=F('created_by__group')).annotate(
@@ -758,6 +757,10 @@ def anomaly_reports(request):
         unsafe=Count('id', filter=Q(action=False))
     ).order_by('shift')
 
+    for item in anomalies_by_shift:
+        total = item['total']
+        item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
+        item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
     # Paginate anomalies_by_shift
     paginator_shift = Paginator(anomalies_by_shift, items_per_page)
     page_shift = request.GET.get('page_shift')
@@ -769,10 +772,7 @@ def anomaly_reports(request):
     except EmptyPage:
         anomalies_by_shift_paginated = paginator_shift.page(paginator_shift.num_pages)
 
-    for item in anomalies_by_shift:
-        total = item['total']
-        item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
-        item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
+
 
     # 4. Anomalies by User
     anomalies_by_user = anomalies.annotate(
@@ -784,6 +784,10 @@ def anomaly_reports(request):
         safe=Count('id', filter=Q(action=True)),
         unsafe=Count('id', filter=Q(action=False))
     ).order_by('full_name')
+    for item in anomalies_by_user:
+        total = item['total']
+        item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
+        item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
 
     # Paginate anomalies_by_user
     paginator_user = Paginator(anomalies_by_user, items_per_page)
@@ -796,10 +800,7 @@ def anomaly_reports(request):
     except EmptyPage:
         anomalies_by_user_paginated = paginator_user.page(paginator_user.num_pages)
 
-    for item in anomalies_by_user:
-        total = item['total']
-        item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
-        item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
+
 
     # 5. Anomaly Frequency by Description
     anomaly_frequency_by_description = anomalies.values('anomalydescription__description').annotate(
@@ -807,6 +808,10 @@ def anomaly_reports(request):
         safe=Count('id', filter=Q(action=True)),
         unsafe=Count('id', filter=Q(action=False))
     ).order_by('-total')
+    for item in anomaly_frequency_by_description:
+        total = item['total']
+        item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
+        item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
 
     # Paginate anomaly_frequency_by_description
     paginator_description = Paginator(anomaly_frequency_by_description, items_per_page)
@@ -819,10 +824,7 @@ def anomaly_reports(request):
     except EmptyPage:
         anomaly_frequency_by_description_paginated = paginator_description.page(paginator_description.num_pages)
 
-    for item in anomaly_frequency_by_description:
-        total = item['total']
-        item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
-        item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
+
 
     # 6. Most Frequent Anomaly by Description in Workshop and Mine Pit
     most_frequent_anomaly_workshop = anomalies.filter(location__name='Workshop').values(
