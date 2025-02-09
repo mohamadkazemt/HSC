@@ -1,0 +1,320 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load jalali %}
+
+{% block content %}
+    <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+        <!--begin::Page-->
+        <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+            <!--begin::Header-->
+            {% include 'header.html' %}
+            <!--end::Header-->
+            <!--begin::Wrapper-->
+            <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+                <!--begin::Sidebar-->
+                {% include 'sidebar.html' %}
+                <!--end::Sidebar-->
+                <!--begin::اصلی-->
+                <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                    <!--begin::Content wrapper-->
+                    <div class="d-flex flex-column flex-column-fluid">
+                        <!--begin::Toolbar-->
+                        {% include 'toolbar.html' %}
+                        <!--end::Toolbar-->
+                        <!--begin::Content-->
+                        <div id="kt_app_content" class="app-content flex-column-fluid">
+                            <!--begin::Content container-->
+                            <div id="kt_app_content_container" class="app-container container-fluid">
+
+                                <!--begin::Tabs-->
+                                <ul class="nav nav-tabs mb-5" id="myTab" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="unit-tab" data-bs-toggle="tab"
+                                                data-bs-target="#unit" type="button" role="tab" aria-controls="unit"
+                                                aria-selected="true">گزارش واحد
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="location-tab" data-bs-toggle="tab"
+                                                data-bs-target="#location" type="button" role="tab"
+                                                aria-controls="location" aria-selected="false">گزارش موقعیت
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="shift-tab" data-bs-toggle="tab"
+                                                data-bs-target="#shift" type="button" role="tab" aria-controls="shift"
+                                                aria-selected="false">گزارش شیفت
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="user-tab" data-bs-toggle="tab" data-bs-target="#user"
+                                                type="button" role="tab" aria-controls="user" aria-selected="false">
+                                            گزارش کاربر
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="description-tab" data-bs-toggle="tab"
+                                                data-bs-target="#description" type="button" role="tab"
+                                                aria-controls="description" aria-selected="false">گزارش شرح
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="frequent-tab" data-bs-toggle="tab"
+                                                data-bs-target="#frequent" type="button" role="tab"
+                                                aria-controls="frequent" aria-selected="false">گزارش متداول
+                                        </button>
+                                    </li>
+                                     <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="type-tab" data-bs-toggle="tab"
+                                                data-bs-target="#type" type="button" role="tab"
+                                                aria-controls="type" aria-selected="false">گزارش بر اساس نوع
+                                        </button>
+                                    </li>
+                                </ul>
+                                <!--end::Tabs-->
+
+                                <!--begin::Tab Content-->
+                                <div class="tab-content" id="myTabContent">
+
+                                    <!-- Report by Unit -->
+                                    <div class="tab-pane fade show active" id="unit" role="tabpanel"
+                                         aria-labelledby="unit-tab">
+                                        <h2 class="mb-5">گزارش ناهنجاری‌ها بر اساس واحد</h2>
+                                        <div class="table-responsive">
+                                            <table class="table table-striped table-bordered">
+                                                <thead>
+                                                <tr>
+                                                    <th>واحد</th>
+                                                    <th>مجموع</th>
+                                                    <th>ایمن</th>
+                                                    <th>ناایمن</th>
+                                                    <th>درصد ایمنی</th>
+                                                    <th>درصد ناایمنی</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                {% for item in anomalies_by_unit %}
+                                                    <tr>
+                                                        <td>{{ item.unit }}</td>
+                                                        <td>{{ item.total }}</td>
+                                                        <td>{{ item.safe }}</td>
+                                                        <td>{{ item.unsafe }}</td>
+                                                        <td>{{ item.safe_percentage|floatformat:2 }}%</td>
+                                                        <td>{{ item.unsafe_percentage|floatformat:2 }}%</td>
+                                                    </tr>
+                                                {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Report by Location -->
+                                    <div class="tab-pane fade" id="location" role="tabpanel"
+                                         aria-labelledby="location-tab">
+                                        <h2 class="mb-5">گزارش ناهنجاری‌ها بر اساس موقعیت (محل حفاری و کارگاه)</h2>
+                                        <div class="table-responsive">
+                                            <table class="table table-striped table-bordered">
+                                                <thead>
+                                                <tr>
+                                                    <th>موقعیت</th>
+                                                    <th>مجموع</th>
+                                                    <th>ایمن</th>
+                                                    <th>ناایمن</th>
+                                                    <th>درصد ایمنی</th>
+                                                    <th>درصد ناایمنی</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                {% for item in anomalies_by_location %}
+                                                    <tr>
+                                                        <td>{{ item.location__name }}</td>
+                                                        <td>{{ item.total }}</td>
+                                                        <td>{{ item.safe }}</td>
+                                                        <td>{{ item.unsafe }}</td>
+                                                        <td>{{ item.safe_percentage|floatformat:2 }}%</td>
+                                                        <td>{{ item.unsafe_percentage|floatformat:2 }}%</td>
+                                                    </tr>
+                                                {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Report by Shift -->
+                                    <div class="tab-pane fade" id="shift" role="tabpanel" aria-labelledby="shift-tab">
+                                        <h2 class="mb-5">گزارش ناهنجاری‌ها بر اساس شیفت</h2>
+                                        <div class="table-responsive">
+                                            <table class="table table-striped table-bordered">
+                                                <thead>
+                                                <tr>
+                                                    <th>شیفت</th>
+                                                    <th>مجموع</th>
+                                                    <th>ایمن</th>
+                                                    <th>ناایمن</th>
+                                                    <th>درصد ایمنی</th>
+                                                    <th>درصد ناایمنی</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                {% for item in anomalies_by_shift %}
+                                                    <tr>
+                                                        <td>{{ item.shift }}</td>
+                                                        <td>{{ item.total }}</td>
+                                                        <td>{{ item.safe }}</td>
+                                                        <td>{{ item.unsafe }}</td>
+                                                        <td>{{ item.safe_percentage|floatformat:2 }}%</td>
+                                                        <td>{{ item.unsafe_percentage|floatformat:2 }}%</td>
+                                                    </tr>
+                                                {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Report by User -->
+                                    <div class="tab-pane fade" id="user" role="tabpanel" aria-labelledby="user-tab">
+                                        <h2 class="mb-5">گزارش ناهنجاری‌ها بر اساس کاربر</h2>
+                                        <div class="table-responsive">
+                                            <table class="table table-striped table-bordered">
+                                                <thead>
+                                                <tr>
+                                                    <th>کاربر</th>
+                                                    <th>مجموع</th>
+                                                    <th>ایمن</th>
+                                                    <th>ناایمن</th>
+                                                    <th>درصد ایمنی</th>
+                                                    <th>درصد ناایمنی</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                {% for item in anomalies_by_user %}
+                                                    <tr>
+                                                        <td>{{ item.user }}</td>
+                                                        <td>{{ item.total }}</td>
+                                                        <td>{{ item.safe }}</td>
+                                                        <td>{{ item.unsafe }}</td>
+                                                        <td>{{ item.safe_percentage|floatformat:2 }}%</td>
+                                                        <td>{{ item.unsafe_percentage|floatformat:2 }}%</td>
+                                                    </tr>
+                                                {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Report by Description -->
+                                    <div class="tab-pane fade" id="description" role="tabpanel"
+                                         aria-labelledby="description-tab">
+                                        <h2 class="mb-5">فراوانی ناهنجاری‌ها بر اساس شرح</h2>
+                                        <div class="table-responsive">
+                                            <table class="table table-striped table-bordered">
+                                                <thead>
+                                                <tr>
+                                                    <th>شرح</th>
+                                                    <th>مجموع</th>
+                                                    <th>ایمن</th>
+                                                    <th>ناایمن</th>
+                                                    <th>درصد ایمنی</th>
+                                                    <th>درصد ناایمنی</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                {% for item in anomaly_frequency_by_description %}
+                                                    <tr>
+                                                        <td>{{ item.anomalydescription__description }}</td>
+                                                        <td>{{ item.total }}</td>
+                                                        <td>{{ item.safe }}</td>
+                                                        <td>{{ item.unsafe }}</td>
+                                                        <td>{{ item.safe_percentage|floatformat:2 }}%</td>
+                                                        <td>{{ item.unsafe_percentage|floatformat:2 }}%</td>
+                                                    </tr>
+                                                {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Report: Most Frequent Anomalies -->
+                                    <div class="tab-pane fade" id="frequent" role="tabpanel" aria-labelledby="frequent-tab">
+                                        <h2 class="mb-5">گزارش ناهنجاری های متداول</h2>
+
+                                        <h3 class="mb-3">متداول‌ترین ناهنجاری در کارگاه:</h3>
+                                        {% if most_frequent_anomaly_workshop %}
+                                            <p class="mb-4">{{ most_frequent_anomaly_workshop.anomalydescription__description }}
+                                                ({{ most_frequent_anomaly_workshop.total }} occurrences)</p>
+                                        {% else %}
+                                            <p class="mb-4">هیچ ناهنجاری در کارگاه یافت نشد.</p>
+                                        {% endif %}
+
+                                        <h3 class="mb-3">متداول‌ترین ناهنجاری در محل حفاری:</h3>
+                                        {% if most_frequent_anomaly_mine_pit %}
+                                            <p class="mb-4">{{ most_frequent_anomaly_mine_pit.anomalydescription__description }}
+                                                ({{ most_frequent_anomaly_mine_pit.total }} occurrences)</p>
+                                        {% else %}
+                                            <p class="mb-4">هیچ ناهنجاری در محل حفاری یافت نشد.</p>
+                                        {% endif %}
+
+                                        <h3 class="mb-3">همکارترین افسر پیگیری:</h3>
+                                        {% if most_cooperative_officer %}
+                                            <p class="mb-4">{{ most_cooperative_officer.officer }}
+                                                ({{ most_cooperative_officer.safe_count }} ناهنجاری ایمن)</p>
+                                        {% else %}
+                                            <p class="mb-4">افسر همکار یافت نشد.</p>
+                                        {% endif %}
+                                    </div>
+
+                                    <!--Report on base type anomaly-->
+                                     <div class="tab-pane fade" id="type" role="tabpanel" aria-labelledby="type-tab">
+                                        <h2 class="mb-5">تعداد ناهنجاری بر اساس نوع ناهنجاری</h2>
+                                        <div class="table-responsive">
+                                            <table class="table table-striped table-bordered">
+                                                <thead>
+                                                <tr>
+                                                    <th>نوع ناهنجاری</th>
+                                                    <th>مجموع</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                {% for item in anomaly_count_by_type %}
+                                                    <tr>
+                                                        <td>{{ item.anomalytype__type }}</td>
+                                                        <td>{{ item.total }}</td>
+                                                    </tr>
+                                                {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                </div>
+                                <!--end::Tab Content-->
+
+                            </div>
+                            <!--end::Content container-->
+                        </div>
+                        <!--end::Content-->
+
+                    </div>
+                    <!--end::Content wrapper-->
+                    <!--begin::Footer-->
+                    {% include 'footer.html' %}
+                    <!--end::Footer-->
+                </div>
+                <!--end:::اصلی-->
+            </div>
+            <!--end::Wrapper-->
+        </div>
+        <!--end::Page-->
+    </div>
+    <!--begin::notification drawer-->
+    <div id="kt_drawer_chat" class="bg-body" data-kt-drawer="true" data-kt-drawer-name="chat"
+         data-kt-drawer-activate="true" data-kt-drawer-overlay="true"
+         data-kt-drawer-width="{default:'300px', 'md': '500px'}" data-kt-drawer-direction="end"
+         data-kt-drawer-toggle="#kt_drawer_chat_toggle" data-kt-drawer-close="#kt_drawer_chat_close">
+        <!--begin::Messenger-->
+        {% include 'notification.html' %}
+        <!--end::Messenger-->
+    </div>
+    <!--end::notification drawer-->
+
+{% endblock %}

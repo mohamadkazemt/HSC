@@ -9,7 +9,7 @@ from dashboard.sms_utils import send_template_sms, logger
 from permissions.utils import permission_required
 from .forms import AnomalyForm, CommentForm
 from django.http import JsonResponse
-from .models import AnomalyDescription, CorrectiveAction, Comment, LocationSection, Anomaly
+from .models import AnomalyDescription, CorrectiveAction, Comment, LocationSection, Anomaly, Location
 from django.views.decorators.csrf import csrf_exempt
 import jdatetime
 from accounts.models import UserProfile
@@ -21,9 +21,7 @@ from django.utils import timezone
 from django.db.models import Count
 from django.db.models.functions import TruncDate, ExtractMonth, ExtractYear
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
 import openpyxl
 from .templatetags.jalali import to_jalali
 from django.template.loader import get_template
@@ -35,8 +33,9 @@ from shift_manager.utils import get_current_shift_and_group
 import jdatetime
 from django.utils.timezone import make_aware
 from datetime import datetime
-from .models import Location, LocationSection
-
+from django.db.models import Count, Q, F
+from django.db.models import IntegerField
+from django.db.models.functions import Cast
 
 
 name = 'anomalis'
@@ -673,3 +672,100 @@ def get_locations_ajax(request):
 def get_all_sections_ajax(request):
      sections = LocationSection.objects.all().values("id","section", "location_id")
      return JsonResponse(list(sections), safe=False)
+
+
+
+
+
+
+from django.shortcuts import render
+from django.db.models import Count, Q, F
+from .models import Anomaly, Location, LocationSection
+from django.db.models.functions import TruncDate
+from django.contrib.auth.decorators import login_required
+from django.db.models import IntegerField
+from django.db.models.functions import Cast
+
+
+@login_required
+def anomaly_reports(request):
+    anomalies = Anomaly.objects.all()
+
+    # 1. Anomalies by Unit
+    anomalies_by_unit = anomalies.values(unit=F('created_by__group')).annotate(total=Count('id'),
+                                                                                 safe=Count('id', filter=Q(action=True)),
+                                                                                 unsafe=Count('id', filter=Q(action=False))).order_by('unit')
+    for item in anomalies_by_unit:
+        total = item['total']
+        item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
+        item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
+
+    # 2. Anomalies by Mine Pit and Workshop
+    anomalies_by_location = anomalies.values('location__name').annotate(total=Count('id'),
+                                                                         safe=Count('id', filter=Q(action=True)),
+                                                                         unsafe=Count('id', filter=Q(action=False))).order_by('location__name')
+    for item in anomalies_by_location:
+        total = item['total']
+        item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
+        item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
+
+    # 3. Anomalies by Shift (Using Group as Shift Information)
+    anomalies_by_shift = anomalies.values(shift=F('created_by__group')).annotate(total=Count('id'),
+                                                                                   safe=Count('id', filter=Q(action=True)),
+                                                                                   unsafe=Count('id', filter=Q(action=False))).order_by('shift')
+    for item in anomalies_by_shift:
+        total = item['total']
+        item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
+        item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
+
+    # 4. Anomalies by User
+    anomalies_by_user = anomalies.values(user=F('created_by__user__username')).annotate(
+        total=Count('id'),
+        safe=Count('id', filter=Q(action=True)),
+        unsafe=Count('id', filter=Q(action=False))
+    ).order_by('user')
+
+    for item in anomalies_by_user:
+        total = item['total']
+        item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
+        item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
+
+    # 5. Anomaly Frequency by Description
+    anomaly_frequency_by_description = anomalies.values('anomalydescription__description').annotate(
+        total=Count('id'),
+        safe=Count('id', filter=Q(action=True)),
+        unsafe=Count('id', filter=Q(action=False))
+    ).order_by('-total')
+
+    for item in anomaly_frequency_by_description:
+        total = item['total']
+        item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
+        item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
+
+    # 6. Most Frequent Anomaly by Description in Workshop and Mine Pit
+    most_frequent_anomaly_workshop = anomalies.filter(location__name='Workshop').values(
+        'anomalydescription__description').annotate(total=Count('id')).order_by('-total').first()
+    most_frequent_anomaly_mine_pit = anomalies.filter(location__name='Mine Pit').values(
+        'anomalydescription__description').annotate(total=Count('id')).order_by('-total').first()
+
+    # 7. Most Cooperative Follow-up Officer
+    most_cooperative_officer = anomalies.filter(action=True).values(officer=F('followup__user__username')).annotate(
+        safe_count=Count('id')).order_by('-safe_count').first()
+
+    # 8. Anomaly Count by Anomaly Type
+    anomaly_count_by_type = anomalies.values('anomalytype__type').annotate(total=Count('id')).order_by('-total')
+
+
+    context = {
+        'anomalies_by_unit': anomalies_by_unit,
+        'anomalies_by_location': anomalies_by_location,
+        'anomalies_by_shift': anomalies_by_shift,
+        'anomalies_by_user': anomalies_by_user,
+        'anomaly_frequency_by_description': anomaly_frequency_by_description,
+        'most_frequent_anomaly_workshop': most_frequent_anomaly_workshop,
+        'most_frequent_anomaly_mine_pit': most_frequent_anomaly_mine_pit,
+        'most_cooperative_officer': most_cooperative_officer,
+        'anomaly_count_by_type': anomaly_count_by_type,
+    }
+
+    return render(request, 'anomalis/reports.html', context)
