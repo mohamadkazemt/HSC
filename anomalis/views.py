@@ -691,8 +691,8 @@ from django.db.models.functions import Cast
 def anomaly_reports(request):
     anomalies = Anomaly.objects.all()
 
-    # 1. Anomalies by Unit
-    anomalies_by_unit = anomalies.values(unit=F('created_by__group')).annotate(total=Count('id'),
+    # 1. Anomalies by Location (Site)
+    anomalies_by_unit = anomalies.values(unit=F('location__name')).annotate(total=Count('id'),
                                                                                  safe=Count('id', filter=Q(action=True)),
                                                                                  unsafe=Count('id', filter=Q(action=False))).order_by('unit')
     for item in anomalies_by_unit:
