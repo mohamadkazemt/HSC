@@ -678,52 +678,123 @@ def get_all_sections_ajax(request):
 
 
 
+
+
+
+# views.py
+# views.py
+
 from django.shortcuts import render
-from django.db.models import Count, Q, F
+from django.db.models import Count, Q, F, CharField, Value  # تغییر در اینجا
 from .models import Anomaly, Location, LocationSection
-from django.db.models.functions import TruncDate
+from django.db.models.functions import TruncDate, Concat
 from django.contrib.auth.decorators import login_required
-from django.db.models import IntegerField
-from django.db.models.functions import Cast
+from django.core.paginator import Paginator, EmptyPage, InvalidPage
 
 
 @login_required
 def anomaly_reports(request):
     anomalies = Anomaly.objects.all()
 
+    # تعداد آیتم‌ها در هر صفحه
+    items_per_page = request.GET.get('items_per_page', 10)
+    try:
+        items_per_page = int(items_per_page)
+        if items_per_page <= 0:
+            items_per_page = 10  # مقدار پیش‌فرض در صورت وارد کردن عدد منفی
+    except ValueError:
+        items_per_page = 10  # مقدار پیش‌فرض در صورت وارد کردن مقدار غیر عددی
+
     # 1. Anomalies by Location (Site)
-    anomalies_by_unit = anomalies.values(unit=F('location__name')).annotate(total=Count('id'),
-                                                                                 safe=Count('id', filter=Q(action=True)),
-                                                                                 unsafe=Count('id', filter=Q(action=False))).order_by('unit')
+    anomalies_by_unit = anomalies.values(unit=F('location__name')).annotate(
+        total=Count('id'),
+        safe=Count('id', filter=Q(action=True)),
+        unsafe=Count('id', filter=Q(action=False))
+    ).order_by('unit')
+
+    # Paginate anomalies_by_unit
+    paginator_unit = Paginator(anomalies_by_unit, items_per_page)
+    page_unit = request.GET.get('page_unit')
+
+    try:
+        anomalies_by_unit_paginated = paginator_unit.page(page_unit)
+    except InvalidPage:
+        anomalies_by_unit_paginated = paginator_unit.page(1)
+    except EmptyPage:
+        anomalies_by_unit_paginated = paginator_unit.page(paginator_unit.num_pages)
+
     for item in anomalies_by_unit:
         total = item['total']
         item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
         item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
 
-    # 2. Anomalies by Mine Pit and Workshop
-    anomalies_by_location = anomalies.values('location__name').annotate(total=Count('id'),
-                                                                         safe=Count('id', filter=Q(action=True)),
-                                                                         unsafe=Count('id', filter=Q(action=False))).order_by('location__name')
+    # 2. Anomalies by Location (Mine Pit & Workshop)
+    anomalies_by_location = anomalies.values('location__name').annotate(
+        total=Count('id'),
+        safe=Count('id', filter=Q(action=True)),
+        unsafe=Count('id', filter=Q(action=False))
+    ).order_by('location__name')
+
+    # Paginate anomalies_by_location
+    paginator_location = Paginator(anomalies_by_location, items_per_page)
+    page_location = request.GET.get('page_location')
+
+    try:
+        anomalies_by_location_paginated = paginator_location.page(page_location)
+    except InvalidPage:
+        anomalies_by_location_paginated = paginator_location.page(1)
+    except EmptyPage:
+        anomalies_by_location_paginated = paginator_location.page(paginator_location.num_pages)
+
     for item in anomalies_by_location:
         total = item['total']
         item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
         item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
 
     # 3. Anomalies by Shift (Using Group as Shift Information)
-    anomalies_by_shift = anomalies.values(shift=F('created_by__group')).annotate(total=Count('id'),
-                                                                                   safe=Count('id', filter=Q(action=True)),
-                                                                                   unsafe=Count('id', filter=Q(action=False))).order_by('shift')
+    anomalies_by_shift = anomalies.values(shift=F('created_by__group')).annotate(
+        total=Count('id'),
+        safe=Count('id', filter=Q(action=True)),
+        unsafe=Count('id', filter=Q(action=False))
+    ).order_by('shift')
+
+    # Paginate anomalies_by_shift
+    paginator_shift = Paginator(anomalies_by_shift, items_per_page)
+    page_shift = request.GET.get('page_shift')
+
+    try:
+        anomalies_by_shift_paginated = paginator_shift.page(page_shift)
+    except InvalidPage:
+        anomalies_by_shift_paginated = paginator_shift.page(1)
+    except EmptyPage:
+        anomalies_by_shift_paginated = paginator_shift.page(paginator_shift.num_pages)
+
     for item in anomalies_by_shift:
         total = item['total']
         item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
         item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
 
     # 4. Anomalies by User
-    anomalies_by_user = anomalies.values(user=F('created_by__user__username')).annotate(
+    anomalies_by_user = anomalies.annotate(
+        full_name=Concat('created_by__user__first_name', Value(' '), 'created_by__user__last_name',
+                          output_field=CharField()),
+        personnel_code=F('created_by__personnel_code')  # Assuming personnel_code is in UserProfile
+    ).values('full_name', 'personnel_code').annotate(
         total=Count('id'),
         safe=Count('id', filter=Q(action=True)),
         unsafe=Count('id', filter=Q(action=False))
-    ).order_by('user')
+    ).order_by('full_name')
+
+    # Paginate anomalies_by_user
+    paginator_user = Paginator(anomalies_by_user, items_per_page)
+    page_user = request.GET.get('page_user')
+
+    try:
+        anomalies_by_user_paginated = paginator_user.page(page_user)
+    except InvalidPage:
+        anomalies_by_user_paginated = paginator_user.page(1)
+    except EmptyPage:
+        anomalies_by_user_paginated = paginator_user.page(paginator_user.num_pages)
 
     for item in anomalies_by_user:
         total = item['total']
@@ -736,6 +807,17 @@ def anomaly_reports(request):
         safe=Count('id', filter=Q(action=True)),
         unsafe=Count('id', filter=Q(action=False))
     ).order_by('-total')
+
+    # Paginate anomaly_frequency_by_description
+    paginator_description = Paginator(anomaly_frequency_by_description, items_per_page)
+    page_description = request.GET.get('page_description')
+
+    try:
+        anomaly_frequency_by_description_paginated = paginator_description.page(page_description)
+    except InvalidPage:
+        anomaly_frequency_by_description_paginated = paginator_description.page(1)
+    except EmptyPage:
+        anomaly_frequency_by_description_paginated = paginator_description.page(paginator_description.num_pages)
 
     for item in anomaly_frequency_by_description:
         total = item['total']
@@ -755,17 +837,22 @@ def anomaly_reports(request):
     # 8. Anomaly Count by Anomaly Type
     anomaly_count_by_type = anomalies.values('anomalytype__type').annotate(total=Count('id')).order_by('-total')
 
-
     context = {
-        'anomalies_by_unit': anomalies_by_unit,
-        'anomalies_by_location': anomalies_by_location,
-        'anomalies_by_shift': anomalies_by_shift,
-        'anomalies_by_user': anomalies_by_user,
-        'anomaly_frequency_by_description': anomaly_frequency_by_description,
+        'anomalies_by_unit_paginated': anomalies_by_unit_paginated,
+        'paginator_unit': paginator_unit,
+        'anomalies_by_location_paginated': anomalies_by_location_paginated,
+        'paginator_location': paginator_location,
+        'anomalies_by_shift_paginated': anomalies_by_shift_paginated,
+        'paginator_shift': paginator_shift,
+        'anomalies_by_user_paginated': anomalies_by_user_paginated,
+        'paginator_user': paginator_user,
+        'anomaly_frequency_by_description_paginated': anomaly_frequency_by_description_paginated,
+        'paginator_description': paginator_description,
         'most_frequent_anomaly_workshop': most_frequent_anomaly_workshop,
         'most_frequent_anomaly_mine_pit': most_frequent_anomaly_mine_pit,
         'most_cooperative_officer': most_cooperative_officer,
         'anomaly_count_by_type': anomaly_count_by_type,
+        'items_per_page': items_per_page
     }
 
     return render(request, 'anomalis/reports.html', context)
