@@ -1,8 +1,7 @@
 # anomalis/urls.py
-from django.urls import path, include
+from django.urls import path
 from . import views
 from .views import get_anomalydescription, get_hse_type, get_corrective_action
-from . import views
 
 app_name = 'anomalis'
 
@@ -14,7 +13,7 @@ URLS_WITH_LABELS = [
         "label": "انومالی_صفحه اصلی ناهنجاری‌ها"
     },
     {
-        "path": "listanomalies",
+        "path": "listanomalies/",
         "view": views.anomaly_list,
         "name": "list",
         "label": "انومالی_لیست ناهنجاری‌ها"
@@ -79,17 +78,23 @@ URLS_WITH_LABELS = [
         "name": "anomaly_pdf",
         "label": "انومالی_دانلود PDF ناهنجاری"
     },
-     {
+    {
         "path": "get_locations_ajax/",
         "view": views.get_locations_ajax,
         "name": "get_locations_ajax",
         "label": "انومالی_دریافت مکان‌ها (آژاکس)"
     },
-     {
+    {
         "path": "get_all_sections_ajax/",
         "view": views.get_all_sections_ajax,
         "name": "get_all_sections_ajax",
         "label": "انومالی_دریافت همه بخش‌ها (آژاکس)"
+    },
+    {
+        "path": "reports/",
+        "view": views.anomaly_reports,
+        "name": "anomaly_reports",
+        "label": "انومالی_گزارش‌ها"
     },
 ]
 
