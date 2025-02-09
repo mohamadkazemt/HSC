@@ -4,8 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="anomali-reports">
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="anomali-reports1">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/reports.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/reports.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -383,15 +385,7 @@
       <workItem from="1738771650800" duration="9797000" />
       <workItem from="1739018659863" duration="961000" />
       <workItem from="1739126895123" duration="3785000" />
-      <workItem from="1739130735706" duration="869000" />
-    </task>
-    <task id="LOCAL-00024" summary="log">
-      <option name="closed" value="true" />
-      <created>1732034871770</created>
-      <option name="number" value="00024" />
-      <option name="presentableId" value="LOCAL-00024" />
-      <option name="project" value="LOCAL" />
-      <updated>1732034871770</updated>
+      <workItem from="1739130735706" duration="2037000" />
     </task>
     <task id="LOCAL-00025" summary="edite-sms">
       <option name="closed" value="true" />
@@ -738,7 +732,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۷۲" />
       <updated>1739131171314</updated>
     </task>
-    <option name="localTasksCounter" value="73" />
+    <task id="LOCAL‎−۰۰۰۷۳" summary="anomali-reports1">
+      <option name="closed" value="true" />
+      <created>1739131855025</created>
+      <option name="number" value="LOCAL‎−۰۰۰۷۳" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۷۳" />
+      <updated>1739131855025</updated>
+    </task>
+    <option name="localTasksCounter" value="74" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -756,7 +757,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="dailyreport_hsemami2" />
     <MESSAGE value="dailyreport_hsemami4" />
     <MESSAGE value="dailyreport_hsemami222" />
     <MESSAGE value="dailyreport_hseENDmax" />
@@ -781,7 +781,8 @@
     <MESSAGE value="dashbord-NT0.2" />
     <MESSAGE value="dailyreporthse_edite" />
     <MESSAGE value="anomali-reports" />
-    <option name="LAST_COMMIT_MESSAGE" value="anomali-reports" />
+    <MESSAGE value="anomali-reports1" />
+    <option name="LAST_COMMIT_MESSAGE" value="anomali-reports1" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -795,11 +796,6 @@
           <url>file://$PROJECT_DIR$/BaseInfo/admin.py</url>
           <line>21</line>
           <option name="timeStamp" value="4" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/anomalis/views.py</url>
-          <line>503</line>
-          <option name="timeStamp" value="7" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/accounts/views.py</url>
