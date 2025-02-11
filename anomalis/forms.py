@@ -2,10 +2,10 @@ from django import forms
 from .models import Anomaly, Priority, Comment
 from django_select2.forms import Select2TagWidget
 from .models import Anomaly, UserProfile
-from django import forms
 from .models import Location, Anomalytype, AnomalyDescription, HSE, CorrectiveAction, Priority, UserProfile
 from django.core.exceptions import ValidationError
 import os
+import jdatetime
 
 class AnomalyForm(forms.ModelForm):
     followup = forms.ModelChoiceField(
@@ -268,3 +268,19 @@ class CommentForm(forms.ModelForm):
             raise forms.ValidationError("لطفا از کلمات نامناسب استفاده نکنید")
 
         return comment
+
+
+
+
+
+class AnomalyReportForm(forms.Form):
+    start_date = forms.CharField(
+        label='تاریخ شروع (شمسی)',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'YYYY/MM/DD'}),
+        required=False
+    )
+    end_date = forms.CharField(
+        label='تاریخ پایان (شمسی)',
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'YYYY/MM/DD'}),
+        required=False
+    )

@@ -25,6 +25,32 @@
                         <div id="kt_app_content" class="app-content flex-column-fluid">
                             <!--begin::Content container-->
                             <div id="kt_app_content_container" class="app-container container-fluid">
+                                <form method="get">
+                                    <div class="row mb-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label">{{ form.start_date.label }}</label>
+                                            {{ form.start_date }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label">{{ form.end_date.label }}</label>
+                                            {{ form.end_date }}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <button type="submit" class="btn btn-primary mt-4">اعمال فیلتر</button>
+                                        </div>
+                                    </div>
+                                </form>
+                                {% if form.start_date.value or form.end_date.value %}
+                                    <p>
+                                        گزارش فیلتر شده بر اساس بازه زمانی:
+                                        {% if form.start_date.value %}
+                                            از {{ form.start_date.value }}
+                                        {% endif %}
+                                        {% if form.end_date.value %}
+                                            تا {{ form.end_date.value }}
+                                        {% endif %}
+                                    </p>
+                                {% endif %}
 
                                 <!--begin::Tabs-->
                                 <ul class="nav nav-tabs mb-5" id="myTab" role="tablist">
@@ -90,15 +116,31 @@
                                     <!-- Report by Unit -->
                                     <div class="tab-pane fade {% if tab == 'unit' %}show active{% endif %}" id="unit" role="tabpanel"
                                          aria-labelledby="unit-tab">
-                                        <h2 class="mb-5">گزارش ناهنجاری‌ها بر اساس سایت</h2>
+                                        <h2 class="mb-5">گزارش ناهنجاری‌ها بر اساس بخش</h2>  <!-- Changed this line -->
                                         <div class="table-responsive">
                                             <table class="table table-striped table-bordered">
                                                 <thead>
                                                 <tr>
-                                                    <th><a href="?tab=unit&order_by_unit=unit{% if ordering_unit == 'unit' and order_direction_unit == 'asc' %}&direction_unit=desc{% else %}&direction_unit=asc{% endif %}&items_per_page={{items_per_page}}">سایت{% if ordering_unit == 'unit' %}{% if order_direction_unit == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}</a></th>
-                                                    <th><a href="?tab=unit&order_by_unit=total{% if ordering_unit == 'total' and order_direction_unit == 'asc' %}&direction_unit=desc{% else %}&direction_unit=asc{% endif %}&items_per_page={{items_per_page}}">مجموع{% if ordering_unit == 'total' %}{% if order_direction_unit == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}</a></th>
-                                                    <th><a href="?tab=unit&order_by_unit=safe{% if ordering_unit == 'safe' and order_direction_unit == 'asc' %}&direction_unit=desc{% else %}&direction_unit=asc{% endif %}&items_per_page={{items_per_page}}">ایمن{% if ordering_unit == 'safe' %}{% if order_direction_unit == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}</a></th>
-                                                    <th><a href="?tab=unit&order_by_unit=unsafe{% if ordering_unit == 'unsafe' and order_direction_unit == 'asc' %}&direction_unit=desc{% else %}&direction_unit=asc{% endif %}&items_per_page={{items_per_page}}">ناایمن{% if ordering_unit == 'unsafe' %}{% if order_direction_unit == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}</a></th>
+                                                    <th>
+                                                        <a href="?tab=unit&order_by_unit=unit{% if ordering_unit == 'unit' and order_direction_unit == 'asc' %}&direction_unit=desc{% else %}&direction_unit=asc{% endif %}&items_per_page={{ items_per_page }}">
+                                                            بخش {% if ordering_unit == 'unit' %}{% if order_direction_unit == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %} <!-- Changed this line -->
+                                                        </a>
+                                                    </th>
+                                                    <th>
+                                                        <a href="?tab=unit&order_by_unit=total{% if ordering_unit == 'total' and order_direction_unit == 'asc' %}&direction_unit=desc{% else %}&direction_unit=asc{% endif %}&items_per_page={{ items_per_page }}">
+                                                            مجموع {% if ordering_unit == 'total' %}{% if order_direction_unit == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
+                                                        </a>
+                                                    </th>
+                                                    <th>
+                                                        <a href="?tab=unit&order_by_unit=safe{% if ordering_unit == 'safe' and order_direction_unit == 'asc' %}&direction_unit=desc{% else %}&direction_unit=asc{% endif %}&items_per_page={{ items_per_page }}">
+                                                            ایمن {% if ordering_unit == 'safe' %}{% if order_direction_unit == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
+                                                        </a>
+                                                    </th>
+                                                    <th>
+                                                        <a href="?tab=unit&order_by_unit=unsafe{% if ordering_unit == 'unsafe' and order_direction_unit == 'asc' %}&direction_unit=desc{% else %}&direction_unit=asc{% endif %}&items_per_page={{ items_per_page }}">
+                                                            ناایمن {% if ordering_unit == 'unsafe' %}{% if order_direction_unit == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
+                                                        </a>
+                                                    </th>
                                                     <th>درصد ایمنی</th>
                                                     <th>درصد ناایمنی</th>
                                                 </tr>
@@ -118,53 +160,8 @@
                                             </table>
                                         </div>
 
-                                        <!-- Pagination -->
-                                        <nav aria-label="Page navigation">
-                                            <ul class="pagination">
-                                                {% if anomalies_by_unit_paginated.has_previous %}
-                                                    <li class="page-item">
-                                                        <a class="page-link"
-                                                           href="?tab=unit&page_unit=1&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}"
-                                                           aria-label="First">
-                                                            <span aria-hidden="true">««</span>
-                                                        </a>
-                                                    </li>
-                                                    <li class="page-item">
-                                                        <a class="page-link"
-                                                           href="?tab=unit&page_unit={{ anomalies_by_unit_paginated.previous_page_number }}&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}"
-                                                           aria-label="Previous">
-                                                            <span aria-hidden="true">«</span>
-                                                        </a>
-                                                    </li>
-                                                {% endif %}
-
-                                                {% for i in paginator_unit.page_range %}
-                                                    <li class="page-item {% if anomalies_by_unit_paginated.number == i %}active{% endif %}">
-                                                        <a class="page-link"
-                                                           href="?tab=unit&page_unit={{ i }}&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}">{{ i }}</a>
-                                                    </li>
-                                                {% endfor %}
-
-                                                {% if anomalies_by_unit_paginated.has_next %}
-                                                    <li class="page-item">
-                                                        <a class="page-link"
-                                                           href="?tab=unit&page_unit={{ anomalies_by_unit_paginated.next_page_number }}&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}"
-                                                           aria-label="Next">
-                                                            <span aria-hidden="true">»</span>
-                                                        </a>
-                                                    </li>
-                                                    <li class="page-item">
-                                                        <a class="page-link"
-                                                           href="?tab=unit&page_unit={{ paginator_unit.num_pages }}&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}"
-                                                           aria-label="Last">
-                                                            <span aria-hidden="true">»»</span>
-                                                        </a>
-                                                    </li>
-                                                {% endif %}
-                                            </ul>
-                                        </nav>
+                                        <!-- ... Pagination ... -->
                                     </div>
-
                                     <!-- Report by Location -->
                                     <div class="tab-pane fade {% if tab == 'location' %}show active{% endif %}" id="location" role="tabpanel"
                                          aria-labelledby="location-tab">
@@ -173,10 +170,26 @@
                                             <table class="table table-striped table-bordered">
                                                 <thead>
                                                 <tr>
-                                                    <th><a href="?tab=location&order_by_location=location__name{% if ordering_location == 'location__name' and order_direction_location == 'asc' %}&direction_location=desc{% else %}&direction_location=asc{% endif %}&items_per_page={{items_per_page}}">موقعیت{% if ordering_location == 'location__name' %}{% if order_direction_location == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}</a></th>
-                                                    <th><a href="?tab=location&order_by_location=total{% if ordering_location == 'total' and order_direction_location == 'asc' %}&direction_location=desc{% else %}&direction_location=asc{% endif %}&items_per_page={{items_per_page}}">مجموع{% if ordering_location == 'total' %}{% if order_direction_location == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}</a></th>
-                                                    <th><a href="?tab=location&order_by_location=safe{% if ordering_location == 'safe' and order_direction_location == 'asc' %}&direction_location=desc{% else %}&direction_location=asc{% endif %}&items_per_page={{items_per_page}}">ایمن{% if ordering_location == 'safe' %}{% if order_direction_location == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}</a></th>
-                                                    <th><a href="?tab=location&order_by_location=unsafe{% if ordering_location == 'unsafe' and order_direction_location == 'asc' %}&direction_location=desc{% else %}&direction_location=asc{% endif %}&items_per_page={{items_per_page}}">ناایمن{% if ordering_location == 'unsafe' %}{% if order_direction_location == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}</a></th>
+                                                    <th>
+                                                        <a href="?tab=location&order_by_location=location__name{% if ordering_location == 'location__name' and order_direction_location == 'asc' %}&direction_location=desc{% else %}&direction_location=asc{% endif %}&items_per_page={{ items_per_page }}">
+                                                            موقعیت {% if ordering_location == 'location__name' %}{% if order_direction_location == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
+                                                        </a>
+                                                    </th>
+                                                    <th>
+                                                        <a href="?tab=location&order_by_location=total{% if ordering_location == 'total' and order_direction_location == 'asc' %}&direction_location=desc{% else %}&direction_location=asc{% endif %}&items_per_page={{ items_per_page }}">
+                                                            مجموع {% if ordering_location == 'total' %}{% if order_direction_location == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
+                                                        </a>
+                                                    </th>
+                                                    <th>
+                                                        <a href="?tab=location&order_by_location=safe{% if ordering_location == 'safe' and order_direction_location == 'asc' %}&direction_location=desc{% else %}&direction_location=asc{% endif %}&items_per_page={{ items_per_page }}">
+                                                            ایمن {% if ordering_location == 'safe' %}{% if order_direction_location == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
+                                                        </a>
+                                                    </th>
+                                                    <th>
+                                                        <a href="?tab=location&order_by_location=unsafe{% if ordering_location == 'unsafe' and order_direction_location == 'asc' %}&direction_location=desc{% else %}&direction_location=asc{% endif %}&items_per_page={{ items_per_page }}">
+                                                            ناایمن {% if ordering_location == 'unsafe' %}{% if order_direction_location == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
+                                                        </a>
+                                                    </th>
                                                     <th>درصد ایمنی</th>
                                                     <th>درصد ناایمنی</th>
                                                 </tr>
@@ -201,14 +214,14 @@
                                                 {% if anomalies_by_location_paginated.has_previous %}
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=location&page_location=1&items_per_page={{items_per_page}}&order_by_location={{ordering_location}}&direction_location={{order_direction_location}}"
+                                                           href="?tab=location&page_location=1&items_per_page={{ items_per_page }}&order_by_location={{ ordering_location }}&direction_location={{ order_direction_location }}"
                                                            aria-label="First">
                                                             <span aria-hidden="true">««</span>
                                                         </a>
                                                     </li>
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=location&page_location={{ anomalies_by_location_paginated.previous_page_number }}&items_per_page={{items_per_page}}&order_by_location={{ordering_location}}&direction_location={{order_direction_location}}"
+                                                           href="?tab=location&page_location={{ anomalies_by_location_paginated.previous_page_number }}&items_per_page={{ items_per_page }}&order_by_location={{ ordering_location }}&direction_location={{ order_direction_location }}"
                                                            aria-label="Previous">
                                                             <span aria-hidden="true">«</span>
                                                         </a>
@@ -218,21 +231,21 @@
                                                 {% for i in paginator_location.page_range %}
                                                     <li class="page-item {% if anomalies_by_location_paginated.number == i %}active{% endif %}">
                                                         <a class="page-link"
-                                                           href="?tab=location&page_location={{ i }}&items_per_page={{items_per_page}}&order_by_location={{ordering_location}}&direction_location={{order_direction_location}}">{{ i }}</a>
+                                                           href="?tab=location&page_location={{ i }}&items_per_page={{ items_per_page }}&order_by_location={{ ordering_location }}&direction_location={{ order_direction_location }}">{{ i }}</a>
                                                     </li>
                                                 {% endfor %}
 
                                                 {% if anomalies_by_location_paginated.has_next %}
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=location&page_location={{ anomalies_by_location_paginated.next_page_number }}&items_per_page={{items_per_page}}&order_by_location={{ordering_location}}&direction_location={{order_direction_location}}"
+                                                           href="?tab=location&page_location={{ anomalies_by_location_paginated.next_page_number }}&items_per_page={{ items_per_page }}&order_by_location={{ ordering_location }}&direction_location={{ order_direction_location }}"
                                                            aria-label="Next">
                                                             <span aria-hidden="true">»</span>
                                                         </a>
                                                     </li>
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=location&page_location={{ paginator_location.num_pages }}&items_per_page={{items_per_page}}&order_by_location={{ordering_location}}&direction_location={{order_direction_location}}"
+                                                           href="?tab=location&page_location={{ paginator_location.num_pages }}&items_per_page={{ items_per_page }}&order_by_location={{ ordering_location }}&direction_location={{ order_direction_location }}"
                                                            aria-label="Last">
                                                             <span aria-hidden="true">»»</span>
                                                         </a>
@@ -243,16 +256,33 @@
                                     </div>
 
                                     <!-- Report by Shift -->
-                                    <div class="tab-pane fade {% if tab == 'shift' %}show active{% endif %}" id="shift" role="tabpanel" aria-labelledby="shift-tab">
+                                    <div class="tab-pane fade {% if tab == 'shift' %}show active{% endif %}" id="shift" role="tabpanel"
+                                         aria-labelledby="shift-tab">
                                         <h2 class="mb-5">گزارش ناهنجاری‌ها بر اساس شیفت</h2>
                                         <div class="table-responsive">
                                             <table class="table table-striped table-bordered">
                                                 <thead>
                                                 <tr>
-                                                    <th><a href="?tab=shift&order_by_shift=shift{% if ordering_shift == 'shift' and order_direction_shift == 'asc' %}&direction_shift=desc{% else %}&direction_shift=asc{% endif %}&items_per_page={{items_per_page}}">شیفت{% if ordering_shift == 'shift' %}{% if order_direction_shift == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}</a></th>
-                                                    <th><a href="?tab=shift&order_by_shift=total{% if ordering_shift == 'total' and order_direction_shift == 'asc' %}&direction_shift=desc{% else %}&direction_shift=asc{% endif %}&items_per_page={{items_per_page}}">مجموع{% if ordering_shift == 'total' %}{% if order_direction_shift == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}</a></th>
-                                                    <th><a href="?tab=shift&order_by_shift=safe{% if ordering_shift == 'safe' and order_direction_shift == 'asc' %}&direction_shift=desc{% else %}&direction_shift=asc{% endif %}&items_per_page={{items_per_page}}">ایمن{% if ordering_shift == 'safe' %}{% if order_direction_shift == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}</a></th>
-                                                    <th><a href="?tab=shift&order_by_shift=unsafe{% if ordering_shift == 'unsafe' and order_direction_shift == 'asc' %}&direction_shift=desc{% else %}&direction_shift=asc{% endif %}&items_per_page={{items_per_page}}">ناایمن{% if ordering_shift == 'unsafe' %}{% if order_direction_shift == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}</a></th>
+                                                    <th>
+                                                        <a href="?tab=shift&order_by_shift=shift{% if ordering_shift == 'shift' and order_direction_shift == 'asc' %}&direction_shift=desc{% else %}&direction_shift=asc{% endif %}&items_per_page={{ items_per_page }}">
+                                                            شیفت {% if ordering_shift == 'shift' %}{% if order_direction_shift == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
+                                                        </a>
+                                                    </th>
+                                                    <th>
+                                                        <a href="?tab=shift&order_by_shift=total{% if ordering_shift == 'total' and order_direction_shift == 'asc' %}&direction_shift=desc{% else %}&direction_shift=asc{% endif %}&items_per_page={{ items_per_page }}">
+                                                            مجموع {% if ordering_shift == 'total' %}{% if order_direction_shift == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
+                                                        </a>
+                                                    </th>
+                                                    <th>
+                                                        <a href="?tab=shift&order_by_shift=safe{% if ordering_shift == 'safe' and order_direction_shift == 'asc' %}&direction_shift=desc{% else %}&direction_shift=asc{% endif %}&items_per_page={{ items_per_page }}">
+                                                            ایمن {% if ordering_shift == 'safe' %}{% if order_direction_shift == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
+                                                        </a>
+                                                    </th>
+                                                    <th>
+                                                        <a href="?tab=shift&order_by_shift=unsafe{% if ordering_shift == 'unsafe' and order_direction_shift == 'asc' %}&direction_shift=desc{% else %}&direction_shift=asc{% endif %}&items_per_page={{ items_per_page }}">
+                                                            ناایمن {% if ordering_shift == 'unsafe' %}{% if order_direction_shift == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
+                                                        </a>
+                                                    </th>
                                                     <th>درصد ایمنی</th>
                                                     <th>درصد ناایمنی</th>
                                                 </tr>
@@ -277,14 +307,14 @@
                                                 {% if anomalies_by_shift_paginated.has_previous %}
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=shift&page_shift=1&items_per_page={{items_per_page}}&order_by_shift={{ordering_shift}}&direction_shift={{order_direction_shift}}"
+                                                           href="?tab=shift&page_shift=1&items_per_page={{ items_per_page }}&order_by_shift={{ ordering_shift }}&direction_shift={{ order_direction_shift }}"
                                                            aria-label="First">
                                                             <span aria-hidden="true">««</span>
                                                         </a>
                                                     </li>
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=shift&page_shift={{ anomalies_by_shift_paginated.previous_page_number }}&items_per_page={{items_per_page}}&order_by_shift={{ordering_shift}}&direction_shift={{order_direction_shift}}"
+                                                           href="?tab=shift&page_shift={{ anomalies_by_shift_paginated.previous_page_number }}&items_per_page={{ items_per_page }}&order_by_shift={{ ordering_shift }}&direction_shift={{ order_direction_shift }}"
                                                            aria-label="Previous">
                                                             <span aria-hidden="true">«</span>
                                                         </a>
@@ -294,21 +324,21 @@
                                                 {% for i in paginator_shift.page_range %}
                                                     <li class="page-item {% if anomalies_by_shift_paginated.number == i %}active{% endif %}">
                                                         <a class="page-link"
-                                                           href="?tab=shift&page_shift={{ i }}&items_per_page={{items_per_page}}&order_by_shift={{ordering_shift}}&direction_shift={{order_direction_shift}}">{{ i }}</a>
+                                                           href="?tab=shift&page_shift={{ i }}&items_per_page={{ items_per_page }}&order_by_shift={{ ordering_shift }}&direction_shift={{ order_direction_shift }}">{{ i }}</a>
                                                     </li>
                                                 {% endfor %}
 
                                                 {% if anomalies_by_shift_paginated.has_next %}
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=shift&page_shift={{ anomalies_by_shift_paginated.next_page_number }}&items_per_page={{items_per_page}}&order_by_shift={{ordering_shift}}&direction_shift={{order_direction_shift}}"
+                                                           href="?tab=shift&page_shift={{ anomalies_by_shift_paginated.next_page_number }}&items_per_page={{ items_per_page }}&order_by_shift={{ ordering_shift }}&direction_shift={{ order_direction_shift }}"
                                                            aria-label="Next">
                                                             <span aria-hidden="true">»</span>
                                                         </a>
                                                     </li>
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=shift&page_shift={{ paginator_shift.num_pages }}&items_per_page={{items_per_page}}&order_by_shift={{ordering_shift}}&direction_shift={{order_direction_shift}}"
+                                                           href="?tab=shift&page_shift={{ paginator_shift.num_pages }}&items_per_page={{ items_per_page }}&order_by_shift={{ ordering_shift }}&direction_shift={{ order_direction_shift }}"
                                                            aria-label="Last">
                                                             <span aria-hidden="true">»»</span>
                                                         </a>
@@ -319,16 +349,33 @@
                                     </div>
 
                                     <!-- Report by User -->
-                                    <div class="tab-pane fade {% if tab == 'user' %}show active{% endif %}" id="user" role="tabpanel" aria-labelledby="user-tab">
+                                    <div class="tab-pane fade {% if tab == 'user' %}show active{% endif %}" id="user" role="tabpanel"
+                                         aria-labelledby="user-tab">
                                         <h2 class="mb-5">گزارش ناهنجاری‌ها بر اساس کاربر</h2>
                                         <div class="table-responsive">
                                             <table class="table table-striped table-bordered">
                                                 <thead>
                                                 <tr>
-                                                    <th><a href="?tab=user&order_by_user=full_name{% if ordering_user == 'full_name' and order_direction_user == 'asc' %}&direction_user=desc{% else %}&direction_user=asc{% endif %}&items_per_page={{items_per_page}}">کاربر (کد پرسنلی){% if ordering_user == 'full_name' %}{% if order_direction_user == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}</a></th>
-                                                    <th><a href="?tab=user&order_by_user=total{% if ordering_user == 'total' and order_direction_user == 'asc' %}&direction_user=desc{% else %}&direction_user=asc{% endif %}&items_per_page={{items_per_page}}">مجموع{% if ordering_user == 'total' %}{% if order_direction_user == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}</a></th>
-                                                    <th><a href="?tab=user&order_by_user=safe{% if ordering_user == 'safe' and order_direction_user == 'asc' %}&direction_user=desc{% else %}&direction_user=asc{% endif %}&items_per_page={{items_per_page}}">ایمن{% if ordering_user == 'safe' %}{% if order_direction_user == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}</a></th>
-                                                    <th><a href="?tab=user&order_by_user=unsafe{% if ordering_user == 'unsafe' and order_direction_user == 'asc' %}&direction_user=desc{% else %}&direction_user=asc{% endif %}&items_per_page={{items_per_page}}">ناایمن{% if ordering_user == 'unsafe' %}{% if order_direction_user == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}</a></th>
+                                                    <th>
+                                                        <a href="?tab=user&order_by_user=full_name{% if ordering_user == 'full_name' and order_direction_user == 'asc' %}&direction_user=desc{% else %}&direction_user=asc{% endif %}&items_per_page={{ items_per_page }}">
+                                                            کاربر (کد پرسنلی) {% if ordering_user == 'full_name' %}{% if order_direction_user == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
+                                                        </a>
+                                                    </th>
+                                                    <th>
+                                                        <a href="?tab=user&order_by_user=total{% if ordering_user == 'total' and order_direction_user == 'asc' %}&direction_user=desc{% else %}&direction_user=asc{% endif %}&items_per_page={{ items_per_page }}">
+                                                            مجموع {% if ordering_user == 'total' %}{% if order_direction_user == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
+                                                        </a>
+                                                    </th>
+                                                    <th>
+                                                        <a href="?tab=user&order_by_user=safe{% if ordering_user == 'safe' and order_direction_user == 'asc' %}&direction_user=desc{% else %}&direction_user=asc{% endif %}&items_per_page={{ items_per_page }}">
+                                                            ایمن {% if ordering_user == 'safe' %}{% if order_direction_user == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
+                                                        </a>
+                                                    </th>
+                                                    <th>
+                                                        <a href="?tab=user&order_by_user=unsafe{% if ordering_user == 'unsafe' and order_direction_user == 'asc' %}&direction_user=desc{% else %}&direction_user=asc{% endif %}&items_per_page={{ items_per_page }}">
+                                                            ناایمن {% if ordering_user == 'unsafe' %}{% if order_direction_user == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
+                                                        </a>
+                                                    </th>
                                                     <th>درصد ایمنی</th>
                                                     <th>درصد ناایمنی</th>
                                                 </tr>
@@ -353,14 +400,14 @@
                                                 {% if anomalies_by_user_paginated.has_previous %}
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=user&page_user=1&items_per_page={{items_per_page}}&order_by_user={{ordering_user}}&direction_user={{order_direction_user}}"
+                                                           href="?tab=user&page_user=1&items_per_page={{ items_per_page }}&order_by_user={{ ordering_user }}&direction_user={{ order_direction_user }}"
                                                            aria-label="First">
                                                             <span aria-hidden="true">««</span>
                                                         </a>
                                                     </li>
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=user&page_user={{ anomalies_by_user_paginated.previous_page_number }}&items_per_page={{items_per_page}}&order_by_user={{ordering_user}}&direction_user={{order_direction_user}}"
+                                                           href="?tab=user&page_user={{ anomalies_by_user_paginated.previous_page_number }}&items_per_page={{ items_per_page }}&order_by_user={{ ordering_user }}&direction_user={{ order_direction_user }}"
                                                            aria-label="Previous">
                                                             <span aria-hidden="true">«</span>
                                                         </a>
@@ -370,21 +417,21 @@
                                                 {% for i in paginator_user.page_range %}
                                                     <li class="page-item {% if anomalies_by_user_paginated.number == i %}active{% endif %}">
                                                         <a class="page-link"
-                                                           href="?tab=user&page_user={{ i }}&items_per_page={{items_per_page}}&order_by_user={{ordering_user}}&direction_user={{order_direction_user}}">{{ i }}</a>
+                                                           href="?tab=user&page_user={{ i }}&items_per_page={{ items_per_page }}&order_by_user={{ ordering_user }}&direction_user={{ order_direction_user }}">{{ i }}</a>
                                                     </li>
                                                 {% endfor %}
 
                                                 {% if anomalies_by_user_paginated.has_next %}
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=user&page_user={{ anomalies_by_user_paginated.next_page_number }}&items_per_page={{items_per_page}}&order_by_user={{ordering_user}}&direction_user={{order_direction_user}}"
+                                                           href="?tab=user&page_user={{ anomalies_by_user_paginated.next_page_number }}&items_per_page={{ items_per_page }}&order_by_user={{ ordering_user }}&direction_user={{ order_direction_user }}"
                                                            aria-label="Next">
                                                             <span aria-hidden="true">»</span>
                                                         </a>
                                                     </li>
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=user&page_user={{ paginator_user.num_pages }}&items_per_page={{items_per_page}}&order_by_user={{ordering_user}}&direction_user={{order_direction_user}}"
+                                                           href="?tab=user&page_user={{ paginator_user.num_pages }}&items_per_page={{ items_per_page }}&order_by_user={{ ordering_user }}&direction_user={{ order_direction_user }}"
                                                            aria-label="Last">
                                                             <span aria-hidden="true">»»</span>
                                                         </a>
@@ -402,10 +449,26 @@
                                             <table class="table table-striped table-bordered">
                                                 <thead>
                                                 <tr>
-                                                    <th><a href="?tab=description&order_by_description=anomalydescription__description{% if ordering_description == 'anomalydescription__description' and order_direction_description == 'asc' %}&direction_description=desc{% else %}&direction_description=asc{% endif %}&items_per_page={{items_per_page}}">شرح{% if ordering_description == 'anomalydescription__description' %}{% if order_direction_description == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}</a></th>
-                                                    <th><a href="?tab=description&order_by_description=total{% if ordering_description == 'total' and order_direction_description == 'asc' %}&direction_description=desc{% else %}&direction_description=asc{% endif %}&items_per_page={{items_per_page}}">مجموع{% if ordering_description == 'total' %}{% if order_direction_description == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}</a></th>
-                                                    <th><a href="?tab=description&order_by_description=safe{% if ordering_description == 'safe' and order_direction_description == 'asc' %}&direction_description=desc{% else %}&direction_description=asc{% endif %}&items_per_page={{items_per_page}}">ایمن{% if ordering_description == 'safe' %}{% if order_direction_description == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}</a></th>
-                                                    <th><a href="?tab=description&order_by_description=unsafe{% if ordering_description == 'unsafe' and order_direction_description == 'asc' %}&direction_description=desc{% else %}&direction_description=asc{% endif %}&items_per_page={{items_per_page}}">ناایمن{% if ordering_description == 'unsafe' %}{% if order_direction_description == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}</a></th>
+                                                    <th>
+                                                        <a href="?tab=description&order_by_description=anomalydescription__description{% if ordering_description == 'anomalydescription__description' and order_direction_description == 'asc' %}&direction_description=desc{% else %}&direction_description=asc{% endif %}&items_per_page={{ items_per_page }}">
+                                                            شرح {% if ordering_description == 'anomalydescription__description' %}{% if order_direction_description == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
+                                                        </a>
+                                                    </th>
+                                                    <th>
+                                                        <a href="?tab=description&order_by_description=total{% if ordering_description == 'total' and order_direction_description == 'asc' %}&direction_description=desc{% else %}&direction_description=asc{% endif %}&items_per_page={{ items_per_page }}">
+                                                            مجموع {% if ordering_description == 'total' %}{% if order_direction_description == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
+                                                        </a>
+                                                    </th>
+                                                    <th>
+                                                        <a href="?tab=description&order_by_description=safe{% if ordering_description == 'safe' and order_direction_description == 'asc' %}&direction_description=desc{% else %}&direction_description=asc{% endif %}&items_per_page={{ items_per_page }}">
+                                                            ایمن {% if ordering_description == 'safe' %}{% if order_direction_description == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
+                                                        </a>
+                                                    </th>
+                                                    <th>
+                                                        <a href="?tab=description&order_by_description=unsafe{% if ordering_description == 'unsafe' and order_direction_description == 'asc' %}&direction_description=desc{% else %}&direction_description=asc{% endif %}&items_per_page={{ items_per_page }}">
+                                                            ناایمن {% if ordering_description == 'unsafe' %}{% if order_direction_description == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
+                                                        </a>
+                                                    </th>
                                                     <th>درصد ایمنی</th>
                                                     <th>درصد ناایمنی</th>
                                                 </tr>
@@ -430,14 +493,14 @@
                                                 {% if anomaly_frequency_by_description_paginated.has_previous %}
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=description&page_description=1&items_per_page={{items_per_page}}&order_by_description={{ordering_description}}&direction_description={{order_direction_description}}"
+                                                           href="?tab=description&page_description=1&items_per_page={{ items_per_page }}&order_by_description={{ ordering_description }}&direction_description={{ order_direction_description }}"
                                                            aria-label="First">
                                                             <span aria-hidden="true">««</span>
                                                         </a>
                                                     </li>
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=description&page_description={{ anomaly_frequency_by_description_paginated.previous_page_number }}&items_per_page={{items_per_page}}&order_by_description={{ordering_description}}&direction_description={{order_direction_description}}"
+                                                           href="?tab=description&page_description={{ anomaly_frequency_by_description_paginated.previous_page_number }}&items_per_page={{ items_per_page }}&order_by_description={{ ordering_description }}&direction_description={{ order_direction_description }}"
                                                            aria-label="Previous">
                                                             <span aria-hidden="true">«</span>
                                                         </a>
@@ -447,21 +510,21 @@
                                                 {% for i in paginator_description.page_range %}
                                                     <li class="page-item {% if anomaly_frequency_by_description_paginated.number == i %}active{% endif %}">
                                                         <a class="page-link"
-                                                           href="?tab=description&page_description={{ i }}&items_per_page={{items_per_page}}&order_by_description={{ordering_description}}&direction_description={{order_direction_description}}">{{ i }}</a>
+                                                           href="?tab=description&page_description={{ i }}&items_per_page={{ items_per_page }}&order_by_description={{ ordering_description }}&direction_description={{ order_direction_description }}">{{ i }}</a>
                                                     </li>
                                                 {% endfor %}
 
                                                 {% if anomaly_frequency_by_description_paginated.has_next %}
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=description&page_description={{ anomaly_frequency_by_description_paginated.next_page_number }}&items_per_page={{items_per_page}}&order_by_description={{ordering_description}}&direction_description={{order_direction_description}}"
+                                                           href="?tab=description&page_description={{ anomaly_frequency_by_description_paginated.next_page_number }}&items_per_page={{ items_per_page }}&order_by_description={{ ordering_description }}&direction_description={{ order_direction_description }}"
                                                            aria-label="Next">
                                                             <span aria-hidden="true">»</span>
                                                         </a>
                                                     </li>
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=description&page_description={{ paginator_description.num_pages }}&items_per_page={{items_per_page}}&order_by_description={{ordering_description}}&direction_description={{order_direction_description}}"
+                                                           href="?tab=description&page_description={{ paginator_description.num_pages }}&items_per_page={{ items_per_page }}&order_by_description={{ ordering_description }}&direction_description={{ order_direction_description }}"
                                                            aria-label="Last">
                                                             <span aria-hidden="true">»»</span>
                                                         </a>
@@ -473,7 +536,8 @@
 
                                     <!-- Report: Most Frequent Anomalies -->
                                     <!-- Report: Most Frequent Anomalies -->
-                                    <div class="tab-pane fade {% if tab == 'frequent' %}show active{% endif %}" id="frequent" role="tabpanel" aria-labelledby="frequent-tab">
+                                    <div class="tab-pane fade {% if tab == 'frequent' %}show active{% endif %}" id="frequent" role="tabpanel"
+                                         aria-labelledby="frequent-tab">
                                         <h2 class="mb-5">گزارش ناهنجاری های متداول</h2>
 
                                         <h3 class="mb-3">متداول‌ترین ناهنجاری در کارگاه:</h3>
@@ -501,14 +565,23 @@
                                         {% endif %}
                                     </div>
                                     <!--Report on base type anomaly-->
-                                    <div class="tab-pane fade {% if tab == 'type' %}show active{% endif %}" id="type" role="tabpanel" aria-labelledby="type-tab">
+                                    <div class="tab-pane fade {% if tab == 'type' %}show active{% endif %}" id="type" role="tabpanel"
+                                         aria-labelledby="type-tab">
                                         <h2 class="mb-5">تعداد ناهنجاری بر اساس نوع ناهنجاری</h2>
                                         <div class="table-responsive">
                                             <table class="table table-striped table-bordered">
                                                 <thead>
                                                 <tr>
-                                                    <th><a href="?tab=type&order_by_type=anomalytype__type{% if ordering_type == 'anomalytype__type' and order_direction_type == 'asc' %}&direction_type=desc{% else %}&direction_type=asc{% endif %}&items_per_page={{items_per_page}}">نوع ناهنجاری{% if ordering_type == 'anomalytype__type' %}{% if order_direction_type == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}</a></th>
-                                                    <th><a href="?tab=type&order_by_type=total{% if ordering_type == 'total' and order_direction_type == 'asc' %}&direction_type=desc{% else %}&direction_type=asc{% endif %}&items_per_page={{items_per_page}}">مجموع{% if ordering_type == 'total' %}{% if order_direction_type == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}</a></th>
+                                                    <th>
+                                                        <a href="?tab=type&order_by_type=anomalytype__type{% if ordering_type == 'anomalytype__type' and order_direction_type == 'asc' %}&direction_type=desc{% else %}&direction_type=asc{% endif %}&items_per_page={{ items_per_page }}">
+                                                            نوع ناهنجاری {% if ordering_type == 'anomalytype__type' %}{% if order_direction_type == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
+                                                        </a>
+                                                    </th>
+                                                    <th>
+                                                        <a href="?tab=type&order_by_type=total{% if ordering_type == 'total' and order_direction_type == 'asc' %}&direction_type=desc{% else %}&direction_type=asc{% endif %}&items_per_page={{ items_per_page }}">
+                                                            مجموع {% if ordering_type == 'total' %}{% if order_direction_type == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
+                                                        </a>
+                                                    </th>
                                                 </tr>
                                                 </thead>
                                                 <tbody>
@@ -561,8 +634,26 @@
             var itemsPerPage = selectElement.value;
             var currentUrl = window.location.href;
             var url = new URL(currentUrl);
-            url.searchParams.set('items_per_page', itemsPerPage);
+
+            // Get all existing parameters
+            var params = new URLSearchParams(url.search);
+
+            // Set the new items_per_page parameter
+            params.set('items_per_page', itemsPerPage);
+
+            // Set the new search string
+            url.search = params.toString();
+
             window.location.href = url.href;
         }
+    </script>
+    <script>
+        $(document).ready(function() {
+            $('.jalali-date-picker').persianDatepicker({
+                format: 'YYYY/MM/DD',
+                initialValueType: 'persian',
+                autoClose: true
+            });
+        });
     </script>
 {% endblock %}
