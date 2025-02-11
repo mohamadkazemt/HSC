@@ -36,7 +36,9 @@ from datetime import datetime
 from django.db.models import Count, Q, F
 from django.db.models import IntegerField
 from django.db.models.functions import Cast
-
+from .forms import AnomalyReportForm
+import jdatetime
+from django.core.exceptions import ValidationError
 
 name = 'anomalis'
 
@@ -98,26 +100,26 @@ def anomalis(request):
 
                 # ایجاد اعلان برای مسئول پیگیری
                 if anomaly.followup and anomaly.followup.user:
-                     logger.debug(f"Attempting to create notification for user: {anomaly.followup.user.username}")
-                     Notification.objects.create(
-                       user=anomaly.followup.user,
-                       message=f"آنومالی جدید با شناسه {anomaly.id} برای شما ثبت شد.",
-                       url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
-                     )
-                     logger.debug(f"Notification created successfully for user: {anomaly.followup.user.username}")
+                    logger.debug(f"Attempting to create notification for user: {anomaly.followup.user.username}")
+                    Notification.objects.create(
+                        user=anomaly.followup.user,
+                        message=f"آنومالی جدید با شناسه {anomaly.id} برای شما ثبت شد.",
+                        url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
+                    )
+                    logger.debug(f"Notification created successfully for user: {anomaly.followup.user.username}")
                 else:
-                   logger.warning("Followup user or user object is missing for anomaly. Skipping notification.")
+                    logger.warning("Followup user or user object is missing for anomaly. Skipping notification.")
 
 
                 try:
-                     hse_group = Group.objects.get(name='مدیر HSE')
+                    hse_group = Group.objects.get(name='مدیر HSE')
                 except Group.DoesNotExist:
                     logger.error("Group 'مدیر HSE' does not exist.")
                     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                         return JsonResponse({
+                        return JsonResponse({
                             'status': 'error',
                             'message': 'گروه مدیر HSE یافت نشد',
-                           })
+                        })
                     messages.error(request, 'گروه مدیر HSE یافت نشد')
                     return redirect('anomalis:anomalis')
 
@@ -664,14 +666,14 @@ def anomaly_pdf_view(request, pk):
 @permission_required("get_locations_ajax")
 @login_required
 def get_locations_ajax(request):
-     locations = Location.objects.all().values("id", "name")
-     return JsonResponse(list(locations), safe=False)
+    locations = Location.objects.all().values("id", "name")
+    return JsonResponse(list(locations), safe=False)
 
 @permission_required("get_all_sections_ajax")
 @login_required
 def get_all_sections_ajax(request):
-     sections = LocationSection.objects.all().values("id","section", "location_id")
-     return JsonResponse(list(sections), safe=False)
+    sections = LocationSection.objects.all().values("id","section", "location_id")
+    return JsonResponse(list(sections), safe=False)
 
 
 from django.shortcuts import render
@@ -679,11 +681,53 @@ from django.db.models import Count, Q, F, CharField, Value
 from django.db.models.functions import Concat
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, EmptyPage, InvalidPage
+from .forms import AnomalyReportForm
+from django.db.models import Q
+import jdatetime
+from django.db.models import Q
+from jalali_date import datetime2jalali
+from django.utils import timezone
+from datetime import datetime
 
 
 @login_required
 def anomaly_reports(request):
-    anomalies = Anomaly.objects.all()
+    form = AnomalyReportForm(request.GET)
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+
+    start_date_gregorian = None
+    end_date_gregorian = None
+
+    if form.is_valid():
+        try:
+            if start_date_str:
+                start_date = jdatetime.datetime.strptime(start_date_str, "%Y/%m/%d").date()
+                start_date_gregorian = start_date.togregorian()
+                print("start_date_gregorian:", start_date_gregorian)  # Add this line
+            if end_date_str:
+                end_date = jdatetime.datetime.strptime(end_date_str, "%Y/%m/%d").date()
+                end_date_gregorian = end_date.togregorian()
+                print("end_date_gregorian:", end_date_gregorian)  # Add this line
+
+
+            if start_date and end_date and start_date > end_date:
+                raise ValidationError("تاریخ شروع باید قبل از تاریخ پایان باشد.")
+        except ValueError:
+            form.add_error(None, "فرمت تاریخ وارد شده صحیح نیست. لطفا از فرمت YYYY/MM/DD استفاده کنید.")
+        except ValidationError as e:
+            form.add_error(None, str(e))
+
+
+    anomalies = Anomaly.objects.all().order_by('-created_at')  # Or any other appropriate field
+
+    if start_date_gregorian:
+        start_date_aware = timezone.make_aware(datetime.combine(start_date_gregorian, datetime.min.time()))
+        anomalies = anomalies.filter(created_at__gte=start_date_aware)
+
+    if end_date_gregorian:
+        end_date_aware = timezone.make_aware(datetime.combine(end_date_gregorian, datetime.max.time()))
+        anomalies = anomalies.filter(created_at__lte=end_date_aware)
 
     # Get ordering parameters for each tab
     tab = request.GET.get('tab', 'unit')  # Default tab
@@ -716,7 +760,7 @@ def anomaly_reports(request):
     # Apply ordering for each tab
     valid_unit_fields = ['unit', 'total', 'safe', 'unsafe']
     anomalies_by_unit, ordering_unit, order_direction_unit = apply_ordering(
-        anomalies.values(unit=F('location__name')).annotate(
+        anomalies.values(unit=F('created_by__section__name')).annotate(  # Changed this line
             total=Count('id'),
             safe=Count('id', filter=Q(action=True)),
             unsafe=Count('id', filter=Q(action=False))
@@ -774,6 +818,16 @@ def anomaly_reports(request):
         order_by_type, order_direction_type, valid_type_fields
     )
 
+    # Most Frequent Anomaly by Description in Workshop and Mine Pit
+    most_frequent_anomaly_workshop = anomalies.filter(location__name='Workshop').values(
+        'anomalydescription__description').annotate(total=Count('id')).order_by('-total').first()
+    most_frequent_anomaly_mine_pit = anomalies.filter(location__name='Mine Pit').values(
+        'anomalydescription__description').annotate(total=Count('id')).order_by('-total').first()
+
+    # 7. Most Cooperative Follow-up Officer
+    most_cooperative_officer = anomalies.filter(action=True).values(officer=F('followup__user__username')).annotate(
+        safe_count=Count('id')).order_by('-safe_count').first()
+
     # Number of items per page
     items_per_page = request.GET.get('items_per_page', 10)
     try:
@@ -787,66 +841,58 @@ def anomaly_reports(request):
     def paginate_data(queryset, items_per_page, page):
         paginator = Paginator(queryset, items_per_page)
         try:
-            return paginator.page(page)
+            return paginator.page(page), paginator
         except (EmptyPage, InvalidPage):
-            return paginator.page(1)
+            return paginator.page(1), paginator
 
     page_unit = request.GET.get('page_unit')
-    anomalies_by_unit_paginated = paginate_data(anomalies_by_unit, items_per_page, page_unit)
+    anomalies_by_unit_paginated, paginator_unit = paginate_data(anomalies_by_unit, items_per_page, page_unit)
 
     page_location = request.GET.get('page_location')
-    anomalies_by_location_paginated = paginate_data(anomalies_by_location, items_per_page, page_location)
+    anomalies_by_location_paginated, paginator_location = paginate_data(anomalies_by_location, items_per_page,
+                                                                        page_location)
 
     page_shift = request.GET.get('page_shift')
-    anomalies_by_shift_paginated = paginate_data(anomalies_by_shift, items_per_page, page_shift)
+    anomalies_by_shift_paginated, paginator_shift = paginate_data(anomalies_by_shift, items_per_page, page_shift)
 
     page_user = request.GET.get('page_user')
-    anomalies_by_user_paginated = paginate_data(anomalies_by_user, items_per_page, page_user)
+    anomalies_by_user_paginated, paginator_user = paginate_data(anomalies_by_user, items_per_page, page_user)
 
     page_description = request.GET.get('page_description')
-    anomaly_frequency_by_description_paginated = paginate_data(anomaly_frequency_by_description, items_per_page,
-                                                               page_description)
-    # Most Frequent Anomaly by Description in Workshop and Mine Pit
-    most_frequent_anomaly_workshop = anomalies.filter(location__name='Workshop').values(
-        'anomalydescription__description').annotate(total=Count('id')).order_by('-total').first()
-    most_frequent_anomaly_mine_pit = anomalies.filter(location__name='Mine Pit').values(
-        'anomalydescription__description').annotate(total=Count('id')).order_by('-total').first()
+    anomaly_frequency_by_description_paginated, paginator_description = paginate_data(anomaly_frequency_by_description,
+                                                                                      items_per_page,
+                                                                                      page_description)
 
-    # 7. Most Cooperative Follow-up Officer
-    most_cooperative_officer = anomalies.filter(action=True).values(officer=F('followup__user__username')).annotate(
-        safe_count=Count('id')).order_by('-safe_count').first()
-
-    # 8. Anomaly Count by Anomaly Type
-    anomaly_count_by_type = anomalies.values('anomalytype__type').annotate(total=Count('id')).order_by('-total')
-    # Calculate percentages for each item in anomalies_by_unit
-    for item in anomalies_by_unit:
+    # Calculate percentages for each item in anomalies_by_unit_paginated
+    for item in anomalies_by_unit_paginated:
         total = item['total']
         item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
         item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
 
-    # Calculate percentages for each item in anomalies_by_location
-    for item in anomalies_by_location:
+    # Calculate percentages for each item in anomalies_by_location_paginated
+    for item in anomalies_by_location_paginated:
         total = item['total']
         item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
         item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
 
-    # Calculate percentages for each item in anomalies_by_shift
-    for item in anomalies_by_shift:
+    # Calculate percentages for each item in anomalies_by_shift_paginated
+    for item in anomalies_by_shift_paginated:
         total = item['total']
         item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
         item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
 
-    # Calculate percentages for each item in anomalies_by_user
-    for item in anomalies_by_user:
+    # Calculate percentages for each item in anomalies_by_user_paginated
+    for item in anomalies_by_user_paginated:
         total = item['total']
         item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
         item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
 
-    # Calculate percentages for each item in anomaly_frequency_by_description
-    for item in anomaly_frequency_by_description:
+    # Calculate percentages for each item in anomaly_frequency_by_description_paginated
+    for item in anomaly_frequency_by_description_paginated:
         total = item['total']
         item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
         item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
+
     context = {
         'tab': tab,
         'anomalies_by_unit_paginated': anomalies_by_unit_paginated,
@@ -871,6 +917,12 @@ def anomaly_reports(request):
         'most_frequent_anomaly_workshop': most_frequent_anomaly_workshop,
         'most_frequent_anomaly_mine_pit': most_frequent_anomaly_mine_pit,
         'most_cooperative_officer': most_cooperative_officer,
+        'paginator_unit': paginator_unit,
+        'paginator_location': paginator_location,
+        'paginator_shift': paginator_shift,
+        'paginator_user': paginator_user,
+        'paginator_description': paginator_description,
+        'form': form,  # Add the form to the context
     }
 
     return render(request, 'anomalis/reports.html', context)
