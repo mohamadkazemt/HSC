@@ -211,41 +211,41 @@
                                         <!-- Pagination -->
                                         <nav aria-label="Page navigation">
                                             <ul class="pagination">
-                                                {% if anomalies_by_location_paginated.has_previous %}
+                                                {% if anomalies_by_unit_paginated.has_previous %}
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=location&page_location=1&items_per_page={{ items_per_page }}&order_by_location={{ ordering_location }}&direction_location={{ order_direction_location }}"
+                                                           href="?tab=unit&page_unit=1&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}"
                                                            aria-label="First">
                                                             <span aria-hidden="true">««</span>
                                                         </a>
                                                     </li>
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=location&page_location={{ anomalies_by_location_paginated.previous_page_number }}&items_per_page={{ items_per_page }}&order_by_location={{ ordering_location }}&direction_location={{ order_direction_location }}"
+                                                           href="?tab=unit&page_unit={{ anomalies_by_unit_paginated.previous_page_number }}&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}"
                                                            aria-label="Previous">
                                                             <span aria-hidden="true">«</span>
                                                         </a>
                                                     </li>
                                                 {% endif %}
 
-                                                {% for i in paginator_location.page_range %}
-                                                    <li class="page-item {% if anomalies_by_location_paginated.number == i %}active{% endif %}">
+                                                {% for i in paginator_unit.page_range %}
+                                                    <li class="page-item {% if anomalies_by_unit_paginated.number == i %}active{% endif %}">
                                                         <a class="page-link"
-                                                           href="?tab=location&page_location={{ i }}&items_per_page={{ items_per_page }}&order_by_location={{ ordering_location }}&direction_location={{ order_direction_location }}">{{ i }}</a>
+                                                           href="?tab=unit&page_unit={{ i }}&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">{{ i }}</a>
                                                     </li>
                                                 {% endfor %}
 
-                                                {% if anomalies_by_location_paginated.has_next %}
+                                                {% if anomalies_by_unit_paginated.has_next %}
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=location&page_location={{ anomalies_by_location_paginated.next_page_number }}&items_per_page={{ items_per_page }}&order_by_location={{ ordering_location }}&direction_location={{ order_direction_location }}"
+                                                           href="?tab=unit&page_unit={{ anomalies_by_unit_paginated.next_page_number }}&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}"
                                                            aria-label="Next">
                                                             <span aria-hidden="true">»</span>
                                                         </a>
                                                     </li>
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=location&page_location={{ paginator_location.num_pages }}&items_per_page={{ items_per_page }}&order_by_location={{ ordering_location }}&direction_location={{ order_direction_location }}"
+                                                           href="?tab=unit&page_unit={{ paginator_unit.num_pages }}&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}"
                                                            aria-label="Last">
                                                             <span aria-hidden="true">»»</span>
                                                         </a>
@@ -304,41 +304,41 @@
                                         <!-- Pagination -->
                                         <nav aria-label="Page navigation">
                                             <ul class="pagination">
-                                                {% if anomalies_by_shift_paginated.has_previous %}
+                                                {% if anomalies_by_unit_paginated.has_previous %}
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=shift&page_shift=1&items_per_page={{ items_per_page }}&order_by_shift={{ ordering_shift }}&direction_shift={{ order_direction_shift }}"
+                                                           href="?tab=unit&page_unit=1&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}"
                                                            aria-label="First">
                                                             <span aria-hidden="true">««</span>
                                                         </a>
                                                     </li>
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=shift&page_shift={{ anomalies_by_shift_paginated.previous_page_number }}&items_per_page={{ items_per_page }}&order_by_shift={{ ordering_shift }}&direction_shift={{ order_direction_shift }}"
+                                                           href="?tab=unit&page_unit={{ anomalies_by_unit_paginated.previous_page_number }}&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}"
                                                            aria-label="Previous">
                                                             <span aria-hidden="true">«</span>
                                                         </a>
                                                     </li>
                                                 {% endif %}
 
-                                                {% for i in paginator_shift.page_range %}
-                                                    <li class="page-item {% if anomalies_by_shift_paginated.number == i %}active{% endif %}">
+                                                {% for i in paginator_unit.page_range %}
+                                                    <li class="page-item {% if anomalies_by_unit_paginated.number == i %}active{% endif %}">
                                                         <a class="page-link"
-                                                           href="?tab=shift&page_shift={{ i }}&items_per_page={{ items_per_page }}&order_by_shift={{ ordering_shift }}&direction_shift={{ order_direction_shift }}">{{ i }}</a>
+                                                           href="?tab=unit&page_unit={{ i }}&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">{{ i }}</a>
                                                     </li>
                                                 {% endfor %}
 
-                                                {% if anomalies_by_shift_paginated.has_next %}
+                                                {% if anomalies_by_unit_paginated.has_next %}
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=shift&page_shift={{ anomalies_by_shift_paginated.next_page_number }}&items_per_page={{ items_per_page }}&order_by_shift={{ ordering_shift }}&direction_shift={{ order_direction_shift }}"
+                                                           href="?tab=unit&page_unit={{ anomalies_by_unit_paginated.next_page_number }}&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}"
                                                            aria-label="Next">
                                                             <span aria-hidden="true">»</span>
                                                         </a>
                                                     </li>
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=shift&page_shift={{ paginator_shift.num_pages }}&items_per_page={{ items_per_page }}&order_by_shift={{ ordering_shift }}&direction_shift={{ order_direction_shift }}"
+                                                           href="?tab=unit&page_unit={{ paginator_unit.num_pages }}&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}"
                                                            aria-label="Last">
                                                             <span aria-hidden="true">»»</span>
                                                         </a>
@@ -397,41 +397,41 @@
                                         <!-- Pagination -->
                                         <nav aria-label="Page navigation">
                                             <ul class="pagination">
-                                                {% if anomalies_by_user_paginated.has_previous %}
+                                                {% if anomalies_by_unit_paginated.has_previous %}
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=user&page_user=1&items_per_page={{ items_per_page }}&order_by_user={{ ordering_user }}&direction_user={{ order_direction_user }}"
+                                                           href="?tab=unit&page_unit=1&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}"
                                                            aria-label="First">
                                                             <span aria-hidden="true">««</span>
                                                         </a>
                                                     </li>
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=user&page_user={{ anomalies_by_user_paginated.previous_page_number }}&items_per_page={{ items_per_page }}&order_by_user={{ ordering_user }}&direction_user={{ order_direction_user }}"
+                                                           href="?tab=unit&page_unit={{ anomalies_by_unit_paginated.previous_page_number }}&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}"
                                                            aria-label="Previous">
                                                             <span aria-hidden="true">«</span>
                                                         </a>
                                                     </li>
                                                 {% endif %}
 
-                                                {% for i in paginator_user.page_range %}
-                                                    <li class="page-item {% if anomalies_by_user_paginated.number == i %}active{% endif %}">
+                                                {% for i in paginator_unit.page_range %}
+                                                    <li class="page-item {% if anomalies_by_unit_paginated.number == i %}active{% endif %}">
                                                         <a class="page-link"
-                                                           href="?tab=user&page_user={{ i }}&items_per_page={{ items_per_page }}&order_by_user={{ ordering_user }}&direction_user={{ order_direction_user }}">{{ i }}</a>
+                                                           href="?tab=unit&page_unit={{ i }}&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">{{ i }}</a>
                                                     </li>
                                                 {% endfor %}
 
-                                                {% if anomalies_by_user_paginated.has_next %}
+                                                {% if anomalies_by_unit_paginated.has_next %}
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=user&page_user={{ anomalies_by_user_paginated.next_page_number }}&items_per_page={{ items_per_page }}&order_by_user={{ ordering_user }}&direction_user={{ order_direction_user }}"
+                                                           href="?tab=unit&page_unit={{ anomalies_by_unit_paginated.next_page_number }}&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}"
                                                            aria-label="Next">
                                                             <span aria-hidden="true">»</span>
                                                         </a>
                                                     </li>
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=user&page_user={{ paginator_user.num_pages }}&items_per_page={{ items_per_page }}&order_by_user={{ ordering_user }}&direction_user={{ order_direction_user }}"
+                                                           href="?tab=unit&page_unit={{ paginator_unit.num_pages }}&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}"
                                                            aria-label="Last">
                                                             <span aria-hidden="true">»»</span>
                                                         </a>
@@ -490,41 +490,41 @@
                                         <!-- Pagination -->
                                         <nav aria-label="Page navigation">
                                             <ul class="pagination">
-                                                {% if anomaly_frequency_by_description_paginated.has_previous %}
+                                                {% if anomalies_by_unit_paginated.has_previous %}
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=description&page_description=1&items_per_page={{ items_per_page }}&order_by_description={{ ordering_description }}&direction_description={{ order_direction_description }}"
+                                                           href="?tab=unit&page_unit=1&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}"
                                                            aria-label="First">
                                                             <span aria-hidden="true">««</span>
                                                         </a>
                                                     </li>
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=description&page_description={{ anomaly_frequency_by_description_paginated.previous_page_number }}&items_per_page={{ items_per_page }}&order_by_description={{ ordering_description }}&direction_description={{ order_direction_description }}"
+                                                           href="?tab=unit&page_unit={{ anomalies_by_unit_paginated.previous_page_number }}&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}"
                                                            aria-label="Previous">
                                                             <span aria-hidden="true">«</span>
                                                         </a>
                                                     </li>
                                                 {% endif %}
 
-                                                {% for i in paginator_description.page_range %}
-                                                    <li class="page-item {% if anomaly_frequency_by_description_paginated.number == i %}active{% endif %}">
+                                                {% for i in paginator_unit.page_range %}
+                                                    <li class="page-item {% if anomalies_by_unit_paginated.number == i %}active{% endif %}">
                                                         <a class="page-link"
-                                                           href="?tab=description&page_description={{ i }}&items_per_page={{ items_per_page }}&order_by_description={{ ordering_description }}&direction_description={{ order_direction_description }}">{{ i }}</a>
+                                                           href="?tab=unit&page_unit={{ i }}&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">{{ i }}</a>
                                                     </li>
                                                 {% endfor %}
 
-                                                {% if anomaly_frequency_by_description_paginated.has_next %}
+                                                {% if anomalies_by_unit_paginated.has_next %}
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=description&page_description={{ anomaly_frequency_by_description_paginated.next_page_number }}&items_per_page={{ items_per_page }}&order_by_description={{ ordering_description }}&direction_description={{ order_direction_description }}"
+                                                           href="?tab=unit&page_unit={{ anomalies_by_unit_paginated.next_page_number }}&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}"
                                                            aria-label="Next">
                                                             <span aria-hidden="true">»</span>
                                                         </a>
                                                     </li>
                                                     <li class="page-item">
                                                         <a class="page-link"
-                                                           href="?tab=description&page_description={{ paginator_description.num_pages }}&items_per_page={{ items_per_page }}&order_by_description={{ ordering_description }}&direction_description={{ order_direction_description }}"
+                                                           href="?tab=unit&page_unit={{ paginator_unit.num_pages }}&items_per_page={{items_per_page}}&order_by_unit={{ordering_unit}}&direction_unit={{order_direction_unit}}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}"
                                                            aria-label="Last">
                                                             <span aria-hidden="true">»»</span>
                                                         </a>
