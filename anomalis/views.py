@@ -8,7 +8,6 @@ from dashboard.models import Notification
 from dashboard.sms_utils import send_template_sms, logger
 from permissions.utils import permission_required
 from .forms import AnomalyForm, CommentForm
-from django.http import JsonResponse
 from .models import AnomalyDescription, CorrectiveAction, Comment, LocationSection, Anomaly, Location
 from django.views.decorators.csrf import csrf_exempt
 import jdatetime
@@ -21,7 +20,6 @@ from django.utils import timezone
 from django.db.models import Count
 from django.db.models.functions import TruncDate, ExtractMonth, ExtractYear
 from django.http import HttpResponse, JsonResponse
-from django.contrib.auth.decorators import login_required
 import openpyxl
 from .templatetags.jalali import to_jalali
 from django.template.loader import get_template
@@ -30,15 +28,21 @@ from django.conf import settings
 from urllib.parse import urljoin
 import logging
 from shift_manager.utils import get_current_shift_and_group
-import jdatetime
 from django.utils.timezone import make_aware
 from datetime import datetime
-from django.db.models import Count, Q, F
 from django.db.models import IntegerField
 from django.db.models.functions import Cast
 from .forms import AnomalyReportForm
-import jdatetime
+from django.shortcuts import render
+from django.db.models import Count, Q, F, CharField, Value
+from django.db.models.functions import Concat
+from django.core.paginator import Paginator, EmptyPage, InvalidPage
+from jalali_date import datetime2jalali
 from django.core.exceptions import ValidationError
+
+
+
+
 
 name = 'anomalis'
 
@@ -676,18 +680,6 @@ def get_all_sections_ajax(request):
     return JsonResponse(list(sections), safe=False)
 
 
-from django.shortcuts import render
-from django.db.models import Count, Q, F, CharField, Value
-from django.db.models.functions import Concat
-from django.contrib.auth.decorators import login_required
-from django.core.paginator import Paginator, EmptyPage, InvalidPage
-from .forms import AnomalyReportForm
-from django.db.models import Q
-import jdatetime
-from django.db.models import Q
-from jalali_date import datetime2jalali
-from django.utils import timezone
-from datetime import datetime
 
 
 @login_required
@@ -700,15 +692,17 @@ def anomaly_reports(request):
     end_date_gregorian = None
 
     if form.is_valid():
+        start_date = None  # Initialize start_date
+        end_date = None    # Initialize end_date
         try:
             if start_date_str:
                 start_date = jdatetime.datetime.strptime(start_date_str, "%Y/%m/%d").date()
                 start_date_gregorian = start_date.togregorian()
-                print("start_date_gregorian:", start_date_gregorian)  # Add this line
+                print("start_date_gregorian:", start_date_gregorian)
             if end_date_str:
                 end_date = jdatetime.datetime.strptime(end_date_str, "%Y/%m/%d").date()
                 end_date_gregorian = end_date.togregorian()
-                print("end_date_gregorian:", end_date_gregorian)  # Add this line
+                print("end_date_gregorian:", end_date_gregorian)
 
 
             if start_date and end_date and start_date > end_date:
@@ -719,15 +713,17 @@ def anomaly_reports(request):
             form.add_error(None, str(e))
 
 
-    anomalies = Anomaly.objects.all().order_by('-created_at')  # Or any other appropriate field
+    anomalies = Anomaly.objects.all()
 
     if start_date_gregorian:
-        start_date_aware = timezone.make_aware(datetime.combine(start_date_gregorian, datetime.min.time()))
-        anomalies = anomalies.filter(created_at__gte=start_date_aware)
+        anomalies = anomalies.filter(created_at__date__gte=start_date_gregorian)
 
     if end_date_gregorian:
-        end_date_aware = timezone.make_aware(datetime.combine(end_date_gregorian, datetime.max.time()))
-        anomalies = anomalies.filter(created_at__lte=end_date_aware)
+        anomalies = anomalies.filter(created_at__date__lte=end_date_gregorian)
+
+
+    anomalies = anomalies.distinct()
+
 
     # Get ordering parameters for each tab
     tab = request.GET.get('tab', 'unit')  # Default tab
@@ -760,7 +756,7 @@ def anomaly_reports(request):
     # Apply ordering for each tab
     valid_unit_fields = ['unit', 'total', 'safe', 'unsafe']
     anomalies_by_unit, ordering_unit, order_direction_unit = apply_ordering(
-        anomalies.values(unit=F('created_by__section__name')).annotate(  # Changed this line
+        anomalies.values(unit=F('followup__section__name')).annotate(  # Changed this line
             total=Count('id'),
             safe=Count('id', filter=Q(action=True)),
             unsafe=Count('id', filter=Q(action=False))
