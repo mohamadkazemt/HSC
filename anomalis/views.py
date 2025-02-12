@@ -682,6 +682,8 @@ def get_all_sections_ajax(request):
 
 
 
+
+
 @login_required
 def anomaly_reports(request):
     form = AnomalyReportForm(request.GET)
@@ -693,7 +695,7 @@ def anomaly_reports(request):
 
     if form.is_valid():
         start_date = None  # Initialize start_date
-        end_date = None    # Initialize end_date
+        end_date = None  # Initialize end_date
         try:
             if start_date_str:
                 start_date = jdatetime.datetime.strptime(start_date_str, "%Y/%m/%d").date()
@@ -704,14 +706,12 @@ def anomaly_reports(request):
                 end_date_gregorian = end_date.togregorian()
                 print("end_date_gregorian:", end_date_gregorian)
 
-
             if start_date and end_date and start_date > end_date:
                 raise ValidationError("تاریخ شروع باید قبل از تاریخ پایان باشد.")
         except ValueError:
             form.add_error(None, "فرمت تاریخ وارد شده صحیح نیست. لطفا از فرمت YYYY/MM/DD استفاده کنید.")
         except ValidationError as e:
             form.add_error(None, str(e))
-
 
     anomalies = Anomaly.objects.all()
 
@@ -720,10 +720,6 @@ def anomaly_reports(request):
 
     if end_date_gregorian:
         anomalies = anomalies.filter(created_at__date__lte=end_date_gregorian)
-
-
-    anomalies = anomalies.distinct()
-
 
     # Get ordering parameters for each tab
     tab = request.GET.get('tab', 'unit')  # Default tab
@@ -756,11 +752,11 @@ def anomaly_reports(request):
     # Apply ordering for each tab
     valid_unit_fields = ['unit', 'total', 'safe', 'unsafe']
     anomalies_by_unit, ordering_unit, order_direction_unit = apply_ordering(
-        anomalies.values(unit=F('followup__section__name')).annotate(  # Changed this line
+        anomalies.values(unit=F('followup__section__name')).annotate(
             total=Count('id'),
             safe=Count('id', filter=Q(action=True)),
             unsafe=Count('id', filter=Q(action=False))
-        ),
+        ).distinct(),
         order_by_unit, order_direction_unit, valid_unit_fields
     )
 
@@ -770,7 +766,7 @@ def anomaly_reports(request):
             total=Count('id'),
             safe=Count('id', filter=Q(action=True)),
             unsafe=Count('id', filter=Q(action=False))
-        ),
+        ).distinct(),
         order_by_location, order_direction_location, valid_location_fields
     )
 
@@ -780,7 +776,7 @@ def anomaly_reports(request):
             total=Count('id'),
             safe=Count('id', filter=Q(action=True)),
             unsafe=Count('id', filter=Q(action=False))
-        ),
+        ).distinct(),
         order_by_shift, order_direction_shift, valid_shift_fields
     )
 
@@ -794,7 +790,7 @@ def anomaly_reports(request):
             total=Count('id'),
             safe=Count('id', filter=Q(action=True)),
             unsafe=Count('id', filter=Q(action=False))
-        ),
+        ).distinct(),
         order_by_user, order_direction_user, valid_user_fields
     )
 
@@ -804,7 +800,7 @@ def anomaly_reports(request):
             total=Count('id'),
             safe=Count('id', filter=Q(action=True)),
             unsafe=Count('id', filter=Q(action=False))
-        ),
+        ).distinct(),
         order_by_description, order_direction_description, valid_description_fields
     )
 
@@ -855,9 +851,11 @@ def anomaly_reports(request):
     anomalies_by_user_paginated, paginator_user = paginate_data(anomalies_by_user, items_per_page, page_user)
 
     page_description = request.GET.get('page_description')
-    anomaly_frequency_by_description_paginated, paginator_description = paginate_data(anomaly_frequency_by_description,
-                                                                                      items_per_page,
-                                                                                      page_description)
+    anomaly_frequency_by_description_paginated, paginator_description = paginate_data(
+        anomaly_frequency_by_description,
+        items_per_page,
+        page_description
+    )
 
     # Calculate percentages for each item in anomalies_by_unit_paginated
     for item in anomalies_by_unit_paginated:
@@ -888,6 +886,12 @@ def anomaly_reports(request):
         total = item['total']
         item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
         item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
+    #valid type
+    valid_type_fields = ['anomalytype__type', 'total']
+    anomaly_count_by_type, ordering_type, order_direction_type = apply_ordering(
+        anomalies.values('anomalytype__type').annotate(total=Count('id')),
+        order_by_type, order_direction_type, valid_type_fields
+    )
 
     context = {
         'tab': tab,
@@ -907,18 +911,18 @@ def anomaly_reports(request):
         'ordering_description': ordering_description,
         'order_direction_description': order_direction_description,
         'anomaly_count_by_type': anomaly_count_by_type,
-        'ordering_type': ordering_type,
-        'order_direction_type': order_direction_type,
-        'items_per_page': items_per_page,
         'most_frequent_anomaly_workshop': most_frequent_anomaly_workshop,
         'most_frequent_anomaly_mine_pit': most_frequent_anomaly_mine_pit,
         'most_cooperative_officer': most_cooperative_officer,
-        'paginator_unit': paginator_unit,
-        'paginator_location': paginator_location,
-        'paginator_shift': paginator_shift,
-        'paginator_user': paginator_user,
-        'paginator_description': paginator_description,
+        'paginator_unit': Paginator(anomalies_by_unit, items_per_page),
+        'paginator_location': Paginator(anomalies_by_location, items_per_page),
+        'paginator_shift': Paginator(anomalies_by_shift, items_per_page),
+        'paginator_user': Paginator(anomalies_by_user, items_per_page),
+        'paginator_description': Paginator(anomaly_frequency_by_description, items_per_page),
         'form': form,  # Add the form to the context
+        'ordering_type': ordering_type,
+        'order_direction_type': order_direction_type,
+
     }
 
     return render(request, 'anomalis/reports.html', context)
