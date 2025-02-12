@@ -680,6 +680,22 @@ def get_all_sections_ajax(request):
     return JsonResponse(list(sections), safe=False)
 
 
+from django.shortcuts import render
+from .forms import AnomalyReportForm
+from django.db.models import Count, Q, F, CharField, Value
+from django.db.models.functions import Concat
+from django.core.paginator import Paginator, EmptyPage, InvalidPage
+from django.contrib.auth.decorators import login_required, user_passes_test
+
+import jdatetime
+from django.core.exceptions import ValidationError
+from .models import Anomaly, UserProfile
+from django.http import HttpResponse
+import openpyxl
+from django.db.models import IntegerField
+from django.db.models.functions import Cast
+
+
 @login_required
 def anomaly_reports(request):
     form = AnomalyReportForm(request.GET)
@@ -904,6 +920,40 @@ def anomaly_reports(request):
         order_by_type, order_direction_type, valid_type_fields
     )
 
+    # Prepare data for unit chart
+    unit_labels = [item['unit'] for item in anomalies_by_unit]
+    unit_total_values = [item['total'] for item in anomalies_by_unit]
+    unit_safe_values = [item['safe'] for item in anomalies_by_unit]
+    unit_unsafe_values = [item['unsafe'] for item in anomalies_by_unit]
+
+    # Prepare data for location chart
+    location_labels = [item['location__name'] for item in anomalies_by_location]
+    location_total_values = [item['total'] for item in anomalies_by_location]
+    location_safe_values = [item['safe'] for item in anomalies_by_location]
+    location_unsafe_values = [item['unsafe'] for item in anomalies_by_location]
+
+    # Prepare data for shift chart
+    shift_labels = [item['shift'] for item in anomalies_by_shift]
+    shift_total_values = [item['total'] for item in anomalies_by_shift]
+    shift_safe_values = [item['safe'] for item in anomalies_by_shift]
+    shift_unsafe_values = [item['unsafe'] for item in anomalies_by_shift]
+
+    # Prepare data for user chart
+    user_labels = [item['full_name'] for item in anomalies_by_user]
+    user_total_values = [item['total'] for item in anomalies_by_user]
+    user_safe_values = [item['safe'] for item in anomalies_by_user]
+    user_unsafe_values = [item['unsafe'] for item in anomalies_by_user]
+
+    # Prepare data for description chart
+    description_labels = [item['anomalydescription__description'] for item in anomaly_frequency_by_description]
+    description_total_values = [item['total'] for item in anomaly_frequency_by_description]
+    description_safe_values = [item['safe'] for item in anomaly_frequency_by_description]
+    description_unsafe_values = [item['unsafe'] for item in anomaly_frequency_by_description]
+
+    # Prepare data for anomaly type chart
+    type_labels = [item['anomalytype__type'] for item in anomaly_count_by_type]
+    type_total_values = [item['total'] for item in anomaly_count_by_type]
+
     context = {
         'tab': tab,
         'anomalies_by_unit_paginated': anomalies_by_unit_paginated,
@@ -933,9 +983,38 @@ def anomaly_reports(request):
         'ordering_type': None,  # Default value for ordering_type
         'order_direction_type': 'asc',  # Default value for order_direction_type,
 
+        'unit_labels': unit_labels,
+        'unit_total_values': unit_total_values,
+        'unit_safe_values': unit_safe_values,
+        'unit_unsafe_values': unit_unsafe_values,
+
+        'location_labels': location_labels,
+        'location_total_values': location_total_values,
+        'location_safe_values': location_safe_values,
+        'location_unsafe_values': location_unsafe_values,
+
+        'shift_labels': shift_labels,
+        'shift_total_values': shift_total_values,
+        'shift_safe_values': shift_safe_values,
+        'shift_unsafe_values': shift_unsafe_values,
+
+        'user_labels': user_labels,
+        'user_total_values': user_total_values,
+        'user_safe_values': user_safe_values,
+        'user_unsafe_values': user_unsafe_values,
+
+        'description_labels': description_labels,
+        'description_total_values': description_total_values,
+        'description_safe_values': description_safe_values,
+        'description_unsafe_values': description_unsafe_values,
+
+        'type_labels': type_labels,
+        'type_total_values': type_total_values,
     }
 
     return render(request, 'anomalis/reports.html', context)
+
+
 
 
 @login_required
@@ -1145,7 +1224,22 @@ def export_report_to_excel(request):
     for item in anomaly_count_by_type:
         ws_type.append([item['anomalytype__type'], item['total']])
 
+    # Determine filename
+    if start_date_str and end_date_str:
+        # Convert Gregorian dates to Jalali dates
+        start_date_jalali = jdatetime.date.fromgregorian(date=start_date_gregorian).strftime("%Y/%m/%d")
+        end_date_jalali = jdatetime.date.fromgregorian(date=end_date_gregorian).strftime("%Y/%m/%d")
+
+        filename = f"report_{start_date_jalali}_to_{end_date_jalali}.xlsx"
+    else:
+        filename = "گزارش کلی.xlsx"
+
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename=anomalies_report.xlsx'
+
+    # Encode filename for UTF-8 compatibility
+    filename_encoded = filename.encode('utf-8')
+    response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{filename_encoded.decode("unicode_escape")}'
+
     wb.save(response)
     return response
+
