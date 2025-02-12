@@ -40,6 +40,10 @@
                                         </div>
                                     </div>
                                 </form>
+                                <a href="{% url 'anomalis:export_report_to_excel' %}?{% for key, value in request.GET.items %}{{ key }}={{ value }}&{% endfor %}"
+                                   class="btn btn-success">
+                                    <i class="fas fa-file-excel"></i> خروجی اکسل گزارش
+                                </a>
                                 {% if form.start_date.value or form.end_date.value %}
                                     <p>
                                         گزارش فیلتر شده بر اساس بازه زمانی:
@@ -402,6 +406,9 @@
                                                         </a>
                                                     </th>
                                                     <th>
+                                                        درصد از کل
+                                                    </th>
+                                                    <th>
                                                         <a href="?tab=user&order_by_user=safe{% if ordering_user == 'safe' and order_direction_user == 'asc' %}&direction_user=desc{% else %}&direction_user=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
                                                             ایمن {% if ordering_user == 'safe' %}{% if order_direction_user == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
                                                         </a>
@@ -420,6 +427,7 @@
                                                     <tr>
                                                         <td>{{ item.full_name }} ({{ item.personnel_code }})</td>
                                                         <td>{{ item.total }}</td>
+                                                        <td>{{ item.total_percentage|floatformat:2 }}%</td>
                                                         <td>{{ item.safe }}</td>
                                                         <td>{{ item.unsafe }}</td>
                                                         <td>{{ item.safe_percentage|floatformat:2 }}%</td>
@@ -495,6 +503,9 @@
                                                         </a>
                                                     </th>
                                                     <th>
+                                                        درصد از کل
+                                                    </th>
+                                                    <th>
                                                         <a href="?tab=description&order_by_description=safe{% if ordering_description == 'safe' and order_direction_description == 'asc' %}&direction_description=desc{% else %}&direction_description=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
                                                             ایمن {% if ordering_description == 'safe' %}{% if order_direction_description == 'asc' %} ↑{% else %} ↓{% endif %}{% endif %}
                                                         </a>
@@ -513,13 +524,13 @@
                                                     <tr>
                                                         <td>{{ item.anomalydescription__description }}</td>
                                                         <td>{{ item.total }}</td>
+                                                        <td>{{ item.total_percentage|floatformat:2 }}%</td>
                                                         <td>{{ item.safe }}</td>
                                                         <td>{{ item.unsafe }}</td>
                                                         <td>{{ item.safe_percentage|floatformat:2 }}%</td>
                                                         <td>{{ item.unsafe_percentage|floatformat:2 }}%</td>
                                                     </tr>
                                                 {% endfor %}
-                                                </tbody>
                                             </table>
                                         </div>
                                         <!-- Pagination -->
@@ -569,7 +580,7 @@
                                         </nav>
                                     </div>
 
-                                     <!-- Report: Most Frequent Anomalies -->
+                                    <!-- Report: Most Frequent Anomalies -->
                                     <div class="tab-pane fade {% if tab == 'frequent' %}show active{% endif %}" id="frequent"
                                          aria-labelledby="frequent-tab">
                                         <h2 class="mb-5">گزارش ناهنجاری های متداول</h2>
@@ -597,30 +608,30 @@
                                             </table>
                                         </div>
 
-                                         <h3 class="mt-5 mb-3">سایر گزارشات:</h3>
-                                            <div class="table-responsive">
-                                                <table class="table table-striped table-bordered">
-                                                    <thead>
+                                        <h3 class="mt-5 mb-3">سایر گزارشات:</h3>
+                                        <div class="table-responsive">
+                                            <table class="table table-striped table-bordered">
+                                                <thead>
+                                                <tr>
+                                                    <th>نام مسئول پیگیری</th>
+                                                    <th>تعداد کل ناهنجاری‌ها</th>
+                                                    <th>تعداد ناهنجاری‌های ایمن شده</th>
+                                                    <th>تعداد ناهنجاری‌های ناایمن</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                {% for officer in followup_officers %}
                                                     <tr>
-                                                        <th>نام مسئول پیگیری</th>
-                                                        <th>تعداد کل ناهنجاری‌ها</th>
-                                                        <th>تعداد ناهنجاری‌های ایمن شده</th>
-                                                        <th>تعداد ناهنجاری‌های ناایمن</th>
+                                                        <td>{{ officer.user.first_name }} {{ officer.user.last_name }}</td>
+                                                        <td>{{ officer.total_anomalies }}</td>
+                                                        <td>{{ officer.safe_anomalies }}</td>
+                                                        <td>{{ officer.unsafe_anomalies }}</td>
                                                     </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                    {% for officer in followup_officers %}
-                                                        <tr>
-                                                            <td>{{ officer.user.first_name }} {{ officer.user.last_name }}</td>
-                                                            <td>{{ officer.total_anomalies }}</td>
-                                                            <td>{{ officer.safe_anomalies }}</td>
-                                                            <td>{{ officer.unsafe_anomalies }}</td>
-                                                        </tr>
-                                                    {% endfor %}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                          {% if most_cooperative_officer %}
+                                                {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        {% if most_cooperative_officer %}
                                             <p class="mb-4">{{ most_cooperative_officer.officer }}
                                                 ({{ most_cooperative_officer.safe_count }} ناهنجاری ایمن)</p>
                                         {% else %}

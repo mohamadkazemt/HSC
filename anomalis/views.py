@@ -680,10 +680,6 @@ def get_all_sections_ajax(request):
     return JsonResponse(list(sections), safe=False)
 
 
-
-
-
-
 @login_required
 def anomaly_reports(request):
     form = AnomalyReportForm(request.GET)
@@ -822,7 +818,8 @@ def anomaly_reports(request):
             most_frequent_anomalies[section] = None
 
     # Most Cooperative Follow-up Officers
-    followup_officers = UserProfile.objects.filter(user__groups__name='مسئول پیگیری', followup_anomalies__isnull=False).annotate(
+    followup_officers = UserProfile.objects.filter(user__groups__name='مسئول پیگیری',
+                                                   followup_anomalies__isnull=False).annotate(
         total_anomalies=Count('followup_anomalies'),
         safe_anomalies=Count('followup_anomalies', filter=Q(followup_anomalies__action=True)),
         unsafe_anomalies=Count('followup_anomalies', filter=Q(followup_anomalies__action=False))
@@ -865,6 +862,9 @@ def anomaly_reports(request):
         page_description
     )
 
+    # Calculate total anomaly for description tab and user
+    total_anomalies = anomalies.count()
+
     # Calculate percentages for each item in anomalies_by_unit_paginated
     for item in anomalies_by_unit_paginated:
         total = item['total']
@@ -888,13 +888,16 @@ def anomaly_reports(request):
         total = item['total']
         item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
         item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
+        item['total_percentage'] = (total / total_anomalies) * 100 if total_anomalies > 0 else 0
 
     # Calculate percentages for each item in anomaly_frequency_by_description_paginated
     for item in anomaly_frequency_by_description_paginated:
         total = item['total']
         item['safe_percentage'] = (item['safe'] / total) * 100 if total > 0 else 0
         item['unsafe_percentage'] = (item['unsafe'] / total) * 100 if total > 0 else 0
-    #valid type
+        item['total_percentage'] = (total / total_anomalies) * 100 if total_anomalies > 0 else 0
+
+    # valid type
     valid_type_fields = ['anomalytype__type', 'total']
     anomaly_count_by_type, ordering_type, order_direction_type = apply_ordering(
         anomalies.values('anomalytype__type').annotate(total=Count('id')),
@@ -933,3 +936,216 @@ def anomaly_reports(request):
     }
 
     return render(request, 'anomalis/reports.html', context)
+
+
+@login_required
+@user_passes_test(lambda u: u.groups.filter(name='مدیر HSE').exists())
+def export_report_to_excel(request):
+    form = AnomalyReportForm(request.GET)
+    start_date_str = request.GET.get('start_date')
+    end_date_str = request.GET.get('end_date')
+
+    start_date_gregorian = None
+    end_date_gregorian = None
+
+    if form.is_valid():
+        start_date = None  # Initialize start_date
+        end_date = None  # Initialize end_date
+        try:
+            if start_date_str:
+                start_date = jdatetime.datetime.strptime(start_date_str, "%Y/%m/%d").date()
+                start_date_gregorian = start_date.togregorian()
+                print("start_date_gregorian:", start_date_gregorian)
+            if end_date_str:
+                end_date = jdatetime.datetime.strptime(end_date_str, "%Y/%m/%d").date()
+                end_date_gregorian = end_date.togregorian()
+                print("end_date_gregorian:", end_date_gregorian)
+
+            if start_date and end_date and start_date > end_date:
+                raise ValidationError("تاریخ شروع باید قبل از تاریخ پایان باشد.")
+        except ValueError:
+            form.add_error(None, "فرمت تاریخ وارد شده صحیح نیست. لطفا از فرمت YYYY/MM/DD استفاده کنید.")
+        except ValidationError as e:
+            form.add_error(None, str(e))
+
+    anomalies = Anomaly.objects.all()
+
+    if start_date_gregorian:
+        anomalies = anomalies.filter(created_at__date__gte=start_date_gregorian)
+
+    if end_date_gregorian:
+        anomalies = anomalies.filter(created_at__date__lte=end_date_gregorian)
+
+    # Get ordering parameters for each tab
+    tab = request.GET.get('tab', 'unit')  # Default tab
+
+    order_by_unit = request.GET.get('order_by_unit', None)
+    order_direction_unit = request.GET.get('direction_unit', 'asc')
+
+    order_by_location = request.GET.get('order_by_location', None)
+    order_direction_location = request.GET.get('direction_location', 'asc')
+
+    order_by_shift = request.GET.get('order_by_shift', None)
+    order_direction_shift = request.GET.get('direction_shift', 'asc')
+
+    order_by_user = request.GET.get('order_by_user', None)
+    order_direction_user = request.GET.get('direction_user', 'asc')
+
+    order_by_description = request.GET.get('order_by_description', None)
+    order_direction_description = request.GET.get('direction_description', 'asc')
+
+    order_by_type = request.GET.get('order_by_type', None)
+    order_direction_type = request.GET.get('direction_type', 'asc')
+
+    # Helper function to apply ordering
+    def apply_ordering(queryset, order_by, order_direction, valid_fields):
+        if order_by in valid_fields:
+            ordering = ('-' if order_direction == 'desc' else '') + order_by
+            return queryset.order_by(ordering), order_by, order_direction
+        return queryset, None, 'asc'
+
+    # Apply ordering for each tab
+    valid_unit_fields = ['unit', 'total', 'safe', 'unsafe']
+    anomalies_by_unit, ordering_unit, order_direction_unit = apply_ordering(
+        anomalies.values(unit=F('followup__section__name')).annotate(
+            total=Count('id'),
+            safe=Count('id', filter=Q(action=True)),
+            unsafe=Count('id', filter=Q(action=False))
+        ).distinct(),
+        order_by_unit, order_direction_unit, valid_unit_fields
+    )
+
+    valid_location_fields = ['location__name', 'total', 'safe', 'unsafe']
+    anomalies_by_location, ordering_location, order_direction_location = apply_ordering(
+        anomalies.values('location__name').annotate(
+            total=Count('id'),
+            safe=Count('id', filter=Q(action=True)),
+            unsafe=Count('id', filter=Q(action=False))
+        ).distinct(),
+        order_by_location, order_direction_location, valid_location_fields
+    )
+
+    valid_shift_fields = ['shift', 'total', 'safe', 'unsafe']
+    anomalies_by_shift, ordering_shift, order_direction_shift = apply_ordering(
+        anomalies.values(shift=F('created_by__group')).annotate(
+            total=Count('id'),
+            safe=Count('id', filter=Q(action=True)),
+            unsafe=Count('id', filter=Q(action=False))
+        ).distinct(),
+        order_by_shift, order_direction_shift, valid_shift_fields
+    )
+
+    valid_user_fields = ['full_name', 'total', 'safe', 'unsafe']
+    anomalies_by_user, ordering_user, order_direction_user = apply_ordering(
+        anomalies.annotate(
+            full_name=Concat('created_by__user__first_name', Value(' '), 'created_by__user__last_name',
+                             output_field=CharField()),
+            personnel_code=F('created_by__personnel_code')
+        ).values('full_name', 'personnel_code').annotate(
+            total=Count('id'),
+            safe=Count('id', filter=Q(action=True)),
+            unsafe=Count('id', filter=Q(action=False))
+        ).distinct(),
+        order_by_user, order_direction_user, valid_user_fields
+    )
+
+    valid_description_fields = ['anomalydescription__description', 'total', 'safe', 'unsafe']
+    anomaly_frequency_by_description, ordering_description, order_direction_description = apply_ordering(
+        anomalies.values('anomalydescription__description').annotate(
+            total=Count('id'),
+            safe=Count('id', filter=Q(action=True)),
+            unsafe=Count('id', filter=Q(action=False))
+        ).distinct(),
+        order_by_description, order_direction_description, valid_description_fields
+    )
+
+    valid_type_fields = ['anomalytype__type', 'total']
+    anomaly_count_by_type, ordering_type, order_direction_type = apply_ordering(
+        anomalies.values('anomalytype__type').annotate(total=Count('id')),
+        order_by_type, order_direction_type, valid_type_fields
+    )
+
+    # Most Frequent Anomaly by Description in each section
+    sections = UserProfile.objects.values_list('section__name', flat=True).distinct()
+    most_frequent_anomalies = {}
+    for section in sections:
+        most_frequent_anomaly = anomalies.filter(followup__section__name=section).values(
+            'anomalydescription__description').annotate(total=Count('id')).order_by('-total').first()
+        if most_frequent_anomaly:
+            most_frequent_anomalies[section] = most_frequent_anomaly
+        else:
+            most_frequent_anomalies[section] = None
+
+    # Most Cooperative Follow-up Officers
+    followup_officers = UserProfile.objects.filter(user__groups__name='مسئول پیگیری',
+                                                   followup_anomalies__isnull=False).annotate(
+        total_anomalies=Count('followup_anomalies'),
+        safe_anomalies=Count('followup_anomalies', filter=Q(followup_anomalies__action=True)),
+        unsafe_anomalies=Count('followup_anomalies', filter=Q(followup_anomalies__action=False))
+    ).order_by('-safe_anomalies')
+
+    wb = openpyxl.Workbook()
+
+    # Create a worksheet for each report type
+    ws_unit = wb.create_sheet("گزارش واحد")
+    ws_location = wb.create_sheet("گزارش موقعیت")
+    ws_shift = wb.create_sheet("گزارش شیفت")
+    ws_user = wb.create_sheet("گزارش کاربر")
+    ws_description = wb.create_sheet("گزارش شرح")
+    ws_type = wb.create_sheet("گزارش نوع")
+
+    # Calculate percentages for each report type
+    total_anomalies = anomalies.count()
+
+    # Unit Report
+    ws_unit.append(['واحد', 'مجموع', 'ایمن', 'ناایمن', 'درصد ایمنی', 'درصد ناایمنی'])
+    for item in anomalies_by_unit:
+        safe_percentage = (item['safe'] / item['total']) * 100 if item['total'] > 0 else 0
+        unsafe_percentage = (item['unsafe'] / item['total']) * 100 if item['total'] > 0 else 0
+        ws_unit.append([item['unit'], item['total'], item['safe'], item['unsafe'], safe_percentage, unsafe_percentage])
+
+    # Location Report
+    ws_location.append(['موقعیت', 'مجموع', 'ایمن', 'ناایمن', 'درصد ایمنی', 'درصد ناایمنی'])
+    for item in anomalies_by_location:
+        safe_percentage = (item['safe'] / item['total']) * 100 if item['total'] > 0 else 0
+        unsafe_percentage = (item['unsafe'] / item['total']) * 100 if item['total'] > 0 else 0
+        ws_location.append(
+            [item['location__name'], item['total'], item['safe'], item['unsafe'], safe_percentage, unsafe_percentage])
+
+    # Shift Report
+    ws_shift.append(['شیفت', 'مجموع', 'ایمن', 'ناایمن', 'درصد ایمنی', 'درصد ناایمنی'])
+    for item in anomalies_by_shift:
+        safe_percentage = (item['safe'] / item['total']) * 100 if item['total'] > 0 else 0
+        unsafe_percentage = (item['unsafe'] / item['total']) * 100 if item['total'] > 0 else 0
+        ws_shift.append(
+            [item['shift'], item['total'], item['safe'], item['unsafe'], safe_percentage, unsafe_percentage])
+
+    # User Report
+    ws_user.append(['نام کامل', 'کد پرسنلی', 'مجموع', 'ایمن', 'ناایمن', 'درصد ایمنی', 'درصد ناایمنی', 'درصد از کل'])
+    for item in anomalies_by_user:
+        safe_percentage = (item['safe'] / item['total']) * 100 if item['total'] > 0 else 0
+        unsafe_percentage = (item['unsafe'] / item['total']) * 100 if item['total'] > 0 else 0
+        total_percentage = (item['total'] / total_anomalies) * 100 if total_anomalies > 0 else 0
+        ws_user.append(
+            [item['full_name'], item['personnel_code'], item['total'], item['safe'], item['unsafe'], safe_percentage,
+             unsafe_percentage, total_percentage])
+
+    # Description Report
+    ws_description.append(['شرح', 'مجموع', 'ایمن', 'ناایمن', 'درصد ایمنی', 'درصد ناایمنی', 'درصد از کل'])
+    for item in anomaly_frequency_by_description:
+        safe_percentage = (item['safe'] / item['total']) * 100 if item['total'] > 0 else 0
+        unsafe_percentage = (item['unsafe'] / item['total']) * 100 if item['total'] > 0 else 0
+        total_percentage = (item['total'] / total_anomalies) * 100 if total_anomalies > 0 else 0
+        ws_description.append(
+            [item['anomalydescription__description'], item['total'], item['safe'], item['unsafe'], safe_percentage,
+             unsafe_percentage, total_percentage])
+
+    # Type Report
+    ws_type.append(['نوع', 'مجموع'])
+    for item in anomaly_count_by_type:
+        ws_type.append([item['anomalytype__type'], item['total']])
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=anomalies_report.xlsx'
+    wb.save(response)
+    return response
