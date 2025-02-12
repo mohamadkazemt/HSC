@@ -821,9 +821,12 @@ def anomaly_reports(request):
         else:
             most_frequent_anomalies[section] = None
 
-    # 7. Most Cooperative Follow-up Officer
-    most_cooperative_officer = anomalies.filter(action=True).values(officer=F('followup__user__username')).annotate(
-        safe_count=Count('id')).order_by('-safe_count').first()
+    # Most Cooperative Follow-up Officers
+    followup_officers = UserProfile.objects.filter(user__groups__name='مسئول پیگیری', followup_anomalies__isnull=False).annotate(
+        total_anomalies=Count('followup_anomalies'),
+        safe_anomalies=Count('followup_anomalies', filter=Q(followup_anomalies__action=True)),
+        unsafe_anomalies=Count('followup_anomalies', filter=Q(followup_anomalies__action=False))
+    ).order_by('-safe_anomalies')
 
     # Number of items per page
     items_per_page = request.GET.get('items_per_page', 10)
@@ -917,7 +920,7 @@ def anomaly_reports(request):
         'order_direction_description': order_direction_description,
         'anomaly_count_by_type': anomaly_count_by_type,
         'most_frequent_anomalies': most_frequent_anomalies,
-        'most_cooperative_officer': most_cooperative_officer,
+        'followup_officers': followup_officers,
         'paginator_unit': Paginator(anomalies_by_unit, items_per_page),
         'paginator_location': Paginator(anomalies_by_location, items_per_page),
         'paginator_shift': Paginator(anomalies_by_shift, items_per_page),
@@ -925,7 +928,7 @@ def anomaly_reports(request):
         'paginator_description': Paginator(anomaly_frequency_by_description, items_per_page),
         'form': form,
         'ordering_type': None,  # Default value for ordering_type
-        'order_direction_type': 'asc',  # Default value for order_direction_type
+        'order_direction_type': 'asc',  # Default value for order_direction_type,
 
     }
 
