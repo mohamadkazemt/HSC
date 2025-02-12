@@ -569,10 +569,10 @@
                                         </nav>
                                     </div>
 
-                                    <!-- Report: Most Frequent Anomalies -->
+                                     <!-- Report: Most Frequent Anomalies -->
                                     <div class="tab-pane fade {% if tab == 'frequent' %}show active{% endif %}" id="frequent"
                                          aria-labelledby="frequent-tab">
-                                        <h2 class="mb-5">گزارش ناهنجاری‌های متداول</h2>
+                                        <h2 class="mb-5">گزارش ناهنجاری های متداول</h2>
 
                                         <div class="table-responsive">
                                             <table class="table table-striped table-bordered">
@@ -585,30 +585,42 @@
                                                 </thead>
                                                 <tbody>
                                                 {% for section, anomaly in most_frequent_anomalies.items %}
-                                                    <tr>
-                                                        <td>{{ section }}</td>
-                                                        <td>
-                                                            {% if anomaly %}
-                                                                {{ anomaly.anomalydescription__description }}
-                                                            {% else %}
-                                                                هیچ ناهنجاری در این بخش یافت نشد.
-                                                            {% endif %}
-                                                        </td>
-                                                        <td>
-                                                            {% if anomaly %}
-                                                                {{ anomaly.total }}
-                                                            {% else %}
-                                                                -
-                                                            {% endif %}
-                                                        </td>
-                                                    </tr>
+                                                    {% if anomaly %}
+                                                        <tr>
+                                                            <td>{{ section }}</td>
+                                                            <td>{{ anomaly.anomalydescription__description }}</td>
+                                                            <td>{{ anomaly.total }}</td>
+                                                        </tr>
+                                                    {% endif %}
                                                 {% endfor %}
                                                 </tbody>
                                             </table>
                                         </div>
 
-                                        <h3 class="mt-5 mb-3">همکارترین افسر پیگیری:</h3>
-                                        {% if most_cooperative_officer %}
+                                         <h3 class="mt-5 mb-3">سایر گزارشات:</h3>
+                                            <div class="table-responsive">
+                                                <table class="table table-striped table-bordered">
+                                                    <thead>
+                                                    <tr>
+                                                        <th>نام مسئول پیگیری</th>
+                                                        <th>تعداد کل ناهنجاری‌ها</th>
+                                                        <th>تعداد ناهنجاری‌های ایمن شده</th>
+                                                        <th>تعداد ناهنجاری‌های ناایمن</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    {% for officer in followup_officers %}
+                                                        <tr>
+                                                            <td>{{ officer.user.first_name }} {{ officer.user.last_name }}</td>
+                                                            <td>{{ officer.total_anomalies }}</td>
+                                                            <td>{{ officer.safe_anomalies }}</td>
+                                                            <td>{{ officer.unsafe_anomalies }}</td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                          {% if most_cooperative_officer %}
                                             <p class="mb-4">{{ most_cooperative_officer.officer }}
                                                 ({{ most_cooperative_officer.safe_count }} ناهنجاری ایمن)</p>
                                         {% else %}
