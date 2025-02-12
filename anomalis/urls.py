@@ -96,6 +96,12 @@ URLS_WITH_LABELS = [
         "name": "anomaly_reports",
         "label": "انومالی_گزارش‌ها"
     },
+{
+        "path": "export_report_excel/",
+        "view": views.export_report_to_excel,
+        "name": "export_report_to_excel",
+        "label": "انومالی_گزارش‌ها (صادرات به اکسل)"
+    },
 ]
 
 urlpatterns = [
