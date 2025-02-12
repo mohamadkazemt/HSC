@@ -810,11 +810,16 @@ def anomaly_reports(request):
         order_by_type, order_direction_type, valid_type_fields
     )
 
-    # Most Frequent Anomaly by Description in Workshop and Mine Pit
-    most_frequent_anomaly_workshop = anomalies.filter(location__name='Workshop').values(
-        'anomalydescription__description').annotate(total=Count('id')).order_by('-total').first()
-    most_frequent_anomaly_mine_pit = anomalies.filter(location__name='Mine Pit').values(
-        'anomalydescription__description').annotate(total=Count('id')).order_by('-total').first()
+    # Most Frequent Anomaly by Description in each section
+    sections = UserProfile.objects.values_list('section__name', flat=True).distinct()
+    most_frequent_anomalies = {}
+    for section in sections:
+        most_frequent_anomaly = anomalies.filter(followup__section__name=section).values(
+            'anomalydescription__description').annotate(total=Count('id')).order_by('-total').first()
+        if most_frequent_anomaly:
+            most_frequent_anomalies[section] = most_frequent_anomaly
+        else:
+            most_frequent_anomalies[section] = None
 
     # 7. Most Cooperative Follow-up Officer
     most_cooperative_officer = anomalies.filter(action=True).values(officer=F('followup__user__username')).annotate(
@@ -911,17 +916,16 @@ def anomaly_reports(request):
         'ordering_description': ordering_description,
         'order_direction_description': order_direction_description,
         'anomaly_count_by_type': anomaly_count_by_type,
-        'most_frequent_anomaly_workshop': most_frequent_anomaly_workshop,
-        'most_frequent_anomaly_mine_pit': most_frequent_anomaly_mine_pit,
+        'most_frequent_anomalies': most_frequent_anomalies,
         'most_cooperative_officer': most_cooperative_officer,
         'paginator_unit': Paginator(anomalies_by_unit, items_per_page),
         'paginator_location': Paginator(anomalies_by_location, items_per_page),
         'paginator_shift': Paginator(anomalies_by_shift, items_per_page),
         'paginator_user': Paginator(anomalies_by_user, items_per_page),
         'paginator_description': Paginator(anomaly_frequency_by_description, items_per_page),
-        'form': form,  # Add the form to the context
-        'ordering_type': ordering_type,
-        'order_direction_type': order_direction_type,
+        'form': form,
+        'ordering_type': None,  # Default value for ordering_type
+        'order_direction_type': 'asc',  # Default value for order_direction_type
 
     }
 
