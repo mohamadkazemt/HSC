@@ -4,10 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="anomali_reports24-10/3">
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="anomali_reports24-10/4">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/reports.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/reports.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/urls.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/views.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -382,14 +381,6 @@
       <workItem from="1737210978942" duration="3062000" />
       <workItem from="1737526000783" duration="4494000" />
     </task>
-    <task id="LOCAL-00018" summary="endamaliyat&amp;anomali">
-      <option name="closed" value="true" />
-      <created>1731173519478</created>
-      <option name="number" value="00018" />
-      <option name="presentableId" value="LOCAL-00018" />
-      <option name="project" value="LOCAL" />
-      <updated>1731173519478</updated>
-    </task>
     <task id="LOCAL-00019" summary="endamaliyat&amp;anomali">
       <option name="closed" value="true" />
       <created>1731248066115</created>
@@ -741,7 +732,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۶۶" />
       <updated>1739337167025</updated>
     </task>
-    <option name="localTasksCounter" value="67" />
+    <task id="LOCAL‎−۰۰۰۶۷" summary="anomali_reports24-10/4">
+      <option name="closed" value="true" />
+      <created>1739352126009</created>
+      <option name="number" value="LOCAL‎−۰۰۰۶۷" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۶۷" />
+      <updated>1739352126009</updated>
+    </task>
+    <option name="localTasksCounter" value="68" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -759,7 +757,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="dailyreport_hse22" />
     <MESSAGE value="dailyreport_hse232" />
     <MESSAGE value="dailyreport_hsemami" />
     <MESSAGE value="dailyreport_hsemami2" />
@@ -784,7 +781,8 @@
     <MESSAGE value="anomali_reports24-10/1" />
     <MESSAGE value="anomali_reports24-10/2" />
     <MESSAGE value="anomali_reports24-10/3" />
-    <option name="LAST_COMMIT_MESSAGE" value="anomali_reports24-10/3" />
+    <MESSAGE value="anomali_reports24-10/4" />
+    <option name="LAST_COMMIT_MESSAGE" value="anomali_reports24-10/4" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

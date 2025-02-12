@@ -938,6 +938,9 @@ def anomaly_reports(request):
     return render(request, 'anomalis/reports.html', context)
 
 
+import jdatetime
+
+
 @login_required
 @user_passes_test(lambda u: u.groups.filter(name='مدیر HSE').exists())
 def export_report_to_excel(request):
@@ -1145,7 +1148,22 @@ def export_report_to_excel(request):
     for item in anomaly_count_by_type:
         ws_type.append([item['anomalytype__type'], item['total']])
 
+    # Determine filename
+    if start_date_str and end_date_str:
+        # Convert Gregorian dates to Jalali dates
+        start_date_jalali = jdatetime.date.fromgregorian(date=start_date_gregorian).strftime("%Y/%m/%d")
+        end_date_jalali = jdatetime.date.fromgregorian(date=end_date_gregorian).strftime("%Y/%m/%d")
+
+        filename = f"report_{start_date_jalali}_to_{end_date_jalali}.xlsx"
+    else:
+        filename = "گزارش کلی.xlsx"
+
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename=anomalies_report.xlsx'
+
+    # Encode filename for UTF-8 compatibility
+    filename_encoded = filename.encode('utf-8')
+    response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{filename_encoded.decode("unicode_escape")}'
+
     wb.save(response)
     return response
+
