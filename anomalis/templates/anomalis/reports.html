@@ -1,3 +1,4 @@
+<!-- reports.html -->
 {% extends 'base.html' %}
 {% load static %}
 {% load jalali %}
@@ -48,15 +49,15 @@
 
                                                 <!--begin::Col-->
                                                 <div class="col-md-4 d-flex align-items-end">
-                                                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                                        <button type="submit" class="btn btn-primary">
+                                                    <div class="d-flex justify-content-md-end gap-2 w-100">  <!-- Changed this line -->
+                                                        <button type="submit" class="btn btn-primary flex-grow-1">  <!-- Added flex-grow-1 -->
                                                             <i class="fas fa-filter"></i> اعمال فیلتر
                                                         </button>
-                                                        <a href="{% url 'anomalis:anomaly_reports' %}" class="btn btn-secondary">
+                                                        <a href="{% url 'anomalis:anomaly_reports' %}" class="btn btn-secondary flex-grow-1">  <!-- Added flex-grow-1 -->
                                                             <i class="fas fa-undo"></i> حذف فیلتر
                                                         </a>
                                                         <a href="{% url 'anomalis:export_report_to_excel' %}?{% for key, value in request.GET.items %}{{ key }}={{ value }}&{% endfor %}"
-                                                           class="btn btn-success">
+                                                           class="btn btn-success flex-grow-1">  <!-- Added flex-grow-1 -->
                                                             <i class="fas fa-file-excel"></i> خروجی اکسل گزارش
                                                         </a>
                                                     </div>
@@ -89,7 +90,7 @@
 
 
                                 <!--begin::Tabs-->
-                                <ul class="nav nav-tabs nav-pills mb-5 flex-column flex-sm-row" id="myTab" role="tablist">
+                                <ul class="nav nav-tabs nav-pills mb-5" id="myTab" role="tablist">  <!-- Removed flex-column and flex-sm-row -->
                                     <li class="nav-item flex-grow-1 text-center" role="presentation">
                                         <button class="nav-link w-100 {% if tab == 'unit' %}active{% endif %}" id="unit-tab" data-bs-toggle="tab"
                                                 data-bs-target="#unit" type="button" role="tab" aria-controls="unit"
@@ -145,6 +146,7 @@
 
                                 <!--begin::Tab Content-->
                                 <div class="tab-content" id="myTabContent">
+
 
                                     <!-- Report by Unit -->
                                     <div class="tab-pane fade {% if tab == 'unit' %}show active{% endif %}" id="unit" role="tabpanel"
@@ -214,10 +216,13 @@
                                                 <!-- Pagination -->
                                                 {% include 'anomalis/pagination.html' with paginator=paginator_unit page=anomalies_by_unit_paginated tab='unit' order_by=ordering_unit direction=order_direction_unit items_per_page=items_per_page %}
 
+                                                <div id="unitChartContainer">
+                                                    <canvas id="unitChart"></canvas>
+                                                </div>
+
                                             </div>
                                         </div>
                                     </div>
-
                                     <!-- Report by Location -->
                                     <div class="tab-pane fade {% if tab == 'location' %}show active{% endif %}" id="location" role="tabpanel"
                                          aria-labelledby="location-tab">
@@ -239,28 +244,28 @@
                                                             </th>
                                                             <th class="text-nowrap text-center">
                                                                 <a class="text-decoration-none text-dark fw-bold d-flex align-items-center justify-content-center"
-                                                                   href="?tab=location&order_by_location=total{% if ordering_location == 'total' and order_direction_location == 'asc' %}&direction_location=desc{% else %}&direction_location=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
+                                                                   href="?tab=location&order_by_location=total{% if ordering_location == 'total' and order_direction_location == 'asc' %}&direction_location=desc{% else %}&direction_direction=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
                                                                     مجموع
                                                                     {% if ordering_location == 'total' %}
-                                                                        <i class="fas {% if order_direction_location == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
+                                                                        <i class="fas {% if order_direction_direction == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
                                                                     {% endif %}
                                                                 </a>
                                                             </th>
                                                             <th class="text-nowrap text-center">
                                                                 <a class="text-decoration-none text-dark fw-bold d-flex align-items-center justify-content-center"
-                                                                   href="?tab=location&order_by_location=safe{% if ordering_location == 'safe' and order_direction_location == 'asc' %}&direction_location=desc{% else %}&direction_location=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
+                                                                   href="?tab=location&order_by_location=safe{% if ordering_location == 'safe' and order_direction_direction == 'asc' %}&direction_direction=desc{% else %}&direction_direction=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
                                                                     ایمن
                                                                     {% if ordering_location == 'safe' %}
-                                                                        <i class="fas {% if order_direction_location == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
+                                                                        <i class="fas {% if order_direction_direction == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
                                                                     {% endif %}
                                                                 </a>
                                                             </th>
                                                             <th class="text-nowrap text-center">
                                                                 <a class="text-decoration-none text-dark fw-bold d-flex align-items-center justify-content-center"
-                                                                   href="?tab=location&order_by_location=unsafe{% if ordering_location == 'unsafe' and order_direction_location == 'asc' %}&direction_location=desc{% else %}&direction_location=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
+                                                                   href="?tab=location&order_by_location=unsafe{% if ordering_location == 'unsafe' and order_direction_direction == 'asc' %}&direction_direction=desc{% else %}&direction_direction=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
                                                                     ناایمن
                                                                     {% if ordering_location == 'unsafe' %}
-                                                                        <i class="fas {% if order_direction_location == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
+                                                                        <i class="fas {% if order_direction_direction == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
                                                                     {% endif %}
                                                                 </a>
                                                             </th>
@@ -283,12 +288,14 @@
                                                     </table>
                                                 </div>
 
-                                                {% include 'anomalis/pagination.html' with paginator=paginator_location page=anomalies_by_location_paginated tab='location' order_by=ordering_location direction=order_direction_location items_per_page=items_per_page %}
+                                                {% include 'anomalis/pagination.html' with paginator=paginator_location page=anomalies_by_location_paginated tab='location' order_by=ordering_location direction=order_direction_direction items_per_page=items_per_page %}
+
+                                                <div id="locationChartContainer">
+                                                    <canvas id="locationChart"></canvas>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-
-
                                     <!-- Report by Shift -->
                                     <div class="tab-pane fade {% if tab == 'shift' %}show active{% endif %}" id="shift" role="tabpanel"
                                          aria-labelledby="shift-tab">
@@ -301,37 +308,37 @@
                                                         <tr>
                                                             <th class="text-nowrap text-center">
                                                                 <a class="text-decoration-none text-dark fw-bold d-flex align-items-center justify-content-center"
-                                                                   href="?tab=shift&order_by_shift=shift{% if ordering_shift == 'shift' and order_direction_shift == 'asc' %}&direction_shift=desc{% else %}&direction_shift=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
+                                                                   href="?tab=shift&order_by_shift=shift{% if ordering_shift == 'shift' and order_direction_direction == 'asc' %}&direction_direction=desc{% else %}&direction_direction=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
                                                                     شیفت
                                                                     {% if ordering_shift == 'shift' %}
-                                                                        <i class="fas {% if order_direction_shift == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
+                                                                        <i class="fas {% if order_direction_direction == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
                                                                     {% endif %}
                                                                 </a>
                                                             </th>
                                                             <th class="text-nowrap text-center">
                                                                 <a class="text-decoration-none text-dark fw-bold d-flex align-items-center justify-content-center"
-                                                                   href="?tab=shift&order_by_shift=total{% if ordering_shift == 'total' and order_direction_shift == 'asc' %}&direction_shift=desc{% else %}&direction_shift=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
+                                                                   href="?tab=shift&order_by_shift=total{% if ordering_shift == 'total' and order_direction_direction == 'asc' %}&direction_direction=desc{% else %}&direction_direction=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
                                                                     مجموع
                                                                     {% if ordering_shift == 'total' %}
-                                                                        <i class="fas {% if order_direction_shift == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
+                                                                        <i class="fas {% if order_direction_direction == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
                                                                     {% endif %}
                                                                 </a>
                                                             </th>
                                                             <th class="text-nowrap text-center">
                                                                 <a class="text-decoration-none text-dark fw-bold d-flex align-items-center justify-content-center"
-                                                                   href="?tab=shift&order_by_shift=safe{% if ordering_shift == 'safe' and order_direction_shift == 'asc' %}&direction_shift=desc{% else %}&direction_shift=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
+                                                                   href="?tab=shift&order_by_shift=safe{% if ordering_shift == 'safe' and order_direction_direction == 'asc' %}&direction_direction=desc{% else %}&direction_direction=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
                                                                     ایمن
                                                                     {% if ordering_shift == 'safe' %}
-                                                                        <i class="fas {% if order_direction_shift == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
+                                                                        <i class="fas {% if order_direction_direction == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
                                                                     {% endif %}
                                                                 </a>
                                                             </th>
                                                             <th class="text-nowrap text-center">
                                                                 <a class="text-decoration-none text-dark fw-bold d-flex align-items-center justify-content-center"
-                                                                   href="?tab=shift&order_by_shift=unsafe{% if ordering_shift == 'unsafe' and order_direction_shift == 'asc' %}&direction_shift=desc{% else %}&direction_shift=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
+                                                                   href="?tab=shift&order_by_shift=unsafe{% if ordering_shift == 'unsafe' and order_direction_direction == 'asc' %}&direction_direction=desc{% else %}&direction_direction=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
                                                                     ناایمن
                                                                     {% if ordering_shift == 'unsafe' %}
-                                                                        <i class="fas {% if order_direction_shift == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
+                                                                        <i class="fas {% if order_direction_direction == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
                                                                     {% endif %}
                                                                 </a>
                                                             </th>
@@ -353,8 +360,11 @@
                                                         </tbody>
                                                     </table>
                                                 </div>
-                                                {% include 'anomalis/pagination.html' with paginator=paginator_shift page=anomalies_by_shift_paginated tab='shift' order_by=ordering_shift direction=order_direction_shift items_per_page=items_per_page %}
+                                                {% include 'anomalis/pagination.html' with paginator=paginator_shift page=anomalies_by_shift_paginated tab='shift' order_by=ordering_shift direction=order_direction_direction items_per_page=items_per_page %}
 
+                                                <div id="shiftChartContainer">
+                                                    <canvas id="shiftChart"></canvas>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -371,47 +381,47 @@
                                                         <tr>
                                                             <th class="text-nowrap text-center">
                                                                 <a class="text-decoration-none text-dark fw-bold d-flex align-items-center justify-content-center"
-                                                                   href="?tab=user&order_by_user=full_name{% if ordering_user == 'full_name' and order_direction_user == 'asc' %}&direction_user=desc{% else %}&direction_user=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
+                                                                   href="?tab=user&order_by_user=full_name{% if ordering_user == 'full_name' and order_direction_direction == 'asc' %}&direction_direction=desc{% else %}&direction_direction=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
                                                                     کاربر (کد پرسنلی)
                                                                     {% if ordering_user == 'full_name' %}
-                                                                        <i class="fas {% if order_direction_user == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
+                                                                        <i class="fas {% if order_direction_direction == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
                                                                     {% endif %}
                                                                 </a>
                                                             </th>
                                                             <th class="text-nowrap text-center">
                                                                 <a class="text-decoration-none text-dark fw-bold d-flex align-items-center justify-content-center"
-                                                                   href="?tab=user&order_by_user=total{% if ordering_user == 'total' and order_direction_user == 'asc' %}&direction_user=desc{% else %}&direction_user=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
+                                                                   href="?tab=user&order_by_user=total{% if ordering_user == 'total' and order_direction_direction == 'asc' %}&direction_direction=desc{% else %}&direction_direction=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
                                                                     مجموع
                                                                     {% if ordering_user == 'total' %}
-                                                                        <i class="fas {% if order_direction_user == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
+                                                                        <i class="fas {% if order_direction_direction == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
                                                                     {% endif %}
                                                                 </a>
                                                             </th>
                                                             <th class="text-nowrap text-center">
                                                                 <a class="text-decoration-none text-dark fw-bold d-flex align-items-center justify-content-center"
-                                                                   href="?tab=user&order_by_user=total{% if ordering_user == 'total' and order_direction_user == 'asc' %}&direction_user=desc{% else %}&direction_user=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
+                                                                   href="?tab=user&order_by_user=total{% if ordering_user == 'total' and order_direction_direction == 'asc' %}&direction_direction=desc{% else %}&direction_direction=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
                                                                     درصد از کل
                                                                     {% if ordering_user == 'total' %}
-                                                                        <i class="fas {% if order_direction_user == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
+                                                                        <i class="fas {% if order_direction_direction == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
                                                                     {% endif %}
                                                                 </a>
 
                                                             </th>
                                                             <th class="text-nowrap text-center">
                                                                 <a class="text-decoration-none text-dark fw-bold d-flex align-items-center justify-content-center"
-                                                                   href="?tab=user&order_by_user=safe{% if ordering_user == 'safe' and order_direction_user == 'asc' %}&direction_user=desc{% else %}&direction_user=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
+                                                                   href="?tab=user&order_by_user=safe{% if ordering_user == 'safe' and order_direction_direction == 'asc' %}&direction_direction=desc{% else %}&direction_direction=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
                                                                     ایمن
                                                                     {% if ordering_user == 'safe' %}
-                                                                        <i class="fas {% if order_direction_user == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
+                                                                        <i class="fas {% if order_direction_direction == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
                                                                     {% endif %}
                                                                 </a>
                                                             </th>
                                                             <th class="text-nowrap text-center">
                                                                 <a class="text-decoration-none text-dark fw-bold d-flex align-items-center justify-content-center"
-                                                                   href="?tab=user&order_by_user=unsafe{% if ordering_user == 'unsafe' and order_direction_user == 'asc' %}&direction_user=desc{% else %}&direction_user=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif%}">
+                                                                   href="?tab=user&order_by_user=unsafe{% if ordering_user == 'unsafe' and order_direction_direction == 'asc' %}&direction_direction=desc{% else %}&direction_direction=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif%}">
                                                                     ناایمن
                                                                     {% if ordering_user == 'unsafe' %}
-                                                                        <i class="fas {% if order_direction_user == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
+                                                                        <i class="fas {% if order_direction_direction == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
                                                                     {% endif %}
                                                                 </a>
                                                             </th>
@@ -424,7 +434,7 @@
                                                             <tr>
                                                                 <td class="text-nowrap text-center">{{ item.full_name }} ({{ item.personnel_code }})</td>
                                                                 <td class="text-nowrap text-center">{{ item.total }}</td>
-                                                                <td class="text-nowrap text-center">{{ item.total_percentage|floatformat:2 }}%</td>
+                                                                <td class="text-nowrap text-center">  {{ item.total_percentage|floatformat:2 }}%</td>
                                                                 <td class="text-nowrap text-center">{{ item.safe }}</td>
                                                                 <td class="text-nowrap text-center">{{ item.unsafe }}</td>
                                                                 <td class="text-nowrap text-center">{{ item.safe_percentage|floatformat:2 }}%</td>
@@ -435,7 +445,11 @@
                                                     </table>
                                                 </div>
 
-                                                {% include 'anomalis/pagination.html' with paginator=paginator_user page=anomalies_by_user_paginated tab='user' order_by=ordering_user direction=order_direction_user items_per_page=items_per_page %}
+                                                {% include 'anomalis/pagination.html' with paginator=paginator_user page=anomalies_by_user_paginated tab='user' order_by=ordering_user direction=order_direction_direction items_per_page=items_per_page %}
+
+                                                <div id="userChartContainer">
+                                                    <canvas id="userChart"></canvas>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -452,46 +466,46 @@
                                                         <tr>
                                                             <th class="text-nowrap text-center">
                                                                 <a class="text-decoration-none text-dark fw-bold d-flex align-items-center justify-content-center"
-                                                                   href="?tab=description&order_by_description=anomalydescription__description{% if ordering_description == 'anomalydescription__description' and order_direction_description == 'asc' %}&direction_description=desc{% else %}&direction_description=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
+                                                                   href="?tab=description&order_by_description=anomalydescription__description{% if ordering_description == 'anomalydescription__description' and order_direction_direction == 'asc' %}&direction_direction=desc{% else %}&direction_direction=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
                                                                     شرح
                                                                     {% if ordering_description == 'anomalydescription__description' %}
-                                                                        <i class="fas {% if order_direction_description == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
+                                                                        <i class="fas {% if order_direction_direction == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
                                                                     {% endif %}
                                                                 </a>
                                                             </th>
                                                             <th class="text-nowrap text-center">
                                                                 <a class="text-decoration-none text-dark fw-bold d-flex align-items-center justify-content-center"
-                                                                   href="?tab=description&order_by_description=total{% if ordering_description == 'total' and order_direction_description == 'asc' %}&direction_description=desc{% else %}&direction_description=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
+                                                                   href="?tab=description&order_by_description=total{% if ordering_description == 'total' and order_direction_direction == 'asc' %}&direction_direction=desc{% else %}&direction_direction=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
                                                                     مجموع
                                                                     {% if ordering_description == 'total' %}
-                                                                        <i class="fas {% if order_direction_description == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
+                                                                        <i class="fas {% if order_direction_direction == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
                                                                     {% endif %}
                                                                 </a>
                                                             </th>
                                                             <th class="text-nowrap text-center">
                                                                 <a class="text-decoration-none text-dark fw-bold d-flex align-items-center justify-content-center"
-                                                                   href="?tab=description&order_by_description=total{% if ordering_description == 'total' and order_direction_description == 'asc' %}&direction_description=desc{% else %}&direction_description=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
+                                                                   href="?tab=description&order_by_description=total{% if ordering_description == 'total' and order_direction_direction == 'asc' %}&direction_direction=desc{% else %}&direction_direction=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
                                                                     درصد از کل
                                                                     {% if ordering_description == 'total' %}
-                                                                        <i class="fas {% if order_direction_description == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
+                                                                        <i class="fas {% if order_direction_direction == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
                                                                     {% endif %}
                                                                 </a>
                                                             </th>
                                                             <th class="text-nowrap text-center">
                                                                 <a class="text-decoration-none text-dark fw-bold d-flex align-items-center justify-content-center"
-                                                                   href="?tab=description&order_by_description=safe{% if ordering_description == 'safe' and order_direction_description == 'asc' %}&direction_description=desc{% else %}&direction_description=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
+                                                                   href="?tab=description&order_by_description=safe{% if ordering_description == 'safe' and order_direction_direction == 'asc' %}&direction_direction=desc{% else %}&direction_direction=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
                                                                     ایمن
                                                                     {% if ordering_description == 'safe' %}
-                                                                        <i class="fas {% if order_direction_description == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
+                                                                        <i class="fas {% if order_direction_direction == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
                                                                     {% endif %}
                                                                 </a>
                                                             </th>
                                                             <th class="text-nowrap text-center">
                                                                 <a class="text-decoration-none text-dark fw-bold d-flex align-items-center justify-content-center"
-                                                                   href="?tab=description&order_by_description=unsafe{% if ordering_description == 'unsafe' and order_direction_description == 'asc' %}&direction_description=desc{% else %}&direction_description=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
+                                                                   href="?tab=description&order_by_description=unsafe{% if ordering_description == 'unsafe' and order_direction_direction == 'asc' %}&direction_direction=desc{% else %}&direction_direction=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
                                                                     ناایمن
                                                                     {% if ordering_description == 'unsafe' %}
-                                                                        <i class="fas {% if order_direction_description == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
+                                                                        <i class="fas {% if order_direction_direction == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
                                                                     {% endif %}
                                                                 </a>
                                                             </th>
@@ -515,7 +529,11 @@
                                                     </table>
                                                 </div>
 
-                                                {% include 'anomalis/pagination.html' with paginator=paginator_description page=anomaly_frequency_by_description_paginated tab='description' order_by=ordering_description direction=order_direction_description items_per_page=items_per_page %}
+                                                {% include 'anomalis/pagination.html' with paginator=paginator_description page=anomaly_frequency_by_description_paginated tab='description' order_by=ordering_description direction=order_direction_direction items_per_page=items_per_page %}
+
+                                                <div id="descriptionChartContainer">
+                                                    <canvas id="descriptionChart"></canvas>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -606,19 +624,19 @@
                                                         <tr>
                                                             <th class="text-nowrap text-center">
                                                                 <a class="text-decoration-none text-dark fw-bold d-flex align-items-center justify-content-center"
-                                                                   href="?tab=type&order_by_type=anomalytype__type{% if ordering_type == 'anomalytype__type' and order_direction_type == 'asc' %}&direction_type=desc{% else %}&direction_type=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
+                                                                   href="?tab=type&order_by_type=anomalytype__type{% if ordering_type == 'anomalytype__type' and order_direction_direction == 'asc' %}&direction_direction=desc{% else %}&direction_direction=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
                                                                     نوع ناهنجاری
                                                                     {% if ordering_type == 'anomalytype__type' %}
-                                                                        <i class="fas {% if order_direction_type == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
+                                                                        <i class="fas {% if order_direction_direction == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
                                                                     {% endif %}
                                                                 </a>
                                                             </th>
                                                             <th class="text-nowrap text-center">
                                                                 <a class="text-decoration-none text-dark fw-bold d-flex align-items-center justify-content-center"
-                                                                   href="?tab=type&order_by_type=total{% if ordering_type == 'total' and order_direction_type == 'asc' %}&direction_type=desc{% else %}&direction_type=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
+                                                                   href="?tab=type&order_by_type=total{% if ordering_type == 'total' and order_direction_direction == 'asc' %}&direction_direction=desc{% else %}&direction_direction=asc{% endif %}&items_per_page={{ items_per_page }}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}">
                                                                     مجموع
                                                                     {% if ordering_type == 'total' %}
-                                                                        <i class="fas {% if order_direction_type == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
+                                                                        <i class="fas {% if order_direction_direction == 'asc' %}fa-sort-up{% else %}fa-sort-down{% endif %} ms-1"></i>
                                                                     {% endif %}
                                                                 </a>
                                                             </th>
@@ -636,7 +654,11 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        {% include 'anomalis/pagination.html' with paginator=paginator_type page=anomaly_count_by_type tab='type' order_by=ordering_type direction=order_direction_type items_per_page=items_per_page %}
+                                        {% include 'anomalis/pagination.html' with paginator=paginator_type page=anomaly_count_by_type tab='type' order_by=ordering_type direction=order_direction_direction items_per_page=items_per_page %}
+
+                                        <div id="typeChartContainer">
+                                            <canvas id="typeChart"></canvas>
+                                        </div>
                                     </div>
                                 </div>
                                 <!--end::Tab Content-->
@@ -671,32 +693,75 @@
     <!--end::notification drawer-->
 {% endblock %}
 
-{% block scripts %}
-    <script>
-        function updateItemsPerPage(selectElement) {
-            var itemsPerPage = selectElement.value;
-            var currentUrl = window.location.href;
-            var url = new URL(currentUrl);
-
-            // Get all existing parameters
-            var params = new URLSearchParams(url.search);
-
-            // Set the new items_per_page parameter
-            params.set('items_per_page', itemsPerPage);
-
-            // Set the new search string
-            url.search = params.toString();
-
-            window.location.href = url.href;
-        }
-    </script>
-    <script>
-        $(document).ready(function() {
-            $('.jalali-date-picker').persianDatepicker({
-                format: 'YYYY/MM/DD',
-                initialValueType: 'persian',
-                autoClose: true
-            });
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="path/to/persianDatepicker.js"></script>
+<script>
+    $(document).ready(function() {
+        $('.jalali-date-picker').persianDatepicker({
+            format: 'YYYY/MM/DD',
+            initialValueType: 'persian',
+            autoClose: true
         });
+    });
+</script>
+    <script>
+        console.log('Script is running');
+        window.onload = function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const startDate = urlParams.get('start_date') || '';
+            const endDate = urlParams.get('end_date') || '';
+            const tab = urlParams.get('tab') || 'unit';
+            let api_url = `/anomalis/reports/api/?tab=${tab}`
+            if(startDate){
+                api_url+=`&start_date=${startDate}`
+            }
+            if(endDate){
+                api_url+=`&end_date=${endDate}`
+            }
+            fetch(api_url)
+                .then(response => response.json())
+                .then(data => {
+                    // Unit chart
+                    renderChart('unitChart', data.anomalies_by_unit, 'unit', 'unitChartContainer');
+                    // Location chart
+                    renderChart('locationChart', data.anomalies_by_location, 'location', 'locationChartContainer');
+                    //shift chart
+                    renderChart('shiftChart', data.anomalies_by_shift, 'shift', 'shiftChartContainer');
+                    //User chart
+                    renderChart('userChart', data.anomalies_by_user, 'user', 'userChartContainer');
+                    //description chart
+                    renderChart('descriptionChart', data.anomaly_frequency_by_description, 'description', 'descriptionChartContainer');
+                    //type chart
+                    renderChart('typeChart', data.anomaly_count_by_type, 'anomalytype__type', 'typeChartContainer');
+                })
+                .catch(error => console.error('Error fetching data:', error));
+        }
+
+        function renderChart(canvasId, chartData, label, chartContainerId) {
+            const labels = chartData.map(item => item[label]);
+            const totalValues = chartData.map(item => item.total);
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            const myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '# of Anomalies',
+                        data: totalValues,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    },
+                    responsive: true,
+                    maintainAspectRatio: false,
+                }
+            });
+        }
     </script>
 {% endblock %}

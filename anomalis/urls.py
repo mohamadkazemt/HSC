@@ -1,4 +1,4 @@
-# anomalis/urls.py
+# urls.py
 from django.urls import path
 from . import views
 from .views import get_anomalydescription, get_hse_type, get_corrective_action
@@ -96,11 +96,17 @@ URLS_WITH_LABELS = [
         "name": "anomaly_reports",
         "label": "انومالی_گزارش‌ها"
     },
-{
+    {
         "path": "export_report_excel/",
         "view": views.export_report_to_excel,
         "name": "export_report_to_excel",
         "label": "انومالی_گزارش‌ها (صادرات به اکسل)"
+    },
+    {
+        "path": "reports/api/",
+        "view": views.anomaly_reports_api,
+        "name": "anomaly_reports_api",
+        "label": "انومالی_دریافت داده‌های نمودار (api)"
     },
 ]
 
