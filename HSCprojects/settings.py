@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     "accounts.apps.AccountsConfig",
     "anomalis.apps.AnomalisConfig",
     'django.contrib.humanize',
-
+    'corsheaders',
 
     "django_select2",
     'analytics.apps.AnalyticsConfig',
@@ -77,6 +77,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
 ]
 
 ROOT_URLCONF = 'HSCprojects.urls'
@@ -255,3 +257,34 @@ JALALI_DATE_DEFAULTS = {
         }
     },
 }
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8000',    # برای محیط لوکال (اگر از پورت 8000 استفاده می‌کنید)
+    'http://127.0.0.1:8000',  # برای محیط لوکال (اگر از پورت 8000 استفاده می‌کنید)
+    'https://miepcoj.ir',       # برای محیط سرور
+    'https://www.miepcoj.ir',    # برای محیط سرور
+]
+
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+    # سایر هدرهایی که فرانت‌اند شما استفاده می‌کند
+]
+
+# اگر نیاز دارید که مرورگر کوکی‌ها را ارسال کند (مثلاً برای احراز هویت):
+CORS_ALLOW_CREDENTIALS = True
