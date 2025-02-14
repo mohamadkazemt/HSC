@@ -216,7 +216,7 @@
                                                 <!-- Pagination -->
                                                 {% include 'anomalis/pagination.html' with paginator=paginator_unit page=anomalies_by_unit_paginated tab='unit' order_by=ordering_unit direction=order_direction_unit items_per_page=items_per_page %}
 
-                                                <div id="unitChartContainer">
+                                                <div style="height: 400px;" id="unitChartContainer">
                                                     <canvas id="unitChart"></canvas>
                                                 </div>
 
@@ -290,7 +290,7 @@
 
                                                 {% include 'anomalis/pagination.html' with paginator=paginator_location page=anomalies_by_location_paginated tab='location' order_by=ordering_location direction=order_direction_direction items_per_page=items_per_page %}
 
-                                                <div id="locationChartContainer">
+                                                <div style="height: 400px;" id="locationChartContainer">
                                                     <canvas id="locationChart"></canvas>
                                                 </div>
                                             </div>
@@ -362,7 +362,7 @@
                                                 </div>
                                                 {% include 'anomalis/pagination.html' with paginator=paginator_shift page=anomalies_by_shift_paginated tab='shift' order_by=ordering_shift direction=order_direction_direction items_per_page=items_per_page %}
 
-                                                <div id="shiftChartContainer">
+                                                <div style="height: 400px;" id="shiftChartContainer">
                                                     <canvas id="shiftChart"></canvas>
                                                 </div>
                                             </div>
@@ -447,7 +447,7 @@
 
                                                 {% include 'anomalis/pagination.html' with paginator=paginator_user page=anomalies_by_user_paginated tab='user' order_by=ordering_user direction=order_direction_direction items_per_page=items_per_page %}
 
-                                                <div id="userChartContainer">
+                                                <div style="height: 400px;" id="userChartContainer">
                                                     <canvas id="userChart"></canvas>
                                                 </div>
                                             </div>
@@ -531,7 +531,7 @@
 
                                                 {% include 'anomalis/pagination.html' with paginator=paginator_description page=anomaly_frequency_by_description_paginated tab='description' order_by=ordering_description direction=order_direction_direction items_per_page=items_per_page %}
 
-                                                <div id="descriptionChartContainer">
+                                                <div style="height: 400px;" id="descriptionChartContainer">
                                                     <canvas id="descriptionChart"></canvas>
                                                 </div>
                                             </div>
@@ -656,7 +656,7 @@
                                         </div>
                                         {% include 'anomalis/pagination.html' with paginator=paginator_type page=anomaly_count_by_type tab='type' order_by=ordering_type direction=order_direction_direction items_per_page=items_per_page %}
 
-                                        <div id="typeChartContainer">
+                                        <div style="height: 400px;" id="typeChartContainer">
                                             <canvas id="typeChart"></canvas>
                                         </div>
                                     </div>
@@ -694,63 +694,95 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="path/to/persianDatepicker.js"></script>
-<script>
-    $(document).ready(function() {
-        $('.jalali-date-picker').persianDatepicker({
-            format: 'YYYY/MM/DD',
-            initialValueType: 'persian',
-            autoClose: true
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="path/to/persianDatepicker.js"></script>  <!-- Make sure this path is correct -->
+    <script>
+        $(document).ready(function() {
+            $('.jalali-date-picker').persianDatepicker({
+                format: 'YYYY/MM/DD',
+                initialValueType: 'persian',
+                autoClose: true
+            });
         });
-    });
-</script>
+    </script>
     <script>
         console.log('Script is running');
         window.onload = function() {
             const urlParams = new URLSearchParams(window.location.search);
             const startDate = urlParams.get('start_date') || '';
             const endDate = urlParams.get('end_date') || '';
-            const tab = urlParams.get('tab') || 'unit';
-            let api_url = `/anomalis/reports/api/?tab=${tab}`
+            const tab = urlParams.get('tab') || 'unit'; // Not really used, but good for consistency
+            let api_url = `/anomalis/reports/api/?` // No need for tab in the API URL anymore
+
             if(startDate){
-                api_url+=`&start_date=${startDate}`
+                api_url+=`start_date=${startDate}&`
             }
             if(endDate){
-                api_url+=`&end_date=${endDate}`
+                api_url+=`end_date=${endDate}&`
             }
+            // Remove trailing & if it exists
+            api_url = api_url.replace(/&$/, '');
+
             fetch(api_url)
                 .then(response => response.json())
                 .then(data => {
-                    // Unit chart
-                    renderChart('unitChart', data.anomalies_by_unit, 'unit', 'unitChartContainer');
-                    // Location chart
-                    renderChart('locationChart', data.anomalies_by_location, 'location', 'locationChartContainer');
-                    //shift chart
-                    renderChart('shiftChart', data.anomalies_by_shift, 'shift', 'shiftChartContainer');
-                    //User chart
-                    renderChart('userChart', data.anomalies_by_user, 'user', 'userChartContainer');
-                    //description chart
-                    renderChart('descriptionChart', data.anomaly_frequency_by_description, 'description', 'descriptionChartContainer');
-                    //type chart
-                    renderChart('typeChart', data.anomaly_count_by_type, 'anomalytype__type', 'typeChartContainer');
+                    // --- Now, access the data directly ---
+                    renderChart('unitChart', data.anomalies_by_unit, 'unit',  'rgba(54, 162, 235, 0.5)',  'rgba(75, 192, 192, 0.5)', 'rgba(255, 99, 132, 0.5)');
+                    renderChart('locationChart', data.anomalies_by_location, 'location__name', 'rgba(54, 162, 235, 0.5)', 'rgba(75, 192, 192, 0.5)', 'rgba(255, 99, 132, 0.5)');
+                    renderChart('shiftChart', data.anomalies_by_shift, 'shift', 'rgba(54, 162, 235, 0.5)',  'rgba(75, 192, 192, 0.5)', 'rgba(255, 99, 132, 0.5)');
+                    renderChart('userChart', data.anomalies_by_user, 'full_name', 'rgba(54, 162, 235, 0.5)',  'rgba(75, 192, 192, 0.5)', 'rgba(255, 99, 132, 0.5)', (item) => `${item.full_name} (${item.personnel_code})`);
+                    renderChart('descriptionChart', data.anomaly_frequency_by_description, 'anomalydescription__description', 'rgba(54, 162, 235, 0.5)',  'rgba(75, 192, 192, 0.5)', 'rgba(255, 99, 132, 0.5)');
+                    renderChart('typeChart', data.anomaly_count_by_type, 'anomalytype__type', 'rgba(54, 162, 235, 0.5)'); // Only one dataset for type
                 })
                 .catch(error => console.error('Error fetching data:', error));
         }
 
-        function renderChart(canvasId, chartData, label, chartContainerId) {
-            const labels = chartData.map(item => item[label]);
-            const totalValues = chartData.map(item => item.total);
+
+
+        function renderChart(canvasId, chartData, labelField, color1, color2 = null, color3 = null, labelCallback = null) {
+            const labels = chartData.map(item => {
+                if (labelCallback) {
+                    return labelCallback(item);  // Use callback if provided
+                }
+                return item[labelField];  // Directly access if no callback
+
+            });
+
+            const datasets = [
+                {
+                    label: 'مجموع',
+                    data: chartData.map(item => item.total),
+                    backgroundColor: color1,
+                    borderWidth: 1
+                }
+            ];
+            // Add safe and unsafe datasets if color2 and color3 are defined.
+            if(color2 && color3){
+                datasets.push(
+                    {
+                        label: 'ایمن',
+                        data: chartData.map(item => item.safe),
+                        backgroundColor: color2,
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'ناایمن',
+                        data: chartData.map(item => item.unsafe),
+                        backgroundColor: color3,
+                        borderWidth: 1
+                    }
+
+                )
+            }
+
+
             const ctx = document.getElementById(canvasId).getContext('2d');
             const myChart = new Chart(ctx, {
-                type: 'bar',
+                type: 'bar',  //  bar chart
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: '# of Anomalies',
-                        data: totalValues,
-                        borderWidth: 1
-                    }]
+                    datasets: datasets,
                 },
                 options: {
                     scales: {
