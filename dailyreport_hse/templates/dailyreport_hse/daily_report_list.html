@@ -1,104 +1,102 @@
 ﻿{% extends 'base.html' %}
-
-
 {% load static %}
 {% load jalali %}
 
-
 {% block content %}
-    <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
-        <!--begin::Page-->
-        <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
-            <!--begin::Header-->
-            {% include 'header.html' %}
-            <!--end::Header-->
-            <!--begin::Wrapper-->
-            <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
-                <!--begin::Sidebar-->
-                {% include 'sidebar.html' %}
-                <!--end::Sidebar-->
-                <!--begin::اصلی-->
-                <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
-                    <!--begin::Content wrapper-->
-                    <div class="d-flex flex-column flex-column-fluid">
-                        <!--begin::Toolbar-->
-                        {% include 'toolbar.html' %}
-                        <!--end::Toolbar-->
-                        <!--begin::Content-->
-                        <div id="kt_app_content" class="app-content flex-column-fluid">
-                            <!--begin::Content container-->
-                            <div id="kt_app_content_container" class="app-container container-fluid">
-                                <!--begin::Row-->
-                                <div class="row g-5 g-xl-8">
-
-                                    <div class="card card-flush mt-6 mt-xl-9">
-                                        <!--begin::کارت header-->
-                                        <div class="card-header mt-5">
-                                            <!--begin::کارت title-->
-                                            <div class="card-title flex-column">
-                                                <h3 class="fw-bold mb-1">لیست گزارش‌های روزانه</h3>
-                                                <div class="fs-6 text-gray-500">مجموع گزارش‌های ثبت‌شده</div>
-                                            </div>
-                                            <!--begin::کارت toolbar-->
-                                            <div class="card-toolbar my-1">
-                                                <form method="get" action="{% url 'dailyreport_hse:daily_report_list' %}" class="d-flex align-items-center flex-wrap">
-                                                    <div class="me-2">
-                                                        <select name="shift" class="form-select form-select-solid form-select-sm">
-                                                            <option value="همه" {% if shift_filter == 'همه' %}selected{% endif %}>همه شیفت‌ها</option>
-                                                            <option value="صبح" {% if shift_filter == 'صبح' %}selected{% endif %}>شیفت صبح</option>
-                                                            <option value="عصر" {% if shift_filter == 'عصر' %}selected{% endif %}>شیفت عصر</option>
-                                                            <option value="شب" {% if shift_filter == 'شب' %}selected{% endif %}>شیفت شب</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="me-2">
-                                                        <select name="group" class="form-select form-select-solid form-select-sm">
-                                                            <option value="همه" {% if group_filter == 'همه' %}selected{% endif %}>همه گروه‌ها</option>
-                                                            <option value="گروه A" {% if group_filter == 'گروه A' %}selected{% endif %}>گروه A</option>
-                                                            <option value="گروه B" {% if group_filter == 'گروه B' %}selected{% endif %}>گروه B</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="me-2">
-                                                        <input type="text" name="search" class="form-control form-control-solid form-select-sm" placeholder="جستجو" value="{{ search_query }}">
-                                                    </div>
-                                                    <div class="me-2">
-                                                        <button type="submit" class="btn btn-primary">اعمال فیلترها</button>
-                                                    </div>
-                                                </form>
-                                            </div>
+<div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+    <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+        {% include 'header.html' %}
+        <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+            {% include 'sidebar.html' %}
+            <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                <div class="d-flex flex-column flex-column-fluid">
+                    {% include 'toolbar.html' %}
+                    <div id="kt_app_content" class="app-content flex-column-fluid">
+                        <div id="kt_app_content_container" class="app-container container-fluid">
+                            <div class="row g-5 g-xl-8">
+                                <div class="card card-flush mt-6 mt-xl-9">
+                                    <div class="card-header mt-5">
+                                        <div class="card-title flex-column">
+                                            <h3 class="fw-bold mb-1">لیست گزارش‌های روزانه</h3>
+                                            <div class="fs-6 text-gray-500">مجموع گزارش‌های ثبت‌شده</div>
                                         </div>
-                                        <!--begin::کارت body-->
-                                        <div class="card-body pt-0">
-                                            <div class="table-responsive">
-                                                <table id="kt_profile_overview_table" class="table table-row-bordered table-row-dashed gy-4 align-middle fw-bold">
-                                                    <thead class="fs-7 text-gray-500 text-uppercase">
+                                         <!-- فرم فیلتر -->
+                                        <div class="card-toolbar">
+                                            <form method="get" action="{% url 'dailyreport_hse:daily_report_list' %}" class="d-flex flex-wrap align-items-center">
+                                                <div class="mb-3 me-3">
+                                                    <label for="shift-filter" class="form-label">شیفت:</label>
+                                                    <select name="shift" id="shift-filter" class="form-select form-select-sm form-select-solid" data-control="select2" data-placeholder="انتخاب شیفت">
+                                                        <option value="همه" {% if shift_filter == 'همه' %}selected{% endif %}>همه شیفت‌ها</option>
+                                                        {% for choice in view.model.SHIFT_CHOICES %}
+                                                        <option value="{{ choice.0 }}" {% if shift_filter == choice.0 %}selected{% endif %}>{{ choice.1 }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+
+                                                <div class="mb-3 me-3">
+                                                    <label for="group-filter" class="form-label">گروه:</label>
+                                                    <select name="group" id="group-filter" class="form-select form-select-sm form-select-solid"  data-control="select2" data-placeholder="انتخاب گروه">
+                                                        <option value="همه" {% if group_filter == 'همه' %}selected{% endif %}>همه گروه‌ها</option>
+                                                        {% for choice in view.model.GROUP_CHOICES %}
+                                                            <option value="{{ choice.0 }}" {% if group_filter == choice.0 %}selected{% endif %}>{{ choice.1 }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+
+                                                <div class="mb-3 me-3">
+                                                    <label for="search-input" class="form-label">جستجو:</label>
+                                                    <div class="input-group input-group-sm">
+                                                        <input type="text" name="search" id="search-input" class="form-control form-control-solid" placeholder="جستجو..." value="{{ search_query }}">
+                                                         <button type="submit" class="btn btn-primary">
+                                                            <i class="fas fa-search"></i>  <!-- آیکون جستجو -->
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                  <div class="mb-3 me-3">
+                                                    <a href="{% url 'dailyreport_hse:daily_report_list' %}" class="btn btn-secondary btn-sm mt-md-4">
+                                                        <i class="fas fa-sync-alt"></i>  <!-- آیکون ریست -->
+                                                        پاکسازی فیلترها
+                                                    </a>
+                                                </div>
+
+                                            </form>
+                                        </div>
+                                    </div>
+                                    <div class="card-body pt-0">
+                                        <div class="table-responsive">
+                                            <table id="kt_profile_overview_table" class="table table-row-bordered table-row-dashed gy-4 align-middle fw-bold">
+                                                <thead class="fs-7 text-gray-500 text-uppercase">
+                                                <tr>
+                                                    <th class="min-w-30px">شماره گزارش</th>
+                                                    <th class="min-w-250px">افسر ایمنی</th>
+                                                    <th class="min-w-90px">شیفت کاری</th>
+                                                    <th class="min-w-90px">گروه کاری</th>
+                                                    <th class="min-w-150px">تاریخ ایجاد</th>
+                                                    <th class="min-w-50px text-end">عملیات</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody class="fs-6">
+                                                {% for report in daily_reports %}
                                                     <tr>
-                                                        <th class="min-w-30px">ردیف</th>
-                                                        <th class="min-w-250px">افسر ایمنی</th>
-                                                        <th class="min-w-90px">شیفت کاری</th>
-                                                        <th class="min-w-90px">گروه کاری</th>
-                                                        <th class="min-w-150px">تاریخ ایجاد</th>
-                                                        <th class="min-w-50px text-end">عملیات</th>
+                                                        <td>{{ report.id }}</td>
+                                                        <td>
+                                                            {{ report.user.first_name }} {{ report.user.last_name }}
+                                                             ({{ report.user.userprofile.personnel_code }})
+                                                        </td>
+                                                        <td>{{ report.get_shift_display }}</td>
+                                                        <td>{{ report.get_work_group_display }}</td>
+                                                        <td>{{ report.created_at|to_jalali }}</td>
+                                                        <td class="text-end">
+                                                            <a href="{% url 'dailyreport_hse:daily_report_detail' report.id %}" class="btn btn-light btn-sm">نمایش</a>
+                                                        </td>
                                                     </tr>
-                                                    </thead>
-                                                    <tbody class="fs-6">
-                                                    {% for report in daily_reports %}
-                                                        <tr>
-                                                            <td>{{ forloop.counter }}</td>
-                                                            <td>{{ report.user.username }}</td>
-                                                            <td>{{ report.get_shift_display }}</td>
-                                                            <td>{{ report.get_work_group_display }}</td>
-                                                            <td>{{ report.created_at|to_jalali }}</td>
-                                                            <td class="text-end">
-                                                                <a href="{% url 'dailyreport_hse:daily_report_detail' report.id %}" class="btn btn-light btn-sm">نمایش</a>
-                                                            </td>
-                                                        </tr>
-                                                    {% empty %}
-                                                        <tr>
-                                                            <td colspan="6" class="text-center">گزارشی یافت نشد.</td>
-                                                        </tr>
-                                                    {% endfor %}
-                                                    </tbody>
-                                                </table>
+                                                {% empty %}
+                                                    <tr>
+                                                        <td colspan="6" class="text-center">گزارشی یافت نشد.</td>
+                                                    </tr>
+                                                {% endfor %}
+                                                </tbody>
+                                            </table>
 
                                                 <!--شروع::شماره صفحات-->
                                                 <div class="pagination">

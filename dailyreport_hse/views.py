@@ -34,6 +34,9 @@ from django.contrib import messages
 import logging
 from django.core.exceptions import ValidationError
 from django.shortcuts import render
+from django.views.generic import TemplateView
+from django.contrib.auth.mixins import LoginRequiredMixin
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -192,14 +195,7 @@ class CreateDailyReportView(APIView):
             )
 
 
-from django.shortcuts import render
-from django.views.generic import TemplateView
-from django.contrib.auth.mixins import LoginRequiredMixin
-from permissions.utils import class_permission_required
-from BaseInfo.models import MiningBlock, MiningMachine, Dump
-import logging
 
-logger = logging.getLogger(__name__)
 
 
 @class_permission_required("daily_report_form")
@@ -227,45 +223,48 @@ class DailyReportFormView(LoginRequiredMixin, TemplateView):
         context['dumps'] = Dump.objects.all()
         return context
 
-@class_permission_required("daily_report_list")
 
+
+
+
+@class_permission_required("daily_report_list")
 class DailyReportListView(LoginRequiredMixin, ListView):
     model = DailyReport
-    template_name = "dailyreport_hse/daily_report_list.html"  # نام فایل قالب
-    context_object_name = "daily_reports"  # نام متغیر در قالب
-    paginate_by = 10  # تعداد گزارش‌ها در هر صفحه
+    template_name = "dailyreport_hse/daily_report_list.html"
+    context_object_name = "daily_reports"
+    paginate_by = 10
 
     def get_queryset(self):
-        # دریافت تمام گزارش‌ها
         queryset = super().get_queryset()
 
-        # دریافت پارامترهای فیلتر از request
-        shift = self.request.GET.get("shift", "همه")
-        group = self.request.GET.get("group", "همه")
-        search_query = self.request.GET.get("search", "")
+        # دریافت پارامترهای فیلتر
+        shift = self.request.GET.get("shift")
+        group = self.request.GET.get("group")
+        search_query = self.request.GET.get("search")
 
-        # اعمال فیلتر برای شیفت کاری
-        if shift != "همه":
+        # اعمال فیلترها (فقط اگر مقداری برای فیلتر وارد شده باشد)
+        if shift and shift != "همه":
             queryset = queryset.filter(shift=shift)
-
-        # اعمال فیلتر برای گروه کاری
-        if group != "همه":
+        if group and group != "همه":
             queryset = queryset.filter(work_group=group)
 
-        # اعمال فیلتر برای جستجو
+        # اعمال فیلتر جستجو (بهبود یافته)
         if search_query:
             queryset = queryset.filter(
                 Q(user__username__icontains=search_query) |
+                Q(user__first_name__icontains=search_query) |
+                Q(user__last_name__icontains=search_query) |
+                Q(user__userprofile__personnel_code__icontains=search_query) |
                 Q(supervisor_comments__icontains=search_query) |
                 Q(shift__icontains=search_query)
+                # میتونید فیلد های دیگه ای رو هم اینجا اضافه کنید
             )
 
-        # مرتب‌سازی بر اساس تاریخ ایجاد
         return queryset.order_by("-created_at")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # ارسال فیلترهای فعلی به قالب برای نمایش انتخاب‌ها
+        # ارسال فیلترهای فعلی به تمپلیت برای نمایش انتخاب‌ها
         context["shift_filter"] = self.request.GET.get("shift", "همه")
         context["group_filter"] = self.request.GET.get("group", "همه")
         context["search_query"] = self.request.GET.get("search", "")
