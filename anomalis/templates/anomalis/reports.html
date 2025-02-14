@@ -706,94 +706,147 @@
             });
         });
     </script>
-    <script>
-        console.log('Script is running');
-        window.onload = function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const startDate = urlParams.get('start_date') || '';
-            const endDate = urlParams.get('end_date') || '';
-            const tab = urlParams.get('tab') || 'unit'; // Not really used, but good for consistency
-            let api_url = `/anomalis/reports/api/?` // No need for tab in the API URL anymore
 
-            if(startDate){
-                api_url+=`start_date=${startDate}&`
-            }
-            if(endDate){
-                api_url+=`end_date=${endDate}&`
-            }
-            // Remove trailing & if it exists
-            api_url = api_url.replace(/&$/, '');
 
-            fetch(api_url)
-                .then(response => response.json())
-                .then(data => {
-                    // --- Now, access the data directly ---
-                    renderChart('unitChart', data.anomalies_by_unit, 'unit',  'rgba(54, 162, 235, 0.5)',  'rgba(75, 192, 192, 0.5)', 'rgba(255, 99, 132, 0.5)');
-                    renderChart('locationChart', data.anomalies_by_location, 'location__name', 'rgba(54, 162, 235, 0.5)', 'rgba(75, 192, 192, 0.5)', 'rgba(255, 99, 132, 0.5)');
-                    renderChart('shiftChart', data.anomalies_by_shift, 'shift', 'rgba(54, 162, 235, 0.5)',  'rgba(75, 192, 192, 0.5)', 'rgba(255, 99, 132, 0.5)');
-                    renderChart('userChart', data.anomalies_by_user, 'full_name', 'rgba(54, 162, 235, 0.5)',  'rgba(75, 192, 192, 0.5)', 'rgba(255, 99, 132, 0.5)', (item) => `${item.full_name} (${item.personnel_code})`);
-                    renderChart('descriptionChart', data.anomaly_frequency_by_description, 'anomalydescription__description', 'rgba(54, 162, 235, 0.5)',  'rgba(75, 192, 192, 0.5)', 'rgba(255, 99, 132, 0.5)');
-                    renderChart('typeChart', data.anomaly_count_by_type, 'anomalytype__type', 'rgba(54, 162, 235, 0.5)'); // Only one dataset for type
-                })
-                .catch(error => console.error('Error fetching data:', error));
+<script>
+    console.log('Script is running');
+    window.onload = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const startDate = urlParams.get('start_date') || '';
+        const endDate = urlParams.get('end_date') || '';
+        const tab = urlParams.get('tab') || 'unit'; // Not really used, but good for consistency
+        let api_url = `/anomalis/reports/api/?` // No need for tab in the API URL anymore
+
+        if(startDate){
+            api_url+=`start_date=${startDate}&`
         }
+        if(endDate){
+            api_url+=`end_date=${endDate}&`
+        }
+        // Remove trailing & if it exists
+        api_url = api_url.replace(/&$/, '');
+
+        fetch(api_url)
+            .then(response => response.json())
+            .then(data => {
+                // --- Now, access the data directly ---
+                renderChart('unitChart', data.anomalies_by_unit, 'unit',  'rgba(54, 162, 235, 0.5)',  'rgba(75, 192, 192, 0.5)', 'rgba(255, 99, 132, 0.5)');
+                renderChart('locationChart', data.anomalies_by_location, 'location__name', 'rgba(54, 162, 235, 0.5)', 'rgba(75, 192, 192, 0.5)', 'rgba(255, 99, 132, 0.5)');
+                renderChart('shiftChart', data.anomalies_by_shift, 'shift', 'rgba(54, 162, 235, 0.5)',  'rgba(75, 192, 192, 0.5)', 'rgba(255, 99, 132, 0.5)');
+                renderChart('userChart', data.anomalies_by_user, 'full_name', 'rgba(54, 162, 235, 0.5)',  'rgba(75, 192, 192, 0.5)', 'rgba(255, 99, 132, 0.5)', (item) => `${item.full_name} (${item.personnel_code})`);
+                renderChart('descriptionChart', data.anomaly_frequency_by_description, 'anomalydescription__description', 'rgba(54, 162, 235, 0.5)',  'rgba(75, 192, 192, 0.5)', 'rgba(255, 99, 132, 0.5)');
+                renderPieChart('typeChart', data.anomaly_count_by_type, 'anomalytype__type'); // Use renderPieChart
+            })
+            .catch(error => console.error('Error fetching data:', error));
+    }
 
 
 
-        function renderChart(canvasId, chartData, labelField, color1, color2 = null, color3 = null, labelCallback = null) {
-            const labels = chartData.map(item => {
-                if (labelCallback) {
-                    return labelCallback(item);  // Use callback if provided
-                }
-                return item[labelField];  // Directly access if no callback
+    function renderChart(canvasId, chartData, labelField, color1, color2 = null, color3 = null, labelCallback = null) {
+        const labels = chartData.map(item => {
+            if (labelCallback) {
+              return labelCallback(item);  // Use callback if provided
+            }
+            return item[labelField];  // Directly access if no callback
 
-            });
+        });
 
-            const datasets = [
+        const datasets = [
+          {
+            label: 'مجموع',
+            data: chartData.map(item => item.total),
+            backgroundColor: color1,
+            borderWidth: 1
+          }
+        ];
+        // Add safe and unsafe datasets if color2 and color3 are defined.
+        if(color2 && color3){
+            datasets.push(
                 {
-                    label: 'مجموع',
-                    data: chartData.map(item => item.total),
-                    backgroundColor: color1,
-                    borderWidth: 1
-                }
-            ];
-            // Add safe and unsafe datasets if color2 and color3 are defined.
-            if(color2 && color3){
-                datasets.push(
-                    {
-                        label: 'ایمن',
-                        data: chartData.map(item => item.safe),
-                        backgroundColor: color2,
-                        borderWidth: 1
-                    },
-                    {
-                        label: 'ناایمن',
-                        data: chartData.map(item => item.unsafe),
-                        backgroundColor: color3,
-                        borderWidth: 1
-                    }
+                label: 'ایمن',
+                data: chartData.map(item => item.safe),
+                backgroundColor: color2,
+                borderWidth: 1
+              },
+              {
+                label: 'ناایمن',
+                data: chartData.map(item => item.unsafe),
+                backgroundColor: color3,
+                borderWidth: 1
+              }
 
-                )
-            }
-
-
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            const myChart = new Chart(ctx, {
-                type: 'bar',  //  bar chart
-                data: {
-                    labels: labels,
-                    datasets: datasets,
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    },
-                    responsive: true,
-                    maintainAspectRatio: false,
-                }
-            });
+            )
         }
-    </script>
+
+
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        const myChart = new Chart(ctx, {
+            type: 'bar',  //  bar chart
+            data: {
+                labels: labels,
+                datasets: datasets,
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                responsive: true,
+                maintainAspectRatio: false,
+            }
+        });
+    }
+
+
+    // --- New function for Pie Charts ---
+    function renderPieChart(canvasId, chartData, labelField) {
+        const labels = chartData.map(item => item[labelField]);
+        const data = chartData.map(item => item.total);
+
+        // Generate an array of colors.  Make sure we have enough!
+        const backgroundColors = generateColors(chartData.length);
+
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        new Chart(ctx, {
+            type: 'pie', // Change to 'pie'
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: backgroundColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {  // Add a 'plugins' section for options specific to pie/doughnut charts
+                    legend: {
+                        position: 'top', // You can change legend position (top, bottom, left, right)
+                    },
+                    title: {
+                        display: true,
+                        text: 'Anomaly Types' // Optional title
+                    }
+                }
+            }
+        });
+    }
+
+
+    // Helper function to generate an array of colors
+    function generateColors(count) {
+        const colors = [];
+        for (let i = 0; i < count; i++) {
+            // Simple color generation - you might want a more sophisticated approach
+            const r = Math.floor(Math.random() * 255);
+            const g = Math.floor(Math.random() * 255);
+            const b = Math.floor(Math.random() * 255);
+            colors.push(`rgba(${r}, ${g}, ${b}, 0.6)`); // Use rgba for some transparency
+        }
+        return colors;
+    }
+
+</script>
 {% endblock %}
