@@ -474,13 +474,17 @@ def anomaly_detail_view(request, pk):
                     )
 
                 # ارسال اعلان به مدیران HSE
-                hse_group = get(name='مدیر HSE')
-                for user in hse_group.user_set.all():
-                    Notification.objects.create(
-                        user=user,
-                        message=f"یک کامنت جدید برای آنومالی {anomaly.id} ارسال شد.",
-                        url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
-                    )
+                try:
+                    hse_group = Group.objects.get(name='مدیر HSE')  # Corrected line
+                    for user in hse_group.user_set.all():
+                        Notification.objects.create(
+                            user=user,
+                            message=f"یک کامنت جدید برای آنومالی {anomaly.id} ارسال شد.",
+                            url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
+                        )
+                except Group.DoesNotExist:
+                   logger.error("Group 'مدیر HSE' does not exist.")
+                   messages.error(request, "گروه 'مدیر HSE' یافت نشد.")
 
                 # اگر کامنت یک پاسخ باشد، ارسال اعلان به نویسنده کامنت قبلی
                 if parent_id:
@@ -681,22 +685,6 @@ def get_all_sections_ajax(request):
 
 
 
-
-
-from django.shortcuts import render
-from .forms import AnomalyReportForm
-from django.db.models import Count, Q, F, CharField, Value
-from django.db.models.functions import Concat
-from django.core.paginator import Paginator, EmptyPage, InvalidPage
-from django.contrib.auth.decorators import login_required, user_passes_test
-
-import jdatetime
-from django.core.exceptions import ValidationError
-from .models import Anomaly, UserProfile
-from django.http import HttpResponse
-import openpyxl
-from django.db.models import IntegerField
-from django.db.models.functions import Cast
 
 
 from django.shortcuts import render
