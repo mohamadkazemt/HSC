@@ -74,7 +74,6 @@
 
     </style>
 {% endblock %}
-
 {% block content %}
     <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
         <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
@@ -105,11 +104,8 @@
                                                 {% csrf_token %}
                                                 <h2 class="fw-bold text-gray-900 mb-5"> کارکرد خودرو پیمانکاران</h2>
 
+                                               <!--  فیلد پیمانکار حذف شد-->
 
-                                                <div class="form-group">
-                                                    <label for="id_contractor" class="form-label">پیمانکار</label>
-                                                    {{ form.contractor }}
-                                                </div>
                                                 <div class="form-group">
                                                     <label for="id_vehicle" class="form-label">خودرو</label>
                                                     {{ form.vehicle }}
@@ -154,8 +150,39 @@
 {% endblock %}
 
 {% block extra_js %}
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // دیگر به Select2 برای پیمانکار نیازی نیست
+
+        $('#id_vehicle').select2({
+            placeholder: 'انتخاب خودرو',
+            allowClear: true,
+            dir: 'rtl',
+            ajax: {
+                url: '{% url "contractor_management:get_all_vehicles_ajax" %}',  // URL درست
+                dataType: 'json',
+                delay: 250,
+                data: function(params) {
+                    return {
+                        term: params.term
+                    };
+                },
+                processResults: function(data) {
+                    return {
+                        results: data
+                    };
+                },
+                cache: true
+            },
+            minimumInputLength: 0,
+        });
+      // دیگر به event handler  پیمانکار نیازی نیست
+      // $('#id_contractor').on('change', function() { ... });
+    });
+
+  //بقیه کد های مربوط به نمایش فیلد های ساعت و توضیحات
+   document.addEventListener('DOMContentLoaded', () => {
             const statusField = document.getElementById("id_status");
             const descriptionField = document.getElementById("description_field");
             const stopTimeFields = document.getElementById("stop_time_fields");
@@ -196,22 +223,5 @@
                 }, 3000); // زمان 3000 میلی ثانیه (3 ثانیه). می توانید این مقدار را تغییر دهید.
             });
         });
-           $(document).ready(function() {
-        $('#id_contractor').select2({
-            placeholder: 'انتخاب پیمانکار',
-            width: '100%',
-            dir: 'rtl'
-        });
-       $('#id_vehicle').select2({
-            placeholder: 'انتخاب خودرو',
-           width: '100%',
-            dir: 'rtl'
-        });
-
-       $('.django-select2').select2({
-            width: '100%',
-            dir: 'rtl'
-       });
-           });
-    </script>
+</script>
 {% endblock %}

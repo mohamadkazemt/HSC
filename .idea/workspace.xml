@@ -4,18 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="dailyreporthse26-10/3">
-      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0006_comment_file_alter_comment_comment.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/HSCprojects.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/HSCprojects.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="anomali-details27-10/2">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/forms.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/anomaly-details.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/anomaly-details.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/reports.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/reports.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/views.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/contractor_management/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/contractor_management/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/contractor_management/templates/contractor_management/report_form.html" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/templates/contractor_management/report_form.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/contractor_management/urls.py" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/urls.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/contractor_management/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/contractor_management/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/templates/toolbar.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/toolbar.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/sidebar.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/sidebar.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -391,14 +390,6 @@
       <workItem from="1739289397066" duration="3518000" />
       <workItem from="1739511148227" duration="8035000" />
     </task>
-    <task id="LOCAL-00019" summary="endamaliyat&amp;anomali">
-      <option name="closed" value="true" />
-      <created>1731248066115</created>
-      <option name="number" value="00019" />
-      <option name="presentableId" value="LOCAL-00019" />
-      <option name="project" value="LOCAL" />
-      <updated>1731248066115</updated>
-    </task>
     <task id="LOCAL-00020" summary="endamaliyat&amp;anomali1">
       <option name="closed" value="true" />
       <created>1731557275820</created>
@@ -749,7 +740,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۶۷" />
       <updated>1739549806371</updated>
     </task>
-    <option name="localTasksCounter" value="68" />
+    <task id="LOCAL‎−۰۰۰۶۸" summary="anomali-details27-10/2">
+      <option name="closed" value="true" />
+      <created>1739637836594</created>
+      <option name="number" value="LOCAL‎−۰۰۰۶۸" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۶۸" />
+      <updated>1739637836594</updated>
+    </task>
+    <option name="localTasksCounter" value="69" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -767,7 +765,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="dailyreport_hse232" />
     <MESSAGE value="dailyreport_hsemami" />
     <MESSAGE value="dailyreport_hsemami2" />
     <MESSAGE value="dailyreport_hsemami4" />
@@ -792,7 +789,8 @@
     <MESSAGE value="anomali-report26-10/1" />
     <MESSAGE value="anomali-report26-10/2" />
     <MESSAGE value="dailyreporthse26-10/3" />
-    <option name="LAST_COMMIT_MESSAGE" value="dailyreporthse26-10/3" />
+    <MESSAGE value="anomali-details27-10/2" />
+    <option name="LAST_COMMIT_MESSAGE" value="anomali-details27-10/2" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>

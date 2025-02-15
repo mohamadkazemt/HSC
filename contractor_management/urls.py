@@ -32,7 +32,13 @@ URLS_WITH_LABELS = [
         "label": "پیمانکاران-دریافت پیمانکاران",
 
     },
+    {
+        "path": "get-all-vehicles-ajax/",
+        "view": views.get_all_vehicles_ajax,
+        "name": "get_all_vehicles_ajax",
+        "label": "پیمانکاران-دریافت خودروها",
 
+    },
 
 ]
 

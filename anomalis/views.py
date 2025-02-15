@@ -1028,6 +1028,7 @@ def anomaly_reports(request):
     most_cooperative_officer = followup_officers.first()
 
     context = {
+        'title': 'تحیل گزارشات آنومالی',
         'tab': tab,
         'anomalies_by_unit_paginated': anomalies_by_unit_paginated,
         'ordering_unit': ordering_unit,
