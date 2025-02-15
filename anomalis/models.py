@@ -139,23 +139,26 @@ class Anomaly(models.Model):
 class Comment(models.Model):
     anomaly = models.ForeignKey(Anomaly, on_delete=models.CASCADE, related_name='comments', verbose_name="آنومالی")
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, verbose_name="کاربر")
-    comment = models.TextField(verbose_name="کامنت")
+    comment = models.TextField(verbose_name="کامنت", blank=True) # Allow empty comment if only a file is uploaded
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="تاریخ بروزرسانی")
     parent = models.ForeignKey('self', null=True, blank=True, related_name='replies', on_delete=models.CASCADE,
                                verbose_name="پاسخ به")  # Added parent field for replies
+    file = models.FileField(upload_to='comment_files/%Y/%m/%d/', verbose_name="فایل پیوست", blank=True, null=True)  # Add file field
 
     class Meta:
         verbose_name = "کامنت"
         verbose_name_plural = "کامنت ها"
 
     def __str__(self):
-        return str(self.comment[:30])
+        if self.comment:
+            return str(self.comment[:30])
+        elif self.file:
+            return f"File attached: {self.file.name}"  # Or some other appropriate message
+        else:
+            return "(No comment or file)"
 
     @property
     def is_reply(self):
         return self.parent is not None
-
-    def __str__(self):
-        return self.comment
 

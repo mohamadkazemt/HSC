@@ -4,14 +4,18 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="anomali_reports25-10/1">
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="dailyreporthse26-10/3">
+      <change afterPath="$PROJECT_DIR$/anomalis/migrations/0006_comment_file_alter_comment_comment.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/HSCprojects.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/HSCprojects.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/dataSources.local.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dataSources.local.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/create_shift_report.html" beforeDir="false" afterPath="$PROJECT_DIR$/OperationsShiftReports/templates/OperationsShiftReports/create_shift_report.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/forms.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/forms.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/models.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/models.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/anomalis/templates/anomalis/anomaly-details.html" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/templates/anomalis/anomaly-details.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/anomalis/views.py" beforeDir="false" afterPath="$PROJECT_DIR$/anomalis/views.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/db.sqlite3" beforeDir="false" afterPath="$PROJECT_DIR$/db.sqlite3" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/templates/toolbar.html" beforeDir="false" afterPath="$PROJECT_DIR$/templates/toolbar.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -26,9 +30,9 @@
       <list>
         <option value="CSS File" />
         <option value="package.json" />
-        <option value="HTML File" />
-        <option value="Python Script" />
         <option value="JavaScript File" />
+        <option value="Python Script" />
+        <option value="HTML File" />
       </list>
     </option>
   </component>
@@ -50,7 +54,7 @@
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/mohamadkazemt/HSC.git&quot;,
-    &quot;accountId&quot;: &quot;b1049974-7825-44ef-a60c-99f35deafaf1&quot;
+    &quot;accountId&quot;: &quot;4a4a0b77-3294-4afc-82ac-479cfd08feaa&quot;
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
@@ -87,7 +91,7 @@
     &quot;django.template.preview.state&quot;: &quot;SHOW_EDITOR&quot;,
     &quot;git-widget-placeholder&quot;: &quot;mkt&quot;,
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/shayan/Desktop/HSE/HSC&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/shayan/Desktop/HSE1/HSC/templates&quot;,
     &quot;list.type.of.created.stylesheet&quot;: &quot;CSS&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
@@ -100,11 +104,11 @@
 }</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\shayan\Desktop\HSE1\HSC\templates" />
       <recent name="C:\Users\shayan\Desktop\HSE\HSC" />
       <recent name="C:\Users\shayan\PycharmProjects\HSC\static" />
       <recent name="C:\Users\shayan\PycharmProjects\HSC\dailyreport_hse\templates\dailyreport_hse" />
       <recent name="C:\Users\shayan\PycharmProjects\HSC\leave_reports" />
-      <recent name="C:\Users\shayan\PycharmProjects\HSC\templates\admin" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="C:\Users\shayan\PycharmProjects\HSC\static\moment" />
@@ -156,7 +160,7 @@
         <env name="DJANGO_SETTINGS_MODULE" value="HSCprojects.settings" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="SDK_NAME" value="Python 3.12 (karavaran)" />
+      <option name="SDK_NAME" value="Python 3.12 (HSC) (3)" />
       <option name="WORKING_DIRECTORY" value="" />
       <option name="IS_MODULE_SDK" value="false" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
@@ -236,8 +240,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-PY-242.24807.21" />
-        <option value="bundled-python-sdk-00717045f1d3-399fe30bd8c1-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-242.24807.21" />
+        <option value="bundled-js-predefined-d6986cc7102b-5c90d61e3bab-JavaScript-PY-242.23726.102" />
+        <option value="bundled-python-sdk-5e1850174b45-399fe30bd8c1-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-242.23726.102" />
       </set>
     </attachedChunks>
   </component>
@@ -384,7 +388,8 @@
       <workItem from="1737127876992" duration="1284000" />
       <workItem from="1737210978942" duration="3062000" />
       <workItem from="1737526000783" duration="4494000" />
-      <workItem from="1739616928906" duration="763000" />
+      <workItem from="1739289397066" duration="3518000" />
+      <workItem from="1739511148227" duration="8035000" />
     </task>
     <task id="LOCAL-00019" summary="endamaliyat&amp;anomali">
       <option name="closed" value="true" />
@@ -716,33 +721,33 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۶۳" />
       <updated>1737951181921</updated>
     </task>
-    <task id="LOCAL‎−۰۰۰۶۴" summary="anomali_reports24-10/1">
+    <task id="LOCAL‎−۰۰۰۶۴" summary="anomali-report23-10/2">
       <option name="closed" value="true" />
-      <created>1739331790790</created>
+      <created>1739292335380</created>
       <option name="number" value="LOCAL‎−۰۰۰۶۴" />
       <option name="presentableId" value="LOCAL‎−۰۰۰۶۴" />
-      <updated>1739331790791</updated>
+      <updated>1739292335381</updated>
     </task>
-    <task id="LOCAL‎−۰۰۰۶۵" summary="anomali_reports24-10/2">
+    <task id="LOCAL‎−۰۰۰۶۵" summary="anomali-report26-10/1">
       <option name="closed" value="true" />
-      <created>1739334020237</created>
+      <created>1739512200124</created>
       <option name="number" value="LOCAL‎−۰۰۰۶۵" />
       <option name="presentableId" value="LOCAL‎−۰۰۰۶۵" />
-      <updated>1739334020237</updated>
+      <updated>1739512200125</updated>
     </task>
-    <task id="LOCAL‎−۰۰۰۶۶" summary="anomali_reports24-10/3">
+    <task id="LOCAL‎−۰۰۰۶۶" summary="anomali-report26-10/2">
       <option name="closed" value="true" />
-      <created>1739337167025</created>
+      <created>1739512787539</created>
       <option name="number" value="LOCAL‎−۰۰۰۶۶" />
       <option name="presentableId" value="LOCAL‎−۰۰۰۶۶" />
-      <updated>1739337167025</updated>
+      <updated>1739512787539</updated>
     </task>
-    <task id="LOCAL‎−۰۰۰۶۷" summary="anomali_reports24-10/4">
+    <task id="LOCAL‎−۰۰۰۶۷" summary="dailyreporthse26-10/3">
       <option name="closed" value="true" />
-      <created>1739352126009</created>
+      <created>1739549806371</created>
       <option name="number" value="LOCAL‎−۰۰۰۶۷" />
       <option name="presentableId" value="LOCAL‎−۰۰۰۶۷" />
-      <updated>1739352126009</updated>
+      <updated>1739549806371</updated>
     </task>
     <option name="localTasksCounter" value="68" />
     <servers />
@@ -783,11 +788,11 @@
     <MESSAGE value="mkt-update2" />
     <MESSAGE value="mkt-update3" />
     <MESSAGE value="mkt-leave-Edite" />
-    <MESSAGE value="anomali_reports24-10/1" />
-    <MESSAGE value="anomali_reports24-10/2" />
-    <MESSAGE value="anomali_reports24-10/3" />
-    <MESSAGE value="anomali_reports24-10/4" />
-    <option name="LAST_COMMIT_MESSAGE" value="anomali_reports24-10/4" />
+    <MESSAGE value="anomali-report23-10/2" />
+    <MESSAGE value="anomali-report26-10/1" />
+    <MESSAGE value="anomali-report26-10/2" />
+    <MESSAGE value="dailyreporthse26-10/3" />
+    <option name="LAST_COMMIT_MESSAGE" value="dailyreporthse26-10/3" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -805,11 +810,6 @@
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/accounts/views.py</url>
           <option name="timeStamp" value="8" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="django-line">
-          <url>file://$PROJECT_DIR$/anomalis/templates/anomalis/anomaly-details.html</url>
-          <line>280</line>
-          <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>

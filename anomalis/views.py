@@ -449,13 +449,16 @@ def anomaly_detail_view(request, pk):
     is_hse_manager = request.user.groups.filter(name__in=['مدیر HSE', 'افسر HSE']).exists()
 
     if request.method == "POST":
-        form = CommentForm(request.POST)
+        form = CommentForm(request.POST, request.FILES)  # Pass request.FILES
         if form.is_valid():
             try:
                 # ذخیره کردن کامنت جدید
                 comment = form.save(commit=False)
                 comment.anomaly = anomaly
                 comment.user = request.user.userprofile
+
+                # Associate the uploaded file
+                comment.file = form.cleaned_data['file']  # Get the file from the form
 
                 # بررسی اینکه آیا کامنت جواب به کامنت قبلی است
                 parent_id = request.POST.get('parent_id')

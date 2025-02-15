@@ -243,7 +243,7 @@ class AnomalyForm(forms.ModelForm):
 class CommentForm(forms.ModelForm):
     class Meta:
         model = Comment
-        fields = ['comment']
+        fields = ['comment', 'file']  # Add 'file' field
         widgets = {
             'comment': forms.Textarea(attrs={
                 'class': 'form-control',
@@ -251,24 +251,29 @@ class CommentForm(forms.ModelForm):
                 'placeholder': 'نظر خود را بنویسید...',
                 'maxlength': 500  # Add max length
             }),
+            'file': forms.FileInput(attrs={  # Add file input widget
+                'class': 'form-control',
+                'accept': 'image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt' # Limit file types
+            }),
         }
 
     def clean_comment(self):
-        comment = self.cleaned_data['comment']
-        # Remove extra whitespace
+        comment = self.cleaned_data.get('comment', '')  # Use get() to handle missing key
         comment = ' '.join(comment.split())
-
-        # Check minimum length
-        if len(comment) < 2:
+        if comment and len(comment) < 2:
             raise forms.ValidationError("کامنت باید حداقل 2 کاراکتر باشد")
-
-        # Check for bad words or spam
         bad_words = ['spam', 'bad', 'word']  # Add your list
-        if any(word in comment.lower() for word in bad_words):
+        if comment and any(word in comment.lower() for word in bad_words):
             raise forms.ValidationError("لطفا از کلمات نامناسب استفاده نکنید")
-
         return comment
 
+    def clean_file(self):
+        file = self.cleaned_data.get('file')
+        if file:
+            max_size = 10 * 1024 * 1024  # 10MB
+            if file.size > max_size:
+                raise forms.ValidationError("حجم فایل نباید بیشتر از 10 مگابایت باشد.")
+        return file
 
 
 
