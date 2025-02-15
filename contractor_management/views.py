@@ -1,7 +1,7 @@
+# views.py
 from django.contrib import messages
 from django.shortcuts import render, redirect
 from django.http import HttpResponseForbidden, JsonResponse
-
 from permissions.utils import permission_required
 from .forms import ReportForm, ReportFilterForm
 from django.contrib.auth.decorators import login_required
@@ -11,7 +11,7 @@ from django.db.models import Q
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .utils import get_current_user_shift_and_group, SHIFT_PATTERN
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Contractor, Employee
+from .models import Contractor, Employee, Vehicle  # Vehicle را هم ایمپورت کنید
 from django.contrib.auth.decorators import user_passes_test
 import json
 
@@ -25,7 +25,11 @@ def create_report(request):
             report.user = request.user
             report.report_datetime = timezone.now()
 
-            from .utils import get_current_user_shift_and_group
+            # اضافه کردن پیمانکار بر اساس خودرو
+            selected_vehicle = form.cleaned_data.get('vehicle')
+            if selected_vehicle:  # چک برای اینکه مطمئن شویم خودرویی انتخاب شده
+                report.contractor = selected_vehicle.contractor
+
             user_shift, user_group = get_current_user_shift_and_group(report.user)
 
             if user_shift and user_group:
@@ -37,13 +41,14 @@ def create_report(request):
                     'form': form,
                     'messages': messages.get_messages(request)
                 })
+
             if report.report_datetime:
                 existing_report = Report.objects.filter(
                     user=report.user,
                     vehicle=report.vehicle,
                     report_datetime__date=report.report_datetime.date(),
-                    shift = report.shift,
-                    group = report.group
+                    shift=report.shift,
+                    group=report.group
                 ).exists()
                 if existing_report:
                     messages.error(request, 'شما قبلاً برای این خودرو در این شیفت و گروه گزارش ثبت کرده‌اید.')
@@ -62,15 +67,10 @@ def create_report(request):
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f"خطا در فیلد {form[field].label} : {error}")
-
-
     else:
         form = ReportForm()
 
-    return render(request, 'contractor_management/report_form.html', {
-        'form': form,
-        'messages': messages.get_messages(request)
-    })
+    return render(request, 'contractor_management/report_form.html', {'form': form})
 
 
 @permission_required("all_reports")
@@ -118,7 +118,6 @@ def all_reports(request):
         'form': form,
     })
 
-
 def get_contractors_ajax(request):
 
     contractors = []  # لیست پیمانکاران
@@ -154,3 +153,17 @@ def get_contractor_employees_ajax(request):
             "name": f"{employee['first_name']} {employee['last_name']}"
         })
     return JsonResponse(list(formatted_employees), safe=False)
+
+def get_all_vehicles_ajax(request):  # این تابع *باید* باشد
+    vehicles = Vehicle.objects.all().values('id', 'driver_name', 'license_plate', 'contractor__company_name')
+    vehicle_list = [
+        {
+            'id': v['id'],
+            'text': f"{v['driver_name']} ({v['license_plate']}) - {v['contractor__company_name']}" # نمایش نام پیمانکار
+        } for v in vehicles
+    ]
+    return JsonResponse(vehicle_list, safe=False)
+
+# تابع get_vehicles_by_contractor_ajax  حذف شود
+# def get_vehicles_by_contractor_ajax(request):
+#     ...

@@ -72,7 +72,8 @@ class Vehicle(models.Model):
     permit_expiry = jmodels.jDateField(null=True, blank=True, verbose_name="تاریخ انقضای آخرین مجوز خودرو")
 
     def __str__(self):
-        return self.license_plate
+        return f"{self.driver_name} ({self.license_plate})" # تغییر این قسمت
+
 
     class Meta:
         verbose_name = "خودرو"
