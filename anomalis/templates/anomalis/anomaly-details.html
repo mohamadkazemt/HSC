@@ -23,313 +23,245 @@
                         {% include 'toolbar.html' %}
                         <!--end::Toolbar-->
                         <!--begin::Content-->
-                        <div id="kt_app_content" class="app-content flex-column-fluid">
-                            <!--begin::Content container-->
-                            <div id="kt_app_content_container" class="app-container container-fluid">
-                                <!--begin::سوشیال - تغذیه -->
-                                <div class="d-flex flex-row">
 
-                                    <!--begin::Content-->
-                                    <div class="w-100 flex-lg-row-fluid mx-lg-13">
-                                        <!--begin::Mobile toolbar-->
-                                        <div class="d-flex d-lg-none align-items-center justify-content-end mb-10">
-                                            <div class="d-flex align-items-center gap-2">
-                                                <div class="btn btn-icon btn-active-color-primary w-30px h-30px" id="kt_social_start_sidebar_toggle">
-                                                    <i class="ki-outline ki-profile-circle fs-1"></i>
+
+                        <div class="container-fluid mt-4">
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="card shadow-sm">
+<div class="card-header {% if anomaly.action %}bg-success{% else %}bg-danger{% endif %} text-white py-3 d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">جزئیات آنومالی (شماره: {{ anomaly.id }})</h5>
+    <div class="d-flex gap-2 align-items-center">
+
+        {% if anomaly.followup.user == request.user and not anomaly.is_request_sent and not anomaly.action %}
+            <form method="POST" action="{% url 'anomalis:request_safe' anomaly.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-warning btn-sm">درخواست ایمن شدن</button>
+            </form>
+        {% endif %}
+
+        {% if is_hse_manager and is_request_sent and not anomaly.action %}
+            <form action="{% url 'anomalis:approve_safe' anomaly.pk %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success btn-sm">تأیید ایمن بودن</button>
+            </form>
+
+            <form action="{% url 'anomalis:reject_safe' anomaly.pk %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-light btn-sm">  <!-- تغییر اینجا -->
+                    <i class="fas fa-times me-1"></i> رد درخواست
+                </button>
+            </form>
+        {% endif %}
+
+        <a href="{% url 'anomalis:anomaly_pdf' anomaly.id %}" class="btn btn-sm btn-light"><i class="fas fa-file-pdf"></i> دانلود PDF</a>
+    </div>
+</div>
+                                        <div class="card-body">
+                                            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab" aria-controls="details" aria-selected="true">جزئیات</button>
+                                                </li>
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link" id="description-tab" data-bs-toggle="tab" data-bs-target="#description" type="button" role="tab" aria-controls="description" aria-selected="false">توضیحات</button>
+                                                </li>
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link" id="image-tab" data-bs-toggle="tab" data-bs-target="#image" type="button" role="tab" aria-controls="image" aria-selected="false">تصویر</button>
+                                                </li>
+                                            </ul>
+                                            <div class="tab-content" id="myTabContent">
+                                                <div class="tab-pane fade show active" id="details" role="tabpanel" aria-labelledby="details-tab">
+                                                    <!-- محتوای تب جزئیات (همان اطلاعات اصلی که الان دارید) -->
+                                                    <h4 class="card-title mt-3">{{ anomaly.anomalydescription }}</h4>
+                                                    <p class="card-subtitle mb-3 text-muted">
+                                                        ایجاد شده: {{ anomaly.created_at|to_jalali }} | آخرین بروزرسانی: {{ anomaly.updated_at|to_jalali }}
+                                                    </p>
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <div class="card mb-4">
+                                                                <div class="card-body">
+                                                                    <h5 class="mb-3">اطلاعات کلی</h5>
+                                                                    <dl class="row">
+                                                                        <dt class="col-sm-4">سایت:</dt>
+                                                                        <dd class="col-sm-8">{{ anomaly.location }}</dd>
+
+                                                                        <dt class="col-sm-4">محل شناسایی:</dt>
+                                                                        <dd class="col-sm-8">{{ anomaly.section|default:"نامشخص" }}</dd>
+
+                                                                        <dt class="col-sm-4">نوع آنومالی:</dt>
+                                                                        <dd class="col-sm-8">{{ anomaly.anomalytype }}</dd>
+
+                                                                        <dt class="col-sm-4">اولویت:</dt>
+                                                                        <dd class="col-sm-8">{{ anomaly.priority }}</dd>
+
+                                                                        <dt class="col-sm-4">وضعیت:</dt>
+                                                                        <dd class="col-sm-8">
+                                                                            {% if anomaly.action %}
+                                                                                <span class="badge bg-success">ایمن</span>
+                                                                            {% else %}
+                                                                                <span class="badge bg-danger">ناایمن</span>
+                                                                            {% endif %}
+                                                                        </dd>
+                                                                    </dl>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="card mb-4">
+                                                                <div class="card-body">
+                                                                    <h5 class="mb-3">اطلاعات تکمیلی</h5>
+                                                                    <dl class="row">
+                                                                        <dt class="col-sm-4">حوزه HSE:</dt>
+                                                                        <dd class="col-sm-8">
+                                                                            {% if anomaly.hse_type == 'H' %}
+                                                                                Health
+                                                                            {% elif anomaly.hse_type == 'S' %}
+                                                                                Safety
+                                                                            {% elif anomaly.hse_type == 'E' %}
+                                                                                Environment
+                                                                            {% endif %}
+                                                                        </dd>
+
+                                                                        <dt class="col-sm-4">عملیات اصلاحی:</dt>
+                                                                        <dd class="col-sm-8">{{ anomaly.correctiveaction }}</dd>
+
+                                                                        <dt class="col-sm-4">ایجاد کننده:</dt>
+                                                                        <dd class="col-sm-8">{{ anomaly.created_by.user.get_full_name }}</dd>
+
+                                                                        <dt class="col-sm-4">مسئول پیگیری:</dt>
+                                                                        <dd class="col-sm-8">{{ anomaly.followup.user.get_full_name }}</dd>
+                                                                        <dt class="col-sm-4">گروه کاری:</dt>
+                                                                        <dd class="col-sm-8">{{ anomaly.get_group_display }}</dd>
+                                                                    </dl>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div class="btn btn-icon btn-active-color-primary w-30px h-30px" id="kt_social_end_sidebar_toggle">
-                                                    <i class="ki-outline ki-scroll fs-1"></i>
+                                                <div class="tab-pane fade" id="description" role="tabpanel" aria-labelledby="description-tab">
+                                                    <!-- محتوای تب توضیحات -->
+                                                    {% if anomaly.description %}
+                                                        <div class="mt-3">
+                                                            <p><strong>توضیحات:</strong></p>
+                                                            <p class="text-justify">{{ anomaly.description }}</p>
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="tab-pane fade" id="image" role="tabpanel" aria-labelledby="image-tab">
+                                                    <!-- محتوای تب تصویر -->
+                                                    {% if anomaly.image %}
+                                                        <div class="mt-4 d-flex justify-content-center">
+                                                            <img src="{{ anomaly.image.url }}" alt="تصویر آنومالی" class="img-fluid rounded shadow-sm" style="max-width: 70%; height: auto;">
+                                                        </div>
+                                                    {% endif %}
                                                 </div>
                                             </div>
                                         </div>
-                                        <!--end::Mobile toolbar-->
-                                        <!--begin::اصلی form-->
-                                        <!--end::اصلی form-->
-                                        <!--begin::Posts-->
-                                        <div class="mb-10" id="kt_social_feeds_posts">
-                                            <!--begin::Post 1-->
-                                            <!--begin::کارت-->
-                                            <div class="card card-flush mb-10">
-                                                <!--begin::کارت header-->
-                                                <div class="card-header pt-9">
-                                                    <!--begin::نویسنده-->
-                                                    <div class="d-flex align-items-center">
-                                                        <!--begin::Avatar-->
-                                                        {% if anomaly.followup.image %}
-                                                            <div class="symbol symbol-50px me-5">
-                                                                <img src="{{ anomaly.followup.image.url }}" class="" alt="" />
-                                                            </div>
+                                    </div>
+                                    <!-- Comment Section -->
+                                    <div class="card shadow-sm mt-4">
+                                        <div class="card-header bg-light py-3">
+                                            <h6 class="mb-0">نظرات</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            {% for comment in comments %}
+                                                <div class="d-flex mb-3">
+                                                    <div class="flex-shrink-0">
+                                                        {% if comment.user.image %}
+                                                            <img src="{{ comment.user.image.url }}" alt="آواتار" class="rounded-circle shadow-sm" width="40" height="40">
                                                         {% else %}
-                                                            <div class="symbol symbol-50px me-5">
-                                                                <img src="{% static 'assets/media/avatars/blank.png' %}" class="" alt="" />
+                                                            <img src="{% static 'assets/media/avatars/blank.png' %}" alt="آواتار" class="rounded-circle shadow-sm" width="40" height="40">
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="flex-grow-1 ms-3">
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <div>
+                                                                <h6 class="mb-0">{{ comment.user.user.get_full_name }}</h6>
+                                                                <small class="text-muted">{{ comment.created_at|timesince }} قبل</small>
+                                                            </div>
+                                                            <button class="btn btn-sm btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#reply-form-{{ comment.id }}">پاسخ</button>
+                                                        </div>
+                                                        {% if comment.comment %}
+                                                            <p class="mb-1">{{ comment.comment }}</p>
+                                                        {% endif %}
+                                                        {% if comment.file %}
+                                                            <div>
+                                                                <a href="{{ comment.file.url }}" class="btn btn-sm btn-outline-primary" download><i class="fas fa-download"></i> دانلود فایل</a>
                                                             </div>
                                                         {% endif %}
-                                                        <!--end::Avatar-->
-                                                        <!--begin::Info-->
-                                                        <div class="flex-grow-1">
-                                                            <!--begin::نام-->
-                                                            <a href="#" class="text-gray-800 text-hover-primary fs-4 fw-bold">  آنومالی شماره: ({{ anomaly.id }})    {{ anomaly.anomalydescription }} </a>
-                                                            <!--end::نام-->
-                                                            <!--begin::تاریخ-->
-                                                            <div class="d-flex flex-wrap fw-semibold fs-6 mb-4 pe-2">
-                                                                <!-- محل آنومالی -->
-                                                                <a href="#" class="d-flex align-items-center text-gray-500 text-hover-primary me-5 mb-2">
-                                                                    <i class="fas fa-map-marker-alt fs-4 me-1"></i> سایت: {{ anomaly.location }}
-                                                                </a>
-                                                                <a href="#" class="d-flex align-items-center text-gray-500 text-hover-primary me-5 mb-2">
-                                                                    <i class="fas fa-map-marker-alt fs-4 me-1"></i> محل شناسایی آنومالی: {{ anomaly.section }}
-                                                                </a>
 
-                                                                <!-- نوع آنومالی -->
-                                                                <a href="#" class="d-flex align-items-center text-gray-500 text-hover-primary me-5 mb-2">
-                                                                    <i class="fas fa-exclamation-triangle fs-4 me-1"></i> نوع آنومالی: {{ anomaly.anomalytype }}
-                                                                </a>
-
-                                                                <!-- نوع HSE -->
-                                                                <a href="#" class="d-flex align-items-center text-gray-500 text-hover-primary me-5 mb-2">
-                                                                    <i class="fas fa-shield-alt fs-4 me-1"></i> HSE:
-                                                                    {% if anomaly.hse_type == 'H' %}
-                                                                        Health
-                                                                    {% elif anomaly.hse_type == 'S' %}
-                                                                        Safety
-                                                                    {% elif anomaly.hse_type == 'E' %}
-                                                                        Environment
-                                                                    {% endif %}
-                                                                </a>
-
-                                                                <!-- عملیات اصلاحی -->
-                                                                <a href="#" class="d-flex align-items-center text-gray-500 text-hover-primary me-5 mb-2">
-                                                                    <i class="fas fa-tools fs-4 me-1"></i> عملیات اصلاحی: {{ anomaly.correctiveaction }}
-                                                                </a>
-
-                                                                <!-- ایجاد کننده -->
-                                                                <a href="#" class="d-flex align-items-center text-gray-500 text-hover-primary me-5 mb-2">
-                                                                    <i class="fas fa-user fs-4 me-1"></i> ایجاد کننده: {{ anomaly.created_by.user.first_name }} {{ anomaly.created_by.user.last_name }}
-                                                                </a>
-
-                                                                <!-- پیگیری -->
-                                                                <a href="#" class="d-flex align-items-center text-gray-500 text-hover-primary me-5 mb-2">
-                                                                    <i class="fas fa-user-check fs-4 me-1"></i> پیگیری: {{ anomaly.followup.user.first_name }} {{ anomaly.followup.user.last_name }}
-                                                                </a>
-
-                                                                <!-- گروه کاری -->
-                                                                <a href="#" class="d-flex align-items-center text-gray-500 text-hover-primary me-5 mb-2">
-                                                                    <i class="fas fa-users fs-4 me-1"></i> گروه کاری: {{ anomaly.get_group_display }}
-                                                                </a>
-
-                                                                <!-- اولویت -->
-                                                                <a href="#" class="d-flex align-items-center text-gray-500 text-hover-primary me-5 mb-2">
-                                                                    <i class="fas fa-flag fs-4 me-1"></i> اولویت: {{ anomaly.priority }}
-                                                                </a>
-
-                                                                <!-- وضعیت عملیات -->
-                                                                <a href="#" class="d-flex align-items-center text-gray-500 text-hover-primary me-5 mb-2">
-                                                                    <i class="fas fa-check-circle fs-4 me-1"></i> وضعیت:
-                                                                    {% if anomaly.action %}
-                                                                        ایمن
-                                                                    {% else %}
-                                                                        غیر ایمن
-                                                                    {% endif %}
-                                                                </a>
-
-                                                                <!-- تاریخ ایجاد -->
-                                                                <a href="#" class="d-flex align-items-center text-gray-500 text-hover-primary me-5 mb-2">
-                                                                    <i class="fas fa-calendar-alt fs-4 me-1"></i> تاریخ ایجاد: {{ anomaly.created_at|to_jalali }}
-                                                                </a>
-
-                                                                <!-- تاریخ بروزرسانی -->
-                                                                <a href="#" class="d-flex align-items-center text-gray-500 text-hover-primary me-5 mb-2">
-                                                                    <i class="fas fa-sync-alt fs-4 me-1"></i> تاریخ بروزرسانی: {{ anomaly.updated_at|to_jalali }}
-                                                                </a>
-
-                                                                <!-- تصویر آنومالی -->
-                                                                {% if anomaly.image %}
-                                                                    <a href="{{ anomaly.image.url }}" class="d-flex align-items-center text-gray-500 text-hover-primary mb-2">
-                                                                        <i class="fas fa-image fs-4 me-1"></i> مشاهده تصویر
-                                                                    </a>
-                                                                {% endif %}
-
-
-
-                                                            </div>
-
-
-                                                            <!--end::تاریخ-->
-                                                        </div>
-                                                        <!--end::Info-->
-                                                    </div>
-                                                    <!--end::نویسنده-->
-
-                                                </div>
-                                                <!--end::کارت header-->
-                                                <!--begin::کارت body-->
-                                                <div class="card-body">
-                                                    <!--begin::Post content-->
-                                                    <div class="fs-6 fw-normal text-gray-700 mb-5">{{ anomaly.description }}</div>
-                                                    <!--end::Post content-->
-
-
-                                                    <div class="card-footer pt-0">
-                                                        <!--begin::Info-->
-                                                        <div class="mb-6">
-                                                            <!--begin::separator-->
-                                                            <div class="separator separator-solid"></div>
-                                                            <!--end::separator-->
-                                                            <!--begin::Nav-->
-<div class="card-header d-flex justify-content-between align-items-center">
-
-    <a href="{% url 'anomalis:anomaly_pdf' anomaly.id %}" class="btn btn-primary btn-sm">
-        <i class="fas fa-file-pdf"></i> دانلود PDF
-    </a>
-</div>
-                                                            <!--end::Nav-->
-                                                            <!--begin::separator-->
-                                                            <div class="separator separator-solid mb-1"></div>
-                                                            <!--end::separator-->
-                                                            <!--begin::نظرات-->
-                                                            {% load crispy_forms_tags %}
-
-                                                            <!-- نظرات -->
-                                                            <div id="kt_social_feeds_comments_1" class="collapse show">
-                                                                <!-- Comment -->
-                                                                {% for comment in comments %}
-                                                                    <div class="d-flex pt-6 comment-box">
-                                                                        <!-- Avatar -->
-                                                                    {% if comment.user.image %}
-                                                                        <div class="symbol me-5">
-                                                                            <img src="{{ comment.user.image.url }}" alt="آواتار" />
-                                                                        </div>
-                                                                    {% else %}
-                                                                        <div class="symbol me-5">
-                                                                            <img src="{% static 'assets/media/avatars/blank.png' %}" alt="آواتار" />
-                                                                        </div>
-                                                                    {% endif %}
-                                                                        <!-- Wrapper -->
-                                                                        <div class="d-flex flex-column flex-row-fluid">
-                                                                            <!-- Info -->
-                                                                            <div class="d-flex align-items-center flex-wrap mb-0">
-                                                                                <!-- Name -->
-                                                                                <a href="#" class="text-gray-800 text-hover-primary fw-bold me-6">{{ comment.user }}</a>
-                                                                                <!-- Date -->
-                                                                                <span class="text-gray-500 fw-semibold fs-7 me-5">{{ comment.created_at|timesince }} قبل</span>
-                                                                                <!-- Reply button -->
-                                                                                <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#reply-form-{{ comment.id }}">
-                                                                                    پاسخ
-                                                                                </button>
-                                                                            </div>
-                                                                            <!-- Text -->
-                                                                            <span class="text-gray-800 fs-7 fw-normal pt-1">{{ comment.comment }}</span>
-
-                                                                            <!-- Form for reply -->
-                                                                            <div id="reply-form-{{ comment.id }}" class="collapse mt-2 reply-box">
-                                                                                <form method="POST" action="{% url 'anomalis:anomaly_detail' anomaly.pk %}">
-                                                                                    {% csrf_token %}
-                                                                                    <textarea class="form-control" name="comment" placeholder="نوشتن پاسخ شما..." rows="2"></textarea>
-                                                                                    <input type="hidden" name="parent_id" value="{{ comment.id }}">
-                                                                                    <button type="submit" class="btn btn-primary mt-2">ارسال پاسخ</button>
-                                                                                </form>
-                                                                            </div>
-
-                                                                            <!-- نمایش پاسخ‌ها -->
-                                                                            {% for reply in comment.replies.all %}
-                                                                                <div class="d-flex pt-6 ms-5">
-                                                                                    <!-- Avatar -->
-                                                                                    {% if reply.user.image %}
-                                                                                    <div class="symbol me-5">
-                                                                                        <img src="{{ reply.user.image.url }}" alt="آواتار" />
-                                                                                    </div>
-                                                                                    {% else %}
-                                                                                    <div class="symbol me-5">
-                                                                                        <img src="{% static 'assets/media/avatars/blank.png' %}" alt="آواتار" />
-                                                                                    </div>
-                                                                                    {% endif %}
-                                                                                    <!-- Wrapper -->
-                                                                                    <div class="d-flex flex-column flex-row-fluid">
-                                                                                        <!-- Info -->
-                                                                                        <div class="d-flex align-items-center flex-wrap mb-0">
-                                                                                            <!-- Name -->
-                                                                                            <a href="#" class="text-gray-800 text-hover-primary fw-bold me-6">{{ reply.user }}</a>
-                                                                                            <!-- Date -->
-                                                                                            <span class="text-gray-500 fw-semibold fs-7 me-5">{{ reply.created_at|timesince }} قبل</span>
-                                                                                        </div>
-                                                                                        <!-- Text -->
-                                                                                        <span class="text-gray-800 fs-7 fw-normal pt-1">{{ reply.comment }}</span>
-                                                                                    </div>
-                                                                                </div>
-                                                                            {% endfor %}
-                                                                        </div>
-                                                                    </div>
-                                                                {% endfor %}
-                                                            </div>
-                                                            <div class="card-footer pt-0">
-                                                                <!--begin::Info-->
-                                                                <div class="mb-6">
-                                                                    <!--begin::separator-->
-                                                                    <div class="separator separator-solid"></div>
-                                                                    <!--end::separator-->
-                                                                    <!--begin::Nav-->
-
-                                                                    <!--end::Nav-->
-                                                                    <!--begin::separator-->
-                                                                    <div class="separator separator-solid mb-1"></div>
-                                                                    <!-- فرم ارسال کامنت جدید -->
-                                                                    <h3>ارسال کامنت جدید:</h3>
-                                                                    <div class="d-flex align-items-center mt-6">
-                                                                        <!-- Avatar نویسنده -->
-                                                                        {% if userprofile.image and userprofile.image.url %}
-                                                                        <div class="symbol me-3">
-                                                                            <img src="{{ userprofile.image.url }}" alt="آواتار" />
-                                                                        </div>
-                                                                        {% else %}
-                                                                        <div class="symbol me-3">
-                                                                            <img src="{% static 'assets/media/avatars/blank.png' %}" alt="آواتار" />
-                                                                        </div>
-                                                                        {% endif %}
-                                                                        <!-- گروه ورودی -->
-                                                                        <div class="position-relative w-100">
-                                                                            <form method="POST" action="{% url 'anomalis:anomaly_detail' anomaly.pk %}">
-                                                                                {% csrf_token %}
-                                                                                <textarea class="form-control" name="comment" placeholder="نوشتن نظر شما..." rows="3"></textarea>
-                                                                                <button type="submit" class="btn btn-primary mt-2">ارسال</button>
-                                                                            </form>
-                                                                        </div>
-                                                                    </div>
+                                                        <!-- Reply Form -->
+                                                        <div id="reply-form-{{ comment.id }}" class="collapse mt-2">
+                                                            <form method="POST" action="{% url 'anomalis:anomaly_detail' anomaly.pk %}" enctype="multipart/form-data">
+                                                                {% csrf_token %}
+                                                                <div class="mb-2">
+                                                                    <textarea class="form-control" name="comment" rows="2" placeholder="نوشتن پاسخ..."></textarea>
                                                                 </div>
-                                                                <!--end::Collapse-->
-                                                            </div>
-
+                                                                <div class="mb-2">
+                                                                    <input type="file" name="file" class="form-control">
+                                                                </div>
+                                                                <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                                                                <button type="submit" class="btn btn-sm btn-primary">ارسال پاسخ</button>
+                                                            </form>
                                                         </div>
 
-                                                        <!--end::کارت body-->
-                                                        <!--begin::کارت footer-->
-
-
-
-                                                        <!--end::کارت footer-->
+                                                        <!-- Replies -->
+                                                        {% for reply in comment.replies.all %}
+                                                            <div class="d-flex mt-3 ms-5">
+                                                                <div class="flex-shrink-0">
+                                                                    {% if reply.user.image %}
+                                                                        <img src="{{ reply.user.image.url }}" alt="آواتار" class="rounded-circle shadow-sm" width="30" height="30">
+                                                                    {% else %}
+                                                                        <img src="{% static 'assets/media/avatars/blank.png' %}" alt="آواتار" class="rounded-circle shadow-sm" width="30" height="30">
+                                                                    {% endif %}
+                                                                </div>
+                                                                <div class="flex-grow-1 ms-3">
+                                                                    <h6 class="mb-0">{{ reply.user.user.get_full_name }} <small class="text-muted">{{ reply.created_at|timesince }} قبل</small></h6>
+                                                                    {% if reply.comment %}
+                                                                        <p class="mb-1">{{ reply.comment }}</p>
+                                                                    {% endif %}
+                                                                    {% if reply.file %}
+                                                                        <div>
+                                                                            <a href="{{ reply.file.url }}" class="btn btn-sm btn-outline-primary" download><i class="fas fa-download"></i> دانلود فایل</a>
+                                                                        </div>
+                                                                    {% endif %}
+                                                                </div>
+                                                            </div>
+                                                        {% endfor %}
                                                     </div>
-                                                    <!--end::کارت-->
-
                                                 </div>
-                                                <!--end::Posts-->
-                                            </div>
-                                            <!--end::Content-->
-                                            <!--begin::End sidebar-->
-
-
-
-                                            <!--end::End sidebar-->
+                                            {% endfor %}
                                         </div>
-                                        <!--end::سوشیال - تغذیه-->
+
+                                        <div class="card-footer">
+                                            <h6 class="mb-3">ارسال نظر جدید</h6>
+                                            <div class="d-flex align-items-start">
+                                                <div class="flex-shrink-0">
+                                                    {% if userprofile.image %}
+                                                        <img src="{{ userprofile.image.url }}" alt="آواتار" class="rounded-circle shadow-sm" width="40" height="40">
+                                                    {% else %}
+                                                        <img src="{% static 'assets/media/avatars/blank.png' %}" alt="آواتار" class="rounded-circle shadow-sm" width="40" height="40">
+                                                    {% endif %}
+                                                </div>
+                                                <div class="flex-grow-1 ms-3">
+                                                    <form method="POST" action="{% url 'anomalis:anomaly_detail' anomaly.pk %}" enctype="multipart/form-data">
+                                                        {% csrf_token %}
+                                                        <div class="mb-2">
+                                                            <textarea class="form-control" name="comment" rows="3" placeholder="نظر شما..."></textarea>
+                                                        </div>
+                                                        <div class="mb-2">
+                                                            <input type="file" name="file" class="form-control">
+                                                        </div>
+                                                        <button type="submit" class="btn btn-primary btn-sm">ارسال</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <!--end::Content container-->
                                 </div>
-                                <!--end::Content-->
                             </div>
-                            <!--end::Content wrapper-->
-                            <!--begin::Footer-->
-                            {% include 'footer.html' %}
-                            <!--end::Footer-->
                         </div>
+
                         <!--end:::اصلی-->
                     </div>
                     <!--end::Wrapper-->
