@@ -43,7 +43,7 @@ class DrillingDetail(models.Model):
     daily_report = models.ForeignKey(DailyReport, on_delete=models.CASCADE, related_name="drilling_details")
     block = models.ForeignKey(MiningBlock, on_delete=models.SET_NULL, null=True, verbose_name="بلوک حفاری")
     machine = models.ForeignKey(MiningMachine, on_delete=models.SET_NULL, null=True, verbose_name="دستگاه حفاری")
-    status = models.CharField(max_length=10, choices=[('safe', 'ایمن'), ('unsafe', 'ناایمن')], verbose_name="وضعیت حفاری")
+    status = models.CharField(max_length=10, choices=[('safe', 'ایمن'), ('unsafe', 'ناایمن')], verbose_name="وضعیت حفاری", null=True, blank=True)
     description = models.TextField(blank=True, verbose_name="توضیحات")
 
 
@@ -54,7 +54,7 @@ class DrillingDetail(models.Model):
 class DumpDetail(models.Model):
     daily_report = models.ForeignKey(DailyReport, on_delete=models.CASCADE, related_name="dump_details")
     dump = models.ForeignKey(Dump, on_delete=models.SET_NULL, null=True, verbose_name="دامپ")
-    status = models.CharField(max_length=10, choices=[('safe', 'ایمن'), ('unsafe', 'ناایمن')], verbose_name="وضعیت دامپ")
+    status = models.CharField(max_length=10, choices=[('safe', 'ایمن'), ('unsafe', 'ناایمن')], verbose_name="وضعیت دامپ", null=True, blank=True)
     description = models.TextField(blank=True, verbose_name="توضیحات")
 
     def __str__(self):
@@ -65,7 +65,7 @@ class LoadingDetail(models.Model):
     daily_report = models.ForeignKey(DailyReport, on_delete=models.CASCADE, related_name="loading_details")
     block = models.ForeignKey(MiningBlock, on_delete=models.SET_NULL, null=True, verbose_name="بلوک بارگیری")
     machine = models.ForeignKey(MiningMachine, on_delete=models.SET_NULL, null=True, verbose_name="دستگاه بارگیری")
-    status = models.CharField(max_length=10, choices=[('safe', 'ایمن'), ('unsafe', 'ناایمن')], verbose_name="وضعیت بارگیری")
+    status = models.CharField(max_length=10, choices=[('safe', 'ایمن'), ('unsafe', 'ناایمن')], verbose_name="وضعیت بارگیری", null=True, blank=True)
     description = models.TextField(blank=True, verbose_name="توضیحات")
 
 
@@ -86,9 +86,9 @@ class InspectionDetail(models.Model):
 # جزئیات توقفات
 class StoppageDetail(models.Model):
     daily_report = models.ForeignKey(DailyReport, on_delete=models.CASCADE, related_name="stoppage_details")
-    reason = models.TextField(verbose_name="علت توقف")
-    start_time = models.TimeField(verbose_name="زمان شروع")
-    end_time = models.TimeField(verbose_name="زمان پایان")
+    reason = models.TextField(verbose_name="علت توقف", blank=True, null=True)
+    start_time = models.TimeField(verbose_name="زمان شروع", blank=True, null=True)
+    end_time = models.TimeField(verbose_name="زمان پایان", blank=True, null=True)
     description = models.TextField(blank=True, verbose_name="توضیحات")
 
     def __str__(self):
@@ -97,7 +97,7 @@ class StoppageDetail(models.Model):
 # جزئیات پیگیری
 class FollowupDetail(models.Model):
     daily_report = models.ForeignKey(DailyReport, on_delete=models.CASCADE, related_name="followup_details")
-    description = models.TextField(verbose_name="توضیحات")
+    description = models.TextField(verbose_name="توضیحات", blank=True, null=True) # Make description optional
     files = models.FileField(upload_to='followups/%Y/%m/%d//', null=True, blank=True, verbose_name="فایل‌های پیوست")
 
     def __str__(self):
