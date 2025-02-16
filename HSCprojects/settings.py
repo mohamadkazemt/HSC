@@ -42,6 +42,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'permissions.apps.PermissionsConfig',
+
     "dashboard.apps.DashboardConfig",
     "accounts.apps.AccountsConfig",
     "anomalis.apps.AnomalisConfig",
@@ -63,7 +66,6 @@ INSTALLED_APPS = [
     'leave_reports.apps.LeaveReportsConfig',
     'contractor_management.apps.ContractorManagementConfig',
     'rest_framework',
-    'permissions.apps.PermissionsConfig',
     'hse_incidents.apps.HseIncidentsConfig',
     'machine_checklist.apps.MachineChecklistConfig'
 
@@ -88,31 +90,26 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [
-            BASE_DIR / 'templates',
-            BASE_DIR / 'core' / 'templates',
-        ]
-,
-'APP_DIRS': True,
-'OPTIONS': {
-    'context_processors': [
-        'django.template.context_processors.debug',
-        'django.template.context_processors.request',
-        'django.contrib.auth.context_processors.auth',
-        'django.contrib.messages.context_processors.messages',
-        'accounts.context_processors.user_profile_processor',
-        'analytics.context_processors.anomaly_stats_context',
-        'dashboard.context_processors.notification_context_processor',
-        'shift_manager.context_processors.shift_context_processor',
-        'shift_manager.context_processors.shift_data_processor',
-
-    ],
-    'builtins': [
-        'django_jalali.templatetags.jformat',
-
-    ],
-},
-},
+        'DIRS': [BASE_DIR / 'templates'],  # مسیرهای اضافی برای تمپلیت‌ها (اختیاری)
+        'APP_DIRS': True,  # فعال کردن جستجو در دایرکتوری templates داخل اپ‌ها
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+                'accounts.context_processors.user_profile_processor',
+                'analytics.context_processors.anomaly_stats_context',
+                'dashboard.context_processors.notification_context_processor',
+                'shift_manager.context_processors.shift_context_processor',
+                'shift_manager.context_processors.shift_data_processor',
+                'permissions.context_processors.permission_context',
+            ],
+            'builtins': [
+                'django_jalali.templatetags.jformat',
+            ],
+        },
+    },
 ]
 
 WSGI_APPLICATION = 'HSCprojects.wsgi.application'
@@ -210,6 +207,10 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
         'simple': {
             'format': '{levelname} {message}',
             'style': '{',
@@ -217,15 +218,21 @@ LOGGING = {
     },
     'handlers': {
         'console': {
-            'level': 'INFO',
+            'level': 'DEBUG',  # Set to DEBUG to see all log messages
             'class': 'logging.StreamHandler',
             'formatter': 'simple'
         },
+        'file': {
+            'level': 'DEBUG', # Set to DEBUG to see all log messages
+            'class': 'logging.FileHandler',
+            'filename': 'permissions_debug.log',  # Specify a log file
+            'formatter': 'verbose',
+        },
     },
     'loggers': {
-        'dailyreport_hse': {  # اسم اپلیکیشن خودتون رو اینجا وارد کنید
-            'handlers': ['console'],
-            'level': 'INFO',
+        'permissions': {  # This is the key - match the logger name
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',  # Set to DEBUG to see all log messages
             'propagate': True,
         },
     },

@@ -5,7 +5,6 @@ from functools import wraps
 from django.core.exceptions import PermissionDenied
 from django.utils.decorators import method_decorator
 import logging
-import logging
 
 logger = logging.getLogger(__name__)
 
