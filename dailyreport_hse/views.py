@@ -236,6 +236,7 @@ class DailyReportFormView(LoginRequiredMixin, TemplateView):
         context['drilling_machines'] = drilling_machines
         context['loading_machines'] = loading_machines
         context['dumps'] = Dump.objects.all()
+        context['title'] = "ثبت گزارش‌های روزانه"
         return context
 
 
@@ -305,6 +306,8 @@ class DailyReportListView(LoginRequiredMixin, ListView):
         context["shift_filter"] = self.shift_filter
         context["group_filter"] = self.group_filter
         context["search_query"] = self.search_query
+        context['title'] = "لیست گزارش‌های روزانه"
+
 
         return context
 
@@ -329,7 +332,7 @@ class DailyReportDetailView(LoginRequiredMixin, DetailView):
         context['stoppage_details'] = StoppageDetail.objects.filter(daily_report=report)
         context['followup_details'] = FollowupDetail.objects.filter(daily_report=report)
         context['inspection_details'] = InspectionDetail.objects.filter(daily_report=report)
-        context['title'] = 'گزارش روزانه'
+        context['title'] = 'جزئیات گزارش روزانه'
 
         return context
 
