@@ -2,7 +2,7 @@ let stepper;
 
 // اول از همه تابع validation رو تعریف می‌کنیم
 function validateCurrentStep(stepIndex) {
-    switch(stepIndex) {
+    switch (stepIndex) {
         case 1: // مرخصی عادی
             return document.querySelector('#regular_leave_table tbody').children.length > 0 ||
                 confirm('هیچ مرخصی عادی ثبت نشده است. آیا مایل به ادامه هستید؟');
@@ -21,7 +21,7 @@ function validateCurrentStep(stepIndex) {
 }
 
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initializeStepper();
     initializeFormHandlers();
     initializeSelect2();
@@ -53,7 +53,7 @@ function initializeFormHandlers() {
         return;
     }
 
-    form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', function (e) {
         e.preventDefault();
         if (validateAllSteps()) {
             submitLeaveReport(this);
@@ -150,28 +150,28 @@ function addAbsence() {
     $(userSelect).trigger('change');
 }
 function addSickLeave() {
-        const userSelect = document.querySelector('[name="sick_leave_user"]');
+    const userSelect = document.querySelector('[name="sick_leave_user"]');
 
-        if (!userSelect) {
-            console.error("Required elements not found");
-            return;
-        }
+    if (!userSelect) {
+        console.error("Required elements not found");
+        return;
+    }
 
-        if (!userSelect.value) {
-            showError('لطفا تمامی فیلدها را پر کنید');
-            return;
-        }
+    if (!userSelect.value) {
+        showError('لطفا تمامی فیلدها را پر کنید');
+        return;
+    }
 
-        const tbody = document.querySelector('#sick_leave_table tbody');
-        if (!tbody) {
-            console.error("Table body not found");
-            return;
-        }
+    const tbody = document.querySelector('#sick_leave_table tbody');
+    if (!tbody) {
+        console.error("Table body not found");
+        return;
+    }
 
-        const userName = userSelect.options[userSelect.selectedIndex].text;
+    const userName = userSelect.options[userSelect.selectedIndex].text;
 
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
             <td>${userName}</td>
             <td>تاریخ ثبت خودکار</td>
             <td>
@@ -183,11 +183,11 @@ function addSickLeave() {
                 <input type="hidden" name="sick_leaves[]" value="${userSelect.value}">
              </td>
         `;
-         tbody.appendChild(tr);
+    tbody.appendChild(tr);
 
-        userSelect.value = '';
-        $(userSelect).trigger('change');
-    }
+    userSelect.value = '';
+    $(userSelect).trigger('change');
+}
 
 
 function addHourlyLeave() {
@@ -286,16 +286,48 @@ function updateNavigationButtons(stepIndex) {
 }
 
 function validateAllSteps() {
-     const regularLeaveCount = document.querySelector('#regular_leave_table tbody').children.length;
+    let isValid = true;
+
+    // بررسی جداول مرخصی عادی، غیبت، استعلاجی و ساعتی
+    const tables = {
+        'regular_leave_table': {required: false},
+        'absence_table': {required: false, description: true},
+        'sick_leave_table': {required: false, description: true},
+        'hourly_leave_table': {required: false}
+    };
+
+    for (const [tableId, options] of Object.entries(tables)) {
+        const table = document.getElementById(tableId);
+        if (!table) continue;
+
+        const rows = table.querySelectorAll('tbody tr');
+        if (rows.length === 0 && options.required) {
+            showError(`جدول ${tableId} نباید خالی باشد.`);
+            return false;
+        }
+
+        for (let i = 0; i < rows.length; i++) {
+            if (options.description) {
+                const descriptionInput = rows[i].querySelector('input[name*="description"]');
+                if (!descriptionInput || !descriptionInput.value.trim()) {
+                    showError(`توضیحات در ردیف ${i + 1} جدول ${tableId} نمی‌تواند خالی باشد.`);
+                    return false;
+                }
+            }
+        }
+    }
+
+    // چک کردن اگر هیچ موردی ثبت نشده
+    const regularLeaveCount = document.querySelector('#regular_leave_table tbody').children.length;
     const absenceCount = document.querySelector('#absence_table tbody').children.length;
     const sickLeaveCount = document.querySelector('#sick_leave_table tbody').children.length;
     const hourlyLeaveCount = document.querySelector('#hourly_leave_table tbody').children.length;
 
-
     if (!regularLeaveCount && !absenceCount && !hourlyLeaveCount && !sickLeaveCount) {
-         showError('لطفا حداقل یک مورد مرخصی را ثبت کنید');
+        showError('لطفا حداقل یک مورد مرخصی را ثبت کنید');
         return false;
     }
+
     return true;
 }
 
@@ -304,6 +336,10 @@ function getTotalSteps() {
 }
 
 function submitLeaveReport(form) {
+    if (!validateAllSteps()) {
+        return;
+    }
+
     const formData = new FormData();
     const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
@@ -319,7 +355,7 @@ function submitLeaveReport(form) {
             type: 'absence',
             descriptionSelector: '[name="absence_description[]"]'
         },
-         'sick_leave': {
+        'sick_leave': {
             selector: '[name="sick_leaves[]"]',
             type: 'sick_leave',
             descriptionSelector: '[name="sick_leave_description[]"]'
@@ -331,33 +367,33 @@ function submitLeaveReport(form) {
     };
 
     // جمع‌آوری داده‌ها از هر جدول
-     for (const [key, table] of Object.entries(tables)) {
-            const elements = document.querySelectorAll(table.selector);
-            elements.forEach((input, index) => {
-                const values = input.value.split(',');
-                 const leaveData = {
+    for (const [key, table] of Object.entries(tables)) {
+        const elements = document.querySelectorAll(table.selector);
+        elements.forEach((input, index) => {
+            const values = input.value.split(',');
+            const leaveData = {
                 user: values[0],
                 leave_type: table.type,
             };
 
-                 if (table.type === 'hourly') {
-                    leaveData.start_time = values[1];
-                    leaveData.end_time = values[2];
+            if (table.type === 'hourly') {
+                leaveData.start_time = values[1];
+                leaveData.end_time = values[2];
+            }
+            if (table.descriptionSelector) {
+                const descriptionInputs = document.querySelectorAll(table.descriptionSelector);
+                if (descriptionInputs[index] && descriptionInputs[index].value) {
+                    leaveData.description = descriptionInputs[index].value;
+                } else {
+                    showError('لطفا توضیحات مربوط به مرخصی غیبت یا استعلاجی را وارد کنید');
+                    return;
                 }
-                if (table.descriptionSelector) {
-                    const descriptionInputs = document.querySelectorAll(table.descriptionSelector);
-                     if (descriptionInputs[index] && descriptionInputs[index].value) {
-                        leaveData.description = descriptionInputs[index].value;
-                    } else {
-                         showError('لطفا توضیحات مربوط به مرخصی غیبت یا استعلاجی را وارد کنید');
-                           return;
-                    }
-                }
+            }
 
-              leaves.push(leaveData);
+            leaves.push(leaveData);
 
-            });
-        }
+        });
+    }
 
     // چک کردن اگر هیچ موردی ثبت نشده
     if (leaves.length === 0) {
@@ -394,20 +430,20 @@ function submitLeaveReport(form) {
         data: formData,
         processData: false,
         contentType: false,
-        headers: { 'X-CSRFToken': csrftoken },
-         success: function(response) {
+        headers: {'X-CSRFToken': csrftoken},
+        success: function (response) {
             console.log('Response:', response); // برای دیباگ
             if (response.success) {
                 handleSubmitResponse(response);
             } else {
-                 handleSubmitError(response.details || response.error || 'خطا در ثبت اطلاعات');
+                handleSubmitError(response.details || response.error || 'خطا در ثبت اطلاعات');
             }
         },
-         error: function(xhr, status, error) {
+        error: function (xhr, status, error) {
             console.error('Error:', error); // برای دیباگ
             handleSubmitError('خطا در ارسال اطلاعات. لطفا دوباره تلاش کنید.');
         },
-        complete: function() {
+        complete: function () {
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'ثبت';
@@ -428,24 +464,24 @@ function handleSubmitResponse(response) {
             window.location.href = '/leave_reports/shift_report_list/';
         });
     } else {
-         handleSubmitError(response.details || response.error || 'خطا در ثبت اطلاعات');
+        handleSubmitError(response.details || response.error || 'خطا در ثبت اطلاعات');
     }
 }
 
 
 function handleSubmitError(error) {
     let message = 'خطا در ثبت اطلاعات';
-     if (typeof error === 'string') {
+    if (typeof error === 'string') {
         message = error;
     } else if (Array.isArray(error)) {
         message = error.join('<br>');
     }
-      Swal.fire({
+    Swal.fire({
         title: 'خطا',
         html: message,
         icon: 'error',
         confirmButtonText: 'باشه',
-         customClass: {
+        customClass: {
             container: 'rtl-alert',
             popup: 'rtl-alert',
             title: 'rtl-alert',
