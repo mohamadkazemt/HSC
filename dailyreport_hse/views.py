@@ -35,8 +35,10 @@ import logging
 from django.core.exceptions import ValidationError
 from django.shortcuts import render
 from django.views.generic import TemplateView
-from django.contrib.auth.mixins import LoginRequiredMixin
 import logging
+from django.db import transaction
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+
 
 logger = logging.getLogger(__name__)
 
@@ -77,118 +79,131 @@ class CreateDailyReportView(APIView):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # ساختن گزارش روزانه
-            daily_report = DailyReport(
-                user=request.user,
-                shift=current_shift,
-                work_group=current_group,
-                supervisor_comments=received_data.get("supervisor_comments", ""),
-            )
+            # Use a transaction to ensure atomicity
+            with transaction.atomic():
+                # ساختن گزارش روزانه
+                daily_report = DailyReport(
+                    user=request.user,
+                    shift=current_shift,
+                    work_group=current_group,
+                    supervisor_comments=received_data.get("supervisor_comments", ""),
+                )
 
-            # اعتبارسنجی گزارش روزانه
-            try:
-                daily_report.full_clean()
-            except ValidationError as e:
+                # اعتبارسنجی گزارش روزانه
+                try:
+                    daily_report.full_clean()
+                except ValidationError as e:
+                    return Response(
+                        {"error": "Validation Error", "errors": e.message_dict},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+                daily_report.save()
+
+                # ذخیره جزئیات آتشباری
+                for blasting in blasting_details:
+                    block_id = blasting.get("block_id")
+                    if block_id:  # Only create if block_id is provided
+                        block = get_object_or_404(MiningBlock, id=block_id)
+                        BlastingDetail.objects.create(
+                            daily_report=daily_report,
+                            explosion_occurred=blasting.get("explosion_occurred", False),
+                            block=block,
+                            description=blasting.get("description", ""),
+                        )
+
+                # ذخیره جزئیات حفاری
+                for drilling in drilling_details:
+                    block_id = drilling.get("block_id")
+                    machine_id = drilling.get("machine_id")
+                    if block_id and machine_id:  # Only create if both are provided
+                        block = get_object_or_404(MiningBlock, id=block_id)
+                        machine = get_object_or_404(
+                            MiningMachine, id=machine_id
+                        )
+                        DrillingDetail.objects.create(
+                            daily_report=daily_report,
+                            block=block,
+                            machine=machine,
+                            status=drilling.get("status", None),  # Allow None
+                            description=drilling.get("description", ""),
+                        )
+
+                # ذخیره جزئیات بارگیری
+                for loading in loading_details:
+                    block_id = loading.get("block_id")
+                    machine_id = loading.get("machine_id")
+                    if block_id and machine_id:
+                        block = get_object_or_404(MiningBlock, id=block_id)
+                        machine = get_object_or_404(
+                            MiningMachine, id=machine_id
+                        )
+                        LoadingDetail.objects.create(
+                            daily_report=daily_report,
+                            block=block,
+                            machine=machine,
+                            status=loading.get("status", None),  # Allow None
+                            description=loading.get("description", ""),
+                        )
+
+                # ذخیره جزئیات تخلیه
+                for dump_detail in dump_details:
+                    dump_id = dump_detail.get("dump_id")
+                    if dump_id:
+                        dump = get_object_or_404(Dump, id=dump_id)
+                        DumpDetail.objects.create(
+                            daily_report=daily_report,
+                            dump=dump,
+                            status=dump_detail.get("status", None),  # Allow None
+                            description=dump_detail.get("description", ""),
+                        )
+
+                # ذخیره جزئیات توقف
+                for stoppage in stoppage_details:  # Iterate through stoppage details
+                    StoppageDetail.objects.create(
+                        daily_report=daily_report,
+                        reason=stoppage.get("reason", None),
+                        start_time=stoppage.get("start_time", None),
+                        end_time=stoppage.get("end_time", None),
+                        description=stoppage.get("description", ""),
+                    )
+
+                # ذخیره جزئیات پیگیری
+                # for index, followup in enumerate(followups_data): #دیگه لازم نیست روی followup_data حلقه بزنید
+                index = 0 # فقط یک پیگیری در این مثال داریم، برای توسعه میتونید حلقه بزنید
+                description = received_data.get(f"followups[{index}][followup_description]")
+                files = request.FILES.getlist(f"followups[{index}][followup_file]")
+
+                FollowupDetail.objects.create(
+                    daily_report=daily_report, description=description
+                )
+
+                followup_instance = FollowupDetail.objects.create(
+                    daily_report=daily_report, description=description
+                )
+
+                # بررسی و ذخیره فایل‌ها
+                for file in files:
+                    followup_instance.files.save(file.name, file)
+
+                # ذخیره جزئیات بازرسی
+                for inspection in inspection_details:
+                    InspectionDetail.objects.create(
+                        daily_report=daily_report,
+                        inspection_done=inspection.get("inspection_done", False),
+                        inspection=inspection.get("inspection", None),  # فیلد inspection رو اضافه کنید
+                        status=inspection.get("status", None),
+                        description=inspection.get("description", ""),
+                    )
+
                 return Response(
-                    {"error": "Validation Error", "errors": e.message_dict},
-                    status=status.HTTP_400_BAD_REQUEST,
+                    {"message": "گزارش با موفقیت ثبت شد.", "id": daily_report.id},
+                    status=status.HTTP_201_CREATED,
                 )
-
-            daily_report.save()
-
-            # ذخیره جزئیات آتشباری
-            for blasting in blasting_details:
-                if blasting.get("block_id"):
-                    block = get_object_or_404(MiningBlock, id=blasting.get("block_id"))
-                    BlastingDetail.objects.create(
-                        daily_report=daily_report,
-                        explosion_occurred=blasting.get("explosion_occurred", False),
-                        block=block,
-                        description=blasting.get("description", ""),
-                    )
-
-            # ذخیره جزئیات حفاری
-            for drilling in drilling_details:
-                if drilling.get("block_id") and drilling.get("machine_id"):
-                    block = get_object_or_404(MiningBlock, id=drilling.get("block_id"))
-                    machine = get_object_or_404(
-                        MiningMachine, id=drilling.get("machine_id")
-                    )
-                    DrillingDetail.objects.create(
-                        daily_report=daily_report,
-                        block=block,
-                        machine=machine,
-                        status=drilling.get("status", "unknown"),
-                        description=drilling.get("description", ""),
-                    )
-
-            # ذخیره جزئیات بارگیری
-            for loading in loading_details:
-                if loading.get("block_id") and loading.get("machine_id"):
-                    block = get_object_or_404(MiningBlock, id=loading.get("block_id"))
-                    machine = get_object_or_404(
-                        MiningMachine, id=loading.get("machine_id")
-                    )
-                    LoadingDetail.objects.create(
-                        daily_report=daily_report,
-                        block=block,
-                        machine=machine,
-                        status=loading.get("status", "unknown"),
-                        description=loading.get("description", ""),
-                    )
-
-            # ذخیره جزئیات تخلیه
-            for dump_detail in dump_details:
-                if dump_detail.get("dump_id"):
-                    dump = get_object_or_404(Dump, id=dump_detail.get("dump_id"))
-                    DumpDetail.objects.create(
-                        daily_report=daily_report,
-                        dump=dump,
-                        status=dump_detail.get("status", "unknown"),
-                        description=dump_detail.get("description", ""),
-                    )
-
-            # ذخیره جزئیات توقف
-            for stoppage in stoppage_details:  # Iterate through stoppage details
-                StoppageDetail.objects.create(
-                    daily_report=daily_report,
-                    reason=stoppage.get("reason", ""),
-                    start_time=stoppage.get("start_time", None),
-                    end_time=stoppage.get("end_time", None),
-                )
-
-            # ذخیره جزئیات پیگیری
-            # for index, followup in enumerate(followups_data): #دیگه لازم نیست روی followup_data حلقه بزنیم
-            index = 0 # فقط یک پیگیری در این مثال داریم، برای توسعه میتونید حلقه بزنید
-            description = received_data.get(f"followups[{index}][followup_description]")
-            files = request.FILES.getlist(f"followups[{index}][followup_file]")
-
-            followup_instance = FollowupDetail.objects.create(
-                daily_report=daily_report, description=description
-            )
-
-            # بررسی و ذخیره فایل‌ها
-            for file in files:
-                followup_instance.files.save(file.name, file)
-
-
-            # ذخیره جزئیات بازرسی
-            for inspection in inspection_details:
-                InspectionDetail.objects.create(
-                    daily_report=daily_report,
-                    inspection_done=inspection.get("inspection_done", False),
-                    inspection=inspection.get("inspection", ""),  # فیلد inspection رو اضافه کنید
-                    status=inspection.get("status", "unknown"),
-                    description=inspection.get("description", ""),
-                )
-
-            return Response(
-                {"message": "گزارش با موفقیت ثبت شد.", "id": daily_report.id},
-                status=status.HTTP_201_CREATED,
-            )
 
         except Exception as e:
             print(f"خطا: {e}")
+            # If ANY error occurs within the transaction, it will be rolled back
             return Response(
                 {"error": str(e), "message": str(e)},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -227,6 +242,9 @@ class DailyReportFormView(LoginRequiredMixin, TemplateView):
 
 
 
+
+
+
 @class_permission_required("daily_report_list")
 class DailyReportListView(LoginRequiredMixin, ListView):
     model = DailyReport
@@ -237,37 +255,57 @@ class DailyReportListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         queryset = super().get_queryset()
 
-        # دریافت پارامترهای فیلتر
-        shift = self.request.GET.get("shift")
-        group = self.request.GET.get("group")
-        search_query = self.request.GET.get("search")
+        # Get filter parameters from the request
+        self.shift_filter = self.request.GET.get("shift", "")
+        self.group_filter = self.request.GET.get("group", "")
+        self.search_query = self.request.GET.get("search", "")
 
-        # اعمال فیلترها (فقط اگر مقداری برای فیلتر وارد شده باشد)
-        if shift and shift != "همه":
-            queryset = queryset.filter(shift=shift)
-        if group and group != "همه":
-            queryset = queryset.filter(work_group=group)
+        # Apply filters
+        if self.shift_filter and self.shift_filter != "همه":
+            queryset = queryset.filter(shift=self.shift_filter)
+        if self.group_filter and self.group_filter != "همه":
+            queryset = queryset.filter(work_group=self.group_filter)
 
-        # اعمال فیلتر جستجو (بهبود یافته)
-        if search_query:
+        # Apply search filter
+        if self.search_query:
             queryset = queryset.filter(
-                Q(user__username__icontains=search_query) |
-                Q(user__first_name__icontains=search_query) |
-                Q(user__last_name__icontains=search_query) |
-                Q(user__userprofile__personnel_code__icontains=search_query) |
-                Q(supervisor_comments__icontains=search_query) |
-                Q(shift__icontains=search_query)
-                # میتونید فیلد های دیگه ای رو هم اینجا اضافه کنید
+                Q(user__username__icontains=self.search_query) |
+                Q(user__first_name__icontains=self.search_query) |
+                Q(user__last_name__icontains=self.search_query) |
+                Q(user__userprofile__personnel_code__icontains=self.search_query) |
+                Q(supervisor_comments__icontains=self.search_query) |
+                Q(shift__icontains=self.search_query)
             )
 
         return queryset.order_by("-created_at")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # ارسال فیلترهای فعلی به تمپلیت برای نمایش انتخاب‌ها
-        context["shift_filter"] = self.request.GET.get("shift", "همه")
-        context["group_filter"] = self.request.GET.get("group", "همه")
-        context["search_query"] = self.request.GET.get("search", "")
+
+        # Get the queryset (already filtered)
+        queryset = self.get_queryset()
+
+        # Paginate the queryset
+        paginator = Paginator(queryset, self.paginate_by)
+        page_number = self.request.GET.get('page')
+
+        try:
+            page_obj = paginator.get_page(page_number)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver first page.
+            page_obj = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), deliver last page of results.
+            page_obj = paginator.page(paginator.num_pages)
+
+        # Pass the paginated page object to the template
+        context['daily_reports'] = page_obj
+
+        # Pass the filter values to the template
+        context["shift_filter"] = self.shift_filter
+        context["group_filter"] = self.group_filter
+        context["search_query"] = self.search_query
+
         return context
 
 @class_permission_required("daily_report_detail")

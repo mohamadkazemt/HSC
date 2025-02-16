@@ -125,26 +125,15 @@ document.addEventListener("DOMContentLoaded", function () {
     window.addDrillingDetail = function () {
         const blockSelect = document.querySelector('[name="drilling_block"]');
         const blockId = blockSelect.value;
-        if (!blockId || isNaN(blockId)) {
-            alert("لطفاً یک بلوک معتبر انتخاب کنید.");
-            return;
-        }
+
         const blockName = blockSelect.options[blockSelect.selectedIndex].text;
         const machineSelect = document.querySelector('[name="drilling_machine"]');
         const machineId = machineSelect.value;
-        if (!machineId || isNaN(machineId)) {
-            alert("لطفاً یک دستگاه معتبر انتخاب کنید.");
-            return;
-        }
+
         const machineName = machineSelect.options[machineSelect.selectedIndex].text;
         const status = document.querySelector('[name="drilling_status"]').value;
         const description = document.querySelector('[name="drilling_description"]').value;
 
-
-        if (!blockId || isNaN(blockId) || !machineId || isNaN(machineId) || !status) {
-            alert("لطفاً تمام فیلدهای موردنیاز را پر کنید.");
-            return;
-        }
 
         const tableBody = document.querySelector('#drilling_table tbody');
         const row = document.createElement("tr");
@@ -176,25 +165,14 @@ document.addEventListener("DOMContentLoaded", function () {
     window.addLoadingDetail = function () {
         const blockSelect = document.querySelector('[name="loading_block"]');
         const blockId = blockSelect.value;
-        if (!blockId || isNaN(blockId)) {
-            alert("لطفاً یک بلوک معتبر انتخاب کنید.");
-            return;
-        }
+
         const blockName = blockSelect.options[blockSelect.selectedIndex].text;
         const machineSelect = document.querySelector('[name="loading_machine"]');
         const machineId = machineSelect.value;
-        if (!machineId || isNaN(machineId)) {
-            alert("لطفاً یک دستگاه معتبر انتخاب کنید.");
-            return;
-        }
+
         const machineName = machineSelect.options[machineSelect.selectedIndex].text;
         const status = document.querySelector('[name="loading_status"]').value;
         const description = document.querySelector('[name="loading_description"]').value;
-
-        if (!blockId || !machineId || !status) {
-            alert("لطفاً تمام فیلدهای موردنیاز را پر کنید.");
-            return;
-        }
 
 
         const tableBody = document.querySelector('#loading_table tbody');
@@ -230,10 +208,6 @@ document.addEventListener("DOMContentLoaded", function () {
         const status = document.querySelector('[name="dump_status"]').value;
         const description = document.querySelector('[name="dump_description"]').value;
 
-        if (!dumpId || isNaN(dumpId)) {
-            alert("لطفاً دامپ را انتخاب کنید.");
-            return;
-        }
 
         const tableBody = document.querySelector('#dump_table tbody');
         const row = document.createElement("tr");
@@ -272,11 +246,6 @@ document.addEventListener("DOMContentLoaded", function () {
         const status = document.querySelector('[name="inspection_safe"]').value;
         const description = document.querySelector('[name="inspection_description"]').value;
 
-        if (!inspection || !status) {
-            alert("لطفاً تمام فیلدها را پر کنید.");
-            return;
-        }
-
         const tableBody = document.querySelector('#inspection_table tbody');
         const row = document.createElement("tr");
 
@@ -306,11 +275,6 @@ document.addEventListener("DOMContentLoaded", function () {
         const reason = document.querySelector('[name="stoppage_reason"]').value;
         const start = document.querySelector('[name="stoppage_start"]').value;
         const end = document.querySelector('[name="stoppage_end"]').value;
-
-        if (!reason || !start || !end) {
-            alert("لطفاً تمام فیلدها را پر کنید.");
-            return;
-        }
 
         const tableBody = document.querySelector('#stoppage_table tbody');
         const row = document.createElement("tr");
@@ -342,11 +306,6 @@ document.addEventListener("DOMContentLoaded", function () {
     window.addFollowupDetail = function () {
         const description = document.querySelector('[name="followup_description"]').value;
         const files = document.querySelector('[name="followup_files"]').files;
-
-        if (!description) {
-            alert("لطفاً توضیحات را وارد کنید.");
-            return;
-        }
 
         const fileArray = [];
         for (let i = 0; i < files.length; i++) {
