@@ -5,121 +5,122 @@
      data-kt-drawer-activate="{default: true, lg: false}" data-kt-drawer-overlay="true"
      data-kt-drawer-width="250px" data-kt-drawer-direction="start"
      data-kt-drawer-toggle="#kt_app_sidebar_mobile_toggle">
-    <div class="app-sidebar-header d-flex flex-stack d-none d-lg-flex pt-8 pb-2" id="kt_app_sidebar_header">
-        <!--begin::Logo-->
+
+    <!-- Sidebar Header -->
+    <div class="app-sidebar-header d-flex flex-stack d-none d-lg-flex align-items-center pt-8 pb-2" id="kt_app_sidebar_header">
+        <!-- Logo -->
         <a href="{% url 'dashboard:dashboard' %}" class="app-sidebar-logo">
             <img alt="Logo" src="{% static 'assets/media/logos/logo.png' %}"
                  class="h-25px d-none d-sm-inline app-sidebar-logo-default theme-light-show"/>
             <img alt="Logo" src="{% static 'assets/media/logos/logo-dark.png' %}"
                  class="h-20px h-lg-25px theme-dark-show"/>
         </a>
-        <!--end::Logo-->
-        <!--begin::Sidebar toggle-->
+        <!-- End Logo -->
+
+        <!-- Sidebar Toggle -->
         <div id="kt_app_sidebar_toggle"
              class="app-sidebar-toggle btn btn-sm btn-icon bg-light btn-color-gray-700 btn-active-color-primary d-none d-lg-flex rotate"
              data-kt-toggle="true" data-kt-toggle-state="active" data-kt-toggle-target="body"
              data-kt-toggle-name="app-sidebar-minimize">
             <i class="ki-outline ki-text-align-right rotate-180 fs-1"></i>
         </div>
-        <!--end::Sidebar toggle-->
+        <!-- End Sidebar Toggle -->
     </div>
-    <!--begin::Navs-->
+    <!-- End Sidebar Header -->
+
+
+    <!-- Sidebar Navs -->
     <div class="app-sidebar-navs flex-column-fluid py-6" id="kt_app_sidebar_navs">
+
+        <!-- Search Bar -->
         <div class="d-flex align-items-center px-5 mb-5">
             <div class="input-group">
-                <input type="text" class="form-control form-control-sm" placeholder="جستجو در منو"
+                <input type="text" class="form-control form-control-sm" placeholder="جستجو در منو..."
                        id="menu-search-input">
                 <span class="input-group-text">
                     <i class="ki-outline ki-magnifier fs-3"></i>
                 </span>
             </div>
         </div>
+        <!-- End Search Bar -->
+
         <div id="kt_app_sidebar_navs_wrappers" class="app-sidebar-wrapper hover-scroll-y my-2" data-kt-scroll="true"
              data-kt-scroll-activate="true" data-kt-scroll-height="auto"
              data-kt-scroll-dependencies="#kt_app_sidebar_header" data-kt-scroll-wrappers="#kt_app_sidebar_navs"
              data-kt-scroll-offset="5px">
-            <!--begin::team-->
+
+            <!-- Shortcuts Menu -->
             <div class="app-sidebar-menu-secondary menu menu-rounded menu-column mb-6">
                 <div class="menu-item mb-2">
-                    <div class="menu-heading text-uppercase fs-7 fw-bold">میانبر</div>
+                    <div class="menu-heading text-uppercase fs-7 fw-bold">میانبرها</div>
                     <div class="app-sidebar-separator separator"></div>
                 </div>
 
-                <!-- Anomaly Reporting Shortcut -->
                 {% if request.user|has_permission:"anomalis" %}
                     <div class="menu-item">
-                        <a class="menu-link active" href="{% url 'anomalis:anomalis' %}">
-                            <span class="menu-icon"><span class="bullet bullet-dot bg-success"></span></span>
+                        <a class="menu-link" href="{% url 'anomalis:anomalis' %}">
+                            <span class="menu-icon"><i class="ki-outline ki-warning-circle text-success fs-2"></i></span>
                             <span class="menu-title">ثبت آنومالی</span>
                         </a>
                     </div>
                 {% endif %}
 
-                <!-- Daily Report Shortcut -->
                 {% if request.user|has_permission:"daily_report_form" %}
                     <div class="menu-item">
-                        <a class="menu-link active" href="{% url 'dailyreport_hse:daily_report_form' %}">
-                            <span class="menu-icon"><span class="bullet bullet-dot bg-success"></span></span>
+                        <a class="menu-link" href="{% url 'dailyreport_hse:daily_report_form' %}">
+                            <span class="menu-icon"><i class="ki-outline ki-notepad-edit text-success fs-2"></i></span>
                             <span class="menu-title">ثبت گزارش روزانه</span>
                         </a>
                     </div>
                 {% endif %}
 
-                <!-- Incident Report Shortcut -->
                 {% if request.user|has_permission:"incident_report" %}
                     <div class="menu-item">
                         <a class="menu-link" href="{% url 'hse_incidents:incident_report' %}">
-                            <span class="menu-icon"><span class="bullet bullet-dot bg-danger"></span></span>
+                            <span class="menu-icon"><i class="ki-outline ki-shield-cross text-danger fs-2"></i></span>
                             <span class="menu-title">ثبت گزارش حوادث</span>
                         </a>
                     </div>
                 {% endif %}
 
-                <!-- Operations Shift Report Shortcut -->
                 {% if request.user|has_permission:"create_shift_report" %}
                     <div class="menu-item">
-                        <a class="menu-link active" href="{% url 'operations:create_shift_report' %}">
-                            <span class="menu-icon">
-                                <span class="bullet bullet-dot bg-success"></span>
-                            </span>
+                        <a class="menu-link" href="{% url 'operations:create_shift_report' %}">
+                            <span class="menu-icon"><i class="ki-outline ki-time text-success fs-2"></i></span>
                             <span class="menu-title">ثبت گزارش شیفت</span>
                         </a>
                     </div>
                 {% endif %}
 
-                <!-- Machine Checklist Shortcut -->
                 {% if request.user|has_permission:"checklist_form" %}
                     <div class="menu-item">
-                        <a class="menu-link active" href="{% url 'machine_checklist:checklist_form' %}">
-                            <span class="menu-icon">
-                                <span class="bullet bullet-dot bg-success"></span>
-                            </span>
+                        <a class="menu-link" href="{% url 'machine_checklist:checklist_form' %}">
+                            <span class="menu-icon"><i class="ki-outline ki-check-square text-success fs-2"></i></span>
                             <span class="menu-title">چک لیست ماشین آلات</span>
                         </a>
                     </div>
                 {% endif %}
 
-                <!-- Leave Report Shortcut -->
                 {% if request.user|has_permission:"shift_report" %}
                     <div class="menu-item">
                         <a class="menu-link" href="{% url 'leave_reports:shift_report' %}">
-                            <span class="menu-icon"><span class="bullet bullet-dot bg-danger"></span></span>
+                            <span class="menu-icon"><i class="ki-outline ki-exit-right text-danger fs-2"></i></span>
                             <span class="menu-title">ثبت مرخصی</span>
                         </a>
                     </div>
                 {% endif %}
+
                 {% if request.user|has_permission:"create_report" %}
                     <div class="menu-item">
                         <a class="menu-link" href="{% url 'contractor_management:create_report' %}">
-                            <span class="menu-icon">
-                                <span class="bullet bullet-dot bg-danger"></span>
-                            </span>
+                            <span class="menu-icon"><i class="ki-outline ki-truck text-danger fs-2"></i></span>
                             <span class="menu-title">ثبت کارکرد خودرو پیمانکاران</span>
                         </a>
                     </div>
                 {% endif %}
 
             </div>
+            <!-- End Shortcuts Menu -->
 
             <!-- Main Menu -->
             <div id="#kt_app_sidebar_menu" data-kt-menu="true" data-kt-menu-expand="false"
@@ -129,7 +130,6 @@
                     <div class="app-sidebar-separator separator"></div>
                 </div>
 
-                <!-- Dashboard -->
                 {% if request.user|has_permission:"dashboard" %}
                     <div data-kt-menu-trigger="click" class="menu-item here show menu-accordion">
                         <span class="menu-link">
@@ -148,16 +148,16 @@
                     </div>
                 {% endif %}
 
-                <!-- Reports Menu -->
+
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
                     <span class="menu-link">
-                        <span class="menu-icon"><i class="ki-outline ki-gift fs-2"></i></span>
+                        <span class="menu-icon"><i class="ki-outline ki-folder fs-2"></i></span>
                         <span class="menu-title">گزارشات</span>
                         <span class="menu-arrow"></span>
                     </span>
 
                     <div class="menu-sub menu-sub-accordion">
-                        <!-- Anomaly -->
+
                         {% if request.user|has_permission:"anomalis" or request.user|has_permission:"list" or request.user|has_permission:"anomaly_reports" %}
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
                                 <span class="menu-link">
@@ -194,7 +194,6 @@
                             </div>
                         {% endif %}
 
-                        <!-- Daily Report -->
                         {% if request.user|has_permission:"daily_report_form" or request.user|has_permission:"daily_report_list"  %}
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
                                 <span class="menu-link">
@@ -223,7 +222,6 @@
                             </div>
                         {% endif %}
 
-                        <!-- Incident Report -->
                         {% if request.user|has_permission:"incident_report" or request.user|has_permission:"list_reports" %}
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
                                 <span class="menu-link">
@@ -254,7 +252,6 @@
                             </div>
                         {% endif %}
 
-                        <!-- Shift Report -->
                         {% if request.user|has_permission:"create_shift_report" or request.user|has_permission:"loading_operations_list" %}
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
                                 <span class="menu-link">
@@ -286,7 +283,6 @@
                             </div>
                         {% endif %}
 
-                        <!-- Leave Reports -->
                         {% if request.user|has_permission:"shift_report" or request.user|has_permission:"shift_report_list" %}
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
                                 <span class="menu-link">
@@ -317,7 +313,6 @@
                             </div>
                         {% endif %}
 
-                        <!-- Contractor Car Usage -->
                         {% if request.user|has_permission:"create_report" or request.user|has_permission:"all_reports" %}
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
                                 <span class="menu-link">
@@ -354,7 +349,6 @@
                             </div>
                         {% endif %}
 
-                        <!-- Machine Checklist -->
                         {% if request.user|has_permission:"checklist_form" or request.user|has_permission:"checklist_list" %}
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
                                 <span class="menu-link">
@@ -394,7 +388,10 @@
                     </div>
                 </div>
             </div>
+            <!-- End Main Menu -->
+
         </div>
     </div>
+    <!-- End Sidebar Navs -->
 </div>
 <script src="{% static 'assets/js/sidebar_search.js' %}"></script>

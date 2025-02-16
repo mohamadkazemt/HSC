@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="dailyreporthse28-11/2">
+    <list default="true" id="b7521fb2-84ac-482d-a175-67d6284063ac" name="Changes" comment="permission_tags28-11/4">
       <change afterPath="$PROJECT_DIR$/permissions/context_processors.py" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/permissions/templatetags/__init__.py" afterDir="false" />
       <change afterPath="$PROJECT_DIR$/permissions/templatetags/permission_tags.py" afterDir="false" />
@@ -392,15 +392,7 @@
       <workItem from="1737526000783" duration="4494000" />
       <workItem from="1739289397066" duration="3518000" />
       <workItem from="1739511148227" duration="8035000" />
-      <workItem from="1739717563640" duration="16491000" />
-    </task>
-    <task id="LOCAL-00023" summary="convert-to-pdf">
-      <option name="closed" value="true" />
-      <created>1731940553225</created>
-      <option name="number" value="00023" />
-      <option name="presentableId" value="LOCAL-00023" />
-      <option name="project" value="LOCAL" />
-      <updated>1731940553225</updated>
+      <workItem from="1739717563640" duration="16886000" />
     </task>
     <task id="LOCAL-00024" summary="log">
       <option name="closed" value="true" />
@@ -748,7 +740,14 @@
       <option name="presentableId" value="LOCAL‎−۰۰۰۷۱" />
       <updated>1739723687184</updated>
     </task>
-    <option name="localTasksCounter" value="72" />
+    <task id="LOCAL‎−۰۰۰۷۲" summary="permission_tags28-11/4">
+      <option name="closed" value="true" />
+      <created>1739738972490</created>
+      <option name="number" value="LOCAL‎−۰۰۰۷۲" />
+      <option name="presentableId" value="LOCAL‎−۰۰۰۷۲" />
+      <updated>1739738972490</updated>
+    </task>
+    <option name="localTasksCounter" value="73" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -766,7 +765,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="dailyreport_hsemami2" />
     <MESSAGE value="dailyreport_hsemami4" />
     <MESSAGE value="dailyreport_hsemami222" />
     <MESSAGE value="dailyreport_hseENDmax" />
@@ -791,7 +789,8 @@
     <MESSAGE value="dailyreporthse26-10/3" />
     <MESSAGE value="anomali-details27-10/2" />
     <MESSAGE value="dailyreporthse28-11/2" />
-    <option name="LAST_COMMIT_MESSAGE" value="dailyreporthse28-11/2" />
+    <MESSAGE value="permission_tags28-11/4" />
+    <option name="LAST_COMMIT_MESSAGE" value="permission_tags28-11/4" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
