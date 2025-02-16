@@ -35,9 +35,10 @@ import logging
 from django.core.exceptions import ValidationError
 from django.shortcuts import render
 from django.views.generic import TemplateView
-from django.contrib.auth.mixins import LoginRequiredMixin
 import logging
 from django.db import transaction
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+
 
 logger = logging.getLogger(__name__)
 
@@ -241,6 +242,9 @@ class DailyReportFormView(LoginRequiredMixin, TemplateView):
 
 
 
+
+
+
 @class_permission_required("daily_report_list")
 class DailyReportListView(LoginRequiredMixin, ListView):
     model = DailyReport
@@ -251,37 +255,57 @@ class DailyReportListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         queryset = super().get_queryset()
 
-        # دریافت پارامترهای فیلتر
-        shift = self.request.GET.get("shift")
-        group = self.request.GET.get("group")
-        search_query = self.request.GET.get("search")
+        # Get filter parameters from the request
+        self.shift_filter = self.request.GET.get("shift", "")
+        self.group_filter = self.request.GET.get("group", "")
+        self.search_query = self.request.GET.get("search", "")
 
-        # اعمال فیلترها (فقط اگر مقداری برای فیلتر وارد شده باشد)
-        if shift and shift != "همه":
-            queryset = queryset.filter(shift=shift)
-        if group and group != "همه":
-            queryset = queryset.filter(work_group=group)
+        # Apply filters
+        if self.shift_filter and self.shift_filter != "همه":
+            queryset = queryset.filter(shift=self.shift_filter)
+        if self.group_filter and self.group_filter != "همه":
+            queryset = queryset.filter(work_group=self.group_filter)
 
-        # اعمال فیلتر جستجو (بهبود یافته)
-        if search_query:
+        # Apply search filter
+        if self.search_query:
             queryset = queryset.filter(
-                Q(user__username__icontains=search_query) |
-                Q(user__first_name__icontains=search_query) |
-                Q(user__last_name__icontains=search_query) |
-                Q(user__userprofile__personnel_code__icontains=search_query) |
-                Q(supervisor_comments__icontains=search_query) |
-                Q(shift__icontains=search_query)
-                # میتونید فیلد های دیگه ای رو هم اینجا اضافه کنید
+                Q(user__username__icontains=self.search_query) |
+                Q(user__first_name__icontains=self.search_query) |
+                Q(user__last_name__icontains=self.search_query) |
+                Q(user__userprofile__personnel_code__icontains=self.search_query) |
+                Q(supervisor_comments__icontains=self.search_query) |
+                Q(shift__icontains=self.search_query)
             )
 
         return queryset.order_by("-created_at")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # ارسال فیلترهای فعلی به تمپلیت برای نمایش انتخاب‌ها
-        context["shift_filter"] = self.request.GET.get("shift", "همه")
-        context["group_filter"] = self.request.GET.get("group", "همه")
-        context["search_query"] = self.request.GET.get("search", "")
+
+        # Get the queryset (already filtered)
+        queryset = self.get_queryset()
+
+        # Paginate the queryset
+        paginator = Paginator(queryset, self.paginate_by)
+        page_number = self.request.GET.get('page')
+
+        try:
+            page_obj = paginator.get_page(page_number)
+        except PageNotAnInteger:
+            # If page is not an integer, deliver first page.
+            page_obj = paginator.page(1)
+        except EmptyPage:
+            # If page is out of range (e.g. 9999), deliver last page of results.
+            page_obj = paginator.page(paginator.num_pages)
+
+        # Pass the paginated page object to the template
+        context['daily_reports'] = page_obj
+
+        # Pass the filter values to the template
+        context["shift_filter"] = self.shift_filter
+        context["group_filter"] = self.group_filter
+        context["search_query"] = self.search_query
+
         return context
 
 @class_permission_required("daily_report_detail")
