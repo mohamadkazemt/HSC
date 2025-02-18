@@ -147,77 +147,57 @@ def list_permissions(request):
     unit_groups=UnitGroup.objects.all()
     users = User.objects.all()
 
-    # جمع‌آوری دسترسی‌ها
+    # دریافت لیبل‌ها
+    views_with_labels = get_all_views_with_labels()
+    view_labels = {view['name']: view['label'] for view in views_with_labels}
+
     permissions = []
+
+    def add_permission(permission, entity_type, entity_name):
+        permissions.append({
+            'type': entity_type,
+            'name': entity_name,
+            'view_name': permission.view_name,
+            'view_label': view_labels.get(permission.view_name, permission.view_name),
+            # نمایش نام ویو در صورت عدم وجود لیبل
+            'can_view': permission.can_view,
+            'can_add': permission.can_add,
+            'can_edit': permission.can_edit,
+            'can_delete': permission.can_delete,
+            'id': permission.id
+        })
 
     if part_filter:
         part_permissions = PartPermission.objects.filter(part_id=part_filter)
         for permission in part_permissions:
-            permissions.append({
-                'type': 'قسمت',
-                'name': permission.part.name,
-                'view_name': permission.view_name,
-                'can_view': permission.can_view,
-                'can_add': permission.can_add,
-                'can_edit': permission.can_edit,
-                'can_delete': permission.can_delete,
-                'id': permission.id
-            })
+            add_permission(permission, 'قسمت', permission.part.name)
 
     if section_filter:
         section_permissions = SectionPermission.objects.filter(section_id=section_filter)
         for permission in section_permissions:
-            permissions.append({
-                'type': 'بخش',
-                'name': permission.section.name,
-                'view_name': permission.view_name,
-                'can_view': permission.can_view,
-                'can_add': permission.can_add,
-                'can_edit': permission.can_edit,
-                'can_delete': permission.can_delete,
-                'id': permission.id
-            })
+            add_permission(permission, 'بخش', permission.section.name)
 
     if position_filter:
         position_permissions = PositionPermission.objects.filter(position_id=position_filter)
         for permission in position_permissions:
-            permissions.append({
-                'type': 'سمت',
-                'name': permission.position.name,
-                'view_name': permission.view_name,
-                'can_view': permission.can_view,
-                'can_add': permission.can_add,
-                'can_edit': permission.can_edit,
-                'can_delete': permission.can_delete,
-                'id': permission.id
-            })
+            add_permission(permission, 'سمت', permission.position.name)
+
     if unit_group_filter:
         unit_group_permissions = UnitGroupPermission.objects.filter(unit_group_id=unit_group_filter)
         for permission in unit_group_permissions:
-            permissions.append({
-                'type': 'گروه',
-                'name': permission.unit_group.name,
-                'view_name': permission.view_name,
-                'can_view': permission.can_view,
-                'can_add': permission.can_add,
-                'can_edit': permission.can_edit,
-                'can_delete': permission.can_delete,
-                'id': permission.id
-            })
-    if user_filter:
-         user_permissions = UserPermission.objects.filter(user_id=user_filter)
-         for permission in user_permissions:
-            permissions.append({
-                'type': 'کاربر',
-                'name': permission.user.username,
-                'view_name': permission.view_name,
-                'can_view': permission.can_view,
-                'can_add': permission.can_add,
-                'can_edit': permission.can_edit,
-                'can_delete': permission.can_delete,
-                'id': permission.id
-            })
+            add_permission(permission, 'گروه', permission.unit_group.name)
 
+    if user_filter:
+        user_permissions = UserPermission.objects.filter(user_id=user_filter)
+        for permission in user_permissions:
+            user_profile = getattr(permission.user, 'userprofile', None)  # تلاش برای دریافت UserProfile
+
+            if user_profile:
+                entity_name = f"{permission.user.first_name} {permission.user.last_name} ({user_profile.personnel_code})"
+            else:
+                entity_name = f"{permission.user.first_name} {permission.user.last_name}"
+
+            add_permission(permission, 'کاربر', entity_name)
 
     if not part_filter and not section_filter and not position_filter and not unit_group_filter and not user_filter:
         # بدون فیلتر همه موارد را نمایش بده
@@ -227,71 +207,34 @@ def list_permissions(request):
         unit_group_permissions = UnitGroupPermission.objects.all()
         user_permissions = UserPermission.objects.all()
 
-
         for permission in part_permissions:
-            permissions.append({
-                'type': 'قسمت',
-                'name': permission.part.name,
-                'view_name': permission.view_name,
-                'can_view': permission.can_view,
-                'can_add': permission.can_add,
-                'can_edit': permission.can_edit,
-                'can_delete': permission.can_delete,
-                'id': permission.id
-            })
+            add_permission(permission, 'قسمت', permission.part.name)
 
         for permission in section_permissions:
-            permissions.append({
-                'type': 'بخش',
-                'name': permission.section.name,
-                'view_name': permission.view_name,
-                'can_view': permission.can_view,
-                'can_add': permission.can_add,
-                'can_edit': permission.can_edit,
-                'can_delete': permission.can_delete,
-                'id': permission.id
-            })
+            add_permission(permission, 'بخش', permission.section.name)
 
         for permission in position_permissions:
-            permissions.append({
-                'type': 'سمت',
-                'name': permission.position.name,
-                'view_name': permission.view_name,
-                'can_view': permission.can_view,
-                'can_add': permission.can_add,
-                'can_edit': permission.can_edit,
-                'can_delete': permission.can_delete,
-                'id': permission.id
-            })
+            add_permission(permission, 'سمت', permission.position.name)
+
         for permission in unit_group_permissions:
-            permissions.append({
-                'type': 'گروه',
-                'name': permission.unit_group.name,
-                'view_name': permission.view_name,
-                'can_view': permission.can_view,
-                'can_add': permission.can_add,
-                'can_edit': permission.can_edit,
-                'can_delete': permission.can_delete,
-                'id': permission.id
-            })
+            add_permission(permission, 'گروه', permission.unit_group.name)
+
         for permission in user_permissions:
-            permissions.append({
-                'type': 'کاربر',
-                'name': permission.user.username,
-                'view_name': permission.view_name,
-                'can_view': permission.can_view,
-                'can_add': permission.can_add,
-                'can_edit': permission.can_edit,
-                'can_delete': permission.can_delete,
-                'id': permission.id
-            })
+            user_profile = getattr(permission.user, 'userprofile', None)  # تلاش برای دریافت UserProfile
+
+            if user_profile:
+                entity_name = f"{permission.user.first_name} {permission.user.last_name} ({user_profile.personnel_code})"
+            else:
+                entity_name = f"{permission.user.first_name} {permission.user.last_name}"
+
+            add_permission(permission, 'کاربر', entity_name)
 
     context = {
         'permissions': permissions,
         'parts': parts,
         'sections': sections,
         'positions': positions,
-        'unit_groups':unit_groups,
+        'unit_groups': unit_groups,
         'users': users,
     }
 
