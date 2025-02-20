@@ -1,9 +1,7 @@
 {% extends 'base.html' %}
 
-
 {% load static %}
 {% load jalali %}
-
 
 {% block content %}
     <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
@@ -35,130 +33,279 @@
                                         <!--begin::کارت header-->
 
                                         <div class="container mt-5">
-                                            <h3 class="mb-4">لیست دسترسی‌ها</h3>
+                                            <h3 class="mb-4">مدیریت دسترسی‌ها</h3>
 
-                                            <!-- فیلترها -->
-                                            <form method="get" class="mb-4">
-                                                <div class="row">
-                                                    <div class="col-md-3">
-                                                        <label for="part" class="form-label">قسمت:</label>
-                                                        <select name="part" id="part" class="form-select">
-                                                            <option value="">همه</option>
-                                                            {% for part in parts %}
-                                                                <option value="{{ part.id }}" {% if request.GET.part == part.id|stringformat:"s" %}selected{% endif %}>
-                                                                    {{ part.name }}
-                                                                </option>
-                                                            {% endfor %}
-                                                        </select>
+                                            <!-- Nav tabs -->
+                                            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link active" id="part-tab" data-bs-toggle="tab" data-bs-target="#part" type="button" role="tab" aria-controls="part" aria-selected="true">قسمت</button>
+                                                </li>
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link" id="section-tab" data-bs-toggle="tab" data-bs-target="#section" type="button" role="tab" aria-controls="section" aria-selected="false">بخش</button>
+                                                </li>
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link" id="unit_group-tab" data-bs-toggle="tab" data-bs-target="#unit_group" type="button" role="tab" aria-controls="unit_group" aria-selected="false">گروه</button>
+                                                </li>
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link" id="position-tab" data-bs-toggle="tab" data-bs-target="#position" type="button" role="tab" aria-controls="position" aria-selected="false">سمت</button>
+                                                </li>
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link" id="user-tab" data-bs-toggle="tab" data-bs-target="#user" type="button" role="tab" aria-controls="user" aria-selected="false">کاربر</button>
+                                                </li>
+                                            </ul>
+
+                                            <!-- Tab panes -->
+                                            <div class="tab-content">
+
+                                                <!-- Part Tab -->
+                                                <div class="tab-pane fade show active" id="part" role="tabpanel" aria-labelledby="part-tab">
+                                                    <div class="mb-3">
+                                                        <input type="text" id="part-search" class="form-control" placeholder="جستجو در قسمت‌ها...">
                                                     </div>
-                                                    <div class="col-md-3">
-                                                        <label for="section" class="form-label">بخش:</label>
-                                                        <select name="section" id="section" class="form-select">
-                                                            <option value="">همه</option>
-                                                            {% for section in sections %}
-                                                                <option value="{{ section.id }}" {% if request.GET.section == section.id|stringformat:"s" %}selected{% endif %}>
-                                                                    {{ section.name }}
-                                                                </option>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-bordered" id="part-table">
+                                                            <thead>
+                                                            <tr>
+                                                                <th>ردیف</th>
+                                                                <th>نام</th>
+                                                                <th>ویو</th>
+                                                                <th>مشاهده</th>
+                                                                <th>افزودن</th>
+                                                                <th>ویرایش</th>
+                                                                <th>حذف</th>
+                                                                <th>عملیات</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                            {% for permission in permissions %}
+                                                                {% if permission.type == 'قسمت' %}
+                                                                    <tr>
+                                                                        <td>{{ forloop.counter }}</td>
+                                                                        <td>{{ permission.name }}</td>
+                                                                        <td>{{ permission.view_label }}</td>
+                                                                        <td>{{ permission.can_view|yesno:"بله,خیر" }}</td>
+                                                                        <td>{{ permission.can_add|yesno:"بله,خیر" }}</td>
+                                                                        <td>{{ permission.can_edit|yesno:"بله,خیر" }}</td>
+                                                                        <td>{{ permission.can_delete|yesno:"بله,خیر" }}</td>
+                                                                        <td>
+                                                                            <a href="{% url 'permissions:edit_permission' permission.id %}?type={{ permission.type }}" class="btn btn-warning btn-sm">ویرایش</a>
+                                                                            <a href="{% url 'permissions:delete_permission' permission.id %}?type={{ permission.type }}"
+                                                                               class="btn btn-danger btn-sm"
+                                                                               onclick="return confirm('آیا مطمئن هستید؟')">حذف</a>
+                                                                        </td>
+                                                                    </tr>
+                                                                {% endif %}
+                                                            {% empty %}
+                                                                <tr>
+                                                                    <td colspan="8" class="text-center">هیچ دسترسی‌ای یافت نشد.</td>
+                                                                </tr>
                                                             {% endfor %}
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <label for="unit_group" class="form-label">گروه:</label>
-                                                        <select name="unit_group" id="unit_group" class="form-select">
-                                                            <option value="">همه</option>
-                                                            {% for unit_group in unit_groups %}
-                                                                <option value="{{ unit_group.id }}" {% if request.GET.unit_group == unit_group.id|stringformat:"s" %}selected{% endif %}>
-                                                                    {{ unit_group.name }}
-                                                                </option>
-                                                            {% endfor %}
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <label for="position" class="form-label">سمت:</label>
-                                                        <select name="position" id="position" class="form-select">
-                                                            <option value="">همه</option>
-                                                            {% for position in positions %}
-                                                                <option value="{{ position.id }}" {% if request.GET.position == position.id|stringformat:"s" %}selected{% endif %}>
-                                                                    {{ position.name }}
-                                                                </option>
-                                                            {% endfor %}
-                                                        </select>
-                                                    </div>
-                                                     <div class="col-md-3">
-                                                        <label for="user" class="form-label">کاربر:</label>
-                                                        <select name="user" id="user" class="form-select">
-                                                            <option value="">همه</option>
-                                                            {% for user in users %}
-                                                                <option value="{{ user.id }}" {% if request.GET.user == user.id|stringformat:"s" %}selected{% endif %}>
-                                                                    {{ user.username }}
-                                                                </option>
-                                                            {% endfor %}
-                                                        </select>
+                                                            </tbody>
+                                                        </table>
                                                     </div>
                                                 </div>
-                                                <div class="mt-3 text-end">
-                                                    <button type="submit" class="btn btn-primary">اعمال فیلتر</button>
-                                                </div>
-                                            </form>
 
-                                            <!-- جدول دسترسی‌ها -->
-                                            <div class="table-responsive">
-                                                <table class="table table-bordered">
-                                                    <thead>
-                                                    <tr>
-                                                        <th>ردیف</th>
-                                                        <th>نوع</th>
-                                                        <th>نام</th>
-                                                        <th>ویو</th>
-                                                        <th>مشاهده</th>
-                                                        <th>افزودن</th>
-                                                        <th>ویرایش</th>
-                                                        <th>حذف</th>
-                                                        <th>عملیات</th>
-                                                    </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                    {% for permission in permissions %}
-                                                        <tr>
-                                                            <td>{{ forloop.counter }}</td>
-                                                            <td>{{ permission.type }}</td>
-                                                            <td>{{ permission.name }}</td>
-                                                            <td>{{ permission.view_name }}</td>
-                                                            <td>{{ permission.can_view|yesno:"بله,خیر" }}</td>
-                                                            <td>{{ permission.can_add|yesno:"بله,خیر" }}</td>
-                                                            <td>{{ permission.can_edit|yesno:"بله,خیر" }}</td>
-                                                            <td>{{ permission.can_delete|yesno:"بله,خیر" }}</td>
-                                                            <td>
-                                                                <a href="{% url 'permissions:edit_permission' permission.id %}?type={{ permission.type }}" class="btn btn-warning btn-sm">ویرایش</a>
-                                                                <a href="{% url 'permissions:delete_permission' permission.id %}?type={{ permission.type }}"
-                                                                   class="btn btn-danger btn-sm"
-                                                                   onclick="return confirm('آیا مطمئن هستید؟')">حذف</a>
-                                                            </td>
-                                                        </tr>
-                                                    {% empty %}
-                                                        <tr>
-                                                            <td colspan="9" class="text-center">هیچ دسترسی‌ای یافت نشد.</td>
-                                                        </tr>
-                                                    {% endfor %}
-                                                    </tbody>
-                                                </table>
+                                                <!-- Section Tab -->
+                                                <div class="tab-pane fade" id="section" role="tabpanel" aria-labelledby="section-tab">
+                                                    <div class="mb-3">
+                                                        <input type="text" id="section-search" class="form-control" placeholder="جستجو در بخش‌ها...">
+                                                    </div>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-bordered" id="section-table">
+                                                            <thead>
+                                                            <tr>
+                                                                <th>ردیف</th>
+                                                                <th>نام</th>
+                                                                <th>ویو</th>
+                                                                <th>مشاهده</th>
+                                                                <th>افزودن</th>
+                                                                <th>ویرایش</th>
+                                                                <th>حذف</th>
+                                                                <th>عملیات</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                            {% for permission in permissions %}
+                                                                {% if permission.type == 'بخش' %}
+                                                                    <tr>
+                                                                        <td>{{ forloop.counter }}</td>
+                                                                        <td>{{ permission.name }}</td>
+                                                                        <td>{{ permission.view_label }}</td>
+                                                                        <td>{{ permission.can_view|yesno:"بله,خیر" }}</td>
+                                                                        <td>{{ permission.can_add|yesno:"بله,خیر" }}</td>
+                                                                        <td>{{ permission.can_edit|yesno:"بله,خیر" }}</td>
+                                                                        <td>{{ permission.can_delete|yesno:"بله,خیر" }}</td>
+                                                                        <td>
+                                                                            <a href="{% url 'permissions:edit_permission' permission.id %}?type={{ permission.type }}" class="btn btn-warning btn-sm">ویرایش</a>
+                                                                            <a href="{% url 'permissions:delete_permission' permission.id %}?type={{ permission.type }}"
+                                                                               class="btn btn-danger btn-sm"
+                                                                               onclick="return confirm('آیا مطمئن هستید؟')">حذف</a>
+                                                                        </td>
+                                                                    </tr>
+                                                                {% endif %}
+                                                            {% empty %}
+                                                                <tr>
+                                                                    <td colspan="8" class="text-center">هیچ دسترسی‌ای یافت نشد.</td>
+                                                                </tr>
+                                                            {% endfor %}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Unit Group Tab -->
+                                                <div class="tab-pane fade" id="unit_group" role="tabpanel" aria-labelledby="unit_group-tab">
+                                                    <div class="mb-3">
+                                                        <input type="text" id="unit_group-search" class="form-control" placeholder="جستجو در گروه‌ها...">
+                                                    </div>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-bordered" id="unit_group-table">
+                                                            <thead>
+                                                            <tr>
+                                                                <th>ردیف</th>
+                                                                <th>نام</th>
+                                                                <th>ویو</th>
+                                                                <th>مشاهده</th>
+                                                                <th>افزودن</th>
+                                                                <th>ویرایش</th>
+                                                                <th>حذف</th>
+                                                                <th>عملیات</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                            {% for permission in permissions %}
+                                                                {% if permission.type == 'گروه' %}
+                                                                    <tr>
+                                                                        <td>{{ forloop.counter }}</td>
+                                                                        <td>{{ permission.name }}</td>
+                                                                        <td>{{ permission.view_label }}</td>
+                                                                        <td>{{ permission.can_view|yesno:"بله,خیر" }}</td>
+                                                                        <td>{{ permission.can_add|yesno:"بله,خیر" }}</td>
+                                                                        <td>{{ permission.can_edit|yesno:"بله,خیر" }}</td>
+                                                                        <td>{{ permission.can_delete|yesno:"بله,خیر" }}</td>
+                                                                        <td>
+                                                                            <a href="{% url 'permissions:edit_permission' permission.id %}?type={{ permission.type }}" class="btn btn-warning btn-sm">ویرایش</a>
+                                                                            <a href="{% url 'permissions:delete_permission' permission.id %}?type={{ permission.type }}"
+                                                                               class="btn btn-danger btn-sm"
+                                                                               onclick="return confirm('آیا مطمئن هستید؟')">حذف</a>
+                                                                        </td>
+                                                                    </tr>
+                                                                {% endif %}
+                                                            {% empty %}
+                                                                <tr>
+                                                                    <td colspan="8" class="text-center">هیچ دسترسی‌ای یافت نشد.</td>
+                                                                </tr>
+                                                            {% endfor %}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Position Tab -->
+                                                <div class="tab-pane fade" id="position" role="tabpanel" aria-labelledby="position-tab">
+                                                    <div class="mb-3">
+                                                        <input type="text" id="position-search" class="form-control" placeholder="جستجو در سمت‌ها...">
+                                                    </div>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-bordered" id="position-table">
+                                                            <thead>
+                                                            <tr>
+                                                                <th>ردیف</th>
+                                                                <th>نام</th>
+                                                                <th>ویو</th>
+                                                                <th>مشاهده</th>
+                                                                <th>افزودن</th>
+                                                                <th>ویرایش</th>
+                                                                <th>حذف</th>
+                                                                <th>عملیات</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                            {% for permission in permissions %}
+                                                                {% if permission.type == 'سمت' %}
+                                                                    <tr>
+                                                                        <td>{{ forloop.counter }}</td>
+                                                                        <td>{{ permission.name }}</td>
+                                                                        <td>{{ permission.view_label }}</td>
+                                                                        <td>{{ permission.can_view|yesno:"بله,خیر" }}</td>
+                                                                        <td>{{ permission.can_add|yesno:"بله,خیر" }}</td>
+                                                                        <td>{{ permission.can_edit|yesno:"بله,خیر" }}</td>
+                                                                        <td>{{ permission.can_delete|yesno:"بله,خیر" }}</td>
+                                                                        <td>
+                                                                            <a href="{% url 'permissions:edit_permission' permission.id %}?type={{ permission.type }}" class="btn btn-warning btn-sm">ویرایش</a>
+                                                                            <a href="{% url 'permissions:delete_permission' permission.id %}?type={{ permission.type }}"
+                                                                               class="btn btn-danger btn-sm"
+                                                                               onclick="return confirm('آیا مطمئن هستید؟')">حذف</a>
+                                                                        </td>
+                                                                    </tr>
+                                                                {% endif %}
+                                                            {% empty %}
+                                                                <tr>
+                                                                    <td colspan="8" class="text-center">هیچ دسترسی‌ای یافت نشد.</td>
+                                                                </tr>
+                                                            {% endfor %}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+
+                                                <!-- User Tab -->
+                                                <div class="tab-pane fade" id="user" role="tabpanel" aria-labelledby="user-tab">
+                                                    <div class="mb-3">
+                                                        <input type="text" id="user-search" class="form-control" placeholder="جستجو در کاربران...">
+                                                    </div>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-bordered" id="user-table">
+                                                            <thead>
+                                                            <tr>
+                                                                <th>ردیف</th>
+                                                                <th>نام کاربری</th>
+                                                                <th>ویو</th>
+                                                                <th>مشاهده</th>
+                                                                <th>افزودن</th>
+                                                                <th>ویرایش</th>
+                                                                <th>حذف</th>
+                                                                <th>عملیات</th>
+                                                            </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                            {% for permission in permissions %}
+                                                                {% if permission.type == 'کاربر' %}
+                                                                    <tr>
+                                                                        <td>{{ forloop.counter }}</td>
+                                                                        <td>{{ permission.name }}</td>
+                                                                        <td>{{ permission.view_label }}</td>
+                                                                        <td>{{ permission.can_view|yesno:"بله,خیر" }}</td>
+                                                                        <td>{{ permission.can_add|yesno:"بله,خیر" }}</td>
+                                                                        <td>{{ permission.can_edit|yesno:"بله,خیر" }}</td>
+                                                                        <td>{{ permission.can_delete|yesno:"بله,خیر" }}</td>
+                                                                        <td>
+                                                                            <a href="{% url 'permissions:edit_permission' permission.id %}?type={{ permission.type }}" class="btn btn-warning btn-sm">ویرایش</a>
+                                                                            <a href="{% url 'permissions:delete_permission' permission.id %}?type={{ permission.type }}"
+                                                                               class="btn btn-danger btn-sm"
+                                                                               onclick="return confirm('آیا مطمئن هستید؟')">حذف</a>
+                                                                        </td>
+                                                                    </tr>
+                                                                {% endif %}
+                                                            {% empty %}
+                                                                <tr>
+                                                                    <td colspan="8" class="text-center">هیچ دسترسی‌ای یافت نشد.</td>
+                                                                </tr>
+                                                            {% endfor %}
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+
                                             </div>
                                         </div>
 
                                     </div>
-
-
-
-
-
-
                                     <!--end::جداول Widget 13-->
                                 </div>
-
                                 <!--end::Content container-->
                             </div>
                             <!--end::Content-->
-
                         </div>
                         <!--end::Content wrapper-->
                         <!--begin::Footer-->
@@ -178,5 +325,27 @@
             <!--end::Messenger-->
         </div>
         <!--end::notification drawer-->
+
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script>
+            $(document).ready(function() {
+                // Function to filter table rows based on search input
+                function filterTable(tableId, searchInputId) {
+                    $("#" + searchInputId).on("keyup", function() {
+                        var value = $(this).val().toLowerCase();
+                        $("#" + tableId + " tbody tr").filter(function() {
+                            $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+                        });
+                    });
+                }
+
+                // Initialize search filtering for each table
+                filterTable("part-table", "part-search");
+                filterTable("section-table", "section-search");
+                filterTable("unit_group-table", "unit_group-search");
+                filterTable("position-table", "position-search");
+                filterTable("user-table", "user-search");
+            });
+        </script>
 
 {% endblock %}
