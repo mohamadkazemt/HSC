@@ -1,3 +1,5 @@
+import logging
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from permissions.utils import permission_required
@@ -21,7 +23,10 @@ import os
 from weasyprint import HTML, CSS
 from anomalis.models import Location, LocationSection
 from .forms import HseCompletionReportForm, IncidentReportForm
+from django.contrib.auth.models import Group
+from dashboard.sms_utils import send_template_sms
 
+logger = logging.getLogger(__name__)
 
 @permission_required("incident_report")
 @login_required
@@ -98,7 +103,31 @@ def report_incident(request):
             incident.involved_person.set(UserProfile.objects.filter(id__in=involved_person_ids))
             incident.injury_type.set(InjuryType.objects.filter(id__in=injury_type_ids))
             incident.related_contractor_employees.set(Employee.objects.filter(id__in=related_contractor_employees_ids))
-            messages.success(request, "گزارش حادثه با موفقیت ثبت شد.")
+            
+            # ارسال پیامک به مدیران HSE
+            template_id = 169411  # شناسه قالب
+            try:
+                hse_group = Group.objects.get(name='مدیر HSE')
+                for user in hse_group.user_set.all():
+                    try:
+                        profile = user.userprofile
+                        location_name = incident.location.name if incident.location else "نامشخص"
+                        parameters = [
+                            {"Name": "LOCATION", "Value": location_name},
+                            {"Name": "INCIDENT_ID", "Value": str(incident.id)}
+                        ]
+                        send_template_sms(profile.mobile, template_id, parameters)
+                        logger.info(f"پیامک به شماره {profile.mobile} برای حادثه {incident.id} ارسال شد")
+                    except Exception as sms_error:
+                        logger.error(f"خطا در ارسال پیامک برای حادثه {incident.id} به کاربر {user.username}: {sms_error}")
+                        continue
+                    
+            except Group.DoesNotExist:
+                logger.error("گروه 'مدیر HSE' یافت نشد")
+                messages.warning(request, "گروه 'مدیر HSE' یافت نشد، اما گزارش با موفقیت ثبت شد")
+            
+            messages.success(request, "گزارش حادثه با موفقیت ثبت شد")
+            
         except Exception as e:
             messages.error(request, f"خطا در ثبت گزارش: {e}")
 

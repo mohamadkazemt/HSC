@@ -203,6 +203,11 @@ fa_formats.DATE_FORMAT = "Y/m/d"
 
 
 
+# مسیر پوشه logs در کنار پروژه
+LOG_DIR = os.path.join(BASE_DIR, 'logs')
+if not os.path.exists(LOG_DIR):
+    os.makedirs(LOG_DIR)
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -212,27 +217,70 @@ LOGGING = {
             'style': '{',
         },
         'simple': {
-            'format': '{levelname} {message}',
+            'format': '{levelname} {asctime} {message}',
             'style': '{',
         },
     },
     'handlers': {
         'console': {
-            'level': 'DEBUG',  # Set to DEBUG to see all log messages
             'class': 'logging.StreamHandler',
-            'formatter': 'simple'
+            'formatter': 'simple',
         },
-        'file': {
-            'level': 'DEBUG', # Set to DEBUG to see all log messages
+        'hse_incidents_file': {
             'class': 'logging.FileHandler',
-            'filename': 'permissions_debug.log',  # Specify a log file
+            'filename': os.path.join(LOG_DIR, 'hse_incidents.log'),
+            'formatter': 'verbose',
+        },
+        'anomalis_file': {
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOG_DIR, 'anomalis.log'),
+            'formatter': 'verbose',
+        },
+        'accounts_file': {
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOG_DIR, 'accounts.log'),
+            'formatter': 'verbose',
+        },
+        'contractor_management_file': {
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOG_DIR, 'contractor_management.log'),
+            'formatter': 'verbose',
+        },
+        'leave_reports_file': {
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(LOG_DIR, 'leave_reports.log'),
             'formatter': 'verbose',
         },
     },
     'loggers': {
-        'permissions': {  # This is the key - match the logger name
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',  # Set to DEBUG to see all log messages
+        'hse_incidents': {
+            'handlers': ['console', 'hse_incidents_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'anomalis': {
+            'handlers': ['console', 'anomalis_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'accounts': {
+            'handlers': ['console', 'accounts_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'contractor_management': {
+            'handlers': ['console', 'contractor_management_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'leave_reports': {
+            'handlers': ['console', 'leave_reports_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
             'propagate': True,
         },
     },
