@@ -21,17 +21,7 @@
                         <!--begin::Toolbar-->
                         {% include 'toolbar.html' %}
                         <!--end::Toolbar-->
-                        {% if messages %}
-                            <div class="messages mt-4">
-                                {% for message in messages %}
-                                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
-                                        <i class="bi bi-info-circle-fill me-2"></i> <!-- آیکون زیبا -->
-                                        {{ message }}
-                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                        
                         <div class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10" id="kt_create_account_stepper">
                             <div id="kt_create_account_stepper" class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10">
                                 <div class="card d-flex flex-row-fluid flex-center">
