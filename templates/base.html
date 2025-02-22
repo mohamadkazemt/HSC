@@ -99,5 +99,43 @@ if (document.documentElement) {
 
 <!--end::سفارشی Javascript-->
 <!--end::Javascript-->
+
+{% block messages %}
+    {% if messages %}
+        <div class="messages-container">
+            {% for message in messages %}
+                {% if message.tags == 'success' %}
+                    <script>
+                        toastr.success('{{ message }}');
+                    </script>
+                {% elif message.tags == 'error' %}
+                    <script>
+                        toastr.error('{{ message }}');
+                    </script>
+                {% elif message.tags == 'warning' %}
+                    <script>
+                        toastr.warning('{{ message }}');
+                    </script>
+                {% elif message.tags == 'info' %}
+                    <script>
+                        toastr.info('{{ message }}');
+                    </script>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}
+
+<!-- تنظیمات Toastr -->
+<script>
+    toastr.options = {
+        "closeButton": true,
+        "progressBar": true,
+        "positionClass": "toast-top-left",
+        "timeOut": "5000",
+        "extendedTimeOut": "2000",
+        "rtl": true
+    };
+</script>
 </body>
 </html>
