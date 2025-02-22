@@ -82,7 +82,7 @@ class MiningBlock(models.Model):
     is_active = models.BooleanField(default=True, verbose_name="فعال")
 
     def __str__(self):
-        return f"{self.block_name} - {self.get_status_display()}"
+        return f"{self.block_name}"
 
     class Meta:
         verbose_name = "بلوک معدنی"

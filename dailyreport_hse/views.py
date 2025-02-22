@@ -169,15 +169,11 @@ class CreateDailyReportView(APIView):
                     )
 
                 # ذخیره جزئیات پیگیری
-                # for index, followup in enumerate(followups_data): #دیگه لازم نیست روی followup_data حلقه بزنید
-                index = 0 # فقط یک پیگیری در این مثال داریم، برای توسعه میتونید حلقه بزنید
+                index = 0 # فقط یک پیگیری در این مثال داریم
                 description = received_data.get(f"followups[{index}][followup_description]")
                 files = request.FILES.getlist(f"followups[{index}][followup_file]")
 
-                FollowupDetail.objects.create(
-                    daily_report=daily_report, description=description
-                )
-
+                # فقط یک بار ایجاد می‌کنیم
                 followup_instance = FollowupDetail.objects.create(
                     daily_report=daily_report, description=description
                 )
