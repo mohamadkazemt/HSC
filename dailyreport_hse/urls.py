@@ -5,6 +5,7 @@ from .views import (
     DailyReportListView,
     DailyReportDetailView,
     daily_report_pdf_view,
+    DailyReportDeleteView,
 )
 
 app_name = "dailyreport_hse"
@@ -39,6 +40,12 @@ URLS_WITH_LABELS = [
         "view": daily_report_pdf_view,
         "name": "daily_report_pdf",
         "label": "گزارش روزانه HSE_دریافت PDF گزارش",
+    },
+    {
+        "path": "report/<int:pk>/delete/",
+        "view": DailyReportDeleteView.as_view(),
+        "name": "daily_report_delete",
+        "label": "گزارش روزانه HSE_حذف گزارش",
     },
 ]
 

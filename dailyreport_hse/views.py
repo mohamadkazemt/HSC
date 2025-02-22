@@ -38,6 +38,10 @@ from django.views.generic import TemplateView
 import logging
 from django.db import transaction
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.views.generic.edit import DeleteView
+from django.urls import reverse_lazy
+from django.http import JsonResponse
+from django.contrib.auth.mixins import UserPassesTestMixin
 
 
 logger = logging.getLogger(__name__)
@@ -377,3 +381,27 @@ def daily_report_pdf_view(request, pk):
     pdf_file.write_pdf(target=response)
 
     return response
+
+@class_permission_required("daily_report_delete")
+class DailyReportDeleteView(LoginRequiredMixin, DeleteView):
+    model = DailyReport
+    success_url = '/dailyreport_hse/list/'
+    
+    def post(self, request, *args, **kwargs):
+        return self.delete(request, *args, **kwargs)
+    
+    def delete(self, request, *args, **kwargs):
+        try:
+            self.object = self.get_object()
+            self.object.delete()
+            # حذف messages.success
+            return JsonResponse({
+                'status': 'success',
+                'message': 'گزارش با موفقیت حذف شد'
+            })
+        except Exception as e:
+            # حذف messages.error
+            return JsonResponse({
+                'status': 'error',
+                'message': str(e)
+            }, status=400)
