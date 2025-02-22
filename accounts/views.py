@@ -179,17 +179,21 @@ def get_users_ajax(request):
     users = []
     search_term = request.GET.get('term', '')
     if search_term:
-        for user in User.objects.filter(Q(first_name__icontains=search_term) | Q(last_name__icontains=search_term) | Q(userprofile__personnel_code__icontains=search_term)):
-          user_profile = getattr(user, 'userprofile', None)
-          if user_profile:
-               users.append({"id": user.id, "name": f"{user.first_name} {user.last_name} ({user_profile.personnel_code})"})
-          else:
-               users.append({"id": user.id, "name": f"{user.first_name} {user.last_name}"})
+        for user in User.objects.filter(Q(first_name__icontains=search_term) | 
+                                      Q(last_name__icontains=search_term) | 
+                                      Q(userprofile__personnel_code__icontains=search_term)):
+            user_profile = getattr(user, 'userprofile', None)
+            if user_profile:
+                users.append({
+                    "id": user_profile.id,
+                    "name": f"{user.first_name} {user.last_name} ({user_profile.personnel_code})"
+                })
     else:
-         for user in User.objects.all():
-             user_profile = getattr(user, 'userprofile', None)
-             if user_profile:
-                users.append({"id": user.id, "name": f"{user.first_name} {user.last_name} ({user_profile.personnel_code})"})
-             else:
-                users.append({"id": user.id, "name": f"{user.first_name} {user.last_name}"})
+        for user in User.objects.all():
+            user_profile = getattr(user, 'userprofile', None)
+            if user_profile:
+                users.append({
+                    "id": user_profile.id,
+                    "name": f"{user.first_name} {user.last_name} ({user_profile.personnel_code})"
+                })
     return JsonResponse(users, safe=False)
