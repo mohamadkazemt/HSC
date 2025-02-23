@@ -1,6 +1,7 @@
 from .utils import get_shift_for_date
 import datetime
 from .models import InitialShiftSetup
+from django.utils import timezone
 
 
 def shift_context_processor(request):

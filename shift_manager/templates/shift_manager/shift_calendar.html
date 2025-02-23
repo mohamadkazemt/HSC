@@ -1,49 +1,105 @@
-<!DOCTYPE html>
-<html lang="fa">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.7/index.global.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/moment-jalaali@0.9.2/build/moment-jalaali.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.7/index.global.min.js"></script>
-    <script src="https://unpkg.com/@fullcalendar/core/locales/fa.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid@6.1.7/index.global.min.js"></script>
-    <title>تقویم جلالی با FullCalendar</title>
-</head>
-<body>
+{% extends 'base.html' %}
+{% load static %}
+{% load calendar_tags %}
 
-<div id="calendar"></div>
+{% block content %}
+<div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+    <!--begin::Page-->
+    <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+        <!--begin::Header-->
+        {% include 'header.html' %}
+        <!--end::Header-->
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Load moment-jalaali
-        moment.loadPersian({ usePersianDigits: true });
+        <!--begin::Wrapper-->
+        <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+            <!--begin::Sidebar-->
+            {% include 'sidebar.html' %}
+            <!--end::Sidebar-->
 
-        const calendarEl = document.getElementById('calendar');
+            <!--begin::Main-->
+            <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                <!--begin::Content wrapper-->
+                <div class="d-flex flex-column flex-column-fluid">
+                    <!--begin::Toolbar-->
+                    {% include 'toolbar.html' %}
+                    <!--end::Toolbar-->
 
-        const calendar = new FullCalendar.Calendar(calendarEl, {
-            plugins: [ FullCalendar.dayGridPlugin ],
-            initialView: 'dayGridMonth',
-            locale: 'fa',  // تنظیم تقویم به زبان فارسی
-            direction: 'rtl', // تنظیم راست به چپ
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay'
-            },
-            events: [
-                {
-                    title: 'شیفت گروه A',
-                    start: moment('2024-10-19', 'YYYY-MM-DD').format('jYYYY-jMM-jDD')
-                },
-                // می‌توانید دیگر رویدادها را اینجا اضافه کنید.
-            ],
-        });
+                    <div class="container mt-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title fw-bold text-center">تقویم شیفت‌ها</h2>
+                            </div>
+                            <div class="card-body">
+                                <!-- فرم انتخاب سال و ماه -->
+                                <form method="get" class="mb-4">
+                                    <div class="row justify-content-center">
+                                        <div class="col-md-3">
+                                            <label for="year" class="form-label">سال:</label>
+                                            <input type="number" name="year" id="year" value="{{ year }}"
+                                                   class="form-control text-center">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="month" class="form-label">ماه:</label>
+                                            <select name="month" id="month" class="form-select text-center">
+                                                {% for i, month_name in months.items %}
+                                                <option value="{{ i }}" {% if month == i %}selected{% endif %}>
+                                                    {{ month_name }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2 d-flex align-items-end">
+                                            <button type="submit" class="btn btn-primary w-100">نمایش</button>
+                                        </div>
+                                    </div>
+                                </form>
 
-        calendar.render();
-    });
-</script>
-
-</body>
-</html>
+                                <!-- نمایش تقویم -->
+                                <table class="table table-bordered">
+                                    <thead>
+                                    <tr>
+                                        <th>شنبه</th>
+                                        <th>یک‌شنبه</th>
+                                        <th>دوشنبه</th>
+                                        <th>سه‌شنبه</th>
+                                        <th>چهارشنبه</th>
+                                        <th>پنج‌شنبه</th>
+                                        <th>جمعه</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for week in calendar %}
+                                        <tr>
+                                            {% for day in week %}
+                                                <td class="text-center">
+                                                    {% if day %}
+                                                        {{ day|date:"j" }} {{ months|get_item:month }}
+                                                        {% with date_str=day|date:"Y-m-d" %}
+                                                            {% if date_str in shift_data %}
+                                                                <br>
+                                                                A: {{ shift_data|get_item:date_str|get_item:'A'|default_if_none:"" }}<br>
+                                                                B: {{ shift_data|get_item:date_str|get_item:'B'|default_if_none:"" }}<br>
+                                                                C: {{ shift_data|get_item:date_str|get_item:'C'|default_if_none:"" }}<br>
+                                                                D: {{ shift_data|get_item:date_str|get_item:'D'|default_if_none:"" }}
+                                                            {% endif %}
+                                                        {% endwith %}
+                                                    {% endif %}
+                                                </td>
+                                            {% endfor %}
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!--end::Content wrapper-->
+            </div>
+            <!--end::Main-->
+        </div>
+        <!--end::Wrapper-->
+    </div>
+    <!--end::Page-->
+</div>
+{% endblock %}

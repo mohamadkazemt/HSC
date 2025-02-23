@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_jalali',
 
     'permissions.apps.PermissionsConfig',
 
@@ -56,7 +57,7 @@ INSTALLED_APPS = [
     'crispy_forms',
     'crispy_bootstrap5',
     'shift_manager.apps.ShiftManagerConfig',
-    'django_jalali',
+    
     'jalali_date',
     'import_export',
     'BaseInfo.apps.BaseinfoConfig',

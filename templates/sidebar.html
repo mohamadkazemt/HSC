@@ -55,11 +55,16 @@
                     <div class="menu-heading text-uppercase fs-7 fw-bold">میانبرها</div>
                     <div class="app-sidebar-separator separator"></div>
                 </div>
-
+                    <div class="menu-item">
+                        <a class="menu-link" href="{% url 'shift_manager:shift_calendar' %}">
+                            <span class="menu-icon"><i class="ki-outline ki-calendar text-primary fs-2"></i></span>
+                            <span class="menu-title">تقویم شیفت چرخشی</span>
+                        </a>
+                    </div>
                 {% if request.user|has_permission:"anomalis" %}
                     <div class="menu-item">
                         <a class="menu-link" href="{% url 'anomalis:anomalis' %}">
-                            <span class="menu-icon"><i class="ki-outline ki-warning-circle text-success fs-2"></i></span>
+                            <span class="menu-icon"><i class="ki-outline ki-bell text-warning fs-2"></i></span>
                             <span class="menu-title">ثبت آنومالی</span>
                         </a>
                     </div>
