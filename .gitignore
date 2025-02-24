@@ -6,3 +6,10 @@ __pycache__/
 permissions_debug.log
 error.log
 debug.log
+*.log
+*.log.*
+*.log.*.*
+*.log.*.*.*
+*.log.*.*.*.*
+*.log.*.*.*.*.*
+/myenv/

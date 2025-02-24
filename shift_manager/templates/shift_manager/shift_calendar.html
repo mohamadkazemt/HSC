@@ -25,22 +25,22 @@
                     <!--end::Toolbar-->
 
                     <div class="container mt-4">
-                        <div class="card">
-                            <div class="card-header">
-                                <h2 class="card-title fw-bold text-center">تقویم شیفت‌ها</h2>
+                        <div class="card shadow-sm rounded-lg">
+                            <div class="card-header bg-light py-4">
+                                <h2 class="card-title fw-bold text-center fs-2">تقویم شیفت‌ها</h2>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body p-4">
                                 <!-- فرم انتخاب سال و ماه -->
-                                <form method="get" class="mb-4">
-                                    <div class="row justify-content-center">
-                                        <div class="col-md-3">
-                                            <label for="year" class="form-label">سال:</label>
+                                <form method="get" class="mb-5">
+                                    <div class="row justify-content-center g-3">
+                                        <div class="col-md-3 col-sm-6">
+                                            <label for="year" class="form-label fw-semibold">سال:</label>
                                             <input type="number" name="year" id="year" value="{{ year }}"
-                                                   class="form-control text-center">
+                                                   class="form-control form-control-lg text-center shadow-sm">
                                         </div>
-                                        <div class="col-md-3">
-                                            <label for="month" class="form-label">ماه:</label>
-                                            <select name="month" id="month" class="form-select text-center">
+                                        <div class="col-md-3 col-sm-6">
+                                            <label for="month" class="form-label fw-semibold">ماه:</label>
+                                            <select name="month" id="month" class="form-select form-select-lg text-center shadow-sm">
                                                 {% for i, month_name in months.items %}
                                                 <option value="{{ i }}" {% if month == i %}selected{% endif %}>
                                                     {{ month_name }}
@@ -48,48 +48,104 @@
                                                 {% endfor %}
                                             </select>
                                         </div>
-                                        <div class="col-md-2 d-flex align-items-end">
-                                            <button type="submit" class="btn btn-primary w-100">نمایش</button>
+                                        <div class="col-md-2 col-sm-6 d-flex align-items-end">
+                                            <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm hover-elevate-up">
+                                                <i class="fas fa-search me-2"></i>نمایش
+                                            </button>
                                         </div>
                                     </div>
                                 </form>
 
                                 <!-- نمایش تقویم -->
-                                <table class="table table-bordered">
-                                    <thead>
-                                    <tr>
-                                        <th>شنبه</th>
-                                        <th>یک‌شنبه</th>
-                                        <th>دوشنبه</th>
-                                        <th>سه‌شنبه</th>
-                                        <th>چهارشنبه</th>
-                                        <th>پنج‌شنبه</th>
-                                        <th>جمعه</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {% for week in calendar %}
-                                        <tr>
+                                <div class="calendar-wrapper">
+                                    <!-- نمایش دسکتاپ -->
+                                    <div class="d-none d-md-block">
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-hover">
+                                                <thead class="table-light">
+                                                    <tr class="text-center">
+                                                        <th class="py-3">شنبه</th>
+                                                        <th class="py-3">یک‌شنبه</th>
+                                                        <th class="py-3">دوشنبه</th>
+                                                        <th class="py-3">سه‌شنبه</th>
+                                                        <th class="py-3">چهارشنبه</th>
+                                                        <th class="py-3">پنج‌شنبه</th>
+                                                        <th class="py-3">جمعه</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for week in calendar %}
+                                                        <tr>
+                                                            {% for day in week %}
+                                                                <td class="text-center p-3 position-relative {% if day %}hover-bg-light{% endif %}">
+                                                                    {% if day %}
+                                                                        <div class="fw-bold mb-2">{{ day|date:"j" }} {{ months|get_item:month }}</div>
+                                                                        {% with date_str=day|date:"Y-m-d" %}
+                                                                            {% if date_str in shift_data %}
+                                                                                <div class="shift-info">
+                                                                                    <div class="shift-group A">A: {{ shift_data|get_item:date_str|get_item:'A'|default_if_none:"" }}</div>
+                                                                                    <div class="shift-group B">B: {{ shift_data|get_item:date_str|get_item:'B'|default_if_none:"" }}</div>
+                                                                                    <div class="shift-group C">C: {{ shift_data|get_item:date_str|get_item:'C'|default_if_none:"" }}</div>
+                                                                                    <div class="shift-group D">D: {{ shift_data|get_item:date_str|get_item:'D'|default_if_none:"" }}</div>
+                                                                                </div>
+                                                                            {% endif %}
+                                                                        {% endwith %}
+                                                                    {% endif %}
+                                                                </td>
+                                                            {% endfor %}
+                                                        </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- نمایش موبایل -->
+                                    <div class="d-md-none mobile-calendar">
+                                        {% for week in calendar %}
                                             {% for day in week %}
-                                                <td class="text-center">
-                                                    {% if day %}
-                                                        {{ day|date:"j" }} {{ months|get_item:month }}
+                                                {% if day %}
+                                                    <div class="mobile-day-card">
+                                                        <div class="day-header">
+                                                            <span class="day-number">{{ day|date:"j" }}</span>
+                                                            <span class="month-name">{{ months|get_item:month }}</span>
+                                                        </div>
                                                         {% with date_str=day|date:"Y-m-d" %}
                                                             {% if date_str in shift_data %}
-                                                                <br>
-                                                                A: {{ shift_data|get_item:date_str|get_item:'A'|default_if_none:"" }}<br>
-                                                                B: {{ shift_data|get_item:date_str|get_item:'B'|default_if_none:"" }}<br>
-                                                                C: {{ shift_data|get_item:date_str|get_item:'C'|default_if_none:"" }}<br>
-                                                                D: {{ shift_data|get_item:date_str|get_item:'D'|default_if_none:"" }}
+                                                                <div class="shift-container">
+                                                                    {% if shift_data|get_item:date_str|get_item:'A' %}
+                                                                        <div class="shift-item shift-A">
+                                                                            <span class="shift-label">A:</span>
+                                                                            <span class="shift-value">{{ shift_data|get_item:date_str|get_item:'A' }}</span>
+                                                                        </div>
+                                                                    {% endif %}
+                                                                    {% if shift_data|get_item:date_str|get_item:'B' %}
+                                                                        <div class="shift-item shift-B">
+                                                                            <span class="shift-label">B:</span>
+                                                                            <span class="shift-value">{{ shift_data|get_item:date_str|get_item:'B' }}</span>
+                                                                        </div>
+                                                                    {% endif %}
+                                                                    {% if shift_data|get_item:date_str|get_item:'C' %}
+                                                                        <div class="shift-item shift-C">
+                                                                            <span class="shift-label">C:</span>
+                                                                            <span class="shift-value">{{ shift_data|get_item:date_str|get_item:'C' }}</span>
+                                                                        </div>
+                                                                    {% endif %}
+                                                                    {% if shift_data|get_item:date_str|get_item:'D' %}
+                                                                        <div class="shift-item shift-D">
+                                                                            <span class="shift-label">D:</span>
+                                                                            <span class="shift-value">{{ shift_data|get_item:date_str|get_item:'D' }}</span>
+                                                                        </div>
+                                                                    {% endif %}
+                                                                </div>
                                                             {% endif %}
                                                         {% endwith %}
-                                                    {% endif %}
-                                                </td>
+                                                    </div>
+                                                {% endif %}
                                             {% endfor %}
-                                        </tr>
-                                    {% endfor %}
-                                    </tbody>
-                                </table>
+                                        {% endfor %}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -102,4 +158,144 @@
     </div>
     <!--end::Page-->
 </div>
+
+<!-- اضافه کردن استایل‌های سفارشی -->
+<style>
+    .hover-elevate-up {
+        transition: transform 0.2s ease;
+    }
+    .hover-elevate-up:hover {
+        transform: translateY(-2px);
+    }
+    
+    .hover-bg-light:hover {
+        background-color: rgba(0,0,0,0.02);
+    }
+    
+    .shift-info {
+        font-size: 0.9rem;
+    }
+    
+    .shift-group {
+        padding: 2px;
+        margin: 2px 0;
+        border-radius: 4px;
+    }
+    
+    .shift-group.A { background-color: rgba(0, 123, 255, 0.1); }
+    .shift-group.B { background-color: rgba(40, 167, 69, 0.1); }
+    .shift-group.C { background-color: rgba(255, 193, 7, 0.1); }
+    .shift-group.D { background-color: rgba(220, 53, 69, 0.1); }
+    
+    @media (max-width: 768px) {
+        .table-responsive {
+            font-size: 0.9rem;
+        }
+        
+        .shift-info {
+            font-size: 0.8rem;
+        }
+    }
+
+    /* استایل‌های جدید برای نمایش موبایل */
+    .mobile-calendar {
+        display: grid;
+        gap: 10px;
+        padding: 10px;
+    }
+
+    .mobile-day-card {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 12px;
+        transition: transform 0.2s ease;
+    }
+
+    .mobile-day-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .day-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #eee;
+        margin-bottom: 8px;
+    }
+
+    .day-number {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .month-name {
+        color: #666;
+    }
+
+    .day-name {
+        color: #888;
+        margin-right: auto;
+    }
+
+    .shift-container {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .shift-item {
+        display: flex;
+        align-items: center;
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-size: 0.9rem;
+    }
+
+    .shift-label {
+        font-weight: bold;
+        margin-left: 8px;
+    }
+
+    .shift-value {
+        color: #555;
+    }
+
+    .shift-A { background-color: rgba(0, 123, 255, 0.1); }
+    .shift-B { background-color: rgba(40, 167, 69, 0.1); }
+    .shift-C { background-color: rgba(255, 193, 7, 0.1); }
+    .shift-D { background-color: rgba(220, 53, 69, 0.1); }
+
+    /* Responsive Grid */
+    @media (max-width: 768px) {
+        .mobile-calendar {
+            grid-template-columns: repeat(1, 1fr);
+        }
+    }
+
+    @media (min-width: 480px) and (max-width: 768px) {
+        .mobile-calendar {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    /* تنظیمات فونت برای موبایل */
+    @media (max-width: 768px) {
+        .day-number {
+            font-size: 1.2rem;
+        }
+        
+        .month-name,
+        .day-name {
+            font-size: 0.9rem;
+        }
+        
+        .shift-item {
+            font-size: 0.85rem;
+        }
+    }
+</style>
 {% endblock %}
