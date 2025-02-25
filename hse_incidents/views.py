@@ -47,7 +47,7 @@ def report_incident(request):
             description='مشاهده فرم گزارش حادثه جدید',
             related_model='IncidentReport',
             related_object_id=None,
-            url=reverse('hse_incidents:report_incident'),
+            url=reverse('hse_incidents:incident_report'),
             request=request
         )
 
