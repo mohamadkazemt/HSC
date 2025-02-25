@@ -73,13 +73,19 @@ def check_permission(user, view_name):
     if not user_profile:
         logger.debug(f"User {user.username} does not have a user profile.")
 
-        user_permissions = UserPermission.objects.filter(
-            user=user,
-            view_name=view_name
-        ).first()
-        if user_permissions:
+        if user.is_authenticated:
+            user_permissions = UserPermission.objects.filter(
+                user_id=user.id,
+                view_name=view_name,
+            )
+        else:
+            user_permissions = UserPermission.objects.filter(
+                user_id=None,
+                view_name=view_name,
+            )
+        if user_permissions.exists():
             user_permission_values = {
-                field.name: getattr(user_permissions, field.name)
+                field.name: getattr(user_permissions.first(), field.name)
                 for field in UserPermission._meta.fields
                 if field.name.startswith("can_")
             }
@@ -163,10 +169,16 @@ def check_permission(user, view_name):
         else:
             logger.debug(f"No position permissions found for position: {user_profile.position} and view: {view_name}")
     # بررسی دسترسی کاربر
-    user_permissions = UserPermission.objects.filter(
-        user=user,
-        view_name=view_name
-    ).first()
+    if user.is_authenticated:
+        user_permissions = UserPermission.objects.filter(
+            user_id=user.id,
+            view_name=view_name
+        ).first()
+    else:
+        user_permissions = UserPermission.objects.filter(
+            user_id=None,
+            view_name=view_name
+        ).first()
     if user_permissions:
         user_permission_values = {
             field.name: getattr(user_permissions, field.name)
