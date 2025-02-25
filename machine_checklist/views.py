@@ -14,14 +14,38 @@ import jdatetime
 import openpyxl
 from openpyxl.utils import get_column_letter
 from shift_manager.utils import get_current_shift_and_group  # حذف import اضافی
+from dashboard.utils import log_user_activity  # اضافه کردن ایمپورت
+from django.urls import reverse  # برای ساخت URL
 
 @permission_required("checklist_form")
 def checklist_form_view(request):
+    # ثبت فعالیت مشاهده فرم چک‌لیست
+    log_user_activity(
+        user=request.user,
+        activity_type='view',
+        description='مشاهده فرم چک‌لیست ماشین‌آلات',
+        related_model='Checklist',
+        related_object_id=None,
+        url=reverse('machine_checklist:checklist_form'),
+        request=request
+    )
+    
     machines = MiningMachine.objects.filter(is_active=True)
     return render(request, 'machine_checklist/checklist_form.html', {'machines': machines})
 
 @permission_required("get_questions")
 def get_questions(request, machine_id):
+    # ثبت فعالیت دریافت سوالات چک‌لیست
+    log_user_activity(
+        user=request.user,
+        activity_type='view',
+        description=f'دریافت سوالات چک‌لیست برای ماشین شماره {machine_id}',
+        related_model='Question',
+        related_object_id=None,
+        url=request.path,
+        request=request
+    )
+    
     machine = get_object_or_404(MiningMachine, id=machine_id)
     questions = Question.objects.filter(machine_type=machine.machine_type)
     question_list = []
@@ -57,6 +81,18 @@ def submit_checklist(request):
                                                shift=current_shift,
                                                 shift_group=shift_group
                                                )
+                                               
+            # ثبت فعالیت ارسال چک‌لیست
+            log_user_activity(
+                user=request.user,
+                activity_type='create',
+                description=f'ثبت چک‌لیست جدید برای ماشین {machine.workshop_code}',
+                related_model='Checklist',
+                related_object_id=checklist.id,
+                url=reverse('machine_checklist:checklist_detail', args=[checklist.id]),
+                request=request
+            )
+            
         except MiningMachine.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'ماشین مورد نظر یافت نشد.'})
 
@@ -76,6 +112,17 @@ def submit_checklist(request):
 
 @permission_required("checklist_list")
 def checklist_list_view(request):
+    # ثبت فعالیت مشاهده لیست چک‌لیست‌ها
+    log_user_activity(
+        user=request.user,
+        activity_type='view',
+        description='مشاهده لیست چک‌لیست‌های ماشین‌آلات',
+        related_model='Checklist',
+        related_object_id=None,
+        url=reverse('machine_checklist:checklist_list'),
+        request=request
+    )
+    
     query = request.GET.get('q')
     from_date_str = request.GET.get('start_date', '')
     to_date_str = request.GET.get('end_date', '')
@@ -129,6 +176,17 @@ def checklist_list_view(request):
 
 @permission_required("checklist_detail")
 def checklist_detail_view(request, checklist_id):
+    # ثبت فعالیت مشاهده جزئیات چک‌لیست
+    log_user_activity(
+        user=request.user,
+        activity_type='view',
+        description=f'مشاهده جزئیات چک‌لیست شماره {checklist_id}',
+        related_model='Checklist',
+        related_object_id=checklist_id,
+        url=reverse('machine_checklist:checklist_detail', args=[checklist_id]),
+        request=request
+    )
+    
     checklist = get_object_or_404(Checklist, id=checklist_id)
     answers = Answer.objects.filter(checklist=checklist)
     return render(request, 'machine_checklist/checklist_detail.html', {'checklist': checklist, 'answers': answers})
@@ -136,6 +194,17 @@ def checklist_detail_view(request, checklist_id):
 
 @permission_required("export_checklists_excel")
 def export_checklists_excel(request):
+    # ثبت فعالیت دریافت اکسل چک‌لیست‌ها
+    log_user_activity(
+        user=request.user,
+        activity_type='view',
+        description='دریافت فایل اکسل چک‌لیست‌های ماشین‌آلات',
+        related_model='Checklist',
+        related_object_id=None,
+        url=reverse('machine_checklist:export_checklists_excel'),
+        request=request
+    )
+    
     query = request.GET.get('q')
     from_date_str = request.GET.get('start_date', '')
     to_date_str = request.GET.get('end_date', '')

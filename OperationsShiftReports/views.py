@@ -20,6 +20,8 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from .permissions import operations_required
 from django.contrib.auth.decorators import login_required
+from dashboard.utils import log_user_activity
+from django.urls import reverse
 
 def convert_to_persian_day(date):
     """تبدیل روز هفته به فارسی برای تاریخ شمسی"""
@@ -74,6 +76,18 @@ def get_shift_details(group, date):
 
 @login_required
 def create_shift_report(request):
+    # ثبت فعالیت مشاهده فرم ایجاد گزارش شیفت
+    if request.method == "GET":
+        log_user_activity(
+            user=request.user,
+            activity_type='view',
+            description='مشاهده فرم ایجاد گزارش شیفت عملیات',
+            related_model='ShiftReport',
+            related_object_id=None,
+            url=reverse('OperationsShiftReports:create_shift_report'),
+            request=request
+        )
+    
     if request.method == "POST":
         try:
             # دریافت توضیحات سرشیفت
@@ -116,6 +130,17 @@ def create_shift_report(request):
                     status=status,
                     inactive_reason=inactive_reason if status == 'inactive' else None
                 )
+            
+            # ثبت فعالیت ایجاد گزارش شیفت
+            log_user_activity(
+                user=request.user,
+                activity_type='create',
+                description=f'ایجاد گزارش شیفت عملیات جدید برای گروه {current_group}',
+                related_model='ShiftReport',
+                related_object_id=shift_report.id,
+                url=None,
+                request=request
+            )
 
             return JsonResponse({'messages': [{'tags': 'success', 'message': 'گزارش با موفقیت ثبت شد.'}]})
 
@@ -168,6 +193,17 @@ def create_shift_report(request):
 @login_required
 @operations_required
 def loading_operations_list(request):
+    # ثبت فعالیت مشاهده لیست عملیات بارگیری
+    log_user_activity(
+        user=request.user,
+        activity_type='view',
+        description='مشاهده لیست عملیات بارگیری',
+        related_model='LoadingOperation',
+        related_object_id=None,
+        url=reverse('OperationsShiftReports:loading_operations_list'),
+        request=request
+    )
+    
     operations = LoadingOperation.objects.prefetch_related(
         'shift_reports',
         'shift_reports__creator',

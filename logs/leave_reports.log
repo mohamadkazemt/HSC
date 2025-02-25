@@ -1,0 +1,11 @@
+INFO 2025-02-25 22:31:06,480 views 15804 12312 POST request received for create_shift_report
+INFO 2025-02-25 22:31:06,481 views 15804 12312 Total leaves from request: 4
+INFO 2025-02-25 22:31:06,482 views 15804 12312 Processing leave 1 with data: {'user': '1', 'leave_type': 'regular', 'status': 'reported', 'description': None}
+WARNING 2025-02-25 22:31:06,498 views 15804 12312 Form not valid for leave 1: 
+INFO 2025-02-25 22:31:06,499 views 15804 12312 Processing leave 2 with data: {'user': '37', 'leave_type': 'absence', 'status': 'reported', 'description': '11'}
+WARNING 2025-02-25 22:31:06,501 views 15804 12312 Form not valid for leave 2: 
+INFO 2025-02-25 22:31:06,501 views 15804 12312 Processing leave 3 with data: {'user': '38', 'leave_type': 'sick_leave', 'status': 'reported', 'description': '111'}
+WARNING 2025-02-25 22:31:06,501 views 15804 12312 Form not valid for leave 3: 
+INFO 2025-02-25 22:31:06,501 views 15804 12312 Processing leave 4 with data: {'user': '40', 'leave_type': 'hourly', 'status': 'reported', 'description': None, 'start_time': '22:32', 'end_time': '22:33'}
+WARNING 2025-02-25 22:31:06,519 views 15804 12312 Form not valid for leave 4: 
+INFO 2025-02-25 22:31:06,519 views 15804 12312 4 leaves saved successfully
