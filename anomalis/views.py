@@ -88,6 +88,18 @@ def anomalis(request):
                 anomaly.save()
                 logger.info(f"Anomaly {anomaly.id} saved successfully by user {request.user.username}")
 
+                # ثبت فعالیت کاربر برای ایجاد آنومالی
+                from dashboard.utils import log_user_activity
+                log_user_activity(
+                    user=request.user,
+                    activity_type='create',
+                    description=f'ایجاد آنومالی جدید با شناسه {anomaly.id}',
+                    related_model='Anomaly',
+                    related_object_id=anomaly.id,
+                    url=reverse('anomalis:anomaly_detail', args=[anomaly.id]),
+                    request=request
+                )
+
                 # ارسال پیامک به مسئول پیگیری
                 template_id = 684430  # شناسه قالب
                 try:
@@ -170,6 +182,17 @@ def anomalis(request):
     else:
         logger.info(f"GET request received from user {request.user.username}")
         form = AnomalyForm()
+        
+        # ثبت فعالیت مشاهده فرم ایجاد آنومالی
+        from dashboard.utils import log_user_activity
+        log_user_activity(
+            user=request.user,
+            activity_type='view',
+            description='مشاهده فرم ایجاد آنومالی جدید',
+            related_model='Anomaly',
+            url=reverse('anomalis:anomalis'),
+            request=request
+        )
 
     return render(request, 'anomalis/new-anomalie.html', {
         'form': form,
@@ -445,6 +468,18 @@ def anomaly_detail_view(request, pk):
         pk=pk
     )
 
+    # ثبت فعالیت مشاهده جزئیات آنومالی
+    from dashboard.utils import log_user_activity
+    log_user_activity(
+        user=request.user,
+        activity_type='view',
+        description=f'مشاهده جزئیات آنومالی با شناسه {anomaly.id}',
+        related_model='Anomaly',
+        related_object_id=anomaly.id,
+        url=reverse('anomalis:anomaly_detail', args=[anomaly.id]),
+        request=request
+    )
+
     # چک کردن اینکه آیا کاربر مدیر HSE است
     is_hse_manager = request.user.groups.filter(name__in=['مدیر HSE', 'افسر HSE']).exists()
 
@@ -467,6 +502,17 @@ def anomaly_detail_view(request, pk):
                     comment.parent = parent_comment
 
                 comment.save()
+                
+                # ثبت فعالیت ارسال کامنت
+                log_user_activity(
+                    user=request.user,
+                    activity_type='create',
+                    description=f'ارسال کامنت برای آنومالی با شناسه {anomaly.id}',
+                    related_model='Comment',
+                    related_object_id=comment.id,
+                    url=reverse('anomalis:anomaly_detail', args=[anomaly.id]),
+                    request=request
+                )
 
                 # ارسال اعلان به مدیر HSE و ایجاد‌کننده آنومالی برای کامنت جدید
                 if anomaly.created_by:
@@ -527,6 +573,18 @@ def request_safe(request, pk):
         anomaly.is_request_sent = True
         anomaly.requested_by = request.user  # ذخیره کاربر درخواست‌دهنده
         anomaly.save()
+        
+        # ثبت فعالیت درخواست ایمن‌سازی
+        from dashboard.utils import log_user_activity
+        log_user_activity(
+            user=request.user,
+            activity_type='update',
+            description=f'درخواست ایمن‌سازی برای آنومالی با شناسه {anomaly.id}',
+            related_model='Anomaly',
+            related_object_id=anomaly.id,
+            url=reverse('anomalis:anomaly_detail', args=[anomaly.id]),
+            request=request
+        )
 
         # شناسایی شیفت جاری و گروه مرتبط
         current_shift, group = get_current_shift_and_group()
@@ -543,26 +601,27 @@ def request_safe(request, pk):
                 parameters = [
                     {"Name": "status", "Value": "در انتظار تایید"},
                     {"Name": "anomaly_id", "Value": str(anomaly.id)},
-                    {"Name": "shift", "Value": current_shift}
                 ]
                 send_template_sms(officer.mobile, template_id, parameters)
-                messages.success(request, "پیامک با موفقیت به افسر ایمنی حاضر ارسال شد.")
-
+                
                 # ایجاد اعلان برای افسر ایمنی
                 Notification.objects.create(
                     user=officer.user,
-                    message=f"آنومالی {anomaly.id} در انتظار تأیید وضعیت ایمن است.",
+                    message=f"درخواست ایمن‌سازی برای آنومالی {anomaly.id} ارسال شد.",
                     url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
                 )
+                
+                messages.success(request, "درخواست ایمن‌سازی با موفقیت ارسال شد و به افسر ایمنی حاضر اطلاع داده شد.")
             else:
-                messages.error(request, "افسر ایمنی حاضر یافت نشد.")
+                messages.warning(request, "افسر ایمنی در شیفت فعلی یافت نشد یا شماره موبایل ندارد.")
         except Exception as e:
-            logger.error(f"خطا در ارسال پیامک: {str(e)}")
-            messages.error(request, "خطا در ارسال پیامک.")
-
+            logger.error(f"Error in request_safe: {e}")
+            messages.error(request, "خطا در ارسال درخواست ایمن‌سازی.")
+            
         return redirect('anomalis:anomaly_detail', pk=anomaly.pk)
-
-    return redirect('anomalis:anomalis')
+    else:
+        messages.error(request, "شما مجاز به انجام این عملیات نیستید.")
+        return redirect('anomalis:anomaly_detail', pk=anomaly.pk)
 
 
 

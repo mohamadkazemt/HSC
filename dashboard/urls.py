@@ -6,5 +6,6 @@ app_name = 'dashboard'
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
     path('notifications/', views.notification_list, name='notification_list'),
-    path('notifications/mark/<int:notification_id>/', views.mark_notification_and_redirect, name='mark_notification_and_redirect'),
+    path('notification/<int:notification_id>/mark-read/', views.mark_notification_and_redirect, name='mark_notification_and_redirect'),
+    path('activities/', views.activity_list, name='activity_list'),  # اضافه کردن URL جدید
 ]

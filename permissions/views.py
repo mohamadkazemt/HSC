@@ -9,6 +9,8 @@ from django.db.models import Q
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib import messages
 from django.contrib.auth.models import User
+from dashboard.utils import log_user_activity
+from django.urls import reverse
 
 
 
@@ -17,6 +19,18 @@ def manage_access(request):
     """
     ویوی مدیریت دسترسی‌ها.
     """
+    # ثبت فعالیت مشاهده صفحه مدیریت دسترسی‌ها
+    if request.method == "GET":
+        log_user_activity(
+            user=request.user,
+            activity_type='view',
+            description='مشاهده صفحه مدیریت دسترسی‌ها',
+            related_model='Permission',
+            related_object_id=None,
+            url=reverse('permissions:manage_access'),
+            request=request
+        )
+    
     parts = Part.objects.values("id", "name")  # استخراج تمام قسمت‌ها
     sections = Section.objects.values("id", "name")  # استخراج تمام بخش‌ها
     positions = Position.objects.values("id", "name")  # استخراج تمام سمت‌ها
@@ -40,6 +54,34 @@ def manage_access(request):
         can_add = "can_add" in request.POST
         can_edit = "can_edit" in request.POST
         can_delete = "can_delete" in request.POST
+        
+        # ثبت فعالیت ایجاد دسترسی جدید
+        entity_name = ""
+        if entity_type == "part":
+            part = Part.objects.get(id=entity_id)
+            entity_name = f"قسمت {part.name}"
+        elif entity_type == "section":
+            section = Section.objects.get(id=entity_id)
+            entity_name = f"بخش {section.name}"
+        elif entity_type == "position":
+            position = Position.objects.get(id=entity_id)
+            entity_name = f"سمت {position.name}"
+        elif entity_type == "unit_group":
+            unit_group = UnitGroup.objects.get(id=entity_id)
+            entity_name = f"گروه {unit_group.name}"
+        elif entity_type == "user":
+            user = User.objects.get(id=entity_id)
+            entity_name = f"کاربر {user.first_name} {user.last_name}"
+        
+        log_user_activity(
+            user=request.user,
+            activity_type='create',
+            description=f'ایجاد دسترسی جدید برای {entity_name}',
+            related_model='Permission',
+            related_object_id=None,
+            url=reverse('permissions:manage_access'),
+            request=request
+        )
 
         for view_name in view_names:
             if entity_type == "part":
@@ -126,6 +168,17 @@ def validate_access(request, view_name):
     """
     ویوی بررسی دسترسی کاربر به ویوی مشخص.
     """
+    # ثبت فعالیت بررسی دسترسی
+    log_user_activity(
+        user=request.user,
+        activity_type='view',
+        description=f'بررسی دسترسی به ویو {view_name}',
+        related_model='Permission',
+        related_object_id=None,
+        url=request.path,
+        request=request
+    )
+    
     if not check_permission(request.user, view_name):
         return HttpResponseForbidden("شما اجازه دسترسی به این بخش را ندارید.")
     return JsonResponse({"message": "دسترسی مجاز است"})
@@ -133,6 +186,17 @@ def validate_access(request, view_name):
 
 @user_passes_test(lambda user: user.is_superuser)
 def list_permissions(request):
+    # ثبت فعالیت مشاهده لیست دسترسی‌ها
+    log_user_activity(
+        user=request.user,
+        activity_type='view',
+        description='مشاهده لیست دسترسی‌ها',
+        related_model='Permission',
+        related_object_id=None,
+        url=reverse('permissions:list_permissions'),
+        request=request
+    )
+    
     # فیلترها
     part_filter = request.GET.get('part')
     section_filter = request.GET.get('section')
@@ -259,6 +323,18 @@ def edit_permission(request, permission_id):
         permission = get_object_or_404(UserPermission, id=permission_id)
     else:
         return HttpResponseForbidden("نوع دسترسی نامعتبر است.")
+    
+    # ثبت فعالیت مشاهده فرم ویرایش دسترسی
+    if request.method == 'GET':
+        log_user_activity(
+            user=request.user,
+            activity_type='view',
+            description=f'مشاهده فرم ویرایش دسترسی {permission_id}',
+            related_model='Permission',
+            related_object_id=permission_id,
+            url=request.path,
+            request=request
+        )
 
     if request.method == 'POST':
         # دریافت اطلاعات از فرم
@@ -273,20 +349,43 @@ def edit_permission(request, permission_id):
         permission.can_edit = can_edit
         permission.can_delete = can_delete
         permission.save()
+        
+        # ثبت فعالیت ویرایش دسترسی
+        log_user_activity(
+            user=request.user,
+            activity_type='update',
+            description=f'ویرایش دسترسی {permission_id}',
+            related_model='Permission',
+            related_object_id=permission_id,
+            url=reverse('permissions:list_permissions'),
+            request=request
+        )
 
+        messages.success(request, "دسترسی با موفقیت به‌روزرسانی شد.")
         return redirect('permissions:list_permissions')
 
-    # ارسال اطلاعات به قالب
-    return render(request, 'permissions/edit_permission.html', {
+    # دریافت لیبل ویو
+    views_with_labels = get_all_views_with_labels()
+    view_label = permission.view_name
+    for view in views_with_labels:
+        if view['name'] == permission.view_name:
+            view_label = view['label']
+            break
+
+    context = {
         'permission': permission,
-        'permission_type': permission_type  # ارسال نوع دسترسی به قالب
-    })
+        'permission_type': permission_type,
+        'view_label': view_label,
+    }
+    return render(request, 'permissions/edit_permission.html', context)
 
 
 @user_passes_test(lambda user: user.is_superuser)
 def delete_permission(request, permission_id):
-    permission_type = request.GET.get('type')  # نوع دسترسی
+    permission_type = request.GET.get('type')  # دریافت نوع دسترسی از پارامتر GET
+    permission = None
 
+    # بررسی نوع دسترسی و بازیابی داده
     if permission_type == 'قسمت':
         permission = get_object_or_404(PartPermission, id=permission_id)
     elif permission_type == 'بخش':
@@ -297,9 +396,36 @@ def delete_permission(request, permission_id):
         permission = get_object_or_404(UnitGroupPermission, id=permission_id)
     elif permission_type == 'کاربر':
         permission = get_object_or_404(UserPermission, id=permission_id)
-
     else:
         return HttpResponseForbidden("نوع دسترسی نامعتبر است.")
 
-    permission.delete()
-    return redirect('permissions:list_permissions')
+    if request.method == 'POST':
+        # ثبت فعالیت حذف دسترسی
+        log_user_activity(
+            user=request.user,
+            activity_type='delete',
+            description=f'حذف دسترسی {permission_id}',
+            related_model='Permission',
+            related_object_id=permission_id,
+            url=reverse('permissions:list_permissions'),
+            request=request
+        )
+        
+        permission.delete()
+        messages.success(request, "دسترسی با موفقیت حذف شد.")
+        return redirect('permissions:list_permissions')
+
+    # دریافت لیبل ویو
+    views_with_labels = get_all_views_with_labels()
+    view_label = permission.view_name
+    for view in views_with_labels:
+        if view['name'] == permission.view_name:
+            view_label = view['label']
+            break
+
+    context = {
+        'permission': permission,
+        'permission_type': permission_type,
+        'view_label': view_label,
+    }
+    return render(request, 'permissions/delete_permission.html', context)

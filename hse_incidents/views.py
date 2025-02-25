@@ -25,6 +25,8 @@ from anomalis.models import Location, LocationSection
 from .forms import HseCompletionReportForm, IncidentReportForm
 from django.contrib.auth.models import Group
 from dashboard.sms_utils import send_template_sms
+from dashboard.utils import log_user_activity
+from django.urls import reverse
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +38,18 @@ def report_incident(request):
     except UserProfile.DoesNotExist:
         messages.error(request, "پروفایل کاربری شما یافت نشد. لطفا با مدیر سیستم تماس بگیرید.")
         return render(request, 'hse_incidents/incident_report_form.html')
+
+    # ثبت فعالیت مشاهده فرم گزارش حادثه
+    if request.method == 'GET':
+        log_user_activity(
+            user=request.user,
+            activity_type='view',
+            description='مشاهده فرم گزارش حادثه جدید',
+            related_model='IncidentReport',
+            related_object_id=None,
+            url=reverse('hse_incidents:report_incident'),
+            request=request
+        )
 
     locations = Location.objects.all()
     sections = LocationSection.objects.all()
@@ -104,6 +118,17 @@ def report_incident(request):
             incident.injury_type.set(InjuryType.objects.filter(id__in=injury_type_ids))
             incident.related_contractor_employees.set(Employee.objects.filter(id__in=related_contractor_employees_ids))
             
+            # ثبت فعالیت ایجاد گزارش حادثه
+            log_user_activity(
+                user=request.user,
+                activity_type='create',
+                description=f'ثبت گزارش حادثه جدید در {incident.location.name if incident.location else "نامشخص"}',
+                related_model='IncidentReport',
+                related_object_id=incident.id,
+                url=reverse('hse_incidents:report_details', args=[incident.id]),
+                request=request
+            )
+            
             # ارسال پیامک به مدیران HSE
             template_id = 169411  # شناسه قالب
             try:
@@ -136,8 +161,20 @@ def report_incident(request):
 
 @permission_required("get_injury_types_ajax")
 def get_injury_types_ajax(request):
-    injury_types = []
+    # ثبت فعالیت جستجوی انواع آسیب
     search_term = request.GET.get('term', '')
+    if search_term:
+        log_user_activity(
+            user=request.user,
+            activity_type='view',
+            description=f'جستجوی نوع آسیب با عبارت "{search_term}"',
+            related_model='InjuryType',
+            related_object_id=None,
+            url=None,
+            request=request
+        )
+    
+    injury_types = []
     if search_term:
         injury_types = InjuryType.objects.filter(Q(name__icontains=search_term)).values("id", "name")
     else:
@@ -148,6 +185,17 @@ def get_injury_types_ajax(request):
 @permission_required("list_reports")
 @login_required
 def list_reports(request):
+    # ثبت فعالیت مشاهده لیست گزارش‌های حادثه
+    log_user_activity(
+        user=request.user,
+        activity_type='view',
+        description='مشاهده لیست گزارش‌های حادثه',
+        related_model='IncidentReport',
+        related_object_id=None,
+        url=reverse('hse_incidents:list_reports'),
+        request=request
+    )
+    
     search_query = request.GET.get('search', '')
     from_date_str = request.GET.get('from_date', '')
     to_date_str = request.GET.get('to_date', '')
@@ -162,6 +210,17 @@ def list_reports(request):
             Q(initial_cause__icontains=search_query)
             | Q(report_author__user__first_name__icontains=search_query)
             | Q(report_author__user__last_name__icontains=search_query)
+        )
+        
+        # ثبت فعالیت جستجو در گزارش‌های حادثه
+        log_user_activity(
+            user=request.user,
+            activity_type='view',
+            description=f'جستجو در گزارش‌های حادثه با عبارت "{search_query}"',
+            related_model='IncidentReport',
+            related_object_id=None,
+            url=request.get_full_path(),
+            request=request
         )
 
     if from_date_str:
@@ -202,6 +261,18 @@ def list_reports(request):
 @login_required
 def report_details(request, report_id):
     report = get_object_or_404(IncidentReport, id=report_id)
+    
+    # ثبت فعالیت مشاهده جزئیات گزارش حادثه
+    log_user_activity(
+        user=request.user,
+        activity_type='view',
+        description=f'مشاهده جزئیات گزارش حادثه شماره {report_id}',
+        related_model='IncidentReport',
+        related_object_id=report_id,
+        url=reverse('hse_incidents:report_details', args=[report_id]),
+        request=request
+    )
+    
     try:
         hse_completion = HseCompletionReport.objects.get(incident_report=report)
     except HseCompletionReport.DoesNotExist:
@@ -215,6 +286,18 @@ def report_details(request, report_id):
             hse_completion.save()
             report.is_completed = True
             report.save()
+            
+            # ثبت فعالیت تکمیل گزارش حادثه
+            log_user_activity(
+                user=request.user,
+                activity_type='update',
+                description=f'تکمیل گزارش حادثه شماره {report_id}',
+                related_model='HseCompletionReport',
+                related_object_id=hse_completion.id,
+                url=reverse('hse_incidents:report_details', args=[report_id]),
+                request=request
+            )
+            
             messages.success(request, "گزارش حادثه با موفقیت تکمیل شد.")
             return redirect('hse_incidents:report_details', report_id=report_id)
         else:
@@ -222,6 +305,18 @@ def report_details(request, report_id):
     else:
          if request.GET.get('form'): # چک کردن پارامتر فرم
             form = HseCompletionReportForm(instance=hse_completion)
+            
+            # ثبت فعالیت مشاهده فرم تکمیل گزارش حادثه
+            log_user_activity(
+                user=request.user,
+                activity_type='view',
+                description=f'مشاهده فرم تکمیل گزارش حادثه شماره {report_id}',
+                related_model='IncidentReport',
+                related_object_id=report_id,
+                url=request.get_full_path(),
+                request=request
+            )
+            
             return render(request, 'hse_incidents/hse_completion_form.html', {'form': form})
          else:
               form = HseCompletionReportForm(instance=hse_completion)
@@ -231,6 +326,17 @@ def report_details(request, report_id):
 @permission_required("export_reports_excel")
 @login_required
 def export_reports_excel(request):
+    # ثبت فعالیت دریافت اکسل گزارش‌های حادثه
+    log_user_activity(
+        user=request.user,
+        activity_type='view',
+        description='دریافت فایل اکسل گزارش‌های حادثه',
+        related_model='IncidentReport',
+        related_object_id=None,
+        url=reverse('hse_incidents:export_reports_excel'),
+        request=request
+    )
+    
     search_query = request.GET.get('search', '')
     from_date_str = request.GET.get('from_date', '')
     to_date_str = request.GET.get('to_date', '')
@@ -243,8 +349,6 @@ def export_reports_excel(request):
             Q(section__section__icontains=search_query) |
             Q(full_description__icontains=search_query) |
             Q(initial_cause__icontains=search_query)
-            | Q(report_author__user__first_name__icontains=search_query)
-            | Q(report_author__user__last_name__icontains=search_query)
         )
 
     if from_date_str:
@@ -264,43 +368,67 @@ def export_reports_excel(request):
         except ValueError:
             pass
 
-    reports = reports.order_by('-incident_date')
-    df_data = []
+    # ایجاد دیتافریم پانداس
+    data = []
     for report in reports:
-        incident_date_jalali = jdatetime.date.fromgregorian(date=report.incident_date).strftime(
-            '%Y/%m/%d') if report.incident_date else ''
-        df_data.append({
-            'تاریخ وقوع حادثه': incident_date_jalali,
-            'ساعت وقوع حادثه': report.incident_time.strftime('%H:%M') if report.incident_time else '',
-            'سایت': report.location.name if report.location else '',
-            'محل شناسایی آنومالی': report.section.section if report.section else '',
-            'اشخاص مرتبط با حادثه': ', '.join([str(person) for person in report.involved_person.all()]),
-            'تجهیزات مرتبط با حادثه': report.involved_equipment,
-            'نوع جراحت': ', '.join([str(injury) for injury in report.injury_type.all()]),
-            'عضو آسیب دیده': report.affected_body_part,
-            'شرح آسیب وارده': report.damage_description,
-            'نوع ارتباط': report.related_entity,
-            'پیمانکار مرتبط': str(report.related_contractor) if report.related_contractor else '',
-            'خودرو آتش نشانی': 'بله' if report.fire_truck_needed else 'خیر',
-            'زمان رسیدن خودرو آتش نشانی': report.fire_truck_arrival_time.strftime(
-                '%H:%M') if report.fire_truck_arrival_time else '',
-            'آمبولانس اعزام شده': 'بله' if report.ambulance_needed else 'خیر',
-            'زمان رسیدن آمبولانس': report.ambulance_arrival_time.strftime(
-                '%H:%M') if report.ambulance_arrival_time else '',
-            'اعزام به بیمارستان': 'بله' if report.hospitalized else 'خیر',
-            'زمان اعزام به بیمارستان': report.hospitalized_time.strftime('%H:%M') if report.hospitalized_time else '',
-            'نوع وسیله اعزام': report.transportation_type,
+        # تبدیل تاریخ میلادی به شمسی
+        jalali_date = jdatetime.date.fromgregorian(date=report.incident_date)
+        jalali_date_str = jalali_date.strftime('%Y-%m-%d')
+
+        # دریافت نام‌های نوع آسیب
+        injury_types = ", ".join([injury.name for injury in report.injury_type.all()])
+
+        # دریافت نام‌های افراد درگیر
+        involved_persons = ", ".join([f"{person.user.first_name} {person.user.last_name}" for person in
+                                      report.involved_person.all()])
+
+        # دریافت نام‌های کارکنان پیمانکار درگیر
+        contractor_employees = ", ".join(
+            [f"{employee.first_name} {employee.last_name}" for employee in report.related_contractor_employees.all()])
+
+        row = {
+            'شماره گزارش': report.id,
+            'تاریخ حادثه': jalali_date_str,
+            'زمان حادثه': report.incident_time,
+            'محل حادثه': report.location.name if report.location else "",
+            'بخش': report.section.section if report.section else "",
+            'افراد درگیر': involved_persons,
+            'تجهیزات درگیر': report.involved_equipment,
+            'نوع آسیب': injury_types,
+            'قسمت آسیب دیده بدن': report.affected_body_part,
+            'شرح خسارت': report.damage_description,
+            'نهاد مرتبط': report.related_entity,
+            'پیمانکار مرتبط': report.related_contractor.company_name if report.related_contractor else "",
+            'کارکنان پیمانکار': contractor_employees,
+            'نیاز به ماشین آتش‌نشانی': "بله" if report.fire_truck_needed else "خیر",
+            'زمان رسیدن ماشین آتش‌نشانی': report.fire_truck_arrival_time,
+            'نیاز به آمبولانس': "بله" if report.ambulance_needed else "خیر",
+            'زمان رسیدن آمبولانس': report.ambulance_arrival_time,
+            'بستری شدن': "بله" if report.hospitalized else "خیر",
+            'زمان بستری شدن': report.hospitalized_time,
+            'نوع حمل و نقل': report.transportation_type,
             'شرح کامل حادثه': report.full_description,
-            'علت حادثه': report.initial_cause,
-            'نویسنده گزارش': str(report.report_author)
-        })
-    df = pd.DataFrame(df_data)
-    excel_file = BytesIO()
-    writer = pd.ExcelWriter(excel_file, engine='xlsxwriter')
-    df.to_excel(writer, sheet_name='گزارشات حوادث', index=False)
-    writer.close()
-    excel_file.seek(0)
-    response = HttpResponse(excel_file.read(),
+            'علت اولیه': report.initial_cause,
+            'گزارش دهنده': f"{report.report_author.user.first_name} {report.report_author.user.last_name}",
+            'تاریخ ثبت': report.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'وضعیت تکمیل': "تکمیل شده" if report.is_completed else "در انتظار تکمیل"
+        }
+        data.append(row)
+
+    df = pd.DataFrame(data)
+
+    # ایجاد فایل اکسل
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, sheet_name='گزارش حوادث', index=False)
+        worksheet = writer.sheets['گزارش حوادث']
+        for i, col in enumerate(df.columns):
+            # تنظیم عرض ستون‌ها
+            max_len = max(df[col].astype(str).map(len).max(), len(col)) + 2
+            worksheet.set_column(i, i, max_len)
+
+    output.seek(0)
+    response = HttpResponse(output.read(),
                             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = 'attachment; filename=incident_reports.xlsx'
     return response

@@ -21,6 +21,8 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.exceptions import ValidationError
 import datetime
 from django.db.models import Count, Q, Subquery, OuterRef
+from dashboard.utils import log_user_activity
+from django.urls import reverse
 
 
 
@@ -35,6 +37,18 @@ def create_shift_report(request):
     personnel_list = UserProfile.objects.select_related('user').filter(
         section=current_user.section,
     )
+
+    # ثبت فعالیت مشاهده فرم ثبت مرخصی
+    if request.method == 'GET':
+        log_user_activity(
+            user=request.user,
+            activity_type='view',
+            description='مشاهده فرم ثبت مرخصی',
+            related_model='ShiftReport',
+            related_object_id=None,
+            url=reverse('leave_reports:shift_report'),
+            request=request
+        )
 
     errors = []
     if request.method == 'POST':
@@ -90,6 +104,18 @@ def create_shift_report(request):
                         with transaction.atomic():  # استفاده از atomic transaction
                             ShiftReport.objects.bulk_create(reports_to_create)
                             logger.info(f"{len(reports_to_create)} leaves saved successfully")
+                            
+                            # ثبت فعالیت ایجاد مرخصی
+                            log_user_activity(
+                                user=request.user,
+                                activity_type='create',
+                                description=f'ثبت {len(reports_to_create)} مورد مرخصی',
+                                related_model='ShiftReport',
+                                related_object_id=None,
+                                url=reverse('leave_reports:shift_report_list'),
+                                request=request
+                            )
+                            
                             return JsonResponse({'success': True, 'message': f'{len(reports_to_create)} مورد با موفقیت ثبت شد'})
                     except Exception as e:
                         errors.append(f'خطا در ذخیره دسته‌ای: {str(e)}')
@@ -120,6 +146,17 @@ def create_shift_report(request):
 
 @login_required
 def shift_report_list(request):
+    # ثبت فعالیت مشاهده لیست مرخصی‌ها
+    log_user_activity(
+        user=request.user,
+        activity_type='view',
+        description='مشاهده لیست مرخصی‌ها',
+        related_model='ShiftReport',
+        related_object_id=None,
+        url=reverse('leave_reports:shift_report_list'),
+        request=request
+    )
+    
     reports = ShiftReport.objects.all()  # Get all reports initially
 
     # Get filter parameters from request
@@ -238,29 +275,37 @@ def shift_report_detail(request, report_id):
     # دریافت گزارش اصلی
     report = get_object_or_404(ShiftReport, id=report_id)
 
+    # ثبت فعالیت مشاهده جزئیات مرخصی
+    log_user_activity(
+        user=request.user,
+        activity_type='view',
+        description=f'مشاهده جزئیات مرخصی شماره {report_id}',
+        related_model='ShiftReport',
+        related_object_id=report_id,
+        url=reverse('leave_reports:shift_report_detail', args=[report_id]),
+        request=request
+    )
+
     # تبدیل تاریخ شیفت به شمسی
     shift_date_jalali = jdatetime.date.fromgregorian(date=report.shift_date).strftime('%Y/%m/%d')
 
-    # دسته‌بندی داده‌ها
-    leaves = ShiftReport.objects.filter(work_group=report.work_group, leave_type='regular',
-                                        shift_date=report.shift_date)
-    absences = ShiftReport.objects.filter(work_group=report.work_group, leave_type='absence',
-                                          shift_date=report.shift_date)
-    hourly_leaves = ShiftReport.objects.filter(work_group=report.work_group, leave_type='hourly',
-                                               shift_date=report.shift_date)
-    sick_leaves = ShiftReport.objects.filter(work_group=report.work_group, leave_type='sick_leave',
-                                             shift_date=report.shift_date)
+    # دریافت همه گزارش‌های مربوط به همان تاریخ و گروه کاری
+    related_reports = ShiftReport.objects.filter(
+        shift_date=report.shift_date,
+        work_group=report.work_group
+    ).select_related('user')
+
+    # گروه‌بندی گزارش‌ها بر اساس نوع مرخصی
+    grouped_reports = defaultdict(list)
+    for r in related_reports:
+        grouped_reports[r.get_leave_type_display()].append(r)
 
     context = {
         'report': report,
-        'shift_date_jalali': shift_date_jalali,  # تاریخ شمسی
-        'leaves': leaves,
-        'absences': absences,
-        'hourly_leaves': hourly_leaves,
-        'sick_leaves': sick_leaves,
-        'title': 'جزییات مرخصی',
+        'shift_date_jalali': shift_date_jalali,
+        'grouped_reports': dict(grouped_reports),
+        'title': f'جزئیات مرخصی {shift_date_jalali}',
     }
-
     return render(request, 'leave_reports/shift_report_detail.html', context)
 
 

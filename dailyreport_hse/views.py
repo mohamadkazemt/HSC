@@ -42,6 +42,8 @@ from django.views.generic.edit import DeleteView
 from django.urls import reverse_lazy
 from django.http import JsonResponse
 from django.contrib.auth.mixins import UserPassesTestMixin
+from dashboard.utils import log_user_activity
+from django.urls import reverse
 
 
 logger = logging.getLogger(__name__)
@@ -103,6 +105,17 @@ class CreateDailyReportView(APIView):
                     )
 
                 daily_report.save()
+
+                # ثبت فعالیت ایجاد گزارش روزانه
+                log_user_activity(
+                    user=request.user,
+                    activity_type='create',
+                    description='ایجاد گزارش روزانه HSE جدید',
+                    related_model='DailyReport',
+                    related_object_id=daily_report.id,
+                    url=None,
+                    request=request
+                )
 
                 # ذخیره جزئیات آتشباری
                 for blasting in blasting_details:
@@ -278,6 +291,17 @@ class DailyReportListView(LoginRequiredMixin, ListView):
                 Q(shift__icontains=self.search_query)
             )
 
+        # ثبت فعالیت مشاهده لیست گزارش‌ها
+        log_user_activity(
+            user=self.request.user,
+            activity_type='view',
+            description='مشاهده لیست گزارش‌های روزانه HSE',
+            related_model='DailyReport',
+            related_object_id=None,
+            url=self.request.path,
+            request=self.request
+        )
+
         return queryset.order_by("-created_at")
 
     def get_context_data(self, **kwargs):
@@ -334,6 +358,17 @@ class DailyReportDetailView(LoginRequiredMixin, DetailView):
         context['inspection_details'] = InspectionDetail.objects.filter(daily_report=report)
         context['title'] = 'جزئیات گزارش روزانه'
 
+        # ثبت فعالیت مشاهده جزئیات گزارش
+        log_user_activity(
+            user=self.request.user,
+            activity_type='view',
+            description=f'مشاهده جزئیات گزارش روزانه HSE شماره {self.object.id}',
+            related_model='DailyReport',
+            related_object_id=self.object.id,
+            url=self.request.path,
+            request=self.request
+        )
+
         return context
 
 @permission_required("daily_report_pdf")
@@ -342,6 +377,17 @@ class DailyReportDetailView(LoginRequiredMixin, DetailView):
 def daily_report_pdf_view(request, pk):
     # دریافت گزارش روزانه
     daily_report = get_object_or_404(DailyReport, pk=pk)
+
+    # ثبت فعالیت دریافت PDF گزارش
+    log_user_activity(
+        user=request.user,
+        activity_type='view',
+        description=f'دریافت PDF گزارش روزانه HSE شماره {pk}',
+        related_model='DailyReport',
+        related_object_id=pk,
+        url=request.path,
+        request=request
+    )
 
     # دریافت اطلاعات کاربر و امضا
     user_profile = get_object_or_404(UserProfile, user=daily_report.user)
@@ -393,14 +439,25 @@ class DailyReportDeleteView(LoginRequiredMixin, DeleteView):
     def delete(self, request, *args, **kwargs):
         try:
             self.object = self.get_object()
+            report_id = self.object.id
             self.object.delete()
-            # حذف messages.success
+            
+            # ثبت فعالیت حذف گزارش
+            log_user_activity(
+                user=request.user,
+                activity_type='delete',
+                description=f'حذف گزارش روزانه HSE شماره {report_id}',
+                related_model='DailyReport',
+                related_object_id=report_id,
+                url=None,
+                request=request
+            )
+            
             return JsonResponse({
                 'status': 'success',
                 'message': 'گزارش با موفقیت حذف شد'
             })
         except Exception as e:
-            # حذف messages.error
             return JsonResponse({
                 'status': 'error',
                 'message': str(e)

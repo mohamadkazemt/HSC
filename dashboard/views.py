@@ -8,28 +8,164 @@ from collections import Counter
 from django.shortcuts import render
 from anomalis.models import Anomaly
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from .models import UserActivity
+from permissions.utils import get_all_views_with_labels
+from permissions.models import UserPermission, PartPermission, SectionPermission, PositionPermission, UnitGroupPermission
+from accounts.models import UnitGroup
 
 name = 'dashboard'
 
 
 @login_required
 def dashboard(request):
+    # دریافت اعلان‌های خوانده نشده
     unread_notifications_count = request.user.notifications.filter(is_read=False).count()
-    notifications = Notification.objects.all().count()
+    
+    # دریافت ۵ اعلان اخیر برای نمایش در داشبورد
+    recent_notifications = request.user.notifications.all().order_by('-created_at')[:5]
+    
+    # دریافت فعالیت‌های اخیر کاربر
+    recent_activities = UserActivity.objects.filter(user=request.user).order_by('-created_at')[:5]
+    
+    # دریافت دسترسی‌های مستقیم کاربر
+    user_permissions = UserPermission.objects.filter(user=request.user)
+    
+    # دریافت دسترسی‌های کاربر بر اساس قسمت
+    part_permissions = []
+    if hasattr(request.user, 'userprofile') and request.user.userprofile.part:
+        part_permissions = PartPermission.objects.filter(part=request.user.userprofile.part)
+    
+    # دریافت دسترسی‌های کاربر بر اساس بخش
+    section_permissions = []
+    if hasattr(request.user, 'userprofile') and request.user.userprofile.section:
+        section_permissions = SectionPermission.objects.filter(section=request.user.userprofile.section)
+    
+    # دریافت دسترسی‌های کاربر بر اساس سمت
+    position_permissions = []
+    if hasattr(request.user, 'userprofile') and request.user.userprofile.position:
+        position_permissions = PositionPermission.objects.filter(position=request.user.userprofile.position)
+    
+    # دریافت دسترسی‌های کاربر بر اساس گروه
+    unit_group_permissions = []
+    if hasattr(request.user, 'userprofile') and request.user.userprofile.group:
+        # ابتدا سعی می‌کنیم گروه را بر اساس نام پیدا کنیم
+        try:
+            unit_group = UnitGroup.objects.get(name=request.user.userprofile.group)
+            unit_group_permissions = UnitGroupPermission.objects.filter(unit_group=unit_group)
+        except (UnitGroup.DoesNotExist, ValueError):
+            # اگر گروه پیدا نشد یا خطای دیگری رخ داد، لیست خالی برمی‌گردانیم
+            unit_group_permissions = []
+    
+    # دریافت لیبل‌های ویوها
+    views_with_labels = get_all_views_with_labels()
+    view_labels = {view['name']: view['label'] for view in views_with_labels}
+    
+    # ترکیب همه دسترسی‌ها
+    all_permissions = []
+    
+    # افزودن دسترسی‌های مستقیم کاربر
+    for perm in user_permissions:
+        all_permissions.append({
+            'type': 'کاربر',
+            'view_name': perm.view_name,
+            'view_label': view_labels.get(perm.view_name, perm.view_name),
+            'can_view': perm.can_view,
+            'can_add': perm.can_add,
+            'can_edit': perm.can_edit,
+            'can_delete': perm.can_delete,
+        })
+    
+    # افزودن دسترسی‌های قسمت
+    for perm in part_permissions:
+        all_permissions.append({
+            'type': 'قسمت',
+            'view_name': perm.view_name,
+            'view_label': view_labels.get(perm.view_name, perm.view_name),
+            'can_view': perm.can_view,
+            'can_add': perm.can_add,
+            'can_edit': perm.can_edit,
+            'can_delete': perm.can_delete,
+        })
+    
+    # افزودن دسترسی‌های بخش
+    for perm in section_permissions:
+        all_permissions.append({
+            'type': 'بخش',
+            'view_name': perm.view_name,
+            'view_label': view_labels.get(perm.view_name, perm.view_name),
+            'can_view': perm.can_view,
+            'can_add': perm.can_add,
+            'can_edit': perm.can_edit,
+            'can_delete': perm.can_delete,
+        })
+    
+    # افزودن دسترسی‌های سمت
+    for perm in position_permissions:
+        all_permissions.append({
+            'type': 'سمت',
+            'view_name': perm.view_name,
+            'view_label': view_labels.get(perm.view_name, perm.view_name),
+            'can_view': perm.can_view,
+            'can_add': perm.can_add,
+            'can_edit': perm.can_edit,
+            'can_delete': perm.can_delete,
+        })
+    
+    # افزودن دسترسی‌های گروه
+    for perm in unit_group_permissions:
+        all_permissions.append({
+            'type': 'گروه',
+            'view_name': perm.view_name,
+            'view_label': view_labels.get(perm.view_name, perm.view_name),
+            'can_view': perm.can_view,
+            'can_add': perm.can_add,
+            'can_edit': perm.can_edit,
+            'can_delete': perm.can_delete,
+        })
+    
+    # حذف دسترسی‌های تکراری (بر اساس view_name)
+    unique_permissions = {}
+    for perm in all_permissions:
+        view_name = perm['view_name']
+        if view_name not in unique_permissions:
+            unique_permissions[view_name] = perm
+    
+    # تبدیل به لیست
+    user_access_permissions_list = list(unique_permissions.values())
+    
+    # صفحه‌بندی دسترسی‌ها
+    page = request.GET.get('page', 1)
+    paginator = Paginator(user_access_permissions_list, 5)  # 5 دسترسی در هر صفحه
+    
+    try:
+        user_access_permissions = paginator.page(page)
+    except PageNotAnInteger:
+        user_access_permissions = paginator.page(1)
+    except EmptyPage:
+        user_access_permissions = paginator.page(paginator.num_pages)
+    
+    # آمار موارد ثبت شده (اگر مدل Anomaly وجود دارد)
+    stats = None
+    if hasattr(request.user, 'anomalies'):
+        total_anomalies = request.user.anomalies.count()
+        completed_anomalies = request.user.anomalies.filter(status='completed').count()
+        in_progress_anomalies = request.user.anomalies.filter(status='in_progress').count()
+        
+        stats = {
+            'total_anomalies': total_anomalies,
+            'completed_anomalies': completed_anomalies,
+            'in_progress_anomalies': in_progress_anomalies,
+        }
 
-    # سایر کدهای داشبورد
-    is_admin_user = request.user.groups.filter(name='مدیر HSC').exists()
-    is_followup_user = request.user.groups.filter(name='مسئول پیگیری').exists()
-    is_safety_officer = request.user.groups.filter(name='افسر HSE').exists()
-
-    print(unread_notifications_count)
-    print(notifications)
-
+    # برای اطمینان از وجود داده‌ها، یک لاگ اضافه کنید
+    print(f"Recent activities count: {recent_activities.count()}")
+    
     context = {
         'unread_notifications_count': unread_notifications_count,
-        'is_admin_user': is_admin_user,
-        'is_followup_user': is_followup_user,
-        'is_safety_officer': is_safety_officer,
+        'recent_notifications': recent_notifications,
+        'recent_activities': recent_activities,  # اضافه کردن فعالیت‌های اخیر
+        'user_access_permissions': user_access_permissions,
+        'stats': stats,
         'title': 'داشبورد',
     }
 
@@ -90,8 +226,7 @@ def mark_notification_and_redirect(request, notification_id):
     return redirect(notification.url if notification.url else 'dashboard')
 
 
-@login_required
-def dashboard(request):
+
     # دریافت پارامترهای فیلتر از درخواست
     status_filter = request.GET.get('status', 'همه')
     priority_filter = request.GET.get('priority', 'همه')
@@ -125,3 +260,32 @@ def dashboard(request):
     }
 
     return render(request, 'dashboard/dashboard.html', context)
+
+
+@login_required
+def activity_list(request):
+    """نمایش لیست کامل فعالیت‌های کاربر"""
+    
+    # دریافت فعالیت‌های کاربر
+    activities_list = request.user.activities.all()
+    
+    # فیلتر بر اساس نوع فعالیت (اگر در پارامترهای URL وجود داشته باشد)
+    activity_type = request.GET.get('type')
+    if activity_type:
+        activities_list = activities_list.filter(activity_type=activity_type)
+    
+    # صفحه‌بندی
+    paginator = Paginator(activities_list, 20)  # 20 فعالیت در هر صفحه
+    page = request.GET.get('page')
+    try:
+        activities = paginator.page(page)
+    except PageNotAnInteger:
+        activities = paginator.page(1)
+    except EmptyPage:
+        activities = paginator.page(paginator.num_pages)
+    
+    return render(request, 'dashboard/activity_list.html', {
+        'activities': activities,
+        'activity_type': activity_type,
+        'title': 'فعالیت‌های من',
+    })
