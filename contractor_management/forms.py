@@ -66,45 +66,37 @@ class ReportForm(forms.ModelForm):
         return cleaned_data
 
 class ReportFilterForm(forms.Form):
-    # ... (فرم فیلتر بدون تغییر) ...
-    start_date = JalaliDateField(
-        label="تاریخ شروع",
-        widget=AdminJalaliDateWidget(),
-        required=False
+    start_date = forms.CharField(
+        required=False,
+        widget=AdminJalaliDateWidget(
+            attrs={'class': 'form-control jalali_date-date', 'placeholder': 'تاریخ شروع'}
+        )
     )
-    end_date = JalaliDateField(
-        label="تاریخ پایان",
-        widget=AdminJalaliDateWidget(),
-        required=False
+    end_date = forms.CharField(
+        required=False,
+        widget=AdminJalaliDateWidget(
+            attrs={'class': 'form-control jalali_date-date', 'placeholder': 'تاریخ پایان'}
+        )
     )
     contractor = forms.ModelChoiceField(
-        queryset=Report.objects.values_list('contractor__company_name',flat=True).distinct(),
-        label="پیمانکار",
-        widget=Select(attrs={'class': 'form-control django-select2'}),
+        queryset=Contractor.objects.all(),
         required=False,
-        empty_label='همه پیمانکاران'
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        empty_label="همه پیمانکاران"
     )
     vehicle = forms.ModelChoiceField(
-        queryset=Report.objects.values_list('vehicle__license_plate',flat=True).distinct(),
-        label="خودرو",
-        widget=Select(attrs={'class': 'form-control django-select2'}),
+        queryset=Vehicle.objects.all(),
         required=False,
-        empty_label='همه خودروها'
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        empty_label="همه خودروها"
     )
-    shift = forms.CharField(
-        label="شیفت",
-        widget=forms.Select(choices=[('', 'همه شیفت ها'), ('روزکار اول', 'روزکار اول'), ('روزکار دوم', 'روزکار دوم'), ('عصرکار اول', 'عصرکار اول'),
-                                     ('عصرکار دوم', 'عصرکار دوم'), ('شب کار اول', 'شب کار اول'), ('شب کار دوم', 'شب کار دوم'),
-                                     ('OFF اول', 'OFF دوم'), ('OFF دوم', 'OFF دوم')],
-                            attrs={'class': 'form-control django-select2'}),
+    shift = forms.ChoiceField(
+        choices=[('', 'همه شیفت‌ها'), ('صبح', 'صبح'), ('عصر', 'عصر'), ('شب', 'شب')],
         required=False,
+        widget=forms.Select(attrs={'class': 'form-control'})
     )
-
-    group = forms.CharField(
-        label="گروه",
-        widget=forms.Select(choices=[('', 'همه گروه ها'), ('A', 'A'), ('B', 'B'), ('C', 'C'), ('D', 'D')],
-                            attrs = {'class': 'form-control django-select2'}),
-
-
-    required=False,
-)
+    group = forms.ChoiceField(
+        choices=[('', 'همه گروه‌ها'), ('A', 'A'), ('B', 'B'), ('C', 'C'), ('D', 'D')],
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
