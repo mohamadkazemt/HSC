@@ -16,34 +16,39 @@ URLS_WITH_LABELS = [
         "name": "all_reports",
         "label": "پیمانکاران-گزارشگیری خودرو ها",
     },
-
+    {
+        "path": "report/<int:pk>/",
+        "view": views.report_detail,
+        "name": "report_detail",
+        "label": "پیمانکاران-جزئیات گزارش کارکرد خودرو",
+    },
     {
         "path": "get_contractors_ajax/",
         "view": views.get_contractors_ajax,
         "name" : "get_contractors_ajax",
         "label": "پیمانکاران-دریافت پیمانکاران",
-
-
     },
     {
         "path": "get_contractor_employees_ajax/",
         "view": views.get_contractor_employees_ajax,
         "name": "get_contractor_employees_ajax",
         "label": "پیمانکاران-دریافت پیمانکاران",
-
     },
     {
         "path": "get-all-vehicles-ajax/",
         "view": views.get_all_vehicles_ajax,
         "name": "get_all_vehicles_ajax",
         "label": "پیمانکاران-دریافت خودروها",
-
     },
-
+    {
+        "path": "vehicle/<int:vehicle_id>/reports/",
+        "view": views.vehicle_reports,
+        "name": "vehicle_reports",
+        "label": "پیمانکاران-گزارش‌های کارکرد خودرو",
+    },
 ]
 
 
 urlpatterns = [
     path(url["path"], url["view"], name=url["name"]) for url in URLS_WITH_LABELS
-
 ]

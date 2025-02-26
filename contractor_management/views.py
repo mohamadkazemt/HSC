@@ -16,6 +16,7 @@ from django.contrib.auth.decorators import user_passes_test
 from dashboard.utils import log_user_activity  # اضافه کردن ایمپورت
 from django.urls import reverse  # برای ساخت URL
 import json
+import jdatetime
 
 @permission_required("create_report")
 @login_required
@@ -101,55 +102,99 @@ def create_report(request):
 @permission_required("all_reports")
 @login_required
 def all_reports(request):
-    # ثبت فعالیت مشاهده همه گزارش‌ها
+    """نمایش همه گزارش‌های کارکرد خودروها"""
+    
+    reports = Report.objects.all().order_by('-report_datetime')
+    vehicles = Vehicle.objects.all()
+    
+    # محاسبه وضعیت هر خودرو بر اساس آخرین گزارش
+    vehicle_statuses = {}
+    for vehicle in vehicles:
+        latest_report = Report.objects.filter(vehicle=vehicle).order_by('-report_datetime', '-id').first()
+        if latest_report:
+            if latest_report.status == 'inactive':
+                status = 'غیرفعال'
+                status_class = 'danger'
+            elif latest_report.status == 'partial':
+                status = 'نیمه فعال'
+                status_class = 'warning'
+            elif latest_report.status == 'full':
+                status = 'فعال'
+                status_class = 'success'
+            else:
+                status = 'نامشخص'
+                status_class = 'secondary'
+        else:
+            status = 'نامشخص'
+            status_class = 'secondary'
+        
+        vehicle_statuses[vehicle.id] = {
+            'status': status,
+            'status_class': status_class,
+            'latest_report': latest_report
+        }
+    
+    # ثبت فعالیت مشاهده لیست گزارش‌ها
     log_user_activity(
         user=request.user,
         activity_type='view',
-        description='مشاهده همه گزارش‌های پیمانکاران',
+        description='مشاهده لیست گزارش‌های پیمانکاران',
         related_model='Report',
         related_object_id=None,
         url=reverse('contractor_management:all_reports'),
         request=request
     )
     
-    form = ReportFilterForm(request.GET)
-    reports = Report.objects.all()
+    form = ReportFilterForm(request.GET or None)
     query = Q()
-
-    if form.is_valid():
-        start_date = form.cleaned_data.get('start_date')
-        end_date = form.cleaned_data.get('end_date')
-        contractor = form.cleaned_data.get('contractor')
-        vehicle = form.cleaned_data.get('vehicle')
-        shift = form.cleaned_data.get('shift')
-        group = form.cleaned_data.get('group')
-        if start_date and end_date:
-            query &= Q(report_datetime__date__range=[start_date, end_date])
-        elif start_date:
-            query &= Q(report_datetime__date__gte=start_date)
-        elif end_date:
-            query &= Q(report_datetime__date__lte=end_date)
-        if contractor:
-            query &= Q(contractor__company_name=contractor)
-        if vehicle:
-            query &= Q(vehicle__license_plate=vehicle)
-        if shift:
-          query &= Q(shift=shift)
-        if group:
-            query &= Q(group=group)
+    
+    if request.method == 'GET' and any(request.GET.values()):
+        if form.is_valid():
+            start_date = form.cleaned_data.get('start_date')
+            end_date = form.cleaned_data.get('end_date')
+            contractor = form.cleaned_data.get('contractor')
+            vehicle = form.cleaned_data.get('vehicle')
+            shift = form.cleaned_data.get('shift')
+            group = form.cleaned_data.get('group')
             
-        # اگر فیلتری اعمال شده، فعالیت جستجو را هم ثبت کنیم
-        if any([start_date, end_date, contractor, vehicle, shift, group]):
-            log_user_activity(
-                user=request.user,
-                activity_type='view',
-                description='جستجو در همه گزارش‌های پیمانکاران',
-                related_model='Report',
-                related_object_id=None,
-                url=request.get_full_path(),
-                request=request
-            )
-
+            if start_date:
+                try:
+                    start_date_obj = jdatetime.datetime.strptime(start_date, '%Y/%m/%d').togregorian()
+                    query &= Q(report_datetime__date__gte=start_date_obj.date())
+                except ValueError:
+                    pass
+            
+            if end_date:
+                try:
+                    end_date_obj = jdatetime.datetime.strptime(end_date, '%Y/%m/%d').togregorian()
+                    query &= Q(report_datetime__date__lte=end_date_obj.date())
+                except ValueError:
+                    pass
+            
+            if contractor:
+                query &= Q(contractor=contractor)
+                vehicles = vehicles.filter(contractor=contractor)
+            
+            if vehicle:
+                query &= Q(vehicle=vehicle)
+            
+            if shift:
+                query &= Q(shift=shift)
+            
+            if group:
+                query &= Q(group=group)
+            
+            # اگر فیلتری اعمال شده، فعالیت جستجو را هم ثبت کنیم
+            if any([start_date, end_date, contractor, vehicle, shift, group]):
+                log_user_activity(
+                    user=request.user,
+                    activity_type='view',
+                    description='جستجو در همه گزارش‌های پیمانکاران',
+                    related_model='Report',
+                    related_object_id=None,
+                    url=request.get_full_path(),
+                    request=request
+                )
 
     reports = reports.filter(query)
     paginator = Paginator(reports, 10)  # Show 10 reports per page
@@ -161,10 +206,26 @@ def all_reports(request):
         reports = paginator.page(1)
     except EmptyPage:
         reports = paginator.page(paginator.num_pages)
-    return render(request, 'contractor_management/reports/all_reports.html', {
+    
+    # محاسبه تعداد خودروهای فعال، نیمه فعال و غیرفعال
+    active_count = sum(1 for status in vehicle_statuses.values() if status['status'] == 'فعال')
+    partial_count = sum(1 for status in vehicle_statuses.values() if status['status'] == 'نیمه فعال')
+    inactive_count = sum(1 for status in vehicle_statuses.values() if status['status'] == 'غیرفعال')
+    unknown_count = sum(1 for status in vehicle_statuses.values() if status['status'] == 'نامشخص')
+    
+    context = {
         'reports': reports,
+        'vehicles': vehicles,
+        'vehicle_statuses': vehicle_statuses,
         'form': form,
-    })
+        'title': 'گزارش‌های کارکرد خودروها',
+        'active_count': active_count,
+        'partial_count': partial_count,
+        'inactive_count': inactive_count,
+        'unknown_count': unknown_count
+    }
+    
+    return render(request, 'contractor_management/reports/all_reports.html', context)
 
 
 def get_contractors_ajax(request):
@@ -354,7 +415,12 @@ def report_detail(request, pk):
         request=request
     )
     
-    return render(request, 'contractor_management/report_detail.html', {'report': report})
+    context = {
+        'report': report,
+        'title': f'جزئیات گزارش کارکرد خودرو {report.vehicle.license_plate}'
+    }
+    
+    return render(request, 'contractor_management/reports/report_detail.html', context)
 
 
 @login_required
@@ -526,6 +592,28 @@ def vehicle_list(request):
 def vehicle_detail(request, pk):
     vehicle = get_object_or_404(Vehicle, pk=pk)
     
+    # بررسی آخرین گزارش خودرو برای تعیین وضعیت فعال/غیرفعال
+    latest_report = Report.objects.filter(vehicle=vehicle).order_by('-report_datetime').first()
+    
+    # تعیین وضعیت خودرو
+    if latest_report:
+        if latest_report.status == 'inactive':
+            vehicle_status = 'غیرفعال'
+            status_class = 'danger'
+        elif latest_report.status == 'partial':
+            vehicle_status = 'نیمه فعال'
+            status_class = 'warning'
+        else:
+            vehicle_status = 'فعال'
+            status_class = 'success'
+        
+        # محاسبه زمان آخرین گزارش
+        last_report_time = latest_report.report_datetime
+    else:
+        vehicle_status = 'نامشخص'
+        status_class = 'secondary'
+        last_report_time = None
+    
     # ثبت فعالیت مشاهده جزئیات خودرو
     log_user_activity(
         user=request.user,
@@ -537,4 +625,138 @@ def vehicle_detail(request, pk):
         request=request
     )
     
-    return render(request, 'contractor_management/vehicle_detail.html', {'vehicle': vehicle})
+    # گزارش‌های اخیر خودرو (۵ گزارش آخر)
+    recent_reports = Report.objects.filter(vehicle=vehicle).order_by('-report_datetime')[:5]
+    
+    context = {
+        'vehicle': vehicle,
+        'vehicle_status': vehicle_status,
+        'status_class': status_class,
+        'last_report_time': last_report_time,
+        'recent_reports': recent_reports,
+        'title': f'جزئیات خودرو {vehicle.license_plate}'
+    }
+    
+    return render(request, 'contractor_management/vehicle_detail.html', context)
+
+
+@login_required
+def vehicle_reports(request, vehicle_id):
+    """نمایش گزارش‌های کارکرد یک خودروی خاص"""
+    
+    vehicle = get_object_or_404(Vehicle, pk=vehicle_id)
+    
+    # محاسبه وضعیت خودرو بر اساس آخرین گزارش
+    latest_report = Report.objects.filter(vehicle=vehicle).order_by('-report_datetime', '-id').first()
+    
+    # تعیین وضعیت خودرو
+    vehicle_status, status_class, last_report_time = get_vehicle_status(latest_report)
+    
+    # دریافت گزارش‌های فیلتر شده
+    reports = get_filtered_reports(request, vehicle)
+    
+    # فرم فیلتر
+    form = ReportFilterForm(request.GET or None)
+    
+    # ثبت فعالیت مشاهده گزارش‌های خودرو
+    log_user_activity(
+        user=request.user,
+        activity_type='view',
+        description=f'مشاهده گزارش‌های کارکرد خودرو {vehicle.license_plate}',
+        related_model='Vehicle',
+        related_object_id=vehicle.id,
+        url=request.get_full_path(),
+        request=request
+    )
+    
+    context = {
+        'vehicle': vehicle,
+        'vehicle_status': vehicle_status,
+        'status_class': status_class,
+        'last_report_time': last_report_time,
+        'latest_report': latest_report,
+        'reports': reports,
+        'form': form,
+        'title': f'گزارش‌های کارکرد خودرو {vehicle.license_plate}'
+    }
+    
+    return render(request, 'contractor_management/reports/vehicle_reports.html', context)
+
+
+def get_vehicle_status(latest_report):
+    """محاسبه وضعیت خودرو بر اساس آخرین گزارش"""
+    if latest_report:
+        if latest_report.status == 'inactive':
+            vehicle_status = 'غیرفعال'
+            status_class = 'danger'
+        elif latest_report.status == 'partial':
+            vehicle_status = 'نیمه فعال'
+            status_class = 'warning'
+        elif latest_report.status == 'full':
+            vehicle_status = 'فعال'
+            status_class = 'success'
+        else:
+            # حالت پیش‌فرض اگر مقدار status شناخته شده نباشد
+            vehicle_status = f'نامشخص ({latest_report.status})'
+            status_class = 'secondary'
+        
+        last_report_time = latest_report.report_datetime
+    else:
+        vehicle_status = 'نامشخص'
+        status_class = 'secondary'
+        last_report_time = None
+    
+    return vehicle_status, status_class, last_report_time
+
+
+def get_filtered_reports(request, vehicle):
+    """دریافت گزارش‌های فیلتر شده"""
+    # فیلترهای جستجو
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    shift = request.GET.get('shift')
+    group = request.GET.get('group')
+    
+    # پایه کوئری
+    reports_query = Report.objects.filter(vehicle=vehicle).order_by('-report_datetime')
+    
+    # اعمال فیلترها
+    reports_query = apply_date_filters(reports_query, start_date, end_date)
+    
+    if shift:
+        reports_query = reports_query.filter(shift=shift)
+    
+    if group:
+        reports_query = reports_query.filter(group=group)
+    
+    # صفحه‌بندی
+    paginator = Paginator(reports_query, 10)  # 10 گزارش در هر صفحه
+    page = request.GET.get('page')
+    
+    try:
+        reports = paginator.page(page)
+    except PageNotAnInteger:
+        reports = paginator.page(1)
+    except EmptyPage:
+        reports = paginator.page(paginator.num_pages)
+    
+    return reports
+
+
+def apply_date_filters(reports_query, start_date, end_date):
+    """اعمال فیلترهای تاریخ به کوئری"""
+    if start_date:
+        try:
+            start_date_obj = jdatetime.datetime.strptime(start_date, '%Y/%m/%d').togregorian()
+            reports_query = reports_query.filter(report_datetime__date__gte=start_date_obj.date())
+        except ValueError:
+            pass
+    
+    if end_date:
+        try:
+            end_date_obj = jdatetime.datetime.strptime(end_date, '%Y/%m/%d').togregorian()
+            reports_query = reports_query.filter(report_datetime__date__lte=end_date_obj.date())
+        except ValueError:
+            pass
+    
+    return reports_query
