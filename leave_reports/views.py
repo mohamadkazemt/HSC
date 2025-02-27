@@ -23,7 +23,7 @@ import datetime
 from django.db.models import Count, Q, Subquery, OuterRef
 from dashboard.utils import log_user_activity
 from django.urls import reverse
-
+from django.contrib import messages
 
 
 logger = logging.getLogger(__name__)
@@ -50,18 +50,35 @@ def create_shift_report(request):
             request=request
         )
 
-    errors = []
     if request.method == 'POST':
         logger.info("POST request received for create_shift_report")
         try:
             total_leaves = int(request.POST.get('total_leaves', 0))
             logger.info(f"Total leaves from request: {total_leaves}")
             if total_leaves == 0:
-                errors.append('هیچ موردی برای ثبت وجود ندارد')
+                messages.warning(request, 'هیچ موردی برای ثبت وجود ندارد')
                 logger.warning("No leaves to process")
+                return JsonResponse({'success': False})
             else:
                 reports_to_create = []  # لیست برای ذخیره فرم ها
                 form_valid = True  # پرچم
+                
+                # دریافت تاریخ شیفت از فرم یا استفاده از تاریخ امروز
+                shift_date_str = request.POST.get('shift_date')
+                if shift_date_str:
+                    try:
+                        # تبدیل تاریخ شمسی به میلادی
+                        day, month, year = map(int, shift_date_str.split('/'))
+                        shift_date = jdatetime.date(year, month, day).togregorian()
+                    except (ValueError, AttributeError):
+                        # اگر تاریخ نامعتبر بود، از تاریخ امروز استفاده کن
+                        shift_date = datetime.date.today()
+                        messages.warning(request, 'تاریخ وارد شده نامعتبر است. از تاریخ امروز استفاده شد.')
+                else:
+                    # اگر تاریخ ارسال نشده بود، از تاریخ امروز استفاده کن
+                    shift_date = datetime.date.today()
+                
+                logger.info(f"Using shift date: {shift_date}")
 
                 for i in range(total_leaves):
                     try:
@@ -71,6 +88,7 @@ def create_shift_report(request):
                             'leave_type': request.POST.get(f'leave_type_{i}'),
                             'status': 'reported',
                             'description': request.POST.get(f'description_{i}'),
+                            'shift_date': shift_date,  # اضافه کردن تاریخ شیفت به داده‌های فرم
                         }
                         if report_data['leave_type'] == 'hourly':
                             report_data.update({
@@ -89,13 +107,24 @@ def create_shift_report(request):
                             reports_to_create.append(report)  # ذخیره در لیست
 
                         else:
+                            # تبدیل خطاهای فرم به پیام‌های فارسی
                             for field, error_list in form.errors.items():
+                                field_name = {
+                                    'user': 'کاربر',
+                                    'leave_type': 'نوع مرخصی',
+                                    'start_time': 'زمان شروع',
+                                    'end_time': 'زمان پایان',
+                                    'description': 'توضیحات',
+                                    'shift_date': 'تاریخ شیفت',
+                                    'status': 'وضعیت'
+                                }.get(field, field)
+                                
                                 for error in error_list:
-                                    errors.append(f"خطا در فیلد {field}: {error}")
+                                    messages.error(request, f"خطا در فیلد {field_name}: {error}")
                             form_valid = False  # تنظیم پرچم به False
-                        logger.warning(f"Form not valid for leave {i + 1}: {form.errors}")
+                            logger.warning(f"Form not valid for leave {i + 1}: {form.errors}")
                     except Exception as e:
-                        errors.append(f"خطا در پردازش مورد {i + 1}: {str(e)}")
+                        messages.error(request, f"خطا در پردازش مورد {i + 1}: {str(e)}")
                         logger.error(f"Error processing leave {i + 1}: {e}", exc_info=True)
                         form_valid = False  # تنظیم پرچم به False
 
@@ -116,26 +145,26 @@ def create_shift_report(request):
                                 request=request
                             )
                             
-                            return JsonResponse({'success': True, 'message': f'{len(reports_to_create)} مورد با موفقیت ثبت شد'})
+                            messages.success(request, f'{len(reports_to_create)} مورد با موفقیت ثبت شد')
+                            return JsonResponse({'success': True})
                     except Exception as e:
-                        errors.append(f'خطا در ذخیره دسته‌ای: {str(e)}')
+                        messages.error(request, f'خطا در ذخیره دسته‌ای: {str(e)}')
                         logger.error(f"Error during bulk create: {e}", exc_info=True)
-                        return JsonResponse({'success': False, 'error': 'خطا در ثبت اطلاعات', 'details': errors})
+                        return JsonResponse({'success': False})
 
                 else:
-                    logger.warning(f"Errors found, not saving. Errors:{errors}")
-                    return JsonResponse({'success': False, 'error': 'خطا در ثبت اطلاعات', 'details': errors})
+                    logger.warning(f"Errors found, not saving.")
+                    return JsonResponse({'success': False})
 
         except Exception as e:
-            errors.append(f'خطای سیستمی: {str(e)}')
+            messages.error(request, f'خطای سیستمی: {str(e)}')
             logger.error(f"System error: {e}", exc_info=True)
-            return JsonResponse({'success': False, 'error': f'خطای سیستمی: {str(e)}'})
+            return JsonResponse({'success': False})
 
     form = ShiftReportForm()
     context = {
         'form': form,
         'personnels': personnel_list,
-        'errors': errors,
         'title': 'ثبت مرخصی',
     }
     return render(request, 'leave_reports/shift_report.html', context)
@@ -157,7 +186,14 @@ def shift_report_list(request):
         request=request
     )
     
-    reports = ShiftReport.objects.all()  # Get all reports initially
+    # بررسی عضویت کاربر در گروه مدیر
+    is_manager = request.user.groups.filter(name='مدیر').exists()
+
+    # دریافت گزارش‌ها بر اساس شرایط
+    if is_manager:
+        reports = ShiftReport.objects.all()  # مدیر می‌تواند همه گزارش‌ها را ببیند
+    else:
+        reports = ShiftReport.objects.filter(crate_by=request.user.userprofile)  # کاربر فقط گزارش‌های خودش را می‌بیند
 
     # Get filter parameters from request
     year = request.GET.get('year')
@@ -208,7 +244,7 @@ def shift_report_list(request):
     reports = reports.filter(created_at__in=Subquery(last_created_at_subquery))
 
     # Group the reports
-    grouped_reports = reports.values('shift_date', 'work_group').annotate(
+    grouped_reports = reports.values('shift_date', 'work_group', 'crate_by__user__first_name', 'crate_by__user__last_name').annotate(
         total_regular=Count('id', filter=Q(leave_type='regular')),
         total_hourly=Count('id', filter=Q(leave_type='hourly')),
         total_absence=Count('id', filter=Q(leave_type='absence')),
@@ -227,6 +263,7 @@ def shift_report_list(request):
         if matching_report:
             report['id'] = matching_report.id
         report['shift_date'] = jdatetime.date.fromgregorian(date=report['shift_date']).strftime('%Y/%m/%d')
+        report['crate_by_name'] = f"{report['crate_by__user__first_name']} {report['crate_by__user__last_name']}"
         report_with_ids.append(report)
 
     # Implement pagination
@@ -271,9 +308,205 @@ def shift_report_list(request):
 
 
 @login_required
+def delete_leave(request, leave_id):
+    # دریافت شیء مرخصی
+    leave = get_object_or_404(ShiftReport, id=leave_id)
+    today = datetime.date.today()
+    
+    # استفاده از ماژول shift_manager برای تشخیص شیفت کاری فعلی کاربر
+    try:
+        from shift_manager.utils import get_current_shift_and_group
+        current_shift, current_group = get_current_shift_and_group(request.user)
+        logger.info(f"Current shift and group for user {request.user.username}: shift={current_shift}, group={current_group}")
+    except ImportError as e:
+        logger.error(f"Error importing shift_manager.utils: {e}", exc_info=True)
+        current_group = request.user.userprofile.group if hasattr(request.user, 'userprofile') and hasattr(request.user.userprofile, 'group') else None
+    except Exception as e:
+        logger.error(f"Error getting current shift and group: {e}", exc_info=True)
+        current_group = request.user.userprofile.group if hasattr(request.user, 'userprofile') and hasattr(request.user.userprofile, 'group') else None
+
+    # بررسی مجوز کاربر برای حذف
+    if leave.crate_by != request.user.userprofile:
+        messages.error(request, 'شما اجازه حذف این مرخصی را ندارید.')
+        return JsonResponse({'success': False, 'error': 'شما اجازه حذف این مرخصی را ندارید.'})
+    
+    # بررسی تاریخ مرخصی (فقط مرخصی‌های امروز قابل حذف هستند)
+    if leave.shift_date != today:
+        messages.error(request, 'فقط مرخصی‌های امروز قابل حذف هستند.')
+        return JsonResponse({'success': False, 'error': 'فقط مرخصی‌های امروز قابل حذف هستند.'})
+    
+    # بررسی گروه کاری (فقط مرخصی‌های گروه کاری فعلی کاربر قابل حذف هستند)
+    if leave.work_group != current_group:
+        messages.error(request, 'شما فقط می‌توانید مرخصی‌های گروه کاری فعلی خود را حذف کنید.')
+        return JsonResponse({'success': False, 'error': 'شما فقط می‌توانید مرخصی‌های گروه کاری فعلی خود را حذف کنید.'})
+
+    if request.method == 'POST':
+        try:
+            # ذخیره اطلاعات مورد نیاز قبل از حذف
+            shift_date = leave.shift_date
+            work_group = leave.work_group
+            
+            # ثبت فعالیت حذف مرخصی
+            log_user_activity(
+                user=request.user,
+                activity_type='delete',
+                description=f'حذف مرخصی با شناسه {leave_id}',
+                related_model='ShiftReport',
+                related_object_id=leave_id,
+                url=request.META.get('HTTP_REFERER', '/'),
+                request=request
+            )
+            
+            # حذف مرخصی
+            leave.delete()
+            
+            messages.success(request, 'مرخصی با موفقیت حذف شد.')
+            return JsonResponse({'success': True})
+        except Exception as e:
+            logger.error(f"Error deleting leave: {e}", exc_info=True)
+            messages.error(request, f'خطا در حذف مرخصی: {str(e)}')
+            return JsonResponse({'success': False, 'error': f'خطا در حذف مرخصی: {str(e)}'})
+    else:
+        messages.error(request, 'درخواست نامعتبر است.')
+        return JsonResponse({'success': False, 'error': 'درخواست نامعتبر است.'})
+
+@login_required
+def add_leave(request):
+    if request.method == 'POST':
+        # ثبت داده‌های دریافتی برای دیباگ
+        logger.info(f"Received POST data: {request.POST}")
+        
+        # استفاده از ماژول shift_manager برای تشخیص شیفت کاری فعلی کاربر
+        try:
+            from shift_manager.utils import get_current_shift_and_group
+            current_shift, current_group = get_current_shift_and_group(request.user)
+            logger.info(f"Current shift and group for user {request.user.username}: shift={current_shift}, group={current_group}")
+        except ImportError as e:
+            logger.error(f"Error importing shift_manager.utils: {e}", exc_info=True)
+            current_group = request.user.userprofile.group if hasattr(request.user, 'userprofile') and hasattr(request.user.userprofile, 'group') else None
+        except Exception as e:
+            logger.error(f"Error getting current shift and group: {e}", exc_info=True)
+            current_group = request.user.userprofile.group if hasattr(request.user, 'userprofile') and hasattr(request.user.userprofile, 'group') else None
+        
+        # دریافت شناسه گزارش
+        report_id = request.POST.get('report_id')
+        if not report_id:
+            logger.error("Missing report_id in request")
+            return JsonResponse({'success': False, 'error': 'شناسه گزارش یافت نشد.'})
+        
+        # دریافت گزارش اصلی
+        try:
+            report = ShiftReport.objects.get(id=report_id)
+        except ShiftReport.DoesNotExist:
+            logger.error(f"Report with ID {report_id} not found")
+            return JsonResponse({'success': False, 'error': 'گزارش مورد نظر یافت نشد.'})
+        
+        # بررسی تاریخ گزارش (فقط گزارش‌های امروز قابل ویرایش هستند)
+        today = datetime.date.today()
+        if report.shift_date != today:
+            logger.warning(f"Attempt to add leave to a report not from today. Report date: {report.shift_date}, Today: {today}")
+            return JsonResponse({'success': False, 'error': 'فقط می‌توانید به گزارش‌های امروز مرخصی اضافه کنید.'})
+        
+        # بررسی گروه کاری (فقط گزارش‌های گروه کاری فعلی کاربر قابل ویرایش هستند)
+        if report.work_group != current_group:
+            logger.warning(f"Attempt to add leave to a report from different work group. Report group: {report.work_group}, User group: {current_group}")
+            return JsonResponse({'success': False, 'error': 'فقط می‌توانید به گزارش‌های گروه کاری فعلی خود مرخصی اضافه کنید.'})
+        
+        # دریافت نوع مرخصی
+        leave_type = request.POST.get('leave_type')
+        
+        # بررسی توضیحات برای غیبت
+        if leave_type == 'absence':
+            description = request.POST.get('description', '').strip()
+            if not description:
+                logger.warning("Missing description for absence")
+                return JsonResponse({'success': False, 'error': 'برای ثبت غیبت، وارد کردن توضیحات الزامی است.'})
+        
+        # بررسی توضیحات برای مرخصی استعلاجی
+        if leave_type == 'sick_leave':
+            description = request.POST.get('description', '').strip()
+            if not description:
+                logger.warning("Missing description for sick leave")
+                return JsonResponse({'success': False, 'error': 'برای ثبت مرخصی استعلاجی، وارد کردن توضیحات الزامی است.'})
+        
+        # بررسی زمان شروع و پایان برای مرخصی ساعتی
+        if leave_type == 'hourly':
+            start_time = request.POST.get('start_time')
+            end_time = request.POST.get('end_time')
+            if not start_time or not end_time:
+                logger.warning(f"Missing start_time or end_time for hourly leave. start_time: {start_time}, end_time: {end_time}")
+                return JsonResponse({'success': False, 'error': 'برای ثبت مرخصی ساعتی، وارد کردن زمان شروع و پایان الزامی است.'})
+        
+        # ایجاد فرم با داده‌های دریافتی
+        post_data = request.POST.copy()
+        post_data['shift_date'] = report.shift_date
+        post_data['status'] = 'reported'
+        form = ShiftReportForm(post_data)
+        
+        if form.is_valid():
+            try:
+                # ایجاد شیء مرخصی جدید بدون ذخیره
+                leave = form.save(commit=False)
+                
+                # تنظیم فیلدهای اضافی
+                leave.shift_date = report.shift_date
+                leave.work_group = current_group  # استفاده از گروه کاری فعلی کاربر
+                leave.crate_by = request.user.userprofile
+                
+                # اطمینان از ذخیره توضیحات
+                if leave_type in ['absence', 'sick_leave']:
+                    leave.description = post_data.get('description', '').strip()
+                
+                # ذخیره مرخصی
+                leave.save()
+                
+                # ثبت فعالیت افزودن مرخصی
+                log_user_activity(
+                    user=request.user,
+                    activity_type='create',
+                    description=f'افزودن مرخصی جدید به گزارش {report_id}',
+                    related_model='ShiftReport',
+                    related_object_id=leave.id,
+                    url=request.META.get('HTTP_REFERER', '/'),
+                    request=request
+                )
+                
+                logger.info(f"Leave successfully added: {leave.id}")
+                return JsonResponse({'success': True})
+            except Exception as e:
+                logger.error(f"Error saving leave: {e}", exc_info=True)
+                return JsonResponse({'success': False, 'error': f'خطا در ذخیره مرخصی: {str(e)}'})
+        else:
+            # ثبت خطاهای اعتبارسنجی فرم
+            logger.warning(f"Form validation errors: {form.errors}")
+            errors = []
+            for field, error_list in form.errors.items():
+                for error in error_list:
+                    errors.append(f"{field}: {error}")
+            
+            return JsonResponse({'success': False, 'errors': errors, 'error': 'خطا در اعتبارسنجی فرم.'})
+    else:
+        return JsonResponse({'success': False, 'error': 'درخواست نامعتبر است.'})
+
+@login_required
 def shift_report_detail(request, report_id):
     # دریافت گزارش اصلی
     report = get_object_or_404(ShiftReport, id=report_id)
+    today_date = datetime.date.today()
+
+    # استفاده از ماژول shift_manager برای تشخیص شیفت کاری فعلی کاربر
+    try:
+        from shift_manager.utils import get_current_shift_and_group
+        current_shift, current_group = get_current_shift_and_group(request.user)
+        logger.info(f"Current shift and group for user {request.user.username}: shift={current_shift}, group={current_group}")
+    except ImportError as e:
+        logger.error(f"Error importing shift_manager.utils: {e}", exc_info=True)
+        current_shift = None
+        current_group = request.user.userprofile.group if hasattr(request.user, 'userprofile') and hasattr(request.user.userprofile, 'group') else None
+    except Exception as e:
+        logger.error(f"Error getting current shift and group: {e}", exc_info=True)
+        current_shift = None
+        current_group = request.user.userprofile.group if hasattr(request.user, 'userprofile') and hasattr(request.user.userprofile, 'group') else None
 
     # ثبت فعالیت مشاهده جزئیات مرخصی
     log_user_activity(
@@ -289,22 +522,64 @@ def shift_report_detail(request, report_id):
     # تبدیل تاریخ شیفت به شمسی
     shift_date_jalali = jdatetime.date.fromgregorian(date=report.shift_date).strftime('%Y/%m/%d')
 
-    # دریافت همه گزارش‌های مربوط به همان تاریخ و گروه کاری
-    related_reports = ShiftReport.objects.filter(
+    # دریافت مرخصی‌ها، غیبت‌ها، مرخصی‌های ساعتی و مرخصی استعلاجی مرتبط
+    leaves = ShiftReport.objects.filter(
         shift_date=report.shift_date,
-        work_group=report.work_group
-    ).select_related('user')
+        work_group=report.work_group,
+        leave_type='regular'
+    ).select_related('user__userprofile')
 
-    # گروه‌بندی گزارش‌ها بر اساس نوع مرخصی
-    grouped_reports = defaultdict(list)
-    for r in related_reports:
-        grouped_reports[r.get_leave_type_display()].append(r)
+    absences = ShiftReport.objects.filter(
+        shift_date=report.shift_date,
+        work_group=report.work_group,
+        leave_type='absence'
+    ).select_related('user__userprofile')
+
+    hourly_leaves = ShiftReport.objects.filter(
+        shift_date=report.shift_date,
+        work_group=report.work_group,
+        leave_type='hourly'
+    ).select_related('user__userprofile')
+
+    sick_leaves = ShiftReport.objects.filter(
+        shift_date=report.shift_date,
+        work_group=report.work_group,
+        leave_type='sick_leave'
+    ).select_related('user__userprofile')
+    
+    # دریافت لیست پرسنل برای انتخاب
+    personnel_list = UserProfile.objects.select_related('user').filter(
+        section=request.user.userprofile.section,
+    )
+
+    form = ShiftReportForm()
+
+    # اگر current_group تعیین نشده، از گروه کاربر استفاده کنیم
+    if current_group is None and hasattr(request.user, 'userprofile') and hasattr(request.user.userprofile, 'group'):
+        current_group = request.user.userprofile.group
+        logger.info(f"Using user's profile group as current_group: {current_group}")
+
+    # بررسی آیا کاربر می‌تواند مرخصی اضافه کند
+    # کاربر فقط می‌تواند در روز جاری و برای گروه کاری فعلی خود مرخصی ثبت کند
+    can_add_leave = (
+        report.shift_date == today_date and 
+        report.work_group == current_group
+    )
 
     context = {
         'report': report,
         'shift_date_jalali': shift_date_jalali,
-        'grouped_reports': dict(grouped_reports),
+        'leaves': leaves,
+        'absences': absences,
+        'hourly_leaves': hourly_leaves,
+        'sick_leaves': sick_leaves,
         'title': f'جزئیات مرخصی {shift_date_jalali}',
+        'form': form,
+        'personnel_list': personnel_list,
+        'today_date': today_date,
+        'can_add_leave': can_add_leave,
+        'current_shift': current_shift,
+        'current_group': current_group,
     }
     return render(request, 'leave_reports/shift_report_detail.html', context)
 
@@ -369,3 +644,69 @@ def shift_report_pdf_view(request, pk):
     HTML(string=html_content, base_url=request.build_absolute_uri('/')).write_pdf(response)
 
     return response
+
+@login_required
+def shift_report_edit(request, report_id):
+    report = get_object_or_404(ShiftReport, id=report_id)
+    today = datetime.date.today()
+
+    # بررسی مجوز کاربر برای ویرایش گزارش
+    if report.crate_by != request.user.userprofile:
+        messages.error(request, 'شما اجازه ویرایش این گزارش را ندارید.')
+        return redirect('leave_reports:shift_report_list')
+    
+    # بررسی تاریخ گزارش (فقط گزارش‌های امروز قابل ویرایش هستند)
+    if report.shift_date != today:
+        messages.error(request, 'فقط گزارش‌های امروز قابل ویرایش هستند.')
+        return redirect('leave_reports:shift_report_detail', report_id=report.id)
+    
+    # بررسی گروه کاری (فقط گزارش‌های گروه کاری خود کاربر قابل ویرایش هستند)
+    if report.work_group != request.user.userprofile.group:
+        messages.error(request, 'شما فقط می‌توانید گزارش‌های گروه کاری خود را ویرایش کنید.')
+        return redirect('leave_reports:shift_report_detail', report_id=report.id)
+
+    if request.method == 'POST':
+        form = ShiftReportForm(request.POST, instance=report)
+        if form.is_valid():
+            try:
+                form.save()
+                
+                # ثبت فعالیت ویرایش مرخصی
+                log_user_activity(
+                    user=request.user,
+                    activity_type='update',
+                    description=f'ویرایش مرخصی با شناسه {report_id}',
+                    related_model='ShiftReport',
+                    related_object_id=report_id,
+                    url=reverse('leave_reports:shift_report_detail', args=[report_id]),
+                    request=request
+                )
+                
+                messages.success(request, 'گزارش با موفقیت به‌روزرسانی شد.')
+                return redirect('leave_reports:shift_report_detail', report_id=report.id)
+            except Exception as e:
+                logger.error(f"Error updating report: {e}", exc_info=True)
+                messages.error(request, f'خطا در به‌روزرسانی گزارش: {str(e)}')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'خطا در فیلد {field}: {error}')
+    else:
+        form = ShiftReportForm(instance=report)
+
+    return render(request, 'leave_reports/shift_report_edit.html', {
+        'form': form, 
+        'report': report,
+        'title': 'ویرایش مرخصی'
+    })
+
+def get_personnels(request):
+    personnels = UserProfile.objects.all()
+    data = []
+    for personnel in personnels:
+        data.append({
+            'user_id': personnel.user.id,
+            'full_name': personnel.user.get_full_name(),
+            'personnel_code': personnel.personnel_code
+        })
+    return JsonResponse(data, safe=False)

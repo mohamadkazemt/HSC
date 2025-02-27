@@ -4,7 +4,7 @@ from .models import ShiftReport
 class ShiftReportForm(forms.ModelForm):
     class Meta:
         model = ShiftReport
-        fields = ['leave_type', 'user', 'leave_hours', 'start_time', 'end_time', 'status','description']  # اضافه شدن 'description'
+        fields = ['leave_type', 'user', 'shift_date', 'leave_hours', 'start_time', 'end_time', 'status', 'description']
         widgets = {
             'start_time': forms.TimeInput(attrs={'type': 'time'}),  # ویجت ساعت شروع
             'end_time': forms.TimeInput(attrs={'type': 'time'}),  # ویجت ساعت پایان
