@@ -9,7 +9,7 @@ from .forms import LoginForm
 from .forms import PasswordResetSMSForm
 from accounts.models import UserProfile
 from dashboard.sms_utils import send_template_sms
-from .forms import UserForm, UserProfileForm,PasswordResetConfirmForm
+from .forms import UserForm, UserProfileForm,PasswordResetConfirmForm, ChangePasswordForm
 from django.utils.timezone import now
 from datetime import timedelta
 from django.db.models import Q # اضافه کردن این خط
@@ -65,24 +65,51 @@ def edit_profile(request):
     if request.method == 'POST':
         user_form = UserForm(request.POST, instance=request.user)
         profile_form = UserProfileForm(request.POST, request.FILES, instance=user_profile)
-
-        # بررسی فایل‌های آپلود شده
-        print(request.FILES)
+        password_form = ChangePasswordForm(request.user, request.POST)
 
         if user_form.is_valid() and profile_form.is_valid():
+            user = request.user
             user_form.save()
-            profile_form.save()
-            print(f"فایل آپلود شده: {user_profile.image.url}")  # نمایش مسیر فایل ذخیره شده
+            profile = profile_form.save(commit=False)
+            if 'image' in request.FILES:
+                profile.image = request.FILES['image']
+            profile.save()
+            messages.success(request, 'پروفایل با موفقیت بروزرسانی شد.')
+
+        if password_form.is_valid():
+            if password_form.cleaned_data.get('old_password') and password_form.cleaned_data.get('new_password1') and password_form.cleaned_data.get('new_password2'):
+                user = request.user
+                user.set_password(password_form.cleaned_data['new_password1'])
+                user.save()
+                messages.success(request, 'رمز عبور با موفقیت تغییر یافت.')
+                # لاگین مجدد کاربر بعد از تغییر رمز
+                user = authenticate(username=user.username, password=password_form.cleaned_data['new_password1'])
+                if user:
+                    login(request, user)
+        
+        if not user_form.errors and not profile_form.errors and not password_form.errors:
             return redirect('accounts:profile')
         else:
-            messages.error(request, 'لطفاً خطاهای زیر را برطرف کنید.')
+            for field, errors in user_form.errors.items():
+                for error in errors:
+                    messages.error(request, f"خطا در فیلد {field}: {error}")
+            for field, errors in profile_form.errors.items():
+                for error in errors:
+                    messages.error(request, f"خطا در فیلد {field}: {error}")
+            for field, errors in password_form.errors.items():
+                for error in errors:
+                    messages.error(request, f"خطا در فیلد {field}: {error}")
+
     else:
         user_form = UserForm(instance=request.user)
         profile_form = UserProfileForm(instance=user_profile)
+        password_form = ChangePasswordForm(user=request.user)
 
     return render(request, 'accounts/settings.html', {
         'user_form': user_form,
         'profile_form': profile_form,
+        'password_form': password_form,
+        'userprofile': user_profile,
     })
 
 
