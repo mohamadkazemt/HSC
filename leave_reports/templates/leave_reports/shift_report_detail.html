@@ -29,6 +29,32 @@
                                         </div>
                                     </div>
                                     <div class="card-body">
+                                        <!-- اطلاعات شیفت کاری فعلی کاربر -->
+                                        <div class="alert alert-info mb-4">
+                                            <div class="d-flex align-items-center">
+                                                <div class="symbol symbol-40px me-3">
+                                                    <div class="symbol-label bg-primary">
+                                                        <i class="bi bi-person-workspace text-white fs-2"></i>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <span class="fw-bold">شیفت کاری فعلی شما:</span>
+                                                    <span class="d-block">
+                                                        {% if current_group %}
+                                                            گروه: {{ current_group }} 
+                                                            {% if current_shift %}
+                                                                - شیفت: {{ current_shift }}
+                                                            {% else %}
+                                                                - شیفت: نامشخص
+                                                            {% endif %}
+                                                        {% else %}
+                                                            اطلاعات شیفت کاری در دسترس نیست
+                                                        {% endif %}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
                                         <div class="d-flex flex-wrap justify-content-between align-items-center mb-5 bg-light p-4 rounded">
                                             <div class="d-flex align-items-center mb-2 mb-md-0">
                                                 <div class="symbol symbol-40px me-3">
@@ -96,9 +122,15 @@
                                                                         </td>
                                                                         <td>{{ leave.user.get_full_name }}</td>
                                                                         <td>
-                                                                            <button class="btn btn-danger btn-sm delete-leave" data-leave-id="{{ leave.id }}">
-                                                                                حذف
-                                                                            </button>
+                                                                            {% if leave.crate_by == request.user.userprofile and leave.shift_date == today_date and leave.work_group == current_group %}
+                                                                                <button class="btn btn-danger btn-sm delete-leave" data-leave-id="{{ leave.id }}">
+                                                                                    حذف
+                                                                                </button>
+                                                                            {% else %}
+                                                                                <button class="btn btn-secondary btn-sm" disabled title="فقط ثبت‌کننده می‌تواند در همان روز ثبت و در گروه کاری فعلی خود، مرخصی را حذف کند.">
+                                                                                    حذف
+                                                                                </button>
+                                                                            {% endif %}
                                                                         </td>
                                                                     </tr>
                                                                 {% empty %}
@@ -149,9 +181,15 @@
                                                                         <td>{{ absence.user.get_full_name }}</td>
                                                                         <td>{{ absence.description }}</td>
                                                                         <td>
-                                                                            <button class="btn btn-danger btn-sm delete-leave" data-leave-id="{{ absence.id }}">
-                                                                                حذف
-                                                                            </button>
+                                                                            {% if absence.crate_by == request.user.userprofile and absence.shift_date == today_date and absence.work_group == current_group %}
+                                                                                <button class="btn btn-danger btn-sm delete-leave" data-leave-id="{{ absence.id }}">
+                                                                                    حذف
+                                                                                </button>
+                                                                            {% else %}
+                                                                                <button class="btn btn-secondary btn-sm" disabled title="فقط ثبت‌کننده می‌تواند در همان روز ثبت و در گروه کاری فعلی خود، مرخصی را حذف کند.">
+                                                                                    حذف
+                                                                                </button>
+                                                                            {% endif %}
                                                                         </td>
                                                                     </tr>
                                                                 {% empty %}
@@ -204,9 +242,15 @@
                                                                         <td>{{ sick_leave.user.get_full_name }}</td>
                                                                         <td>{{ sick_leave.description }}</td>
                                                                         <td>
-                                                                            <button class="btn btn-danger btn-sm delete-leave" data-leave-id="{{ sick_leave.id }}">
-                                                                                حذف
-                                                                            </button>
+                                                                            {% if sick_leave.crate_by == request.user.userprofile and sick_leave.shift_date == today_date and sick_leave.work_group == current_group %}
+                                                                                <button class="btn btn-danger btn-sm delete-leave" data-leave-id="{{ sick_leave.id }}">
+                                                                                    حذف
+                                                                                </button>
+                                                                            {% else %}
+                                                                                <button class="btn btn-secondary btn-sm" disabled title="فقط ثبت‌کننده می‌تواند در همان روز ثبت و در گروه کاری فعلی خود، مرخصی را حذف کند.">
+                                                                                    حذف
+                                                                                </button>
+                                                                            {% endif %}
                                                                         </td>
                                                                     </tr>
                                                                 {% empty %}
@@ -259,9 +303,15 @@
                                                                         <td>{{ hourly_leave.start_time }}</td>
                                                                         <td>{{ hourly_leave.end_time }}</td>
                                                                         <td>
-                                                                            <button class="btn btn-danger btn-sm delete-leave" data-leave-id="{{ hourly_leave.id }}">
-                                                                                حذف
-                                                                            </button>
+                                                                            {% if hourly_leave.crate_by == request.user.userprofile and hourly_leave.shift_date == today_date and hourly_leave.work_group == current_group %}
+                                                                                <button class="btn btn-danger btn-sm delete-leave" data-leave-id="{{ hourly_leave.id }}">
+                                                                                    حذف
+                                                                                </button>
+                                                                            {% else %}
+                                                                                <button class="btn btn-secondary btn-sm" disabled title="فقط ثبت‌کننده می‌تواند در همان روز ثبت و در گروه کاری فعلی خود، مرخصی را حذف کند.">
+                                                                                    حذف
+                                                                                </button>
+                                                                            {% endif %}
                                                                         </td>
                                                                     </tr>
                                                                 {% empty %}
@@ -283,6 +333,7 @@
                                         </div>
 
                                         <!-- فرم اضافه کردن مرخصی جدید -->
+                                        {% if can_add_leave %}
                                         <div class="card card-bordered mt-5">
                                             <div class="card-header bg-light">
                                                 <div class="card-title">
@@ -311,13 +362,58 @@
                                                             <option value="hourly">مرخصی ساعتی</option>
                                                         </select>
                                                     </div>
+                                                    
+                                                    <!-- فیلدهای مخصوص مرخصی ساعتی -->
+                                                    <div id="hourly_fields" class="leave-type-fields" style="display:none;">
+                                                        <div class="row">
+                                                            <div class="col-md-6 mb-3">
+                                                                <label for="start_time" class="form-label">زمان شروع:</label>
+                                                                <input type="time" class="form-control" id="start_time" name="start_time">
+                                                            </div>
+                                                            <div class="col-md-6 mb-3">
+                                                                <label for="end_time" class="form-label">زمان پایان:</label>
+                                                                <input type="time" class="form-control" id="end_time" name="end_time">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- فیلد توضیحات برای غیبت -->
+                                                    <div id="absence_fields" class="leave-type-fields" style="display:none;">
+                                                        <div class="mb-3">
+                                                            <label for="absence_description" class="form-label">توضیحات (الزامی):</label>
+                                                            <textarea class="form-control" id="absence_description" name="description" rows="3" required></textarea>
+                                                            <div class="form-text text-danger">توضیحات برای ثبت غیبت الزامی است.</div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- فیلد توضیحات برای مرخصی استعلاجی -->
+                                                    <div id="sick_leave_fields" class="leave-type-fields" style="display:none;">
+                                                        <div class="mb-3">
+                                                            <label for="sick_leave_description" class="form-label">توضیحات (الزامی):</label>
+                                                            <textarea class="form-control" id="sick_leave_description" name="description" rows="3" required></textarea>
+                                                            <div class="form-text text-danger">توضیحات برای ثبت مرخصی استعلاجی الزامی است.</div>
+                                                        </div>
+                                                    </div>
+                                                    
                                                     <button type="button" class="btn btn-primary" id="addLeaveBtn">ذخیره مرخصی جدید</button>
                                                 </form>
-                                                <div id="errorMessages" class="mt-3 text-danger">
-                                                    <!-- محل نمایش خطاها -->
+                                            </div>
+                                        </div>
+                                        {% else %}
+                                        <div class="card card-bordered mt-5">
+                                            <div class="card-header bg-light">
+                                                <div class="card-title">
+                                                    افزودن مرخصی جدید
+                                                </div>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="alert alert-warning">
+                                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                                    شما فقط می‌توانید در روز جاری و برای گروه کاری خود مرخصی ثبت کنید.
                                                 </div>
                                             </div>
                                         </div>
+                                        {% endif %}
                                     </div>
                                 </div>
                             </div>
@@ -336,77 +432,193 @@
             $('.delete-leave').click(function(e) {
                 e.preventDefault();
                 var leaveId = $(this).data('leave-id');
-                var btn = $(this); // Store the button reference
-
-                $.ajax({
-                    url: '{% url "leave_reports:delete_leave" leave_id=0 %}'.replace('0', leaveId),
-                    type: 'POST',
-                    data: {
-                        csrfmiddlewaretoken: '{{ csrf_token }}'
-                    },
-                    dataType: 'json',
-                    success: function(response) {
-                        if (response.success) {
-                            // Optionally, remove the row from the table
-                            btn.closest('tr').remove();
-                        } else {
-                            alert('Failed to delete leave: ' + response.error);
+                var btn = $(this); // ذخیره مرجع دکمه
+                
+                if (confirm('آیا از حذف این مرخصی اطمینان دارید؟')) {
+                    $.ajax({
+                        url: '{% url "leave_reports:delete_leave" leave_id=0 %}'.replace('0', leaveId),
+                        type: 'POST',
+                        data: {
+                            csrfmiddlewaretoken: '{{ csrf_token }}'
+                        },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                // حذف سطر از جدول
+                                btn.closest('tr').fadeOut(300, function() {
+                                    $(this).remove();
+                                });
+                                
+                                // نمایش پیام موفقیت با toastr
+                                toastr.success('مرخصی با موفقیت حذف شد.');
+                            } else {
+                                // نمایش پیام خطا با toastr
+                                toastr.error(response.error || 'خطا در حذف مرخصی.');
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            console.error("Error:", status, error);
+                            console.error("Response:", xhr.responseText);
+                            try {
+                                var response = JSON.parse(xhr.responseText);
+                                if (response.error) {
+                                    toastr.error(response.error);
+                                } else {
+                                    toastr.error('خطا در ارتباط با سرور. لطفا دوباره تلاش کنید.');
+                                }
+                            } catch (e) {
+                                toastr.error('خطا در ارتباط با سرور. لطفا دوباره تلاش کنید.');
+                            }
                         }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error("Error:", status, error);
-                        alert('An error occurred while deleting the leave.');
-                    }
-                });
+                    });
+                }
             });
 
             // اضافه کردن مرخصی
             $('#addLeaveBtn').click(function(e) {
                 e.preventDefault();
+                
+                // بررسی اعتبار فرم
+                var user = $('#user').val();
+                var leaveType = $('#leave_type').val();
+                
+                if (!user) {
+                    toastr.error('لطفا یک پرسنل را انتخاب کنید.');
+                    return;
+                }
+                
+                // بررسی توضیحات برای غیبت و مرخصی استعلاجی
+                var description = '';
+                if (leaveType === 'absence') {
+                    description = $('#absence_description').val().trim();
+                    if (!description) {
+                        toastr.error('برای ثبت غیبت، وارد کردن توضیحات الزامی است.');
+                        $('#absence_description').focus();
+                        return;
+                    }
+                }
+                
+                if (leaveType === 'sick_leave') {
+                    description = $('#sick_leave_description').val().trim();
+                    if (!description) {
+                        toastr.error('برای ثبت مرخصی استعلاجی، وارد کردن توضیحات الزامی است.');
+                        $('#sick_leave_description').focus();
+                        return;
+                    }
+                }
+                
+                // بررسی زمان شروع و پایان برای مرخصی ساعتی
+                if (leaveType === 'hourly') {
+                    var startTime = $('#start_time').val();
+                    var endTime = $('#end_time').val();
+                    
+                    if (!startTime) {
+                        toastr.error('لطفا زمان شروع را وارد کنید.');
+                        $('#start_time').focus();
+                        return;
+                    }
+                    
+                    if (!endTime) {
+                        toastr.error('لطفا زمان پایان را وارد کنید.');
+                        $('#end_time').focus();
+                        return;
+                    }
+                }
+
+                // نمایش لودینگ
+                var btn = $(this);
+                var originalText = btn.html();
+                btn.html('<i class="spinner-border spinner-border-sm"></i> در حال ذخیره...');
+                btn.prop('disabled', true);
+                
+                // ساخت داده‌های فرم به صورت دستی
+                var formData = new FormData(document.getElementById('addLeaveForm'));
+                
+                // اضافه کردن توضیحات به فرم داده بر اساس نوع مرخصی
+                if (leaveType === 'absence') {
+                    formData.set('description', $('#absence_description').val().trim());
+                } else if (leaveType === 'sick_leave') {
+                    formData.set('description', $('#sick_leave_description').val().trim());
+                }
+                
+                // لاگ کردن داده‌های فرم برای دیباگ
+                console.log('Form data:');
+                for (var pair of formData.entries()) {
+                    console.log(pair[0] + ': ' + pair[1]);
+                }
 
                 $.ajax({
                     url: '{% url "leave_reports:add_leave" %}',
                     type: 'POST',
-                    data: $('#addLeaveForm').serialize(),
-                    dataType: 'json',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
                     success: function(response) {
+                        // بازگرداندن دکمه به حالت اولیه
+                        btn.html(originalText);
+                        btn.prop('disabled', false);
+                        
                         if (response.success) {
-                            // ساخت یک ردیف جدید در جدول
-                            var newRow = '<tr>' +
-                                '<td>' + response.leave.user_personnel_code + '</td>' +
-                                '<td>' + response.leave.user_full_name + '</td>' +
-                                '<td>' +
-                                '<button class="btn btn-danger btn-sm delete-leave" data-leave-id="' + response.leave.id + '">' +
-                                'حذف' +
-                                '</button>' +
-                                '</td>' +
-                                '</tr>';
-
-                            // اضافه کردن ردیف جدید به جدول مرخصی‌ها
-                            $('table.table-striped tbody').append(newRow);
-
-                            // نمایش پیام موفقیت
-                            alert('مرخصی با موفقیت اضافه شد.');
+                            // پاک کردن فرم
+                            $('#addLeaveForm')[0].reset();
                             
-                            // پاک کردن پیام های خطا
-                            $('#errorMessages').empty();
+                            // نمایش پیام موفقیت
+                            toastr.success('مرخصی با موفقیت ثبت شد.');
+                            
+                            // بازخوانی صفحه برای نمایش مرخصی جدید
+                            setTimeout(function() {
+                                location.reload();
+                            }, 1500);
                         } else {
-                            // نمایش خطاها
-                            var errors = JSON.parse(response.errors);
-                            var errorHtml = '<ul>';
-                            for (var field in errors) {
-                                errorHtml += '<li>' + errors[field][0].message + '</li>';
+                            // نمایش پیام خطا
+                            if (response.errors && response.errors.length > 0) {
+                                // نمایش خطاهای خاص
+                                response.errors.forEach(function(error) {
+                                    toastr.error(error);
+                                });
+                            } else if (response.error) {
+                                // نمایش پیام خطای کلی
+                                toastr.error(response.error);
+                            } else {
+                                // پیام خطای پیش‌فرض
+                                toastr.error('خطا در ثبت مرخصی. لطفا دوباره تلاش کنید.');
                             }
-                            errorHtml += '</ul>';
-                            $('#errorMessages').html(errorHtml);
                         }
                     },
                     error: function(xhr, status, error) {
+                        // بازگرداندن دکمه به حالت اولیه
+                        btn.html(originalText);
+                        btn.prop('disabled', false);
+                        
                         console.error("Error:", status, error);
-                        alert('An error occurred while adding the leave.');
+                        console.error("Response:", xhr.responseText);
+                        try {
+                            var response = JSON.parse(xhr.responseText);
+                            if (response.error) {
+                                toastr.error(response.error);
+                            } else {
+                                toastr.error('خطا در ارتباط با سرور. لطفا دوباره تلاش کنید.');
+                            }
+                        } catch (e) {
+                            toastr.error('خطا در ارتباط با سرور. لطفا دوباره تلاش کنید.');
+                        }
                     }
                 });
             });
+            
+            // نمایش/مخفی کردن فیلدهای اضافی بر اساس نوع مرخصی
+            $('#leave_type').change(function() {
+                var leaveType = $(this).val();
+                
+                // مخفی کردن همه فیلدهای اضافی
+                $('.leave-type-fields').hide();
+                
+                // نمایش فیلدهای مربوط به نوع مرخصی انتخاب شده
+                $('#' + leaveType + '_fields').show();
+            });
+            
+            // اجرای تغییر نوع مرخصی در بارگذاری اولیه
+            $('#leave_type').trigger('change');
         });
     </script>
 {% endblock %}
