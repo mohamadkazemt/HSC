@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from .models import UserProfile
+from django.core.exceptions import ValidationError
 
 class LoginForm(AuthenticationForm):
     username = forms.CharField(widget=forms.TextInput(attrs={
@@ -18,26 +19,61 @@ class LoginForm(AuthenticationForm):
 class UserForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'email']  # فیلدهای مورد نظر از مدل User
+        fields = ['first_name', 'last_name', 'email']  # فیلدهایی که کاربر اجازه ویرایش دارد
         widgets = {
-            'username': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'نام کاربری'}),
-            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'نام'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'نام خانوادگی'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'ایمیل'}),
-
+            'first_name': forms.TextInput(attrs={'class': 'form-control form-control-lg form-control-solid mb-3 mb-lg-0', 'placeholder': 'نام'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control form-control-lg form-control-solid', 'placeholder': 'نام خانوادگی'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control form-control-lg form-control-solid', 'placeholder': 'ایمیل'})
         }
 
 class UserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
-        fields = ['personnel_code', 'image', 'mobile', 'group']
+        fields = ['mobile', 'image']  # فقط فیلدهایی که کاربر اجازه ویرایش دارد
         widgets = {
-            'personnel_code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'کد پرسنلی'}),
-            'image': forms.ClearableFileInput(attrs={'class': 'form-control'}),
-            'mobile': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'شماره موبایل'}),
-            'group': forms.Select(attrs={'class': 'form-control'})
+            'mobile': forms.TextInput(attrs={'class': 'form-control form-control-lg form-control-solid', 'placeholder': 'شماره موبایل'}),
+            'image': forms.FileInput(attrs={'class': 'd-none'})
         }
 
+class ChangePasswordForm(forms.Form):
+    old_password = forms.CharField(widget=forms.PasswordInput(attrs={
+        'class': 'form-control form-control-lg form-control-solid',
+        'placeholder': 'رمز عبور فعلی'
+    }), label='رمز عبور فعلی', required=False)
+    
+    new_password1 = forms.CharField(widget=forms.PasswordInput(attrs={
+        'class': 'form-control form-control-lg form-control-solid',
+        'placeholder': 'رمز عبور جدید'
+    }), label='رمز عبور جدید', required=False)
+    
+    new_password2 = forms.CharField(widget=forms.PasswordInput(attrs={
+        'class': 'form-control form-control-lg form-control-solid',
+        'placeholder': 'تکرار رمز عبور جدید'
+    }), label='تکرار رمز عبور جدید', required=False)
+
+    def __init__(self, user, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.user = user
+
+    def clean_old_password(self):
+        old_password = self.cleaned_data.get('old_password')
+        if old_password and not self.user.check_password(old_password):
+            raise ValidationError('رمز عبور فعلی اشتباه است.')
+        return old_password
+
+    def clean(self):
+        cleaned_data = super().clean()
+        new_password1 = cleaned_data.get('new_password1')
+        new_password2 = cleaned_data.get('new_password2')
+        old_password = cleaned_data.get('old_password')
+
+        if new_password1 and new_password2 and new_password1 != new_password2:
+            raise ValidationError('رمز عبور جدید و تکرار آن یکسان نیستند.')
+        
+        if new_password1 and not old_password:
+            raise ValidationError('لطفا رمز عبور فعلی را وارد کنید.')
+
+        return cleaned_data
 
 class PasswordResetSMSForm(forms.Form):
     username = forms.CharField(widget=forms.TextInput(attrs={
