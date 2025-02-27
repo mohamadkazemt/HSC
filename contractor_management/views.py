@@ -111,25 +111,12 @@ def all_reports(request):
     vehicle_statuses = {}
     for vehicle in vehicles:
         latest_report = Report.objects.filter(vehicle=vehicle).order_by('-report_datetime', '-id').first()
-        if latest_report:
-            if latest_report.status == 'inactive':
-                status = 'غیرفعال'
-                status_class = 'danger'
-            elif latest_report.status == 'partial':
-                status = 'نیمه فعال'
-                status_class = 'warning'
-            elif latest_report.status == 'full':
-                status = 'فعال'
-                status_class = 'success'
-            else:
-                status = 'نامشخص'
-                status_class = 'secondary'
-        else:
-            status = 'نامشخص'
-            status_class = 'secondary'
+        
+        # تعیین وضعیت خودرو بر اساس آخرین گزارش
+        vehicle_status, status_class = get_vehicle_status_display(latest_report)
         
         vehicle_statuses[vehicle.id] = {
-            'status': status,
+            'status': vehicle_status,
             'status_class': status_class,
             'latest_report': latest_report
         }
@@ -760,3 +747,27 @@ def apply_date_filters(reports_query, start_date, end_date):
             pass
     
     return reports_query
+
+
+def get_vehicle_status_display(latest_report):
+    """
+    تعیین وضعیت خودرو و کلاس وضعیت (badge) بر اساس آخرین گزارش.
+    """
+    if latest_report:
+        if latest_report.status == 'inactive':
+            vehicle_status = 'غیرفعال'
+            status_class = 'danger'
+        elif latest_report.status == 'partial':
+            vehicle_status = 'نیمه فعال'
+            status_class = 'warning'
+        elif latest_report.status == 'full':
+            vehicle_status = 'فعال'
+            status_class = 'success'
+        else:
+            vehicle_status = 'نامشخص'
+            status_class = 'secondary'
+    else:
+        vehicle_status = 'نامشخص'
+        status_class = 'secondary'
+    
+    return vehicle_status, status_class

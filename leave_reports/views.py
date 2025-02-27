@@ -157,7 +157,14 @@ def shift_report_list(request):
         request=request
     )
     
-    reports = ShiftReport.objects.all()  # Get all reports initially
+    # بررسی عضویت کاربر در گروه مدیر
+    is_manager = request.user.groups.filter(name='مدیر').exists()
+
+    # دریافت گزارش‌ها بر اساس شرایط
+    if is_manager:
+        reports = ShiftReport.objects.all()  # مدیر می‌تواند همه گزارش‌ها را ببیند
+    else:
+        reports = ShiftReport.objects.filter(crate_by=request.user.userprofile)  # کاربر فقط گزارش‌های خودش را می‌بیند
 
     # Get filter parameters from request
     year = request.GET.get('year')
@@ -208,7 +215,7 @@ def shift_report_list(request):
     reports = reports.filter(created_at__in=Subquery(last_created_at_subquery))
 
     # Group the reports
-    grouped_reports = reports.values('shift_date', 'work_group').annotate(
+    grouped_reports = reports.values('shift_date', 'work_group', 'crate_by__user__first_name', 'crate_by__user__last_name').annotate(
         total_regular=Count('id', filter=Q(leave_type='regular')),
         total_hourly=Count('id', filter=Q(leave_type='hourly')),
         total_absence=Count('id', filter=Q(leave_type='absence')),
@@ -227,6 +234,7 @@ def shift_report_list(request):
         if matching_report:
             report['id'] = matching_report.id
         report['shift_date'] = jdatetime.date.fromgregorian(date=report['shift_date']).strftime('%Y/%m/%d')
+        report['crate_by_name'] = f"{report['crate_by__user__first_name']} {report['crate_by__user__last_name']}"
         report_with_ids.append(report)
 
     # Implement pagination
@@ -271,6 +279,71 @@ def shift_report_list(request):
 
 
 @login_required
+def delete_leave(request, leave_id):
+    # دریافت شیء مرخصی
+    leave = get_object_or_404(ShiftReport, id=leave_id)
+
+    # بررسی مجوز کاربر برای حذف
+    if leave.crate_by != request.user.userprofile:
+        return HttpResponse("You are not allowed to delete this leave.")
+
+    if request.method == 'POST':
+        # ثبت فعالیت حذف مرخصی
+        log_user_activity(
+            user=request.user,
+            activity_type='delete',
+            description=f'حذف مرخصی با شناسه {leave_id}',
+            related_model='ShiftReport',
+            related_object_id=leave_id,
+            url=reverse('leave_reports:shift_report_detail', args=[leave.shift_report.id]),
+            request=request
+        )
+        leave.delete()
+        return JsonResponse({'success': True})  # ارسال پاسخ JSON برای موفقیت
+    else:
+        return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+
+@login_required
+def add_leave(request):
+    if request.method == 'POST':
+        form = ShiftReportForm(request.POST)
+        if form.is_valid():
+            new_leave = form.save(commit=False)
+            # دریافت گزارش اصلی
+            report_id = request.POST.get('report_id')
+            report = get_object_or_404(ShiftReport, id=report_id)
+
+            new_leave.crate_by = request.user.userprofile
+            new_leave.work_group = report.work_group
+            new_leave.shift_date = report.shift_date  # تاریخ را از گزارش اصلی بگیر
+            new_leave.save()
+
+            # ثبت فعالیت ایجاد مرخصی
+            log_user_activity(
+                user=request.user,
+                activity_type='create',
+                description=f'ایجاد مرخصی جدید با شناسه {new_leave.id}',
+                related_model='ShiftReport',
+                related_object_id=new_leave.id,
+                url=reverse('leave_reports:shift_report_detail', args=[report_id]),
+                request=request
+            )
+
+            # ساخت پاسخ JSON
+            leave_data = {
+                'id': new_leave.id,
+                'user_full_name': new_leave.user.get_full_name(),
+                'user_personnel_code': new_leave.user.userprofile.personnel_code if new_leave.user.userprofile else 'کد پرسنلی تعریف نشده',
+            }
+            return JsonResponse({'success': True, 'leave': leave_data})
+        else:
+            # ارسال خطاها به صورت JSON
+            errors = form.errors.as_json()
+            return JsonResponse({'success': False, 'errors': errors})
+    else:
+        return JsonResponse({'success': False, 'error': 'Invalid request method.'})
+
+@login_required
 def shift_report_detail(request, report_id):
     # دریافت گزارش اصلی
     report = get_object_or_404(ShiftReport, id=report_id)
@@ -289,22 +362,48 @@ def shift_report_detail(request, report_id):
     # تبدیل تاریخ شیفت به شمسی
     shift_date_jalali = jdatetime.date.fromgregorian(date=report.shift_date).strftime('%Y/%m/%d')
 
-    # دریافت همه گزارش‌های مربوط به همان تاریخ و گروه کاری
-    related_reports = ShiftReport.objects.filter(
+    # دریافت مرخصی‌ها، غیبت‌ها، مرخصی‌های ساعتی و مرخصی استعلاجی مرتبط
+    leaves = ShiftReport.objects.filter(
         shift_date=report.shift_date,
-        work_group=report.work_group
-    ).select_related('user')
+        work_group=report.work_group,
+        leave_type='regular'
+    ).select_related('user__userprofile')
 
-    # گروه‌بندی گزارش‌ها بر اساس نوع مرخصی
-    grouped_reports = defaultdict(list)
-    for r in related_reports:
-        grouped_reports[r.get_leave_type_display()].append(r)
+    absences = ShiftReport.objects.filter(
+        shift_date=report.shift_date,
+        work_group=report.work_group,
+        leave_type='absence'
+    ).select_related('user__userprofile')
+
+    hourly_leaves = ShiftReport.objects.filter(
+        shift_date=report.shift_date,
+        work_group=report.work_group,
+        leave_type='hourly'
+    ).select_related('user__userprofile')
+
+    sick_leaves = ShiftReport.objects.filter(
+        shift_date=report.shift_date,
+        work_group=report.work_group,
+        leave_type='sick_leave'
+    ).select_related('user__userprofile')
+    
+    # دریافت لیست پرسنل برای انتخاب
+    personnel_list = UserProfile.objects.select_related('user').filter(
+        section=request.user.userprofile.section,
+    )
+
+    form = ShiftReportForm()
 
     context = {
         'report': report,
         'shift_date_jalali': shift_date_jalali,
-        'grouped_reports': dict(grouped_reports),
+        'leaves': leaves,
+        'absences': absences,
+        'hourly_leaves': hourly_leaves,
+        'sick_leaves': sick_leaves,
         'title': f'جزئیات مرخصی {shift_date_jalali}',
+        'form': form,  # فرم را به context اضافه کنید
+        'personnel_list': personnel_list,  # لیست پرسنل را به context اضافه کنید
     }
     return render(request, 'leave_reports/shift_report_detail.html', context)
 
@@ -369,3 +468,32 @@ def shift_report_pdf_view(request, pk):
     HTML(string=html_content, base_url=request.build_absolute_uri('/')).write_pdf(response)
 
     return response
+
+@login_required
+def shift_report_edit(request, report_id):
+    report = get_object_or_404(ShiftReport, id=report_id)
+
+    # Check if the user is allowed to edit the report
+    if report.crate_by != request.user.userprofile:
+        return HttpResponse("You are not allowed to edit this report.")
+
+    if request.method == 'POST':
+        form = ShiftReportForm(request.POST, instance=report)
+        if form.is_valid():
+            form.save()
+            return redirect('leave_reports:shift_report_detail', report_id=report.id)
+    else:
+        form = ShiftReportForm(instance=report)
+
+    return render(request, 'leave_reports/shift_report_edit.html', {'form': form, 'report': report})
+
+def get_personnels(request):
+    personnels = UserProfile.objects.all()
+    data = []
+    for personnel in personnels:
+        data.append({
+            'user_id': personnel.user.id,
+            'full_name': personnel.user.get_full_name(),
+            'personnel_code': personnel.personnel_code
+        })
+    return JsonResponse(data, safe=False)
