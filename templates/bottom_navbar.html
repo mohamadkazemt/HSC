@@ -1,0 +1,185 @@
+{% load static %}
+{% load permission_tags %}
+
+<div class="bottom-navbar">
+    <a class="menu-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard:dashboard' %}">
+        <span class="menu-icon">
+            <i class="ki-outline ki-home-2 fs-2"></i>
+        </span>
+        <span class="menu-title">خانه</span>
+    </a>
+
+    <a class="menu-link {% if request.resolver_match.url_name == 'messages' %}active{% endif %}" href="#" id="messages-toggle">
+        <span class="menu-icon position-relative">
+            <i class="ki-outline ki-message-text-2 fs-2"></i>
+            <span class="position-absolute top-0 start-100 translate-middle badge badge-circle badge-danger w-15px h-15px ms-n4">7</span>
+        </span>
+        <span class="menu-title">پیام‌ها</span>
+    </a>
+
+    <a class="menu-link" id="forms-menu-trigger">
+        <span class="menu-icon">
+            <i class="ki-outline ki-plus-circle fs-2"></i>
+        </span>
+        <span class="menu-title">فرم‌ها</span>
+    </a>
+
+    <a class="menu-link {% if request.resolver_match.url_name == 'notifications' %}active{% endif %}" href="#" id="notifications-toggle">
+        <span class="menu-icon position-relative">
+            <i class="ki-outline ki-notification fs-2"></i>
+            {% if unread_notifications_count > 0 %}
+            <span class="position-absolute top-0 start-100 translate-middle badge badge-circle badge-danger w-15px h-15px ms-n4">
+                {{ unread_notifications_count }}
+            </span>
+            {% endif %}
+        </span>
+        <span class="menu-title">اعلان‌ها</span>
+    </a>
+
+    <a class="menu-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}" href="#" id="profile-toggle">
+        <span class="menu-icon">
+            {% if userprofile.image and userprofile.image.url %}
+            <img src="{{ userprofile.image.url }}" alt="user" class="h-30px w-30px rounded-circle" />
+            {% else %}
+            <img src="{% static 'assets/media/avatars/blank.png' %}" alt="user" class="h-30px w-30px rounded-circle" />
+            {% endif %}
+        </span>
+        <span class="menu-title">پروفایل</span>
+    </a>
+</div>
+
+<!-- منوی فرم‌ها -->
+<div class="forms-menu" id="forms-menu">
+    <div class="menu-header">
+        <h3>فرم‌ها</h3>
+    </div>
+    <div class="forms-menu-content">
+        {% if request.user|has_permission:"anomalis" %}
+            <a href="{% url 'anomalis:anomalis' %}" class="forms-menu-item">
+                <i class="ki-outline ki-bell fs-2 text-warning"></i>
+                <span>ثبت آنومالی</span>
+            </a>
+        {% endif %}
+
+        {% if request.user|has_permission:"daily_report_form" %}
+            <a href="{% url 'dailyreport_hse:daily_report_form' %}" class="forms-menu-item">
+                <i class="ki-outline ki-notepad-edit fs-2 text-success"></i>
+                <span>گزارش روزانه</span>
+            </a>
+        {% endif %}
+
+        {% if request.user|has_permission:"incident_report" %}
+            <a href="{% url 'hse_incidents:incident_report' %}" class="forms-menu-item">
+                <i class="ki-outline ki-shield-cross fs-2 text-danger"></i>
+                <span>گزارش حوادث</span>
+            </a>
+        {% endif %}
+
+        {% if request.user|has_permission:"shift_report" %}
+            <a href="{% url 'leave_reports:shift_report' %}" class="forms-menu-item">
+                <i class="ki-outline ki-exit-right fs-2 text-primary"></i>
+                <span>ثبت مرخصی</span>
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- منوی اعلان‌ها -->
+<div class="menu-sub-dropdown" id="notifications-menu">
+    <div class="menu-header">
+        <h3>اعلان‌ها</h3>
+    </div>
+    <div class="scroll-y">
+        {% if notifications %}
+            {% for notification in notifications %}
+                <div class="notification-item">
+                    <div class="notification-icon">
+                        <i class="ki-outline ki-abstract-28 fs-2 text-primary"></i>
+                    </div>
+                    <div class="notification-content">
+                        <div class="notification-title">{{ notification.title }}</div>
+                        <div class="notification-text">{{ notification.message }}</div>
+                        <div class="notification-time">{{ notification.created_at|timesince }}</div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center p-5">
+                <div class="text-muted">اعلان جدیدی وجود ندارد</div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- منوی پیام‌ها -->
+<div class="menu-sub-dropdown" id="messages-menu">
+    <div class="menu-header">
+        <h3>پیام‌ها</h3>
+    </div>
+    <div class="scroll-y">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="notification-item">
+                    <div class="symbol symbol-45px symbol-circle me-3">
+                        {% if message.sender.userprofile.image %}
+                        <img alt="Pic" src="{{ message.sender.userprofile.image.url }}" />
+                        {% else %}
+                        <img alt="Pic" src="{% static 'assets/media/avatars/blank.png' %}" />
+                        {% endif %}
+                    </div>
+                    <div class="notification-content">
+                        <div class="notification-title">{{ message.sender.get_full_name }}</div>
+                        <div class="notification-text">{{ message.content }}</div>
+                        <div class="notification-time">{{ message.created_at|timesince }}</div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center p-5">
+                <div class="text-muted">پیام جدیدی وجود ندارد</div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- منوی پروفایل -->
+<div class="menu-sub-dropdown" id="profile-menu">
+    <div class="menu-header">
+        <div class="d-flex align-items-center">
+            <div class="symbol symbol-50px me-3">
+                {% if userprofile.image and userprofile.image.url %}
+                <img alt="Logo" src="{{ userprofile.image.url }}" />
+                {% else %}
+                <img alt="Logo" src="{% static 'assets/media/avatars/blank.png' %}" />
+                {% endif %}
+            </div>
+            <div>
+                <div class="fw-bold">{{ user.first_name }} {{ user.last_name }}</div>
+                <div class="text-white opacity-75">{{ user.username }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="menu-content px-3 py-3">
+        <div class="menu-item px-3">
+            <a href="{% url 'accounts:profile' %}" class="menu-link px-3">
+                <i class="ki-outline ki-user-square fs-2 me-3"></i>
+                پروفایل من
+            </a>
+        </div>
+        <div class="menu-item px-3">
+            <a href="{% url 'accounts:settings' %}" class="menu-link px-3">
+                <i class="ki-outline ki-setting-2 fs-2 me-3"></i>
+                تنظیمات اکانت
+            </a>
+        </div>
+        <div class="separator my-2"></div>
+        <div class="menu-item px-3">
+            <a href="{% url 'accounts:logout' %}" class="menu-link px-3 text-danger">
+                <i class="ki-outline ki-exit-right fs-2 me-3"></i>
+                خروج
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="menu-overlay"></div> 

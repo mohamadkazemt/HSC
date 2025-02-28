@@ -30,6 +30,7 @@
     <!--begin::Global Stylesheets Bundle(mandatory for all pages)-->
     <link href="{% static 'assets/plugins/global/plugins.bundle.rtl.css' %}" rel="stylesheet" type="text/css" />
     <link href="{% static 'assets/css/style.bundle.rtl.css' %}" rel="stylesheet" type="text/css" />
+    <link href="{% static 'assets/css/override.css' %}" rel="stylesheet" type="text/css" />
 
 {% block style %}{% endblock %}
     <!--end::Global Stylesheets Bundle-->
@@ -154,5 +155,8 @@ if (document.documentElement) {
     });
   }
 </script>
+
+{% include 'bottom_navbar.html' %}
+<script src="{% static 'assets/js/bottom-navbar.js' %}"></script>
 </body>
 </html>

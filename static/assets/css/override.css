@@ -16,6 +16,7 @@ body {
     color: #333;
     direction: rtl;
     text-align: right;
+    padding-bottom: 80px;
 }
 
 /* استایل برای هدر */
@@ -179,4 +180,360 @@ html[data-theme="light"], :root {
     padding: 8px 20px;
     background: #006b1b;
     text-shadow: #0B0C10 0 2px 0;
+}
+
+/* Bottom Navbar */
+.bottom-navbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    background: #009ef7;
+    padding: 0.75rem 1rem;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 1000;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.bottom-navbar .menu-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #ffffff;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    padding: 0.25rem;
+    min-width: 60px;
+    text-align: center;
+    position: relative;
+}
+
+.bottom-navbar .menu-link:hover,
+.bottom-navbar .menu-link.active {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 0.475rem;
+}
+
+.bottom-navbar .menu-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+    line-height: 1;
+    position: relative;
+}
+
+.bottom-navbar .menu-title {
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+    color: #ffffff;
+}
+
+/* Badge Styles */
+.badge-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Forms Menu */
+.forms-menu {
+    position: fixed;
+    bottom: 80px;
+    left: 0;
+    right: 0;
+    width: 100%;
+    background: #ffffff;
+    box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.1);
+    border-top-left-radius: 1.5rem;
+    border-top-right-radius: 1.5rem;
+    transform: translateY(120%);
+    transition: transform 0.3s ease, visibility 0.3s ease;
+    z-index: 999;
+    visibility: hidden;
+    display: none;
+}
+
+.forms-menu.show {
+    transform: translateY(0);
+    visibility: visible;
+    display: block;
+}
+
+.forms-menu-content {
+    padding: 1.25rem;
+    max-height: calc(70vh - 100px);
+    overflow-y: auto;
+}
+
+.forms-menu-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    background-color: #f5f8fa;
+    border-radius: 0.75rem;
+    text-decoration: none;
+    color: #3f4254;
+    transition: all 0.2s ease;
+}
+
+.forms-menu-item:last-child {
+    margin-bottom: 0;
+}
+
+.forms-menu-item i {
+    margin-left: 1rem;
+    font-size: 1.5rem;
+}
+
+.forms-menu-item span {
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.forms-menu-item:hover {
+    background-color: #eef3f7;
+    transform: translateX(-5px);
+}
+
+/* Dropdown Menus (Notifications, Messages, Profile) */
+.menu-sub-dropdown {
+    position: fixed;
+    bottom: 80px;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border-radius: 0.75rem;
+    box-shadow: 0 0 50px 0 rgba(82, 63, 105, 0.15);
+    z-index: 1001;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    display: none;
+    margin: 0 1rem;
+}
+
+.menu-sub-dropdown.show {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    display: block;
+}
+
+/* Notification Items */
+.notification-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 1rem;
+    border-bottom: 1px solid #eff2f5;
+    transition: background-color 0.3s ease;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-item:hover {
+    background-color: #f8f9fa;
+}
+
+.notification-icon {
+    flex-shrink: 0;
+    margin-left: 1rem;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f5f8fa;
+    border-radius: 0.475rem;
+}
+
+.notification-icon i {
+    font-size: 1.5rem;
+    color: #009ef7;
+}
+
+.notification-content {
+    flex-grow: 1;
+    min-width: 0;
+    padding-left: 0.5rem;
+}
+
+.notification-title {
+    font-weight: 600;
+    color: #181c32;
+    margin-bottom: 0.25rem;
+    font-size: 0.95rem;
+}
+
+.notification-text {
+    color: #7e8299;
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+    line-height: 1.5;
+}
+
+.notification-time {
+    font-size: 0.75rem;
+    color: #b5b5c3;
+}
+
+/* Empty State */
+.text-center {
+    text-align: center;
+}
+
+.text-muted {
+    color: #a1a5b7;
+    font-size: 0.95rem;
+}
+
+.p-5 {
+    padding: 1.25rem;
+}
+
+/* Menu Headers */
+.menu-header {
+    padding: 1rem 1.25rem;
+    background: #009ef7;
+    color: #ffffff;
+    border-top-left-radius: 0.75rem;
+    border-top-right-radius: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.menu-header h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 500;
+}
+
+.menu-header .d-flex {
+    display: flex;
+    align-items: center;
+}
+
+.menu-header .symbol {
+    margin-left: 1rem;
+}
+
+.menu-header .text-white {
+    color: #ffffff !important;
+}
+
+.menu-header .opacity-75 {
+    opacity: 0.75;
+}
+
+/* Separator */
+.separator {
+    height: 0;
+    margin: 0.5rem 0;
+    border-bottom: 1px solid #eff2f5;
+}
+
+/* Custom Scrollbar for Menus */
+.menu-sub-dropdown::-webkit-scrollbar {
+    width: 5px;
+}
+
+.menu-sub-dropdown::-webkit-scrollbar-track {
+    background: #f5f8fa;
+}
+
+.menu-sub-dropdown::-webkit-scrollbar-thumb {
+    background: #e4e6ef;
+    border-radius: 5px;
+}
+
+.menu-sub-dropdown::-webkit-scrollbar-thumb:hover {
+    background: #b5b5c3;
+}
+
+/* Overlay */
+.menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 998;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.menu-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 380px) {
+    .bottom-navbar {
+        padding: 0.5rem;
+    }
+    
+    .bottom-navbar .menu-link {
+        min-width: 50px;
+        padding: 0.15rem;
+    }
+    
+    .bottom-navbar .menu-icon {
+        font-size: 1.25rem;
+    }
+    
+    .bottom-navbar .menu-title {
+        font-size: 0.7rem;
+    }
+}
+
+/* Hide on larger screens */
+@media (min-width: 992px) {
+    .bottom-navbar {
+        display: none;
+    }
+}
+
+/* Hide the original sidebar on small screens */
+@media (max-width: 991.98px) {
+    #kt_app_sidebar {
+        display: none;
+    }
+    body {
+        padding-bottom: 80px !important;
+    }
+}
+
+/* Custom Scrollbar */
+.forms-menu-content::-webkit-scrollbar {
+    width: 5px;
+}
+
+.forms-menu-content::-webkit-scrollbar-track {
+    background: #f5f8fa;
+}
+
+.forms-menu-content::-webkit-scrollbar-thumb {
+    background: #e4e6ef;
+    border-radius: 5px;
+}
+
+.forms-menu-content::-webkit-scrollbar-thumb:hover {
+    background: #b5b5c3;
 }
