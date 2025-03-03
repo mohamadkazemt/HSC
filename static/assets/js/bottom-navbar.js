@@ -4,8 +4,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const formsMenu = document.getElementById('forms-menu');
     const notificationsToggle = document.getElementById('notifications-toggle');
     const notificationsMenu = document.getElementById('notifications-menu');
-    const messagesToggle = document.getElementById('messages-toggle');
-    const messagesMenu = document.getElementById('messages-menu');
+    const reportsToggle = document.getElementById('reports-toggle');
+    const reportsMenu = document.getElementById('reports-menu');
     const profileToggle = document.getElementById('profile-toggle');
     const profileMenu = document.getElementById('profile-menu');
     const overlay = document.querySelector('.menu-overlay');
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to close all menus
     function closeAllMenus() {
-        [formsMenu, notificationsMenu, messagesMenu, profileMenu].forEach(menu => {
+        [formsMenu, notificationsMenu, reportsMenu, profileMenu].forEach(menu => {
             if (menu) {
                 menu.classList.remove('show');
             }
@@ -63,11 +63,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    if (messagesToggle) {
-        messagesToggle.addEventListener('click', function(e) {
+    if (reportsToggle) {
+        reportsToggle.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            toggleMenu(messagesMenu, this);
+            toggleMenu(reportsMenu, this);
         });
     }
 

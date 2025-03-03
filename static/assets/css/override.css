@@ -857,3 +857,70 @@ html[data-theme="light"], :root {
         height: 35px;
     }
 }
+
+/* Reports Menu Specific */
+#reports-menu.menu-sub-dropdown {
+    background: #ffffff;
+    padding: 0;
+    max-height: 80vh;
+}
+
+#reports-menu.menu-sub-dropdown.show {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    display: block;
+}
+
+#reports-menu .menu-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #009ef7;
+    padding: 1rem 1.5rem;
+    color: #ffffff;
+    border-radius: 1.5rem 1.5rem 0 0;
+}
+
+#reports-menu .menu-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+#reports-menu .menu-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f5f8fa;
+}
+
+#reports-menu .menu-title {
+    color: #181c32;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+#reports-menu .menu-sub-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+#reports-menu .menu-sub-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    color: #5e6278;
+    text-decoration: none;
+    border-radius: 0.475rem;
+    transition: all 0.2s ease;
+}
+
+#reports-menu .menu-sub-item:hover {
+    background-color: #f5f8fa;
+    color: #009ef7;
+}
+
+#reports-menu .menu-sub-item i {
+    margin-right: 0.5rem;
+}
