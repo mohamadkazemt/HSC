@@ -590,4 +590,19 @@ body.dark-mode .theme-mode-buttons .btn:hover {
     color: #ffffff !important;
     background-color: #2b2b40 !important;
 }
+
+/* مخفی کردن هدر و سایدبار در حالت موبایل */
+@media (max-width: 768px) {
+    #kt_app_header {
+        display: none;
+    }
+
+    #kt_app_sidebar {
+        display: none;
+    }
+
+    .app-container {
+        display: block !important; /* نمایش لوگو */
+    }
+}
 </style> 
