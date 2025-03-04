@@ -21,33 +21,37 @@ def get_current_user_shift_and_group(user):
              shift_index = SHIFT_PATTERN.index(user_shift)
              next_shift_index = (shift_index + 1) % len(SHIFT_PATTERN)
              next_shift = SHIFT_PATTERN[next_shift_index]
-             # تبدیل ساعت شیفت به بازه زمانی
+             
+             # تعیین ساعت‌های شیفت
              if user_shift == 'روزکار اول':
                   shift_start_hour = 7
-                  shift_end_hour = 14
+                  shift_end_hour = 15
              elif user_shift == 'عصرکار اول':
                   shift_start_hour = 15
-                  shift_end_hour = 22
+                  shift_end_hour = 23
              elif user_shift == 'شب کار اول':
-                 shift_start_hour = 23
-                 shift_end_hour = 6 if next_shift != 'روزکار اول' else 7
+                  shift_start_hour = 23
+                  shift_end_hour = 7  # ساعت پایان شیفت شب در روز بعد
              elif user_shift == 'روزکار دوم':
                   shift_start_hour = 7
-                  shift_end_hour = 14
+                  shift_end_hour = 15
              elif user_shift == 'عصرکار دوم':
                   shift_start_hour = 15
-                  shift_end_hour = 22
+                  shift_end_hour = 23
              elif user_shift == 'شب کار دوم':
-                 shift_start_hour = 23
-                 shift_end_hour = 6 if next_shift != 'روزکار اول' else 7
+                  shift_start_hour = 23
+                  shift_end_hour = 7  # ساعت پایان شیفت شب در روز بعد
              else: # برای شیفت های آف
                  return None, None
-             # بررسی اینکه ساعت فعلی بین شیفت و شیفت بعدی هست یا نه
-             shift_end_hour_extended = (shift_end_hour + 8) % 24
-             if shift_start_hour <= shift_end_hour: # شیفت روزکار و عصر کار
-                if (shift_start_hour <= current_hour < shift_end_hour) or (shift_end_hour <= current_hour < shift_end_hour_extended if shift_end_hour_extended > shift_end_hour else current_hour < shift_end_hour_extended):
-                        return user_shift, user_group
-             else: # شیفت شب کار
-                  if (shift_start_hour <= current_hour or current_hour < shift_end_hour) or (shift_end_hour <= current_hour or current_hour < shift_end_hour_extended if shift_end_hour_extended > shift_end_hour else current_hour < shift_end_hour_extended):
-                      return user_shift, user_group
+
+             # بررسی زمان فعلی در محدوده شیفت
+             if 'شب کار' in user_shift:
+                 # برای شیفت شب، باید بررسی کنیم آیا ساعت فعلی بین 23 تا 24 است یا بین 0 تا 7
+                 if (current_hour >= shift_start_hour) or (current_hour < shift_end_hour):
+                     return user_shift, user_group
+             else:
+                 # برای شیفت‌های روز و عصر
+                 if shift_start_hour <= current_hour < shift_end_hour:
+                     return user_shift, user_group
+
     return None, None
