@@ -258,36 +258,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Close menus when clicking on overlay
     menuOverlay.addEventListener('click', closeAllMenus);
-    
-    // Theme Mode Functionality
-    const lightBtn = document.getElementById('theme-light-btn');
-    const darkBtn = document.getElementById('theme-dark-btn');
-    
-    // Check for saved theme preference or use light as default
-    const savedTheme = localStorage.getItem('theme-mode');
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-        document.documentElement.setAttribute('data-bs-theme', 'dark');
-    } else {
-        document.body.classList.remove('dark-mode');
-        document.documentElement.setAttribute('data-bs-theme', 'light');
-    }
-    
-    // Light mode button
-    lightBtn.addEventListener('click', function() {
-        document.body.classList.remove('dark-mode');
-        document.documentElement.setAttribute('data-bs-theme', 'light');
-        localStorage.setItem('theme-mode', 'light');
-        closeAllMenus();
-    });
-    
-    // Dark mode button
-    darkBtn.addEventListener('click', function() {
-        document.body.classList.add('dark-mode');
-        document.documentElement.setAttribute('data-bs-theme', 'dark');
-        localStorage.setItem('theme-mode', 'dark');
-        closeAllMenus();
-    });
 });
 </script>
 
@@ -430,24 +400,6 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         {% endif %}
         
-        <!-- حالت تاریک/روشن -->
-        <div class="menu-item px-3">
-            <div class="d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center">
-                    <i class="ki-outline ki-night-day fs-2 me-3"></i>
-                    <span>حالت نمایش</span>
-                </div>
-                <div class="theme-mode-buttons">
-                    <button type="button" class="btn btn-sm btn-icon btn-active-light-primary me-1" id="theme-light-btn">
-                        <i class="ki-outline ki-night-day fs-2"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-icon btn-active-light-primary" id="theme-dark-btn">
-                        <i class="ki-outline ki-moon fs-2"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-        
         <div class="menu-item px-3">
             <a href="{% url 'accounts:settings' %}" class="menu-link px-3">
                 <i class="ki-outline ki-setting-2 fs-2 me-3"></i>
@@ -589,20 +541,5 @@ body.dark-mode .theme-mode-buttons .btn {
 body.dark-mode .theme-mode-buttons .btn:hover {
     color: #ffffff !important;
     background-color: #2b2b40 !important;
-}
-
-/* مخفی کردن هدر و سایدبار در حالت موبایل */
-@media (max-width: 768px) {
-    #kt_app_header {
-        display: none;
-    }
-
-    #kt_app_sidebar {
-        display: none;
-    }
-
-    .app-container {
-        display: block !important; /* نمایش لوگو */
-    }
 }
 </style> 
