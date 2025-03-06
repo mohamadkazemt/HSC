@@ -86,8 +86,7 @@
                                                 <!-- محتوای تب جزئیات (همان اطلاعات اصلی که الان دارید) -->
                                                 <h4 class="card-title mt-3">{{ anomaly.anomalydescription }}</h4>
                                                 <p class="card-subtitle mb-3 text-muted">
-                                                    ایجاد شده: {{ anomaly.created_at|to_jalali }} | آخرین بروزرسانی: {{
-                                                    anomaly.updated_at|to_jalali }}
+                                                    ایجاد شده: {{ anomaly.created_at|to_jalali }} | آخرین بروزرسانی: {{anomaly.updated_at|to_jalali }}
                                                 </p>
                                                 <div class="row">
                                                     <div class="col-md-6">
@@ -99,8 +98,7 @@
                                                                     <dd class="col-sm-8">{{ anomaly.location }}</dd>
 
                                                                     <dt class="col-sm-4">محل شناسایی:</dt>
-                                                                    <dd class="col-sm-8">{{
-                                                                        anomaly.section|default:"نامشخص" }}</dd>
+                                                                    <dd class="col-sm-8">{{ anomaly.section|default:"نامشخص" }}</dd>
 
                                                                     <dt class="col-sm-4">نوع آنومالی:</dt>
                                                                     <dd class="col-sm-8">{{ anomaly.anomalytype }}</dd>
@@ -141,12 +139,10 @@
                                                                     </dd>
 
                                                                     <dt class="col-sm-4">ایجاد کننده:</dt>
-                                                                    <dd class="col-sm-8">{{
-                                                                        anomaly.created_by.user.get_full_name }}</dd>
+                                                                    <dd class="col-sm-8">{{anomaly.created_by.user.get_full_name }}</dd>
 
                                                                     <dt class="col-sm-4">مسئول پیگیری:</dt>
-                                                                    <dd class="col-sm-8">{{
-                                                                        anomaly.followup.user.get_full_name }}</dd>
+                                                                    <dd class="col-sm-8">{{anomaly.followup.user.get_full_name }}</dd>
                                                                     <dt class="col-sm-4">گروه کاری:</dt>
                                                                     <dd class="col-sm-8">{{ anomaly.get_group_display }}
                                                                     </dd>
