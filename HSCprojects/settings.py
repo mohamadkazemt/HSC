@@ -68,7 +68,8 @@ INSTALLED_APPS = [
     'contractor_management.apps.ContractorManagementConfig',
     'rest_framework',
     'hse_incidents.apps.HseIncidentsConfig',
-    'machine_checklist.apps.MachineChecklistConfig'
+    'machine_checklist.apps.MachineChecklistConfig',
+    'fire_reports.apps.FireReportsConfig'
 
 ]
 
