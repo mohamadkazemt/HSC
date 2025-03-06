@@ -1,29 +1,36 @@
-﻿{% extends 'base.html' %}
+﻿{% extends "base.html" %}
 {% load static %}
 {% block content %}
-
     <div id="kt_app_root" class="d-flex flex-column flex-root app-root">
         <div id="kt_app_page" class="app-page flex-column flex-column-fluid">
-            {% include 'header.html' %}
-
+            {% include "header.html" %}
             <div id="kt_app_wrapper" class="app-wrapper flex-column flex-row-fluid">
-                {% include 'sidebar.html' %}
-
+                {% include "sidebar.html" %}
                 <div id="kt_app_main" class="app-main flex-column flex-row-fluid">
                     <div class="d-flex flex-column flex-column-fluid">
-                        {% include 'toolbar.html' %}
-
+                        {% include "toolbar.html" %}
                         <div id="kt_app_content" class="app-content flex-column-fluid">
                             <div id="kt_app_content_container" class="app-container container-fluid">
                                 <div class="card">
                                     <div class="card-body">
                                         <div class="card-px text-center pt-15 pb-15">
                                             <h2 class="fs-2x fw-bold mb-0">لیست آنومالی</h2>
-                                            <p class="text-gray-400 fs-4 fw-semibold py-7">برای ارسال انومالی بر روی دکمه زیرکلیک کنید<br/>-----------</p>
-                                            <a href="#" class="btn btn-primary er fs-6 px-8 py-4" data-bs-toggle="modal" data-bs-target="#kt_modal_new_target">آنومالی جدید</a>
+                                            <p class="text-gray-400 fs-4 fw-semibold py-7">
+                                                برای ارسال انومالی بر روی دکمه زیرکلیک کنید
+                                                <br />
+                                                -----------
+                                            </p>
+                                            <a href="#"
+                                               class="btn btn-primary er fs-6 px-8 py-4"
+                                               data-bs-toggle="modal"
+                                               data-bs-target="#kt_modal_new_target">آنومالی جدید</a>
                                         </div>
                                         <div class="text-center pb-15 px-5">
-                                            <img src="{% static 'assets/media/illustrations/sketchy-1/17.png' %}" alt="" class="mw-100 h-200px h-sm-325px">
+                                            <img src="{% static 'assets/media/illustrations/sketchy-1/17.png' %}"
+                                                 alt=""
+                                                 class="mw-100 h-200px h-sm-325px"
+                                                 width="325"
+                                                 height="325">
                                         </div>
                                     </div>
                                 </div>
@@ -32,50 +39,64 @@
                     </div>
                 </div>
             </div>
-
-            {% include 'footer.html' %}
+            {% include "footer.html" %}
         </div>
     </div>
-
-    <div id="kt_drawer_chat" class="bg-body" data-kt-drawer="true" data-kt-drawer-name="chat" data-kt-drawer-activate="true"
-         data-kt-drawer-overlay="true" data-kt-drawer-width="{default:'300px', 'md': '500px'}" data-kt-drawer-direction="end"
-         data-kt-drawer-toggle="#kt_drawer_chat_toggle" data-kt-drawer-close="#kt_drawer_chat_close">
-        {% include 'notification.html' %}
-    </div>
-
+    <div id="kt_drawer_chat"
+         class="bg-body"
+         data-kt-drawer="true"
+         data-kt-drawer-name="chat"
+         data-kt-drawer-activate="true"
+         data-kt-drawer-overlay="true"
+         data-kt-drawer-width="{default:'300px', 'md': '500px'}"
+         data-kt-drawer-direction="end"
+         data-kt-drawer-toggle="#kt_drawer_chat_toggle"
+         data-kt-drawer-close="#kt_drawer_chat_close">{% include "notification.html" %}</div>
     <div id="kt_scrolltop" class="scrolltop" data-kt-scrolltop="true"></div>
-
     <!-- Modal Form -->
-    <div class="modal fade" id="kt_modal_new_target" tabindex="-1" aria-hidden="true">
+    <div class="modal fade"
+         id="kt_modal_new_target"
+         tabindex="-1"
+         aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered mw-650px">
             <div class="modal-content rounded">
                 <div class="modal-header pb-0 border-0 justify-content-end">
-                    <div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal">
-                    <span class="svg-icon svg-icon-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                            <rect opacity="0.5" x="6" y="17.3137" width="16" height="2" rx="1" transform="rotate(-45 6 17.3137)" fill="black"/>
-                            <rect x="7.41422" y="6" width="16" height="2" rx="1" transform="rotate(45 7.41422 6)" fill="black"/>
-                        </svg>
-                    </span>
+                    <div class="btn btn-sm btn-icon btn-active-color-primary"
+                         data-bs-dismiss="modal">
+                        <span class="svg-icon svg-icon-1">
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 width="24"
+                                 height="24"
+                                 viewBox="0 0 24 24"
+                                 fill="none">
+                                <rect opacity="0.5" x="6" y="17.3137" width="16" height="2" rx="1" transform="rotate(-45 6 17.3137)" fill="black" />
+                                <rect x="7.41422" y="6" width="16" height="2" rx="1" transform="rotate(45 7.41422 6)" fill="black" />
+                            </svg>
+                        </span>
                     </div>
                 </div>
-
                 <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-15">
                     <!-- Display Messages -->
                     <div class="messages-container">
                         {% if messages %}
                             {% for message in messages %}
-                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show"
+                                     role="alert">
                                     {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                    <button type="button"
+                                            class="btn-close"
+                                            data-bs-dismiss="alert"
+                                            aria-label="Close"></button>
                                 </div>
                             {% endfor %}
                         {% endif %}
                     </div>
-
-                    <form id="anomaly_form" class="form" action="{% url 'anomalis:anomalis' %}" method="post" enctype="multipart/form-data">
+                    <form id="anomaly_form"
+                          class="form"
+                          action="{% url 'anomalis:anomalis' %}"
+                          method="post"
+                          enctype="multipart/form-data">
                         {% csrf_token %}
-
                         <div class="mb-13 text-center">
                             <h1 class="mb-3">فرم آنومالی</h1>
                             <div class="text-muted fw-semibold fs-5">
@@ -83,102 +104,78 @@
                                 لطفاً بررسی کنید.
                             </div>
                         </div>
-
                         <!-- Location and Section -->
                         <div class="row g-9 mb-8">
                             <div class="col-md-6 fv-row">
                                 <label for="id_location" class="required fs-6 fw-semibold mb-2">{{ form.location.label }}</label>
-                                {{ form.location}}
+                                {{ form.location }}
                                 {% if form.location.errors %}
-                                    <div class="fv-plugins-message-container invalid-feedback">
-                                        {{ form.location.errors|join:" " }}
-                                    </div>
+                                    <div class="fv-plugins-message-container invalid-feedback">{{ form.location.errors|join:" " }}</div>
                                 {% endif %}
                             </div>
-
                             <div class="col-md-6 fv-row">
                                 <label for="id_section" class="fs-6 fw-semibold mb-2">{{ form.section.label }}</label>
                                 {{ form.section }}
                                 {% if form.section.errors %}
-                                    <div class="fv-plugins-message-container invalid-feedback">
-                                        {{ form.section.errors|join:" " }}
-                                    </div>
+                                    <div class="fv-plugins-message-container invalid-feedback">{{ form.section.errors|join:" " }}</div>
                                 {% endif %}
                             </div>
                         </div>
-
-
                         <!-- Followup and Anomaly Type -->
                         <div class="row g-9 mb-8">
                             <div class="col-md-6 fv-row">
                                 <label class="required fs-6 fw-semibold mb-2">{{ form.followup.label }}</label>
                                 {{ form.followup }}
                                 {% if form.followup.errors %}
-                                    <div class="fv-plugins-message-container invalid-feedback">
-                                        {{ form.followup.errors|join:" " }}
-                                    </div>
+                                    <div class="fv-plugins-message-container invalid-feedback">{{ form.followup.errors|join:" " }}</div>
                                 {% endif %}
                             </div>
-
                             <div class="col-md-6 fv-row">
                                 <label class="required fs-6 fw-semibold mb-2">{{ form.anomalytype.label }}</label>
                                 {{ form.anomalytype }}
                                 {% if form.anomalytype.errors %}
-                                    <div class="fv-plugins-message-container invalid-feedback">
-                                        {{ form.anomalytype.errors|join:" " }}
-                                    </div>
+                                    <div class="fv-plugins-message-container invalid-feedback">{{ form.anomalytype.errors|join:" " }}</div>
                                 {% endif %}
                             </div>
                         </div>
-
                         <!-- Anomaly Description -->
                         <div class="d-flex flex-column mb-8 fv-row">
                             <label class="required fs-6 fw-semibold mb-2">
                                 {{ form.anomalydescription.label }}
-                                <span class="ms-1" data-bs-toggle="tooltip" title="لطفا یک شرح آنومالی را انتخاب کنید"></span>
+                                <span class="ms-1"
+                                      data-bs-toggle="tooltip"
+                                      title="لطفا یک شرح آنومالی را انتخاب کنید"></span>
                             </label>
                             {{ form.anomalydescription }}
                             {% if form.anomalydescription.errors %}
-                                <div class="fv-plugins-message-container invalid-feedback">
-                                    {{ form.anomalydescription.errors|join:" " }}
-                                </div>
+                                <div class="fv-plugins-message-container invalid-feedback">{{ form.anomalydescription.errors|join:" " }}</div>
                             {% endif %}
                         </div>
-
                         <!-- HSE Type and Corrective Action -->
                         <div class="row g-9 mb-8">
                             <div class="col-md-6 fv-row">
                                 <label class="fs-6 fw-semibold mb-2">{{ form.hse_type.label }}</label>
                                 {{ form.hse_type }}
                                 {% if form.hse_type.errors %}
-                                    <div class="fv-plugins-message-container invalid-feedback">
-                                        {{ form.hse_type.errors|join:" " }}
-                                    </div>
+                                    <div class="fv-plugins-message-container invalid-feedback">{{ form.hse_type.errors|join:" " }}</div>
                                 {% endif %}
                             </div>
-
                             <div class="col-md-6 fv-row">
                                 <label class="required fs-6 fw-semibold mb-2">{{ form.correctiveaction.label }}</label>
                                 {{ form.correctiveaction }}
                                 {% if form.correctiveaction.errors %}
-                                    <div class="fv-plugins-message-container invalid-feedback">
-                                        {{ form.correctiveaction.errors|join:" " }}
-                                    </div>
+                                    <div class="fv-plugins-message-container invalid-feedback">{{ form.correctiveaction.errors|join:" " }}</div>
                                 {% endif %}
                             </div>
                         </div>
-
                         <!-- Description -->
                         <div class="d-flex flex-column mb-8">
                             <label class="fs-6 fw-semibold mb-2">{{ form.description.label }}</label>
                             {{ form.description }}
                             {% if form.description.errors %}
-                                <div class="fv-plugins-message-container invalid-feedback">
-                                    {{ form.description.errors|join:" " }}
-                                </div>
+                                <div class="fv-plugins-message-container invalid-feedback">{{ form.description.errors|join:" " }}</div>
                             {% endif %}
                         </div>
-
                         <!-- Priority -->
                         <div class="d-flex flex-column mb-8 fv-row">
                             <label class="required fs-6 fw-semibold mb-2">
@@ -187,48 +184,39 @@
                             </label>
                             {{ form.priority }}
                             {% if form.priority.errors %}
-                                <div class="fv-plugins-message-container invalid-feedback">
-                                    {{ form.priority.errors|join:" " }}
-                                </div>
+                                <div class="fv-plugins-message-container invalid-feedback">{{ form.priority.errors|join:" " }}</div>
                             {% endif %}
                         </div>
-
                         <!-- Image -->
                         <div class="d-flex flex-column mb-8 fv-row">
                             <label class="required fs-6 fw-semibold mb-2">
                                 {{ form.image.label }}
-                                <span class="ms-1" data-bs-toggle="tooltip" title="لطفا تصویر آنومالی را بارگذاری کنید"></span>
+                                <span class="ms-1"
+                                      data-bs-toggle="tooltip"
+                                      title="لطفا تصویر آنومالی را بارگذاری کنید"></span>
                             </label>
                             {{ form.image }}
                             {% if form.image.errors %}
-                                <div class="fv-plugins-message-container invalid-feedback">
-                                    {{ form.image.errors|join:" " }}
-                                </div>
+                                <div class="fv-plugins-message-container invalid-feedback">{{ form.image.errors|join:" " }}</div>
                             {% endif %}
                         </div>
-
                         <!-- Action -->
                         <div class="d-flex flex-stack mb-8">
                             <div class="me-5">
                                 <label class="fs-6 fw-semibold">{{ form.action.label }}</label>
-                                <div class="fs-7 fw-semibold text-muted">
-                                    در صورت روشن بودن این گزینه به معنای ایمن بودن آنومالی می باشد
-                                </div>
+                                <div class="fs-7 fw-semibold text-muted">در صورت روشن بودن این گزینه به معنای ایمن بودن آنومالی می باشد</div>
                             </div>
-                            <div class="form-check form-switch">
-                                {{ form.action }}
-                            </div>
+                            <div class="form-check form-switch">{{ form.action }}</div>
                         </div>
-
                         <!-- Submit Buttons -->
                         <div class="text-center">
                             <button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">انصراف</button>
                             <button type="submit" class="btn btn-primary" data-kt-indicator="off">
                                 <span class="indicator-label">ثبت</span>
                                 <span class="indicator-progress">
-                    لطفا صبر کنید...
-                    <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
-                </span>
+                                    لطفا صبر کنید...
+                                    <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+                                </span>
                             </button>
                         </div>
                     </form>
@@ -236,13 +224,7 @@
             </div>
         </div>
     </div>
-
-{% endblock %}
-
-
-
-
-
+{% endblock content %}
 {% block extra_js %}
     <script>
         // Add this to your JavaScript/jQuery code
@@ -527,5 +509,4 @@
         });
 
     </script>
-
-{% endblock %}
+{% endblock extra_js %}

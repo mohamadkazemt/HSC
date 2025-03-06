@@ -6,6 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }}</title>
+    <meta name="description" content="فرم گزارش آنومالی - شرکت کاراوران صنعت خاورمیانه">
     <style>
         @font-face {
             font-family: 'IRANSans';
@@ -120,9 +121,11 @@
             border: 2px solid #ccc;
             border-radius: 10px;
             margin-top: 15px;
-        }  .company-name {
-               font-family: 'IRANSans', Tahoma, sans-serif;
-           }
+        }
+
+        .company-name {
+            font-family: 'IRANSans', Tahoma, sans-serif;
+        }
         .company-name span {
             display: block;
         }
@@ -133,6 +136,14 @@
         .company-name p:first-child {
             font-weight: bold; /* بولد کردن خط اول */
         }
+        .company-name p.company-title {
+            font-weight: bold;
+            margin: 0;
+            font-size: 25px;
+        }
+        .company-name p.company-subtitle {
+            margin: 0;
+        }
     </style>
 </head>
 <body>
@@ -140,19 +151,13 @@
     <!-- Header -->
     <div class="header">
         <div class="logo">
-            <img src="{{ static_url }}assets/media/logos/logo-small.png" alt="لوگو شرکت">
+            <img src="{{ static_url }}assets/media/logos/logo-small.png" alt="لوگو شرکت" width="50" height="50">
         </div>
-
-
 
         <div class="company-name">
-            <p style="font-weight: bold; margin: 0; font-size: 25px;">شرکت کاراوران صنعت خاورمیانه</p>
-            <p style="margin: 0;">پروژه معدن سنگ آهن جلال‌آباد - واحد HSEC</p>
+            <p class="company-title">شرکت کاراوران صنعت خاورمیانه</p>
+            <p class="company-subtitle">پروژه معدن سنگ آهن جلال‌آباد - واحد HSEC</p>
         </div>
-
-
-
-
 
         <div class="info">
             <p>کد فرم: MIE-HS-M-FR-142-V03</p>

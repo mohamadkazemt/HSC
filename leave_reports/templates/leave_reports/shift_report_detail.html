@@ -1,14 +1,14 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
 {% block content %}
     <div class="d-flex flex-column flex-root">
         <div class="app-page flex-column flex-column-fluid">
-            {% include 'header.html' %}
+            {% include "header.html" %}
             <div class="app-wrapper flex-column flex-row-fluid">
-                {% include 'sidebar.html' %}
+                {% include "sidebar.html" %}
                 <div class="app-main flex-column flex-row-fluid">
                     <div class="d-flex flex-column flex-column-fluid">
-                        {% include 'toolbar.html' %}
+                        {% include "toolbar.html" %}
                         <div class="app-content flex-column-fluid">
                             <div class="container-fluid">
                                 <div class="card card-flush shadow-sm mt-6 mt-xl-9">
@@ -364,7 +364,7 @@
                                                     </div>
                                                     
                                                     <!-- فیلدهای مخصوص مرخصی ساعتی -->
-                                                    <div id="hourly_fields" class="leave-type-fields" style="display:none;">
+                                                    <div id="hourly_fields" class="leave-type-fields hidden">
                                                         <div class="row">
                                                             <div class="col-md-6 mb-3">
                                                                 <label for="start_time" class="form-label">زمان شروع:</label>
@@ -378,7 +378,7 @@
                                                     </div>
                                                     
                                                     <!-- فیلد توضیحات برای غیبت -->
-                                                    <div id="absence_fields" class="leave-type-fields" style="display:none;">
+                                                    <div id="absence_fields" class="leave-type-fields hidden">
                                                         <div class="mb-3">
                                                             <label for="absence_description" class="form-label">توضیحات (الزامی):</label>
                                                             <textarea class="form-control" id="absence_description" name="description" rows="3" required></textarea>
@@ -387,7 +387,7 @@
                                                     </div>
                                                     
                                                     <!-- فیلد توضیحات برای مرخصی استعلاجی -->
-                                                    <div id="sick_leave_fields" class="leave-type-fields" style="display:none;">
+                                                    <div id="sick_leave_fields" class="leave-type-fields hidden">
                                                         <div class="mb-3">
                                                             <label for="sick_leave_description" class="form-label">توضیحات (الزامی):</label>
                                                             <textarea class="form-control" id="sick_leave_description" name="description" rows="3" required></textarea>
@@ -423,7 +423,7 @@
             </div>
         </div>
     </div>
-{% endblock %}
+{% endblock content %}
 
 {% block extra_js %}
     <script>
@@ -621,4 +621,10 @@
             $('#leave_type').trigger('change');
         });
     </script>
-{% endblock %}
+{% endblock extra_js %}
+
+<style>
+    .leave-type-fields.hidden {
+        display: none;
+    }
+</style>

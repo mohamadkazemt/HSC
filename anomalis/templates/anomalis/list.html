@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+﻿{% extends "base.html" %}
 
 
 {% load static %}
@@ -9,19 +9,19 @@
         <!--begin::Page-->
         <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
             <!--begin::Header-->
-            {% include 'header.html' %}
+            {% include "header.html" %}
             <!--end::Header-->
             <!--begin::Wrapper-->
             <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
                 <!--begin::Sidebar-->
-                {% include 'sidebar.html' %}
+                {% include "sidebar.html" %}
                 <!--end::Sidebar-->
                 <!--begin::اصلی-->
                 <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
                     <!--begin::Content wrapper-->
                     <div class="d-flex flex-column flex-column-fluid">
                         <!--begin::Toolbar-->
-                        {% include 'toolbar.html' %}
+                        {% include "toolbar.html" %}
                         <!--end::Toolbar-->
                         <!--begin::Content-->
                         <div id="kt_app_content" class="app-content flex-column-fluid">
@@ -80,8 +80,6 @@
                                                     {% endif %}
                                                 </form>
                                             </div>
-
-
                                         </div>
                                         <!--begin::کارت body-->
                                         <div class="card-body pt-0">
@@ -110,11 +108,11 @@
                                                                     <div class="me-5 position-relative">
                                                                         {% if anomaly.followup.image %}
                                                                             <div class="symbol symbol-35px symbol-circle">
-                                                                                <img alt="{{ anomaly.description }}" src="{{ anomaly.followup.image.url }}" />
+                                                                                <img alt="{{ anomaly.description }}" src="{{ anomaly.followup.image.url }}" width="35" height="35" />
                                                                             </div>
                                                                         {% else %}
                                                                             <div class="symbol symbol-35px symbol-circle">
-                                                                                <img alt="{{ anomaly.description }}" src="{% static 'assets/media/avatars/blank.png' %}" />
+                                                                                <img alt="{{ anomaly.description }}" src="{% static 'assets/media/avatars/blank.png' %}" width="35" height="35" />
                                                                             </div>
                                                                         {% endif %}
                                                                     </div>
@@ -155,7 +153,6 @@
                                                     </tbody>
                                                 </table>
                                                 <!--شروع::شماره صفحات-->
-
                                                 <div class="pagination">
                                                     <nav aria-label="Page navigation">
                                                         <ul class="pagination justify-content-center">
@@ -198,11 +195,6 @@
                                             </div>
                                         </div>
                                     </div>
-
-
-
-
-
                                     <!--end::جداول Widget 13-->
                                 </div>
 
@@ -213,7 +205,7 @@
                         </div>
                         <!--end::Content wrapper-->
                         <!--begin::Footer-->
-                        {% include 'footer.html' %}
+                        {% include "footer.html" %}
                         <!--end::Footer-->
                     </div>
                     <!--end:::اصلی-->
@@ -225,9 +217,9 @@
         <!--begin::notification drawer-->
         <div id="kt_drawer_chat" class="bg-body" data-kt-drawer="true" data-kt-drawer-name="chat" data-kt-drawer-activate="true" data-kt-drawer-overlay="true" data-kt-drawer-width="{default:'300px', 'md': '500px'}" data-kt-drawer-direction="end" data-kt-drawer-toggle="#kt_drawer_chat_toggle" data-kt-drawer-close="#kt_drawer_chat_close">
             <!--begin::Messenger-->
-            {% include 'notification.html' %}
+            {% include "notification.html" %}
             <!--end::Messenger-->
         </div>
         <!--end::notification drawer-->
 
-{% endblock %}
+{% endblock content %}
