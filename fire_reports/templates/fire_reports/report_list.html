@@ -33,35 +33,58 @@
                                 <div class="card-body">
                                     {% if page_obj %}
                                     <div class="table-responsive">
-                                        <table class="table table-striped table-hover">
+                                        <table class="table table-striped table-hover align-middle">
                                             <thead>
-                                                <tr>
+                                                <tr class="text-center">
+                                                    <th>#</th>
                                                     <th>تاریخ گزارش</th>
                                                     <th>شیفت کاری</th>
+                                                    <th>گروه کاری</th>
                                                     <th>متصدی شیفت</th>
                                                     <th>آتش‌نشان</th>
                                                     <th>تعداد حوادث</th>
+                                                    <th>وضعیت تأیید</th>
                                                     <th>عملیات</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 {% for report in page_obj %}
-                                                <tr>
+                                                <tr class="text-center">
+                                                    <td>{{ forloop.counter|add:page_obj.start_index|add:"-1" }}</td>
                                                     <td>{{ report.report_date|date:"Y/m/d H:i" }}</td>
                                                     <td>{{ report.shift }}</td>
+                                                    <td>{{ report.shift_operator.userprofile.get_group_display }}</td>
                                                     <td>{{ report.shift_operator.get_full_name }}</td>
                                                     <td>{{ report.firefighter.get_full_name }}</td>
-                                                    <td>{{ report.incident_dispatch_count }}</td>
+                                                    <td>
+                                                        <span class="badge badge-light-primary">
+                                                            {{ report.incident_dispatch_count|add:report.personal_incident_count|add:report.equipment_incident_count|add:report.fire_incident_count }}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        {% if report.approval_status == 'pending' %}
+                                                        <span class="badge badge-light-warning">در انتظار تأیید</span>
+                                                        {% elif report.approval_status == 'approved' %}
+                                                        <span class="badge badge-light-success">تأیید شده</span>
+                                                        {% else %}
+                                                        <span class="badge badge-light-danger">رد شده</span>
+                                                        {% endif %}
+                                                    </td>
                                                     <td>
                                                         <div class="btn-group">
-                                                            <a href="{% url 'fire_reports:report_detail' report.pk %}" class="btn btn-sm btn-info">
+                                                            <a href="{% url 'fire_reports:report_detail' report.pk %}" class="btn btn-sm btn-icon btn-info" data-bs-toggle="tooltip" title="مشاهده">
                                                                 <i class="fas fa-eye"></i>
                                                             </a>
-                                                            <a href="{% url 'fire_reports:report_edit' report.pk %}" class="btn btn-sm btn-warning">
+                                                            {% if report.approval_status == 'pending' %}
+                                                            <a href="{% url 'fire_reports:report_edit' report.pk %}" class="btn btn-sm btn-icon btn-warning" data-bs-toggle="tooltip" title="ویرایش">
                                                                 <i class="fas fa-edit"></i>
                                                             </a>
-                                                            <a href="{% url 'fire_reports:report_delete' report.pk %}" class="btn btn-sm btn-danger">
+                                                            <a href="{% url 'fire_reports:report_delete' report.pk %}" class="btn btn-sm btn-icon btn-danger" data-bs-toggle="tooltip" title="حذف">
                                                                 <i class="fas fa-trash"></i>
+                                                            </a>
+                                                            {% endif %}
+                                                            <a href="{% url 'fire_reports:report_pdf' report.pk %}" class="btn btn-sm btn-icon btn-success" data-bs-toggle="tooltip" title="دانلود PDF" target="_blank">
+                                                                <i class="fas fa-file-pdf"></i>
                                                             </a>
                                                         </div>
                                                     </td>
@@ -76,7 +99,14 @@
                                         <ul class="pagination justify-content-center">
                                             {% if page_obj.has_previous %}
                                             <li class="page-item">
-                                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">قبلی</a>
+                                                <a class="page-link" href="?page=1" title="اولین صفحه">
+                                                    <i class="fas fa-angle-double-right"></i>
+                                                </a>
+                                            </li>
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                                    <i class="fas fa-angle-right"></i>
+                                                </a>
                                             </li>
                                             {% endif %}
 
@@ -94,14 +124,22 @@
 
                                             {% if page_obj.has_next %}
                                             <li class="page-item">
-                                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">بعدی</a>
+                                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                                    <i class="fas fa-angle-left"></i>
+                                                </a>
+                                            </li>
+                                            <li class="page-item">
+                                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" title="آخرین صفحه">
+                                                    <i class="fas fa-angle-double-left"></i>
+                                                </a>
                                             </li>
                                             {% endif %}
                                         </ul>
                                     </nav>
                                     {% endif %}
                                     {% else %}
-                                    <div class="alert alert-info">
+                                    <div class="alert alert-info text-center">
+                                        <i class="fas fa-info-circle me-2"></i>
                                         هیچ گزارشی یافت نشد.
                                     </div>
                                     {% endif %}
@@ -131,4 +169,14 @@
 </div>
 <!--end::Chat drawer-->
 <!--end::Drawers-->
+
+{% block extra_js %}
+<script>
+    // فعال‌سازی tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+</script>
+{% endblock extra_js %}
 {% endblock content %} 

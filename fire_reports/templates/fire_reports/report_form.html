@@ -1,10 +1,59 @@
 {% extends "base.html" %}
+{% load fire_report_tags %}
 {% load static %}
 
 {% block style %}
 <style>
 .description-field {
-    display: none;
+    width: 100%;
+    border: 1px solid #e4e6ef;
+    border-radius: 6px;
+    padding: 8px 12px;
+    min-height: 35px;
+    height: 35px;
+    resize: none;
+    background-color: #ffffff !important;
+    color: #181c32;
+    font-size: 1rem;
+    line-height: 1.2;
+}
+
+.description-field:focus {
+    border-color: #009ef7;
+    outline: none;
+    box-shadow: none;
+}
+
+.form-control.form-control-solid {
+    background-color: #ffffff;
+    border-color: #e4e6ef;
+    color: #181c32;
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.form-control.form-control-solid:focus {
+    border-color: #009ef7;
+    background-color: #ffffff;
+}
+
+.description-field-container {
+    margin-top: 5px;
+}
+.vehicle-form {
+    border: 1px solid #eee;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+}
+.vehicle-form:hover {
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+.delete-vehicle {
+    color: #dc3545;
+    cursor: pointer;
+}
+.add-vehicle {
+    margin-bottom: 20px;
 }
 </style>
 {% endblock style %}
@@ -31,7 +80,7 @@
                     <!--begin::Content-->
                     <div id="kt_app_content" class="app-content flex-column-fluid">
                         <div id="kt_app_content_container" class="app-container container-fluid">
-                            {% if form.errors %}
+                            {% if form.errors or formset.errors %}
                             <div class="alert alert-danger mb-5">
                                 <div class="d-flex flex-column">
                                     <h4 class="mb-1 text-dark">خطا در ثبت فرم</h4>
@@ -41,6 +90,23 @@
                                                 <li>{{ field.label }}: {{ error }}</li>
                                             {% endfor %}
                                         {% endfor %}
+                                        {% for vehicle_form in formset %}
+                                            {% if vehicle_form.errors %}
+                                                <li>خطا در خودرو #{{ forloop.counter }}:</li>
+                                                <ul>
+                                                    {% for field in vehicle_form %}
+                                                        {% for error in field.errors %}
+                                                            <li>{{ field.label }}: {{ error }}</li>
+                                                        {% endfor %}
+                                                    {% endfor %}
+                                                </ul>
+                                            {% endif %}
+                                        {% endfor %}
+                                        {% if formset.non_form_errors %}
+                                            {% for error in formset.non_form_errors %}
+                                                <li>{{ error }}</li>
+                                            {% endfor %}
+                                        {% endif %}
                                     </ul>
                                 </div>
                             </div>
@@ -90,6 +156,7 @@
                                     <div class="card-body">
                                         <form method="post" id="kt_fire_report_form" class="form" novalidate="novalidate">
                                             {% csrf_token %}
+                                            {{ formset.management_form }}
                                             
                                             <!-- اطلاعات کلی شیفت -->
                                             <div class="card mb-4">
@@ -109,39 +176,89 @@
                                                 </div>
                                             </div>
 
-                                            <!-- وضعیت تجهیزات -->
+                                            <!-- گزارش وضعیت خودروها -->
                                             <div class="card mb-4">
-                                                <div class="card-header">
-                                                    <h5 class="mb-0"><i class="fas fa-tools me-2"></i>وضعیت تجهیزات</h5>
+                                                <div class="card-header d-flex justify-content-between align-items-center">
+                                                    <h5 class="mb-0"><i class="fas fa-truck me-2"></i>گزارش وضعیت خودروها</h5>
+                                                    <button type="button" class="btn btn-sm btn-primary add-vehicle">
+                                                        <i class="fas fa-plus me-2"></i>افزودن خودرو
+                                                    </button>
                                                 </div>
-                                                <div class="card-body">
-                                                    {% for field_name, field_info in equipment_fields.items %}
-                                                    <div class="form-group mb-8">
-                                                        <label class="required fw-semibold fs-6">{{ field_info.label }}</label>
-                                                        <div class="row g-3">
-                                                            <div class="col-md-6">
-                                                                <div class="d-flex flex-stack">
-                                                                    <div class="form-check form-check-custom form-check-solid form-check-success me-10">
-                                                                        {{ field_info.status.0 }}
-                                                                        <span class="form-check-label">مناسب</span>
-                                                                    </div>
-                                                                    <div class="form-check form-check-custom form-check-solid form-check-danger">
-                                                                        {{ field_info.status.1 }}
-                                                                        <span class="form-check-label">نامناسب</span>
+                                                <div class="card-body" id="vehicle-forms-container">
+                                                    {% for vehicle_form in formset %}
+                                                    <div class="vehicle-form">
+                                                        {{ vehicle_form.id }}
+                                                        <div class="d-flex justify-content-between align-items-center mb-4">
+                                                            <h6 class="mb-0">خودرو #{{ forloop.counter }}</h6>
+                                                            {% if formset.can_delete %}
+                                                            <span class="delete-vehicle">
+                                                                <i class="fas fa-trash"></i>
+                                                                {{ vehicle_form.DELETE }}
+                                                            </span>
+                                                            {% endif %}
+                                                        </div>
+                                                        
+                                                        <!-- انتخاب نوع خودرو -->
+                                                        <div class="row g-5 mb-8">
+                                                            <div class="col-12">
+                                                                <div class="form-group mb-5">
+                                                                    <label class="required fw-semibold fs-6">نوع خودرو</label>
+                                                                    <div class="d-flex flex-stack">
+                                                                        <div class="d-flex">
+                                                                            {% for radio in vehicle_form.vehicle_source %}
+                                                                            <div class="form-check form-check-custom form-check-solid me-5">
+                                                                                {{ radio.tag }}
+                                                                                <label class="form-check-label" for="{{ radio.id_for_label }}">
+                                                                                    {{ radio.choice_label }}
+                                                                                </label>
+                                                                            </div>
+                                                                            {% endfor %}
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            <div class="col-md-6">
-                                                                <div class="form-check form-switch form-check-custom form-check-solid">
-                                                                    {{ field_info.show_description }}
-                                                                    <span class="form-check-label">افزودن توضیحات</span>
+                                                            <div class="col-md-6 company-vehicle-section">
+                                                                <div class="form-group">
+                                                                    <label class="required fw-semibold fs-6">خودروی امدادی شرکت</label>
+                                                                    {{ vehicle_form.company_vehicle }}
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-6 contractor-vehicle-section">
+                                                                <div class="form-group">
+                                                                    <label class="required fw-semibold fs-6">خودروی پیمانکار</label>
+                                                                    {{ vehicle_form.contractor_vehicle }}
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <div class="mt-3 description-field" id="description_{{ field_name }}">
-                                                            {{ field_info.description }}
+
+                                                        <!-- وضعیت تجهیزات -->
+                                                        <div class="row g-5">
+                                                            {% for field_name in "horn,hose,monitor,extinguisher,equipment,foam,water,tire,brake,lighting"|split:"," %}
+                                                            <div class="col-md-6">
+                                                                <div class="form-group mb-5">
+                                                                    <label class="required fw-semibold fs-6">{{ vehicle_form|get_field_label:field_name }}</label>
+                                                                    <div class="d-flex flex-stack mb-3">
+                                                                        {% with status_field=field_name|add:"_status" %}
+                                                                        <div class="d-flex">
+                                                                            {% for radio in vehicle_form|get_field:status_field %}
+                                                                            <div class="form-check form-check-custom form-check-solid me-5">
+                                                                                {{ radio.tag }}
+                                                                                <label class="form-check-label" for="{{ radio.id_for_label }}">
+                                                                                    {{ radio.choice_label }}
+                                                                                </label>
+                                                                            </div>
+                                                                            {% endfor %}
+                                                                        </div>
+                                                                        {% endwith %}
+                                                                    </div>
+                                                                    <div class="mt-3">
+                                                                        <label class="fw-semibold fs-6 text-gray-600 mb-2">توضیحات:</label>
+                                                                        {{ vehicle_form|get_description_field:field_name }}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            {% endfor %}
                                                         </div>
-                                                        <div class="form-text text-muted">{{ field_info.help_text }}</div>
                                                     </div>
                                                     {% endfor %}
                                                 </div>
@@ -240,38 +357,91 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // تابع برای نمایش/مخفی کردن فیلد توضیحات
-    function toggleDescription(checkbox, descriptionField) {
-        const field = document.getElementById(descriptionField);
-        if (field) {
-            field.style.display = checkbox.checked ? 'block' : 'none';
-        }
-    }
-
-    // تنظیم رویداد برای همه چک‌باکس‌ها
-    const equipmentFields = {
-        'horn': 'بوق و چراغ گردان',
-        'hose': 'شیلنگ‌ها و اتصالات',
-        'monitor': 'مانیتور',
-        'extinguisher': 'خاموش‌کننده‌های دستی',
-        'equipment': 'تجهیزات آتش‌نشانی',
-        'foam': 'پودر و فوم',
-        'water': 'آب',
-        'tire': 'لاستیک‌ها',
-        'brake': 'سیستم ترمز',
-        'lighting': 'سیستم روشنایی'
-    };
-
-    for (let field in equipmentFields) {
-        const checkbox = document.getElementById(`id_show_${field}_description`);
-        if (checkbox) {
-            checkbox.addEventListener('change', function() {
-                toggleDescription(this, `description_${field}`);
+    const formsetPrefix = 'vehicles';
+    const totalFormsInput = document.getElementById('id_' + formsetPrefix + '-TOTAL_FORMS');
+    const maxFormsInput = document.getElementById('id_' + formsetPrefix + '-MAX_NUM_FORMS');
+    const container = document.getElementById('vehicle-forms-container');
+    const addButton = document.querySelector('.add-vehicle');
+    const emptyForm = document.querySelector('.vehicle-form').cloneNode(true);
+    
+    // تابع برای به‌روزرسانی شماره‌های فرم
+    function updateFormIndexes() {
+        const forms = container.querySelectorAll('.vehicle-form');
+        forms.forEach((form, index) => {
+            form.querySelectorAll('[name*="' + formsetPrefix + '"]').forEach(input => {
+                input.name = input.name.replace(/-\d+-/, '-' + index + '-');
+                input.id = input.id.replace(/-\d+-/, '-' + index + '-');
             });
-            // تنظیم وضعیت اولیه
-            toggleDescription(checkbox, `description_${field}`);
+            form.querySelectorAll('[for*="' + formsetPrefix + '"]').forEach(label => {
+                label.setAttribute('for', label.getAttribute('for').replace(/-\d+-/, '-' + index + '-'));
+            });
+            form.querySelector('h6').textContent = 'خودرو #' + (index + 1);
+        });
+        totalFormsInput.value = forms.length;
+    }
+
+    // اضافه کردن فرم جدید
+    addButton.addEventListener('click', function() {
+        const newForm = emptyForm.cloneNode(true);
+        // پاک کردن مقادیر فیلدها در فرم جدید
+        newForm.querySelectorAll('input[type="text"], input[type="number"], textarea, select').forEach(input => {
+            input.value = '';
+        });
+        // پاک کردن مقدار فیلد id
+        const idField = newForm.querySelector('input[name*="-id"]');
+        if (idField) {
+            idField.value = '';
+        }
+        container.appendChild(newForm);
+        updateFormIndexes();
+        initializeFormEvents(newForm);
+    });
+
+    // حذف فرم
+    container.addEventListener('click', function(e) {
+        if (e.target.closest('.delete-vehicle')) {
+            const form = e.target.closest('.vehicle-form');
+            const forms = container.querySelectorAll('.vehicle-form');
+            if (forms.length > 1) {
+                form.remove();
+                updateFormIndexes();
+            } else {
+                alert('حداقل یک خودرو باید در گزارش وجود داشته باشد.');
+            }
+        }
+    });
+
+    // تابع برای مدیریت نمایش فیلدهای خودرو
+    function toggleVehicleFields(form) {
+        const vehicleSource = form.querySelector('input[name*="vehicle_source"]:checked');
+        const companySection = form.querySelector('.company-vehicle-section');
+        const contractorSection = form.querySelector('.contractor-vehicle-section');
+
+        if (vehicleSource) {
+            if (vehicleSource.value === 'company') {
+                companySection.style.display = 'block';
+                contractorSection.style.display = 'none';
+            } else {
+                companySection.style.display = 'none';
+                contractorSection.style.display = 'block';
+            }
         }
     }
+
+    // تابع برای راه‌اندازی رویدادهای فرم
+    function initializeFormEvents(form) {
+        // تنظیم رویدادها برای رادیو باتن‌های نوع خودرو
+        const vehicleSourceRadios = form.querySelectorAll('input[name*="vehicle_source"]');
+        vehicleSourceRadios.forEach(radio => {
+            radio.addEventListener('change', () => toggleVehicleFields(form));
+        });
+        toggleVehicleFields(form);
+    }
+
+    // راه‌اندازی رویدادها برای تمام فرم‌های موجود
+    document.querySelectorAll('.vehicle-form').forEach(form => {
+        initializeFormEvents(form);
+    });
 
     // اعتبارسنجی فرم
     const form = document.getElementById('kt_fire_report_form');

@@ -1,30 +1,106 @@
 from django import forms
-from .models import FireReport
+from django.forms import inlineformset_factory
+from .models import FireReport, VehicleStatusReport
 from shift_manager.models import SHIFT_CHOICES
 from django.contrib.auth import get_user_model
+from BaseInfo.models import EmergencyVehicle
+from contractor_management.models import Vehicle as ContractorVehicle
 import logging
 
 logger = logging.getLogger('fire_reports')
 
 User = get_user_model()
 
-class FireReportForm(forms.ModelForm):
-    # فیلدهای چک‌باکس برای نمایش/مخفی کردن توضیحات
-    show_horn_description = forms.BooleanField(required=False, label='افزودن توضیحات')
-    show_hose_description = forms.BooleanField(required=False, label='افزودن توضیحات')
-    show_monitor_description = forms.BooleanField(required=False, label='افزودن توضیحات')
-    show_extinguisher_description = forms.BooleanField(required=False, label='افزودن توضیحات')
-    show_equipment_description = forms.BooleanField(required=False, label='افزودن توضیحات')
-    show_foam_description = forms.BooleanField(required=False, label='افزودن توضیحات')
-    show_water_description = forms.BooleanField(required=False, label='افزودن توضیحات')
-    show_tire_description = forms.BooleanField(required=False, label='افزودن توضیحات')
-    show_brake_description = forms.BooleanField(required=False, label='افزودن توضیحات')
-    show_lighting_description = forms.BooleanField(required=False, label='افزودن توضیحات')
+class VehicleStatusReportForm(forms.ModelForm):
+    STATUS_CHOICES = [
+        ('suitable', 'مناسب'),
+        ('unsuitable', 'نامناسب'),
+    ]
+
+    vehicle_source = forms.ChoiceField(
+        choices=VehicleStatusReport.VEHICLE_SOURCE_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='company',
+        label='نوع خودرو'
+    )
+
+    horn_status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='suitable',
+        label='وضعیت بوق و چراغ گردان'
+    )
+    hose_status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='suitable',
+        label='وضعیت شیلنگ‌ها و اتصالات'
+    )
+    monitor_status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='suitable',
+        label='وضعیت مانیتور'
+    )
+    extinguisher_status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='suitable',
+        label='وضعیت خاموش‌کننده‌های دستی'
+    )
+    equipment_status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='suitable',
+        label='وضعیت تجهیزات آتش‌نشانی'
+    )
+    foam_status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='suitable',
+        label='وضعیت پودر و فوم خودرو'
+    )
+    water_status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='suitable',
+        label='وضعیت آب'
+    )
+    tire_status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='suitable',
+        label='وضعیت لاستیک‌ها'
+    )
+    brake_status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='suitable',
+        label='وضعیت سیستم ترمز خودرو'
+    )
+    lighting_status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='suitable',
+        label='وضعیت سیستم روشنایی'
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # فیلتر کردن خودروهای امدادی فعال
+        self.fields['company_vehicle'].queryset = EmergencyVehicle.objects.filter(
+            status='active',
+            vehicle_type='fire_truck'
+        )
+        
+        # فیلتر کردن خودروهای پیمانکار
+        self.fields['contractor_vehicle'].queryset = ContractorVehicle.objects.all()
 
     class Meta:
-        model = FireReport
+        model = VehicleStatusReport
         fields = [
-            'shift', 'shift_operator', 'firefighter',
+            'vehicle_source', 'company_vehicle', 'contractor_vehicle',
             'horn_status', 'horn_description',
             'hose_status', 'hose_description',
             'monitor_status', 'monitor_description',
@@ -35,6 +111,68 @@ class FireReportForm(forms.ModelForm):
             'tire_status', 'tire_description',
             'brake_status', 'brake_description',
             'lighting_status', 'lighting_description',
+        ]
+        widgets = {
+            'vehicle_source': forms.RadioSelect(attrs={'class': 'form-check-input'}),
+            'company_vehicle': forms.Select(attrs={'class': 'form-select form-select-solid'}),
+            'contractor_vehicle': forms.Select(attrs={'class': 'form-select form-select-solid'}),
+            'horn_description': forms.Textarea(attrs={
+                'rows': 3,
+                'class': 'form-control form-control-solid description-field',
+                'placeholder': 'توضیحات خود را وارد کنید...'
+            }),
+            'hose_description': forms.Textarea(attrs={
+                'rows': 3,
+                'class': 'form-control form-control-solid description-field',
+                'placeholder': 'توضیحات خود را وارد کنید...'
+            }),
+            'monitor_description': forms.Textarea(attrs={
+                'rows': 3,
+                'class': 'form-control form-control-solid description-field',
+                'placeholder': 'توضیحات خود را وارد کنید...'
+            }),
+            'extinguisher_description': forms.Textarea(attrs={
+                'rows': 3,
+                'class': 'form-control form-control-solid description-field',
+                'placeholder': 'توضیحات خود را وارد کنید...'
+            }),
+            'equipment_description': forms.Textarea(attrs={
+                'rows': 3,
+                'class': 'form-control form-control-solid description-field',
+                'placeholder': 'توضیحات خود را وارد کنید...'
+            }),
+            'foam_description': forms.Textarea(attrs={
+                'rows': 3,
+                'class': 'form-control form-control-solid description-field',
+                'placeholder': 'توضیحات خود را وارد کنید...'
+            }),
+            'water_description': forms.Textarea(attrs={
+                'rows': 3,
+                'class': 'form-control form-control-solid description-field',
+                'placeholder': 'توضیحات خود را وارد کنید...'
+            }),
+            'tire_description': forms.Textarea(attrs={
+                'rows': 3,
+                'class': 'form-control form-control-solid description-field',
+                'placeholder': 'توضیحات خود را وارد کنید...'
+            }),
+            'brake_description': forms.Textarea(attrs={
+                'rows': 3,
+                'class': 'form-control form-control-solid description-field',
+                'placeholder': 'توضیحات خود را وارد کنید...'
+            }),
+            'lighting_description': forms.Textarea(attrs={
+                'rows': 3,
+                'class': 'form-control form-control-solid description-field',
+                'placeholder': 'توضیحات خود را وارد کنید...'
+            }),
+        }
+
+class FireReportForm(forms.ModelForm):
+    class Meta:
+        model = FireReport
+        fields = [
+            'shift', 'shift_operator', 'firefighter',
             'incident_dispatch_count', 'personal_incident_count',
             'equipment_incident_count', 'fire_incident_count',
             'additional_notes'
@@ -43,140 +181,31 @@ class FireReportForm(forms.ModelForm):
             'shift': forms.Select(attrs={'class': 'form-select form-select-solid'}),
             'shift_operator': forms.HiddenInput(),
             'firefighter': forms.HiddenInput(),
-            'horn_status': forms.RadioSelect(attrs={'class': 'form-check-input'}),
-            'hose_status': forms.RadioSelect(attrs={'class': 'form-check-input'}),
-            'monitor_status': forms.RadioSelect(attrs={'class': 'form-check-input'}),
-            'extinguisher_status': forms.RadioSelect(attrs={'class': 'form-check-input'}),
-            'equipment_status': forms.RadioSelect(attrs={'class': 'form-check-input'}),
-            'foam_status': forms.RadioSelect(attrs={'class': 'form-check-input'}),
-            'water_status': forms.RadioSelect(attrs={'class': 'form-check-input'}),
-            'tire_status': forms.RadioSelect(attrs={'class': 'form-check-input'}),
-            'brake_status': forms.RadioSelect(attrs={'class': 'form-check-input'}),
-            'lighting_status': forms.RadioSelect(attrs={'class': 'form-check-input'}),
-            'horn_description': forms.Textarea(attrs={
-                'rows': 3,
-                'class': 'form-control form-control-solid description-field',
-                'style': 'display: none;',
-                'placeholder': 'توضیحات خود را وارد کنید...'
-            }),
-            'hose_description': forms.Textarea(attrs={
-                'rows': 3,
-                'class': 'form-control form-control-solid description-field',
-                'style': 'display: none;',
-                'placeholder': 'توضیحات خود را وارد کنید...'
-            }),
-            'monitor_description': forms.Textarea(attrs={
-                'rows': 3,
-                'class': 'form-control form-control-solid description-field',
-                'style': 'display: none;',
-                'placeholder': 'توضیحات خود را وارد کنید...'
-            }),
-            'extinguisher_description': forms.Textarea(attrs={
-                'rows': 3,
-                'class': 'form-control form-control-solid description-field',
-                'style': 'display: none;',
-                'placeholder': 'توضیحات خود را وارد کنید...'
-            }),
-            'equipment_description': forms.Textarea(attrs={
-                'rows': 3,
-                'class': 'form-control form-control-solid description-field',
-                'style': 'display: none;',
-                'placeholder': 'توضیحات خود را وارد کنید...'
-            }),
-            'foam_description': forms.Textarea(attrs={
-                'rows': 3,
-                'class': 'form-control form-control-solid description-field',
-                'style': 'display: none;',
-                'placeholder': 'توضیحات خود را وارد کنید...'
-            }),
-            'water_description': forms.Textarea(attrs={
-                'rows': 3,
-                'class': 'form-control form-control-solid description-field',
-                'style': 'display: none;',
-                'placeholder': 'توضیحات خود را وارد کنید...'
-            }),
-            'tire_description': forms.Textarea(attrs={
-                'rows': 3,
-                'class': 'form-control form-control-solid description-field',
-                'style': 'display: none;',
-                'placeholder': 'توضیحات خود را وارد کنید...'
-            }),
-            'brake_description': forms.Textarea(attrs={
-                'rows': 3,
-                'class': 'form-control form-control-solid description-field',
-                'style': 'display: none;',
-                'placeholder': 'توضیحات خود را وارد کنید...'
-            }),
-            'lighting_description': forms.Textarea(attrs={
-                'rows': 3,
-                'class': 'form-control form-control-solid description-field',
-                'style': 'display: none;',
-                'placeholder': 'توضیحات خود را وارد کنید...'
-            }),
             'incident_dispatch_count': forms.NumberInput(attrs={
                 'class': 'form-control form-control-solid',
                 'min': '0',
-                'value': '0',
-                'placeholder': 'تعداد را وارد کنید'
+                'value': '0'
             }),
             'personal_incident_count': forms.NumberInput(attrs={
                 'class': 'form-control form-control-solid',
                 'min': '0',
-                'value': '0',
-                'placeholder': 'تعداد را وارد کنید'
+                'value': '0'
             }),
             'equipment_incident_count': forms.NumberInput(attrs={
                 'class': 'form-control form-control-solid',
                 'min': '0',
-                'value': '0',
-                'placeholder': 'تعداد را وارد کنید'
+                'value': '0'
             }),
             'fire_incident_count': forms.NumberInput(attrs={
                 'class': 'form-control form-control-solid',
                 'min': '0',
-                'value': '0',
-                'placeholder': 'تعداد را وارد کنید'
+                'value': '0'
             }),
             'additional_notes': forms.Textarea(attrs={
                 'class': 'form-control form-control-solid',
                 'rows': 4,
                 'placeholder': 'توضیحات تکمیلی خود را وارد کنید...'
             }),
-        }
-        labels = {
-            'shift': 'شیفت کاری',
-            'horn_status': 'وضعیت بوق و چراغ گردان',
-            'hose_status': 'وضعیت شیلنگ‌ها و اتصالات',
-            'monitor_status': 'وضعیت مانیتور',
-            'extinguisher_status': 'وضعیت خاموش‌کننده‌های دستی',
-            'equipment_status': 'وضعیت تجهیزات آتش‌نشانی',
-            'foam_status': 'وضعیت پودر و فوم',
-            'water_status': 'وضعیت آب',
-            'tire_status': 'وضعیت لاستیک‌ها',
-            'brake_status': 'وضعیت سیستم ترمز',
-            'lighting_status': 'وضعیت سیستم روشنایی',
-            'incident_dispatch_count': 'تعداد اعزام به محل حادثه',
-            'personal_incident_count': 'تعداد حوادث فردی',
-            'equipment_incident_count': 'تعداد حوادث تجهیزاتی',
-            'fire_incident_count': 'تعداد حوادث آتش‌سوزی',
-            'additional_notes': 'توضیحات تکمیلی'
-        }
-        help_texts = {
-            'horn_status': 'وضعیت بوق و چراغ گردان خودرو را مشخص کنید',
-            'hose_status': 'وضعیت شیلنگ‌ها و اتصالات را مشخص کنید',
-            'monitor_status': 'وضعیت مانیتور را مشخص کنید',
-            'extinguisher_status': 'وضعیت خاموش‌کننده‌های دستی را مشخص کنید',
-            'equipment_status': 'وضعیت تجهیزات آتش‌نشانی را مشخص کنید',
-            'foam_status': 'وضعیت پودر و فوم را مشخص کنید',
-            'water_status': 'وضعیت آب را مشخص کنید',
-            'tire_status': 'وضعیت لاستیک‌ها را مشخص کنید',
-            'brake_status': 'وضعیت سیستم ترمز را مشخص کنید',
-            'lighting_status': 'وضعیت سیستم روشنایی را مشخص کنید',
-            'incident_dispatch_count': 'تعداد دفعاتی که به محل حادثه اعزام شده‌اید را وارد کنید',
-            'personal_incident_count': 'تعداد حوادث فردی رخ داده را وارد کنید',
-            'equipment_incident_count': 'تعداد حوادث تجهیزاتی رخ داده را وارد کنید',
-            'fire_incident_count': 'تعداد حوادث آتش‌سوزی رخ داده را وارد کنید',
-            'additional_notes': 'هر گونه توضیحات تکمیلی را در این قسمت وارد کنید'
         }
 
     def __init__(self, *args, **kwargs):
@@ -196,17 +225,14 @@ class FireReportForm(forms.ModelForm):
             self.fields['personal_incident_count'].initial = 0
             self.fields['equipment_incident_count'].initial = 0
             self.fields['fire_incident_count'].initial = 0
-        
-        logger.info(f"Form fields: {self.fields.keys()}")
-        logger.info(f"Initial values: shift_operator={self.fields['shift_operator'].initial}, firefighter={self.fields['firefighter'].initial}")
 
-    def clean(self):
-        cleaned_data = super().clean()
-        logger.info(f"Cleaned data: {cleaned_data}")
-        return cleaned_data
-
-    def is_valid(self):
-        is_valid = super().is_valid()
-        if not is_valid:
-            logger.error(f"Form validation errors: {self.errors}")
-        return is_valid
+# ایجاد Formset برای گزارش وضعیت خودروها
+VehicleStatusFormSet = inlineformset_factory(
+    FireReport,
+    VehicleStatusReport,
+    form=VehicleStatusReportForm,
+    extra=2,  # تعداد فرم‌های خالی افزایش یافت به 3
+    can_delete=True,  # امکان حذف گزارش خودرو
+    min_num=1,  # حداقل تعداد خودرو
+    validate_min=True,  # اجباری بودن حداقل تعداد
+)
