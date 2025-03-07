@@ -94,8 +94,10 @@ class VehicleStatusReportForm(forms.ModelForm):
             vehicle_type='fire_truck'
         )
         
-        # فیلتر کردن خودروهای پیمانکار
-        self.fields['contractor_vehicle'].queryset = ContractorVehicle.objects.all()
+        # فیلتر کردن خودروهای پیمانکار آتش‌نشانی
+        self.fields['contractor_vehicle'].queryset = ContractorVehicle.objects.filter(
+            contractor__company_name__icontains='آتش نشانی'
+        )
 
     class Meta:
         model = VehicleStatusReport
