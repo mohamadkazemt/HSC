@@ -55,14 +55,14 @@
     <div class="forms-menu-content">
         {% if request.user|has_permission:"anomalis" %}
             <a href="{% url 'anomalis:anomalis' %}" class="forms-menu-item">
-                <i class="ki-outline ki-bell fs-2 text-warning"></i>
+                <i class="ki-outline ki-warning-2 fs-2 text-warning"></i>
                 <span>ثبت آنومالی</span>
             </a>
         {% endif %}
 
         {% if request.user|has_permission:"daily_report_form" %}
             <a href="{% url 'dailyreport_hse:daily_report_form' %}" class="forms-menu-item">
-                <i class="ki-outline ki-notepad-edit fs-2 text-success"></i>
+                <i class="ki-outline ki-document fs-2 text-success"></i>
                 <span>گزارش روزانه</span>
             </a>
         {% endif %}
@@ -76,14 +76,14 @@
 
         {% if request.user|has_permission:"shift_report" %}
             <a href="{% url 'leave_reports:shift_report' %}" class="forms-menu-item">
-                <i class="ki-outline ki-exit-right fs-2 text-primary"></i>
+                <i class="ki-outline ki-calendar-tick fs-2 text-primary"></i>
                 <span>ثبت مرخصی</span>
             </a>
         {% endif %}
         
         {% if request.user|has_permission:"create_report" %}
             <a href="{% url 'contractor_management:create_report' %}" class="forms-menu-item">
-                <i class="ki-outline ki-truck fs-2 text-danger"></i>
+                <i class="ki-outline ki-truck fs-2 text-info"></i>
                 <span>ثبت کارکرد خودرو پیمانکاران</span>
             </a>
         {% endif %}
@@ -92,6 +92,13 @@
             <a href="{% url 'machine_checklist:checklist_form' %}" class="forms-menu-item">
                 <i class="ki-outline ki-check-square fs-2 text-success"></i>
                 <span>چک لیست ماشین آلات</span>
+            </a>
+        {% endif %}
+
+        {% if request.user|has_permission:"report_create" %}
+            <a href="{% url 'fire_reports:report_create' %}" class="forms-menu-item">
+                <i class="ki-outline ki-fire fs-2 text-danger"></i>
+                <span>گزارش آتش‌نشانی</span>
             </a>
         {% endif %}
     </div>
@@ -352,6 +359,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     <a href="{% url 'machine_checklist:checklist_list' %}" class="menu-sub-item d-flex align-items-center px-3 py-2 rounded-3">
                         <i class="ki-outline ki-check-square text-success fs-5 me-2"></i>
                         <span class="text-gray-700">لیست چک لیست ها</span>
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+
+        {% if request.user|has_permission:"report_list" %}
+            <div class="menu-item mb-3">
+                <div class="menu-title text-gray-800 fw-bold mb-2">گزارشات آتش‌نشانی</div>
+                <div class="menu-sub-items">
+                    <a href="{% url 'fire_reports:report_list' %}" class="menu-sub-item d-flex align-items-center px-3 py-2 rounded-3">
+                        <i class="ki-outline ki-fire text-danger fs-5 me-2"></i>
+                        <span class="text-gray-700">لیست گزارش‌ها</span>
                     </a>
                 </div>
             </div>

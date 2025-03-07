@@ -38,8 +38,7 @@ urlpatterns = [
     path('hse_incidents/', include(('hse_incidents.urls', 'hse_incidents'), namespace='hse_incidents')),
     path('machine-checklist/', include(('machine_checklist.urls', 'machine_checklist'), namespace='machine_checklist')),
     path('shift-manager/', include('shift_manager.urls')),
-
-
+    path('fire-reports/', include(('fire_reports.urls', 'fire_reports'), namespace='fire_reports')),
 ]
 
 

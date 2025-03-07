@@ -103,5 +103,38 @@ class Dump(models.Model):
         verbose_name_plural = "دمپ‌ها"
 
 
+class EmergencyVehicle(models.Model):
+    VEHICLE_TYPE_CHOICES = [
+        ('fire_truck', 'خودروی آتش‌نشانی'),
+        ('ambulance', 'آمبولانس'),
+        ('rescue', 'خودروی امداد و نجات'),
+    ]
+
+    STATUS_CHOICES = [
+        ('active', 'فعال'),
+        ('inactive', 'غیرفعال'),
+        ('maintenance', 'در حال تعمیر'),
+    ]
+
+    vehicle_type = models.CharField(max_length=20, choices=VEHICLE_TYPE_CHOICES, verbose_name="نوع خودرو")
+    workshop_code = models.CharField(max_length=20, unique=True, verbose_name="کد کارگاهی")
+    license_plate = models.CharField(max_length=20, unique=True, verbose_name="شماره پلاک")
+    model = models.CharField(max_length=100, verbose_name="مدل خودرو")
+    manufacture_year = models.IntegerField(verbose_name="سال ساخت")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active', verbose_name="وضعیت")
+    last_maintenance_date = models.DateField(null=True, blank=True, verbose_name="تاریخ آخرین سرویس")
+    next_maintenance_date = models.DateField(null=True, blank=True, verbose_name="تاریخ سرویس بعدی")
+    insurance_expiry = models.DateField(null=True, blank=True, verbose_name="تاریخ انقضای بیمه")
+    technical_inspection_expiry = models.DateField(null=True, blank=True, verbose_name="تاریخ انقضای معاینه فنی")
+    description = models.TextField(blank=True, null=True, verbose_name="توضیحات")
+
+    def __str__(self):
+        return f"{self.get_vehicle_type_display()} - {self.workshop_code}"
+
+    class Meta:
+        verbose_name = "خودروی امدادی"
+        verbose_name_plural = "خودروهای امدادی"
+
+
 
 
