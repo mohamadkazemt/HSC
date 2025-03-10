@@ -20,10 +20,11 @@ import logging
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.exceptions import ValidationError
 import datetime
-from django.db.models import Count, Q, Subquery, OuterRef
+from django.db.models import Count, Q, Subquery, OuterRef, Min
 from dashboard.utils import log_user_activity
 from django.urls import reverse
 from django.contrib import messages
+from shift_manager.utils import get_shift_for_date  # Import the function
 
 
 logger = logging.getLogger(__name__)
@@ -244,27 +245,35 @@ def shift_report_list(request):
     reports = reports.filter(created_at__in=Subquery(last_created_at_subquery))
 
     # Group the reports
-    grouped_reports = reports.values('shift_date', 'work_group', 'crate_by__user__first_name', 'crate_by__user__last_name').annotate(
+    reports = reports.order_by('-shift_date', 'work_group', '-created_at').annotate(
         total_regular=Count('id', filter=Q(leave_type='regular')),
         total_hourly=Count('id', filter=Q(leave_type='hourly')),
         total_absence=Count('id', filter=Q(leave_type='absence')),
         total_sick_leave=Count('id', filter=Q(leave_type='sick_leave')),
-        total_persons=Count('user', distinct=True)
-    ).order_by('-shift_date')
+        total_persons=Count('user', distinct=True),
+        first_created_at=Min('created_at')
+    )
 
-    # Convert Gregorian date to Jalali and add ID to grouped reports
     report_with_ids = []
-    for report in grouped_reports:
-        matching_report = ShiftReport.objects.filter(
-            shift_date=report['shift_date'],
-            work_group=report['work_group']
-        ).first()
+    for report in reports:
+        # Get the shift for the report's creation date
+        shift_info = get_shift_for_date(report.shift_date)
+        report_shift = shift_info.get(report.work_group)
 
-        if matching_report:
-            report['id'] = matching_report.id
-        report['shift_date'] = jdatetime.date.fromgregorian(date=report['shift_date']).strftime('%Y/%m/%d')
-        report['crate_by_name'] = f"{report['crate_by__user__first_name']} {report['crate_by__user__last_name']}"
-        report_with_ids.append(report)
+        report_dict = {
+            'id': report.id,
+            'shift_date': jdatetime.date.fromgregorian(date=report.shift_date).strftime('%Y/%m/%d'),
+            'work_group': report.work_group,
+            'crate_by_name': f"{report.crate_by.user.first_name} {report.crate_by.user.last_name}",
+            'total_regular': report.total_regular,
+            'total_hourly': report.total_hourly,
+            'total_absence': report.total_absence,
+            'total_sick_leave': report.total_sick_leave,
+            'total_persons': report.total_persons,
+            'created_at': report.first_created_at,
+            'shift': report_shift,  # Add the shift here
+        }
+        report_with_ids.append(report_dict)
 
     # Implement pagination
     page = request.GET.get('page', 1)
@@ -566,6 +575,10 @@ def shift_report_detail(request, report_id):
         report.work_group == current_group
     )
 
+    # Get the shift for the report
+    shift_info = get_shift_for_date(report.shift_date)
+    report_shift = shift_info.get(report.work_group)
+
     context = {
         'report': report,
         'shift_date_jalali': shift_date_jalali,
@@ -580,6 +593,7 @@ def shift_report_detail(request, report_id):
         'can_add_leave': can_add_leave,
         'current_shift': current_shift,
         'current_group': current_group,
+        'report_shift': report_shift, # Add report_shift to context
     }
     return render(request, 'leave_reports/shift_report_detail.html', context)
 
@@ -622,6 +636,11 @@ def shift_report_pdf_view(request, pk):
     static_url = request.build_absolute_uri(settings.STATIC_URL)
     media_url = request.build_absolute_uri(settings.MEDIA_URL)
 
+    # Get shift information
+    shift_info = get_shift_for_date(shift_report.shift_date)
+    shift = shift_info.get(shift_report.work_group)
+
+
     # رندر کردن HTML
     template = get_template('leave_reports/shift_report_pdf.html')
     html_content = template.render({
@@ -634,6 +653,7 @@ def shift_report_pdf_view(request, pk):
         'today': jdate.today().strftime('%Y/%m/%d'),
         'static_url': static_url,
         'media_url': media_url,
+        'shift': shift, # Add shift to the context
     }, request)
 
     # تنظیم پاسخ به صورت PDF

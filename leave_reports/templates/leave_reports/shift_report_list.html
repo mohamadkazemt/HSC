@@ -127,6 +127,8 @@
                                                             <th>ثبت کننده</th>
                                                             <th>گروه کاری</th>
                                                             <th>تاریخ شیفت</th>
+                                                            <th>زمان ثبت</th>
+                                                            <th>شیفت</th>
                                                             <th>تعداد افراد</th>
                                                             <th>مرخصی روزانه</th>
                                                             <th>مرخصی ساعتی</th>
@@ -141,6 +143,8 @@
                                                                 <td>{{ report.crate_by_name }}</td>
                                                                 <td>{{ report.work_group }}</td>
                                                                 <td>{{ report.shift_date }}</td>
+                                                                <td>{{ report.created_at|time:"H:i" }}</td>
+                                                                <td>{{ report.shift }}</td>
                                                                 <td>{{ report.total_persons }}</td>
                                                                 <td>
                                                                     <span class="badge badge-light-primary">{{ report.total_regular }}</span>
