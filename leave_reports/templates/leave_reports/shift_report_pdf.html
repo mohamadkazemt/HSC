@@ -132,6 +132,7 @@
         <div class="info">
             <p>کد فرم: MIE-HS-M-FR-142-V03</p>
             <p>تاریخ گزارش: {{ shift_report.shift_date|to_jalali }}</p>
+            <p>زمان ثبت: {{ shift_report.created_at|jformat:"%H:%M" }}</p>
             <p>تاریخ چاپ: {{ today|to_jalali }}</p>
         </div>
     </div>
@@ -147,6 +148,10 @@
         <tr>
             <th>گروه کاری</th>
             <td>{{ shift_report.work_group }}</td>
+        </tr>
+        <tr>
+            <th>شیفت کاری</th>
+            <td>{{ shift }}</td>
         </tr>
         <tr>
             <th>ثبت‌کننده</th>
