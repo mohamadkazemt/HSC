@@ -13,14 +13,14 @@ class ShiftReport(models.Model):
         ('sick_leave', 'مرخصی استعلاجی')
     ]
     leave_type = models.CharField(max_length=10, choices=LEAVE_TYPE_CHOICES)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    shift_date = models.DateField(default=now)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, db_index=True)
+    shift_date = models.DateField(default=now, db_index=True)
     leave_hours = models.IntegerField(null=True, blank=True)
     start_time = models.TimeField(null=True, blank=True)
     end_time = models.TimeField(null=True, blank=True)
     status = models.CharField(max_length=10, default='reported')
     crate_by = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True, blank=True)
-    work_group = models.CharField(max_length=100)
+    work_group = models.CharField(max_length=100, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     description = models.TextField(null=True, blank=True)  # توضیحات برای غیبت و استعلاجی
 

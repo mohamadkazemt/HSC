@@ -25,6 +25,9 @@ from dashboard.utils import log_user_activity
 from django.urls import reverse
 from django.contrib import messages
 from shift_manager.utils import get_shift_for_date  # Import the function
+import openpyxl
+from django.utils import timezone
+from .utils import get_shift_for_date_and_time  # Import the new function
 
 
 logger = logging.getLogger(__name__)
@@ -730,3 +733,109 @@ def get_personnels(request):
             'personnel_code': personnel.personnel_code
         })
     return JsonResponse(data, safe=False)
+
+@login_required
+def export_shift_reports_excel(request):
+    # بررسی دسترسی کاربر (مثلاً، فقط کارشناسان اداری)
+    if not request.user.groups.filter(name='کارشناس اداری').exists():
+        return HttpResponse("شما دسترسی به این صفحه را ندارید.", status=403)
+
+    try:
+        # دریافت و فیلتر کردن گزارش‌ها (مانند تابع shift_report_list)
+        if request.user.groups.filter(name='مدیر').exists():
+            reports = ShiftReport.objects.all()  # مدیر می‌تواند همه گزارش‌ها را ببیند
+        else:
+            reports = ShiftReport.objects.filter(crate_by=request.user.userprofile)  # کاربر فقط گزارش‌های خودش را می‌بیند
+
+        year = request.GET.get('year')
+        month = request.GET.get('month')
+        day = request.GET.get('day')
+        work_group = request.GET.get('work_group')
+        today_filter = request.GET.get('today')
+
+        # اگر هیچ فیلتری انتخاب نشده، گزارش‌های یک ماه اخیر رو نمایش بده
+        if not year and not month and not day and not work_group and not today_filter:
+            today = timezone.now().date()
+            one_month_ago = today - datetime.timedelta(days=30)
+            reports = reports.filter(shift_date__gte=one_month_ago, shift_date__lte=today)
+
+        if work_group:
+            reports = reports.filter(work_group=work_group)
+
+        if today_filter == 'true':
+            reports = reports.filter(shift_date=datetime.date.today())
+
+        if year and month and day:
+            try:
+                gregorian_date = jdatetime.date(year=int(year), month=int(month), day=int(day)).togregorian()
+                reports = reports.filter(shift_date=gregorian_date)
+            except ValueError as e:
+                print(f"Error converting Jalali to Gregorian: {e}")
+        elif year and month:
+            try:
+                gregorian_start = jdatetime.date(year=int(year), month=int(month), day=1).togregorian()
+                if int(month) < 12:
+                    gregorian_end = jdatetime.date(year=int(year), month=int(month) + 1, day=1).togregorian()
+                else:
+                    gregorian_end = jdatetime.date(year=int(year) + 1, month=1, day=1).togregorian()
+                reports = reports.filter(shift_date__gte=gregorian_start, shift_date__lt=gregorian_end)
+            except ValueError as e:
+                print(f"Error converting Jalali to Gregorian: {e}")
+        elif year:
+            try:
+                gregorian_start = jdatetime.date(year=int(year), month=1, day=1).togregorian()
+                gregorian_end = jdatetime.date(year=int(year) + 1, month=1, day=1).togregorian()
+                reports = reports.filter(shift_date__gte=gregorian_start, shift_date__lt=gregorian_end)
+            except ValueError as e:
+                print(f"Error converting Jalali to Gregorian: {e}")
+        
+        logger.info(f"Number of reports found: {reports.count()}")  # لاگ تعداد گزارش‌ها
+        
+        # ایجاد فایل اکسل
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Shift Reports"
+
+        # اضافه کردن سرفصل‌ها
+        ws.append([
+            'ثبت کننده', 'گروه کاری', 'شیفت کاری', 'نوع مرخصی', 'کاربر', 'کد پرسنلی', 'توضیحات',
+            'زمان شروع', 'زمان پایان', 'تاریخ ثبت', 'ساعت ثبت'
+        ])
+
+        # اضافه کردن داده‌ها
+        for report in reports:
+            logger.info(f"Processing report: {report.id}")  # لاگ شناسه گزارش
+            
+            # Convert Gregorian dates to Jalali
+            # shift_date_jalali = jdatetime.date.fromgregorian(date=report.shift_date).strftime('%Y/%m/%d')
+            created_at_jalali_date = jdatetime.datetime.fromgregorian(datetime=report.created_at).strftime('%Y/%m/%d')
+            created_at_jalali_time = jdatetime.datetime.fromgregorian(datetime=report.created_at).strftime('%H:%M')
+
+            # Get shift information
+            shift_info = get_shift_for_date_and_time(report.shift_date, report.created_at.time(), report.work_group)
+            shift = shift_info
+
+            ws.append([
+                f"{report.crate_by.user.first_name} {report.crate_by.user.last_name}",
+                report.work_group,
+                # shift_date_jalali,  # Use Jalali shift date
+                shift,  # Add shift information here
+                report.get_leave_type_display(),
+                report.user.get_full_name(),
+                report.user.userprofile.personnel_code if report.user.userprofile else '',
+                report.description or '',
+                report.start_time.strftime('%H:%M') if report.start_time else '',
+                report.end_time.strftime('%H:%M') if report.end_time else '',
+                created_at_jalali_date,  # Jalali created_at date
+                created_at_jalali_time,  # Jalali created_at time
+            ])
+
+        # تنظیم پاسخ HTTP برای دانلود فایل
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename="shift_reports.xlsx"'
+        wb.save(response)
+        return response
+
+    except Exception as e:
+        logger.error(f"Error in export_shift_reports_excel: {str(e)}", exc_info=True)  # لاگ کامل خطا
+        return HttpResponse(f"خطا در ایجاد فایل اکسل: {str(e)}")
