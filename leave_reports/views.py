@@ -282,6 +282,9 @@ def shift_report_list(request):
     # Convert the aggregated_reports dictionary to a list
     report_list = list(aggregated_reports.values())
 
+    # Sort the report_list by created_at in reverse order
+    report_list.sort(key=lambda x: x['created_at'], reverse=True)
+
     # Implement pagination
     page = request.GET.get('page', 1)
     paginator = Paginator(report_list, 10)  # Show 10 reports per page
