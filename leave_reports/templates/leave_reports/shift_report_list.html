@@ -118,6 +118,12 @@
                                                     <span class="card-label fw-bold text-dark">لیست گزارش‌ها</span>
                                                     <span class="text-muted mt-1 fw-semibold fs-7">مدیریت گزارش‌های شیفت</span>
                                                 </h3>
+                                                <div class="card-toolbar">
+                                                    <a href="{% url 'leave_reports:export_shift_reports_excel' %}?year={{ selected_year }}&month={{ selected_month }}&day={{ selected_day }}&work_group={{ selected_work_group }}&today={{ today_filter }}" class="btn btn-sm btn-light-primary">
+                                                        <i class="bi bi-file-excel me-1"></i>
+                                                        خروجی اکسل
+                                                    </a>
+                                                </div>
                                             </div>
                                             <div class="card-body p-0">
                                                 <div class="table-responsive">

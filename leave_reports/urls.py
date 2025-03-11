@@ -46,6 +46,12 @@ URLS_WITH_LABELS = [
         "name": "add_leave",
         "label": "مرخصی_افزودن مرخصی",
     },
+    {
+        "path": "export-excel/",
+        "view": views.export_shift_reports_excel,
+        "name": "export_shift_reports_excel",
+        "label": "مرخصی_خروجی اکسل گزارش‌های شیفت",
+    },
 ]
 
 urlpatterns = [
