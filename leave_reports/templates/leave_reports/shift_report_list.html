@@ -165,9 +165,11 @@
                                                                     <span class="badge badge-light-warning">{{ report.total_sick_leave }}</span>
                                                                 </td>
                                                                 <td class="text-center">
-                                                                    <a href="{% url 'leave_reports:shift_report_detail' report.id %}" class="btn btn-icon btn-sm btn-light-primary me-1" data-bs-toggle="tooltip" title="نمایش">
-                                                                        <i class="bi bi-eye-fill"></i>
-                                                                    </a>
+                                                                    {% if report.leave_ids %}
+                                                                        <a href="{% url 'leave_reports:shift_report_detail' report.leave_ids.0 %}" class="btn btn-icon btn-sm btn-light-primary me-1" data-bs-toggle="tooltip" title="نمایش">
+                                                                            <i class="bi bi-eye-fill"></i>
+                                                                        </a>
+                                                                    {% endif %}
                                                                 </td>
                                                             </tr>
                                                         {% empty %}

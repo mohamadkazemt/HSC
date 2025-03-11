@@ -237,50 +237,54 @@ def shift_report_list(request):
         except ValueError as e:
             print(f"Error converting Jalali to Gregorian: {e}")
 
-    # Subquery to get the last created_at for each user per day
-    last_created_at_subquery = reports.filter(
-        user=OuterRef('user'),
-        shift_date=OuterRef('shift_date'),
-        work_group=OuterRef('work_group')
-    ).order_by('-created_at').values('created_at')[:1]
+    # Group reports by user, shift_date, and work_group
+    aggregated_reports = defaultdict(lambda: {
+        'shift_date': None,
+        'work_group': None,
+        'crate_by_name': None,
+        'total_regular': 0,
+        'total_hourly': 0,
+        'total_absence': 0,
+        'total_sick_leave': 0,
+        'total_persons': 0,
+        'created_at': None,
+        'shift': None,
+        'leave_ids': [],  # Store leave IDs for detail view
+    })
 
-    # Filter the reports based on the last created_at
-    reports = reports.filter(created_at__in=Subquery(last_created_at_subquery))
-
-    # Group the reports
-    reports = reports.order_by('-shift_date', 'work_group', '-created_at').annotate(
-        total_regular=Count('id', filter=Q(leave_type='regular')),
-        total_hourly=Count('id', filter=Q(leave_type='hourly')),
-        total_absence=Count('id', filter=Q(leave_type='absence')),
-        total_sick_leave=Count('id', filter=Q(leave_type='sick_leave')),
-        total_persons=Count('user', distinct=True),
-        first_created_at=Min('created_at')
-    )
-
-    report_with_ids = []
     for report in reports:
+        key = (report.crate_by.user.id, report.shift_date, report.work_group)
+        
         # Get the shift for the report's creation date
         shift_info = get_shift_for_date(report.shift_date)
         report_shift = shift_info.get(report.work_group)
 
-        report_dict = {
-            'id': report.id,
-            'shift_date': jdatetime.date.fromgregorian(date=report.shift_date).strftime('%Y/%m/%d'),
-            'work_group': report.work_group,
-            'crate_by_name': f"{report.crate_by.user.first_name} {report.crate_by.user.last_name}",
-            'total_regular': report.total_regular,
-            'total_hourly': report.total_hourly,
-            'total_absence': report.total_absence,
-            'total_sick_leave': report.total_sick_leave,
-            'total_persons': report.total_persons,
-            'created_at': report.first_created_at,
-            'shift': report_shift,  # Add the shift here
-        }
-        report_with_ids.append(report_dict)
+        if not aggregated_reports[key]['shift_date']:
+            aggregated_reports[key]['shift_date'] = jdatetime.date.fromgregorian(date=report.shift_date).strftime('%Y/%m/%d')
+            aggregated_reports[key]['work_group'] = report.work_group
+            aggregated_reports[key]['crate_by_name'] = f"{report.crate_by.user.first_name} {report.crate_by.user.last_name}"
+            aggregated_reports[key]['created_at'] = report.created_at
+            aggregated_reports[key]['shift'] = report_shift
+
+        if report.leave_type == 'regular':
+            aggregated_reports[key]['total_regular'] += 1
+        elif report.leave_type == 'hourly':
+            aggregated_reports[key]['total_hourly'] += 1
+        elif report.leave_type == 'absence':
+            aggregated_reports[key]['total_absence'] += 1
+        elif report.leave_type == 'sick_leave':
+            aggregated_reports[key]['total_sick_leave'] += 1
+
+        # Aggregate leave IDs
+        aggregated_reports[key]['leave_ids'].append(report.id)
+        aggregated_reports[key]['total_persons'] = len(set(aggregated_reports[key]['leave_ids']))
+
+    # Convert the aggregated_reports dictionary to a list
+    report_list = list(aggregated_reports.values())
 
     # Implement pagination
     page = request.GET.get('page', 1)
-    paginator = Paginator(report_with_ids, 10)  # Show 10 reports per page
+    paginator = Paginator(report_list, 10)  # Show 10 reports per page
     try:
         reports_page = paginator.page(page)
     except PageNotAnInteger:
@@ -290,14 +294,14 @@ def shift_report_list(request):
 
     # Extract years, months, and days
     all_years = sorted(
-        list({int(r['shift_date'].split('/')[0]) for r in report_with_ids}),
+        list({int(r['shift_date'].split('/')[0]) for r in report_list}),
         reverse=True
     )
     all_months = sorted(
-        list({int(r['shift_date'].split('/')[1]) for r in report_with_ids})
+        list({int(r['shift_date'].split('/')[1]) for r in report_list})
     )
     all_days = sorted(
-        list({int(r['shift_date'].split('/')[2]) for r in report_with_ids})
+        list({int(r['shift_date'].split('/')[2]) for r in report_list})
     )
 
     # Extract work groups
