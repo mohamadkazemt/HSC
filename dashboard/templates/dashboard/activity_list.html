@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
 {% block content %}
     {% load static %}
@@ -8,13 +8,13 @@
         <!--begin::Page-->
         <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
             <!--begin::Header-->
-            {% include 'header.html' %}
+            {% include "header.html" %}
             <!--end::Header-->
-            
+        
             <!--begin::Wrapper-->
             <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
                 <!--begin::Sidebar-->
-                {% include 'sidebar.html' %}
+                {% include "sidebar.html" %}
                 <!--end::Sidebar-->
                 
                 <!--begin::Main-->
@@ -22,7 +22,7 @@
                     <!--begin::Content wrapper-->
                     <div class="d-flex flex-column flex-column-fluid">
                         <!--begin::Toolbar-->
-                        {% include 'toolbar.html' %}
+                        {% include "toolbar.html" %}
                         <!--end::Toolbar-->
                         
                         <!--begin::Content-->
@@ -178,7 +178,7 @@
                     <!--end::Content wrapper-->
                     
                     <!--begin::Footer-->
-                    {% include 'footer.html' %}
+                    {% include "footer.html" %}
                     <!--end::Footer-->
                 </div>
                 <!--end::Main-->
@@ -205,4 +205,4 @@
             window.location.href = url.toString();
         });
     </script>
-{% endblock %} 
+{% endblock content %} 

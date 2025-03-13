@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html direction="rtl" dir="rtl" style="direction: rtl" >
+<html lang="fa" dir="rtl">
 <!--begin::Head-->
 <head>
     {% load static %}
@@ -14,13 +14,13 @@
     <meta property="og:title" content="HSE کاراوران صنعت خاور میانه" />
     <meta property="og:url" content="https://mkt0900.ir" />
     <meta property="og:site_name" content="HSE by MKT" />
-    <link rel="canonical" href="http://index.html" />
+    <link rel="canonical" href="https://index.html" />
     <link rel="shortcut icon" href="{% static 'assets/media/logos/favicon.ico' %}" />
     <link rel="manifest" href="{% static 'manifest.json' %}">
     <meta name="theme-color" content="#000">
     <link rel="apple-touch-icon" href="{% static 'images/icon-192x192.png' %}">
     <!--begin::Fonts(mandatory for all pages)-->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/cssfamily=Inter:300,400,500,600,700" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
     <!--end::Fonts-->
     <!--begin::Vendor Stylesheets(used for this page only)-->
     <link href="{% static 'assets/plugins/custom/fullcalendar/fullcalendar.bundle.css' %}" rel="stylesheet" type="text/css" />
@@ -44,7 +44,7 @@
         }
     </script>
 
-{% block style %}{% endblock %}
+    {% block style %}{% endblock style %}
     <!--end::Global Stylesheets Bundle-->
     <script>// Frame-busting to prevent site from being loaded within a frame without permission (click-jacking) if (window.top != window.self) { window.top.location.replace(window.self.location.href); }</script>
 </head>
@@ -52,10 +52,7 @@
 <body id="kt_app_body" data-kt-app-header-fixed="true" data-kt-app-header-fixed-mobile="true" data-kt-app-sidebar-enabled="true" data-kt-app-sidebar-fixed="true" data-kt-app-sidebar-hoverable="true" data-kt-app-sidebar-push-header="true" data-kt-app-sidebar-push-toolbar="true" data-kt-app-sidebar-push-footer="true" class="app-default">
 
 {% block content %}
-
-
 {% endblock content %}
-
 
 <!--begin::Javascript-->
 <script>var hostUrl = "{% static  'assets/' %}";</script>
@@ -79,12 +76,8 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="{% static 'assets/js/notifications.js' %}"></script>
 
-
- {% block extra_js %}
-
-
-
- {% endblock extra_js %}
+{% block extra_js %}
+{% endblock extra_js %}
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -136,7 +129,7 @@
             {% endfor %}
         </div>
     {% endif %}
-{% endblock %}
+{% endblock messages %}
 
 <!-- تنظیمات Toastr -->
 <script>
@@ -164,7 +157,7 @@
   }
 </script>
 
-{% include 'bottom_navbar.html' %}
+{% include "bottom_navbar.html" %}
 <script src="{% static 'assets/js/bottom-navbar.js' %}"></script>
 </body>
 </html>
