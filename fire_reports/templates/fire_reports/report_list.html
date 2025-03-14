@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load jalali %}
 
 {% block content %}
 <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
@@ -51,7 +52,7 @@
                                                 {% for report in page_obj %}
                                                 <tr class="text-center">
                                                     <td>{{ forloop.counter|add:page_obj.start_index|add:"-1" }}</td>
-                                                    <td>{{ report.report_date|date:"Y/m/d H:i" }}</td>
+                                                    <td><dd class="col-sm-8">نوع داده: {{ report.report_date|class_name }} - مقدار: {{ report.report_date|to_jalali:"%Y/%m/%d %H:%M" }}</dd></td>
                                                     <td>{{ report.shift }}</td>
                                                     <td>{{ report.shift_operator.userprofile.get_group_display }}</td>
                                                     <td>{{ report.shift_operator.get_full_name }}</td>

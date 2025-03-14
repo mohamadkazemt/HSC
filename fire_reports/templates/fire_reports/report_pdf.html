@@ -269,7 +269,7 @@
 
         <div class="info">
             <p>کد فرم: MIE-HS-M-FR-143-V01</p>
-            <p>تاریخ گزارش: {{ report.report_date|date:"Y/m/d H:i" }}</p>
+            <p>تاریخ گزارش: {{ report.report_date|to_jalali:"Y/m/d H:i" }}</p>
             <p>شماره گزارش: {{ report.id }}</p>
         </div>
     </div>
@@ -302,7 +302,7 @@
             </div>
             <div class="info-item">
                 <div class="label">تاریخ تأیید:</div>
-                <div class="value">{{ report.approval_date|date:"Y/m/d H:i" }}</div>
+                <div class="value">{{ report.approval_date|to_jalali }}</div>
             </div>
             {% endif %}
         </div>
@@ -425,7 +425,7 @@
                 <img src="{{ media_url }}{{ report.firefighter.userprofile.signature.url }}" alt="امضای آتش‌نشان" class="signature-image" width="150" height="100">
                 {% endif %}
                 <div class="signature-date">
-                    تاریخ: {{ report.report_date|date:"Y/m/d H:i" }}
+                    تاریخ: {{ report.report_date|to_jalali:"Y/m/d H:i" }}
                 </div>
             </div>
 
@@ -437,7 +437,7 @@
                 <img src="{{ media_url }}{{ report.shift_operator.userprofile.signature.url }}" alt="امضای متصدی شیفت" class="signature-image" width="150" height="100">
                 {% endif %}
                 <div class="signature-date">
-                    تاریخ تأیید: {{ report.approval_date|date:"Y/m/d H:i" }}
+                    تاریخ تأیید: {{ report.approval_date|to_jalali:"Y/m/d H:i" }}
                 </div>
             </div>
             {% endif %}
