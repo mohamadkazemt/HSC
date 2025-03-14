@@ -9,7 +9,7 @@
             </div>
             <!--begin::Logo image-->
             <a href="{% url 'dashboard:dashboard' %}">
-                <img alt="Logo" src="{% static 'assets/media/logos/logo-small.png' %}" class="h-30px" />
+                <img alt="Logo" src="{% static 'assets/media/logos/logo-small.png' %}" class="h-30px" height="50" width="30" />
             </a>
             <!--end::Logo image-->
         </div>
@@ -32,7 +32,6 @@
                         {{ unread_notifications_count }}
                     </span>
                     {% endif %}
-                    </a>
                     {% endif %}
                 </div>
                 <!--end::Menu wrapper-->
@@ -43,9 +42,9 @@
                 <!--begin::Menu wrapper-->
                 <div class="cursor-pointer symbol symbol-circle symbol-35px symbol-md-45px" data-kt-menu-trigger="{default: 'click', lg: 'hover'}" data-kt-menu-attach="parent" data-kt-menu-placement="bottom-end">
                     {% if userprofile.image and userprofile.image.url %}
-                    <img src="{{ userprofile.image.url }}" alt="user" />
+                    <img src="{{ userprofile.image.url }}" alt="user" height="50" width="50" />
                     {% else %}
-                    <img src="{% static 'assets/media/avatars/blank.png' %}" alt="user" />
+                    <img src="{% static 'assets/media/avatars/blank.png' %}" alt="user" height="50" width="50" />
                     {% endif %}
                 </div>
                 <!--begin::کاربر account menu-->
@@ -56,9 +55,9 @@
                             <!--begin::Avatar-->
                             <div class="symbol symbol-50px me-5">
                                 {% if userprofile.image and userprofile.image.url %}
-                                <img alt="Logo" src="{{ userprofile.image.url }}" />
+                                <img alt="Logo" src="{{ userprofile.image.url }}" height="50" width="50" />
                                 {% else %}
-                                <img alt="Logo" src="{% static 'assets/media/avatars/blank.png' %}" />
+                                <img alt="Logo" src="{% static 'assets/media/avatars/blank.png' %}" height="50" width="50" />
                                 {% endif %}
                             </div>
                             <!--end::Avatar-->
