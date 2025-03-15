@@ -18,4 +18,9 @@ def to_jalali(value, fmt='%Y/%m/%d %H:%M'):
         # تبدیل به تاریخ شمسی
         return jdatetime.datetime.fromgregorian(datetime=local_value).strftime(fmt)
     except Exception as e:
+        print(f"Error in to_jalali filter: {e}") # چاپ خطا برای دیباگ
         return value  # در صورت بروز خطا، مقدار اصلی را بازگرداند
+
+@register.filter(name='class_name')
+def get_class_name(value):
+    return value.__class__.__name__

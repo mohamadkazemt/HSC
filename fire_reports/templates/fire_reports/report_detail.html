@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load jalali %} {# لود تگ‌های جلالی #}
 
 {% block style %}
 <style>
@@ -99,7 +100,7 @@
                                                     <h5 class="mb-3">اطلاعات کلی</h5>
                                                     <dl class="row">
                                                         <dt class="col-sm-4">تاریخ گزارش:</dt>
-                                                        <dd class="col-sm-8">{{ report.report_date|date:"Y/m/d H:i" }}</dd>
+                                                        <dd class="col-sm-8">{{ report.report_date|to_jalali }}</dd>
                                                         
                                                         <dt class="col-sm-4">شیفت کاری:</dt>
                                                         <dd class="col-sm-8">{{ report.shift }}</dd>
@@ -126,7 +127,7 @@
                                                         <dd class="col-sm-8">{{ report.approved_by.get_full_name }}</dd>
                                                         
                                                         <dt class="col-sm-4">تاریخ تأیید:</dt>
-                                                        <dd class="col-sm-8">{{ report.approval_date|date:"Y/m/d H:i" }}</dd>
+                                                        <dd class="col-sm-8">{{ report.approval_date|to_jalali:"Y/m/d H:i" }}</dd>
                                                         {% endif %}
                                                         
                                                         {% if report.approval_status == 'rejected' %}
