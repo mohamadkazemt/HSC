@@ -302,7 +302,7 @@
             </div>
             <div class="info-item">
                 <div class="label">تاریخ تأیید:</div>
-                <div class="value">{{ report.approval_date|to_jalali }}</div>
+                <div class="value">{{ report.approval_date|to_jalali:"%Y/%m/%d %H:%M" }}</div>
             </div>
             {% endif %}
         </div>
