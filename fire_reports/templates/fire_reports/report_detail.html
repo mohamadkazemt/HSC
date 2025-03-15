@@ -100,7 +100,7 @@
                                                     <h5 class="mb-3">اطلاعات کلی</h5>
                                                     <dl class="row">
                                                         <dt class="col-sm-4">تاریخ گزارش:</dt>
-                                                        <dd class="col-sm-8">{{ report.report_date|to_jalali }}</dd>
+                                                        <dd class="col-sm-8">{{ report.report_date|to_jalali:"%Y/%m/%d %H:%M" }}</dd>
                                                         
                                                         <dt class="col-sm-4">شیفت کاری:</dt>
                                                         <dd class="col-sm-8">{{ report.shift }}</dd>
