@@ -29,4 +29,4 @@ def get_description_field(form, field_name):
     try:
         return form[f"{field_name}_description"]
     except:
-        return None 
+        return None
