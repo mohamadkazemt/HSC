@@ -4,6 +4,8 @@ from django.contrib.auth.models import User
 import random
 from django.utils.timezone import now
 from datetime import timedelta
+from django.core.files.base import ContentFile
+from io import BytesIO
 
 class UserProfile(models.Model):
     GROUP_CHOICES = [
@@ -31,6 +33,21 @@ class UserProfile(models.Model):
         self.verification_code = str(random.randint(100000, 999999))
         self.code_generated_at = now()
         self.save()
+
+    def save(self, *args, **kwargs):
+        if self.signature:
+            # حذف پس‌زمینه تصویر امضا
+            img_no_bg = remove_background(self.signature.path)
+            if img_no_bg:
+                # ذخیره تصویر بدون پس‌زمینه
+                buffer = BytesIO()
+                img_no_bg.save(buffer, format='PNG')
+                filename = f'{self.signature.name.split(".")[0]}_no_bg.png'
+                contentfile = ContentFile(buffer.getvalue())
+                self.signature_no_bg.save(filename, contentfile, save=False)
+
+        super().save(*args, **kwargs)
+
     def __str__(self):
         name = f'{self.user.first_name} {self.user.last_name} {self.personnel_code}'.strip()
         return name if name else self.user.username

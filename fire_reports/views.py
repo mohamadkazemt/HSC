@@ -20,6 +20,9 @@ from django.db import transaction
 from django.template.loader import get_template
 from django.http import HttpResponse
 from weasyprint import HTML
+from PIL import Image, ImageChops, ImageFilter
+from io import BytesIO
+from django.core.files.base import ContentFile
 
 logger = logging.getLogger('fire_reports')
 
@@ -40,6 +43,35 @@ def send_report_sms(mobile, report_id, status):
             logger.info(f"SMS sent to {mobile} for report {report_id} with status {status}")
     except Exception as e:
         logger.error(f"Error sending SMS for report {report_id}: {e}")
+
+def remove_background(image_path, threshold=200):
+    """
+    حذف پس‌زمینه یک تصویر با استفاده از آستانه‌گذاری.
+    """
+    try:
+        img = Image.open(image_path).convert("RGBA")
+        
+        # ایجاد یک ماسک بر اساس آستانه
+        alpha = img.split()[-1]
+        alpha = alpha.filter(ImageFilter.GaussianBlur(2))  # Blur the mask slightly
+
+        # Define a function to apply to each pixel
+        def threshold_function(x):
+            return 255 if x > threshold else 0
+
+        alpha = alpha.point(threshold_function)
+
+        # Convert to RGBA if it's not already
+        if img.mode != 'RGBA':
+            img = img.convert("RGBA")
+
+        # Paste the image with the mask
+        img.putalpha(alpha)
+
+        return img
+    except Exception as e:
+        print(f"Error removing background: {e}")
+        return None
 
 @permission_required("report_list")
 @login_required
@@ -338,6 +370,25 @@ def fire_report_pdf(request, pk):
     # ایجاد مسیر کامل فایل‌های استاتیک و مدیا
     static_url = request.build_absolute_uri(settings.STATIC_URL)
     media_url = request.build_absolute_uri(settings.MEDIA_URL)
+    print(f"Media URL: {media_url}")  # اضافه کردن این خط برای بررسی مقدار media_url
+
+    # حذف پس‌زمینه تصاویر امضا
+    firefighter_signature_no_bg = None
+    shift_operator_signature_no_bg = None
+
+    if report.firefighter.userprofile.signature:
+        img_no_bg = remove_background(report.firefighter.userprofile.signature.path)
+        if img_no_bg:
+            buffer = BytesIO()
+            img_no_bg.save(buffer, format='PNG')
+            firefighter_signature_no_bg = buffer.getvalue()
+
+    if report.approval_status == 'approved' and report.shift_operator.userprofile.signature:
+        img_no_bg = remove_background(report.shift_operator.userprofile.signature.path)
+        if img_no_bg:
+            buffer = BytesIO()
+            img_no_bg.save(buffer, format='PNG')
+            shift_operator_signature_no_bg = buffer.getvalue()
 
     # رندر کردن HTML
     html_content = template.render({
@@ -345,6 +396,8 @@ def fire_report_pdf(request, pk):
         'title': 'گزارش آتش‌نشانی',
         'static_url': static_url,
         'media_url': media_url,
+        'firefighter_signature_no_bg': firefighter_signature_no_bg,
+        'shift_operator_signature_no_bg': shift_operator_signature_no_bg,
     }, request)
 
     # ایجاد فایل PDF
