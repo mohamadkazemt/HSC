@@ -271,8 +271,8 @@
         }
 
         .signature-image {
-            max-width: 170px;
-            max-height: 120px;
+            max-width:  270px;
+            max-height: 220px;
             margin: 0;
             position: relative;
             z-index: 2;
@@ -452,7 +452,7 @@
                 <div class="signature-container">
                     {% if report.firefighter.userprofile.signature and firefighter_signature_no_bg %}
                     <div class="signature-name">{{ report.firefighter.get_full_name }}</div>
-                    <img src="{{ firefighter_signature_no_bg|image_to_data_uri }}" alt="امضای آتش‌نشان" class="signature-image" width="170" height="120">
+                    <img src="{{ firefighter_signature_no_bg|image_to_data_uri }}" alt="امضای آتش‌نشان" class="signature-image" width="270" height="220">
                     {% else %}
                     <div class="name">{{ report.firefighter.get_full_name }}</div>
                     {% endif %}
@@ -468,7 +468,7 @@
                 <div class="signature-container">
                     {% if report.approval_status == 'approved' and report.shift_operator.userprofile.signature and shift_operator_signature_no_bg %}
                     <div class="signature-name">{{ report.shift_operator.get_full_name }}</div>
-                    <img src="{{ shift_operator_signature_no_bg|image_to_data_uri }}" alt="امضای متصدی شیفت" class="signature-image" width="170" height="120">
+                    <img src="{{ shift_operator_signature_no_bg|image_to_data_uri }}" alt="امضای متصدی شیفت" class="signature-image" width="270" height="220">
                     {% else %}
                     <div class="name">{{ report.shift_operator.get_full_name }}</div>
                     {% endif %}
