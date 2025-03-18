@@ -1,10 +1,25 @@
 {% extends "base.html" %}
 {% load static %}
 {% load jalali %}
+{% load meeting_filters %}
 
 {% block title %}
     {% if form.instance.pk %}ویرایش جلسه{% else %}ایجاد جلسه جدید{% endif %}
 {% endblock title %}
+
+{% block style %}
+    <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.css">
+    <style>
+        /* می‌توانید استایل‌های اضافی خود را اینجا اضافه کنید */
+        .select2-container {
+            width: 100% !important;
+        }
+    </style>
+{% endblock %}
+
+<head>
+    {{ form.media }}
+</head>
 
 {% block content %}
 <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
@@ -35,9 +50,9 @@
                                     </h3>
                                 </div>
                                 <div class="card-body">
-                                    <form method="post">
+                                    <form method="post" id="meeting-form">
                                         {% csrf_token %}
-                                        
+
                                         {% if form.non_field_errors %}
                                         <div class="alert alert-danger">
                                             {% for error in form.non_field_errors %}
@@ -46,22 +61,98 @@
                                         </div>
                                         {% endif %}
 
-                                        {% for field in form %}
-                                        <div class="form-group mb-3">
-                                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                                            {{ field }}
-                                            {% if field.help_text %}
-                                            <small class="form-text text-muted">{{ field.help_text }}</small>
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }}</label>
+                                                {{ form.title|add_class:"form-control" }}
+                                                {% if form.title.help_text %}
+                                                <small class="form-text text-muted">{{ form.title.help_text }}</small>
+                                                {% endif %}
+                                                {% if form.title.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {% for error in form.title.errors %}
+                                                    {{ error }}
+                                                    {% endfor %}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="{{ form.date.id_for_label }}" class="form-label">{{ form.date.label }}</label>
+                                                <input type="text" class="form-control persian-date-picker" id="{{ form.date.id_for_label }}" name="date_display">
+                                                <input type="hidden" id="id_date" name="{{ form.date.html_name }}">
+                                                {% if form.date.help_text %}
+                                                <small class="form-text text-muted">{{ form.date.help_text }}</small>
+                                                {% endif %}
+                                                {% if form.date.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {% for error in form.date.errors %}
+                                                    {{ error }}
+                                                    {% endfor %}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3">
+                                                <label for="{{ form.time.id_for_label }}" class="form-label">{{ form.time.label }}</label>
+                                                {{ form.time|add_class:"form-control" }}
+                                                {% if form.time.help_text %}
+                                                <small class="form-text text-muted">{{ form.time.help_text }}</small>
+                                                {% endif %}
+                                                {% if form.time.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {% for error in form.time.errors %}
+                                                    {{ error }}
+                                                    {% endfor %}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-md-6 mb-3">
+                                                <label for="{{ form.participants.id_for_label }}" class="form-label">{{ form.participants.label }}</label>
+                                                {{ form.participants|add_class:"form-control select2" }}
+                                                {% if form.participants.help_text %}
+                                                <small class="form-text text-muted">{{ form.participants.help_text }}</small>
+                                                {% endif %}
+                                                {% if form.participants.errors %}
+                                                <div class="invalid-feedback d-block">
+                                                    {% for error in form.participants.errors %}
+                                                    {{ error }}
+                                                    {% endfor %}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="{{ form.manual_numbers.id_for_label }}" class="form-label">{{ form.manual_numbers.label }}</label>
+                                            {{ form.manual_numbers|add_class:"form-control" }}
+                                            {% if form.manual_numbers.help_text %}
+                                            <small class="form-text text-muted">{{ form.manual_numbers.help_text }}</small>
                                             {% endif %}
-                                            {% if field.errors %}
+                                            {% if form.manual_numbers.errors %}
                                             <div class="invalid-feedback d-block">
-                                                {% for error in field.errors %}
+                                                {% for error in form.manual_numbers.errors %}
                                                 {{ error }}
                                                 {% endfor %}
                                             </div>
                                             {% endif %}
                                         </div>
-                                        {% endfor %}
+
+                                        <div class="mb-3 form-check">
+                                            {{ form.notify_transport_coordinator|add_class:"form-check-input" }}
+                                            <label for="{{ form.notify_transport_coordinator.id_for_label }}" class="form-check-label">{{ form.notify_transport_coordinator.label }}</label>
+                                            {% if form.notify_transport_coordinator.help_text %}
+                                            <small class="form-text text-muted">{{ form.notify_transport_coordinator.help_text }}</small>
+                                            {% endif %}
+                                            {% if form.notify_transport_coordinator.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {% for error in form.notify_transport_coordinator.errors %}
+                                                {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                            {% endif %}
+                                        </div>
 
                                         <div class="d-flex justify-content-between">
                                             <a href="{% url 'meetings:meeting_list' %}" class="btn btn-secondary">
@@ -98,14 +189,37 @@
 </div>
 <!--end::Chat drawer-->
 <!--end::Drawers-->
+{% endblock content %}
 
 {% block extra_js %}
-<script>
-    // فعال‌سازی tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
+    <script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        // Initialize Persian Datepicker
+        $('.persian-date-picker').persianDatepicker({
+            format: 'YYYY/MM/DD',
+            altFormat: 'YYYY-MM-DD',
+            altField: '#id_date', // ID فیلد مخفی
+            autoClose: true,
+            initialValueType: 'persian'
+        });
+
+        // Initialize Select2 for participants
+        $('#{{ form.participants.id_for_label }}').select2({
+            placeholder: 'انتخاب شرکت‌کنندگان',
+            allowClear: true,
+            width: '100%'
+        });
+
+        // کپی کردن مقدار از فیلد نمایشی به فیلد مخفی قبل از ارسال فرم
+        $('#meeting-form').submit(function() {
+            $('#id_date').val($('.persian-date-picker').val());
+        });
     });
-</script>
-{% endblock extra_js %}
-{% endblock content %} 
+    </script>
+{% endblock extra_js %} 

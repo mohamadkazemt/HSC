@@ -1,6 +1,10 @@
 from django import forms
 from django.contrib.auth.models import User
 from .models import Meeting
+# برای فرم های معمولی
+# from django_jalali.forms.widgets import jDateInput
+# برای فرم های ادمین
+# from jalali_date.widgets import AdminJalaliDateWidget
 
 class MeetingForm(forms.ModelForm):
     participants = forms.ModelMultipleChoiceField(
@@ -19,7 +23,7 @@ class MeetingForm(forms.ModelForm):
         fields = ['title', 'date', 'time', 'participants', 'manual_numbers', 'notify_transport_coordinator']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
-            'date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'date': forms.DateInput(attrs={'class': 'form-control'}),
             'time': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
             'notify_transport_coordinator': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }

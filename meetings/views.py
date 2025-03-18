@@ -119,3 +119,22 @@ def cancel_meeting(request, pk):
         'meeting': meeting,
         'title': 'لغو جلسه'
     })
+
+def create_meeting(request):
+    if request.method == 'POST':
+        form = MeetingForm(request.POST)
+        if form.is_valid():
+            # بررسی کنید که آیا فیلد تاریخ خالی است یا خیر
+            if form.cleaned_data['date'] is None:
+                # اگر خالی است، یک خطا به کاربر نشان دهید
+                form.add_error('date', 'لطفاً تاریخ جلسه را وارد کنید.')
+            else:
+                # اگر تاریخ وارد شده، جلسه را ایجاد کنید
+                meeting = form.save(commit=False)
+                meeting.creator = request.user
+                meeting.save()
+                form.save_m2m()  # برای ذخیره شرکت‌کنندگان
+                return redirect('meeting_list')  # یا هر URL دیگری
+    else:
+        form = MeetingForm()
+    return render(request, 'meetings/meeting_form.html', {'form': form})

@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_jalali',
+    'widget_tweaks',
 
     'permissions.apps.PermissionsConfig',
     'meetings.apps.MeetingsConfig',
@@ -72,6 +73,7 @@ INSTALLED_APPS = [
     'machine_checklist.apps.MachineChecklistConfig',
     'fire_reports.apps.FireReportsConfig',
     'django_celery_results',
+
 ]
 
 MIDDLEWARE = [
