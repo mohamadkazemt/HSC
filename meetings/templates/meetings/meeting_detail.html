@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% load static %}
 {% load jalali %}
+{% load meeting_filters %}
 
-{% block title %}{{ meeting.title }}{% endblock %}
+{% block title %}جزئیات جلسه{% endblock title %}
 
 {% block content %}
 <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
@@ -27,99 +28,70 @@
                     <div id="kt_app_content" class="app-content flex-column-fluid">
                         <div id="kt_app_content_container" class="app-container container-fluid">
                             <div class="card">
-                                <div class="card-header d-flex justify-content-between align-items-center">
-                                    <h3 class="card-title">{{ meeting.title }}</h3>
-                                    <div class="btn-group">
-                                        {% if perms.meetings.change_meeting %}
-                                        <a href="{% url 'meetings:meeting_edit' meeting.pk %}" class="btn btn-warning" data-bs-toggle="tooltip" title="ویرایش">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        {% endif %}
-                                        {% if perms.meetings.delete_meeting %}
-                                        <a href="{% url 'meetings:meeting_delete' meeting.pk %}" class="btn btn-danger" data-bs-toggle="tooltip" title="حذف">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                        {% endif %}
-                                    </div>
+                                <div class="card-header">
+                                    <h3 class="card-title mb-0">{{ meeting.title }}</h3>
                                 </div>
                                 <div class="card-body">
                                     <div class="row">
                                         <div class="col-md-6">
-                                            <div class="card bg-light">
-                                                <div class="card-header">
-                                                    <h5 class="card-title mb-0">اطلاعات جلسه</h5>
-                                                </div>
-                                                <div class="card-body">
-                                                    <table class="table table-borderless">
-                                                        <tr>
-                                                            <th>تاریخ:</th>
-                                                            <td>{{ meeting.date|to_jalali:"%Y/%m/%d" }}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <th>ساعت:</th>
-                                                            <td>{{ meeting.time|time:"H:i" }}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <th>ایجاد کننده:</th>
-                                                            <td>{{ meeting.creator.get_full_name }}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <th>وضعیت:</th>
-                                                            <td>
-                                                                {% if meeting.status == 'scheduled' %}
-                                                                    <span class="badge badge-success">برنامه‌ریزی شده</span>
-                                                                {% elif meeting.status == 'cancelled' %}
-                                                                    <span class="badge badge-danger">لغو شده</span>
-                                                                    {% if meeting.cancellation_reason %}
-                                                                        <div class="mt-2">
-                                                                            <small class="text-muted">دلیل لغو: {{ meeting.cancellation_reason }}</small>
-                                                                        </div>
-                                                                    {% endif %}
-                                                                {% elif meeting.status == 'completed' %}
-                                                                    <span class="badge badge-info">برگزار شده</span>
-                                                                {% endif %}
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </div>
-                                            </div>
+                                            <p><strong>تاریخ:</strong> {{ meeting.date|to_jalali }}</p>
+                                            <p><strong>زمان شروع:</strong> {{ meeting.start_time }}</p>
+                                            <p><strong>زمان پایان:</strong> {{ meeting.end_time }}</p>
+                                            <p><strong>مکان:</strong> {{ meeting.location }}</p>
                                         </div>
                                         <div class="col-md-6">
-                                            <div class="card bg-light">
-                                                <div class="card-header">
-                                                    <h5 class="card-title mb-0">شرکت‌کنندگان</h5>
-                                                </div>
-                                                <div class="card-body">
-                                                    <ul class="list-group list-group-flush">
-                                                        {% for participant in meeting.participants.all %}
-                                                        <li class="list-group-item">{{ participant.get_full_name }}</li>
-                                                        {% endfor %}
-                                                    </ul>
-                                                </div>
-                                            </div>
+                                            <p><strong>ایجاد شده توسط:</strong> {{ meeting.created_by.get_full_name }}</p>
+                                            <p><strong>تاریخ ایجاد:</strong> {{ meeting.created_at|to_jalali }}</p>
+                                            <p><strong>آخرین ویرایش:</strong> {{ meeting.updated_at|to_jalali }}</p>
                                         </div>
                                     </div>
+
+                                    <div class="row mt-4">
+                                        <div class="col-12">
+                                            <h4>شرکت‌کنندگان</h4>
+                                            <ul class="list-unstyled">
+                                                {% for participant in meeting.participants.all %}
+                                                <li>{{ participant.get_full_name }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                    </div>
+
+                                    {% if meeting.description %}
+                                    <div class="row mt-4">
+                                        <div class="col-12">
+                                            <h4>توضیحات</h4>
+                                            <p>{{ meeting.description }}</p>
+                                        </div>
+                                    </div>
+                                    {% endif %}
 
                                     {% if meeting.manual_numbers %}
-                                    <div class="mt-4">
-                                        <div class="card bg-light">
-                                            <div class="card-header">
-                                                <h5 class="card-title mb-0">شماره‌های دستی</h5>
-                                            </div>
-                                            <div class="card-body">
-                                                <p class="card-text">{{ meeting.manual_numbers }}</p>
-                                            </div>
+                                    <div class="row mt-4">
+                                        <div class="col-12">
+                                            <h4>شماره‌های دستی</h4>
+                                            <p>{{ meeting.manual_numbers }}</p>
                                         </div>
                                     </div>
                                     {% endif %}
 
-                                    {% if meeting.notify_transport_coordinator %}
-                                    <div class="mt-4">
-                                        <div class="alert alert-info">
-                                            <i class="fas fa-info-circle"></i> هماهنگ‌کننده حمل و نقل از این جلسه مطلع خواهد شد.
+                                    <div class="row mt-4">
+                                        <div class="col-12">
+                                            <div class="d-flex justify-content-between">
+                                                <a href="{% url 'meetings:meeting_list' %}" class="btn btn-secondary">
+                                                    <i class="fas fa-arrow-right"></i> بازگشت
+                                                </a>
+                                                <div>
+                                                    <a href="{% url 'meetings:edit_meeting' meeting.pk %}" class="btn btn-primary">
+                                                        <i class="fas fa-edit"></i> ویرایش
+                                                    </a>
+                                                    <a href="{% url 'meetings:delete_meeting' meeting.pk %}" class="btn btn-danger">
+                                                        <i class="fas fa-trash"></i> حذف
+                                                    </a>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -127,26 +99,6 @@
                     <!--end::Content-->
                 </div>
                 <!--end::Content wrapper-->
-                <div class="d-flex justify-content-between">
-                    <a href="{% url 'meetings:meeting_list' %}" class="btn btn-secondary">
-                        <i class="fas fa-arrow-right"></i> بازگشت
-                    </a>
-                    <div>
-                        {% if meeting.status == 'scheduled' %}
-                            <a href="{% url 'meetings:meeting_cancel' meeting.id %}" class="btn btn-danger me-2">
-                                <i class="fas fa-times"></i> لغو جلسه
-                            </a>
-                        {% endif %}
-                        {% if user == meeting.creator or user.is_superuser %}
-                            <a href="{% url 'meetings:meeting_edit' meeting.id %}" class="btn btn-primary me-2">
-                                <i class="fas fa-edit"></i> ویرایش
-                            </a>
-                            <a href="{% url 'meetings:meeting_delete' meeting.id %}" class="btn btn-danger">
-                                <i class="fas fa-trash"></i> حذف
-                            </a>
-                        {% endif %}
-                    </div>
-                </div>
                 {% include "footer.html" %}
             </div>
             <!--end::Main-->
@@ -166,14 +118,4 @@
 </div>
 <!--end::Chat drawer-->
 <!--end::Drawers-->
-
-{% block extra_js %}
-<script>
-    // فعال‌سازی tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-</script>
-{% endblock extra_js %}
 {% endblock content %} 

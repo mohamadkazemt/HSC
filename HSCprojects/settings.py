@@ -43,7 +43,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_jalali',
-    'widget_tweaks',
 
     'permissions.apps.PermissionsConfig',
     'meetings.apps.MeetingsConfig',
@@ -290,3 +289,19 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'your-email@gmail.com'
 EMAIL_HOST_PASSWORD = 'your-app-password'
 DEFAULT_FROM_EMAIL = 'your-email@gmail.com'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'meetings.views': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+    },
+} 

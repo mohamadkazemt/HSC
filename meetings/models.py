@@ -12,7 +12,10 @@ class Meeting(models.Model):
 
     title = models.CharField(max_length=200, verbose_name='عنوان جلسه')
     date = models.DateField(verbose_name='تاریخ')
-    time = models.TimeField(verbose_name='ساعت')
+    start_time = models.TimeField(verbose_name='ساعت شروع')
+    end_time = models.TimeField(verbose_name='ساعت پایان')
+    location = models.CharField(max_length=200, blank=True, null=True, verbose_name='مکان')
+    description = models.TextField(blank=True, null=True, verbose_name='توضیحات')
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_meetings', verbose_name='ایجادکننده')
     participants = models.ManyToManyField(User, related_name='participated_meetings', verbose_name='شرکت‌کنندگان')
     manual_numbers = models.TextField(blank=True, null=True, verbose_name='شماره‌های دستی')
@@ -25,7 +28,7 @@ class Meeting(models.Model):
     class Meta:
         verbose_name = 'جلسه'
         verbose_name_plural = 'جلسات'
-        ordering = ['-date', '-time']
+        ordering = ['-date', '-start_time']
 
     def __str__(self):
-        return f"{self.title} - {self.date}"
+        return f"{self.title} - {self.date} - {self.start_time}"
