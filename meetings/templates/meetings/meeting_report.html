@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}گزارش جلسات{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>گزارش جلسات</h2>
+        <a href="{% url 'meetings:meeting_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i> بازگشت به لیست
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {% if meetings %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>عنوان</th>
+                            <th>تاریخ</th>
+                            <th>ساعت</th>
+                            <th>ایجاد کننده</th>
+                            <th>تعداد شرکت‌کنندگان</th>
+                            <th>عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for meeting in meetings %}
+                        <tr>
+                            <td>{{ meeting.title }}</td>
+                            <td>{{ meeting.date|date:"Y/m/d" }}</td>
+                            <td>{{ meeting.time|time:"H:i" }}</td>
+                            <td>{{ meeting.creator.get_full_name }}</td>
+                            <td>{{ meeting.participants.count }}</td>
+                            <td>
+                                <a href="{% url 'meetings:meeting_detail' meeting.pk %}" class="btn btn-sm btn-info">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                هیچ جلسه‌ای یافت نشد.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

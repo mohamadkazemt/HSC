@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'django_jalali',
 
     'permissions.apps.PermissionsConfig',
+    'meetings.apps.MeetingsConfig',
 
     "dashboard.apps.DashboardConfig",
     "accounts.apps.AccountsConfig",
@@ -69,8 +70,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'hse_incidents.apps.HseIncidentsConfig',
     'machine_checklist.apps.MachineChecklistConfig',
-    'fire_reports.apps.FireReportsConfig'
-
+    'fire_reports.apps.FireReportsConfig',
+    'django_celery_results',
 ]
 
 MIDDLEWARE = [
@@ -134,6 +135,11 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        'OPTIONS': {
+            'timeout': 30,  # افزایش زمان timeout برای عملیات‌های طولانی
+            'check_same_thread': False,  # اجازه دسترسی همزمان به پایگاه داده
+            'isolation_level': None,  # غیرفعال کردن isolation level برای جلوگیری از قفل شدن
+        }
     }
 }
 
@@ -262,3 +268,23 @@ CORS_ALLOW_HEADERS = [
 
 # اگر نیاز دارید که مرورگر کوکی‌ها را ارسال کند (مثلاً برای احراز هویت):
 CORS_ALLOW_CREDENTIALS = True
+
+# Celery Configuration
+if DEBUG:
+    CELERY_BROKER_URL = 'sqla+sqlite:///celery.sqlite'
+else:
+    CELERY_BROKER_URL = 'sqla+postgresql://hsc_user:Znmk@0900@localhost:5432/hsc_db'
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Tehran'
+
+# Email Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'your-email@gmail.com'
+EMAIL_HOST_PASSWORD = 'your-app-password'
+DEFAULT_FROM_EMAIL = 'your-email@gmail.com'
