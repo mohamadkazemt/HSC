@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from .models import Meeting
 from django.utils.translation import gettext_lazy as _
 from django_jalali.forms.widgets import jDateInput
+from accounts.models import UserProfile
 import jdatetime
 import re
 import logging
@@ -29,6 +30,19 @@ class MeetingForm(forms.ModelForm):
         required=False,
         label='شماره‌های دستی'
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # تغییر نمایش شرکت‌کنندگان
+        self.fields['participants'].queryset = User.objects.all()
+        self.fields['participants'].label_from_instance = self.label_from_instance
+
+    def label_from_instance(self, obj):
+        try:
+            profile = UserProfile.objects.get(user=obj)
+            return f"{obj.get_full_name()} - {profile.personnel_code}"
+        except UserProfile.DoesNotExist:
+            return obj.get_full_name() or obj.username
 
     class Meta:
         model = Meeting

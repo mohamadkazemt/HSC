@@ -16,7 +16,14 @@
     .table th {
         white-space: nowrap;
     }
+    .persian-datepicker-container {
+        z-index: 1000;
+    }
+    .persian-datepicker {
+        font-family: Vazir, Tahoma, Arial;
+    }
 </style>
+<link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.css">
 {% endblock style %}
 
 {% block content %}
@@ -60,6 +67,66 @@
                                         {% endfor %}
                                     </div>
                                     {% endif %}
+
+                                    <!-- شروع بخش فیلترها -->
+                                    <div class="mb-5">
+                                        <form method="get" class="row g-3">
+                                            <!-- جستجو -->
+                                            <div class="col-md-12 mb-3">
+                                                <div class="input-group">
+                                                    <input type="text" name="q" class="form-control" placeholder="جستجو در عنوان، توضیحات، مکان یا نام شرکت‌کنندگان..." value="{{ request.GET.q }}">
+                                                    <button class="btn btn-primary" type="submit">
+                                                        <i class="fas fa-search"></i> جستجو
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <!-- فیلترهای پیشرفته -->
+                                            <div class="col-md-3">
+                                                <label class="form-label">از تاریخ</label>
+                                                <input type="text" name="start_date" class="form-control persian-date-picker" value="{{ request.GET.start_date }}" readonly>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">تا تاریخ</label>
+                                                <input type="text" name="end_date" class="form-control persian-date-picker" value="{{ request.GET.end_date }}" readonly>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">مکان</label>
+                                                <input type="text" name="location" class="form-control" value="{{ request.GET.location }}">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">وضعیت</label>
+                                                <select name="status" class="form-select">
+                                                    <option value="">همه</option>
+                                                    <option value="scheduled" {% if request.GET.status == 'scheduled' %}selected{% endif %}>برنامه‌ریزی شده</option>
+                                                    <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>لغو شده</option>
+                                                    <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>برگزار شده</option>
+                                                </select>
+                                            </div>
+
+                                            <!-- دکمه‌های عملیات -->
+                                            <div class="col-12 mt-3">
+                                                <button type="submit" class="btn btn-primary">
+                                                    <i class="fas fa-filter"></i> اعمال فیلترها
+                                                </button>
+                                                <a href="{% url 'meetings:meeting_list' %}" class="btn btn-secondary">
+                                                    <i class="fas fa-redo"></i> پاک کردن فیلترها
+                                                </a>
+                                                <div class="float-end">
+                                                    <a href="{% url 'meetings:meeting_export' %}" class="btn btn-success">
+                                                        <i class="fas fa-file-excel"></i> خروجی اکسل
+                                                    </a>
+                                                    <a href="{% url 'meetings:meeting_report' %}" class="btn btn-info">
+                                                        <i class="fas fa-chart-bar"></i> گزارش آماری
+                                                    </a>
+                                                    <a href="{% url 'meetings:meeting_calendar' %}" class="btn btn-warning">
+                                                        <i class="fas fa-calendar-alt"></i> نمایش تقویم
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <!-- پایان بخش فیلترها -->
 
                                     {% if meetings %}
                                     <div class="table-responsive">
@@ -197,11 +264,39 @@
 <!--end::Drawers-->
 
 {% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
+<script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
 <script>
-    // فعال‌سازی tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
+    $(document).ready(function() {
+        // فعال‌سازی tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+
+        // تنظیمات تقویم شمسی
+        $('.persian-date-picker').persianDatepicker({
+            format: 'YYYY/MM/DD',
+            initialValueType: 'persian',
+            autoClose: true,
+            persianDigit: false,
+            onSelect: function(unix) {
+                console.log("تاریخ انتخاب شده:", unix);
+                var date = new persianDate(unix);
+                var year = date.year();
+                var month = String(date.month() + 1).padStart(2, '0');
+                var day = String(date.date()).padStart(2, '0');
+                var formattedDate = year + '/' + month + '/' + day;
+                console.log("تاریخ فرمت شده:", formattedDate);
+                $(this).val(formattedDate);
+            }
+        });
+
+        // اضافه کردن event listener برای کلیک
+        $('.persian-date-picker').on('click', function() {
+            $(this).persianDatepicker('show');
+        });
     });
 </script>
 {% endblock extra_js %}

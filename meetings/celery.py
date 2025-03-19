@@ -22,5 +22,5 @@ app.conf.update(
     broker_connection_retry_on_startup=True,
     worker_pool_restarts=True,
     worker_concurrency=1,
-    worker_pool='solo',
+    worker_pool='prefork',
 ) 
