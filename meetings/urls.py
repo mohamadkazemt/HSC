@@ -12,5 +12,4 @@ urlpatterns = [
     path('<int:pk>/cancel/', views.cancel_meeting, name='meeting_cancel'),
     path('report/', views.meeting_report, name='meeting_report'),
     path('notification/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
-    path('meetings/create/', views.create_meeting, name='create_meeting'),
 ] 

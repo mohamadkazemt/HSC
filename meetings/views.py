@@ -25,7 +25,7 @@ class MeetingListView(LoginRequiredMixin, ListView):
     model = Meeting
     template_name = 'meetings/meeting_list.html'
     context_object_name = 'meetings'
-    ordering = ['-date', '-start_time']
+    ordering = ['-created_at', '-date', '-start_time']
     paginate_by = 10
 
     def get_queryset(self):
@@ -156,7 +156,7 @@ def cancel_meeting(request, pk):
     })
 
 def create_meeting(request):
-    logger.debug("Entering create_meeting view function - Logging Test")
+    logger.debug("Entering create_meeting view function")
 
     if request.method == 'POST':
         form = MeetingForm(request.POST)
@@ -164,30 +164,11 @@ def create_meeting(request):
         logger.debug(f"Raw form data received: {request.POST}")
         logger.debug(f"Date value from form: {request.POST.get('date')}")
 
-        # نمایش تاریخ دریافت شده از فرم در کنسول
-        print(f"تاریخ دریافت شده از فرم: {request.POST.get('date')}")
-
-        # نمایش فرمت های تاریخ مورد انتظار Django در کنسول
-        print(f"فرمت‌های تاریخ مورد انتظار سرور: {settings.DATE_INPUT_FORMATS}")
-
         if form.is_valid():
             logger.info("Form is valid")
             logger.debug(f"Cleaned data: {form.cleaned_data}")
-            logger.debug(f"Cleaned date: {form.cleaned_data.get('date')}")
-            # بررسی فیلدهای اجباری
-            if not form.cleaned_data.get('date'):
-                form.add_error('date', 'لطفاً تاریخ جلسه را وارد کنید.')
-            if not form.cleaned_data.get('start_time'):
-                form.add_error('start_time', 'لطفاً زمان شروع جلسه را وارد کنید.')
-            if not form.cleaned_data.get('end_time'):
-                form.add_error('end_time', 'لطفاً زمان پایان جلسه را وارد کنید.')
-            if not form.cleaned_data.get('location'):
-                form.add_error('location', 'لطفاً مکان جلسه را وارد کنید.')
-            if not form.cleaned_data.get('participants'):
-                form.add_error('participants', 'لطفاً حداقل یک شرکت‌کننده را انتخاب کنید.')
-
-            if not form.errors:
-                logger.info(f"Cleaned data before save: {form.cleaned_data}")
+            
+            try:
                 meeting = form.save(commit=False)
                 meeting.creator = request.user
                 meeting.save()
@@ -195,15 +176,28 @@ def create_meeting(request):
                 messages.success(request, 'جلسه با موفقیت ایجاد شد.')
                 logger.info(f"Meeting saved successfully. Meeting ID: {meeting.id}, Date: {meeting.date}")
                 return redirect('meetings:meeting_list')
-            else:
-                 logger.warning(f"Form has errors: {form.errors}")
-                 logger.warning(f"Form errors detail: {form.errors.as_data()}")
+            except Exception as e:
+                logger.error(f"Error saving meeting: {str(e)}")
+                logger.exception("Full traceback:")
+                messages.error(request, 'خطا در ذخیره جلسه. لطفاً دوباره تلاش کنید.')
         else:
             logger.warning("Form is invalid")
             logger.warning(f"Form errors: {form.errors}")
             logger.warning(f"Form errors detail: {form.errors.as_data()}")
+            
+            # نمایش خطاهای عمومی
+            if form.non_field_errors():
+                for error in form.non_field_errors():
+                    messages.error(request, error)
+            
+            # نمایش خطاهای فیلدها
+            for field, errors in form.errors.items():
+                if field != '__all__':  # خطاهای عمومی را نادیده می‌گیریم
+                    for error in errors:
+                        messages.error(request, f"{form.fields[field].label}: {error}")
     else:
         form = MeetingForm()
+    
     return render(request, 'meetings/meeting_form.html', {'form': form})
 
 

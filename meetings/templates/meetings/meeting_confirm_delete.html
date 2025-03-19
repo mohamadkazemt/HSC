@@ -1,34 +1,61 @@
 {% extends "base.html" %}
 {% load static %}
+{% load jalali %}
 
-{% block title %}حذف جلسه{% endblock %}
+{% block title %}حذف جلسه{% endblock title %}
+
+{% block style %}
+<style>
+    .card-header.bg-danger {
+        background-color: #dc3545 !important;
+    }
+    .lead {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock style %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-danger text-white">
-                    <h3 class="card-title mb-0">حذف جلسه</h3>
-                </div>
-                <div class="card-body">
-                    <p class="lead">آیا از حذف جلسه "{{ meeting.title }}" اطمینان دارید؟</p>
-                    <p>این عملیات قابل بازگشت نیست.</p>
+<div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+    <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+        {% include "header.html" %}
+        <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+            {% include "sidebar.html" %}
+            <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                <div class="d-flex flex-column flex-column-fluid">
+                    {% include "toolbar.html" %}
+                    <div id="kt_app_content" class="app-content flex-column-fluid">
+                        <div id="kt_app_content_container" class="app-container container-fluid">
+                            <div class="card">
+                                <div class="card-header bg-danger text-white">
+                                    <h3 class="card-title mb-0">حذف جلسه</h3>
+                                </div>
+                                <div class="card-body">
+                                    <p class="lead">آیا از حذف جلسه "{{ meeting.title }}" اطمینان دارید؟</p>
+                                    <p>این عملیات قابل بازگشت نیست.</p>
 
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="d-flex justify-content-between">
-                            <a href="{% url 'meetings:meeting_list' %}" class="btn btn-secondary">
-                                <i class="fas fa-times"></i> انصراف
-                            </a>
-                            <button type="submit" class="btn btn-danger">
-                                <i class="fas fa-trash"></i> حذف
-                            </button>
+                                    <form method="post">
+                                        {% csrf_token %}
+                                        <div class="d-flex justify-content-between">
+                                            <a href="{% url 'meetings:meeting_list' %}" class="btn btn-secondary">
+                                                <i class="fas fa-times"></i> انصراف
+                                            </a>
+                                            <button type="submit" class="btn btn-danger">
+                                                <i class="fas fa-trash"></i> حذف
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
                         </div>
-                    </form>
+                    </div>
                 </div>
+                {% include "footer.html" %}
             </div>
         </div>
     </div>
 </div>
-{% endblock %} 
+
+{% include "notification.html" %}
+{% endblock content %} 

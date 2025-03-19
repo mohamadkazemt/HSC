@@ -2,7 +2,22 @@
 {% load static %}
 {% load jalali %}
 
-{% block title %}لیست جلسات{% endblock %}
+{% block title %}لیست جلسات{% endblock title %}
+
+{% block style %}
+<style>
+    .badge {
+        font-size: 0.9rem;
+        padding: 0.5em 0.8em;
+    }
+    .btn-group .btn {
+        margin: 0 2px;
+    }
+    .table th {
+        white-space: nowrap;
+    }
+</style>
+{% endblock style %}
 
 {% block content %}
 <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
@@ -52,8 +67,9 @@
                                             <thead>
                                                 <tr class="text-center">
                                                     <th>عنوان</th>
+                                                    <th>تاریخ ایجاد</th>
                                                     <th>تاریخ</th>
-                                                    <th>ساعت</th>
+                                                    <th>زمان شروع</th>
                                                     <th>ایجاد کننده</th>
                                                     <th>وضعیت</th>
                                                     <th>عملیات</th>
@@ -63,8 +79,9 @@
                                                 {% for meeting in meetings %}
                                                 <tr class="text-center">
                                                     <td>{{ meeting.title }}</td>
+                                                    <td>{{ meeting.created_at|to_jalali:"%Y/%m/%d %H:%M" }}</td>
                                                     <td>{{ meeting.date|to_jalali:"%Y/%m/%d" }}</td>
-                                                    <td>{{ meeting.time|time:"H:i" }}</td>
+                                                    <td>{{ meeting.start_time|time:"H:i" }}</td>
                                                     <td>{{ meeting.creator.get_full_name }}</td>
                                                     <td>
                                                         {% if meeting.status == 'scheduled' %}

@@ -9,13 +9,14 @@
 
 {% block style %}
     <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <style>
         /* می‌توانید استایل‌های اضافی خود را اینجا اضافه کنید */
         .select2-container {
             width: 100% !important;
         }
     </style>
-{% endblock %}
+{% endblock style %}
 
 <head>
     {{ form.media }}
@@ -50,7 +51,7 @@
                                     </h3>
                                 </div>
                                 <div class="card-body">
-                                    <form method="post" id="meeting-form" action="{% url 'meetings:create_meeting' %}">
+                                    <form method="post" id="meeting-form" action="{% url 'meetings:meeting_create' %}">
                                         {% csrf_token %}
 
                                         {% if form.non_field_errors %}
@@ -195,8 +196,6 @@
 {% block extra_js %}
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-
     <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
     <script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
     <script>
@@ -206,7 +205,16 @@
             format: 'YYYY-MM-DD',
             altFormat: 'YYYY-MM-DD',
             autoClose: true,
-            initialValueType: 'persian'
+            initialValueType: 'persian',
+            onSelect: function(unix) {
+                var date = new Date(unix);
+                var persianDate = new persianDate(date);
+                var year = persianDate.year();
+                var month = String(persianDate.month()).padStart(2, '0');
+                var day = String(persianDate.date()).padStart(2, '0');
+                var formattedDate = year + '-' + month + '-' + day;
+                $(this).val(formattedDate);
+            }
         });
 
         // Initialize Select2 for participants

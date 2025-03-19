@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 from dashboard.models import Notification
+from django_jalali.db import models as jmodels
 
 class Meeting(models.Model):
     STATUS_CHOICES = [
@@ -11,7 +12,7 @@ class Meeting(models.Model):
     ]
 
     title = models.CharField(max_length=200, verbose_name='عنوان جلسه')
-    date = models.DateField(verbose_name='تاریخ')
+    date = jmodels.jDateField(verbose_name='تاریخ')
     start_time = models.TimeField(verbose_name='ساعت شروع')
     end_time = models.TimeField(verbose_name='ساعت پایان')
     location = models.CharField(max_length=200, blank=True, null=True, verbose_name='مکان')
