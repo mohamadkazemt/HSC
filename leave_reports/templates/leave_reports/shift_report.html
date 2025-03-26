@@ -1,6 +1,11 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block style %}
+    <link type="text/css" rel="stylesheet" href="{% static 'assets/css/persianDatepicker-default.css' %}" />
+    <link type="text/css" rel="stylesheet" href="{% static 'assets/css/custom/datepicker.css' %}" />
+{% endblock %}
+
 {% block content %}
     <div class="d-flex flex-column flex-root">
         <div class="app-page flex-column flex-column-fluid">
@@ -106,26 +111,42 @@
                                                             <!-- محتوای مرحله 1: مرخصی عادی -->
                                                             <div class="current" data-kt-stepper-element="content">
                                                                 <div class="w-100">
-                                                                    <div class="col-md-6">
-                                                                        <label class="form-label">پرسنل</label>
-                                                                        <select name="regular_leave_user" class="form-select select2">
-                                                                            <option value="">انتخاب کنید...</option>
-                                                                            {% for personnel in personnels %}
-                                                                                <option value="{{ personnel.user.id }}">
-                                                                                    {{ personnel.user.get_full_name }} - {{ personnel.personnel_code }}
-                                                                                </option>
-                                                                            {% endfor %}
-                                                                        </select>
+                                                                    <div class="row mb-6">
+                                                                        <div class="col-md-4">
+                                                                            <label class="form-label">پرسنل</label>
+                                                                            <select name="regular_leave_user" class="form-select select2">
+                                                                                <option value="">انتخاب کنید...</option>
+                                                                                {% for personnel in personnels %}
+                                                                                    <option value="{{ personnel.user.id }}">
+                                                                                        {{ personnel.user.get_full_name }} - {{ personnel.personnel_code }}
+                                                                                    </option>
+                                                                                {% endfor %}
+                                                                            </select>
+                                                                        </div>
+                                                                        <div class="col-md-4">
+                                                                            <label class="form-label">تاریخ</label>
+                                                                            <input type="text" name="regular_leave_date" class="form-control persian-date-picker" id="regular_leave_date">
+                                                                            <input type="hidden" id="regular_leave_date_alt">
+                                                                        </div>
+                                                                        <div class="col-md-4">
+                                                                            <label class="form-label">شیفت کاری</label>
+                                                                            <select name="regular_leave_shift" class="form-select">
+                                                                                <option value="">انتخاب کنید...</option>
+                                                                                <option value="day">روزکار اول</option>
+                                                                                <option value="day2">روزکار دوم</option>
+                                                                                <option value="evening">عصرکار اول</option>
+                                                                                <option value="evening2">عصرکار دوم</option>
+                                                                                <option value="night">شبکار اول</option>
+                                                                                <option value="night2">شبکار دوم</option>
+                                                                            </select>
+                                                                        </div>
                                                                     </div>
 
                                                                     <button type="button" class="btn btn-primary mt-5" onclick="addRegularLeave()">
                                                                         <i class="ki-outline ki-plus-square fs-2"></i>
                                                                         اضافه کردن
                                                                     </button>
-
-
                                                                 </div>
-
 
                                                                 <div class="table-responsive mt-4">
                                                                     <table class="table" id="regular_leave_table">
@@ -133,6 +154,7 @@
                                                                         <tr>
                                                                             <th>نام پرسنل</th>
                                                                             <th>تاریخ</th>
+                                                                            <th>شیفت کاری</th>
                                                                             <th>عملیات</th>
                                                                         </tr>
                                                                         </thead>
@@ -144,30 +166,47 @@
                                                             <!-- محتوای مرحله 2: غیبت -->
                                                             <div data-kt-stepper-element="content">
                                                                 <div class="row mb-6">
-                                                                    <div class="col-md-6">
+                                                                    <div class="col-md-4">
                                                                         <label class="form-label">پرسنل</label>
                                                                         <select name="absence_user" class="form-select select2">
                                                                             <option value="">انتخاب کنید...</option>
                                                                             {% for personnel in personnels %}
                                                                                 <option value="{{ personnel.user.id }}">
-                                                                                    {{ personnel.user.get_full_name }} - {{ personnel.personnel_code }}
+                                                                                        {{ personnel.user.get_full_name }} - {{ personnel.personnel_code }}
                                                                                 </option>
                                                                             {% endfor %}
                                                                         </select>
-
-                                                                        <button type="button" class="btn btn-primary mt-5" onclick="addAbsence()">
-                                                                            <i class="ki-outline ki-plus-square fs-2"></i>
-                                                                            اضافه کردن
-                                                                        </button>
                                                                     </div>
-
-
-
-
-
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label">تاریخ</label>
+                                                                        <input type="text" name="absence_date" class="form-control persian-date-picker" id="absence_date">
+                                                                        <input type="hidden" id="absence_date_alt">
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label">شیفت کاری</label>
+                                                                        <select name="absence_shift" class="form-select">
+                                                                            <option value="">انتخاب کنید...</option>
+                                                                            <option value="day">روزکار اول</option>
+                                                                            <option value="day2">روزکار دوم</option>
+                                                                            <option value="evening">عصرکار اول</option>
+                                                                            <option value="evening2">عصرکار دوم</option>
+                                                                            <option value="night">شبکار اول</option>
+                                                                            <option value="night2">شبکار دوم</option>
+                                                                        </select>
+                                                                    </div>
                                                                 </div>
 
+                                                                <div class="row mb-6">
+                                                                    <div class="col-md-12">
+                                                                        <label class="form-label">توضیحات</label>
+                                                                        <textarea name="absence_description" class="form-control" rows="3"></textarea>
+                                                                    </div>
+                                                                </div>
 
+                                                                <button type="button" class="btn btn-primary mt-5" onclick="addAbsence()">
+                                                                    <i class="ki-outline ki-plus-square fs-2"></i>
+                                                                    اضافه کردن
+                                                                </button>
 
                                                                 <div class="table-responsive mt-4">
                                                                     <table class="table" id="absence_table">
@@ -175,6 +214,8 @@
                                                                         <tr>
                                                                             <th>نام پرسنل</th>
                                                                             <th>تاریخ</th>
+                                                                            <th>شیفت کاری</th>
+                                                                            <th>توضیحات</th>
                                                                             <th>عملیات</th>
                                                                         </tr>
                                                                         </thead>
@@ -185,29 +226,53 @@
                                                             <!-- محتوای مرحله 3: مرخصی استعلاجی -->
                                                             <div data-kt-stepper-element="content">
                                                                <div class="row mb-6">
-                                                                    <div class="col-md-6">
+                                                                    <div class="col-md-4">
                                                                         <label class="form-label">پرسنل</label>
                                                                         <select name="sick_leave_user" class="form-select select2">
                                                                             <option value="">انتخاب کنید...</option>
                                                                             {% for personnel in personnels %}
                                                                                 <option value="{{ personnel.user.id }}">
-                                                                                    {{ personnel.user.get_full_name }} - {{ personnel.personnel_code }}
+                                                                                        {{ personnel.user.get_full_name }} - {{ personnel.personnel_code }}
                                                                                 </option>
                                                                             {% endfor %}
                                                                         </select>
-
-                                                                        <button type="button" class="btn btn-primary mt-5" onclick="addSickLeave()">
-                                                                            <i class="ki-outline ki-plus-square fs-2"></i>
-                                                                            اضافه کردن
-                                                                        </button>
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label">تاریخ</label>
+                                                                        <input type="text" name="sick_leave_date" class="form-control persian-date-picker" id="sick_leave_date">
+                                                                        <input type="hidden" id="sick_leave_date_alt">
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label">شیفت کاری</label>
+                                                                        <select name="sick_leave_shift" class="form-select">
+                                                                            <option value="">انتخاب کنید...</option>
+                                                                            <option value="day">روزکار اول</option>
+                                                                            <option value="day2">روزکار دوم</option>
+                                                                            <option value="evening">عصرکار اول</option>
+                                                                            <option value="evening2">عصرکار دوم</option>
+                                                                            <option value="night">شبکار اول</option>
+                                                                            <option value="night2">شبکار دوم</option>
+                                                                        </select>
                                                                     </div>
                                                                 </div>
+                                                                <div class="row mb-6">
+                                                                    <div class="col-md-12">
+                                                                        <label class="form-label">توضیحات</label>
+                                                                        <textarea name="sick_leave_description" class="form-control" rows="3"></textarea>
+                                                                    </div>
+                                                                </div>
+                                                                <button type="button" class="btn btn-primary mt-5" onclick="addSickLeave()">
+                                                                    <i class="ki-outline ki-plus-square fs-2"></i>
+                                                                    اضافه کردن
+                                                                </button>
                                                                 <div class="table-responsive mt-4">
                                                                     <table class="table" id="sick_leave_table">
                                                                         <thead>
                                                                         <tr>
                                                                              <th>نام پرسنل</th>
                                                                             <th>تاریخ</th>
+                                                                            <th>شیفت کاری</th>
+                                                                            <th>توضیحات</th>
                                                                             <th>عملیات</th>
                                                                         </tr>
                                                                         </thead>
@@ -219,19 +284,34 @@
                                                             <!-- محتوای مرحله 4: مرخصی ساعتی -->
                                                             <div data-kt-stepper-element="content">
                                                                 <div class="row mb-6">
-                                                                    <div class="col-md-6">
+                                                                    <div class="col-md-4">
                                                                         <label class="form-label">پرسنل</label>
                                                                         <select name="hourly_leave_user" class="form-select select2">
                                                                             <option value="">انتخاب کنید...</option>
                                                                             {% for personnel in personnels %}
                                                                                 <option value="{{ personnel.user.id }}">
-                                                                                    {{ personnel.user.get_full_name }} - {{ personnel.personnel_code }}
+                                                                                        {{ personnel.user.get_full_name }} - {{ personnel.personnel_code }}
                                                                                 </option>
                                                                             {% endfor %}
                                                                         </select>
                                                                     </div>
-
-
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label">تاریخ</label>
+                                                                        <input type="text" name="hourly_leave_date" class="form-control persian-date-picker"  id="hourly_leave_date">
+                                                                        <input type="hidden" id="hourly_leave_date_alt">
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label">شیفت کاری</label>
+                                                                        <select name="hourly_leave_shift" class="form-select">
+                                                                            <option value="">انتخاب کنید...</option>
+                                                                            <option value="day">روزکار اول</option>
+                                                                            <option value="day2">روزکار دوم</option>
+                                                                            <option value="evening">عصرکار اول</option>
+                                                                            <option value="evening2">عصرکار دوم</option>
+                                                                            <option value="night">شبکار اول</option>
+                                                                            <option value="night2">شبکار دوم</option>
+                                                                        </select>
+                                                                    </div>
                                                                 </div>
 
                                                                 <div class="row mb-6">
@@ -251,13 +331,13 @@
                                                                     اضافه کردن
                                                                 </button>
 
-
                                                                 <div class="table-responsive mt-4">
                                                                     <table class="table" id="hourly_leave_table">
                                                                         <thead>
                                                                         <tr>
                                                                             <th>نام پرسنل</th>
                                                                             <th>تاریخ</th>
+                                                                            <th>شیفت کاری</th>
                                                                             <th>ساعت شروع</th>
                                                                             <th>ساعت پایان</th>
                                                                             <th>عملیات</th>
@@ -305,5 +385,6 @@
 {% endblock %}
 
 {% block extra_js %}
+    <script type="text/javascript" src="{% static 'assets/js/persianDatepicker.min.js' %}"></script>  
     <script src="{% static 'assets/js/custom/leave-report.js' %}"></script>
 {% endblock %}

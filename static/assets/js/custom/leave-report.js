@@ -25,6 +25,7 @@ document.addEventListener('DOMContentLoaded', function () {
     initializeStepper();
     initializeFormHandlers();
     initializeSelect2();
+    initializePersianDatePickers();
 
     setTimeout(() => {
         updateStepContent(1);
@@ -74,16 +75,107 @@ function initializeSelect2() {
     });
 }
 
+function initializePersianDatePickers() {
+    $(function() {
+        $(".persian-date-picker").each(function() {
+            const inputId = $(this).attr("id");
+            $(this).persianDatepicker({
+                formatDate: "YYYY-0M-0D",
+                format: "YYYY-0M-0D",
+                persianNumbers: true,
+                altField: '#' + inputId + '_alt',
+                altFormat: 'YYYY-0M-0D',
+                observer: true,
+                initialValue: false,
+                autoClose: true,
+                theme: 'default',
+                cellWidth: 35,
+                cellHeight: 30,
+                fontSize: 14,
+                isRTL: true,
+                calendarPosition: {
+                    x: 0,
+                    y: 0,
+                },
+                toolbox: {
+                    enabled: true,
+                    calendarSwitch: {
+                        enabled: false
+                    }
+                },
+                navigator: {
+                    scroll: {
+                        enabled: false
+                    }
+                },
+                dayPicker: {
+                    enabled: true,
+                    titleFormat: 'YYYY-0M-0D'
+                },
+                onSelect: function(unix) {
+                    try {
+                        // دریافت تاریخ شمسی از picker
+                        const pdate = this.model.state.selected;
+                        const persianYear = pdate.year;
+                        const persianMonth = String(pdate.month).padStart(2, '0');
+                        const persianDay = String(pdate.date).padStart(2, '0');
+                        
+                        // تنظیم تاریخ شمسی در فیلد نمایشی و مخفی
+                        const persianDateStr = `${persianYear}-${persianMonth}-${persianDay}`;
+                        $(this.model.input.elem).val(persianDateStr);
+                        $(this.altField).val(persianDateStr);
+                        
+                        console.log('تاریخ انتخاب شده:', {
+                            unix: unix,
+                            persianDate: persianDateStr,
+                            state: {
+                                year: persianYear,
+                                month: pdate.month,
+                                day: pdate.date
+                            }
+                        });
+                    } catch (error) {
+                        console.error('خطا در تنظیم تاریخ:', error);
+                        $(this.model.input.elem).val('');
+                        $(this.altField).val('');
+                        showError('خطا در تنظیم تاریخ. لطفا دوباره تلاش کنید');
+                    }
+                },
+                onShow: function() {
+                    $('.datepicker-plot-area').addClass('rtl-calendar');
+                },
+                onHide: function() {
+                    $('.datepicker-plot-area').removeClass('rtl-calendar');
+                }
+            });
+        });
+    });
+}
+
+
+
 function addRegularLeave() {
     const userSelect = document.querySelector('[name="regular_leave_user"]');
+    const dateInput = document.querySelector('[name="regular_leave_date"]');
+    const shiftSelect = document.querySelector('[name="regular_leave_shift"]');
 
-    if (!userSelect) {
+    if (!userSelect || !dateInput || !shiftSelect) {
         console.error("Required elements not found");
         return;
     }
 
     if (!userSelect.value) {
-        showError('لطفا تمامی فیلدها را پر کنید');
+        showError('لطفا پرسنل را انتخاب کنید');
+        return;
+    }
+
+    if (!dateInput.value) {
+        showError('لطفا تاریخ را وارد کنید');
+        return;
+    }
+
+    if (!shiftSelect.value) {
+        showError('لطفا شیفت کاری را انتخاب کنید');
         return;
     }
 
@@ -94,32 +186,46 @@ function addRegularLeave() {
     }
 
     const userName = userSelect.options[userSelect.selectedIndex].text;
+    const shiftName = shiftSelect.options[shiftSelect.selectedIndex].text;
+    const displayDate = dateInput.value;
+    const storedDate = dateInput.value; // استفاده از همان تاریخ شمسی
+
+    console.log('تاریخ انتخاب شده:', {
+        displayDate: displayDate,
+        storedDate: storedDate
+    });
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
         <td>${userName}</td>
-        <td>تاریخ ثبت خودکار</td>
+        <td>${displayDate}</td>
+        <td>${shiftName}</td>
         <td>
             <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">حذف</button>
-            <input type="hidden" name="regular_leaves[]" value="${userSelect.value}">
+            <input type="hidden" name="regular_leaves[]" value="${userSelect.value},${storedDate},${shiftSelect.value}">
         </td>
     `;
     tbody.appendChild(tr);
 
     userSelect.value = '';
+    dateInput.value = '';
+    shiftSelect.value = '';
     $(userSelect).trigger('change');
 }
 
 
 function addAbsence() {
     const userSelect = document.querySelector('[name="absence_user"]');
+    const dateInput = document.querySelector('[name="absence_date"]');
+    const shiftSelect = document.querySelector('[name="absence_shift"]');
+    const descriptionInput = document.querySelector('[name="absence_description"]');
 
-    if (!userSelect) {
+    if (!userSelect || !dateInput || !shiftSelect || !descriptionInput) {
         console.error("Required elements not found");
         return;
     }
 
-    if (!userSelect.value) {
+    if (!userSelect.value || !dateInput.value || !shiftSelect.value || !descriptionInput.value.trim()) {
         showError('لطفا تمامی فیلدها را پر کنید');
         return;
     }
@@ -131,33 +237,46 @@ function addAbsence() {
     }
 
     const userName = userSelect.options[userSelect.selectedIndex].text;
+    const shiftName = shiftSelect.options[shiftSelect.selectedIndex].text;
+    const displayDate = dateInput.value;
+    const storedDate = dateInput.value; // استفاده از همان تاریخ شمسی
+
+    console.log('تاریخ انتخاب شده:', {
+        displayDate: displayDate,
+        storedDate: storedDate
+    });
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
         <td>${userName}</td>
-        <td>تاریخ ثبت خودکار</td>
-         <td>
-            <label class="form-label">توضیحات</label>
-             <input type="text" class="form-control" name="absence_description[]" required>
-        </td>
+        <td>${displayDate}</td>
+        <td>${shiftName}</td>
+        <td>${descriptionInput.value}</td>
         <td>
             <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">حذف</button>
-            <input type="hidden" name="absences[]" value="${userSelect.value}">
+            <input type="hidden" name="absences[]" value="${userSelect.value},${storedDate},${shiftSelect.value},${descriptionInput.value}">
         </td>
     `;
     tbody.appendChild(tr);
 
     userSelect.value = '';
+    dateInput.value = '';
+    shiftSelect.value = '';
+    descriptionInput.value = '';
     $(userSelect).trigger('change');
 }
 function addSickLeave() {
     const userSelect = document.querySelector('[name="sick_leave_user"]');
+    const dateInput = document.querySelector('[name="sick_leave_date"]');
+    const shiftSelect = document.querySelector('[name="sick_leave_shift"]');
+    const descriptionInput = document.querySelector('[name="sick_leave_description"]');
 
-    if (!userSelect) {
+    if (!userSelect || !dateInput || !shiftSelect || !descriptionInput) {
         console.error("Required elements not found");
         return;
     }
 
-    if (!userSelect.value) {
+    if (!userSelect.value || !dateInput.value || !shiftSelect.value || !descriptionInput.value.trim()) {
         showError('لطفا تمامی فیلدها را پر کنید');
         return;
     }
@@ -169,38 +288,49 @@ function addSickLeave() {
     }
 
     const userName = userSelect.options[userSelect.selectedIndex].text;
+    const shiftName = shiftSelect.options[shiftSelect.selectedIndex].text;
+    const displayDate = dateInput.value;
+    const storedDate = dateInput.value; // استفاده از همان تاریخ شمسی
+
+    console.log('تاریخ انتخاب شده:', {
+        displayDate: displayDate,
+        storedDate: storedDate
+    });
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
-            <td>${userName}</td>
-            <td>تاریخ ثبت خودکار</td>
-            <td>
-                <label class="form-label">توضیحات</label>
-                <input type="text" class="form-control" name="sick_leave_description[]" required>
-            </td>
-             <td>
-                <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">حذف</button>
-                <input type="hidden" name="sick_leaves[]" value="${userSelect.value}">
-             </td>
-        `;
+        <td>${userName}</td>
+        <td>${displayDate}</td>
+        <td>${shiftName}</td>
+        <td>${descriptionInput.value}</td>
+        <td>
+            <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">حذف</button>
+            <input type="hidden" name="sick_leaves[]" value="${userSelect.value},${storedDate},${shiftSelect.value},${descriptionInput.value}">
+        </td>
+    `;
     tbody.appendChild(tr);
 
     userSelect.value = '';
+    dateInput.value = '';
+    shiftSelect.value = '';
+    descriptionInput.value = '';
     $(userSelect).trigger('change');
 }
 
 
 function addHourlyLeave() {
     const userSelect = document.querySelector('[name="hourly_leave_user"]');
+    const dateInput = document.querySelector('[name="hourly_leave_date"]');
+    const shiftSelect = document.querySelector('[name="hourly_leave_shift"]');
     const startTime = document.querySelector('[name="start_time"]');
     const endTime = document.querySelector('[name="end_time"]');
 
-    if (!userSelect || !startTime || !endTime) {
+    if (!userSelect || !dateInput || !shiftSelect || !startTime || !endTime) {
         console.error("Required elements not found");
         return;
     }
 
-    if (!userSelect.value || !startTime.value || !endTime.value) {
+    if (!userSelect.value || !dateInput.value || !shiftSelect.value || !startTime.value || !endTime.value) {
         showError('لطفا تمامی فیلدها را پر کنید');
         return;
     }
@@ -212,21 +342,32 @@ function addHourlyLeave() {
     }
 
     const userName = userSelect.options[userSelect.selectedIndex].text;
+    const shiftName = shiftSelect.options[shiftSelect.selectedIndex].text;
+    const displayDate = dateInput.value;
+    const storedDate = dateInput.value; // استفاده از همان تاریخ شمسی
+
+    console.log('تاریخ انتخاب شده:', {
+        displayDate: displayDate,
+        storedDate: storedDate
+    });
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
         <td>${userName}</td>
-        <td>تاریخ ثبت خودکار</td>
+        <td>${displayDate}</td>
+        <td>${shiftName}</td>
         <td>${startTime.value}</td>
         <td>${endTime.value}</td>
         <td>
             <button type="button" class="btn btn-sm btn-danger" onclick="this.closest('tr').remove()">حذف</button>
-            <input type="hidden" name="hourly_leaves[]" value="${userSelect.value},${startTime.value},${endTime.value}">
+            <input type="hidden" name="hourly_leaves[]" value="${userSelect.value},${storedDate},${shiftSelect.value},${startTime.value},${endTime.value}">
         </td>
     `;
     tbody.appendChild(tr);
 
     userSelect.value = '';
+    dateInput.value = '';
+    shiftSelect.value = '';
     startTime.value = '';
     endTime.value = '';
     $(userSelect).trigger('change');
@@ -291,8 +432,8 @@ function validateAllSteps() {
     // بررسی جداول مرخصی عادی، غیبت، استعلاجی و ساعتی
     const tables = {
         'regular_leave_table': {required: false},
-        'absence_table': {required: false, description: true},
-        'sick_leave_table': {required: false, description: true},
+        'absence_table': {required: false},
+        'sick_leave_table': {required: false},
         'hourly_leave_table': {required: false}
     };
 
@@ -304,16 +445,6 @@ function validateAllSteps() {
         if (rows.length === 0 && options.required) {
             showError(`جدول ${tableId} نباید خالی باشد.`);
             return false;
-        }
-
-        for (let i = 0; i < rows.length; i++) {
-            if (options.description) {
-                const descriptionInput = rows[i].querySelector('input[name*="description"]');
-                if (!descriptionInput || !descriptionInput.value.trim()) {
-                    showError(`توضیحات در ردیف ${i + 1} جدول ${tableId} نمی‌تواند خالی باشد.`);
-                    return false;
-                }
-            }
         }
     }
 
@@ -352,13 +483,11 @@ function submitLeaveReport(form) {
         },
         'absence': {
             selector: '[name="absences[]"]',
-            type: 'absence',
-            descriptionSelector: '[name="absence_description[]"]'
+            type: 'absence'
         },
         'sick_leave': {
             selector: '[name="sick_leaves[]"]',
-            type: 'sick_leave',
-            descriptionSelector: '[name="sick_leave_description[]"]'
+            type: 'sick_leave'
         },
         'hourly': {
             selector: '[name="hourly_leaves[]"]',
@@ -369,29 +498,23 @@ function submitLeaveReport(form) {
     // جمع‌آوری داده‌ها از هر جدول
     for (const [key, table] of Object.entries(tables)) {
         const elements = document.querySelectorAll(table.selector);
-        elements.forEach((input, index) => {
+        elements.forEach((input) => {
             const values = input.value.split(',');
             const leaveData = {
                 user: values[0],
                 leave_type: table.type,
+                shift_date: values[1],
+                shift_type: values[2]
             };
 
             if (table.type === 'hourly') {
-                leaveData.start_time = values[1];
-                leaveData.end_time = values[2];
-            }
-            if (table.descriptionSelector) {
-                const descriptionInputs = document.querySelectorAll(table.descriptionSelector);
-                if (descriptionInputs[index] && descriptionInputs[index].value) {
-                    leaveData.description = descriptionInputs[index].value;
-                } else {
-                    showError('لطفا توضیحات مربوط به مرخصی غیبت یا استعلاجی را وارد کنید');
-                    return;
-                }
+                leaveData.start_time = values[3];
+                leaveData.end_time = values[4];
+            } else if (table.type === 'absence' || table.type === 'sick_leave') {
+                leaveData.description = values[3];
             }
 
             leaves.push(leaveData);
-
         });
     }
 
@@ -400,8 +523,6 @@ function submitLeaveReport(form) {
         showError('لطفا حداقل یک مورد را ثبت کنید');
         return;
     }
-
-    console.log('All leaves to be submitted:', leaves); // برای دیباگ
 
     // تبدیل به فرمت مورد نیاز برای ارسال
     leaves.forEach((leave, index) => {
@@ -419,11 +540,6 @@ function submitLeaveReport(form) {
         submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> در حال ارسال...';
     }
 
-    // نمایش داده‌های ارسالی در کنسول برای دیباگ
-    for (let [key, value] of formData.entries()) {
-        console.log(`${key}: ${value}`);
-    }
-
     $.ajax({
         url: form.action || window.location.href,
         type: 'POST',
@@ -432,15 +548,13 @@ function submitLeaveReport(form) {
         contentType: false,
         headers: {'X-CSRFToken': csrftoken},
         success: function (response) {
-            console.log('Response:', response); // برای دیباگ
             if (response.success) {
                 handleSubmitResponse(response);
             } else {
-                handleSubmitError(response.details || response.error || 'خطا در ثبت اطلاعات');
+                handleSubmitError(response.errors || response.error || 'خطا در ثبت اطلاعات');
             }
         },
         error: function (xhr, status, error) {
-            console.error('Error:', error); // برای دیباگ
             handleSubmitError('خطا در ارسال اطلاعات. لطفا دوباره تلاش کنید.');
         },
         complete: function () {
@@ -457,14 +571,14 @@ function handleSubmitResponse(response) {
     if (response.success) {
         Swal.fire({
             title: 'موفقیت',
-            text: 'اطلاعات با موفقیت ثبت شد',
+            text: response.message || 'اطلاعات با موفقیت ثبت شد',
             icon: 'success',
             confirmButtonText: 'باشه'
         }).then(() => {
             window.location.href = '/leave_reports/shift_report_list/';
         });
     } else {
-        handleSubmitError(response.details || response.error || 'خطا در ثبت اطلاعات');
+        handleSubmitError(response.errors || response.error || 'خطا در ثبت اطلاعات');
     }
 }
 
