@@ -12,6 +12,7 @@ from .models import UserActivity
 from permissions.utils import get_all_views_with_labels
 from permissions.models import UserPermission, PartPermission, SectionPermission, PositionPermission, UnitGroupPermission
 from accounts.models import UnitGroup
+from django.contrib import messages
 
 name = 'dashboard'
 
@@ -213,17 +214,17 @@ from .models import Notification
 
 @login_required
 def mark_notification_and_redirect(request, notification_id):
-    # دریافت نوتیفیکیشن مربوطه
-    notification = get_object_or_404(Notification, id=notification_id, user=request.user)
-
-    # علامت زدن به عنوان خوانده‌شده
-    if not notification.is_read:
+    try:
+        notification = Notification.objects.get(id=notification_id, user=request.user)
         notification.is_read = True
         notification.read_at = timezone.now()
         notification.save()
-
-    # هدایت به URL مقصد نوتیفیکیشن
-    return redirect(notification.url if notification.url else 'dashboard')
+        
+        # اگر URL نوتیفیکیشن خالی باشد، به لیست جلسات هدایت می‌کنیم
+        return redirect(notification.url if notification.url else 'meetings:meeting_list')
+    except Notification.DoesNotExist:
+        messages.error(request, 'نوتیفیکیشن مورد نظر یافت نشد.')
+        return redirect('meetings:meeting_list')
 
 
 

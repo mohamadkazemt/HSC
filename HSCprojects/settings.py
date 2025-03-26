@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'django_jalali',
 
     'permissions.apps.PermissionsConfig',
+    'meetings.apps.MeetingsConfig',
 
     "dashboard.apps.DashboardConfig",
     "accounts.apps.AccountsConfig",
@@ -69,7 +70,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'hse_incidents.apps.HseIncidentsConfig',
     'machine_checklist.apps.MachineChecklistConfig',
-    'fire_reports.apps.FireReportsConfig'
+    'fire_reports.apps.FireReportsConfig',
+    'django_celery_results',
 
 ]
 
@@ -134,6 +136,11 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        'OPTIONS': {
+            'timeout': 30,  # افزایش زمان timeout برای عملیات‌های طولانی
+            'check_same_thread': False,  # اجازه دسترسی همزمان به پایگاه داده
+            'isolation_level': None,  # غیرفعال کردن isolation level برای جلوگیری از قفل شدن
+        }
     }
 }
 
@@ -262,3 +269,36 @@ CORS_ALLOW_HEADERS = [
 
 # اگر نیاز دارید که مرورگر کوکی‌ها را ارسال کند (مثلاً برای احراز هویت):
 CORS_ALLOW_CREDENTIALS = True
+
+# Celery Configuration
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_CACHE_BACKEND = 'default'
+CELERY_TIMEZONE = 'Asia/Tehran'
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60
+
+# Email Configuration
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'your-email@gmail.com'
+EMAIL_HOST_PASSWORD = 'your-app-password'
+DEFAULT_FROM_EMAIL = 'your-email@gmail.com'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'meetings.views': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+    },
+} 

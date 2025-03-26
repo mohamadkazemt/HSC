@@ -1,13 +1,20 @@
 from django import forms
 from .models import ShiftReport
+import jdatetime
 
 class ShiftReportForm(forms.ModelForm):
+    shift_date = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label='تاریخ'
+    )
+    
     class Meta:
         model = ShiftReport
-        fields = ['leave_type', 'user', 'shift_date', 'leave_hours', 'start_time', 'end_time', 'status', 'description']
+        fields = ['leave_type', 'user', 'shift_date', 'shift_type', 'leave_hours', 'start_time', 'end_time', 'status', 'description']
         widgets = {
             'start_time': forms.TimeInput(attrs={'type': 'time'}),  # ویجت ساعت شروع
             'end_time': forms.TimeInput(attrs={'type': 'time'}),  # ویجت ساعت پایان
+            'shift_date': forms.DateInput(attrs={'type': 'date'}),
         }
 
     def clean(self):
@@ -16,6 +23,11 @@ class ShiftReportForm(forms.ModelForm):
         start_time = cleaned_data.get('start_time')  # دریافت ساعت شروع
         end_time = cleaned_data.get('end_time')  # دریافت ساعت پایان
         description = cleaned_data.get('description')  # دریافت توضیحات
+        shift_date = cleaned_data.get('shift_date')
+        shift_type = cleaned_data.get('shift_type')
+
+        # حذف اعتبارسنجی اجباری برای تاریخ و شیفت
+        # چون این مقادیر از طریق JavaScript تنظیم می‌شوند
 
         # اعتبارسنجی برای مرخصی ساعتی
         if leave_type == 'hourly' and (not start_time or not end_time):

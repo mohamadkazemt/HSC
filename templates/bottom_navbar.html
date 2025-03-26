@@ -127,7 +127,6 @@
                         </div>
                         <div class="notification-content flex-grow-1">
                             <div class="d-flex flex-stack mb-1">
-                                <span class="notification-title text-gray-800">{{ notification.title }}</span>
                                 <span class="text-muted fs-7">{{ notification.created_at|timesince }} پیش</span>
                             </div>
                             <form method="get" action="{% url 'dashboard:mark_notification_and_redirect' notification.id %}" class="notification-action">
@@ -154,7 +153,6 @@
                         </div>
                         <div class="notification-content flex-grow-1">
                             <div class="d-flex flex-stack mb-1">
-                                <span class="notification-title text-gray-600">{{ notification.title }}</span>
                                 <span class="text-muted fs-7">{{ notification.created_at|timesince }} پیش</span>
                             </div>
                             <a href="{{ notification.url }}" class="text-gray-600 text-hover-primary">{{ notification.message }}</a>
@@ -167,7 +165,7 @@
             {% else %}
                 <div class="text-center py-10">
                     <i class="ki-outline ki-notification-bing fs-3x text-gray-300 mb-5"></i>
-                    <div class="text-muted">اعلان خوانده‌شده‌ای وجود ندارد</div>
+                    <div class="text-muted">اعلان خوانده شده‌ای وجود ندارد</div>
                 </div>
             {% endif %}
         </div>
