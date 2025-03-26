@@ -46,9 +46,28 @@ URLS_WITH_LABELS = [
         "name": "vehicle_reports",
         "label": "پیمانکاران-گزارش‌های کارکرد خودرو",
     },
+    {
+        "path": "vehicle/<int:pk>/",
+        "view": views.vehicle_detail,
+        "name": "vehicle_detail",
+        "label": "پیمانکاران-جزئیات خودرو",
+    },
+    {
+        "path": "export-reports/",
+        "view": views.export_reports_to_excel,
+        "name": "export_reports",
+        "label": "پیمانکاران-خروجی اکسل گزارش‌ها",
+    },
+    {
+        "path": "export-vehicle-reports/<int:vehicle_id>/",
+        "view": views.export_reports_to_excel,
+        "name": "export_vehicle_reports",
+        "label": "پیمانکاران-خروجی اکسل گزارش‌های خودرو",
+    },
 ]
 
 
 urlpatterns = [
     path(url["path"], url["view"], name=url["name"]) for url in URLS_WITH_LABELS
 ]
+

@@ -1,7 +1,7 @@
 # views.py
 from django.contrib import messages
 from django.shortcuts import render, redirect
-from django.http import HttpResponseForbidden, JsonResponse
+from django.http import HttpResponseForbidden, JsonResponse, HttpResponse
 from permissions.utils import permission_required
 from .forms import ReportForm, ReportFilterForm
 from django.contrib.auth.decorators import login_required
@@ -17,6 +17,8 @@ from dashboard.utils import log_user_activity  # اضافه کردن ایمپو�
 from django.urls import reverse  # برای ساخت URL
 import json
 import jdatetime
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Side, Border
 
 @permission_required("create_report")
 @login_required
@@ -734,16 +736,24 @@ def apply_date_filters(reports_query, start_date, end_date):
     """اعمال فیلترهای تاریخ به کوئری"""
     if start_date:
         try:
-            start_date_obj = jdatetime.datetime.strptime(start_date, '%Y/%m/%d').togregorian()
-            reports_query = reports_query.filter(report_datetime__date__gte=start_date_obj.date())
-        except ValueError:
+            # تبدیل تاریخ شمسی به میلادی
+            start_date_obj = jdatetime.datetime.strptime(start_date, '%Y-%m-%d').togregorian()
+            # تنظیم ساعت روی ابتدای روز با در نظر گرفتن timezone
+            start_date_obj = timezone.make_aware(start_date_obj.replace(hour=0, minute=0, second=0, microsecond=0))
+            reports_query = reports_query.filter(report_datetime__gte=start_date_obj)
+        except ValueError as e:
+            print(f"خطا در تبدیل تاریخ شروع: {e}")
             pass
     
     if end_date:
         try:
-            end_date_obj = jdatetime.datetime.strptime(end_date, '%Y/%m/%d').togregorian()
-            reports_query = reports_query.filter(report_datetime__date__lte=end_date_obj.date())
-        except ValueError:
+            # تبدیل تاریخ شمسی به میلادی
+            end_date_obj = jdatetime.datetime.strptime(end_date, '%Y-%m-%d').togregorian()
+            # تنظیم ساعت روی انتهای روز با در نظر گرفتن timezone
+            end_date_obj = timezone.make_aware(end_date_obj.replace(hour=23, minute=59, second=59, microsecond=999999))
+            reports_query = reports_query.filter(report_datetime__lte=end_date_obj)
+        except ValueError as e:
+            print(f"خطا در تبدیل تاریخ پایان: {e}")
             pass
     
     return reports_query
@@ -771,3 +781,187 @@ def get_vehicle_status_display(latest_report):
         status_class = 'secondary'
     
     return vehicle_status, status_class
+
+
+def export_reports_to_excel(request, vehicle_id=None):
+    """خروجی اکسل گزارش‌ها"""
+    # ایجاد یک workbook جدید
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "گزارش‌های کارکرد خودرو"
+    
+    # تنظیمات اولیه
+    ws.sheet_properties.rightToLeft = True
+    
+    # دریافت داده‌ها
+    reports_query = Report.objects.all()
+    
+    # اعمال فیلترها اگر وجود داشته باشند
+    if vehicle_id:
+        reports_query = reports_query.filter(vehicle_id=vehicle_id)
+        vehicle = Vehicle.objects.get(id=vehicle_id)
+    
+    # اعمال فیلترهای تاریخ اگر وجود داشته باشند
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    if start_date or end_date:
+        reports_query = apply_date_filters(reports_query, start_date, end_date)
+    
+    # اعمال سایر فیلترها
+    shift = request.GET.get('shift')
+    group = request.GET.get('group')
+    if shift:
+        reports_query = reports_query.filter(shift=shift)
+    if group:
+        reports_query = reports_query.filter(group=group)
+    
+    # مرتب‌سازی
+    reports_query = reports_query.order_by('-report_datetime')
+    
+    # تنظیم استایل‌ها
+    title_font = Font(name='B Nazanin', size=24, bold=True)
+    subtitle_font = Font(name='B Nazanin', size=16, bold=True)
+    info_font = Font(name='B Nazanin', size=14)
+    header_font = Font(name='B Nazanin', size=12, bold=True)
+    data_font = Font(name='B Nazanin', size=11)
+    
+    header_fill = PatternFill(start_color='D9D9D9', end_color='D9D9D9', fill_type='solid')  # خاکستری روشن
+    title_fill = PatternFill(start_color='E8E8E8', end_color='E8E8E8', fill_type='solid')   # خاکستری خیلی روشن
+    info_fill = PatternFill(start_color='F8F9FA', end_color='F8F9FA', fill_type='solid')    # نقره‌ای روشن
+    
+    center_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    
+    # تنظیم ارتفاع ردیف‌ها
+    ws.row_dimensions[1].height = 45  # عنوان اصلی
+    ws.row_dimensions[2].height = 35  # اطلاعات پیمانکار - ردیف 1
+    ws.row_dimensions[3].height = 35  # اطلاعات پیمانکار - ردیف 2
+    ws.row_dimensions[4].height = 30  # هدرها
+    
+    # اضافه کردن عنوان اصلی
+    ws.merge_cells('A1:I1')
+    title_cell = ws.cell(row=1, column=1, value='گزارش کارکرد خودرو')
+    title_cell.font = title_font
+    title_cell.fill = title_fill
+    title_cell.alignment = center_alignment
+    
+    # اضافه کردن اطلاعات پیمانکار و خودرو در دو ردیف
+    if vehicle_id:
+        # ردیف اول اطلاعات
+        ws.merge_cells('A2:I2')
+        info_cell1 = ws.cell(row=2, column=1, value=f'نام پیمانکار: {vehicle.contractor.company_name}')
+        info_cell1.font = subtitle_font
+        info_cell1.fill = info_fill
+        info_cell1.alignment = center_alignment
+        
+        # ردیف دوم اطلاعات
+        ws.merge_cells('A3:C3')
+        info_cell2_1 = ws.cell(row=3, column=1, value=f'نوع خودرو: {vehicle.vehicle_type}')
+        info_cell2_1.font = info_font
+        info_cell2_1.fill = info_fill
+        info_cell2_1.alignment = center_alignment
+        
+        ws.merge_cells('D3:F3')
+        info_cell2_2 = ws.cell(row=3, column=4, value=f'پلاک: {vehicle.license_plate}')
+        info_cell2_2.font = info_font
+        info_cell2_2.fill = info_fill
+        info_cell2_2.alignment = center_alignment
+        
+        ws.merge_cells('G3:I3')
+        info_cell2_3 = ws.cell(row=3, column=7, value=f'شماره تماس مدیر: {vehicle.contractor.manager_phone}')
+        info_cell2_3.font = info_font
+        info_cell2_3.fill = info_fill
+        info_cell2_3.alignment = center_alignment
+    
+    # تعریف هدرها
+    headers = [
+        'شماره گزارش',
+        'تاریخ و زمان ثبت',
+        'ثبت کننده',
+        'شیفت کاری',
+        'گروه کاری',
+        'وضعیت کارکرد',
+        'ساعت شروع توقف',
+        'ساعت پایان توقف',
+        'توضیحات'
+    ]
+    
+    # اضافه کردن هدرها
+    header_row = 4 if vehicle_id else 1
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=header_row, column=col, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = center_alignment
+    
+    # تنظیم عرض ستون‌ها
+    column_widths = {
+        'A': 12,  # شماره گزارش
+        'B': 22,  # تاریخ و زمان
+        'C': 20,  # ثبت کننده
+        'D': 15,  # شیفت
+        'E': 15,  # گروه
+        'F': 18,  # وضعیت
+        'G': 18,  # شروع توقف
+        'H': 18,  # پایان توقف
+        'I': 45,  # توضیحات
+    }
+    
+    for col, width in column_widths.items():
+        ws.column_dimensions[col].width = width
+    
+    # اضافه کردن داده‌ها
+    data_start_row = header_row + 1
+    for row, report in enumerate(reports_query, data_start_row):
+        ws.row_dimensions[row].height = 25  # تنظیم ارتفاع ردیف‌های داده
+        
+        ws.cell(row=row, column=1, value=report.id)
+        ws.cell(row=row, column=2, value=report.report_datetime.strftime('%Y/%m/%d %H:%M:%S'))
+        ws.cell(row=row, column=3, value=report.user.get_full_name())
+        ws.cell(row=row, column=4, value=report.shift)
+        ws.cell(row=row, column=5, value=report.group)
+        ws.cell(row=row, column=6, value=dict(Report.STATUS_CHOICES)[report.status])
+        ws.cell(row=row, column=7, value=report.stop_start_time if report.stop_start_time else '')
+        ws.cell(row=row, column=8, value=report.stop_end_time if report.stop_end_time else '')
+        ws.cell(row=row, column=9, value=report.description if report.description else '')
+        
+        # اعمال استایل به سلول‌ها
+        for col in range(1, 10):
+            cell = ws.cell(row=row, column=col)
+            cell.font = data_font
+            cell.alignment = center_alignment
+            
+            # اضافه کردن border به همه سلول‌ها
+            thin_border = Side(border_style="thin", color="000000")
+            cell.border = Border(top=thin_border, left=thin_border, right=thin_border, bottom=thin_border)
+    
+    # اضافه کردن border به هدرها و اطلاعات بالای صفحه
+    for row in range(1, data_start_row):
+        for col in range(1, 10):
+            cell = ws.cell(row=row, column=col)
+            thin_border = Side(border_style="thin", color="000000")
+            cell.border = Border(top=thin_border, left=thin_border, right=thin_border, bottom=thin_border)
+    
+    # تنظیم نام فایل
+    filename = f"reports_{timezone.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    if vehicle_id:
+        filename = f"reports_{vehicle.license_plate}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    
+    # ایجاد پاسخ HTTP
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    # ذخیره فایل
+    wb.save(response)
+    
+    # ثبت فعالیت خروجی اکسل
+    log_user_activity(
+        user=request.user,
+        activity_type='export',
+        description=f'دریافت خروجی اکسل گزارش‌ها',
+        related_model='Report',
+        related_object_id=None,
+        url=request.get_full_path(),
+        request=request
+    )
+    
+    return response

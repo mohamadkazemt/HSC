@@ -48,7 +48,18 @@
                         {% include 'toolbar.html' %}
                         <div id="kt_app_content" class="app-content flex-column-fluid">
                             <div id="kt_app_content_container" class="app-container container-fluid">
-                                <div class="card mb-5">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <div class="card-title">
+                                            <h3 class="fw-bold">گزارش‌های کارکرد خودرو {{ vehicle.license_plate }}</h3>
+                                        </div>
+                                        <div class="card-toolbar">
+                                            
+                                            <a href="{% url 'contractor_management:export_vehicle_reports' vehicle.id %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-sm btn-light-success">
+                                                <i class="fas fa-file-excel me-2"></i>دریافت اکسل
+                                            </a>
+                                        </div>
+                                    </div>
                                     <div class="card-body">
                                         <div class="d-flex align-items-center mb-5">
                                             <div class="symbol symbol-60px me-5">
