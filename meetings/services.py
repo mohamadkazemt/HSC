@@ -1,95 +1,132 @@
+# meetings/services.py
+import logging
+from django.db import transaction
 from django.contrib.auth.models import User, Group
 from django.utils import timezone
-from django.db.models import Q
 from datetime import timedelta, time
 from .models import Meeting
-from dashboard.models import Notification
-from django.db import transaction
-from .sms_utils import send_meeting_created_sms
-import logging
-import jdatetime
-from .tasks import send_sms_reminder, send_notifications_async, send_meeting_created_sms_async # اضافه کردن تسک پیامک ایجاد
+from dashboard.models import Notification # اطمینان از وارد کردن Notification
 
 logger = logging.getLogger(__name__)
 
 class MeetingService:
+
+    # --- متد get_transport_coordinators را هم اضافه می کنیم اگر لازم است ---
+    # (اگر فقط در tasks.py استفاده می شود، نیازی نیست اینجا باشد)
     @staticmethod
-    @transaction.atomic
-    def create_meeting(title, date, start_time, end_time, creator, participants, manual_numbers, notify_transport_coordinator, location=None, description=None): # اضافه کردن location و description
+    def get_transport_coordinators():
+        """لیست کاربران گروه transport_coordinator را برمی‌گرداند."""
+        try:
+            coordinator_group = Group.objects.get(name='transport_coordinator')
+            coordinators = coordinator_group.user_set.all()
+            logger.info(f"Found {coordinators.count()} transport coordinators via MeetingService.")
+            return coordinators
+        except Group.DoesNotExist:
+            logger.warning("Group 'transport_coordinator' not found via MeetingService.")
+            return User.objects.none()
+        except Exception as e:
+            logger.error(f"Error fetching transport coordinators via MeetingService: {e}", exc_info=True)
+            return User.objects.none()
+
+
+    # --- متد ارسال نوتیفیکیشن دیتابیس ---
+    @staticmethod
+    # @transaction.atomic # نیازی نیست چون در create_meeting داخل تراکنش صدا زده می شود
+    def send_notifications_to_all_users(meeting):
+        """فقط آبجکت‌های Notification را در دیتابیس برای همه کاربران ایجاد می‌کند."""
+        all_users = User.objects.all()
+        notifications_to_create = []
+        for user in all_users:
+            notifications_to_create.append(
+                Notification(
+                    user=user,
+                    message=f'جلسه جدید: {meeting.title}',
+                    url=f'/meetings/{meeting.pk}/', # استفاده از pk
+                    meeting=meeting
+                )
+            )
+        if notifications_to_create:
+             # چون این متد ممکن است خارج از تراکنش هم صدا زده شود، بهتر است bulk_create را اینجا انجام دهیم
+             Notification.objects.bulk_create(notifications_to_create)
+             logger.info(f"Created {len(notifications_to_create)} Notification objects in DB via send_notifications_to_all_users for meeting {meeting.pk}")
+        else:
+             logger.info(f"No users found to create notifications for meeting {meeting.pk}")
+
+        # --- اطمینان از عدم فراخوانی تسک ایمیل ---
+        # from .tasks import send_notification
+        # for user in all_users:
+        #     if user.email:
+        #         send_notification.delay(user.id, meeting.id)
+
+
+    # --- متد create_meeting (با تغییرات قبلی on_commit) ---
+    @staticmethod
+    def create_meeting(title, date, start_time, end_time, creator, participants, manual_numbers, notify_transport_coordinator, location=None, description=None):
         logger.info("Starting create_meeting...")
+        meeting_instance = None # برای دسترسی به pk در لاگ خطا
         try:
             if not creator.has_perm('meetings.add_meeting'):
                 logger.warning(f"User {creator.username} does not have permission to create meetings.")
                 raise PermissionError("شما مجاز به ایجاد جلسه نیستید")
 
-            meeting = Meeting.objects.create(
-                title=title,
-                date=date,
-                start_time=start_time,
-                end_time=end_time,
-                creator=creator,
-                manual_numbers=manual_numbers,
-                notify_transport_coordinator=notify_transport_coordinator,
-                location=location, # اضافه شد
-                description=description # اضافه شد
-            )
-            logger.info(f"Meeting object created in DB (pre-commit): ID {meeting.id}")
-            meeting.participants.set(participants)
-            logger.info("Participants set (pre-commit)")
+            with transaction.atomic():
+                meeting = Meeting.objects.create(
+                    title=title,
+                    date=date,
+                    start_time=start_time,
+                    end_time=end_time,
+                    creator=creator,
+                    manual_numbers=manual_numbers,
+                    notify_transport_coordinator=notify_transport_coordinator,
+                    location=location,
+                    description=description
+                )
+                meeting_instance = meeting # ذخیره نمونه برای استفاده احتمالی در لاگ خطا
+                logger.info(f"Meeting object created in DB (within transaction): ID {meeting.pk}")
+                meeting.participants.set(participants)
+                logger.info("Participants set (within transaction)")
 
-            # --- حذف ارسال پیامک مستقیم از اینجا ---
-            # for participant in participants:
-            #    if hasattr(participant, 'userprofile') and participant.userprofile.mobile:
-            #        logger.debug(f"Direct SMS to participant {participant.userprofile.mobile}") # تغییر به debug
-            #        send_meeting_created_sms(...) # حذف شود
-            # if notify_transport_coordinator:
-            #    coordinators = MeetingService.get_transport_coordinators()
-            #    for coordinator in coordinators:
-            #        if hasattr(coordinator, 'userprofile') and coordinator.userprofile.mobile:
-            #            logger.debug(f"Direct SMS to coordinator {coordinator.userprofile.mobile}") # تغییر به debug
-            #            send_meeting_created_sms(...) # حذف شود
-            # if manual_numbers:
-            #    numbers = manual_numbers.split('\n')
-            #    for number in numbers:
-            #        if number.strip():
-            #            logger.debug(f"Direct SMS to manual number {number.strip()}") # تغییر به debug
-            #            send_meeting_created_sms(...) # حذف شود
-            # logger.info("Direct SMS sending attempts completed.")
+                # ثبت تسک ارسال پیامک ایجاد برای اجرا *بعد* از کامیت
+                def task_send_creation_sms():
+                    from .tasks import send_meeting_created_sms_async
+                    send_meeting_created_sms_async.delay(meeting.pk)
+                    logger.info(f"Creation SMS task triggered via on_commit for meeting {meeting.pk}")
+                transaction.on_commit(task_send_creation_sms)
 
-            # --- فراخوانی تسک آسنکرون برای ارسال پیامک ایجاد ---
-            send_meeting_created_sms_async.delay(meeting.id)
-            logger.info(f"Called send_meeting_created_sms_async task for meeting {meeting.id}")
+                # ثبت تسک‌های یادآوری برای اجرا *بعد* از کامیت
+                try:
+                    jalali_date = jdatetime.date.fromisoformat(str(date))
+                    gregorian_date = jalali_date.togregorian()
+                    day_before = gregorian_date - timedelta(days=1)
+                    reminder_time_before = timezone.make_aware(timezone.datetime.combine(day_before, time(18, 0)))
+                    day_of_meeting = gregorian_date
+                    reminder_time_day_of = timezone.make_aware(timezone.datetime.combine(day_of_meeting, time(7, 0)))
 
-            # --- زمان‌بندی تسک‌های یادآوری (بدون تغییر) ---
-            logger.info("Attempting to schedule reminder Celery tasks.")
-            try:
-                # ... (کد زمان بندی send_sms_reminder با eta) ...
-                 # تبدیل تاریخ شمسی به میلادی
-                jalali_date = jdatetime.date.fromisoformat(str(date))
-                gregorian_date = jalali_date.togregorian()
+                    def task_schedule_reminders():
+                        from .tasks import send_sms_reminder
+                        send_sms_reminder.apply_async(args=[meeting.pk], eta=reminder_time_before)
+                        logger.info(f"Scheduled day_before reminder via on_commit for meeting {meeting.pk} at {reminder_time_before}")
+                        send_sms_reminder.apply_async(args=[meeting.pk], eta=reminder_time_day_of)
+                        logger.info(f"Scheduled day_of_meeting reminder via on_commit for meeting {meeting.pk} at {reminder_time_day_of}")
+                    transaction.on_commit(task_schedule_reminders)
+                    logger.info(f"Reminder tasks registered via on_commit for meeting {meeting.pk}")
 
-                # تنظیم زمان یادآوری روز قبل
-                day_before = gregorian_date - timedelta(days=1)
-                reminder_time_before = timezone.make_aware(timezone.datetime.combine(day_before, time(18, 0)))
-                send_sms_reminder.apply_async(args=[meeting.id], eta=reminder_time_before)
-                logger.info(f"Scheduled day_before reminder for meeting {meeting.id} at {reminder_time_before}")
+                except Exception as celery_err:
+                    logger.error(f"!!! Error preparing reminder schedule data for meeting {meeting.pk}: {celery_err}", exc_info=True)
+                    raise # Rollback transaction
 
-                # تنظیم زمان یادآوری روز جلسه
-                day_of_meeting = gregorian_date
-                reminder_time_day_of = timezone.make_aware(timezone.datetime.combine(day_of_meeting, time(7, 0)))
-                send_sms_reminder.apply_async(args=[meeting.id], eta=reminder_time_day_of)
-                logger.info(f"Scheduled day_of_meeting reminder for meeting {meeting.id} at {reminder_time_day_of}")
+                # ایجاد نوتیفیکیشن دیتابیس *داخل* تراکنش
+                MeetingService.send_notifications_to_all_users(meeting)
 
-            except Exception as celery_err:
-                logger.error(f"!!! Celery reminder scheduling failed: {celery_err}", exc_info=True)
-                raise # Rollback transaction
 
-            # --- ارسال نوتیفیکیشن دیتابیس (بدون تغییر) ---
-            MeetingService.send_notifications_to_all_users(meeting) # این متد دیگر ایمیل نمیفرستد
-
-            logger.info(f"create_meeting completed successfully for ID {meeting.id}. Committing transaction.")
+            logger.info(f"create_meeting transaction committed successfully for meeting ID {meeting.pk}.")
             return meeting
 
         except Exception as e:
-            logger.error(f"!!! Error during create_meeting execution: {e}", exc_info=True)
-            raise
+            # اگر meeting_instance ایجاد شده باشد، pk آن را لاگ می کنیم
+            meeting_pk = meeting_instance.pk if meeting_instance else "N/A"
+            logger.error(f"!!! Error during create_meeting (Meeting PK if created: {meeting_pk}): {e}", exc_info=True)
+            # اطمینان از اینکه پیام خطا به view می رسد
+            # raise # خطا را دوباره صادر کنید
+            # یا اگر می خواهید پیام عمومی تری برگردانید:
+            raise Exception(f"خطا در ایجاد جلسه: {e}") from e
