@@ -141,8 +141,7 @@ def send_sms_reminder(meeting_id):
         logger.error(f"خطا در ارسال پیامک یادآوری: {str(e)}")
         print(f"خطا در ارسال پیامک یادآوری: {str(e)}")
 
-@shared_task
-def send_notification(user_id, meeting_id):
+
     meeting = Meeting.objects.get(id=meeting_id)
     user = meeting.participants.get(id=user_id)
     
