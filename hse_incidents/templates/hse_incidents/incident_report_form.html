@@ -4,8 +4,7 @@
 {% load form_filters %}
 
 {% block style %}
-    <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.css">
-    <style>
+    <link type="text/css" rel="stylesheet" href="{% static 'assets/css/persianDatepicker-default.css' %}" /><style>
         /* محل قرارگیری پیام ها */
         .alert-messages {
             position: fixed;
@@ -279,8 +278,7 @@
 {% endblock %}
 
 {% block extra_js %}
-    <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
-    <script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+    <script type="text/javascript" src="{% static 'assets/js/persianDatepicker.min.js' %}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const alerts = document.querySelectorAll('.alert.fade.show');

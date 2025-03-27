@@ -429,6 +429,36 @@
                             </div>
                         {% endif %}
 
+                        {% if request.user|has_permission:"meeting_list" or request.user|has_permission:"meeting_create" %}
+                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
+                                <span class="menu-link">
+                                    <span class="menu-icon">
+                                        <i class="ki-outline ki-calendar-tick text-primary fs-2"></i>
+                                    </span>
+                                    <span class="menu-title">جلسات</span>
+                                    <span class="menu-arrow"></span>
+                                </span>
+                                <div class="menu-sub menu-sub-accordion">
+                                    {% if request.user|has_permission:"meeting_list" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'meetings:meeting_list' %}">
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                                <span class="menu-title">لیست جلسات</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                    {% if request.user|has_permission:"meeting_create" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'meetings:meeting_create' %}">
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                                <span class="menu-title">افزودن جلسه جدید</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+
                     </div>
                 </div>
             </div>
