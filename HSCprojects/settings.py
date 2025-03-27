@@ -42,37 +42,39 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django_jalali',
+    'django.contrib.humanize', 
 
+    # Third-party apps
+    'corsheaders',
+    'crispy_forms',
+    'crispy_bootstrap5',
+    'django_jalali',
+    'jalali_date', # شما هم django_jalali و هم jalali_date را دارید؟ معمولا یکی کافیست.
+    'django_select2',
+    'import_export',
+    'formtools',
+    'rest_framework',
+
+    # Celery related apps
+    'django_celery_results',   # برای ذخیره نتایج تسک‌ها (فقط یک بار)
+    'django_celery_beat',    # <<<--- برای زمان‌بندی تسک‌ها (اضافه شد)
+
+    # Your project apps (use Config class where defined)
     'permissions.apps.PermissionsConfig',
     'meetings.apps.MeetingsConfig',
-
     "dashboard.apps.DashboardConfig",
     "accounts.apps.AccountsConfig",
     "anomalis.apps.AnomalisConfig",
-    'django.contrib.humanize',
-    'corsheaders',
-
-    "django_select2",
     'analytics.apps.AnalyticsConfig',
-    'crispy_forms',
-    'crispy_bootstrap5',
     'shift_manager.apps.ShiftManagerConfig',
-    
-    'jalali_date',
-    'import_export',
     'BaseInfo.apps.BaseinfoConfig',
     'OperationsShiftReports.apps.OperationsshiftreportsConfig',
-    'formtools',
     'dailyreport_hse.apps.DailyreportHseConfig',
     'leave_reports.apps.LeaveReportsConfig',
     'contractor_management.apps.ContractorManagementConfig',
-    'rest_framework',
     'hse_incidents.apps.HseIncidentsConfig',
     'machine_checklist.apps.MachineChecklistConfig',
     'fire_reports.apps.FireReportsConfig',
-    'django_celery_results',
-
 ]
 
 MIDDLEWARE = [
