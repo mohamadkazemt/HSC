@@ -28,9 +28,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-ygf6#b*bj-ko2fimc)sg=u2vo6c)5a1#c5#zr=@#8&o7nd*tpt'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['127.0.0.1','mtorkzadeh.ir','miepcoj.ir', 'localhost']
 
 
 # Application definition
@@ -122,6 +122,7 @@ WSGI_APPLICATION = 'HSCprojects.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+
 #DATABASES = {
 #'default': {
 #    'ENGINE': 'django.db.backends.postgresql',
@@ -132,17 +133,18 @@ WSGI_APPLICATION = 'HSCprojects.wsgi.application'
 #         'PORT': '5432',
 #      }
 #   }
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-        'OPTIONS': {
-            'timeout': 30,  # افزایش زمان timeout برای عملیات‌های طولانی
-            'check_same_thread': False,  # اجازه دسترسی همزمان به پایگاه داده
-            'isolation_level': None,  # غیرفعال کردن isolation level برای جلوگیری از قفل شدن
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'hsc_db',
+            'USER': 'hsc_user',
+            'PASSWORD': 'Znmk@0900',
+            'HOST': 'localhost',
+            'PORT': '5432',
         }
     }
-}
+
 
 
 

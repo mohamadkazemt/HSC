@@ -13,3 +13,6 @@ debug.log
 *.log.*.*.*.*
 *.log.*.*.*.*.*
 /myenv/
+staticfiles/
+venv/
+

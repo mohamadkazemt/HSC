@@ -41,6 +41,7 @@ def create_shift_report(request):
     current_user = request.user.userprofile
     personnel_list = UserProfile.objects.select_related('user').filter(
         section=current_user.section,
+
     )
 
     # ثبت فعالیت مشاهده فرم ثبت مرخصی
