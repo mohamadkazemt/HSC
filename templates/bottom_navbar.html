@@ -101,6 +101,13 @@
                 <span>گزارش آتش‌نشانی</span>
             </a>
         {% endif %}
+
+        {% if request.user|has_permission:"meeting_create" %}
+            <a href="{% url 'meetings:meeting_create' %}" class="forms-menu-item">
+                <i class="ki-outline ki-calendar-tick fs-2 text-primary"></i>
+                <span>افزودن جلسه</span>
+            </a>
+        {% endif %}
     </div>
 </div>
 
@@ -373,6 +380,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
         {% endif %}
+        {% if request.user|has_permission:"meeting_list" %}
+            <div class="menu-item mb-3">
+                <div class="menu-title text-gray-800 fw-bold mb-2">جلسات</div>
+                <div class="menu-sub-items">
+                    <a href="{% url 'meetings:meeting_list' %}" class="menu-sub-item d-flex align-items-center px-3 py-2 rounded-3">
+                        <i class="ki-outline ki-calendar-tick text-primary fs-5 me-2"></i>
+                        <span class="text-gray-700">لیست جلسات</span>
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+
     </div>
 </div>
 

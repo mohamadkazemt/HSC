@@ -23,7 +23,7 @@
         font-family: Vazir, Tahoma, Arial;
     }
 </style>
-<link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.css">
+<link type="text/css" rel="stylesheet" href="{% static 'assets/css/persianDatepicker-default.css' %}" />
 {% endblock style %}
 
 {% block content %}
@@ -264,40 +264,11 @@
 <!--end::Drawers-->
 
 {% block extra_js %}
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
-<script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
-<script>
-    $(document).ready(function() {
-        // فعال‌سازی tooltips
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
+<script type="text/javascript" src="{% static 'assets/js/persianDatepicker.min.js' %}"></script>  
+    <script>
+        $(".persian-date-picker").persianDatepicker({
+            formatDate: "YYYY/0M/0D",
         });
-
-        // تنظیمات تقویم شمسی
-        $('.persian-date-picker').persianDatepicker({
-            format: 'YYYY/MM/DD',
-            initialValueType: 'persian',
-            autoClose: true,
-            persianDigit: false,
-            onSelect: function(unix) {
-                console.log("تاریخ انتخاب شده:", unix);
-                var date = new persianDate(unix);
-                var year = date.year();
-                var month = String(date.month() + 1).padStart(2, '0');
-                var day = String(date.date()).padStart(2, '0');
-                var formattedDate = year + '/' + month + '/' + day;
-                console.log("تاریخ فرمت شده:", formattedDate);
-                $(this).val(formattedDate);
-            }
-        });
-
-        // اضافه کردن event listener برای کلیک
-        $('.persian-date-picker').on('click', function() {
-            $(this).persianDatepicker('show');
-        });
-    });
-</script>
+    </script>
 {% endblock extra_js %}
 {% endblock content %} 

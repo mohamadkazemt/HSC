@@ -19,6 +19,9 @@ import logging
 import jdatetime
 from django.utils import timezone
 from .sms_utils import send_meeting_cancelled_sms, send_meeting_reminder_sms, send_meeting_updated_sms, send_meeting_deleted_sms, send_meeting_created_sms
+from permissions.utils import permission_required, check_permission
+from functools import wraps
+
 
 logger = logging.getLogger(__name__)
 logger.debug("Logging system is initialized in meetings/views.py")
@@ -29,6 +32,12 @@ class MeetingListView(LoginRequiredMixin, ListView):
     context_object_name = 'meetings'
     ordering = ['-date', '-start_time']
     paginate_by = 10
+
+    def dispatch(self, request, *args, **kwargs):
+        if not check_permission(request.user, "meeting_list"):
+            messages.error(request, "شما دسترسی لازم برای مشاهده لیست جلسات را ندارید.")
+            return redirect('home')
+        return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -102,6 +111,12 @@ class MeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
     template_name = 'meetings/meeting_detail.html'
     context_object_name = 'meeting'
 
+    def dispatch(self, request, *args, **kwargs):
+        if not check_permission(request.user, "meeting_detail"):
+            messages.error(request, "شما دسترسی لازم برای مشاهده جزئیات جلسه را ندارید.")
+            return redirect('meetings:meeting_list')
+        return super().dispatch(request, *args, **kwargs)
+
     def test_func(self):
         meeting = self.get_object()
         return self.request.user.is_superuser or self.request.user in meeting.participants.all()
@@ -112,9 +127,13 @@ class MeetingCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     template_name = 'meetings/meeting_form.html'
     success_url = reverse_lazy('meetings:meeting_list')
 
+    def dispatch(self, request, *args, **kwargs):
+        if not check_permission(request.user, "meeting_create"):
+            messages.error(request, "شما دسترسی لازم برای ایجاد جلسه را ندارید.")
+            return redirect('meetings:meeting_list')
+        return super().dispatch(request, *args, **kwargs)
+
     def test_func(self):
-        content_type = ContentType.objects.get_for_model(Meeting)
-        permission = Permission.objects.get(content_type=content_type, codename='add_meeting')
         return self.request.user.has_perm('meetings.add_meeting')
 
     def form_valid(self, form):
@@ -163,9 +182,13 @@ class MeetingUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     template_name = 'meetings/meeting_form.html'
     success_url = reverse_lazy('meetings:meeting_list')
 
+    def dispatch(self, request, *args, **kwargs):
+        if not check_permission(request.user, "meeting_edit"):
+            messages.error(request, "شما دسترسی لازم برای ویرایش جلسه را ندارید.")
+            return redirect('meetings:meeting_list')
+        return super().dispatch(request, *args, **kwargs)
+
     def test_func(self):
-        content_type = ContentType.objects.get_for_model(Meeting)
-        permission = Permission.objects.get(content_type=content_type, codename='change_meeting')
         return self.request.user.has_perm('meetings.change_meeting')
 
     def form_valid(self, form):
@@ -229,9 +252,13 @@ class MeetingDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     template_name = 'meetings/meeting_confirm_delete.html'
     success_url = reverse_lazy('meetings:meeting_list')
 
+    def dispatch(self, request, *args, **kwargs):
+        if not check_permission(request.user, "meeting_delete"):
+            messages.error(request, "شما دسترسی لازم برای حذف جلسه را ندارید.")
+            return redirect('meetings:meeting_list')
+        return super().dispatch(request, *args, **kwargs)
+
     def test_func(self):
-        content_type = ContentType.objects.get_for_model(Meeting)
-        permission = Permission.objects.get(content_type=content_type, codename='delete_meeting')
         return self.request.user.has_perm('meetings.delete_meeting')
 
     def delete(self, request, *args, **kwargs):
@@ -239,11 +266,7 @@ class MeetingDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         messages.success(self.request, 'جلسه با موفقیت حذف شد.')
         return response
 
-@login_required
-def meeting_list(request):
-    meetings = Meeting.objects.all().order_by('-date', '-start_time')
-    return render(request, 'meetings/meeting_list.html', {'meetings': meetings})
-
+@permission_required("meeting_report")
 @login_required
 def meeting_report(request):
     meetings = Meeting.objects.all().order_by('-date', '-start_time')
@@ -271,6 +294,7 @@ def meeting_report(request):
     
     return render(request, 'meetings/meeting_report.html', context)
 
+@permission_required("meeting_notification")
 @login_required
 def mark_notification_read(request, notification_id):
     notification = get_object_or_404(Notification, id=notification_id, user=request.user)
@@ -278,6 +302,7 @@ def mark_notification_read(request, notification_id):
     notification.save()
     return redirect('meetings:meeting_list')
 
+@permission_required("meeting_cancel")
 @login_required
 def cancel_meeting(request, pk):
     meeting = get_object_or_404(Meeting, pk=pk)
@@ -360,6 +385,7 @@ def cancel_meeting(request, pk):
         'title': 'لغو جلسه'
     })
 
+@permission_required("meeting_delete")
 @login_required
 def delete_meeting(request, pk):
     meeting = get_object_or_404(Meeting, pk=pk)
@@ -433,6 +459,7 @@ def delete_meeting(request, pk):
     
     return render(request, 'meetings/meeting_confirm_delete.html', {'meeting': meeting})
 
+@permission_required("meeting_export")
 @login_required
 def meeting_export(request):
     import openpyxl
@@ -510,6 +537,7 @@ def meeting_export(request):
     wb.save(response)
     return response
 
+@permission_required("meeting_calendar")
 @login_required
 def meeting_calendar(request):
     meetings = Meeting.objects.all().order_by('date', 'start_time')
