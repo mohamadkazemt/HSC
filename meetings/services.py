@@ -5,14 +5,14 @@ from django.contrib.auth.models import User, Group
 from django.utils import timezone
 from datetime import timedelta, time
 from .models import Meeting
-from dashboard.models import Notification # اطمینان از وارد کردن Notification
+from dashboard.models import Notification
+import jdatetime # <<<--- این خط اضافه شود
 
 logger = logging.getLogger(__name__)
 
 class MeetingService:
 
-    # --- متد get_transport_coordinators را هم اضافه می کنیم اگر لازم است ---
-    # (اگر فقط در tasks.py استفاده می شود، نیازی نیست اینجا باشد)
+    # ... (بقیه متدها: get_transport_coordinators, send_notifications_to_all_users) ...
     @staticmethod
     def get_transport_coordinators():
         """لیست کاربران گروه transport_coordinator را برمی‌گرداند."""
@@ -28,10 +28,7 @@ class MeetingService:
             logger.error(f"Error fetching transport coordinators via MeetingService: {e}", exc_info=True)
             return User.objects.none()
 
-
-    # --- متد ارسال نوتیفیکیشن دیتابیس ---
     @staticmethod
-    # @transaction.atomic # نیازی نیست چون در create_meeting داخل تراکنش صدا زده می شود
     def send_notifications_to_all_users(meeting):
         """فقط آبجکت‌های Notification را در دیتابیس برای همه کاربران ایجاد می‌کند."""
         all_users = User.objects.all()
@@ -46,24 +43,16 @@ class MeetingService:
                 )
             )
         if notifications_to_create:
-             # چون این متد ممکن است خارج از تراکنش هم صدا زده شود، بهتر است bulk_create را اینجا انجام دهیم
              Notification.objects.bulk_create(notifications_to_create)
              logger.info(f"Created {len(notifications_to_create)} Notification objects in DB via send_notifications_to_all_users for meeting {meeting.pk}")
         else:
              logger.info(f"No users found to create notifications for meeting {meeting.pk}")
 
-        # --- اطمینان از عدم فراخوانی تسک ایمیل ---
-        # from .tasks import send_notification
-        # for user in all_users:
-        #     if user.email:
-        #         send_notification.delay(user.id, meeting.id)
 
-
-    # --- متد create_meeting (با تغییرات قبلی on_commit) ---
     @staticmethod
     def create_meeting(title, date, start_time, end_time, creator, participants, manual_numbers, notify_transport_coordinator, location=None, description=None):
         logger.info("Starting create_meeting...")
-        meeting_instance = None # برای دسترسی به pk در لاگ خطا
+        meeting_instance = None
         try:
             if not creator.has_perm('meetings.add_meeting'):
                 logger.warning(f"User {creator.username} does not have permission to create meetings.")
@@ -72,7 +61,7 @@ class MeetingService:
             with transaction.atomic():
                 meeting = Meeting.objects.create(
                     title=title,
-                    date=date,
+                    date=date, # تاریخ اینجا هنوز شمسی است (شیء jDateField یا رشته)
                     start_time=start_time,
                     end_time=end_time,
                     creator=creator,
@@ -81,7 +70,7 @@ class MeetingService:
                     location=location,
                     description=description
                 )
-                meeting_instance = meeting # ذخیره نمونه برای استفاده احتمالی در لاگ خطا
+                meeting_instance = meeting
                 logger.info(f"Meeting object created in DB (within transaction): ID {meeting.pk}")
                 meeting.participants.set(participants)
                 logger.info("Participants set (within transaction)")
@@ -95,8 +84,30 @@ class MeetingService:
 
                 # ثبت تسک‌های یادآوری برای اجرا *بعد* از کامیت
                 try:
-                    jalali_date = jdatetime.date.fromisoformat(str(date))
-                    gregorian_date = jalali_date.togregorian()
+                    # تبدیل تاریخ ورودی (که شمسی است) به میلادی برای محاسبات timedelta
+                    # فرض می‌کنیم 'date' که از فرم آمده، شیء date شمسی یا رشته YYYY-MM-DD است
+                    if isinstance(date, str):
+                         # اطمینان از فرمت و تبدیل به شیء jdatetime.date
+                         try:
+                             jalali_date_obj = jdatetime.date.fromisoformat(date)
+                         except ValueError:
+                             logger.error(f"Invalid date format '{date}' received for reminder scheduling.")
+                             raise ValueError(f"فرمت تاریخ نامعتبر: {date}")
+                    elif isinstance(date, jdatetime.date):
+                         jalali_date_obj = date
+                    # --- اضافه کردن بررسی برای نوع date جنگو (اگر jDateField مستقیما شی date برگرداند) ---
+                    elif isinstance(date, datetime.date) and not isinstance(date, jdatetime.date):
+                        # اگر به نحوی تاریخ میلادی به اینجا رسیده، باید به شمسی تبدیل شود یا منطق تغییر کند
+                        # فعلا فرض میکنیم ورودی شمسی است طبق فرم
+                        logger.warning(f"Received standard python date {date}, expected jdatetime.date. Attempting conversion.")
+                        # این تبدیل ممکن است بسته به تنظیمات TIME_ZONE نیاز به دقت داشته باشد
+                        jalali_date_obj = jdatetime.date.fromgregorian(date=date)
+                    else:
+                        logger.error(f"Unexpected date type '{type(date)}' received for reminder scheduling.")
+                        raise TypeError(f"نوع تاریخ نامشخص: {type(date)}")
+
+                    gregorian_date = jalali_date_obj.togregorian() # تبدیل به میلادی
+
                     day_before = gregorian_date - timedelta(days=1)
                     reminder_time_before = timezone.make_aware(timezone.datetime.combine(day_before, time(18, 0)))
                     day_of_meeting = gregorian_date
@@ -123,10 +134,10 @@ class MeetingService:
             return meeting
 
         except Exception as e:
-            # اگر meeting_instance ایجاد شده باشد، pk آن را لاگ می کنیم
             meeting_pk = meeting_instance.pk if meeting_instance else "N/A"
             logger.error(f"!!! Error during create_meeting (Meeting PK if created: {meeting_pk}): {e}", exc_info=True)
-            # اطمینان از اینکه پیام خطا به view می رسد
-            # raise # خطا را دوباره صادر کنید
-            # یا اگر می خواهید پیام عمومی تری برگردانید:
-            raise Exception(f"خطا در ایجاد جلسه: {e}") from e
+            # raise Exception(f"خطا در ایجاد جلسه: {e}") from e # این خطا را به view برمی‌گرداند
+            # برای نمایش خطای اصلی jdatetime به کاربر:
+            raise Exception(f"خطا در ایجاد جلسه: {str(e)}") from e
+
+
