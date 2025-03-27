@@ -396,18 +396,7 @@
     $(document).ready(function() {
         // Initialize Persian Datepicker
         var datePicker = $('.persian-date-picker').persianDatepicker({
-            format: 'YYYY-MM-DD',
-            initialValueType: 'persian',
-            autoClose: true,
-            onSelect: function(unix) {
-                var date = new Date(unix);
-                var persianDate = new persianDate(date);
-                var year = persianDate.year();
-                var month = String(persianDate.month()).padStart(2, '0');
-                var day = String(persianDate.date()).padStart(2, '0');
-                var formattedDate = year + '-' + month + '-' + day;
-                $(this).val(formattedDate);
-            }
+            formatDate: "YYYY-0M-0D",
         });
 
         // اضافه کردن event listener برای کلیک
