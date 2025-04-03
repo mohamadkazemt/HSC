@@ -6,6 +6,31 @@ from django.utils.timezone import now
 from datetime import timedelta
 from django.core.files.base import ContentFile
 from io import BytesIO
+from PIL import Image
+import os
+
+def remove_background(image_file):
+    try:
+        img = Image.open(image_file)
+        # تبدیل تصویر به حالت RGBA
+        img = img.convert('RGBA')
+        
+        # پیکسل‌های سفید و نزدیک به سفید را شفاف می‌کنیم
+        data = img.getdata()
+        new_data = []
+        for item in data:
+            # اگر پیکسل نزدیک به سفید است
+            if item[0] > 240 and item[1] > 240 and item[2] > 240:
+                # آن را کاملاً شفاف می‌کنیم
+                new_data.append((255, 255, 255, 0))
+            else:
+                new_data.append(item)
+                
+        img.putdata(new_data)
+        return img
+    except Exception as e:
+        print(f"خطا در حذف پس‌زمینه: {str(e)}")
+        return None
 
 class UserProfile(models.Model):
     GROUP_CHOICES = [
@@ -35,16 +60,19 @@ class UserProfile(models.Model):
         self.save()
 
     def save(self, *args, **kwargs):
-        if self.signature:
-            # حذف پس‌زمینه تصویر امضا
-            img_no_bg = remove_background(self.signature.path)
-            if img_no_bg:
-                # ذخیره تصویر بدون پس‌زمینه
-                buffer = BytesIO()
-                img_no_bg.save(buffer, format='PNG')
-                filename = f'{self.signature.name.split(".")[0]}_no_bg.png'
-                contentfile = ContentFile(buffer.getvalue())
-                self.signature_no_bg.save(filename, contentfile, save=False)
+        if self.signature and hasattr(self.signature, 'file'):
+            try:
+                # حذف پس‌زمینه تصویر امضا
+                img_no_bg = remove_background(self.signature.file)
+                if img_no_bg:
+                    # ذخیره تصویر بدون پس‌زمینه
+                    buffer = BytesIO()
+                    img_no_bg.save(buffer, format='PNG')
+                    filename = f'{os.path.splitext(self.signature.name)[0]}_no_bg.png'
+                    contentfile = ContentFile(buffer.getvalue())
+                    self.signature.save(filename, contentfile, save=False)
+            except Exception as e:
+                print(f"خطا در پردازش تصویر: {str(e)}")
 
         super().save(*args, **kwargs)
 
