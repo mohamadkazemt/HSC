@@ -99,6 +99,40 @@ class VehicleStatusReportForm(forms.ModelForm):
             contractor__company_name__icontains='آتش نشانی'
         )
 
+        # اگر نمونه موجود است، فیلدها را بر اساس نوع خودرو تنظیم کن
+        if self.instance and self.instance.company_vehicle:
+            vehicle = self.instance.company_vehicle
+            if not vehicle.has_horn:
+                self.fields['horn_status'].widget = forms.HiddenInput()
+                self.fields['horn_description'].widget = forms.HiddenInput()
+            if not vehicle.has_hose:
+                self.fields['hose_status'].widget = forms.HiddenInput()
+                self.fields['hose_description'].widget = forms.HiddenInput()
+            if not vehicle.has_monitor:
+                self.fields['monitor_status'].widget = forms.HiddenInput()
+                self.fields['monitor_description'].widget = forms.HiddenInput()
+            if not vehicle.has_extinguisher:
+                self.fields['extinguisher_status'].widget = forms.HiddenInput()
+                self.fields['extinguisher_description'].widget = forms.HiddenInput()
+            if not vehicle.has_equipment:
+                self.fields['equipment_status'].widget = forms.HiddenInput()
+                self.fields['equipment_description'].widget = forms.HiddenInput()
+            if not vehicle.has_foam:
+                self.fields['foam_status'].widget = forms.HiddenInput()
+                self.fields['foam_description'].widget = forms.HiddenInput()
+            if not vehicle.has_water:
+                self.fields['water_status'].widget = forms.HiddenInput()
+                self.fields['water_description'].widget = forms.HiddenInput()
+            if not vehicle.has_tire:
+                self.fields['tire_status'].widget = forms.HiddenInput()
+                self.fields['tire_description'].widget = forms.HiddenInput()
+            if not vehicle.has_brake:
+                self.fields['brake_status'].widget = forms.HiddenInput()
+                self.fields['brake_description'].widget = forms.HiddenInput()
+            if not vehicle.has_lighting:
+                self.fields['lighting_status'].widget = forms.HiddenInput()
+                self.fields['lighting_description'].widget = forms.HiddenInput()
+
     class Meta:
         model = VehicleStatusReport
         fields = [

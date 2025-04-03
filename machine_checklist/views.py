@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse, HttpResponse
+from django.utils import timezone
 
 from permissions.utils import permission_required
 from .models import Checklist, Question, Answer
@@ -66,12 +67,23 @@ def submit_checklist(request):
         machine_id = request.POST.get('machine')
         try:
             machine = MiningMachine.objects.get(id=machine_id)
+
+            # بررسی اینکه آیا کاربر قبلاً در این روز چک‌لیستی ثبت کرده است یا خیر
             if request.user and request.user.is_authenticated:
-                 current_shift, current_group = get_current_shift_and_group(request.user)
-                 if hasattr(request.user, 'userprofile'):
-                     shift_group = request.user.userprofile.group
-                 else:
-                     shift_group = current_group
+                today = timezone.localdate() # استفاده از timezone.localdate() برای دریافت تاریخ محلی
+                existing_checklist = Checklist.objects.filter(
+                    user=request.user,
+                    machine=machine,
+                    date__date=today # فیلتر بر اساس تاریخ روز
+                ).first()
+                if existing_checklist:
+                    return JsonResponse({'success': False, 'error': f'شما قبلاً یک چک‌لیست برای دستگاه {machine.workshop_code} در امروز ثبت کرده‌اید.'})
+
+                current_shift, current_group = get_current_shift_and_group(request.user)
+                if hasattr(request.user, 'userprofile'):
+                    shift_group = request.user.userprofile.group
+                else:
+                    shift_group = current_group
             else:
                 current_shift, current_group = get_current_shift_and_group()
                 shift_group = current_group

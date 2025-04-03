@@ -69,6 +69,40 @@ class VehicleStatusReport(models.Model):
         if self.company_vehicle and self.contractor_vehicle:
             raise ValidationError('نمی‌توانید همزمان خودروی شرکت و پیمانکار را انتخاب کنید.')
 
+        # بررسی تجهیزات بر اساس نوع خودرو
+        if self.vehicle_source == 'company' and self.company_vehicle:
+            vehicle = self.company_vehicle
+            if not vehicle.has_horn:
+                self.horn_status = 'suitable'
+                self.horn_description = 'این تجهیز در این خودرو موجود نیست.'
+            if not vehicle.has_hose:
+                self.hose_status = 'suitable'
+                self.hose_description = 'این تجهیز در این خودرو موجود نیست.'
+            if not vehicle.has_monitor:
+                self.monitor_status = 'suitable'
+                self.monitor_description = 'این تجهیز در این خودرو موجود نیست.'
+            if not vehicle.has_extinguisher:
+                self.extinguisher_status = 'suitable'
+                self.extinguisher_description = 'این تجهیز در این خودرو موجود نیست.'
+            if not vehicle.has_equipment:
+                self.equipment_status = 'suitable'
+                self.equipment_description = 'این تجهیز در این خودرو موجود نیست.'
+            if not vehicle.has_foam:
+                self.foam_status = 'suitable'
+                self.foam_description = 'این تجهیز در این خودرو موجود نیست.'
+            if not vehicle.has_water:
+                self.water_status = 'suitable'
+                self.water_description = 'این تجهیز در این خودرو موجود نیست.'
+            if not vehicle.has_tire:
+                self.tire_status = 'suitable'
+                self.tire_description = 'این تجهیز در این خودرو موجود نیست.'
+            if not vehicle.has_brake:
+                self.brake_status = 'suitable'
+                self.brake_description = 'این تجهیز در این خودرو موجود نیست.'
+            if not vehicle.has_lighting:
+                self.lighting_status = 'suitable'
+                self.lighting_description = 'این تجهیز در این خودرو موجود نیست.'
+
     def get_vehicle(self):
         """Return the selected vehicle regardless of its source"""
         return self.company_vehicle if self.vehicle_source == 'company' else self.contractor_vehicle

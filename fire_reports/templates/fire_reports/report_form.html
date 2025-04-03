@@ -74,6 +74,9 @@
 .add-vehicle {
     margin-bottom: 20px;
 }
+.hidden-field {
+    display: none;
+}
 </style>
 {% endblock style %}
 
@@ -448,6 +451,116 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             toastr.error('لطفاً تمام فیلدهای الزامی را پر کنید.');
         }
+    });
+
+    // تابع برای به‌روزرسانی فیلدها بر اساس نوع خودرو
+    function updateFields(vehicleForm) {
+        const vehicleSource = vehicleForm.querySelector('input[name$="-vehicle_source"]:checked')?.value;
+        const companyVehicleSelect = vehicleForm.querySelector('select[name$="-company_vehicle"]');
+        const contractorVehicleSelect = vehicleForm.querySelector('select[name$="-contractor_vehicle"]');
+        
+        // مخفی کردن همه فیلدها به جز فیلدهای انتخاب نوع خودرو
+        const equipmentFields = [
+            'horn', 'hose', 'monitor', 'extinguisher', 'equipment',
+            'foam', 'water', 'tire', 'brake', 'lighting'
+        ];
+
+        // مخفی کردن همه فیلدها در ابتدا
+        equipmentFields.forEach(equipment => {
+            const fieldParent = vehicleForm.querySelector(`[name$="-${equipment}_status"]`)?.closest('.col-md-6');
+            if (fieldParent) {
+                fieldParent.style.display = 'none';
+                // تنظیم مقادیر پیش‌فرض
+                const statusField = vehicleForm.querySelector(`[name$="-${equipment}_status"][value="suitable"]`);
+                const descriptionField = vehicleForm.querySelector(`[name$="-${equipment}_description"]`);
+                if (statusField) {
+                    statusField.checked = true;
+                }
+                if (descriptionField) {
+                    descriptionField.value = 'این تجهیز در این خودرو موجود نیست.';
+                }
+            }
+        });
+
+        if (!vehicleSource) return;
+
+        if (vehicleSource === 'company' && companyVehicleSelect && companyVehicleSelect.value) {
+            // درخواست AJAX برای دریافت اطلاعات خودرو
+            fetch(`{% url 'fire_reports:get_vehicle_info' vehicle_id=0 %}`.replace('0', companyVehicleSelect.value))
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Vehicle data:', data); // برای دیباگ
+
+                    equipmentFields.forEach(equipment => {
+                        const fieldParent = vehicleForm.querySelector(`[name$="-${equipment}_status"]`)?.closest('.col-md-6');
+                        if (fieldParent) {
+                            if (data[`has_${equipment}`] === true) {
+                                fieldParent.style.display = 'block';
+                                // پاک کردن مقادیر پیش‌فرض برای فیلدهای نمایش داده شده
+                                const descriptionField = vehicleForm.querySelector(`[name$="-${equipment}_description"]`);
+                                if (descriptionField && descriptionField.value === 'این تجهیز در این خودرو موجود نیست.') {
+                                    descriptionField.value = '';
+                                }
+                            } else {
+                                fieldParent.style.display = 'none';
+                                // تنظیم مقادیر پیش‌فرض برای فیلدهای مخفی
+                                const statusField = vehicleForm.querySelector(`[name$="-${equipment}_status"][value="suitable"]`);
+                                const descriptionField = vehicleForm.querySelector(`[name$="-${equipment}_description"]`);
+                                if (statusField) {
+                                    statusField.checked = true;
+                                }
+                                if (descriptionField) {
+                                    descriptionField.value = 'این تجهیز در این خودرو موجود نیست.';
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching vehicle data:', error);
+                });
+        } else if (vehicleSource === 'contractor') {
+            // برای خودروهای پیمانکار، همه فیلدها را نمایش بده
+            equipmentFields.forEach(equipment => {
+                const fieldParent = vehicleForm.querySelector(`[name$="-${equipment}_status"]`)?.closest('.col-md-6');
+                if (fieldParent) {
+                    fieldParent.style.display = 'block';
+                    // پاک کردن مقادیر پیش‌فرض
+                    const descriptionField = vehicleForm.querySelector(`[name$="-${equipment}_description"]`);
+                    if (descriptionField && descriptionField.value === 'این تجهیز در این خودرو موجود نیست.') {
+                        descriptionField.value = '';
+                    }
+                }
+            });
+        }
+    }
+
+    // اضافه کردن event listener به همه فرم‌های خودرو
+    document.querySelectorAll('.vehicle-form').forEach(vehicleForm => {
+        const vehicleSourceInputs = vehicleForm.querySelectorAll('input[name$="-vehicle_source"]');
+        const companyVehicleSelect = vehicleForm.querySelector('select[name$="-company_vehicle"]');
+        
+        vehicleSourceInputs.forEach(input => {
+            input.addEventListener('change', () => {
+                updateFields(vehicleForm);
+                toggleVehicleFields(vehicleForm);
+            });
+        });
+        
+        if (companyVehicleSelect) {
+            companyVehicleSelect.addEventListener('change', () => updateFields(vehicleForm));
+        }
+    });
+
+    // اجرای اولیه برای همه فرم‌ها
+    document.querySelectorAll('.vehicle-form').forEach(form => {
+        updateFields(form);
+        toggleVehicleFields(form);
     });
 });
 </script>
