@@ -184,56 +184,85 @@
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
+                                                                    {% if vehicle_report.vehicle_source == 'company' and vehicle_report.company_vehicle.has_horn or vehicle_report.vehicle_source == 'contractor' %}
                                                                     <tr>
                                                                         <td>بوق و چراغ گردان</td>
                                                                         <td><span class="badge {% if vehicle_report.horn_status == 'suitable' %}bg-success{% else %}bg-danger{% endif %}">{{ vehicle_report.get_horn_status_display }}</span></td>
                                                                         <td>{{ vehicle_report.horn_description|default:"-" }}</td>
                                                                     </tr>
+                                                                    {% endif %}
+                                                                    
+                                                                    {% if vehicle_report.vehicle_source == 'company' and vehicle_report.company_vehicle.has_hose or vehicle_report.vehicle_source == 'contractor' %}
                                                                     <tr>
                                                                         <td>شیلنگ‌ها و اتصالات</td>
                                                                         <td><span class="badge {% if vehicle_report.hose_status == 'suitable' %}bg-success{% else %}bg-danger{% endif %}">{{ vehicle_report.get_hose_status_display }}</span></td>
                                                                         <td>{{ vehicle_report.hose_description|default:"-" }}</td>
                                                                     </tr>
+                                                                    {% endif %}
+                                                                    
+                                                                    {% if vehicle_report.vehicle_source == 'company' and vehicle_report.company_vehicle.has_monitor or vehicle_report.vehicle_source == 'contractor' %}
                                                                     <tr>
                                                                         <td>مانیتور</td>
                                                                         <td><span class="badge {% if vehicle_report.monitor_status == 'suitable' %}bg-success{% else %}bg-danger{% endif %}">{{ vehicle_report.get_monitor_status_display }}</span></td>
                                                                         <td>{{ vehicle_report.monitor_description|default:"-" }}</td>
                                                                     </tr>
+                                                                    {% endif %}
+                                                                    
+                                                                    {% if vehicle_report.vehicle_source == 'company' and vehicle_report.company_vehicle.has_extinguisher or vehicle_report.vehicle_source == 'contractor' %}
                                                                     <tr>
                                                                         <td>خاموش‌کننده‌های دستی</td>
                                                                         <td><span class="badge {% if vehicle_report.extinguisher_status == 'suitable' %}bg-success{% else %}bg-danger{% endif %}">{{ vehicle_report.get_extinguisher_status_display }}</span></td>
                                                                         <td>{{ vehicle_report.extinguisher_description|default:"-" }}</td>
                                                                     </tr>
+                                                                    {% endif %}
+                                                                    
+                                                                    {% if vehicle_report.vehicle_source == 'company' and vehicle_report.company_vehicle.has_equipment or vehicle_report.vehicle_source == 'contractor' %}
                                                                     <tr>
                                                                         <td>تجهیزات آتش‌نشانی</td>
                                                                         <td><span class="badge {% if vehicle_report.equipment_status == 'suitable' %}bg-success{% else %}bg-danger{% endif %}">{{ vehicle_report.get_equipment_status_display }}</span></td>
                                                                         <td>{{ vehicle_report.equipment_description|default:"-" }}</td>
                                                                     </tr>
+                                                                    {% endif %}
+                                                                    
+                                                                    {% if vehicle_report.vehicle_source == 'company' and vehicle_report.company_vehicle.has_foam or vehicle_report.vehicle_source == 'contractor' %}
                                                                     <tr>
                                                                         <td>پودر و فوم</td>
                                                                         <td><span class="badge {% if vehicle_report.foam_status == 'suitable' %}bg-success{% else %}bg-danger{% endif %}">{{ vehicle_report.get_foam_status_display }}</span></td>
                                                                         <td>{{ vehicle_report.foam_description|default:"-" }}</td>
                                                                     </tr>
+                                                                    {% endif %}
+                                                                    
+                                                                    {% if vehicle_report.vehicle_source == 'company' and vehicle_report.company_vehicle.has_water or vehicle_report.vehicle_source == 'contractor' %}
                                                                     <tr>
                                                                         <td>آب</td>
                                                                         <td><span class="badge {% if vehicle_report.water_status == 'suitable' %}bg-success{% else %}bg-danger{% endif %}">{{ vehicle_report.get_water_status_display }}</span></td>
                                                                         <td>{{ vehicle_report.water_description|default:"-" }}</td>
                                                                     </tr>
+                                                                    {% endif %}
+                                                                    
+                                                                    {% if vehicle_report.vehicle_source == 'company' and vehicle_report.company_vehicle.has_tire or vehicle_report.vehicle_source == 'contractor' %}
                                                                     <tr>
                                                                         <td>لاستیک‌ها</td>
                                                                         <td><span class="badge {% if vehicle_report.tire_status == 'suitable' %}bg-success{% else %}bg-danger{% endif %}">{{ vehicle_report.get_tire_status_display }}</span></td>
                                                                         <td>{{ vehicle_report.tire_description|default:"-" }}</td>
                                                                     </tr>
+                                                                    {% endif %}
+                                                                    
+                                                                    {% if vehicle_report.vehicle_source == 'company' and vehicle_report.company_vehicle.has_brake or vehicle_report.vehicle_source == 'contractor' %}
                                                                     <tr>
                                                                         <td>سیستم ترمز</td>
                                                                         <td><span class="badge {% if vehicle_report.brake_status == 'suitable' %}bg-success{% else %}bg-danger{% endif %}">{{ vehicle_report.get_brake_status_display }}</span></td>
                                                                         <td>{{ vehicle_report.brake_description|default:"-" }}</td>
                                                                     </tr>
+                                                                    {% endif %}
+                                                                    
+                                                                    {% if vehicle_report.vehicle_source == 'company' and vehicle_report.company_vehicle.has_lighting or vehicle_report.vehicle_source == 'contractor' %}
                                                                     <tr>
                                                                         <td>سیستم روشنایی</td>
                                                                         <td><span class="badge {% if vehicle_report.lighting_status == 'suitable' %}bg-success{% else %}bg-danger{% endif %}">{{ vehicle_report.get_lighting_status_display }}</span></td>
                                                                         <td>{{ vehicle_report.lighting_description|default:"-" }}</td>
                                                                     </tr>
+                                                                    {% endif %}
                                                                 </tbody>
                                                             </table>
                                                         </div>

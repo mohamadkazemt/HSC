@@ -128,6 +128,18 @@ class EmergencyVehicle(models.Model):
     technical_inspection_expiry = models.DateField(null=True, blank=True, verbose_name="تاریخ انقضای معاینه فنی")
     description = models.TextField(blank=True, null=True, verbose_name="توضیحات")
 
+    # فیلدهای جدید برای کنترل نمایش تجهیزات
+    has_horn = models.BooleanField(default=True, verbose_name="دارای بوق و چراغ گردان")
+    has_hose = models.BooleanField(default=True, verbose_name="دارای شیلنگ و اتصالات")
+    has_monitor = models.BooleanField(default=True, verbose_name="دارای مانیتور")
+    has_extinguisher = models.BooleanField(default=True, verbose_name="دارای خاموش‌کننده دستی")
+    has_equipment = models.BooleanField(default=True, verbose_name="دارای تجهیزات آتش‌نشانی")
+    has_foam = models.BooleanField(default=True, verbose_name="دارای پودر و فوم")
+    has_water = models.BooleanField(default=True, verbose_name="دارای آب")
+    has_tire = models.BooleanField(default=True, verbose_name="دارای لاستیک")
+    has_brake = models.BooleanField(default=True, verbose_name="دارای سیستم ترمز")
+    has_lighting = models.BooleanField(default=True, verbose_name="دارای سیستم روشنایی")
+
     def __str__(self):
         return f"{self.get_vehicle_type_display()} - {self.workshop_code}"
 

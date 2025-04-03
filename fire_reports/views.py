@@ -11,6 +11,8 @@ from django.conf import settings
 from dashboard.models import Notification
 from dashboard.sms_utils import send_template_sms
 from permissions.utils import permission_required
+from BaseInfo.models import EmergencyVehicle
+from django.http import JsonResponse
 import requests
 import json
 import logging
@@ -408,3 +410,25 @@ def fire_report_pdf(request, pk):
     HTML(string=html_content, base_url=request.build_absolute_uri('/')).write_pdf(response)
 
     return response
+
+@login_required
+def get_vehicle_info(request, vehicle_id):
+    """API endpoint برای دریافت اطلاعات خودرو"""
+    try:
+        vehicle = get_object_or_404(EmergencyVehicle, id=vehicle_id)
+        data = {
+            'has_horn': vehicle.has_horn,
+            'has_hose': vehicle.has_hose,
+            'has_monitor': vehicle.has_monitor,
+            'has_extinguisher': vehicle.has_extinguisher,
+            'has_equipment': vehicle.has_equipment,
+            'has_foam': vehicle.has_foam,
+            'has_water': vehicle.has_water,
+            'has_tire': vehicle.has_tire,
+            'has_brake': vehicle.has_brake,
+            'has_lighting': vehicle.has_lighting,
+        }
+        return JsonResponse(data)
+    except Exception as e:
+        logger.error(f"Error getting vehicle info: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
