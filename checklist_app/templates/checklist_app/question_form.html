@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}تعریف سوال جدید{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">تعریف سوال جدید</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="questionForm">
+                        {% csrf_token %}
+                        
+                        <!-- اطلاعات اصلی سوال -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="required fs-6 fw-semibold mb-2">محدوده سوال</label>
+                                    <select name="question_scope" class="form-select form-select-solid" required>
+                                        <option value="">انتخاب کنید</option>
+                                        <option value="machine" {% if question.question_scope == 'machine' %}selected{% endif %}>ماشین</option>
+                                        <option value="location" {% if question.question_scope == 'location' %}selected{% endif %}>مکان</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="required fs-6 fw-semibold mb-2">نوع سوال</label>
+                                    <select name="question_type" class="form-select form-select-solid" required>
+                                        <option value="">انتخاب کنید</option>
+                                        <option value="text" {% if question.question_type == 'text' %}selected{% endif %}>متنی</option>
+                                        <option value="option" {% if question.question_type == 'option' %}selected{% endif %}>گزینه‌ای</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- بخش نوع ماشین -->
+                        <div id="machineTypeSection" class="row mb-4" style="display: none;">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="required fs-6 fw-semibold mb-2">نوع ماشین</label>
+                                    <select name="machine_type" class="form-select form-select-solid select2-basic">
+                                        <option value="">انتخاب کنید</option>
+                                        {% for type in machine_types %}
+                                        <option value="{{ type.id }}" {% if question.machine_type_id == type.id %}selected{% endif %}>
+                                            {{ type.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- بخش مکان -->
+                        <div id="locationSection" class="row mb-4" style="display: none;">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="required fs-6 fw-semibold mb-2">بخش مکانی</label>
+                                    <select name="location_section" class="form-select form-select-solid select2-basic">
+                                        <option value="">انتخاب کنید</option>
+                                        {% for section in location_sections %}
+                                        <option value="{{ section.id }}" {% if question.location_section_id == section.id %}selected{% endif %}>
+                                            {{ section.section }} - {{ section.location.name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label class="required fs-6 fw-semibold mb-2">متن سوال</label>
+                                    <textarea name="text" class="form-control form-control-solid" rows="3" required>{{ question.text }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- بخش گزینه‌ها -->
+                        <div id="optionsSection" style="display: none;">
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="form-group">
+                                        <label class="required fs-6 fw-semibold mb-2">گزینه‌ها (با کاما جدا کنید)</label>
+                                        <input type="text" name="options" class="form-control form-control-solid" 
+                                               placeholder="مثال: قابل قبول,غیر قابل قبول,نیاز به بررسی"
+                                               value="{{ question.options }}">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="form-group">
+                                        <label class="required fs-6 fw-semibold mb-2">گزینه‌های غیرقابل قبول (با کاما جدا کنید)</label>
+                                        <input type="text" name="unacceptable_options" class="form-control form-control-solid" 
+                                               placeholder="مثال: غیر قابل قبول"
+                                               value="{{ question.unacceptable_options }}">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- اطلاعات آنومالی -->
+                        <h4 class="mb-4">تنظیمات آنومالی</h4>
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="required fs-6 fw-semibold mb-2">نوع آنومالی</label>
+                                    <select name="anomaly_type" class="form-select form-select-solid select2-basic" required>
+                                        <option value="">انتخاب کنید</option>
+                                        {% for type in anomaly_types %}
+                                        <option value="{{ type.id }}" {% if question.anomaly_type_id == type.id %}selected{% endif %}>
+                                            {{ type.type }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="required fs-6 fw-semibold mb-2">حوزه HSE</label>
+                                    <select name="hse_type" class="form-select form-select-solid" required>
+                                        <option value="">انتخاب کنید</option>
+                                        <option value="H" {% if question.hse_type == 'H' %}selected{% endif %}>Health</option>
+                                        <option value="S" {% if question.hse_type == 'S' %}selected{% endif %}>Safety</option>
+                                        <option value="E" {% if question.hse_type == 'E' %}selected{% endif %}>Environment</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label class="required fs-6 fw-semibold mb-2">شرح آنومالی پیش‌فرض</label>
+                                    <select name="default_anomaly_description" class="form-select form-select-solid select2-basic" required>
+                                        <option value="">انتخاب کنید</option>
+                                        {% for desc in anomaly_descriptions %}
+                                        <option value="{{ desc.id }}" {% if question.default_anomaly_description_id == desc.id %}selected{% endif %}>
+                                            {{ desc.description }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <small class="form-text text-muted">شرح پیش‌فرض آنومالی که در صورت پاسخ غیرقابل قبول ایجاد می‌شود.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="required fs-6 fw-semibold mb-2">اولویت پیش‌فرض</label>
+                                    <select name="default_priority_on_fail" class="form-select form-select-solid select2-basic" required>
+                                        <option value="">انتخاب کنید</option>
+                                        {% for priority in priorities %}
+                                        <option value="{{ priority.id }}" {% if question.default_priority_on_fail_id == priority.id %}selected{% endif %}>
+                                            {{ priority.priority }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label class="required fs-6 fw-semibold mb-2">اقدام اصلاحی پیش‌فرض</label>
+                                    <select name="default_corrective_action" class="form-select form-select-solid select2-basic" required>
+                                        <option value="">انتخاب کنید</option>
+                                        {% for action in corrective_actions %}
+                                        <option value="{{ action.description }}" {% if question.default_corrective_action == action.description %}selected{% endif %}>
+                                            {{ action.description }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- دکمه‌های فرم -->
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary">ذخیره</button>
+                                <a href="{% url 'checklist_app:question_list' %}" class="btn btn-secondary">انصراف</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    // تنظیمات Select2
+    $('.select2-basic').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        language: {
+            noResults: function() {
+                return "نتیجه‌ای یافت نشد";
+            },
+            searching: function() {
+                return "در حال جستجو...";
+            }
+        }
+    });
+
+    // نمایش/مخفی کردن بخش‌های مختلف بر اساس نوع سوال
+    function toggleSections() {
+        var scope = $('select[name="question_scope"]').val();
+        var type = $('select[name="question_type"]').val();
+
+        // نمایش/مخفی کردن بخش نوع ماشین و مکان
+        if (scope === 'machine') {
+            $('#machineTypeSection').show();
+            $('#locationSection').hide();
+            $('select[name="machine_type"]').prop('required', true);
+            $('select[name="location_section"]').prop('required', false);
+        } else if (scope === 'location') {
+            $('#machineTypeSection').hide();
+            $('#locationSection').show();
+            $('select[name="machine_type"]').prop('required', false);
+            $('select[name="location_section"]').prop('required', true);
+        } else {
+            $('#machineTypeSection').hide();
+            $('#locationSection').hide();
+            $('select[name="machine_type"]').prop('required', false);
+            $('select[name="location_section"]').prop('required', false);
+        }
+
+        // نمایش/مخفی کردن بخش گزینه‌ها
+        if (type === 'option') {
+            $('#optionsSection').show();
+            $('input[name="options"]').prop('required', true);
+            $('input[name="unacceptable_options"]').prop('required', true);
+        } else {
+            $('#optionsSection').hide();
+            $('input[name="options"]').prop('required', false);
+            $('input[name="unacceptable_options"]').prop('required', false);
+        }
+    }
+
+    // اجرای اولیه برای تنظیم وضعیت صحیح فرم
+    toggleSections();
+
+    // اضافه کردن event listener برای تغییرات
+    $('select[name="question_scope"]').change(toggleSections);
+    $('select[name="question_type"]').change(toggleSections);
+});
+</script>
+{% endblock %} 

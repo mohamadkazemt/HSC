@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}جزئیات چک لیست{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">جزئیات چک لیست #{{ checklist.id }}</h3>
+                    <div class="card-tools">
+                        <a href="{% url 'checklist_app:checklist_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-right"></i> بازگشت به لیست
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- اطلاعات کلی -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-info"><i class="fas fa-clipboard-list"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">نوع چک لیست</span>
+                                    <span class="info-box-number">{{ checklist.get_checklist_type_display }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-success"><i class="fas fa-calendar"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">تاریخ ثبت</span>
+                                    <span class="info-box-number">{{ checklist.date|date:"Y/m/d H:i" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-warning"><i class="fas fa-clock"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">شیفت</span>
+                                    <span class="info-box-number">{{ checklist.shift }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box">
+                                <span class="info-box-icon bg-primary"><i class="fas fa-users"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">گروه شیفت</span>
+                                    <span class="info-box-number">{{ checklist.shift_group }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- اطلاعات آیتم -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">اطلاعات {{ checklist.get_checklist_type_display }}</h3>
+                                </div>
+                                <div class="card-body">
+                                    {% if checklist.checklist_type == 'machine' %}
+                                    <table class="table table-bordered">
+                                        <tr>
+                                            <th>کد کارگاهی</th>
+                                            <td>{{ checklist.machine.workshop_code }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>نوع دستگاه</th>
+                                            <td>{{ checklist.machine.machine_type }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>گروه کاری</th>
+                                            <td>{{ checklist.machine.machine_workgroup }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>مالکیت</th>
+                                            <td>{{ checklist.machine.get_ownership_display }}</td>
+                                        </tr>
+                                        {% if checklist.machine.contractor %}
+                                        <tr>
+                                            <th>پیمانکار</th>
+                                            <td>{{ checklist.machine.contractor }}</td>
+                                        </tr>
+                                        {% endif %}
+                                    </table>
+                                    {% else %}
+                                    <table class="table table-bordered">
+                                        <tr>
+                                            <th>بخش</th>
+                                            <td>{{ checklist.location_section.section }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>محل</th>
+                                            <td>{{ checklist.location_section.location }}</td>
+                                        </tr>
+                                    </table>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">اطلاعات ثبت کننده</h3>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-bordered">
+                                        <tr>
+                                            <th>نام و نام خانوادگی</th>
+                                            <td>{{ checklist.user.get_full_name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>کد پرسنلی</th>
+                                            <td>{{ checklist.user.userprofile.personnel_code }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>بخش</th>
+                                            <td>{{ checklist.user.userprofile.section }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>گروه کاری</th>
+                                            <td>{{ checklist.user.userprofile.get_group_display }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- پاسخ‌ها -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">پاسخ‌های چک لیست</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>سوال</th>
+                                            <th>پاسخ</th>
+                                            <th>توضیحات</th>
+                                            <th>وضعیت</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for answer in answers %}
+                                        <tr class="{% if answer.is_unacceptable %}table-danger{% endif %}">
+                                            <td>{{ forloop.counter }}</td>
+                                            <td>{{ answer.question.text }}</td>
+                                            <td>
+                                                {% if answer.question.question_type == 'option' %}
+                                                {{ answer.selected_option }}
+                                                {% else %}
+                                                {{ answer.answer_text }}
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ answer.description|default:"-" }}</td>
+                                            <td>
+                                                {% if answer.is_unacceptable %}
+                                                <span class="badge badge-danger">غیر قابل قبول</span>
+                                                {% else %}
+                                                <span class="badge badge-success">قابل قبول</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

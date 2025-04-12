@@ -40,6 +40,7 @@ urlpatterns = [
     path('shift-manager/', include('shift_manager.urls')),
     path('fire-reports/', include(('fire_reports.urls', 'fire_reports'), namespace='fire_reports')),
     path('meetings/', include('meetings.urls')),
+    path('checklist_app/', include('checklist_app.urls')),
 ]
 
 

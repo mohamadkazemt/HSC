@@ -75,6 +75,7 @@ INSTALLED_APPS = [
     'hse_incidents.apps.HseIncidentsConfig',
     'machine_checklist.apps.MachineChecklistConfig',
     'fire_reports.apps.FireReportsConfig',
+    'checklist_app.apps.ChecklistAppConfig',  # اضافه کردن اپلیکیشن چک‌لیست
 ]
 
 MIDDLEWARE = [
