@@ -307,8 +307,53 @@ def question_form_view(request):
 @login_required
 def question_list_view(request):
     questions = Question.objects.all()
+    
+    # فیلترها
+    search_query = request.GET.get('search', '')
+    scope_filter = request.GET.get('scope', '')
+    type_filter = request.GET.get('type', '')
+    anomaly_type_filter = request.GET.get('anomaly_type', '')
+    hse_type_filter = request.GET.get('hse_type', '')
+    priority_filter = request.GET.get('priority', '')
+    
+    if search_query:
+        questions = questions.filter(text__icontains=search_query)
+    
+    if scope_filter:
+        questions = questions.filter(question_scope=scope_filter)
+        
+    if type_filter:
+        questions = questions.filter(question_type=type_filter)
+        
+    if anomaly_type_filter:
+        questions = questions.filter(anomaly_type_id=anomaly_type_filter)
+        
+    if hse_type_filter:
+        questions = questions.filter(hse_type=hse_type_filter)
+        
+    if priority_filter:
+        questions = questions.filter(default_priority_on_fail_id=priority_filter)
+    
+    # مرتب‌سازی
+    sort_by = request.GET.get('sort_by', '-id')
+    questions = questions.order_by(sort_by)
+    
+    # صفحه‌بندی
+    paginator = Paginator(questions, 10)  # 10 آیتم در هر صفحه
+    page = request.GET.get('page')
+    questions_page = paginator.get_page(page)
+    
     context = {
-        'questions': questions
+        'questions': questions_page,
+        'anomaly_types': Anomalytype.objects.all(),
+        'priorities': Priority.objects.all(),
+        'search_query': search_query,
+        'scope_filter': scope_filter,
+        'type_filter': type_filter,
+        'anomaly_type_filter': anomaly_type_filter,
+        'hse_type_filter': hse_type_filter,
+        'priority_filter': priority_filter,
+        'sort_by': sort_by
     }
     return render(request, 'checklist_app/question_list.html', context)
 

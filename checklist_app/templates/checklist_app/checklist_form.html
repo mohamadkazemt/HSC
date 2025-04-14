@@ -9,9 +9,21 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
+<div class="d-flex flex-column flex-root">
+    <div class="app-page flex-column flex-column-fluid">
+        {% include 'header.html' %}
+
+        <div class="app-wrapper flex-column flex-row-fluid">
+            {% include 'sidebar.html' %}
+
+            <div class="app-main flex-column flex-row-fluid">
+                <div class="d-flex flex-column flex-column-fluid">
+                    {% include 'toolbar.html' %}
+
+                    <div class="app-content flex-column-fluid">
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div class="col-12">
             <div class="card">
                 <div class="card-header">
                     <h3 class="card-title">ایجاد چک‌لیست جدید</h3>
@@ -101,6 +113,7 @@
                             </div>
                         </div>
                     </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -134,9 +147,10 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
                 <button type="button" class="btn btn-primary" id="submitFollowup">تایید و ثبت آنومالی(ها)</button>
             </div>
-        </div>
+        </div>        
     </div>
 </div>
+{% include 'footer.html' %}
 {% endblock %}
 
 {% block extra_js %}
