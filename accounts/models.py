@@ -133,3 +133,65 @@ class Position(models.Model):
     class Meta:
         verbose_name = "سمت"
         verbose_name_plural = "سمت‌ها"
+
+class DriverLicense(models.Model):
+    LICENSE_BASE_CHOICES = [
+        ('1', 'پایه یک'),
+        ('2', 'پایه دو'),
+        ('3', 'پایه سه'),
+    ]
+    
+    SPECIAL_CODES = [
+        ('38', 'لیفتراک'),
+        ('37', 'تراکتور'),
+        ('36', 'گریدر'),
+        ('39', 'لودر'),
+        ('56', 'بکهو'),
+        ('52', 'بیل مکانیکی'),
+        ('47', 'دامپر'),
+        ('42', 'جرثقیل'),
+        ('43', 'بلدوزر'),
+        ('54', 'دامپتراک'),
+        ('53', 'چکش تخریب'),
+        ('48', 'فینیشر'),
+        ('45', 'کامباین'),
+        ('46', 'آسفالت تراش'),
+        ('41', 'غلطک'),
+        ('62', 'شاول'),
+        ('63', 'دریل حفاری'),
+        ('61', 'دریل واگن'),
+        ('55', 'اسکیپر'),
+        ('57', 'اسکریپر'),
+        ('49', 'مینی لودر'),
+        ('65', 'بالابر تلسکوپی'),
+        ('55', 'ریچ استاکر'),
+        ('51', 'ساید بوم'),
+    ]
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='driver_license')
+    license_base = models.CharField(max_length=1, choices=LICENSE_BASE_CHOICES, verbose_name='پایه گواهینامه')
+    expiry_date = models.DateField(verbose_name='تاریخ انقضا')
+    has_special = models.BooleanField(default=False, verbose_name='ویژه دارد')
+    special_codes = models.JSONField(default=list, blank=True, verbose_name='کدهای ویژه')
+    front_image = models.ImageField(upload_to='license_images/', verbose_name='عکس روی گواهینامه')
+    back_image = models.ImageField(upload_to='license_images/', verbose_name='عکس پشت گواهینامه')
+    is_verified = models.BooleanField(default=False, verbose_name='تایید شده')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'گواهینامه {self.user.get_full_name()} - پایه {self.get_license_base_display()}'
+
+    class Meta:
+        verbose_name = 'گواهینامه'
+        verbose_name_plural = 'گواهینامه‌ها'
+
+    def is_complete(self):
+        """بررسی کامل بودن اطلاعات گواهینامه"""
+        return all([
+            self.license_base,
+            self.expiry_date,
+            self.front_image,
+            self.back_image,
+            (not self.has_special or (self.has_special and self.special_codes))
+        ])

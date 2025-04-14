@@ -11,7 +11,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .models import UserActivity
 from permissions.utils import get_all_views_with_labels
 from permissions.models import UserPermission, PartPermission, SectionPermission, PositionPermission, UnitGroupPermission
-from accounts.models import UnitGroup
+from accounts.models import UnitGroup, UserProfile, DriverLicense
 from django.contrib import messages
 
 name = 'dashboard'
@@ -19,6 +19,19 @@ name = 'dashboard'
 
 @login_required
 def dashboard(request):
+    # بررسی نقش کاربر و وضعیت گواهینامه
+    is_operator = any('اپراتور' in group.name for group in request.user.groups.all())
+    driver_license = None
+    license_warning = None
+    
+    if is_operator:
+        try:
+            driver_license = DriverLicense.objects.get(user=request.user)
+            if not driver_license.is_complete():
+                license_warning = "لطفاً اطلاعات گواهینامه خود را تکمیل کنید."
+        except DriverLicense.DoesNotExist:
+            license_warning = "لطفاً اطلاعات گواهینامه خود را تکمیل کنید."
+
     # دریافت اعلان‌های خوانده نشده
     unread_notifications_count = request.user.notifications.filter(is_read=False).count()
     
@@ -168,6 +181,8 @@ def dashboard(request):
         'user_access_permissions': user_access_permissions,
         'stats': stats,
         'title': 'داشبورد',
+        'license_warning': license_warning,
+        'driver_license': driver_license,
     }
 
     return render(request, 'dashboard/dashboard.html', context)
