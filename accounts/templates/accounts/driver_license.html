@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">اطلاعات گواهینامه</h3>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-5">
+                            <label class="form-label">پایه گواهینامه</label>
+                            <select name="license_base" class="form-select form-select-lg" id="id_license_base">
+                                <option value="">پایه گواهینامه را انتخاب کنید</option>
+                                {% for value, text in form.fields.license_base.choices %}
+                                    <option value="{{ value }}" {% if form.license_base.value == value %}selected{% endif %}>{{ text }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if form.license_base.errors %}
+                            <div class="text-danger">
+                                {{ form.license_base.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-5">
+                            <label class="form-label">تاریخ انقضا</label>
+                            {{ form.expiry_date }}
+                            {% if form.expiry_date.errors %}
+                            <div class="text-danger">
+                                {{ form.expiry_date.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-5">
+                            <div class="form-check form-switch">
+                                {{ form.has_special }}
+                                <label class="form-check-label" for="has_special">ویژه دارد</label>
+                            </div>
+                        </div>
+
+                        <div class="mb-5" id="special_codes_container" style="display: none;">
+                            <label class="form-label">کدهای ویژه</label>
+                            {{ form.special_codes }}
+                            {% if form.special_codes.errors %}
+                            <div class="text-danger">
+                                {{ form.special_codes.errors }}
+                            </div>
+                            {% endif %}
+                            <div class="form-text">می‌توانید چند کد ویژه را انتخاب کنید.</div>
+                        </div>
+
+                        <div class="mb-5">
+                            <label class="form-label">عکس روی گواهینامه</label>
+                            {{ form.front_image }}
+                            {% if form.front_image.errors %}
+                            <div class="text-danger">
+                                {{ form.front_image.errors }}
+                            </div>
+                            {% endif %}
+                            {% if driver_license and driver_license.front_image %}
+                            <div class="mt-2">
+                                <img src="{{ driver_license.front_image.url }}" alt="عکس روی گواهینامه" class="img-thumbnail" style="max-width: 200px;">
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-5">
+                            <label class="form-label">عکس پشت گواهینامه</label>
+                            {{ form.back_image }}
+                            {% if form.back_image.errors %}
+                            <div class="text-danger">
+                                {{ form.back_image.errors }}
+                            </div>
+                            {% endif %}
+                            {% if driver_license and driver_license.back_image %}
+                            <div class="mt-2">
+                                <img src="{{ driver_license.back_image.url }}" alt="عکس پشت گواهینامه" class="img-thumbnail" style="max-width: 200px;">
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">ذخیره</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const hasSpecialCheckbox = document.getElementById('has_special');
+        const specialCodesContainer = document.getElementById('special_codes_container');
+
+        function toggleSpecialCodes() {
+            specialCodesContainer.style.display = hasSpecialCheckbox.checked ? 'block' : 'none';
+        }
+
+        hasSpecialCheckbox.addEventListener('change', toggleSpecialCodes);
+        toggleSpecialCodes(); // اجرای اولیه
+
+        // راه‌اندازی Select2 برای کدهای ویژه
+        $('#id_special_codes').select2({
+            theme: 'bootstrap-5',
+            width: '100%',
+            placeholder: 'کدهای ویژه را انتخاب کنید'
+        });
+
+        // راه‌اندازی تاریخ شمسی با persianDatepicker
+        $('#id_expiry_date').addClass('persian-date-picker');
+        var datePicker = $('.persian-date-picker').persianDatepicker({
+            formatDate: "YYYY-0M-0D",
+            onSelect: function(unix) {
+                var date = new persianDate(unix);
+                var gregorianDate = date.toCalendar('gregorian').format('YYYY-MM-DD');
+                $('#id_expiry_date').val(gregorianDate);
+            }
+        });
+    });
+</script>
+{% endblock %} 

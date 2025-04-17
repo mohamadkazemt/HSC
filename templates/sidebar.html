@@ -55,26 +55,19 @@
                     <div class="menu-heading text-uppercase fs-7 fw-bold">میانبرها</div>
                     <div class="app-sidebar-separator separator"></div>
                 </div>
-                    <div class="menu-item">
-                        <a class="menu-link" href="{% url 'shift_manager:shift_calendar' %}">
-                            <span class="menu-icon"><i class="ki-outline ki-calendar text-primary fs-2"></i></span>
-                            <span class="menu-title">تقویم شیفت چرخشی</span>
-                        </a>
-                    </div>
+
+                <!-- میانبرهای HSE -->
+                <div class="menu-item mb-2">
+                    <div class="menu-heading text-uppercase fs-7">HSE</div>
+                </div>
+
                 {% if request.user|has_permission:"anomalis" %}
                     <div class="menu-item">
                         <a class="menu-link" href="{% url 'anomalis:anomalis' %}">
-                            <span class="menu-icon"><i class="ki-outline ki-warning-2 text-warning fs-2"></i></span>
+                            <span class="menu-icon">
+                                <i class="ki-outline ki-notification-status text-warning fs-2"></i>
+                            </span>
                             <span class="menu-title">ثبت آنومالی</span>
-                        </a>
-                    </div>
-                {% endif %}
-
-                {% if request.user|has_permission:"daily_report_form" %}
-                    <div class="menu-item">
-                        <a class="menu-link" href="{% url 'dailyreport_hse:daily_report_form' %}">
-                            <span class="menu-icon"><i class="ki-outline ki-document text-success fs-2"></i></span>
-                            <span class="menu-title">ثبت گزارش روزانه</span>
                         </a>
                     </div>
                 {% endif %}
@@ -82,26 +75,21 @@
                 {% if request.user|has_permission:"incident_report" %}
                     <div class="menu-item">
                         <a class="menu-link" href="{% url 'hse_incidents:incident_report' %}">
-                            <span class="menu-icon"><i class="ki-outline ki-shield-cross text-danger fs-2"></i></span>
+                            <span class="menu-icon">
+                                <i class="ki-outline ki-shield-cross text-danger fs-2"></i>
+                            </span>
                             <span class="menu-title">ثبت گزارش حوادث</span>
                         </a>
                     </div>
                 {% endif %}
 
-                {% if request.user|has_permission:"create_shift_report" %}
+                {% if request.user|has_permission:"daily_report_form" %}
                     <div class="menu-item">
-                        <a class="menu-link" href="{% url 'operations:create_shift_report' %}">
-                            <span class="menu-icon"><i class="ki-outline ki-clock text-primary fs-2"></i></span>
-                            <span class="menu-title">ثبت گزارش شیفت</span>
-                        </a>
-                    </div>
-                {% endif %}
-
-                {% if request.user|has_permission:"checklist_form" %}
-                    <div class="menu-item">
-                        <a class="menu-link" href="{% url 'machine_checklist:checklist_form' %}">
-                            <span class="menu-icon"><i class="ki-outline ki-check-square text-success fs-2"></i></span>
-                            <span class="menu-title">چک لیست ماشین آلات</span>
+                        <a class="menu-link" href="{% url 'dailyreport_hse:daily_report_form' %}">
+                            <span class="menu-icon">
+                                <i class="ki-outline ki-document text-success fs-2"></i>
+                            </span>
+                            <span class="menu-title">ثبت گزارش روزانه</span>
                         </a>
                     </div>
                 {% endif %}
@@ -109,26 +97,91 @@
                 {% if request.user|has_permission:"report_create" %}
                     <div class="menu-item">
                         <a class="menu-link" href="{% url 'fire_reports:report_create' %}">
-                            <span class="menu-icon"><i class="ki-outline ki-fire text-danger fs-2"></i></span>
+                            <span class="menu-icon">
+                                <i class="ki-outline ki-shield-tick text-danger fs-2"></i>
+                            </span>
                             <span class="menu-title">ثبت گزارش آتش‌نشانی</span>
                         </a>
                     </div>
                 {% endif %}
 
+                <!-- میانبرهای عملیات -->
+                <div class="menu-item mb-2 mt-4">
+                    <div class="menu-heading text-uppercase fs-7">عملیات</div>
+                </div>
+
+                {% if request.user|has_permission:"create_shift_report" %}
+                    <div class="menu-item">
+                        <a class="menu-link" href="{% url 'operations:create_shift_report' %}">
+                            <span class="menu-icon">
+                                <i class="ki-outline ki-time text-primary fs-2"></i>
+                            </span>
+                            <span class="menu-title">ثبت گزارش شیفت</span>
+                        </a>
+                    </div>
+                {% endif %}
+
+                {% if request.user|has_permission:"general_checklist_form" %}
+                    <div class="menu-item">
+                        <a class="menu-link" href="{% url 'checklist_app:general_checklist_form' %}">
+                            <span class="menu-icon">
+                                <i class="ki-outline ki-notepad-edit text-success fs-2"></i>
+                            </span>
+                            <span class="menu-title">ایجاد چک لیست</span>
+                        </a>
+                    </div>
+                {% endif %}
+
+                {% if request.user|has_permission:"checklist_form" %}
+                    <div class="menu-item">
+                        <a class="menu-link" href="{% url 'machine_checklist:checklist_form' %}">
+                            <span class="menu-icon">
+                                <i class="ki-outline ki-check-square text-info fs-2"></i>
+                            </span>
+                            <span class="menu-title">چک لیست ماشین آلات</span>
+                        </a>
+                    </div>
+                {% endif %}
+
+                <!-- میانبرهای پرسنلی -->
+                <div class="menu-item mb-2 mt-4">
+                    <div class="menu-heading text-uppercase fs-7">پرسنلی</div>
+                </div>
+
                 {% if request.user|has_permission:"shift_report" %}
                     <div class="menu-item">
                         <a class="menu-link" href="{% url 'leave_reports:shift_report' %}">
-                            <span class="menu-icon"><i class="ki-outline ki-calendar-tick text-primary fs-2"></i></span>
+                            <span class="menu-icon">
+                                <i class="ki-outline ki-calendar-tick text-primary fs-2"></i>
+                            </span>
                             <span class="menu-title">ثبت مرخصی</span>
                         </a>
                     </div>
                 {% endif %}
 
+                {% if request.user|has_permission:"meeting_create" %}
+                    <div class="menu-item">
+                        <a class="menu-link" href="{% url 'meetings:meeting_create' %}">
+                            <span class="menu-icon">
+                                <i class="ki-outline ki-chart-line-star text-info fs-2"></i>
+                            </span>
+                            <span class="menu-title">ثبت جلسه جدید</span>
+                        </a>
+                    </div>
+                {% endif %}
+
+                <!-- میانبرهای پیمانکاران -->
+                <div class="menu-item mb-2 mt-4">
+                    <div class="menu-heading text-uppercase fs-7">پیمانکاران</div>
+                </div>
+
                 {% if request.user|has_permission:"create_report" %}
                     <div class="menu-item">
                         <a class="menu-link" href="{% url 'contractor_management:create_report' %}">
-                            <span class="menu-icon"><i class="ki-outline ki-truck text-info fs-2"></i></span>
-                            <span class="menu-title">ثبت کارکرد خودرو پیمانکاران</span>
+                            <span class="menu-icon">
+                                <i class="ki-outline ki-delivery text-danger fs-2"></i>
+                            </span>
+                            <span class="menu-title">ثبت کارکرد خودرو</span>
                         </a>
                     </div>
                 {% endif %}
@@ -148,30 +201,28 @@
                     <div data-kt-menu-trigger="click" class="menu-item here show menu-accordion">
                         <span class="menu-link">
                             <span class="menu-icon"><i class="ki-outline ki-home-2 text-primary fs-2"></i></span>
-                            <span class="menu-title">داشبورد ها</span>
+                            <span class="menu-title">داشبورد</span>
                             <span class="menu-arrow"></span>
                         </span>
                         <div class="menu-sub menu-sub-accordion">
                             <div class="menu-item">
                                 <a class="menu-link active" href="{% url 'dashboard:dashboard' %}">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">پیش فرض</span>
+                                    <span class="menu-title">داشبورد اصلی</span>
                                 </a>
                             </div>
                         </div>
                     </div>
                 {% endif %}
 
-
+                <!-- منوی HSE -->
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
                     <span class="menu-link">
-                        <span class="menu-icon"><i class="ki-outline ki-folder text-primary fs-2"></i></span>
-                        <span class="menu-title">گزارشات</span>
+                        <span class="menu-icon"><i class="ki-outline ki-shield-tick text-success fs-2"></i></span>
+                        <span class="menu-title">HSE</span>
                         <span class="menu-arrow"></span>
                     </span>
-
                     <div class="menu-sub menu-sub-accordion">
-
                         {% if request.user|has_permission:"anomalis" or request.user|has_permission:"list" or request.user|has_permission:"anomaly_reports" %}
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
                                 <span class="menu-link">
@@ -192,7 +243,7 @@
                                         <div class="menu-item">
                                             <a class="menu-link" href="{% url 'anomalis:list' %}">
                                                 <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                                <span class="menu-title">لیست آنومالی ها</span>
+                                                <span class="menu-title">لیست آنومالی‌ها</span>
                                             </a>
                                         </div>
                                     {% endif %}
@@ -201,34 +252,6 @@
                                             <a class="menu-link" href="{% url 'anomalis:anomaly_reports' %}">
                                                 <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                                 <span class="menu-title">تحلیل و آمار</span>
-                                            </a>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        {% endif %}
-
-                        {% if request.user|has_permission:"daily_report_form" or request.user|has_permission:"daily_report_list"  %}
-                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
-                                <span class="menu-link">
-                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">گزارش روزانه</span>
-                                    <span class="menu-arrow"></span>
-                                </span>
-                                <div class="menu-sub menu-sub-accordion">
-                                    {% if request.user|has_permission:"daily_report_form" %}
-                                        <div class="menu-item">
-                                            <a class="menu-link" href="{% url 'dailyreport_hse:daily_report_form' %}">
-                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                                <span class="menu-title">ثبت گزارش جدید</span>
-                                            </a>
-                                        </div>
-                                    {% endif %}
-                                    {% if request.user|has_permission:"daily_report_list" %}
-                                        <div class="menu-item">
-                                            <a class="menu-link" href="{% url 'dailyreport_hse:daily_report_list' %}">
-                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                                <span class="menu-title">لیست گزارش ها</span>
                                             </a>
                                         </div>
                                     {% endif %}
@@ -247,8 +270,7 @@
                                     {% if request.user|has_permission:"incident_report" %}
                                         <div class="menu-item">
                                             <a class="menu-link" href="{% url 'hse_incidents:incident_report' %}">
-                                                <span class="menu-bullet"><span
-                                                        class="bullet bullet-dot"></span></span>
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                                 <span class="menu-title">ثبت گزارش جدید</span>
                                             </a>
                                         </div>
@@ -256,142 +278,8 @@
                                     {% if request.user|has_permission:"list_reports" %}
                                         <div class="menu-item">
                                             <a class="menu-link" href="{% url 'hse_incidents:list_reports' %}">
-                                                <span class="menu-bullet"><span
-                                                        class="bullet bullet-dot"></span></span>
-                                                <span class="menu-title">لیست گزارش ها</span>
-                                            </a>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        {% endif %}
-
-                        {% if request.user|has_permission:"create_shift_report" or request.user|has_permission:"loading_operations_list" %}
-                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
-                                <span class="menu-link">
-                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">دفتر گزارش شیفت</span>
-                                    <span class="menu-arrow"></span>
-                                </span>
-                                <div class="menu-sub menu-sub-accordion">
-                                    {% if request.user|has_permission:"create_shift_report" %}
-                                        <div class="menu-item">
-                                            <a class="menu-link" href="{% url 'operations:create_shift_report' %}">
-                                                <span class="menu-bullet"><span
-                                                        class="bullet bullet-dot"></span></span>
-                                                <span class="menu-title">ثبت گزارش جدید</span>
-                                            </a>
-                                        </div>
-                                    {% endif %}
-                                    {% if request.user|has_permission:"loading_operations_list" %}
-                                        <div class="menu-item">
-                                            <a class="menu-link"
-                                               href="{% url 'operations:loading_operations_list' %}">
-                                                <span class="menu-bullet"><span
-                                                        class="bullet bullet-dot"></span></span>
-                                                <span class="menu-title">لیست گزارش</span>
-                                            </a>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        {% endif %}
-
-                        {% if request.user|has_permission:"shift_report" or request.user|has_permission:"shift_report_list" %}
-                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
-                                <span class="menu-link">
-                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">مرخصی</span>
-                                    <span class="menu-arrow"></span>
-                                </span>
-                                <div class="menu-sub menu-sub-accordion">
-                                    {% if request.user|has_permission:"shift_report" %}
-                                        <div class="menu-item">
-                                            <a class="menu-link" href="{% url 'leave_reports:shift_report' %}">
-                                                <span class="menu-bullet"><span
-                                                        class="bullet bullet-dot"></span></span>
-                                                <span class="menu-title">ثبت مرخصی شیفت</span>
-                                            </a>
-                                        </div>
-                                    {% endif %}
-                                    {% if request.user|has_permission:"shift_report_list" %}
-                                        <div class="menu-item">
-                                            <a class="menu-link" href="{% url 'leave_reports:shift_report_list' %}">
-                                                <span class="menu-bullet"><span
-                                                        class="bullet bullet-dot"></span></span>
-                                                <span class="menu-title">لیست مرخصی</span>
-                                            </a>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        {% endif %}
-
-                        {% if request.user|has_permission:"create_report" or request.user|has_permission:"all_reports" %}
-                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
-                                <span class="menu-link">
-                                    <span class="menu-bullet">
-                                        <span class="bullet bullet-dot"></span>
-                                    </span>
-                                    <span class="menu-title">کار کرد خودرو پیمانکاران</span>
-                                    <span class="menu-arrow"></span>
-                                </span>
-                                <div class="menu-sub menu-sub-accordion">
-                                    {% if request.user|has_permission:"create_report" %}
-                                        <div class="menu-item">
-                                            <a class="menu-link"
-                                               href="{% url 'contractor_management:create_report' %}">
-                                                <span class="menu-bullet">
-                                                    <span class="bullet bullet-dot"></span>
-                                                </span>
-                                                <span class="menu-title">ثبت کارکرد</span>
-                                            </a>
-                                        </div>
-                                    {% endif %}
-                                    {% if request.user|has_permission:"all_reports" %}
-                                        <div class="menu-item">
-                                            <a class="menu-link"
-                                               href="{% url 'contractor_management:all_reports' %}">
-                                                <span class="menu-bullet">
-                                                    <span class="bullet bullet-dot"></span>
-                                                </span>
-                                                <span class="menu-title">لیست کارکردها</span>
-                                            </a>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        {% endif %}
-
-                        {% if request.user|has_permission:"checklist_form" or request.user|has_permission:"checklist_list" %}
-                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
-                                <span class="menu-link">
-                                    <span class="menu-bullet">
-                                        <span class="bullet bullet-dot"></span>
-                                    </span>
-                                    <span class="menu-title">چک لیست ماشین آلات</span>
-                                    <span class="menu-arrow"></span>
-                                </span>
-                                <div class="menu-sub menu-sub-accordion">
-                                    {% if request.user|has_permission:"checklist_form" %}
-                                        <div class="menu-item">
-                                            <a class="menu-link"
-                                               href="{% url 'machine_checklist:checklist_form' %}">
-                                                <span class="menu-bullet">
-                                                    <span class="bullet bullet-dot"></span>
-                                                </span>
-                                                <span class="menu-title">ثبت چک لیست</span>
-                                            </a>
-                                        </div>
-                                    {% endif %}
-                                    {% if request.user|has_permission:"checklist_list" %}
-                                        <div class="menu-item">
-                                            <a class="menu-link"
-                                               href="{% url 'machine_checklist:checklist_list' %}">
-                                                <span class="menu-bullet">
-                                                    <span class="bullet bullet-dot"></span>
-                                                </span>
-                                                <span class="menu-title">لیست چک لیست ها</span>
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                                <span class="menu-title">لیست گزارش‌ها</span>
                                             </a>
                                         </div>
                                     {% endif %}
@@ -402,9 +290,7 @@
                         {% if request.user|has_permission:"report_list" or request.user|has_permission:"report_create" %}
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
                                 <span class="menu-link">
-                                    <span class="menu-icon">
-                                        <i class="ki-outline ki-fire text-danger fs-2"></i>
-                                    </span>
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">گزارشات آتش‌نشانی</span>
                                     <span class="menu-arrow"></span>
                                 </span>
@@ -429,12 +315,154 @@
                             </div>
                         {% endif %}
 
+                        {% if request.user|has_permission:"daily_report_form" or request.user|has_permission:"daily_report_list" %}
+                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
+                                <span class="menu-link">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">گزارش روزانه</span>
+                                    <span class="menu-arrow"></span>
+                                </span>
+                                <div class="menu-sub menu-sub-accordion">
+                                    {% if request.user|has_permission:"daily_report_form" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'dailyreport_hse:daily_report_form' %}">
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                                <span class="menu-title">ثبت گزارش جدید</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                    {% if request.user|has_permission:"daily_report_list" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'dailyreport_hse:daily_report_list' %}">
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                                <span class="menu-title">لیست گزارش‌ها</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- منوی عملیات و تجهیزات -->
+                <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
+                    <span class="menu-link">
+                        <span class="menu-icon"><i class="ki-outline ki-gear text-warning fs-2"></i></span>
+                        <span class="menu-title">عملیات و تجهیزات</span>
+                        <span class="menu-arrow"></span>
+                    </span>
+                    <div class="menu-sub menu-sub-accordion">
+                        <!-- چک لیست‌ها -->
+                        {% if request.user|has_permission:"general_checklist_form" or request.user|has_permission:"general_checklist_list" or request.user|has_permission:"question_form" or request.user|has_permission:"question_list" or request.user|has_permission:"checklist_form" or request.user|has_permission:"checklist_list" %}
+                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
+                                <span class="menu-link">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">چک لیست‌ها</span>
+                                    <span class="menu-arrow"></span>
+                                </span>
+                                <div class="menu-sub menu-sub-accordion">
+                                    {% if request.user|has_permission:"general_checklist_form" or request.user|has_permission:"general_checklist_list" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'checklist_app:general_checklist_form' %}">
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                                <span class="menu-title">مدیریت چک لیست</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                    {% if request.user|has_permission:"question_form" or request.user|has_permission:"question_list" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'checklist_app:general_question_form' %}">
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                                <span class="menu-title">مدیریت سوالات</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                    {% if request.user|has_permission:"checklist_form" or request.user|has_permission:"checklist_list" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'machine_checklist:checklist_form' %}">
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                                <span class="menu-title">چک لیست ماشین آلات</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- گزارش شیفت -->
+                        {% if request.user|has_permission:"create_shift_report" or request.user|has_permission:"loading_operations_list" %}
+                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
+                                <span class="menu-link">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">گزارش شیفت</span>
+                                    <span class="menu-arrow"></span>
+                                </span>
+                                <div class="menu-sub menu-sub-accordion">
+                                    {% if request.user|has_permission:"create_shift_report" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'operations:create_shift_report' %}">
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                                <span class="menu-title">ثبت گزارش جدید</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                    {% if request.user|has_permission:"loading_operations_list" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'operations:loading_operations_list' %}">
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                                <span class="menu-title">لیست گزارش‌ها</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- منوی مدیریت پرسنل -->
+                <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
+                    <span class="menu-link">
+                        <span class="menu-icon"><i class="ki-outline ki-profile-user text-info fs-2"></i></span>
+                        <span class="menu-title">مدیریت پرسنل</span>
+                        <span class="menu-arrow"></span>
+                    </span>
+                    <div class="menu-sub menu-sub-accordion">
+                        <!-- مرخصی -->
+                        {% if request.user|has_permission:"shift_report" or request.user|has_permission:"shift_report_list" %}
+                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
+                                <span class="menu-link">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">مرخصی</span>
+                                    <span class="menu-arrow"></span>
+                                </span>
+                                <div class="menu-sub menu-sub-accordion">
+                                    {% if request.user|has_permission:"shift_report" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'leave_reports:shift_report' %}">
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                                <span class="menu-title">ثبت مرخصی</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                    {% if request.user|has_permission:"shift_report_list" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'leave_reports:shift_report_list' %}">
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                                <span class="menu-title">لیست مرخصی‌ها</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- جلسات -->
                         {% if request.user|has_permission:"meeting_list" or request.user|has_permission:"meeting_create" %}
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
                                 <span class="menu-link">
-                                    <span class="menu-icon">
-                                        <i class="ki-outline ki-calendar-tick text-primary fs-2"></i>
-                                    </span>
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                     <span class="menu-title">جلسات</span>
                                     <span class="menu-arrow"></span>
                                 </span>
@@ -458,11 +486,63 @@
                                 </div>
                             </div>
                         {% endif %}
-
                     </div>
                 </div>
+
+                <!-- منوی مدیریت پیمانکاران -->
+                <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
+                    <span class="menu-link">
+                        <span class="menu-icon"><i class="ki-outline ki-truck text-danger fs-2"></i></span>
+                        <span class="menu-title">مدیریت پیمانکاران</span>
+                        <span class="menu-arrow"></span>
+                    </span>
+                    <div class="menu-sub menu-sub-accordion">
+                        {% if request.user|has_permission:"create_report" or request.user|has_permission:"all_reports" %}
+                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
+                                <span class="menu-link">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">کارکرد خودرو پیمانکاران</span>
+                                    <span class="menu-arrow"></span>
+                                </span>
+                                <div class="menu-sub menu-sub-accordion">
+                                    {% if request.user|has_permission:"create_report" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'contractor_management:create_report' %}">
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                                <span class="menu-title">ثبت کارکرد</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                    {% if request.user|has_permission:"all_reports" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'contractor_management:all_reports' %}">
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                                <span class="menu-title">لیست کارکردها</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Spacer for bottom padding -->
+                <div class="menu-item">
+                    <div class="h-100px"></div>
+                </div>
+
             </div>
             <!-- End Main Menu -->
+
+            <style>
+                #kt_app_sidebar_navs_wrappers {
+                    padding-bottom: 60px;
+                }
+                .app-sidebar .hover-scroll-y {
+                    padding-bottom: 60px;
+                }
+            </style>
 
         </div>
     </div>

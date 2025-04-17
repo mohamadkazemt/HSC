@@ -1,0 +1,316 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}لیست سوالات{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<style>
+    .filter-card {
+        margin-bottom: 1.5rem;
+    }
+    .filter-form .form-group {
+        margin-bottom: 1rem;
+    }
+    .sort-link {
+        color: inherit;
+        text-decoration: none;
+    }
+    .sort-link:hover {
+        color: #009ef7;
+    }
+    .sort-icon {
+        margin-right: 0.5rem;
+    }
+    .pagination {
+        margin-top: 1rem;
+    }
+    .search-box {
+        position: relative;
+    }
+    .search-box .form-control {
+        padding-right: 2.5rem;
+    }
+    .search-box .search-icon {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-root">
+    <div class="app-page flex-column flex-column-fluid">
+        {% include 'header.html' %}
+
+        <div class="app-wrapper flex-column flex-row-fluid">
+            {% include 'sidebar.html' %}
+
+            <div class="app-main flex-column flex-row-fluid">
+                <div class="d-flex flex-column flex-column-fluid">
+                    {% include 'toolbar.html' %}
+
+                    <div class="app-content flex-column-fluid">
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div class="col-12">
+                                    <!-- کارت فیلترها -->
+                                    <div class="card filter-card">
+                                        <div class="card-header">
+                                            <h3 class="card-title">فیلترها و جستجو</h3>
+                                        </div>
+                                        <div class="card-body">
+                                            <form method="get" class="filter-form">
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label>جستجوی متن سوال</label>
+                                                            <div class="search-box">
+                                                                <input type="text" name="search" class="form-control" 
+                                                                       value="{{ search_query }}" placeholder="جستجو...">
+                                                                <i class="fas fa-search search-icon"></i>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label>محدوده سوال</label>
+                                                            <select name="scope" class="form-select select2-basic">
+                                                                <option value="">همه</option>
+                                                                <option value="machine" {% if scope_filter == 'machine' %}selected{% endif %}>ماشین</option>
+                                                                <option value="location" {% if scope_filter == 'location' %}selected{% endif %}>مکان</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label>نوع سوال</label>
+                                                            <select name="type" class="form-select select2-basic">
+                                                                <option value="">همه</option>
+                                                                <option value="text" {% if type_filter == 'text' %}selected{% endif %}>متنی</option>
+                                                                <option value="option" {% if type_filter == 'option' %}selected{% endif %}>گزینه‌ای</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label>حوزه HSE</label>
+                                                            <select name="hse_type" class="form-select select2-basic">
+                                                                <option value="">همه</option>
+                                                                <option value="H" {% if hse_type_filter == 'H' %}selected{% endif %}>Health</option>
+                                                                <option value="S" {% if hse_type_filter == 'S' %}selected{% endif %}>Safety</option>
+                                                                <option value="E" {% if hse_type_filter == 'E' %}selected{% endif %}>Environment</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label>نوع آنومالی</label>
+                                                            <select name="anomaly_type" class="form-select select2-basic">
+                                                                <option value="">همه</option>
+                                                                {% for type in anomaly_types %}
+                                                                <option value="{{ type.id }}" {% if anomaly_type_filter == type.id|stringformat:"i" %}selected{% endif %}>
+                                                                    {{ type.type }}
+                                                                </option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label>اولویت</label>
+                                                            <select name="priority" class="form-select select2-basic">
+                                                                <option value="">همه</option>
+                                                                {% for priority in priorities %}
+                                                                <option value="{{ priority.id }}" {% if priority_filter == priority.id|stringformat:"i" %}selected{% endif %}>
+                                                                    {{ priority.priority }}
+                                                                </option>
+                                                                {% endfor %}
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <div class="form-group d-flex align-items-end h-100">
+                                                            <button type="submit" class="btn btn-primary me-2">
+                                                                <i class="fas fa-filter me-2"></i>
+                                                                اعمال فیلتر
+                                                            </button>
+                                                            <a href="{% url 'checklist_app:general_question_list' %}" class="btn btn-secondary">
+                                                                <i class="fas fa-times me-2"></i>
+                                                                پاک کردن فیلترها
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+
+                                    <!-- کارت لیست سوالات -->
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <h3 class="card-title">لیست سوالات</h3>
+                                                <a href="{% url 'checklist_app:general_question_form' %}" class="btn btn-primary">
+                                                    <i class="fas fa-plus me-2"></i>
+                                                    افزودن سوال جدید
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-striped table-row-bordered table-hover align-middle gs-4 gy-2">
+                                                    <thead>
+                                                        <tr class="fw-bold text-muted bg-light">
+                                                            <th class="min-w-50px">#</th>
+                                                            <th class="min-w-200px">
+                                                                <a href="?{% if search_query %}search={{ search_query }}&{% endif %}{% if scope_filter %}scope={{ scope_filter }}&{% endif %}{% if type_filter %}type={{ type_filter }}&{% endif %}{% if anomaly_type_filter %}anomaly_type={{ anomaly_type_filter }}&{% endif %}{% if hse_type_filter %}hse_type={{ hse_type_filter }}&{% endif %}{% if priority_filter %}priority={{ priority_filter }}&{% endif %}sort_by={% if sort_by == 'text' %}-text{% else %}text{% endif %}" class="sort-link">
+                                                                    <i class="fas {% if sort_by == 'text' %}fa-sort-up{% elif sort_by == '-text' %}fa-sort-down{% else %}fa-sort{% endif %} sort-icon"></i>
+                                                                    متن سوال
+                                                                </a>
+                                                            </th>
+                                                            <th class="min-w-100px">محدوده</th>
+                                                            <th class="min-w-100px">نوع سوال</th>
+                                                            <th class="min-w-150px">نوع آنومالی</th>
+                                                            <th class="min-w-100px">حوزه HSE</th>
+                                                            <th class="min-w-100px">اولویت</th>
+                                                            <th class="min-w-100px">عملیات</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for question in questions %}
+                                                        <tr>
+                                                            <td>{{ forloop.counter }}</td>
+                                                            <td>{{ question.text }}</td>
+                                                            <td>{{ question.get_question_scope_display }}</td>
+                                                            <td>{{ question.get_question_type_display }}</td>
+                                                            <td>{{ question.anomaly_type.type }}</td>
+                                                            <td>{{ question.get_hse_type_display }}</td>
+                                                            <td>{{ question.default_priority_on_fail.priority }}</td>
+                                                            <td>
+                                                                <a href="{% url 'checklist_app:general_question_edit' question.id %}" class="btn btn-icon btn-light-primary btn-sm me-1" title="ویرایش">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </a>
+                                                                <button type="button" class="btn btn-icon btn-light-danger btn-sm" onclick="deleteQuestion({{ question.id }})" title="حذف">
+                                                                    <i class="fas fa-trash"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                        {% empty %}
+                                                        <tr>
+                                                            <td colspan="8" class="text-center">هیچ سوالی یافت نشد</td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            <!-- صفحه‌بندی -->
+                                            {% if questions.paginator.num_pages > 1 %}
+                                            <div class="d-flex justify-content-center">
+                                                <nav aria-label="Page navigation">
+                                                    <ul class="pagination">
+                                                        {% if questions.has_previous %}
+                                                        <li class="page-item">
+                                                            <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if scope_filter %}&scope={{ scope_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if anomaly_type_filter %}&anomaly_type={{ anomaly_type_filter }}{% endif %}{% if hse_type_filter %}&hse_type={{ hse_type_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}" aria-label="First">
+                                                                <span aria-hidden="true">&laquo;&laquo;</span>
+                                                            </a>
+                                                        </li>
+                                                        <li class="page-item">
+                                                            <a class="page-link" href="?page={{ questions.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if scope_filter %}&scope={{ scope_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if anomaly_type_filter %}&anomaly_type={{ anomaly_type_filter }}{% endif %}{% if hse_type_filter %}&hse_type={{ hse_type_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}" aria-label="Previous">
+                                                                <span aria-hidden="true">&laquo;</span>
+                                                            </a>
+                                                        </li>
+                                                        {% endif %}
+
+                                                        {% for num in questions.paginator.page_range %}
+                                                            {% if questions.number == num %}
+                                                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                                                            {% elif num > questions.number|add:'-3' and num < questions.number|add:'3' %}
+                                                            <li class="page-item">
+                                                                <a class="page-link" href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if scope_filter %}&scope={{ scope_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if anomaly_type_filter %}&anomaly_type={{ anomaly_type_filter }}{% endif %}{% if hse_type_filter %}&hse_type={{ hse_type_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}">{{ num }}</a>
+                                                            </li>
+                                                            {% endif %}
+                                                        {% endfor %}
+
+                                                        {% if questions.has_next %}
+                                                        <li class="page-item">
+                                                            <a class="page-link" href="?page={{ questions.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if scope_filter %}&scope={{ scope_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if anomaly_type_filter %}&anomaly_type={{ anomaly_type_filter }}{% endif %}{% if hse_type_filter %}&hse_type={{ hse_type_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}" aria-label="Next">
+                                                                <span aria-hidden="true">&raquo;</span>
+                                                            </a>
+                                                        </li>
+                                                        <li class="page-item">
+                                                            <a class="page-link" href="?page={{ questions.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if scope_filter %}&scope={{ scope_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if anomaly_type_filter %}&anomaly_type={{ anomaly_type_filter }}{% endif %}{% if hse_type_filter %}&hse_type={{ hse_type_filter }}{% endif %}{% if priority_filter %}&priority={{ priority_filter }}{% endif %}{% if sort_by %}&sort_by={{ sort_by }}{% endif %}" aria-label="Last">
+                                                                <span aria-hidden="true">&raquo;&raquo;</span>
+                                                            </a>
+                                                        </li>
+                                                        {% endif %}
+                                                    </ul>
+                                                </nav>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% include 'footer.html' %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    // تنظیمات Select2
+    $('.select2-basic').select2({
+        theme: 'bootstrap-5',
+        width: '100%',
+        language: {
+            noResults: function() {
+                return "نتیجه‌ای یافت نشد";
+            },
+            searching: function() {
+                return "در حال جستجو...";
+            }
+        }
+    });
+
+    // تابع حذف سوال
+    function deleteQuestion(questionId) {
+        if (confirm('آیا از حذف این سوال اطمینان دارید؟')) {
+            $.ajax({
+                url: '{% url "checklist_app:general_question_delete" %}',
+                type: 'POST',
+                data: JSON.stringify({ question_id: questionId }),
+                contentType: 'application/json',
+                headers: {
+                    'X-CSRFToken': $('input[name="csrfmiddlewaretoken"]').val()
+                },
+                success: function(response) {
+                    if (response.status === 'success') {
+                        location.reload();
+                    } else {
+                        alert(response.message || 'خطا در حذف سوال');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    alert('خطا در حذف سوال');
+                }
+            });
+        }
+    }
+});
+</script>
+{% endblock %} 

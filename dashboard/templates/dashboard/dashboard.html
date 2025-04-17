@@ -30,6 +30,21 @@
                             <div id="kt_app_content_container" class="app-container container-fluid">
                                 <!--begin::Content-->
                                 <div class="row">
+                                    {% if license_warning %}
+                                    <div class="col-12 mb-5">
+                                        <div class="alert alert-warning d-flex align-items-center p-5">
+                                            <i class="ki-outline ki-information-5 fs-2hx text-warning me-4"></i>
+                                            <div class="d-flex flex-column">
+                                                <h4 class="mb-1 text-warning">هشدار</h4>
+                                                <span>{{ license_warning }}</span>
+                                                <div class="mt-3">
+                                                    <a href="{% url 'accounts:driver_license' %}" class="btn btn-sm btn-warning">تکمیل اطلاعات گواهینامه</a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                    
                                     <!--شروع بلوک اطلاعات کاربر -->
                                     <div class="col-xl-6 col-lg-12">
                                         <div class="card card-xl-stretch mb-5">

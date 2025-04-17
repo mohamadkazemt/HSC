@@ -14,5 +14,5 @@ urlpatterns = [
     path('reset-password/sms/', views.send_reset_code, name='send_reset_code'),
     path('reset-password/confirm/', views.confirm_reset_code, name='reset_password_confirm'),
     path('get_users_ajax/', views.get_users_ajax, name='get_users_ajax'),
-
+    path('driver-license/', views.driver_license, name='driver_license'),
 ]

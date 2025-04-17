@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
-from .models import UserProfile
+from .models import UserProfile, DriverLicense
 from django.core.exceptions import ValidationError
 
 class LoginForm(AuthenticationForm):
@@ -97,4 +97,80 @@ class PasswordResetConfirmForm(forms.Form):
 
         if new_password and confirm_password and new_password != confirm_password:
              self.add_error('confirm_password', "رمز عبور جدید و تکرار آن یکسان نیستند.")
+        return cleaned_data
+
+class DriverLicenseForm(forms.ModelForm):
+    license_base = forms.ChoiceField(
+        choices=DriverLicense.LICENSE_BASE_CHOICES,
+        widget=forms.Select(attrs={
+            'class': 'form-select',
+        })
+    )
+    
+    special_codes = forms.MultipleChoiceField(
+        choices=DriverLicense.SPECIAL_CODES,
+        required=False,
+        widget=forms.SelectMultiple(attrs={
+            'class': 'form-control form-control-lg form-control-solid select2',
+            'data-control': 'select2',
+            'data-placeholder': 'کدهای ویژه را انتخاب کنید',
+            'multiple': 'multiple'
+        })
+    )
+
+    class Meta:
+        model = DriverLicense
+        fields = ['license_base', 'expiry_date', 'has_special', 'special_codes', 'front_image', 'back_image']
+        widgets = {
+            'expiry_date': forms.DateInput(attrs={
+                'class': 'form-control form-control-lg form-control-solid',
+                'type': 'text',
+                'id': 'id_expiry_date'
+            }),
+            'has_special': forms.CheckboxInput(attrs={
+                'class': 'form-check-input',
+                'id': 'has_special'
+            }),
+            'front_image': forms.FileInput(attrs={
+                'class': 'form-control form-control-lg form-control-solid',
+                'accept': 'image/jpeg,image/png'
+            }),
+            'back_image': forms.FileInput(attrs={
+                'class': 'form-control form-control-lg form-control-solid',
+                'accept': 'image/jpeg,image/png'
+            })
+        }
+
+    def clean_front_image(self):
+        image = self.cleaned_data.get('front_image')
+        if image:
+            if image.size > 2 * 1024 * 1024:  # 2MB
+                raise ValidationError('حجم فایل نباید بیشتر از ۲ مگابایت باشد.')
+            if not image.content_type in ['image/jpeg', 'image/png']:
+                raise ValidationError('فرمت فایل باید jpg یا png باشد.')
+        return image
+
+    def clean_back_image(self):
+        image = self.cleaned_data.get('back_image')
+        if image:
+            if image.size > 2 * 1024 * 1024:  # 2MB
+                raise ValidationError('حجم فایل نباید بیشتر از ۲ مگابایت باشد.')
+            if not image.content_type in ['image/jpeg', 'image/png']:
+                raise ValidationError('فرمت فایل باید jpg یا png باشد.')
+        return image
+
+    def clean(self):
+        cleaned_data = super().clean()
+        has_special = cleaned_data.get('has_special')
+        special_codes = cleaned_data.get('special_codes')
+
+        if has_special and not special_codes:
+            self.add_error('special_codes', 'لطفا حداقل یک کد ویژه را انتخاب کنید.')
+        
+        # اطمینان از اینکه special_codes به صورت لیست ذخیره می‌شود
+        if special_codes:
+            cleaned_data['special_codes'] = list(special_codes)
+        else:
+            cleaned_data['special_codes'] = []
+
         return cleaned_data

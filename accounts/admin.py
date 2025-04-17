@@ -6,7 +6,7 @@ from io import BytesIO
 from django.urls import path
 from django.contrib import admin, messages
 from django.contrib.auth.models import User
-from .models import UserProfile, Section, Part, Position, UnitGroup
+from .models import UserProfile, Section, Part, Position, UnitGroup, DriverLicense
 
 class UserImportAdmin(admin.ModelAdmin):
     list_display = (
@@ -229,3 +229,28 @@ class PositionAdmin(admin.ModelAdmin):
 @admin.register(UnitGroup)
 class UnitGroupAdmin(admin.ModelAdmin):
     list_display = ('name', 'id')
+
+@admin.register(DriverLicense)
+class DriverLicenseAdmin(admin.ModelAdmin):
+    list_display = ('user', 'license_base', 'expiry_date', 'has_special', 'is_verified')
+    list_filter = ('license_base', 'has_special', 'is_verified')
+    search_fields = ('user__username', 'user__first_name', 'user__last_name')
+    readonly_fields = ('created_at', 'updated_at')
+    fieldsets = (
+        ('اطلاعات کاربر', {
+            'fields': ('user',)
+        }),
+        ('اطلاعات گواهینامه', {
+            'fields': ('license_base', 'expiry_date', 'has_special', 'special_codes')
+        }),
+        ('تصاویر', {
+            'fields': ('front_image', 'back_image')
+        }),
+        ('وضعیت', {
+            'fields': ('is_verified',)
+        }),
+        ('اطلاعات سیستمی', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )

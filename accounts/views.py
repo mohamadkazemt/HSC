@@ -7,9 +7,9 @@ from django.http import JsonResponse
 from dashboard.views import dashboard
 from .forms import LoginForm
 from .forms import PasswordResetSMSForm
-from accounts.models import UserProfile
+from accounts.models import UserProfile, DriverLicense
 from dashboard.sms_utils import send_template_sms
-from .forms import UserForm, UserProfileForm,PasswordResetConfirmForm, ChangePasswordForm
+from .forms import UserForm, UserProfileForm,PasswordResetConfirmForm, ChangePasswordForm, DriverLicenseForm
 from django.utils.timezone import now
 from datetime import timedelta
 from django.db.models import Q # اضافه کردن این خط
@@ -224,3 +224,29 @@ def get_users_ajax(request):
                     "name": f"{user.first_name} {user.last_name} ({user_profile.personnel_code})"
                 })
     return JsonResponse(users, safe=False)
+
+@login_required
+def driver_license(request):
+    try:
+        driver_license = DriverLicense.objects.get(user=request.user)
+        form = DriverLicenseForm(instance=driver_license)
+    except DriverLicense.DoesNotExist:
+        form = DriverLicenseForm()
+
+    if request.method == 'POST':
+        form = DriverLicenseForm(request.POST, request.FILES, instance=driver_license if 'driver_license' in locals() else None)
+        if form.is_valid():
+            license = form.save(commit=False)
+            license.user = request.user
+            license.save()
+            messages.success(request, 'اطلاعات گواهینامه با موفقیت ذخیره شد.')
+            return redirect('accounts:profile')
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"خطا در فیلد {field}: {error}")
+
+    return render(request, 'accounts/driver_license.html', {
+        'form': form,
+        'driver_license': driver_license if 'driver_license' in locals() else None
+    })

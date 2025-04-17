@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}اعلان‌ها{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">اعلان‌ها</h1>
+    
+    {% if unread_count > 0 %}
+    <div class="alert alert-info">
+        شما {{ unread_count }} اعلان خوانده نشده دارید.
+        <a href="{% url 'notifications:mark_all_as_read' %}" class="btn btn-sm btn-primary float-end">علامت‌گذاری همه به عنوان خوانده شده</a>
+    </div>
+    {% endif %}
+    
+    {% if notifications %}
+    <div class="list-group">
+        {% for notification in notifications %}
+        <div class="list-group-item {% if not notification.is_read %}list-group-item-primary{% endif %}">
+            <div class="d-flex w-100 justify-content-between">
+                <h5 class="mb-1">{{ notification.message }}</h5>
+                <small>{{ notification.created_at|date:"Y/m/d H:i" }}</small>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+                <a href="{% url 'notifications:notification_detail' notification.pk %}" class="btn btn-sm btn-info">مشاهده</a>
+                {% if not notification.is_read %}
+                <a href="{% url 'notifications:mark_as_read' notification.pk %}" class="btn btn-sm btn-success">علامت‌گذاری به عنوان خوانده شده</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        شما هیچ اعلانی ندارید.
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

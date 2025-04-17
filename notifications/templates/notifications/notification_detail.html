@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}جزئیات اعلان{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h2>جزئیات اعلان</h2>
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">{{ notification.message }}</h5>
+            <p class="card-text">
+                <strong>تاریخ:</strong> {{ notification.created_at|date:"Y/m/d H:i" }}<br>
+                <strong>وضعیت:</strong> {% if notification.is_read %}خوانده شده{% else %}خوانده نشده{% endif %}
+            </p>
+            
+            {% if notification.url %}
+            <a href="{{ notification.url }}" class="btn btn-primary">مشاهده محتوا</a>
+            {% endif %}
+            
+            <a href="{% url 'notifications:notification_list' %}" class="btn btn-secondary">بازگشت به لیست اعلان‌ها</a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

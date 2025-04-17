@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}لیست چک‌لیست‌ها{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-root">
+    <div class="app-page flex-column flex-column-fluid">
+        {% include 'header.html' %}
+
+        <div class="app-wrapper flex-column flex-row-fluid">
+            {% include 'sidebar.html' %}
+
+            <div class="app-main flex-column flex-row-fluid">
+                <div class="d-flex flex-column flex-column-fluid">
+                    {% include 'toolbar.html' %}
+
+                    <div class="app-content flex-column-fluid">
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">لیست چک‌لیست‌ها</h3>
+                    <div class="card-tools">
+                        <a href="{% url 'checklist_app:general_checklist_form' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> ایجاد چک‌لیست جدید
+                        </a>
+                        <a href="{% url 'checklist_app:export_general_checklists_excel' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-success">
+                            <i class="fas fa-file-excel"></i> خروجی اکسل
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- فیلترها -->
+                    <form method="get" class="mb-4">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>نوع چک‌لیست</label>
+                                    <select name="checklist_type" class="form-control">
+                                        <option value="">همه</option>
+                                        {% for value, label in checklist_types %}
+                                        <option value="{{ value }}" {% if request.GET.checklist_type == value %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>از تاریخ</label>
+                                    <input type="text" name="date_from" class="form-control datepicker" value="{{ request.GET.date_from }}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>تا تاریخ</label>
+                                    <input type="text" name="date_to" class="form-control datepicker" value="{{ request.GET.date_to }}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>شیفت</label>
+                                    <input type="text" name="shift" class="form-control" value="{{ request.GET.shift }}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>گروه شیفت</label>
+                                    <input type="text" name="shift_group" class="form-control" value="{{ request.GET.shift_group }}">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>&nbsp;</label>
+                                    <button type="submit" class="btn btn-primary btn-block">
+                                        <i class="fas fa-search"></i> جستجو
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- جدول چک‌لیست‌ها -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>تاریخ</th>
+                                    <th>نوع چک‌لیست</th>
+                                    <th>ماشین/مکان</th>
+                                    <th>شیفت</th>
+                                    <th>گروه شیفت</th>
+                                    <th>ثبت کننده</th>
+                                    <th>عملیات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for checklist in page_obj %}
+                                <tr>
+                                    <td>{{ checklist.date|date:"Y/m/d H:i" }}</td>
+                                    <td>{{ checklist.get_checklist_type_display }}</td>
+                                    <td>
+                                        {% if checklist.checklist_type == 'machine' %}
+                                            {{ checklist.machine }}
+                                        {% else %}
+                                            {{ checklist.location_section }}
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ checklist.shift }}</td>
+                                    <td>{{ checklist.shift_group }}</td>
+                                    <td>{{ checklist.user.get_full_name }}</td>
+                                    <td>
+                                        <a href="{% url 'checklist_app:general_checklist_detail' checklist.pk %}" class="btn btn-info btn-sm">
+                                            <i class="fas fa-eye"></i> مشاهده
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center">هیچ چک‌لیستی یافت نشد.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    {% if page_obj.has_other_pages %}
+                    <nav aria-label="Page navigation" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">قبلی</a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for num in page_obj.paginator.page_range %}
+                            <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">بعدی</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                </div>
+            </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% include 'footer.html' %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // تنظیم تاریخ‌پیکر
+        $('.datepicker').persianDatepicker({
+            format: 'YYYY/MM/DD',
+            autoClose: true
+        });
+    });
+</script>
+{% endblock %} 

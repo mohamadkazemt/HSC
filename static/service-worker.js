@@ -1,10 +1,16 @@
-const CACHE_NAME = 'my-site-cache-v1';
+const CACHE_NAME = 'my-site-cache-v6';
 const urlsToCache = [
   '/',
-  '/static/css/main.css', // مسیر فایل‌های CSS خود را وارد کنید
-  '/static/js/main.js',   // مسیر فایل‌های JS خود را وارد کنید
-  '/static/manifest.json',
-  //  مسیرهای دیگری که می‌خواهید کش شوند
+  'assets/css/style.bundle.css',
+  'assets/css/style.bundle.rtl.css',
+  'assets/css/custom.css',
+  'assets/js/scripts.bundle.js',
+  'assets/js/widgets.bundle.js',
+  'assets/js/persian-date.min.js',
+  'manifest.json',
+  'assets/media/logos/logo-small.png',
+  'assets/media/logos/logo.png',
+  'assets/fonts/IRANSansWeb.woff'
 ];
 
 self.addEventListener('install', function(event) {
