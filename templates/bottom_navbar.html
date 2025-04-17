@@ -55,7 +55,7 @@
     <div class="forms-menu-content">
         {% if request.user|has_permission:"anomalis" %}
             <a href="{% url 'anomalis:anomalis' %}" class="forms-menu-item">
-                <i class="ki-outline ki-warning-2 fs-2 text-warning"></i>
+                <i class="ki-outline ki-notification-status fs-2 text-warning"></i>
                 <span>ثبت آنومالی</span>
             </a>
         {% endif %}
@@ -83,8 +83,8 @@
         
         {% if request.user|has_permission:"create_report" %}
             <a href="{% url 'contractor_management:create_report' %}" class="forms-menu-item">
-                <i class="ki-outline ki-truck fs-2 text-info"></i>
-                <span>ثبت کارکرد خودرو پیمانکاران</span>
+                <i class="ki-outline ki-delivery fs-2 text-info"></i>
+                <span>ثبت کارکرد خودرو</span>
             </a>
         {% endif %}
         
@@ -97,17 +97,32 @@
 
         {% if request.user|has_permission:"report_create" %}
             <a href="{% url 'fire_reports:report_create' %}" class="forms-menu-item">
-                <i class="ki-outline ki-fire fs-2 text-danger"></i>
+                <i class="ki-outline ki-shield-tick fs-2 text-danger"></i>
                 <span>گزارش آتش‌نشانی</span>
             </a>
         {% endif %}
 
         {% if request.user|has_permission:"meeting_create" %}
             <a href="{% url 'meetings:meeting_create' %}" class="forms-menu-item">
-                <i class="ki-outline ki-calendar-tick fs-2 text-primary"></i>
+                <i class="ki-outline ki-chart-line-star fs-2 text-primary"></i>
                 <span>افزودن جلسه</span>
             </a>
         {% endif %}
+        
+        {% if request.user|has_permission:"general_checklist_form" %}
+            <a href="{% url 'checklist_app:general_checklist_form' %}" class="forms-menu-item">
+                <i class="ki-outline ki-notepad-edit fs-2 text-success"></i>
+                <span>ایجاد چک لیست</span>
+            </a>
+        {% endif %}
+        
+        {% if request.user|has_permission:"question_form" %}
+            <a href="{% url 'checklist_app:general_question_form' %}" class="forms-menu-item">
+                <i class="ki-outline ki-questionnaire-tablet fs-2 text-info"></i>
+                <span>طراحی سوالات</span>
+            </a>
+        {% endif %}
+        
     </div>
 </div>
 
@@ -284,12 +299,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="menu-title text-gray-800 fw-bold mb-2">آنومالی</div>
                 <div class="menu-sub-items">
                     <a href="{% url 'anomalis:list' %}" class="menu-sub-item d-flex align-items-center px-3 py-2 rounded-3">
-                        <i class="ki-outline ki-abstract-26 text-primary fs-5 me-2"></i>
+                        <i class="ki-outline ki-notification-status text-warning fs-5 me-2"></i>
                         <span class="text-gray-700">لیست آنومالی ها</span>
                     </a>
                     {% if request.user|has_permission:"anomaly_reports" %}
                         <a href="{% url 'anomalis:anomaly_reports' %}" class="menu-sub-item d-flex align-items-center px-3 py-2 rounded-3">
-                            <i class="ki-outline ki-chart-line-star text-success fs-5 me-2"></i>
+                            <i class="ki-outline ki-chart-simple text-success fs-5 me-2"></i>
                             <span class="text-gray-700">تحلیل و آمار</span>
                         </a>
                     {% endif %}
@@ -302,7 +317,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="menu-title text-gray-800 fw-bold mb-2">گزارش روزانه</div>
                 <div class="menu-sub-items">
                     <a href="{% url 'dailyreport_hse:daily_report_list' %}" class="menu-sub-item d-flex align-items-center px-3 py-2 rounded-3">
-                        <i class="ki-outline ki-abstract-26 text-primary fs-5 me-2"></i>
+                        <i class="ki-outline ki-document text-success fs-5 me-2"></i>
                         <span class="text-gray-700">لیست گزارش ها</span>
                     </a>
                 </div>
@@ -314,7 +329,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="menu-title text-gray-800 fw-bold mb-2">گزارش حوادث</div>
                 <div class="menu-sub-items">
                     <a href="{% url 'hse_incidents:list_reports' %}" class="menu-sub-item d-flex align-items-center px-3 py-2 rounded-3">
-                        <i class="ki-outline ki-abstract-26 text-primary fs-5 me-2"></i>
+                        <i class="ki-outline ki-shield-cross text-danger fs-5 me-2"></i>
                         <span class="text-gray-700">لیست گزارش ها</span>
                     </a>
                 </div>
@@ -326,7 +341,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="menu-title text-gray-800 fw-bold mb-2">دفتر گزارش شیفت</div>
                 <div class="menu-sub-items">
                     <a href="{% url 'operations:loading_operations_list' %}" class="menu-sub-item d-flex align-items-center px-3 py-2 rounded-3">
-                        <i class="ki-outline ki-abstract-26 text-primary fs-5 me-2"></i>
+                        <i class="ki-outline ki-time text-primary fs-5 me-2"></i>
                         <span class="text-gray-700">لیست گزارش</span>
                     </a>
                 </div>
@@ -338,7 +353,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="menu-title text-gray-800 fw-bold mb-2">مرخصی</div>
                 <div class="menu-sub-items">
                     <a href="{% url 'leave_reports:shift_report_list' %}" class="menu-sub-item d-flex align-items-center px-3 py-2 rounded-3">
-                        <i class="ki-outline ki-abstract-26 text-primary fs-5 me-2"></i>
+                        <i class="ki-outline ki-calendar-tick text-primary fs-5 me-2"></i>
                         <span class="text-gray-700">لیست مرخصی</span>
                     </a>
                 </div>
@@ -350,7 +365,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="menu-title text-gray-800 fw-bold mb-2">کارکرد خودرو پیمانکاران</div>
                 <div class="menu-sub-items">
                     <a href="{% url 'contractor_management:all_reports' %}" class="menu-sub-item d-flex align-items-center px-3 py-2 rounded-3">
-                        <i class="ki-outline ki-truck text-danger fs-5 me-2"></i>
+                        <i class="ki-outline ki-delivery text-danger fs-5 me-2"></i>
                         <span class="text-gray-700">لیست کارکردها</span>
                     </a>
                 </div>
@@ -374,9 +389,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="menu-title text-gray-800 fw-bold mb-2">گزارشات آتش‌نشانی</div>
                 <div class="menu-sub-items">
                     <a href="{% url 'fire_reports:report_list' %}" class="menu-sub-item d-flex align-items-center px-3 py-2 rounded-3">
-                        <i class="ki-outline ki-fire text-danger fs-5 me-2"></i>
+                        <i class="ki-outline ki-shield-tick text-danger fs-5 me-2"></i>
                         <span class="text-gray-700">لیست گزارش‌ها</span>
                     </a>
+                </div>
+            </div>
+        {% endif %}
+        
+        {% if request.user|has_permission:"question_form" or request.user|has_permission:"question_list" %}
+            <div class="menu-item mb-3">
+                <div class="menu-title text-gray-800 fw-bold mb-2">مدیریت سوالات</div>
+                <div class="menu-sub-items">
+                    {% if request.user|has_permission:"question_list" %}
+                        <a href="{% url 'checklist_app:general_question_list' %}" class="menu-sub-item d-flex align-items-center px-3 py-2 rounded-3">
+                            <i class="ki-outline ki-questionnaire-tablet text-warning fs-5 me-2"></i>
+                            <span class="text-gray-700">لیست سوالات</span>
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         {% endif %}
@@ -385,7 +414,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="menu-title text-gray-800 fw-bold mb-2">جلسات</div>
                 <div class="menu-sub-items">
                     <a href="{% url 'meetings:meeting_list' %}" class="menu-sub-item d-flex align-items-center px-3 py-2 rounded-3">
-                        <i class="ki-outline ki-calendar-tick text-primary fs-5 me-2"></i>
+                        <i class="ki-outline ki-chart-line-star text-primary fs-5 me-2"></i>
                         <span class="text-gray-700">لیست جلسات</span>
                     </a>
                 </div>
