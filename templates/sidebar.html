@@ -133,6 +133,24 @@
                     </div>
                 {% endif %}
 
+                {% if request.user|has_permission:"general_checklist_form" %}
+                    <div class="menu-item">
+                        <a class="menu-link" href="{% url 'checklist_app:general_checklist_form' %}">
+                            <span class="menu-icon"><i class="ki-outline ki-check-square text-success fs-2"></i></span>
+                            <span class="menu-title">ایجاد چک لیست</span>
+                        </a>
+                    </div>
+                {% endif %}
+
+                {% if request.user|has_permission:"general_checklist_list" %}
+                    <div class="menu-item">
+                        <a class="menu-link" href="{% url 'checklist_app:general_checklist_list' %}">
+                            <span class="menu-icon"><i class="ki-outline ki-list text-success fs-2"></i></span>
+                            <span class="menu-title">لیست چک لیست‌ها</span>
+                        </a>
+                    </div>
+                {% endif %}
+
             </div>
             <!-- End Shortcuts Menu -->
 
@@ -392,6 +410,87 @@
                                                     <span class="bullet bullet-dot"></span>
                                                 </span>
                                                 <span class="menu-title">لیست چک لیست ها</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if request.user|has_permission:"create_question" or request.user|has_permission:"list_questions" or request.user|has_permission:"create_checklist" %}
+                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
+                                <span class="menu-link">
+                                    <span class="menu-bullet">
+                                        <span class="bullet bullet-dot"></span>
+                                    </span>
+                                    <span class="menu-title">مدیریت چک لیست</span>
+                                    <span class="menu-arrow"></span>
+                                </span>
+                                <div class="menu-sub menu-sub-accordion">
+                                    {% if request.user|has_permission:"create_question" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link"
+                                               href="{% url 'checklist:create_question' %}">
+                                                <span class="menu-bullet">
+                                                    <span class="bullet bullet-dot"></span>
+                                                </span>
+                                                <span class="menu-title">ایجاد سوال جدید</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                    {% if request.user|has_permission:"list_questions" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link"
+                                               href="{% url 'checklist:list_questions' %}">
+                                                <span class="menu-bullet">
+                                                    <span class="bullet bullet-dot"></span>
+                                                </span>
+                                                <span class="menu-title">لیست سوالات</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                    {% if request.user|has_permission:"create_checklist" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link"
+                                               href="{% url 'checklist:create_checklist' %}">
+                                                <span class="menu-bullet">
+                                                    <span class="bullet bullet-dot"></span>
+                                                </span>
+                                                <span class="menu-title">ایجاد چک لیست</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if request.user|has_permission:"general_checklist_form" or request.user|has_permission:"general_checklist_list" %}
+                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
+                                <span class="menu-link">
+                                    <span class="menu-bullet">
+                                        <span class="bullet bullet-dot"></span>
+                                    </span>
+                                    <span class="menu-title">مدیریت چک لیست</span>
+                                    <span class="menu-arrow"></span>
+                                </span>
+                                <div class="menu-sub menu-sub-accordion">
+                                    {% if request.user|has_permission:"general_checklist_form" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'checklist_app:general_checklist_form' %}">
+                                                <span class="menu-bullet">
+                                                    <span class="bullet bullet-dot"></span>
+                                                </span>
+                                                <span class="menu-title">ایجاد چک لیست</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                    {% if request.user|has_permission:"general_checklist_list" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'checklist_app:general_checklist_list' %}">
+                                                <span class="menu-bullet">
+                                                    <span class="bullet bullet-dot"></span>
+                                                </span>
+                                                <span class="menu-title">لیست چک لیست‌ها</span>
                                             </a>
                                         </div>
                                     {% endif %}

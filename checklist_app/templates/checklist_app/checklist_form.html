@@ -109,7 +109,7 @@
                         <div class="row mt-4">
                             <div class="col-12">
                                 <button type="submit" class="btn btn-primary">ثبت چک‌لیست</button>
-                                <a href="{% url 'checklist_app:checklist_list' %}" class="btn btn-secondary">انصراف</a>
+                                <a href="{% url 'checklist_app:general_checklist_list' %}" class="btn btn-secondary">انصراف</a>
                             </div>
                         </div>
                     </form>
@@ -218,7 +218,7 @@ $(document).ready(function() {
 
         if ((type === 'machine' && data.machine_id) || (type === 'location' && data.location_section_id)) {
             $.ajax({
-                url: '{% url "checklist_app:get_questions" %}',
+                url: '{% url "checklist_app:get_general_questions" %}',
                 type: 'POST',
                 data: JSON.stringify(data),
                 contentType: 'application/json',
@@ -320,7 +320,7 @@ $(document).ready(function() {
         });
 
         $.ajax({
-            url: '{% url "checklist_app:submit_checklist" %}',
+            url: '{% url "checklist_app:submit_general_checklist" %}',
             type: 'POST',
             data: JSON.stringify(formData),
             contentType: 'application/json',
@@ -350,7 +350,7 @@ $(document).ready(function() {
                     });
                     followupModal.show();
                 } else if (response.status === 'success') {
-                    window.location.href = '{% url "checklist_app:checklist_detail" 0 %}'.replace('0', response.checklist_id);
+                    window.location.href = '{% url "checklist_app:general_checklist_detail" 0 %}'.replace('0', response.checklist_id);
                 }
             },
             error: function(xhr, status, error) {
@@ -384,7 +384,7 @@ $(document).ready(function() {
                 followupModal.hide();
                 
                 if (response.status === 'success') {
-                    window.location.href = '{% url "checklist_app:checklist_detail" 0 %}'.replace('0', formData.checklist_id);
+                    window.location.href = '{% url "checklist_app:general_checklist_detail" 0 %}'.replace('0', formData.checklist_id);
                 } else {
                     alert(response.message || 'خطایی رخ داد');
                 }

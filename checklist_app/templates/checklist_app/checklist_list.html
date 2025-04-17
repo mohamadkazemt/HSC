@@ -23,10 +23,10 @@
                 <div class="card-header">
                     <h3 class="card-title">لیست چک‌لیست‌ها</h3>
                     <div class="card-tools">
-                        <a href="{% url 'checklist_app:checklist_form' %}" class="btn btn-primary">
+                        <a href="{% url 'checklist_app:general_checklist_form' %}" class="btn btn-primary">
                             <i class="fas fa-plus"></i> ایجاد چک‌لیست جدید
                         </a>
-                        <a href="{% url 'checklist_app:export_checklists_excel' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-success">
+                        <a href="{% url 'checklist_app:export_general_checklists_excel' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" class="btn btn-success">
                             <i class="fas fa-file-excel"></i> خروجی اکسل
                         </a>
                     </div>
@@ -113,7 +113,7 @@
                                     <td>{{ checklist.shift_group }}</td>
                                     <td>{{ checklist.user.get_full_name }}</td>
                                     <td>
-                                        <a href="{% url 'checklist_app:checklist_detail' checklist.pk %}" class="btn btn-info btn-sm">
+                                        <a href="{% url 'checklist_app:general_checklist_detail' checklist.pk %}" class="btn btn-info btn-sm">
                                             <i class="fas fa-eye"></i> مشاهده
                                         </a>
                                     </td>

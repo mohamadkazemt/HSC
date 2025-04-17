@@ -17,13 +17,14 @@ from anomalis.models import (
 )
 from accounts.models import UserProfile
 import json
+from permissions.utils import permission_required
 
 User = get_user_model()
 
 # Create your views here.
-
+@permission_required("general_checklist_list")
 @login_required
-def checklist_list_view(request):
+def general_checklist_list_view(request):
     checklists = Checklist.objects.all().order_by('-date')
     paginator = Paginator(checklists, 10)
     page_number = request.GET.get('page')
@@ -34,8 +35,9 @@ def checklist_list_view(request):
     }
     return render(request, 'checklist_app/checklist_list.html', context)
 
+@permission_required("general_checklist_form")
 @login_required
-def checklist_form_view(request):
+def general_checklist_form_view(request):
     machines = MiningMachine.objects.all()
     location_sections = LocationSection.objects.all()
     
@@ -45,8 +47,9 @@ def checklist_form_view(request):
     }
     return render(request, 'checklist_app/checklist_form.html', context)
 
+@permission_required("general_checklist_detail")
 @login_required
-def checklist_detail_view(request, pk):
+def general_checklist_detail_view(request, pk):
     checklist = get_object_or_404(Checklist, pk=pk)
     answers = Answer.objects.filter(checklist=checklist)
     
@@ -56,10 +59,11 @@ def checklist_detail_view(request, pk):
     }
     return render(request, 'checklist_app/checklist_detail.html', context)
 
+@permission_required("get_general_questions")
 @csrf_exempt
 @login_required
 @require_http_methods(["POST"])
-def get_questions(request):
+def get_general_questions(request):
     data = json.loads(request.body)
     checklist_type = data.get('checklist_type')
     machine_id = data.get('machine_id')
@@ -82,9 +86,10 @@ def get_questions(request):
     
     return JsonResponse({'questions': questions_data})
 
+@permission_required("submit_general_checklist")
 @login_required
 @require_http_methods(["POST"])
-def submit_checklist(request):
+def submit_general_checklist(request):
     data = json.loads(request.body)
     print(f"Received data: {data}")
     
@@ -130,6 +135,7 @@ def submit_checklist(request):
     
     return JsonResponse({'status': 'success', 'checklist_id': checklist.id})
 
+@permission_required("create_general_anomaly_from_failure")
 @login_required
 @require_http_methods(["POST"])
 def create_anomaly_from_failure_view(request):
@@ -237,11 +243,13 @@ def create_anomaly_from_failure_view(request):
         'message': 'خطا در ایجاد آنومالی‌ها'
     })
 
+@permission_required("export_checklists_excel")
 @login_required
-def export_checklists_excel(request):
+def export_general_checklists_excel(request):
     # این تابع باید با توجه به نیاز شما پیاده‌سازی شود
     pass
 
+@permission_required("get_followup_users")
 @login_required
 def get_followup_users(request):
     try:
@@ -262,8 +270,9 @@ def get_followup_users(request):
         print(f"Error in get_followup_users: {str(e)}")  # اضافه کردن لاگ خطا
         return JsonResponse({'error': str(e)}, status=500)
 
+@permission_required("question_form")
 @login_required
-def question_form_view(request):
+def general_question_form_view(request):
     if request.method == 'POST':
         # دریافت داده‌های فرم
         data = request.POST
@@ -290,7 +299,7 @@ def question_form_view(request):
             question.location_section_id = data['location_section']
         question.save()
         
-        return redirect('checklist_app:question_list')
+        return redirect('checklist_app:general_question_list')
     
     # دریافت داده‌های مورد نیاز برای فرم
     context = {
@@ -304,8 +313,9 @@ def question_form_view(request):
     
     return render(request, 'checklist_app/question_form.html', context)
 
+@permission_required("question_list")
 @login_required
-def question_list_view(request):
+def general_question_list_view(request):
     questions = Question.objects.all()
     
     # فیلترها
@@ -357,8 +367,9 @@ def question_list_view(request):
     }
     return render(request, 'checklist_app/question_list.html', context)
 
+@permission_required("question_edit")
 @login_required
-def question_edit_view(request, pk):
+def general_question_edit_view(request, pk):
     question = get_object_or_404(Question, pk=pk)
     
     if request.method == 'POST':
@@ -377,7 +388,7 @@ def question_edit_view(request, pk):
         question.default_anomaly_description_id = data.get('default_anomaly_description', '')
         question.save()
         
-        return redirect('checklist_app:question_list')
+        return redirect('checklist_app:general_question_list')
     
     context = {
         'question': question,
@@ -388,9 +399,10 @@ def question_edit_view(request, pk):
     
     return render(request, 'checklist_app/question_form.html', context)
 
+@permission_required("question_delete")
 @login_required
 @require_http_methods(["POST"])
-def question_delete_view(request):
+def general_question_delete_view(request):
     data = json.loads(request.body)
     question_id = data.get('question_id')
     

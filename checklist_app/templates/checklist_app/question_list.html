@@ -141,7 +141,7 @@
                                                                 <i class="fas fa-filter me-2"></i>
                                                                 اعمال فیلتر
                                                             </button>
-                                                            <a href="{% url 'checklist_app:question_list' %}" class="btn btn-secondary">
+                                                            <a href="{% url 'checklist_app:general_question_list' %}" class="btn btn-secondary">
                                                                 <i class="fas fa-times me-2"></i>
                                                                 پاک کردن فیلترها
                                                             </a>
@@ -157,7 +157,7 @@
                                         <div class="card-header">
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <h3 class="card-title">لیست سوالات</h3>
-                                                <a href="{% url 'checklist_app:question_form' %}" class="btn btn-primary">
+                                                <a href="{% url 'checklist_app:general_question_form' %}" class="btn btn-primary">
                                                     <i class="fas fa-plus me-2"></i>
                                                     افزودن سوال جدید
                                                 </a>
@@ -194,7 +194,7 @@
                                                             <td>{{ question.get_hse_type_display }}</td>
                                                             <td>{{ question.default_priority_on_fail.priority }}</td>
                                                             <td>
-                                                                <a href="{% url 'checklist_app:question_edit' question.id %}" class="btn btn-icon btn-light-primary btn-sm me-1" title="ویرایش">
+                                                                <a href="{% url 'checklist_app:general_question_edit' question.id %}" class="btn btn-icon btn-light-primary btn-sm me-1" title="ویرایش">
                                                                     <i class="fas fa-edit"></i>
                                                                 </a>
                                                                 <button type="button" class="btn btn-icon btn-light-danger btn-sm" onclick="deleteQuestion({{ question.id }})" title="حذف">
@@ -291,7 +291,7 @@ $(document).ready(function() {
     function deleteQuestion(questionId) {
         if (confirm('آیا از حذف این سوال اطمینان دارید؟')) {
             $.ajax({
-                url: '{% url "checklist_app:question_delete" %}',
+                url: '{% url "checklist_app:general_question_delete" %}',
                 type: 'POST',
                 data: JSON.stringify({ question_id: questionId }),
                 contentType: 'application/json',
