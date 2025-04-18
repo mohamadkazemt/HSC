@@ -1,6 +1,6 @@
 # dashboard/views.py
 from django.utils import timezone
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from dashboard.models import Notification
 import jdatetime
@@ -13,6 +13,7 @@ from permissions.utils import get_all_views_with_labels
 from permissions.models import UserPermission, PartPermission, SectionPermission, PositionPermission, UnitGroupPermission
 from accounts.models import UnitGroup, UserProfile, DriverLicense
 from django.contrib import messages
+from django.http import JsonResponse
 
 name = 'dashboard'
 
@@ -305,3 +306,43 @@ def activity_list(request):
         'activity_type': activity_type,
         'title': 'فعالیت‌های من',
     })
+
+
+@login_required
+def mark_all_notifications_as_read(request):
+    """علامت‌گذاری همه اعلان‌های خوانده نشده کاربر به عنوان خوانده شده"""
+    from .models import Notification
+    
+    # علامت‌گذاری همه اعلان‌های خوانده نشده
+    count = Notification.mark_all_as_read(request.user)
+    
+    # اگر درخواست AJAX باشد، پاسخ JSON برگردان
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'status': 'success',
+            'message': f'{count} اعلان به عنوان خوانده شده علامت‌گذاری شد.',
+            'count': count
+        })
+    
+    # در غیر این صورت، به صفحه اعلان‌ها برگرد
+    messages.success(request, f'{count} اعلان به عنوان خوانده شده علامت‌گذاری شد.')
+    return redirect('dashboard:notification_list')
+
+
+@login_required
+def notification_detail(request, pk):
+    """نمایش جزئیات یک اعلان"""
+    from .models import Notification
+    
+    notification = get_object_or_404(Notification, pk=pk, user=request.user)
+    
+    # علامت‌گذاری اعلان به عنوان خوانده شده
+    if not notification.is_read:
+        notification.mark_as_read()
+    
+    context = {
+        'notification': notification,
+        'title': 'جزئیات اعلان',
+    }
+    
+    return render(request, 'notification_detail.html', context)

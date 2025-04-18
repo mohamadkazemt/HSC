@@ -121,3 +121,30 @@
     </div>
     <!--end::Header container-->
 </div>
+
+<script>
+    // اضافه کردن عملکرد دکمه علامت‌گذاری همه به عنوان خوانده شده در هدر
+    document.getElementById('mark_all_read_header')?.addEventListener('click', function() {
+        if (confirm('آیا مطمئن هستید که می‌خواهید همه اعلان‌ها را به عنوان خوانده شده علامت‌گذاری کنید؟')) {
+            fetch('{% url "dashboard:mark_all_notifications_read" %}', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // نمایش پیام موفقیت
+                    alert(data.message);
+                    // بازخوانی صفحه
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('خطایی رخ داد. لطفاً دوباره تلاش کنید.');
+            });
+        }
+    });
+</script>
