@@ -24,11 +24,11 @@
             {% endif %}
             <div class="app-navbar-item ms-1 ms-md-3">
                 <!--begin::Menu wrapper-->
-                <div class="btn btn-icon btn-custom btn-color-gray-600 btn-active-light btn-active-color-primary w-35px h-35px w-md-40px h-md-40px position-relative" id="kt_drawer_chat_toggle">
+                <div class="btn btn-icon btn-custom btn-color-gray-600 btn-active-light btn-active-color-primary w-35px h-35px w-md-40px h-md-40px position-relative notification-bell" id="kt_drawer_chat_toggle">
                     {% if request.user.is_authenticated %}
                     <i class="ki-outline ki-notification-on fs-1"></i>
                     {% if unread_notifications_count > 0 %}
-                    <span class="position-absolute top-0 start-100 translate-middle badge badge-circle badge-danger w-15px h-15px ms-n4 mt-3">
+                    <span class="position-absolute top-0 start-100 translate-middle badge badge-circle badge-danger w-15px h-15px ms-n4 mt-3 notification-badge animate__animated animate__bounceIn">
                         {{ unread_notifications_count }}
                     </span>
                     {% endif %}
@@ -72,19 +72,104 @@
                         </div>
                     </div>
                     <!--end::Menu item-->
+
                     <!--begin::Menu separator-->
                     <div class="separator my-2"></div>
                     <!--end::Menu separator-->
+
+                    <!--begin::Menu section-->
+                    <div class="menu-item">
+                        <div class="menu-content">
+                            <span class="menu-heading fw-bold text-uppercase fs-7">حساب کاربری</span>
+                        </div>
+                    </div>
+                    <!--end::Menu section-->
+
                     <!--begin::Menu item-->
                     <div class="menu-item px-5">
-                        <a href="{% url 'accounts:profile' %}" class="menu-link px-5">پروفایل من</a>
+                        <a href="{% url 'accounts:profile' %}" class="menu-link px-5">
+                            <i class="ki-outline ki-profile-user fs-2 me-2"></i>
+                            پروفایل من
+                        </a>
                     </div>
                     <!--end::Menu item-->
+
                     <!--begin::Menu item-->
-                    <div class="menu-item px-5 my-1">
-                        <a href="{% url 'accounts:settings' %}" class="menu-link px-5">تنظیمات اکانت</a>
+                    <div class="menu-item px-5">
+                        <a href="{% url 'accounts:settings' %}" class="menu-link px-5">
+                            <i class="ki-outline ki-setting-3 fs-2 me-2"></i>
+                            تنظیمات اکانت
+                        </a>
                     </div>
                     <!--end::Menu item-->
+
+                    {% if user.is_staff %}
+                    <!--begin::Menu separator-->
+                    <div class="separator my-2"></div>
+                    <!--end::Menu separator-->
+
+                    <!--begin::Menu section-->
+                    <div class="menu-item">
+                        <div class="menu-content">
+                            <span class="menu-heading fw-bold text-uppercase fs-7">مدیریت سیستم</span>
+                        </div>
+                    </div>
+                    <!--end::Menu section-->
+
+                    <!--begin::Menu item-->
+                    <div class="menu-item px-5">
+                        <a href="{% url 'admin:index' %}" class="menu-link px-5">
+                            <i class="ki-outline ki-shield-tick fs-2 me-2"></i>
+                            داشبورد ادمین
+                        </a>
+                    </div>
+                    <!--end::Menu item-->
+                    {% endif %}
+
+                    {% if perms.permissions %}
+                    <!--begin::Menu separator-->
+                    <div class="separator my-2"></div>
+                    <!--end::Menu separator-->
+
+                    <!--begin::Menu section-->
+                    <div class="menu-item">
+                        <div class="menu-content">
+                            <span class="menu-heading fw-bold text-uppercase fs-7">مدیریت دسترسی‌ها</span>
+                        </div>
+                    </div>
+                    <!--end::Menu section-->
+
+                    <!--begin::Menu item-->
+                    <div class="menu-item px-5">
+                        <a href="{% url 'permissions:list_permissions' %}" class="menu-link px-5">
+                            <i class="ki-outline ki-lock-2 fs-2 me-2"></i>
+                            لیست دسترسی‌ها
+                        </a>
+                    </div>
+                    <!--end::Menu item-->
+
+                    <!--begin::Menu item-->
+                    <div class="menu-item px-5">
+                        <a href="{% url 'permissions:manage_access' %}" class="menu-link px-5">
+                            <i class="ki-outline ki-user-tick fs-2 me-2"></i>
+                            مدیریت دسترسی‌های کاربران
+                        </a>
+                    </div>
+                    <!--end::Menu item-->
+                    {% endif %}
+
+                    <!--begin::Menu separator-->
+                    <div class="separator my-2"></div>
+                    <!--end::Menu separator-->
+
+                    <!--begin::Menu section-->
+                    <div class="menu-item">
+                        <div class="menu-content">
+                            <span class="menu-heading fw-bold text-uppercase fs-7">تنظیمات نمایش</span>
+                        </div>
+                    </div>
+                    <!--end::Menu section-->
+
                     <!-- حالت تاریک/روشن -->
                     <div class="menu-item px-3">
                         <div class="d-flex align-items-center justify-content-between">
@@ -102,10 +187,17 @@
                             </div>
                         </div>
                     </div>
-                    <!--end::Menu item-->
+
+                    <!--begin::Menu separator-->
+                    <div class="separator my-2"></div>
+                    <!--end::Menu separator-->
+
                     <!--begin::Menu item-->
                     <div class="menu-item px-5">
-                        <a href="{% url 'accounts:logout' %}" class="menu-link px-5">خروج</a>
+                        <a href="{% url 'accounts:logout' %}" class="menu-link px-5">
+                            <i class="ki-outline ki-exit fs-2 me-2"></i>
+                            خروج
+                        </a>
                     </div>
                     <!--end::Menu item-->
                 </div>
@@ -121,3 +213,30 @@
     </div>
     <!--end::Header container-->
 </div>
+
+<script>
+    // اضافه کردن عملکرد دکمه علامت‌گذاری همه به عنوان خوانده شده در هدر
+    document.getElementById('mark_all_read_header')?.addEventListener('click', function() {
+        if (confirm('آیا مطمئن هستید که می‌خواهید همه اعلان‌ها را به عنوان خوانده شده علامت‌گذاری کنید؟')) {
+            fetch('{% url "dashboard:mark_all_notifications_read" %}', {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // نمایش پیام موفقیت
+                    alert(data.message);
+                    // بازخوانی صفحه
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('خطایی رخ داد. لطفاً دوباره تلاش کنید.');
+            });
+        }
+    });
+</script>

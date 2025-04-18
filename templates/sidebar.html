@@ -364,7 +364,7 @@
                                 <div class="menu-sub menu-sub-accordion">
                                     {% if request.user|has_permission:"general_checklist_form" or request.user|has_permission:"general_checklist_list" %}
                                         <div class="menu-item">
-                                            <a class="menu-link" href="{% url 'checklist_app:general_checklist_form' %}">
+                                            <a class="menu-link" href="{% url 'checklist_app:general_checklist_list' %}">
                                                 <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                                 <span class="menu-title">مدیریت چک لیست</span>
                                             </a>
@@ -372,7 +372,7 @@
                                     {% endif %}
                                     {% if request.user|has_permission:"question_form" or request.user|has_permission:"question_list" %}
                                         <div class="menu-item">
-                                            <a class="menu-link" href="{% url 'checklist_app:general_question_form' %}">
+                                            <a class="menu-link" href="{% url 'checklist_app:general_question_list' %}">
                                                 <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                                 <span class="menu-title">مدیریت سوالات</span>
                                             </a>

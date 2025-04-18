@@ -1,10 +1,11 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 from .models import Checklist, Question, Answer
 from BaseInfo.models import MiningMachine, TypeMachine
 from anomalis.models import (
@@ -13,11 +14,19 @@ from anomalis.models import (
     Priority, 
     Anomaly,
     Anomalytype,
-    CorrectiveAction
+    CorrectiveAction,
+    Location
 )
 from accounts.models import UserProfile
 import json
 from permissions.utils import permission_required
+import jdatetime
+from datetime import datetime, time
+import openpyxl
+from openpyxl.styles import Font, Alignment, PatternFill
+from openpyxl.utils import get_column_letter
+from io import BytesIO
+from difflib import SequenceMatcher
 
 User = get_user_model()
 
@@ -26,12 +35,65 @@ User = get_user_model()
 @login_required
 def general_checklist_list_view(request):
     checklists = Checklist.objects.all().order_by('-date')
+    
+    # دریافت پارامترهای فیلتر
+    checklist_type = request.GET.get('checklist_type', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    shift = request.GET.get('shift', '')
+    shift_group = request.GET.get('shift_group', '')
+
+    # اعمال فیلترها
+    if checklist_type:
+        checklists = checklists.filter(checklist_type=checklist_type)
+
+    # تبدیل تاریخ شمسی به میلادی و اعمال فیلتر
+    if date_from:
+        try:
+            # تبدیل تاریخ شمسی به میلادی
+            jalali_date = date_from.split('/')
+            gregorian_date = jdatetime.date(int(jalali_date[0]), int(jalali_date[1]), int(jalali_date[2])).togregorian()
+            checklists = checklists.filter(date__date__gte=gregorian_date)
+        except (ValueError, IndexError):
+            pass
+
+    if date_to:
+        try:
+            # تبدیل تاریخ شمسی به میلادی
+            jalali_date = date_to.split('/')
+            gregorian_date = jdatetime.date(int(jalali_date[0]), int(jalali_date[1]), int(jalali_date[2])).togregorian()
+            # اضافه کردن ساعت 23:59:59 به تاریخ پایان
+            end_datetime = datetime.combine(gregorian_date, time(23, 59, 59))
+            checklists = checklists.filter(date__lte=end_datetime)
+        except (ValueError, IndexError):
+            pass
+
+    if shift:
+        checklists = checklists.filter(shift=shift)
+
+    if shift_group:
+        checklists = checklists.filter(shift_group=shift_group)
+
+    # صفحه‌بندی
     paginator = Paginator(checklists, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
+    # ایجاد دیکشنری از معادل‌های فارسی شیفت کاری
+    shift_display = dict(Checklist.CHECKLIST_SHIFT_CHOICES)
+    checklist_types = dict(Checklist.CHECKLIST_TYPE_CHOICES)
+    
     context = {
         'page_obj': page_obj,
+        'shift_display': shift_display,
+        'checklist_types': Checklist.CHECKLIST_TYPE_CHOICES,
+        'current_filters': {
+            'checklist_type': checklist_type,
+            'date_from': date_from,
+            'date_to': date_to,
+            'shift': shift,
+            'shift_group': shift_group,
+        }
     }
     return render(request, 'checklist_app/checklist_list.html', context)
 
@@ -44,6 +106,7 @@ def general_checklist_form_view(request):
     context = {
         'machines': machines,
         'location_sections': location_sections,
+        'shift_choices': Checklist.CHECKLIST_SHIFT_CHOICES,
     }
     return render(request, 'checklist_app/checklist_form.html', context)
 
@@ -92,6 +155,10 @@ def get_general_questions(request):
 def submit_general_checklist(request):
     data = json.loads(request.body)
     print(f"Received data: {data}")
+    
+    # همیشه از گروه کاری کاربر استفاده می‌کنیم
+    user_profile = UserProfile.objects.get(user=request.user)
+    data['shift_group'] = user_profile.group
     
     checklist = Checklist.objects.create(
         user=request.user,
@@ -246,8 +313,128 @@ def create_anomaly_from_failure_view(request):
 @permission_required("export_checklists_excel")
 @login_required
 def export_general_checklists_excel(request):
-    # این تابع باید با توجه به نیاز شما پیاده‌سازی شود
-    pass
+    # دریافت پارامترهای فیلتر
+    checklist_type = request.GET.get('checklist_type', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    shift = request.GET.get('shift', '')
+    shift_group = request.GET.get('shift_group', '')
+
+    # کوئری اولیه
+    checklists = Checklist.objects.all().order_by('-date')
+
+    # اعمال فیلترها
+    if checklist_type:
+        checklists = checklists.filter(checklist_type=checklist_type)
+
+    if date_from:
+        try:
+            jalali_date = date_from.split('/')
+            gregorian_date = jdatetime.date(int(jalali_date[0]), int(jalali_date[1]), int(jalali_date[2])).togregorian()
+            checklists = checklists.filter(date__date__gte=gregorian_date)
+        except (ValueError, IndexError):
+            pass
+
+    if date_to:
+        try:
+            jalali_date = date_to.split('/')
+            gregorian_date = jdatetime.date(int(jalali_date[0]), int(jalali_date[1]), int(jalali_date[2])).togregorian()
+            end_datetime = datetime.combine(gregorian_date, time(23, 59, 59))
+            checklists = checklists.filter(date__lte=end_datetime)
+        except (ValueError, IndexError):
+            pass
+
+    if shift:
+        checklists = checklists.filter(shift=shift)
+
+    if shift_group:
+        checklists = checklists.filter(shift_group=shift_group)
+
+    # ایجاد فایل اکسل
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "چک‌لیست‌ها"
+
+    # تنظیم استایل‌های سلول‌ها
+    header_font = Font(name='B Nazanin', size=12, bold=True)
+    header_fill = PatternFill(start_color='CCE5FF', end_color='CCE5FF', fill_type='solid')
+    header_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    
+    cell_font = Font(name='B Nazanin', size=11)
+    cell_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+
+    # ستون‌های فایل اکسل
+    headers = [
+        'شماره', 'تاریخ', 'نوع چک‌لیست', 'ماشین/مکان', 'شیفت', 'گروه کاری',
+        'ثبت کننده', 'سوال', 'پاسخ', 'توضیحات'
+    ]
+
+    # تنظیم عرض ستون‌ها
+    column_widths = [8, 15, 15, 20, 15, 15, 20, 40, 20, 30]
+    for i, width in enumerate(column_widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = width
+
+    # نوشتن هدرها
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+
+    # نوشتن داده‌ها
+    row = 2
+    for checklist in checklists:
+        answers = Answer.objects.filter(checklist=checklist)
+        
+        # تبدیل تاریخ به شمسی
+        jalali_date = jdatetime.datetime.fromgregorian(datetime=checklist.date)
+        formatted_date = jalali_date.strftime('%Y/%m/%d %H:%M')
+
+        # دریافت نام مکان/ماشین
+        location = checklist.machine.workshop_code if checklist.checklist_type == 'machine' else checklist.location_section.section
+
+        # دریافت معادل فارسی شیفت
+        shift_display = dict(Checklist.CHECKLIST_SHIFT_CHOICES).get(checklist.shift, checklist.shift)
+
+        for answer in answers:
+            # نوشتن داده‌های هر پاسخ
+            data = [
+                checklist.id,
+                formatted_date,
+                checklist.get_checklist_type_display(),
+                location,
+                shift_display,
+                checklist.shift_group,
+                f"{checklist.user.first_name} {checklist.user.last_name}",
+                answer.question.text,
+                answer.selected_option if answer.selected_option else answer.answer_text,
+                answer.description or ''
+            ]
+
+            for col, value in enumerate(data, 1):
+                cell = ws.cell(row=row, column=col, value=value)
+                cell.font = cell_font
+                cell.alignment = cell_alignment
+
+            row += 1
+
+    # ذخیره فایل در حافظه
+    excel_file = BytesIO()
+    wb.save(excel_file)
+    excel_file.seek(0)
+
+    # ایجاد پاسخ HTTP
+    response = HttpResponse(
+        excel_file.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    
+    # تنظیم نام فایل با تاریخ شمسی
+    current_jalali = jdatetime.datetime.now()
+    filename = f"checklist_report_{current_jalali.strftime('%Y%m%d_%H%M%S')}.xlsx"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    return response
 
 @permission_required("get_followup_users")
 @login_required
@@ -386,14 +573,26 @@ def general_question_edit_view(request, pk):
         question.default_priority_on_fail_id = data['default_priority_on_fail']
         question.default_corrective_action = data['default_corrective_action']
         question.default_anomaly_description_id = data.get('default_anomaly_description', '')
+
+        # به‌روزرسانی نوع ماشین یا بخش مکانی
+        if data['question_scope'] == 'machine' and data.get('machine_type'):
+            question.machine_type_id = data['machine_type']
+            question.location_section = None
+        elif data['question_scope'] == 'location' and data.get('location_section'):
+            question.location_section_id = data['location_section']
+            question.machine_type = None
+        
         question.save()
         
         return redirect('checklist_app:general_question_list')
     
     context = {
         'question': question,
+        'machine_types': TypeMachine.objects.all(),
+        'location_sections': LocationSection.objects.select_related('location').all(),
         'anomaly_types': Anomalytype.objects.all(),
         'priorities': Priority.objects.all(),
+        'corrective_actions': CorrectiveAction.objects.all().values('description').distinct(),
         'anomaly_descriptions': AnomalyDescription.objects.all(),
     }
     
@@ -411,12 +610,237 @@ def general_question_delete_view(request):
         question.delete()
         return JsonResponse({'status': 'success'})
     except Question.DoesNotExist:
-        return JsonResponse({
-            'status': 'error',
-            'message': 'سوال مورد نظر یافت نشد'
-        }, status=404)
+        return JsonResponse({'status': 'error', 'message': 'سوال مورد نظر یافت نشد'}, status=404)
     except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+def similar_text(a, b):
+    """محاسبه میزان شباهت دو متن"""
+    return SequenceMatcher(None, a.lower(), b.lower()).ratio()
+
+def find_similar_item(text, queryset, field_name='description', threshold=0.8):
+    """پیدا کردن مورد مشابه در کوئری‌ست"""
+    for item in queryset:
+        field_value = getattr(item, field_name)
+        if field_value and similar_text(text, field_value) >= threshold:
+            return item
+    return None
+
+@login_required
+@require_http_methods(["POST"])
+def import_questions_view(request):
+    try:
+        excel_file = request.FILES.get('excel_file')
+        if not excel_file:
+            return JsonResponse({'status': 'error', 'message': 'فایل اکسل انتخاب نشده است'}, status=400)
+        
+        print(f"Starting to process excel file: {excel_file.name}")
+        
+        # خواندن فایل اکسل
+        wb = openpyxl.load_workbook(excel_file)
+        ws = wb.active
+        
+        # بررسی ساختار فایل
+        headers = [cell.value for cell in ws[1]]
+        print(f"Found headers: {headers}")
+        
+        required_headers = [
+            'متن سوال', 'محدوده', 'نوع سوال', 'نوع ماشین', 'بخش مکانی',
+            'گزینه‌ها', 'گزینه‌های غیرقابل قبول', 'نوع آنومالی', 'حوزه HSE',
+            'شرح آنومالی پیش‌فرض', 'اولویت', 'اقدام اصلاحی پیش‌فرض'
+        ]
+        
+        missing_headers = [h for h in required_headers if h not in headers]
+        if missing_headers:
+            error_msg = f'ستون‌های زیر در فایل یافت نشد: {", ".join(missing_headers)}'
+            print(f"Error: {error_msg}")
+            return JsonResponse({
+                'status': 'error',
+                'message': error_msg
+            }, status=400)
+        
+        # ایجاد نقشه ستون‌ها
+        header_map = {header: idx for idx, header in enumerate(headers, 1)}
+        print(f"Header map: {header_map}")
+        
+        # خواندن و ذخیره سوالات
+        success_count = 0
+        error_count = 0
+        errors = []
+        
+        for row in range(2, ws.max_row + 1):
+            try:
+                print(f"\nProcessing row {row}")
+                
+                # خواندن داده‌های سطر
+                text = ws.cell(row=row, column=header_map['متن سوال']).value
+                scope = ws.cell(row=row, column=header_map['محدوده']).value
+                question_type = ws.cell(row=row, column=header_map['نوع سوال']).value
+                machine_type_name = ws.cell(row=row, column=header_map['نوع ماشین']).value
+                location_section_name = ws.cell(row=row, column=header_map['بخش مکانی']).value
+                options = ws.cell(row=row, column=header_map['گزینه‌ها']).value
+                unacceptable_options = ws.cell(row=row, column=header_map['گزینه‌های غیرقابل قبول']).value
+                anomaly_type_name = ws.cell(row=row, column=header_map['نوع آنومالی']).value
+                hse_type = ws.cell(row=row, column=header_map['حوزه HSE']).value
+                anomaly_description = ws.cell(row=row, column=header_map['شرح آنومالی پیش‌فرض']).value
+                priority_value = ws.cell(row=row, column=header_map['اولویت']).value
+                corrective_action = ws.cell(row=row, column=header_map['اقدام اصلاحی پیش‌فرض']).value
+                
+                print(f"Row data: text={text}, scope={scope}, type={question_type}, machine_type={machine_type_name}, "
+                      f"location={location_section_name}, anomaly_type={anomaly_type_name}, hse_type={hse_type}, "
+                      f"priority={priority_value}")
+                
+                # تبدیل مقادیر به فرمت مناسب
+                scope_map = {'ماشین': 'machine', 'مکان': 'location'}
+                type_map = {'متنی': 'text', 'گزینه‌ای': 'option'}
+                hse_map = {'H': 'H', 'S': 'S', 'E': 'E', 'Health': 'H', 'Safety': 'S', 'Environment': 'E'}
+                
+                if not scope in scope_map:
+                    raise ValueError(f'محدوده نامعتبر: {scope}. باید یکی از این مقادیر باشد: {", ".join(scope_map.keys())}')
+                
+                if not question_type in type_map:
+                    raise ValueError(f'نوع سوال نامعتبر: {question_type}. باید یکی از این مقادیر باشد: {", ".join(type_map.keys())}')
+                
+                if not hse_type in hse_map:
+                    raise ValueError(f'نوع HSE نامعتبر: {hse_type}. باید یکی از این مقادیر باشد: {", ".join(hse_map.keys())}')
+                
+                # یافتن نوع آنومالی مشابه
+                similar_anomaly_type = find_similar_item(
+                    anomaly_type_name,
+                    Anomalytype.objects.all(),
+                    field_name='type'
+                )
+                if similar_anomaly_type:
+                    anomaly_type = similar_anomaly_type
+                    print(f"Found similar anomaly type: {anomaly_type}")
+                else:
+                    anomaly_type = Anomalytype.objects.create(type=anomaly_type_name)
+                    print(f"Created new anomaly type: {anomaly_type}")
+                
+                # یافتن شرح آنومالی مشابه
+                similar_anomaly_desc = find_similar_item(
+                    anomaly_description,
+                    AnomalyDescription.objects.filter(anomalytype=anomaly_type),
+                    field_name='description'
+                )
+                if similar_anomaly_desc:
+                    anomaly_desc = similar_anomaly_desc
+                    print(f"Found similar anomaly description: {anomaly_desc}")
+                else:
+                    anomaly_desc = AnomalyDescription.objects.create(
+                        description=anomaly_description,
+                        anomalytype=anomaly_type,
+                        hse_type=hse_map[hse_type]
+                    )
+                    print(f"Created new anomaly description: {anomaly_desc}")
+                
+                # یافتن اقدام اصلاحی مشابه
+                similar_corrective_action = find_similar_item(
+                    corrective_action,
+                    CorrectiveAction.objects.filter(anomali_type=anomaly_desc),
+                    field_name='description'
+                )
+                if similar_corrective_action:
+                    corrective_action_obj = similar_corrective_action
+                    print(f"Found similar corrective action: {corrective_action_obj}")
+                else:
+                    corrective_action_obj = CorrectiveAction.objects.create(
+                        description=corrective_action,
+                        anomali_type=anomaly_desc
+                    )
+                    print(f"Created new corrective action: {corrective_action_obj}")
+                
+                # یافتن نوع ماشین مشابه
+                if scope_map[scope] == 'machine' and machine_type_name:
+                    similar_machine_type = find_similar_item(
+                        machine_type_name,
+                        TypeMachine.objects.all(),
+                        field_name='name'
+                    )
+                    if similar_machine_type:
+                        machine_type = similar_machine_type
+                        print(f"Found similar machine type: {machine_type}")
+                    else:
+                        machine_type = TypeMachine.objects.create(name=machine_type_name)
+                        print(f"Created new machine type: {machine_type}")
+                    question = Question.objects.create(
+                        text=text,
+                        question_scope=scope_map[scope],
+                        question_type=type_map[question_type],
+                        options=options,
+                        unacceptable_options=unacceptable_options,
+                        anomaly_type=anomaly_type,
+                        hse_type=hse_map[hse_type],
+                        default_priority_on_fail=priority_value,
+                        default_corrective_action=corrective_action,
+                        default_anomaly_description=anomaly_desc,
+                        is_required=True
+                    )
+                    question.machine_type = machine_type
+                    print(f"Created new question: {question}")
+                
+                # یافتن بخش مکانی مشابه
+                elif scope_map[scope] == 'location' and location_section_name:
+                    similar_location_section = find_similar_item(
+                        location_section_name,
+                        LocationSection.objects.all(),
+                        field_name='section',
+                        threshold=0.9  # دقت بیشتر برای بخش مکانی
+                    )
+                    if similar_location_section:
+                        location_section = similar_location_section
+                        print(f"Found similar location section: {location_section}")
+                    else:
+                        default_location = Location.objects.first()
+                        if not default_location:
+                            default_location = Location.objects.create(
+                                name="مکان پیش‌فرض",
+                                description="مکان پیش‌فرض برای سوالات ایمپورت شده"
+                            )
+                        location_section = LocationSection.objects.create(
+                            section=location_section_name,
+                            location=default_location
+                        )
+                        print(f"Created new location section: {location_section}")
+                    question = Question.objects.create(
+                        text=text,
+                        question_scope=scope_map[scope],
+                        question_type=type_map[question_type],
+                        options=options,
+                        unacceptable_options=unacceptable_options,
+                        anomaly_type=anomaly_type,
+                        hse_type=hse_map[hse_type],
+                        default_priority_on_fail=priority_value,
+                        default_corrective_action=corrective_action,
+                        default_anomaly_description=anomaly_desc,
+                        is_required=True
+                    )
+                    question.location_section = location_section
+                    print(f"Created new question: {question}")
+                
+                question.save()
+                success_count += 1
+                print(f"Successfully saved question {success_count}")
+                
+            except Exception as e:
+                error_count += 1
+                error_msg = f'خطا در سطر {row}: {str(e)}'
+                print(f"Error: {error_msg}")
+                errors.append(error_msg)
+                continue
+        
+        result = {
+            'status': 'success',
+            'message': f'{success_count} سوال با موفقیت ایمپورت شد. {error_count} خطا رخ داد.',
+            'errors': errors
+        }
+        print(f"Final result: {result}")
+        return JsonResponse(result)
+        
+    except Exception as e:
+        error_msg = f'خطا در پردازش فایل: {str(e)}'
+        print(f"Fatal error: {error_msg}")
         return JsonResponse({
             'status': 'error',
-            'message': str(e)
+            'message': error_msg
         }, status=500)

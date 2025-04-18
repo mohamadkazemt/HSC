@@ -75,6 +75,12 @@ URLS_WITH_LABELS = [
         "view": views.general_question_delete_view,
         "name": "general_question_delete",
         "label": "چک لیست_حذف سوال"
+    },
+    {
+        "path": "questions/import/",
+        "view": views.import_questions_view,
+        "name": "import_questions",
+        "label": "چک لیست_ایمپورت سوالات"
     }
 ]
 

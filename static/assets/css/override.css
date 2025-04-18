@@ -772,14 +772,15 @@ html[data-theme="light"], :root {
 .notification-card {
     padding: 1rem;
     border-radius: 0.75rem;
-    transition: all 0.2s ease;
-    border: 1px solid #eff2f5;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
     background-color: #ffffff;
 }
 
 .notification-card:hover {
-    background-color: #f8f9fa;
-    transform: translateX(-3px);
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
+    border-color: #e4e6ef;
 }
 
 .notification-card.read {
@@ -945,4 +946,128 @@ html[data-theme="light"], :root {
 .me-2 {
     margin-left: 0.5rem !important;
     margin-right: 0 !important;
+}
+
+/* Notification Styles */
+.notification-card {
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.notification-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
+    border-color: #e4e6ef;
+}
+
+.notification-actions {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.notification-card:hover .notification-actions {
+    opacity: 1;
+}
+
+.notification-card .btn-icon {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Search Input Styles */
+#notificationSearch {
+    border-radius: 0.475rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid #e4e6ef;
+    transition: all 0.3s ease;
+}
+
+#notificationSearch:focus {
+    border-color: #009ef7;
+    box-shadow: 0 0 0 0.25rem rgba(0, 158, 247, 0.1);
+}
+
+.input-group-text {
+    background-color: transparent;
+    border: 1px solid #e4e6ef;
+    color: #a1a5b7;
+}
+
+/* Animation Classes */
+.animate__animated {
+    animation-duration: 0.5s;
+}
+
+.animate__fadeIn {
+    animation-name: fadeIn;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Empty State Styles */
+.text-center.py-10 {
+    padding: 3rem 1rem;
+    background: #f5f8fa;
+    border-radius: 0.75rem;
+    margin: 1rem 0;
+}
+
+.text-center.py-10 i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #a1a5b7;
+}
+
+/* Tab Styles */
+#newNotificationsTab,
+#readNotificationsTab {
+    transition: all 0.3s ease;
+    padding: 0.5rem 1.5rem;
+    border-radius: 0.475rem;
+}
+
+#newNotificationsTab:hover,
+#readNotificationsTab:hover {
+    transform: translateY(-1px);
+}
+
+/* Notification Bell Styles */
+.notification-bell {
+    transition: all 0.3s ease;
+}
+
+.notification-bell:hover {
+    transform: scale(1.1);
+}
+
+.notification-badge {
+    animation-duration: 0.5s;
+    animation-delay: 0.2s;
+}
+
+@keyframes bounceIn {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }

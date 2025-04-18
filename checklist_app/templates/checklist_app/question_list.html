@@ -59,26 +59,41 @@
                             <div class="row">
                                 <div class="col-12">
                                     <!-- کارت فیلترها -->
-                                    <div class="card filter-card">
+                                    <div class="card card-flush mb-5">
                                         <div class="card-header">
-                                            <h3 class="card-title">فیلترها و جستجو</h3>
+                                            <h3 class="card-title">
+                                                <i class="fas fa-filter text-primary me-2"></i>
+                                                فیلترها
+                                            </h3>
+                                            <div class="card-toolbar">
+                                                <button type="button" class="btn btn-sm btn-light-primary" id="toggleFilters">
+                                                    <i class="fas fa-chevron-down me-2"></i>
+                                                    <span class="toggle-text">نمایش فیلترها</span>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-light-danger ms-2" id="resetFilters">
+                                                    <i class="fas fa-times me-2"></i>
+                                                    پاک کردن فیلترها
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div class="card-body">
-                                            <form method="get" class="filter-form">
-                                                <div class="row">
-                                                    <div class="col-md-3">
+                                        <div class="card-body collapse" id="filtersBody">
+                                            <form method="get" class="mb-4" id="filterForm">
+                                                <div class="row g-2">
+                                                    <div class="col-md-1-5">
                                                         <div class="form-group">
-                                                            <label>جستجوی متن سوال</label>
-                                                            <div class="search-box">
+                                                            <label class="form-label fw-bold">جستجوی متن سوال</label>
+                                                            <div class="input-group input-group-sm">
                                                                 <input type="text" name="search" class="form-control" 
                                                                        value="{{ search_query }}" placeholder="جستجو...">
-                                                                <i class="fas fa-search search-icon"></i>
+                                                                <span class="input-group-text">
+                                                                    <i class="fas fa-search"></i>
+                                                                </span>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-3">
+                                                    <div class="col-md-1-5">
                                                         <div class="form-group">
-                                                            <label>محدوده سوال</label>
+                                                            <label class="form-label fw-bold">محدوده سوال</label>
                                                             <select name="scope" class="form-select select2-basic">
                                                                 <option value="">همه</option>
                                                                 <option value="machine" {% if scope_filter == 'machine' %}selected{% endif %}>ماشین</option>
@@ -86,9 +101,9 @@
                                                             </select>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-3">
+                                                    <div class="col-md-1-5">
                                                         <div class="form-group">
-                                                            <label>نوع سوال</label>
+                                                            <label class="form-label fw-bold">نوع سوال</label>
                                                             <select name="type" class="form-select select2-basic">
                                                                 <option value="">همه</option>
                                                                 <option value="text" {% if type_filter == 'text' %}selected{% endif %}>متنی</option>
@@ -96,9 +111,9 @@
                                                             </select>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-3">
+                                                    <div class="col-md-1-5">
                                                         <div class="form-group">
-                                                            <label>حوزه HSE</label>
+                                                            <label class="form-label fw-bold">حوزه HSE</label>
                                                             <select name="hse_type" class="form-select select2-basic">
                                                                 <option value="">همه</option>
                                                                 <option value="H" {% if hse_type_filter == 'H' %}selected{% endif %}>Health</option>
@@ -107,11 +122,9 @@
                                                             </select>
                                                         </div>
                                                     </div>
-                                                </div>
-                                                <div class="row">
-                                                    <div class="col-md-3">
+                                                    <div class="col-md-1-5">
                                                         <div class="form-group">
-                                                            <label>نوع آنومالی</label>
+                                                            <label class="form-label fw-bold">نوع آنومالی</label>
                                                             <select name="anomaly_type" class="form-select select2-basic">
                                                                 <option value="">همه</option>
                                                                 {% for type in anomaly_types %}
@@ -122,9 +135,9 @@
                                                             </select>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-3">
+                                                    <div class="col-md-1-5">
                                                         <div class="form-group">
-                                                            <label>اولویت</label>
+                                                            <label class="form-label fw-bold">اولویت</label>
                                                             <select name="priority" class="form-select select2-basic">
                                                                 <option value="">همه</option>
                                                                 {% for priority in priorities %}
@@ -135,16 +148,12 @@
                                                             </select>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-6">
-                                                        <div class="form-group d-flex align-items-end h-100">
-                                                            <button type="submit" class="btn btn-primary me-2">
-                                                                <i class="fas fa-filter me-2"></i>
-                                                                اعمال فیلتر
+                                                    <div class="col-md-1-5 d-flex align-items-end">
+                                                        <div class="form-group w-100">
+                                                            <button type="submit" class="btn btn-primary btn-sm w-100">
+                                                                <i class="fas fa-search me-2"></i>
+                                                                جستجو
                                                             </button>
-                                                            <a href="{% url 'checklist_app:general_question_list' %}" class="btn btn-secondary">
-                                                                <i class="fas fa-times me-2"></i>
-                                                                پاک کردن فیلترها
-                                                            </a>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -152,15 +161,107 @@
                                         </div>
                                     </div>
 
+                                    <style>
+                                        .card-flush {
+                                            border: 0;
+                                            box-shadow: 0 0 20px rgba(0,0,0,.08);
+                                        }
+                                        .card-header {
+                                            background-color: #f8f9fa;
+                                            border-bottom: 1px solid rgba(0,0,0,.05);
+                                            padding: 0.75rem 1rem;
+                                        }
+                                        .card-body {
+                                            padding: 1rem;
+                                        }
+                                        .form-label {
+                                            font-size: 0.85rem;
+                                            margin-bottom: 0.3rem;
+                                        }
+                                        .form-label.required:after {
+                                            content: " *";
+                                            color: #dc3545;
+                                        }
+                                        .input-group-text {
+                                            background-color: #f8f9fa;
+                                            border-color: #e4e6ef;
+                                            padding: 0.25rem 0.5rem;
+                                        }
+                                        .select2-container--bootstrap-5 .select2-selection {
+                                            border-color: #e4e6ef;
+                                            min-height: 31px;
+                                        }
+                                        .select2-container--bootstrap-5 .select2-selection--single {
+                                            padding: 0.25rem 0.5rem;
+                                        }
+                                        .btn-light-primary {
+                                            color: #009ef7;
+                                            background-color: #f1faff;
+                                            border-color: #f1faff;
+                                        }
+                                        .btn-light-primary:hover {
+                                            color: #009ef7;
+                                            background-color: #e1f0ff;
+                                            border-color: #e1f0ff;
+                                        }
+                                        .btn-light-danger {
+                                            color: #f1416c;
+                                            background-color: #fff5f8;
+                                            border-color: #fff5f8;
+                                        }
+                                        .btn-light-danger:hover {
+                                            color: #f1416c;
+                                            background-color: #ffe8ef;
+                                            border-color: #ffe8ef;
+                                        }
+                                        #filtersBody {
+                                            transition: all 0.3s ease;
+                                        }
+                                        #filtersBody.collapse:not(.show) {
+                                            display: none;
+                                        }
+                                        #filtersBody.collapsing {
+                                            height: 0;
+                                            overflow: hidden;
+                                            transition: height 0.35s ease;
+                                        }
+                                        .form-control:focus, .form-select:focus {
+                                            border-color: #009ef7;
+                                            box-shadow: 0 0 0 0.25rem rgba(0,158,247,.25);
+                                        }
+                                        .form-control, .form-select {
+                                            font-size: 0.85rem;
+                                            padding: 0.25rem 0.5rem;
+                                        }
+                                        .btn-sm {
+                                            padding: 0.25rem 0.5rem;
+                                            font-size: 0.85rem;
+                                        }
+                                        
+                                        /* کلاس‌های سفارشی برای عرض ستون‌ها */
+                                        @media (min-width: 768px) {
+                                            .col-md-1-5 {
+                                                flex: 0 0 auto;
+                                                width: 14.285714%;
+                                            }
+                                        }
+                                    </style>
+
                                     <!-- کارت لیست سوالات -->
                                     <div class="card">
                                         <div class="card-header">
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <h3 class="card-title">لیست سوالات</h3>
-                                                <a href="{% url 'checklist_app:general_question_form' %}" class="btn btn-primary">
-                                                    <i class="fas fa-plus me-2"></i>
-                                                    افزودن سوال جدید
-                                                </a>
+                                                <div>
+                                                    <button type="button" class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#importModal">
+                                                        <i class="fas fa-file-excel me-2"></i>
+                                                        ایمپورت از اکسل
+                                                    </button>
+                                                    <a href="{% url 'checklist_app:general_question_form' %}" class="btn btn-primary">
+                                                        <i class="fas fa-plus me-2"></i>
+                                                        افزودن سوال جدید
+                                                    </a>
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="card-body">
@@ -267,6 +368,38 @@
     </div>
 </div>
 {% include 'footer.html' %}
+
+<!-- مودال ایمپورت از اکسل -->
+<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importModalLabel">ایمپورت سوالات از اکسل</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="importForm" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="excelFile" class="form-label">فایل اکسل</label>
+                        <input type="file" class="form-control" id="excelFile" name="excel_file" accept=".xlsx, .xls" required>
+                        <div class="form-text">فرمت‌های مجاز: .xlsx, .xls</div>
+                    </div>
+                    <div class="mb-3">
+                        <a href="{% static 'checklist_app/sample_questions.xlsx' %}" class="btn btn-link">
+                            <i class="fas fa-download me-2"></i>
+                            دانلود نمونه فایل اکسل
+                        </a>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                <button type="button" class="btn btn-primary" id="importButton">ایمپورت</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -288,7 +421,7 @@ $(document).ready(function() {
     });
 
     // تابع حذف سوال
-    function deleteQuestion(questionId) {
+    window.deleteQuestion = function(questionId) {
         if (confirm('آیا از حذف این سوال اطمینان دارید؟')) {
             $.ajax({
                 url: '{% url "checklist_app:general_question_delete" %}',
@@ -310,7 +443,67 @@ $(document).ready(function() {
                 }
             });
         }
+    };
+
+    // نمایش/مخفی کردن فیلترها
+    $('#toggleFilters').on('click', function() {
+        const $icon = $(this).find('i');
+        const $text = $(this).find('.toggle-text');
+        const $filters = $('#filtersBody');
+        
+        if ($filters.hasClass('show')) {
+            $icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+            $text.text('نمایش فیلترها');
+            $filters.collapse('hide');
+        } else {
+            $icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+            $text.text('پنهان کردن فیلترها');
+            $filters.collapse('show');
+        }
+    });
+    
+    // پاک کردن فیلترها
+    $('#resetFilters').on('click', function() {
+        window.location.href = window.location.pathname;
+    });
+    
+    // اضافه کردن کلاس active به دکمه‌های فیلتر
+    $('select, input').on('change', function() {
+        $(this).addClass('is-valid');
+    });
+    
+    // نمایش وضعیت اولیه فیلترها
+    if ($('#filterForm select, #filterForm input').filter(function() {
+        return $(this).val() !== '';
+    }).length > 0) {
+        $('#filtersBody').addClass('show');
+        $('#toggleFilters i').removeClass('fa-chevron-down').addClass('fa-chevron-up');
+        $('#toggleFilters .toggle-text').text('پنهان کردن فیلترها');
     }
+
+    // اضافه کردن کد مربوط به ایمپورت از اکسل
+    $('#importButton').on('click', function() {
+        const formData = new FormData($('#importForm')[0]);
+        
+        $.ajax({
+            url: '{% url "checklist_app:import_questions" %}',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.status === 'success') {
+                    alert('سوالات با موفقیت ایمپورت شدند');
+                    location.reload();
+                } else {
+                    alert(response.message || 'خطا در ایمپورت سوالات');
+                }
+            },
+            error: function(xhr, status, error) {
+                alert('خطا در ایمپورت سوالات');
+            }
+        });
+    });
 });
 </script>
 {% endblock %} 

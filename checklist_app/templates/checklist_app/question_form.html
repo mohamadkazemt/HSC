@@ -14,10 +14,27 @@
         box-shadow: 0 0 20px rgba(0,0,0,.08);
         border: none;
         margin-bottom: 1.5rem;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    .card:hover {
+        box-shadow: 0 0 25px rgba(0,0,0,.12);
+        transform: translateY(-2px);
     }
     .card-header {
         background-color: #f8f9fa;
         border-bottom: 1px solid rgba(0,0,0,.05);
+        padding: 1rem 1.5rem;
+    }
+    .card-body {
+        padding: 1.5rem;
+    }
+    .form-label {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #3f4254;
+        transition: all 0.3s ease;
     }
     .form-label.required:after {
         content: " *";
@@ -34,6 +51,238 @@
         color: #6c757d;
         margin-left: 0.5rem;
         cursor: help;
+        transition: all 0.3s ease;
+    }
+    .tooltip-icon:hover {
+        color: #009ef7;
+    }
+    .input-group {
+        box-shadow: 0 0 10px rgba(0,0,0,.03);
+        border-radius: 0.5rem;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+    .input-group:focus-within {
+        box-shadow: 0 0 15px rgba(0,158,247,.1);
+    }
+    .form-control, .form-select {
+        border: 1px solid #e4e6ef;
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #009ef7;
+        box-shadow: 0 0 0 0.25rem rgba(0,158,247,.25);
+    }
+    .select2-container--bootstrap-5 .select2-selection {
+        border: 1px solid #e4e6ef;
+        min-height: 45px;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    .select2-container--bootstrap-5 .select2-selection--single {
+        padding: 0.5rem 1rem;
+    }
+    .select2-container--bootstrap-5.select2-container--focus .select2-selection {
+        border-color: #009ef7;
+        box-shadow: 0 0 0 0.25rem rgba(0,158,247,.25);
+    }
+    .btn {
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    .btn-primary {
+        background-color: #009ef7;
+        border-color: #009ef7;
+    }
+    .btn-primary:hover {
+        background-color: #0095e8;
+        border-color: #0095e8;
+        transform: translateY(-1px);
+    }
+    .btn-secondary {
+        background-color: #e4e6ef;
+        border-color: #e4e6ef;
+        color: #3f4254;
+    }
+    .btn-secondary:hover {
+        background-color: #d1d3e0;
+        border-color: #d1d3e0;
+        color: #3f4254;
+        transform: translateY(-1px);
+    }
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #3f4254;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #e4e6ef;
+    }
+    .form-text {
+        font-size: 0.85rem;
+        color: #7e8299;
+        margin-top: 0.5rem;
+    }
+    .invalid-feedback {
+        font-size: 0.85rem;
+    }
+    .card-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #3f4254;
+    }
+    .card-title i {
+        color: #009ef7;
+    }
+    .form-section {
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    .form-section:hover {
+        background-color: #f1f3f7;
+    }
+    .form-section-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #3f4254;
+        margin-bottom: 1rem;
+    }
+    .form-section-title i {
+        color: #009ef7;
+        margin-left: 0.5rem;
+    }
+    .form-check {
+        margin-bottom: 0.5rem;
+    }
+    .form-check-input:checked {
+        background-color: #009ef7;
+        border-color: #009ef7;
+    }
+    .form-check-label {
+        font-size: 0.95rem;
+        color: #3f4254;
+    }
+    .badge {
+        font-size: 0.85rem;
+        font-weight: 500;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.5rem;
+    }
+    .badge-light-primary {
+        background-color: #f1faff;
+        color: #009ef7;
+    }
+    .badge-light-success {
+        background-color: #e8fff3;
+        color: #50cd89;
+    }
+    .badge-light-warning {
+        background-color: #fff8dd;
+        color: #ffc700;
+    }
+    .badge-light-danger {
+        background-color: #fff5f8;
+        color: #f1416c;
+    }
+    .badge-light-info {
+        background-color: #e1f0ff;
+        color: #009ef7;
+    }
+    .badge-light-dark {
+        background-color: #e4e6ef;
+        color: #3f4254;
+    }
+    .badge-light-secondary {
+        background-color: #f5f8fa;
+        color: #7e8299;
+    }
+    .animate-fade {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    .animate-slide-down {
+        animation: slideDown 0.5s ease-in-out;
+    }
+    @keyframes slideDown {
+        from { transform: translateY(-20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    /* اضافه کردن استایل‌های جدید */
+    .form-control:disabled, .form-control[readonly] {
+        background-color: #f5f8fa;
+        opacity: 1;
+    }
+    .form-control:focus::placeholder {
+        color: #b5b5c3;
+    }
+    .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+        color: #3f4254;
+        line-height: 1.5;
+    }
+    .select2-container--bootstrap-5 .select2-selection--single .select2-selection__placeholder {
+        color: #b5b5c3;
+    }
+    .select2-container--bootstrap-5 .select2-results__option--highlighted[aria-selected] {
+        background-color: #009ef7;
+    }
+    .select2-container--bootstrap-5 .select2-results__option[aria-selected=true] {
+        background-color: #e1f0ff;
+        color: #009ef7;
+    }
+    .form-section-title {
+        position: relative;
+        padding-right: 1.5rem;
+    }
+    .form-section-title:before {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 4px;
+        height: 20px;
+        background-color: #009ef7;
+        border-radius: 2px;
+    }
+    .card-header .card-title {
+        display: flex;
+        align-items: center;
+    }
+    .card-header .card-title i {
+        margin-left: 0.5rem;
+        font-size: 1.5rem;
+    }
+    .btn i {
+        margin-left: 0.5rem;
+    }
+    .form-group label {
+        display: flex;
+        align-items: center;
+    }
+    .form-group label i {
+        margin-left: 0.5rem;
+        color: #009ef7;
+    }
+    .invalid-feedback {
+        display: flex;
+        align-items: center;
+    }
+    .invalid-feedback:before {
+        content: '\f071';
+        font-family: 'Font Awesome 5 Free';
+        font-weight: 900;
+        margin-left: 0.5rem;
+        color: #dc3545;
     }
 </style>
 {% endblock %}
@@ -58,7 +307,7 @@
                                         {% csrf_token %}
                                         
                                         <!-- کارت اطلاعات اصلی -->
-                                        <div class="card">
+                                        <div class="card animate-fade">
                                             <div class="card-header d-flex justify-content-between align-items-center">
                                                 <h3 class="card-title mb-0">
                                                     <i class="fas fa-question-circle me-2"></i>
@@ -77,85 +326,91 @@
                                                 </div>
                                             </div>
                                             <div class="card-body">
-                                                <div class="row">
-                                                    <div class="col-md-6">
-                                                        <div class="form-group">
-                                                            <label class="form-label required">محدوده سوال</label>
-                                                            <div class="input-group">
-                                                                <select name="question_scope" class="form-select" required>
-                                                                    <option value="">انتخاب کنید</option>
-                                                                    <option value="machine" {% if question.question_scope == 'machine' %}selected{% endif %}>ماشین</option>
-                                                                    <option value="location" {% if question.question_scope == 'location' %}selected{% endif %}>مکان</option>
-                                                                </select>
-                                                                <span class="tooltip-icon" data-bs-toggle="tooltip" title="محدوده سوال را مشخص کنید">
-                                                                    <i class="fas fa-info-circle"></i>
-                                                                </span>
+                                                <div class="form-section animate-slide-down">
+                                                    <div class="form-section-title">
+                                                        <i class="fas fa-info-circle"></i>
+                                                        اطلاعات پایه سوال
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <div class="form-group">
+                                                                <label class="form-label required">محدوده سوال</label>
+                                                                <div class="input-group">
+                                                                    <select name="question_scope" class="form-select" required>
+                                                                        <option value="">انتخاب کنید</option>
+                                                                        <option value="machine" {% if question.question_scope == 'machine' %}selected{% endif %}>ماشین</option>
+                                                                        <option value="location" {% if question.question_scope == 'location' %}selected{% endif %}>مکان</option>
+                                                                    </select>
+                                                                    <span class="tooltip-icon" data-bs-toggle="tooltip" title="محدوده سوال را مشخص کنید">
+                                                                        <i class="fas fa-info-circle"></i>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="form-group">
+                                                                <label class="form-label required">نوع سوال</label>
+                                                                <div class="input-group">
+                                                                    <select name="question_type" class="form-select" required>
+                                                                        <option value="">انتخاب کنید</option>
+                                                                        <option value="text" {% if question.question_type == 'text' %}selected{% endif %}>متنی</option>
+                                                                        <option value="option" {% if question.question_type == 'option' %}selected{% endif %}>گزینه‌ای</option>
+                                                                    </select>
+                                                                    <span class="tooltip-icon" data-bs-toggle="tooltip" title="نوع پاسخ سوال را مشخص کنید">
+                                                                        <i class="fas fa-info-circle"></i>
+                                                                    </span>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-6">
-                                                        <div class="form-group">
-                                                            <label class="form-label required">نوع سوال</label>
-                                                            <div class="input-group">
-                                                                <select name="question_type" class="form-select" required>
+
+                                                    <!-- بخش نوع ماشین -->
+                                                    <div id="machineTypeSection" class="row" style="display: none;">
+                                                        <div class="col-md-6">
+                                                            <div class="form-group">
+                                                                <label class="form-label required">نوع ماشین</label>
+                                                                <select name="machine_type" class="form-select select2-basic">
                                                                     <option value="">انتخاب کنید</option>
-                                                                    <option value="text" {% if question.question_type == 'text' %}selected{% endif %}>متنی</option>
-                                                                    <option value="option" {% if question.question_type == 'option' %}selected{% endif %}>گزینه‌ای</option>
+                                                                    {% for type in machine_types %}
+                                                                    <option value="{{ type.id }}" {% if question.machine_type_id == type.id %}selected{% endif %}>
+                                                                        {{ type.name }}
+                                                                    </option>
+                                                                    {% endfor %}
                                                                 </select>
-                                                                <span class="tooltip-icon" data-bs-toggle="tooltip" title="نوع پاسخ سوال را مشخص کنید">
-                                                                    <i class="fas fa-info-circle"></i>
-                                                                </span>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                </div>
 
-                                                <!-- بخش نوع ماشین -->
-                                                <div id="machineTypeSection" class="row" style="display: none;">
-                                                    <div class="col-md-6">
-                                                        <div class="form-group">
-                                                            <label class="form-label required">نوع ماشین</label>
-                                                            <select name="machine_type" class="form-select select2-basic">
-                                                                <option value="">انتخاب کنید</option>
-                                                                {% for type in machine_types %}
-                                                                <option value="{{ type.id }}" {% if question.machine_type_id == type.id %}selected{% endif %}>
-                                                                    {{ type.name }}
-                                                                </option>
-                                                                {% endfor %}
-                                                            </select>
+                                                    <!-- بخش مکان -->
+                                                    <div id="locationSection" class="row" style="display: none;">
+                                                        <div class="col-md-6">
+                                                            <div class="form-group">
+                                                                <label class="form-label required">بخش مکانی</label>
+                                                                <select name="location_section" class="form-select select2-basic">
+                                                                    <option value="">انتخاب کنید</option>
+                                                                    {% for section in location_sections %}
+                                                                    <option value="{{ section.id }}" {% if question.location_section_id == section.id %}selected{% endif %}>
+                                                                        {{ section.section }} - {{ section.location.name }}
+                                                                    </option>
+                                                                    {% endfor %}
+                                                                </select>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
 
-                                                <!-- بخش مکان -->
-                                                <div id="locationSection" class="row" style="display: none;">
-                                                    <div class="col-md-6">
-                                                        <div class="form-group">
-                                                            <label class="form-label required">بخش مکانی</label>
-                                                            <select name="location_section" class="form-select select2-basic">
-                                                                <option value="">انتخاب کنید</option>
-                                                                {% for section in location_sections %}
-                                                                <option value="{{ section.id }}" {% if question.location_section_id == section.id %}selected{% endif %}>
-                                                                    {{ section.section }} - {{ section.location.name }}
-                                                                </option>
-                                                                {% endfor %}
-                                                            </select>
+                                                    <div class="form-group">
+                                                        <label class="form-label required">متن سوال</label>
+                                                        <textarea name="text" class="form-control" rows="3" required>{{ question.text }}</textarea>
+                                                        <div class="invalid-feedback">
+                                                            لطفاً متن سوال را وارد کنید
                                                         </div>
-                                                    </div>
-                                                </div>
-
-                                                <div class="form-group">
-                                                    <label class="form-label required">متن سوال</label>
-                                                    <textarea name="text" class="form-control" rows="3" required>{{ question.text }}</textarea>
-                                                    <div class="invalid-feedback">
-                                                        لطفاً متن سوال را وارد کنید
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <!-- کارت گزینه‌ها -->
-                                        <div id="optionsSection" class="card" style="display: none;">
+                                        <div id="optionsSection" class="card animate-fade" style="display: none;">
                                             <div class="card-header">
                                                 <h3 class="card-title">
                                                     <i class="fas fa-list me-2"></i>
@@ -163,32 +418,44 @@
                                                 </h3>
                                             </div>
                                             <div class="card-body">
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <div class="form-group">
-                                                            <label class="form-label required">گزینه‌ها</label>
-                                                            <div class="input-group">
-                                                                <input type="text" name="options" class="form-control" 
-                                                                       placeholder="مثال: قابل قبول,غیر قابل قبول,نیاز به بررسی"
-                                                                       value="{{ question.options }}">
-                                                                <span class="tooltip-icon" data-bs-toggle="tooltip" 
-                                                                      title="گزینه‌ها را با کاما از هم جدا کنید">
-                                                                    <i class="fas fa-info-circle"></i>
-                                                                </span>
+                                                <div class="form-section animate-slide-down">
+                                                    <div class="form-section-title">
+                                                        <i class="fas fa-check-circle"></i>
+                                                        گزینه‌های پاسخ
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-12">
+                                                            <div class="form-group">
+                                                                <label class="form-label required">گزینه‌ها</label>
+                                                                <div class="input-group">
+                                                                    <input type="text" name="options" class="form-control" 
+                                                                           placeholder="مثال: قابل قبول,غیر قابل قبول,نیاز به بررسی"
+                                                                           value="{{ question.options }}">
+                                                                    <span class="tooltip-icon" data-bs-toggle="tooltip" 
+                                                                          title="گزینه‌ها را با کاما از هم جدا کنید">
+                                                                        <i class="fas fa-info-circle"></i>
+                                                                    </span>
+                                                                </div>
+                                                                <div class="form-text">
+                                                                    گزینه‌های پاسخ را با کاما از هم جدا کنید
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                    <div class="col-12">
-                                                        <div class="form-group">
-                                                            <label class="form-label required">گزینه‌های غیرقابل قبول</label>
-                                                            <div class="input-group">
-                                                                <input type="text" name="unacceptable_options" class="form-control" 
-                                                                       placeholder="مثال: غیر قابل قبول"
-                                                                       value="{{ question.unacceptable_options }}">
-                                                                <span class="tooltip-icon" data-bs-toggle="tooltip" 
-                                                                      title="گزینه‌های غیرقابل قبول را با کاما از هم جدا کنید">
-                                                                    <i class="fas fa-info-circle"></i>
-                                                                </span>
+                                                        <div class="col-12">
+                                                            <div class="form-group">
+                                                                <label class="form-label required">گزینه‌های غیرقابل قبول</label>
+                                                                <div class="input-group">
+                                                                    <input type="text" name="unacceptable_options" class="form-control" 
+                                                                           placeholder="مثال: غیر قابل قبول"
+                                                                           value="{{ question.unacceptable_options }}">
+                                                                    <span class="tooltip-icon" data-bs-toggle="tooltip" 
+                                                                          title="گزینه‌های غیرقابل قبول را با کاما از هم جدا کنید">
+                                                                        <i class="fas fa-info-circle"></i>
+                                                                    </span>
+                                                                </div>
+                                                                <div class="form-text">
+                                                                    گزینه‌های غیرقابل قبول را با کاما از هم جدا کنید
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -197,7 +464,7 @@
                                         </div>
 
                                         <!-- کارت تنظیمات آنومالی -->
-                                        <div class="card">
+                                        <div class="card animate-fade">
                                             <div class="card-header">
                                                 <h3 class="card-title">
                                                     <i class="fas fa-exclamation-triangle me-2"></i>
@@ -205,77 +472,87 @@
                                                 </h3>
                                             </div>
                                             <div class="card-body">
-                                                <div class="row">
-                                                    <div class="col-md-6">
-                                                        <div class="form-group">
-                                                            <label class="form-label required">نوع آنومالی</label>
-                                                            <select name="anomaly_type" class="form-select select2-basic" required>
-                                                                <option value="">انتخاب کنید</option>
-                                                                {% for type in anomaly_types %}
-                                                                <option value="{{ type.id }}" {% if question.anomaly_type_id == type.id %}selected{% endif %}>
-                                                                    {{ type.type }}
-                                                                </option>
-                                                                {% endfor %}
-                                                            </select>
+                                                <div class="form-section animate-slide-down">
+                                                    <div class="form-section-title">
+                                                        <i class="fas fa-exclamation-circle"></i>
+                                                        اطلاعات آنومالی
+                                                    </div>
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <div class="form-group">
+                                                                <label class="form-label required">نوع آنومالی</label>
+                                                                <select name="anomaly_type" class="form-select select2-basic" required>
+                                                                    <option value="">انتخاب کنید</option>
+                                                                    {% for type in anomaly_types %}
+                                                                    <option value="{{ type.id }}" {% if question.anomaly_type_id == type.id %}selected{% endif %}>
+                                                                        {{ type.type }}
+                                                                    </option>
+                                                                    {% endfor %}
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="form-group">
+                                                                <label class="form-label required">حوزه HSE</label>
+                                                                <select name="hse_type" class="form-select" required>
+                                                                    <option value="">انتخاب کنید</option>
+                                                                    <option value="H" {% if question.hse_type == 'H' %}selected{% endif %}>Health</option>
+                                                                    <option value="S" {% if question.hse_type == 'S' %}selected{% endif %}>Safety</option>
+                                                                    <option value="E" {% if question.hse_type == 'E' %}selected{% endif %}>Environment</option>
+                                                                </select>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                    <div class="col-md-6">
-                                                        <div class="form-group">
-                                                            <label class="form-label required">حوزه HSE</label>
-                                                            <select name="hse_type" class="form-select" required>
-                                                                <option value="">انتخاب کنید</option>
-                                                                <option value="H" {% if question.hse_type == 'H' %}selected{% endif %}>Health</option>
-                                                                <option value="S" {% if question.hse_type == 'S' %}selected{% endif %}>Safety</option>
-                                                                <option value="E" {% if question.hse_type == 'E' %}selected{% endif %}>Environment</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                </div>
 
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <div class="form-group">
-                                                            <label class="form-label required">شرح آنومالی پیش‌فرض</label>
-                                                            <select name="default_anomaly_description" class="form-select select2-basic" required>
-                                                                <option value="">انتخاب کنید</option>
-                                                                {% for desc in anomaly_descriptions %}
-                                                                <option value="{{ desc.id }}" {% if question.default_anomaly_description_id == desc.id %}selected{% endif %}>
-                                                                    {{ desc.description }}
-                                                                </option>
-                                                                {% endfor %}
-                                                            </select>
-                                                            <small class="form-text text-muted">
-                                                                شرح پیش‌فرض آنومالی که در صورت پاسخ غیرقابل قبول ایجاد می‌شود
-                                                            </small>
+                                                    <div class="row">
+                                                        <div class="col-12">
+                                                            <div class="form-group">
+                                                                <label class="form-label required">شرح آنومالی پیش‌فرض</label>
+                                                                <select name="default_anomaly_description" class="form-select select2-basic" required>
+                                                                    <option value="">انتخاب کنید</option>
+                                                                    {% for desc in anomaly_descriptions %}
+                                                                    <option value="{{ desc.id }}" {% if question.default_anomaly_description_id == desc.id %}selected{% endif %}>
+                                                                        {{ desc.description }}
+                                                                    </option>
+                                                                    {% endfor %}
+                                                                </select>
+                                                                <small class="form-text text-muted">
+                                                                    شرح پیش‌فرض آنومالی که در صورت پاسخ غیرقابل قبول ایجاد می‌شود
+                                                                </small>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
 
-                                                <div class="row">
-                                                    <div class="col-md-6">
-                                                        <div class="form-group">
-                                                            <label class="form-label required">اولویت پیش‌فرض</label>
-                                                            <select name="default_priority_on_fail" class="form-select select2-basic" required>
-                                                                <option value="">انتخاب کنید</option>
-                                                                {% for priority in priorities %}
-                                                                <option value="{{ priority.id }}" {% if question.default_priority_on_fail_id == priority.id %}selected{% endif %}>
-                                                                    {{ priority.priority }}
-                                                                </option>
-                                                                {% endfor %}
-                                                            </select>
-                                                        </div>
+                                                    <div class="form-section-title mt-4">
+                                                        <i class="fas fa-tasks"></i>
+                                                        اقدامات اصلاحی
                                                     </div>
-                                                    <div class="col-md-6">
-                                                        <div class="form-group">
-                                                            <label class="form-label required">اقدام اصلاحی پیش‌فرض</label>
-                                                            <select name="default_corrective_action" class="form-select select2-basic" required>
-                                                                <option value="">انتخاب کنید</option>
-                                                                {% for action in corrective_actions %}
-                                                                <option value="{{ action.description }}" {% if question.default_corrective_action == action.description %}selected{% endif %}>
-                                                                    {{ action.description }}
-                                                                </option>
-                                                                {% endfor %}
-                                                            </select>
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <div class="form-group">
+                                                                <label class="form-label required">اولویت پیش‌فرض</label>
+                                                                <select name="default_priority_on_fail" class="form-select select2-basic" required>
+                                                                    <option value="">انتخاب کنید</option>
+                                                                    {% for priority in priorities %}
+                                                                    <option value="{{ priority.id }}" {% if question.default_priority_on_fail_id == priority.id %}selected{% endif %}>
+                                                                        {{ priority.priority }}
+                                                                    </option>
+                                                                    {% endfor %}
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="form-group">
+                                                                <label class="form-label required">اقدام اصلاحی پیش‌فرض</label>
+                                                                <select name="default_corrective_action" class="form-select select2-basic" required>
+                                                                    <option value="">انتخاب کنید</option>
+                                                                    {% for action in corrective_actions %}
+                                                                    <option value="{{ action.description }}" {% if question.default_corrective_action == action.description %}selected{% endif %}>
+                                                                        {{ action.description }}
+                                                                    </option>
+                                                                    {% endfor %}
+                                                                </select>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -287,11 +564,11 @@
                         </div>
                     </div>
                 </div>
-                {% include 'footer.html' %}
             </div>
         </div>
     </div>
 </div>
+{% include 'footer.html' %}
 {% endblock %}
 
 {% block extra_js %}
@@ -301,7 +578,11 @@ $(document).ready(function() {
     // فعال‌سازی tooltips
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl)
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+            trigger: 'hover',
+            animation: true,
+            delay: { show: 100, hide: 100 }
+        })
     });
 
     // تنظیمات Select2
@@ -314,8 +595,14 @@ $(document).ready(function() {
             },
             searching: function() {
                 return "در حال جستجو...";
+            },
+            inputTooShort: function() {
+                return "لطفاً حداقل ۱ کاراکتر وارد کنید";
             }
-        }
+        },
+        placeholder: "انتخاب کنید",
+        allowClear: true,
+        minimumResultsForSearch: 1
     });
 
     // نمایش/مخفی کردن بخش‌های مختلف بر اساس نوع سوال
@@ -325,29 +612,29 @@ $(document).ready(function() {
 
         // نمایش/مخفی کردن بخش نوع ماشین و مکان
         if (scope === 'machine') {
-            $('#machineTypeSection').slideDown();
-            $('#locationSection').slideUp();
+            $('#machineTypeSection').slideDown(300);
+            $('#locationSection').slideUp(300);
             $('select[name="machine_type"]').prop('required', true);
             $('select[name="location_section"]').prop('required', false);
         } else if (scope === 'location') {
-            $('#machineTypeSection').slideUp();
-            $('#locationSection').slideDown();
+            $('#machineTypeSection').slideUp(300);
+            $('#locationSection').slideDown(300);
             $('select[name="machine_type"]').prop('required', false);
             $('select[name="location_section"]').prop('required', true);
         } else {
-            $('#machineTypeSection').slideUp();
-            $('#locationSection').slideUp();
+            $('#machineTypeSection').slideUp(300);
+            $('#locationSection').slideUp(300);
             $('select[name="machine_type"]').prop('required', false);
             $('select[name="location_section"]').prop('required', false);
         }
 
         // نمایش/مخفی کردن بخش گزینه‌ها
         if (type === 'option') {
-            $('#optionsSection').slideDown();
+            $('#optionsSection').slideDown(300);
             $('input[name="options"]').prop('required', true);
             $('input[name="unacceptable_options"]').prop('required', true);
         } else {
-            $('#optionsSection').slideUp();
+            $('#optionsSection').slideUp(300);
             $('input[name="options"]').prop('required', false);
             $('input[name="unacceptable_options"]').prop('required', false);
         }
@@ -357,22 +644,86 @@ $(document).ready(function() {
     toggleSections();
 
     // اضافه کردن event listener برای تغییرات
-    $('select[name="question_scope"]').change(toggleSections);
-    $('select[name="question_type"]').change(toggleSections);
+    $('select[name="question_scope"]').change(function() {
+        toggleSections();
+        validateField($(this));
+    });
+    
+    $('select[name="question_type"]').change(function() {
+        toggleSections();
+        validateField($(this));
+    });
 
-    // فعال‌سازی اعتبارسنجی فرم
+    // تابع اعتبارسنجی فیلدها
+    function validateField(field) {
+        if (field.val()) {
+            field.addClass('is-valid').removeClass('is-invalid');
+            field.closest('.form-group').find('.invalid-feedback').hide();
+        } else {
+            field.removeClass('is-valid').addClass('is-invalid');
+            field.closest('.form-group').find('.invalid-feedback').show();
+        }
+    }
+
+    // اعتبارسنجی فرم
     var forms = document.querySelectorAll('.needs-validation');
     Array.prototype.slice.call(forms).forEach(function (form) {
         form.addEventListener('submit', function (event) {
             if (!form.checkValidity()) {
                 event.preventDefault();
                 event.stopPropagation();
+                
+                // نمایش پیام خطا برای فیلدهای خالی
+                $(form).find(':invalid').each(function() {
+                    validateField($(this));
+                });
+                
+                // اسکرول به اولین فیلد خطا
+                var firstError = $(form).find(':invalid').first();
+                if (firstError.length) {
+                    $('html, body').animate({
+                        scrollTop: firstError.offset().top - 100
+                    }, 500);
+                }
             } else {
                 $('.loading-spinner').show();
+                $('button[type="submit"]').prop('disabled', true);
             }
             form.classList.add('was-validated');
         }, false);
     });
+    
+    // اعتبارسنجی فیلدها هنگام تغییر
+    $('select, input, textarea').on('change', function() {
+        validateField($(this));
+    });
+    
+    // بررسی اولیه فیلدهای پر شده
+    $('select, input, textarea').each(function() {
+        if ($(this).val()) {
+            validateField($(this));
+        }
+    });
+
+    // اضافه کردن انیمیشن hover به کارت‌ها
+    $('.card').hover(
+        function() {
+            $(this).find('.card-header').css('background-color', '#f1f3f7');
+        },
+        function() {
+            $(this).find('.card-header').css('background-color', '#f8f9fa');
+        }
+    );
+
+    // بهبود نمایش tooltip‌ها
+    $('.tooltip-icon').hover(
+        function() {
+            $(this).find('i').addClass('fa-bounce');
+        },
+        function() {
+            $(this).find('i').removeClass('fa-bounce');
+        }
+    );
 });
 </script>
 {% endblock %} 
