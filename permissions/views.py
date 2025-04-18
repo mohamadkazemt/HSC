@@ -12,9 +12,10 @@ from django.contrib.auth.models import User
 from dashboard.utils import log_user_activity
 from django.urls import reverse
 
+def is_staff_user(user):
+    return user.is_staff
 
-
-@user_passes_test(lambda user: user.is_superuser)
+@user_passes_test(is_staff_user)
 def manage_access(request):
     """
     ویوی مدیریت دسترسی‌ها.
@@ -163,7 +164,7 @@ def manage_access(request):
     })
 
 
-@user_passes_test(lambda user: user.is_superuser)
+@user_passes_test(is_staff_user)
 def validate_access(request, view_name):
     """
     ویوی بررسی دسترسی کاربر به ویوی مشخص.
@@ -184,7 +185,7 @@ def validate_access(request, view_name):
     return JsonResponse({"message": "دسترسی مجاز است"})
 
 
-@user_passes_test(lambda user: user.is_superuser)
+@user_passes_test(is_staff_user)
 def list_permissions(request):
     # ثبت فعالیت مشاهده لیست دسترسی‌ها
     log_user_activity(
@@ -305,7 +306,7 @@ def list_permissions(request):
     return render(request, 'permissions/list_permissions.html', context)
 
 
-@user_passes_test(lambda user: user.is_superuser)
+@user_passes_test(is_staff_user)
 def edit_permission(request, permission_id):
     permission_type = request.GET.get('type')  # دریافت نوع دسترسی از پارامتر GET
     permission = None
@@ -380,7 +381,7 @@ def edit_permission(request, permission_id):
     return render(request, 'permissions/edit_permission.html', context)
 
 
-@user_passes_test(lambda user: user.is_superuser)
+@user_passes_test(is_staff_user)
 def delete_permission(request, permission_id):
     permission_type = request.GET.get('type')  # دریافت نوع دسترسی از پارامتر GET
     permission = None
@@ -429,3 +430,10 @@ def delete_permission(request, permission_id):
         'view_label': view_label,
     }
     return render(request, 'permissions/delete_permission.html', context)
+
+@user_passes_test(is_staff_user)
+def manage_user_permissions(request):
+    """
+    ویوی مدیریت دسترسی‌های کاربران.
+    """
+    # ... rest of the function ...

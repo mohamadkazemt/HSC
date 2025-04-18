@@ -1,167 +1,219 @@
 {# dashboard/templates/notification.html #}
 {% load static %}
 {% if request.user.is_authenticated %}
-    <div class="card w-100 border-0 rounded-0" id="kt_drawer_chat_messenger">
-    <!--begin::کارت body-->
-    <div class="card-body">
-    <!--begin::Tabs-->
-    <div class="d-flex justify-content-center mb-5">
-        <button class="btn btn-primary me-2" id="newNotificationsTab">اعلان‌های جدید</button>
-        <button class="btn btn-secondary" id="readNotificationsTab">اعلان‌های خوانده شده</button>
-    </div>
-    <!--end::Tabs-->
+    <div class="card w-100 border-0 rounded-0 shadow-sm" id="kt_drawer_chat_messenger">
+        <div class="card-body p-0">
+            <!-- Header Section -->
+            <div class="d-flex flex-column p-5 border-bottom">
+                <div class="d-flex justify-content-between align-items-center mb-5">
+                    <h3 class="fw-bold text-gray-800">اعلان‌ها</h3>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-light-primary active" id="newNotificationsTab">
+                            <i class="ki-outline ki-notification-status fs-2 me-2"></i>
+                            جدید
+                        </button>
+                        <button class="btn btn-sm btn-light" id="readNotificationsTab">
+                            <i class="ki-outline ki-notification-bing fs-2 me-2"></i>
+                            خوانده شده
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="d-flex align-items-center position-relative">
+                    <i class="ki-outline ki-magnifier fs-2 position-absolute ms-4"></i>
+                    <input type="text" class="form-control form-control-solid ps-12" id="notificationSearch" placeholder="جستجو در اعلان‌ها...">
+                </div>
+            </div>
 
-    <!-- جدید اعلان ها -->
-    <div class="notifications-list" id="newNotificationsList">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h4 class="fw-bold text-primary">اعلان‌های جدید</h4>
-            {% if unread_notifications %}
-            <button class="btn btn-sm btn-success" id="markAllAsReadBtn">
-                <i class="ki-outline ki-check fs-2"></i> علامت‌گذاری همه به عنوان خوانده شده
-            </button>
-            {% endif %}
-        </div>
+            <!-- New Notifications Section -->
+            <div class="notifications-list p-5" id="newNotificationsList">
+                <div class="d-flex justify-content-between align-items-center mb-5">
+                    <div class="d-flex align-items-center">
+                        <span class="badge badge-primary badge-circle w-8px h-8px me-2"></span>
+                        <span class="text-gray-600 fw-semibold">اعلان‌های جدید</span>
+                    </div>
+                    {% if unread_notifications %}
+                    <button class="btn btn-sm btn-light-success" id="markAllAsReadBtn">
+                        <i class="ki-outline ki-check fs-2 me-2"></i>
+                        علامت‌گذاری همه
+                    </button>
+                    {% endif %}
+                </div>
 
-        <!-- Pagination for Unread Notifications -->
-        <div class="pagination-controls mb-3 d-flex justify-content-center" id="unreadNotificationsPagination">
-            {% if unread_notifications.has_previous %}
-                <a href="?page_unread={{ unread_notifications.previous_page_number }}" class="btn btn-outline-secondary me-2">قبلی</a>
-            {% endif %}
-            <span id="unreadNotificationsPageNumber" class="align-self-center">صفحه {{ unread_notifications.number }} از {{ unread_notifications.paginator.num_pages }}</span>
-            {% if unread_notifications.has_next %}
-                <a href="?page_unread={{ unread_notifications.next_page_number }}" class="btn btn-outline-secondary ms-2">بعدی</a>
-            {% endif %}
-        </div>
-
-        <div id="newNotificationsContainer">
-            {% if unread_notifications %}
-                {% for notification in unread_notifications %}
-                    <div class="d-flex justify-content-start mb-10 new-notification-item">
-                        <div class="d-flex flex-column align-items-start w-100">
-                            <div class="p-5 rounded bg-light-{{ notification.get_type_color }} text-gray-900 fw-semibold mw-lg-400px text-start w-100">
-                                <div class="d-flex align-items-center mb-2">
-                                    <span class="symbol symbol-30px me-3">
+                <div id="newNotificationsContainer">
+                    {% if unread_notifications %}
+                        {% for notification in unread_notifications %}
+                            <div class="notification-item bg-light-primary bg-opacity-10 rounded-3 p-5 mb-5 new-notification-item animate__animated animate__fadeIn">
+                                <div class="d-flex">
+                                    <div class="symbol symbol-40px me-4">
                                         <span class="symbol-label bg-light-{{ notification.get_type_color }}">
                                             <i class="ki-outline {{ notification.get_type_icon }} fs-2 text-{{ notification.get_type_color }}"></i>
                                         </span>
-                                    </span>
-                                    {% if notification.title %}
-                                    <h5 class="mb-0 text-{{ notification.get_type_color }}">{{ notification.title }}</h5>
-                                    {% endif %}
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div>
+                                                {% if notification.title %}
+                                                <h6 class="text-gray-800 fw-bold mb-1">{{ notification.title }}</h6>
+                                                {% endif %}
+                                                <div class="text-gray-600 fs-7">{{ notification.message }}</div>
+                                            </div>
+                                            <span class="text-gray-500 fs-7">{{ notification.created_at|timesince }} پیش</span>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <form method="get" action="{% url 'dashboard:mark_notification_and_redirect' notification.id %}" class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-light-primary">
+                                                    <i class="ki-outline ki-arrow-right fs-2"></i>
+                                                    مشاهده
+                                                </button>
+                                            </form>
+                                            <a href="{% url 'dashboard:notification_detail' notification.pk %}" class="btn btn-sm btn-light">
+                                                <i class="ki-outline ki-eye fs-2"></i>
+                                                جزئیات
+                                            </a>
+                                        </div>
+                                    </div>
                                 </div>
-                                <form method="get" action="{% url 'dashboard:mark_notification_and_redirect' notification.id %}" class="mb-2">
-                                    <button type="submit" class="btn btn-link text-hover-primary p-0">{{ notification.message }}</button>
-                                </form>
-                                <span class="text-muted fs-7">ایجاد شده: {{ notification.created_at|timesince }} پیش</span>
                             </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-10">
+                            <i class="ki-outline ki-notification-bing fs-3x text-gray-300 mb-5"></i>
+                            <div class="text-gray-500">هیچ اعلان جدیدی وجود ندارد.</div>
                         </div>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <div class="text-muted text-center">
-                    <i class="ki-outline ki-notification-bing fs-3x text-gray-300 mb-5"></i>
-                    <div class="text-muted">هیچ اعلان جدیدی وجود ندارد.</div>
+                    {% endif %}
                 </div>
-            {% endif %}
-        </div>
-    </div>
+            </div>
 
-    <!-- خوانده شده اعلان ها -->
-    <div class="notifications-list d-none" id="readNotificationsList">
-        <h4 class="fw-bold text-secondary">اعلان‌های خوانده شده</h4>
+            <!-- Read Notifications Section -->
+            <div class="notifications-list p-5 d-none" id="readNotificationsList">
+                <div class="d-flex align-items-center mb-5">
+                    <span class="badge badge-secondary badge-circle w-8px h-8px me-2"></span>
+                    <span class="text-gray-600 fw-semibold">اعلان‌های خوانده شده</span>
+                </div>
 
-        <!-- Pagination for Read Notifications -->
-        <div class="pagination-controls mb-3 d-flex justify-content-center" id="readNotificationsPagination">
-            {% if read_notifications.has_previous %}
-                <a href="?page_read={{ read_notifications.previous_page_number }}" class="btn btn-outline-secondary me-2">قبلی</a>
-            {% endif %}
-            <span id="readNotificationsPageNumber" class="align-self-center">صفحه {{ read_notifications.number }} از {{ read_notifications.paginator.num_pages }}</span>
-            {% if read_notifications.has_next %}
-                <a href="?page_read={{ read_notifications.next_page_number }}" class="btn btn-outline-secondary ms-2">بعدی</a>
-            {% endif %}
-        </div>
-
-        <div id="readNotificationsContainer">
-            {% if read_notifications %}
-                {% for notification in read_notifications %}
-                    <div class="d-flex justify-content-start mb-10 read-notification-item">
-                        <div class="d-flex flex-column align-items-start w-100">
-                            <div class="p-5 rounded bg-light-secondary text-gray-900 fw-semibold mw-lg-400px text-start w-100">
-                                <div class="d-flex align-items-center mb-2">
-                                    <span class="symbol symbol-30px me-3">
+                <div id="readNotificationsContainer">
+                    {% if read_notifications %}
+                        {% for notification in read_notifications %}
+                            <div class="notification-item bg-light-secondary bg-opacity-10 rounded-3 p-5 mb-5 read-notification-item animate__animated animate__fadeIn">
+                                <div class="d-flex">
+                                    <div class="symbol symbol-40px me-4">
                                         <span class="symbol-label bg-light-{{ notification.get_type_color }}">
                                             <i class="ki-outline {{ notification.get_type_icon }} fs-2 text-{{ notification.get_type_color }}"></i>
                                         </span>
-                                    </span>
-                                    {% if notification.title %}
-                                    <h5 class="mb-0 text-{{ notification.get_type_color }}">{{ notification.title }}</h5>
-                                    {% endif %}
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div>
+                                                {% if notification.title %}
+                                                <h6 class="text-gray-800 fw-bold mb-1">{{ notification.title }}</h6>
+                                                {% endif %}
+                                                <div class="text-gray-600 fs-7">{{ notification.message }}</div>
+                                            </div>
+                                            <div class="text-end">
+                                                <span class="text-gray-500 fs-7 d-block">{{ notification.created_at|timesince }} پیش</span>
+                                                {% if notification.read_at %}
+                                                <span class="text-gray-400 fs-8">خوانده شده: {{ notification.read_at|timesince }} پیش</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <a href="{{ notification.get_absolute_url }}" class="btn btn-sm btn-light-primary">
+                                                <i class="ki-outline ki-arrow-right fs-2"></i>
+                                                مشاهده
+                                            </a>
+                                            <a href="{% url 'dashboard:notification_detail' notification.pk %}" class="btn btn-sm btn-light">
+                                                <i class="ki-outline ki-eye fs-2"></i>
+                                                جزئیات
+                                            </a>
+                                        </div>
+                                    </div>
                                 </div>
-                                <a href="{{ notification.get_absolute_url }}" class="text-hover-primary d-block mb-2">{{ notification.message }}</a>
-                                <span class="text-muted fs-7">ایجاد شده: {{ notification.created_at|timesince }} پیش</span>
-                                {% if notification.read_at %}
-                                    <br>
-                                    <span class="text-muted fs-7">خوانده شده: {{ notification.read_at|timesince }} پیش</span>
-                                {% endif %}
                             </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-10">
+                            <i class="ki-outline ki-notification-bing fs-3x text-gray-300 mb-5"></i>
+                            <div class="text-gray-500">هیچ اعلان خوانده شده‌ای وجود ندارد.</div>
                         </div>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <div class="text-muted text-center">
-                    <i class="ki-outline ki-notification-bing fs-3x text-gray-300 mb-5"></i>
-                    <div class="text-muted">هیچ اعلان خوانده شده‌ای وجود ندارد.</div>
+                    {% endif %}
                 </div>
-            {% endif %}
+            </div>
         </div>
-    </div>
-    </div>
     </div>
 {% else %}
-    <div class="text-muted text-center">برای مشاهده اعلان‌ها ابتدا وارد شوید.</div>
+    <div class="text-center py-10">
+        <i class="ki-outline ki-lock fs-3x text-gray-300 mb-5"></i>
+        <div class="text-gray-500">برای مشاهده اعلان‌ها ابتدا وارد شوید.</div>
+    </div>
 {% endif %}
 
 <script>
-    document.getElementById('newNotificationsTab').addEventListener('click', function() {
-        document.getElementById('newNotificationsList').classList.remove('d-none');
-        document.getElementById('readNotificationsList').classList.add('d-none');
-        this.classList.add('btn-primary');
-        this.classList.remove('btn-secondary');
-        document.getElementById('readNotificationsTab').classList.add('btn-secondary');
-        document.getElementById('readNotificationsTab').classList.remove('btn-primary');
-    });
+    document.addEventListener('DOMContentLoaded', function() {
+        // Tab switching with smooth transitions
+        const newTab = document.getElementById('newNotificationsTab');
+        const readTab = document.getElementById('readNotificationsTab');
+        const newList = document.getElementById('newNotificationsList');
+        const readList = document.getElementById('readNotificationsList');
 
-    document.getElementById('readNotificationsTab').addEventListener('click', function() {
-        document.getElementById('newNotificationsList').classList.add('d-none');
-        document.getElementById('readNotificationsList').classList.remove('d-none');
-        this.classList.add('btn-primary');
-        this.classList.remove('btn-secondary');
-        document.getElementById('newNotificationsTab').classList.add('btn-secondary');
-        document.getElementById('newNotificationsTab').classList.remove('btn-primary');
-    });
-    
-    // اضافه کردن عملکرد دکمه علامت‌گذاری همه به عنوان خوانده شده
-    document.getElementById('markAllAsReadBtn')?.addEventListener('click', function() {
-        if (confirm('آیا مطمئن هستید که می‌خواهید همه اعلان‌ها را به عنوان خوانده شده علامت‌گذاری کنید؟')) {
-            fetch('{% url "dashboard:mark_all_notifications_read" %}', {
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    // نمایش پیام موفقیت
-                    alert(data.message);
-                    // بازخوانی صفحه
-                    window.location.reload();
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('خطایی رخ داد. لطفاً دوباره تلاش کنید.');
-            });
+        function switchTab(activeTab, inactiveTab, activeList, inactiveList) {
+            activeTab.classList.add('btn-light-primary', 'active');
+            activeTab.classList.remove('btn-light');
+            inactiveTab.classList.add('btn-light');
+            inactiveTab.classList.remove('btn-light-primary', 'active');
+            
+            activeList.classList.remove('d-none');
+            inactiveList.classList.add('d-none');
         }
+
+        newTab.addEventListener('click', () => switchTab(newTab, readTab, newList, readList));
+        readTab.addEventListener('click', () => switchTab(readTab, newTab, readList, newList));
+
+        // Enhanced search functionality with debounce
+        const searchInput = document.getElementById('notificationSearch');
+        let searchTimeout;
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const searchTerm = this.value.toLowerCase();
+                const notifications = document.querySelectorAll('.notification-item');
+                
+                notifications.forEach(notification => {
+                    const text = notification.textContent.toLowerCase();
+                    const shouldShow = text.includes(searchTerm);
+                    notification.style.display = shouldShow ? '' : 'none';
+                });
+            }, 300);
+        });
+
+        // Mark all as read with loading state
+        document.getElementById('markAllAsReadBtn')?.addEventListener('click', function() {
+            if (confirm('آیا مطمئن هستید که می‌خواهید همه اعلان‌ها را به عنوان خوانده شده علامت‌گذاری کنید؟')) {
+                const button = this;
+                const originalText = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> در حال پردازش...';
+
+                fetch('{% url "dashboard:mark_all_notifications_read" %}', {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        window.location.reload();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('خطایی رخ داد. لطفاً دوباره تلاش کنید.');
+                    button.disabled = false;
+                    button.innerHTML = originalText;
+                });
+            }
+        });
     });
 </script>

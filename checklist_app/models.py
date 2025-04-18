@@ -10,13 +10,21 @@ class Checklist(models.Model):
         ('machine', 'ماشین'),
         ('location', 'مکان'),
     ]
+    CHECKLIST_SHIFT_CHOICES = [
+        ('day', 'روزکاراول'),
+        ('day2', 'روزکاردوم'),
+        ('evening', 'عصرکاراول'),
+        ('evening2', 'عصرکاردوم'),
+        ('night', 'شبکاراول'),
+        ('night2', 'شبکاردوم')
+    ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="ثبت کننده", related_name='general_checklists')
     checklist_type = models.CharField(max_length=10, choices=CHECKLIST_TYPE_CHOICES, verbose_name="نوع چک لیست")
     machine = models.ForeignKey(MiningMachine, on_delete=models.CASCADE, null=True, blank=True, verbose_name="ماشین", related_name='general_checklists')
     location_section = models.ForeignKey(LocationSection, on_delete=models.CASCADE, null=True, blank=True, verbose_name="بخش مکانی")
     date = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ثبت")
-    shift = models.CharField(max_length=50, verbose_name="شیفت کاری")
+    shift = models.CharField(max_length=50, choices=CHECKLIST_SHIFT_CHOICES, verbose_name="شیفت کاری")
     shift_group = models.CharField(max_length=50, verbose_name="گروه شیفت")
 
     class Meta:

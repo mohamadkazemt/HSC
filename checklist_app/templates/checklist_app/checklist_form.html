@@ -47,23 +47,9 @@
                                     <label>شیفت کاری</label>
                                     <select name="shift" class="form-control" required>
                                         <option value="">انتخاب کنید</option>
-                                        <option value="صبح">صبح</option>
-                                        <option value="عصر">عصر</option>
-                                        <option value="شب">شب</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label>گروه شیفت</label>
-                                    <select name="shift_group" class="form-control" required>
-                                        <option value="">انتخاب کنید</option>
-                                        <option value="A">A</option>
-                                        <option value="B">B</option>
-                                        <option value="C">C</option>
+                                        {% for value, label in shift_choices %}
+                                        <option value="{{ value }}">{{ label }}</option>
+                                        {% endfor %}
                                     </select>
                                 </div>
                             </div>
@@ -293,7 +279,6 @@ $(document).ready(function() {
         var formData = {
             checklist_type: $('#checklistType').val(),
             shift: $('select[name="shift"]').val(),
-            shift_group: $('select[name="shift_group"]').val(),
             answers: []
         };
 
