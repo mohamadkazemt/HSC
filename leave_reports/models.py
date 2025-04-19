@@ -20,6 +20,10 @@ class ShiftReport(models.Model):
         ('night', 'شبکاراول'),
         ('night2', 'شبکاردوم')
     ]
+    registration_CHOICES = [
+        (True, 'ثبت شده'),
+        (False, 'ثبت نشده')
+    ]
     leave_type = models.CharField(max_length=10, choices=LEAVE_TYPE_CHOICES)
     user = models.ForeignKey(User, on_delete=models.CASCADE, db_index=True)
     shift_date = models.DateField(db_index=True)
@@ -27,11 +31,13 @@ class ShiftReport(models.Model):
     start_time = models.TimeField(null=True, blank=True)
     end_time = models.TimeField(null=True, blank=True)
     status = models.CharField(max_length=10, default='reported')
+    registration = models.BooleanField(choices=registration_CHOICES, default=False, verbose_name='وضعیت ثبت')
     crate_by = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True, blank=True)
     work_group = models.CharField(max_length=100, db_index=True)
     shift_type = models.CharField(max_length=10, choices=SHIFT_TYPE_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
     description = models.TextField(null=True, blank=True)  # توضیحات برای غیبت و استعلاجی
+    exported_to_excel = models.BooleanField(default=False, verbose_name='خروجی اکسل گرفته شده')
 
     def clean(self):
         # بررسی تکراری بودن گزارش برای یک کاربر در یک تاریخ خاص
