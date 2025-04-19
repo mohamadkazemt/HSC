@@ -32,6 +32,18 @@
                                             <div class="fs-6 text-gray-500">مشاهده و فیلتر گزارش‌های شیفت</div>
                                         </div>
                                         <div class="card-toolbar">
+                                            <div class="btn-group me-3">
+                                                <a href="?display_mode=by_date{% if selected_year %}&year={{ selected_year }}{% endif %}{% if selected_month %}&month={{ selected_month }}{% endif %}{% if selected_day %}&day={{ selected_day }}{% endif %}{% if selected_work_group %}&work_group={{ selected_work_group }}{% endif %}{% if today_filter %}&today={{ today_filter }}{% endif %}" 
+                                                   class="btn btn-sm {% if display_mode == 'by_date' %}btn-primary{% else %}btn-light{% endif %}">
+                                                    <i class="bi bi-calendar-week me-1"></i>
+                                                    نمایش بر اساس تاریخ
+                                                </a>
+                                                <a href="?display_mode=by_person{% if selected_year %}&year={{ selected_year }}{% endif %}{% if selected_month %}&month={{ selected_month }}{% endif %}{% if selected_day %}&day={{ selected_day }}{% endif %}{% if selected_work_group %}&work_group={{ selected_work_group }}{% endif %}{% if today_filter %}&today={{ today_filter }}{% endif %}" 
+                                                   class="btn btn-sm {% if display_mode == 'by_person' %}btn-primary{% else %}btn-light{% endif %}">
+                                                    <i class="bi bi-person me-1"></i>
+                                                    نمایش بر اساس پرسنل
+                                                </a>
+                                            </div>
                                             <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newReportModal">
                                                 <i class="bi bi-plus-lg me-1"></i>
                                                 گزارش جدید
@@ -57,6 +69,7 @@
                                             <div id="filterCollapse" class="collapse show">
                                                 <div class="card-body pt-4">
                                                     <form id="filterForm" method="get" class="row g-3">
+                                                        <input type="hidden" name="display_mode" value="{{ display_mode }}">
                                                         <div class="col-md-2">
                                                             <label class="form-label fw-bold">سال</label>
                                                             <select name="year" class="form-select form-select-solid">
@@ -101,7 +114,7 @@
                                                             <button type="submit" class="btn btn-primary">
                                                                 <i class="bi bi-funnel-fill me-1"></i>اعمال فیلترها
                                                             </button>
-                                                            <a href="{% url 'leave_reports:shift_report_list' %}" class="btn btn-light ms-2">
+                                                            <a href="{% url 'leave_reports:shift_report_list' %}?display_mode={{ display_mode }}" class="btn btn-light ms-2">
                                                                 <i class="bi bi-x-circle me-1"></i>حذف فیلترها
                                                             </a>
                                                         </div>
@@ -127,13 +140,13 @@
                                             </div>
                                             <div class="card-body p-0">
                                                 <div class="table-responsive">
+                                                    {% if display_mode == 'by_date' %}
+                                                    <!-- Display by date -->
                                                     <table class="table table-hover table-rounded table-striped border gy-7 gs-7 mb-0">
                                                         <thead>
                                                         <tr class="fw-bold fs-6 text-gray-800 border-bottom border-gray-200 bg-light">
-                                                            <th>ثبت کننده</th>
                                                             <th>گروه کاری</th>
                                                             <th>تاریخ شیفت</th>
-                                                            <th>زمان ثبت</th>
                                                             <th>شیفت</th>
                                                             <th>تعداد افراد</th>
                                                             <th>مرخصی روزانه</th>
@@ -146,10 +159,8 @@
                                                         <tbody>
                                                         {% for report in reports.object_list %}
                                                             <tr>
-                                                                <td>{{ report.crate_by_name }}</td>
                                                                 <td>{{ report.work_group }}</td>
                                                                 <td>{{ report.shift_date }}</td>
-                                                                <td>{{ report.created_at|time:"H:i" }}</td>
                                                                 <td>{{ report.shift }}</td>
                                                                 <td>{{ report.total_persons }}</td>
                                                                 <td>
@@ -188,6 +199,62 @@
                                                         {% endfor %}
                                                         </tbody>
                                                     </table>
+                                                    {% else %}
+                                                    <!-- Display by person -->
+                                                    <table class="table table-hover table-rounded table-striped border gy-7 gs-7 mb-0">
+                                                        <thead>
+                                                        <tr class="fw-bold fs-6 text-gray-800 border-bottom border-gray-200 bg-light">
+                                                            <th>نام و نام خانوادگی</th>
+                                                            <th>کد پرسنلی</th>
+                                                            <th>مرخصی روزانه</th>
+                                                            <th>مرخصی ساعتی</th>
+                                                            <th>غیبت‌ها</th>
+                                                            <th>مرخصی استعلاجی</th>
+                                                            <th class="text-center">عملیات</th>
+                                                        </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                        {% for report in reports.object_list %}
+                                                            <tr>
+                                                                <td>{{ report.user_name }}</td>
+                                                                <td>{{ report.personnel_code }}</td>
+                                                                <td>
+                                                                    <span class="badge badge-light-primary">{{ report.total_regular }}</span>
+                                                                </td>
+                                                                <td>
+                                                                    <span class="badge badge-light-success">{{ report.total_hourly }}</span>
+                                                                </td>
+                                                                <td>
+                                                                    <span class="badge badge-light-danger">{{ report.total_absence }}</span>
+                                                                </td>
+                                                                <td>
+                                                                    <span class="badge badge-light-warning">{{ report.total_sick_leave }}</span>
+                                                                </td>
+                                                                <td class="text-center">
+                                                                    {% if report.leave_ids %}
+                                                                        <a href="{% url 'leave_reports:shift_report_detail' report.leave_ids.0 %}" class="btn btn-icon btn-sm btn-light-primary me-1" data-bs-toggle="tooltip" title="نمایش">
+                                                                            <i class="bi bi-eye-fill"></i>
+                                                                        </a>
+                                                                    {% endif %}
+                                                                </td>
+                                                            </tr>
+                                                        {% empty %}
+                                                            <tr>
+                                                                <td colspan="7" class="text-center py-5">
+                                                                    <div class="d-flex flex-column align-items-center">
+                                                                        <i class="bi bi-clipboard-x fs-3x text-muted mb-3"></i>
+                                                                        <span class="text-muted">هیچ گزارشی یافت نشد.</span>
+                                                                        <button type="button" class="btn btn-sm btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#newReportModal">
+                                                                            <i class="bi bi-plus-lg me-1"></i>
+                                                                            ایجاد گزارش جدید
+                                                                        </button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                    {% endif %}
                                                 </div>
                                             </div>
                                         </div>
@@ -199,7 +266,7 @@
                                                 <ul class="pagination">
                                                     {% if page_obj.has_previous %}
                                                         <li class="page-item">
-                                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&year={{selected_year}}&month={{selected_month}}&day={{selected_day}}&work_group={{selected_work_group}}&today={{today_filter}}" aria-label="Previous">«</a>
+                                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&display_mode={{ display_mode }}&year={{selected_year}}&month={{selected_month}}&day={{selected_day}}&work_group={{selected_work_group}}&today={{today_filter}}" aria-label="Previous">«</a>
                                                         </li>
                                                     {% else %}
                                                         <li class="page-item disabled">
@@ -209,13 +276,13 @@
 
                                                     {% for i in page_obj.paginator.page_range %}
                                                         <li class="page-item {% if page_obj.number == i %}active{% endif %}">
-                                                            <a class="page-link" href="?page={{ i }}&year={{selected_year}}&month={{selected_month}}&day={{selected_day}}&work_group={{selected_work_group}}&today={{today_filter}}">{{ i }}</a>
+                                                            <a class="page-link" href="?page={{ i }}&display_mode={{ display_mode }}&year={{selected_year}}&month={{selected_month}}&day={{selected_day}}&work_group={{selected_work_group}}&today={{today_filter}}">{{ i }}</a>
                                                         </li>
                                                     {% endfor %}
 
                                                     {% if page_obj.has_next %}
                                                         <li class="page-item">
-                                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&year={{selected_year}}&month={{selected_month}}&day={{selected_day}}&work_group={{selected_work_group}}&today={{today_filter}}" aria-label="Next">»</a>
+                                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&display_mode={{ display_mode }}&year={{selected_year}}&month={{selected_month}}&day={{selected_day}}&work_group={{selected_work_group}}&today={{today_filter}}" aria-label="Next">»</a>
                                                         </li>
                                                     {% else %}
                                                         <li class="page-item disabled">

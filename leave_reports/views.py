@@ -222,21 +222,18 @@ def shift_report_list(request):
         request=request
     )
     
-    # بررسی عضویت کاربر در گروه مدیر
-    is_manager = request.user.groups.filter(name='مدیر').exists()
-
-    # دریافت گزارش‌ها بر اساس شرایط
-    if is_manager:
-        reports = ShiftReport.objects.all()  # مدیر می‌تواند همه گزارش‌ها را ببیند
-    else:
-        reports = ShiftReport.objects.filter(crate_by=request.user.userprofile)  # کاربر فقط گزارش‌های خودش را می‌بیند
-
+    # Get display mode from request (by_person or by_date)
+    display_mode = request.GET.get('display_mode', 'by_date')
+    
     # Get filter parameters from request
     year = request.GET.get('year')
     month = request.GET.get('month')
     day = request.GET.get('day')
     work_group = request.GET.get('work_group')
     today_filter = request.GET.get('today')
+    
+    # Get all reports without user restrictions
+    reports = ShiftReport.objects.all()
 
     # Apply filters
     if work_group:
@@ -277,58 +274,96 @@ def shift_report_list(request):
             logger.error(f"Error converting Jalali to Gregorian: {e}")
             messages.error(request, 'خطا در تبدیل تاریخ')
 
-    # Group reports by user, shift_date, and work_group
-    aggregated_reports = defaultdict(lambda: {
-        'shift_date': None,
-        'work_group': None,
-        'crate_by_name': None,
-        'total_regular': 0,
-        'total_hourly': 0,
-        'total_absence': 0,
-        'total_sick_leave': 0,
-        'total_persons': 0,
-        'created_at': None,
-        'shift': None,
-        'leave_ids': [],  # Store leave IDs for detail view
-    })
-
-    for report in reports:
-        key = (report.crate_by.user.id, report.shift_date, report.work_group)
+    # Group reports based on display mode
+    if display_mode == 'by_person':
+        # Group by person who was granted leave
+        aggregated_reports = defaultdict(lambda: {
+            'user_id': None,
+            'user_name': None,
+            'personnel_code': None,
+            'total_regular': 0,
+            'total_hourly': 0,
+            'total_absence': 0,
+            'total_sick_leave': 0,
+            'leave_ids': [],  # Store leave IDs for detail view
+        })
         
-        # تبدیل تاریخ میلادی به شمسی برای نمایش
-        try:
-            shift_date_jalali = jdatetime.date.fromgregorian(date=report.shift_date)
-            aggregated_reports[key]['shift_date'] = shift_date_jalali.strftime('%Y/%m/%d')
-        except ValueError as e:
-            logger.error(f"Error converting Gregorian to Jalali: {e}")
-            aggregated_reports[key]['shift_date'] = report.shift_date.strftime('%Y/%m/%d')
-
-        # استفاده از shift_type به جای shift_info
-        aggregated_reports[key]['shift'] = report.get_shift_type_display()
-
-        if not aggregated_reports[key]['work_group']:
-            aggregated_reports[key]['work_group'] = report.work_group
-            aggregated_reports[key]['crate_by_name'] = f"{report.crate_by.user.first_name} {report.crate_by.user.last_name}"
-            aggregated_reports[key]['created_at'] = report.created_at
-
-        if report.leave_type == 'regular':
-            aggregated_reports[key]['total_regular'] += 1
-        elif report.leave_type == 'hourly':
-            aggregated_reports[key]['total_hourly'] += 1
-        elif report.leave_type == 'absence':
-            aggregated_reports[key]['total_absence'] += 1
-        elif report.leave_type == 'sick_leave':
-            aggregated_reports[key]['total_sick_leave'] += 1
-
-        # Aggregate leave IDs
-        aggregated_reports[key]['leave_ids'].append(report.id)
-        aggregated_reports[key]['total_persons'] = len(set(aggregated_reports[key]['leave_ids']))
+        for report in reports:
+            user_id = report.user.id
+            user_name = f"{report.user.first_name} {report.user.last_name}"
+            personnel_code = report.user.userprofile.personnel_code if hasattr(report.user, 'userprofile') else ''
+            
+            if not aggregated_reports[user_id]['user_id']:
+                aggregated_reports[user_id]['user_id'] = user_id
+                aggregated_reports[user_id]['user_name'] = user_name
+                aggregated_reports[user_id]['personnel_code'] = personnel_code
+            
+            if report.leave_type == 'regular':
+                aggregated_reports[user_id]['total_regular'] += 1
+            elif report.leave_type == 'hourly':
+                aggregated_reports[user_id]['total_hourly'] += 1
+            elif report.leave_type == 'absence':
+                aggregated_reports[user_id]['total_absence'] += 1
+            elif report.leave_type == 'sick_leave':
+                aggregated_reports[user_id]['total_sick_leave'] += 1
+            
+            # Aggregate leave IDs
+            aggregated_reports[user_id]['leave_ids'].append(report.id)
+    else:
+        # Group by date (default mode)
+        aggregated_reports = defaultdict(lambda: {
+            'shift_date': None,
+            'work_group': None,
+            'total_regular': 0,
+            'total_hourly': 0,
+            'total_absence': 0,
+            'total_sick_leave': 0,
+            'total_persons': 0,
+            'shift': None,
+            'leave_ids': [],  # Store leave IDs for detail view
+        })
+        
+        for report in reports:
+            # Use shift_date and work_group as the key
+            key = (report.shift_date, report.work_group)
+            
+            # تبدیل تاریخ میلادی به شمسی برای نمایش
+            try:
+                shift_date_jalali = jdatetime.date.fromgregorian(date=report.shift_date)
+                aggregated_reports[key]['shift_date'] = shift_date_jalali.strftime('%Y/%m/%d')
+            except ValueError as e:
+                logger.error(f"Error converting Gregorian to Jalali: {e}")
+                aggregated_reports[key]['shift_date'] = report.shift_date.strftime('%Y/%m/%d')
+            
+            # استفاده از shift_type به جای shift_info
+            aggregated_reports[key]['shift'] = report.get_shift_type_display()
+            
+            if not aggregated_reports[key]['work_group']:
+                aggregated_reports[key]['work_group'] = report.work_group
+            
+            if report.leave_type == 'regular':
+                aggregated_reports[key]['total_regular'] += 1
+            elif report.leave_type == 'hourly':
+                aggregated_reports[key]['total_hourly'] += 1
+            elif report.leave_type == 'absence':
+                aggregated_reports[key]['total_absence'] += 1
+            elif report.leave_type == 'sick_leave':
+                aggregated_reports[key]['total_sick_leave'] += 1
+            
+            # Aggregate leave IDs
+            aggregated_reports[key]['leave_ids'].append(report.id)
+            aggregated_reports[key]['total_persons'] = len(set(aggregated_reports[key]['leave_ids']))
 
     # Convert the aggregated_reports dictionary to a list
     report_list = list(aggregated_reports.values())
 
-    # Sort the report_list by created_at in reverse order
-    report_list.sort(key=lambda x: x['created_at'], reverse=True)
+    # Sort the report_list
+    if display_mode == 'by_person':
+        # Sort by user name
+        report_list.sort(key=lambda x: x['user_name'])
+    else:
+        # Sort by date in reverse order
+        report_list.sort(key=lambda x: x['shift_date'], reverse=True)
 
     # Implement pagination
     page = request.GET.get('page', 1)
@@ -342,14 +377,14 @@ def shift_report_list(request):
 
     # Extract years, months, and days
     all_years = sorted(
-        list({int(r['shift_date'].split('/')[0]) for r in report_list}),
+        list({int(r['shift_date'].split('/')[0]) for r in report_list if 'shift_date' in r}),
         reverse=True
     )
     all_months = sorted(
-        list({int(r['shift_date'].split('/')[1]) for r in report_list})
+        list({int(r['shift_date'].split('/')[1]) for r in report_list if 'shift_date' in r})
     )
     all_days = sorted(
-        list({int(r['shift_date'].split('/')[2]) for r in report_list})
+        list({int(r['shift_date'].split('/')[2]) for r in report_list if 'shift_date' in r})
     )
 
     # Extract work groups
@@ -367,6 +402,7 @@ def shift_report_list(request):
         'work_groups': all_work_groups,
         'selected_work_group': work_group,
         'today_filter': today_filter,
+        'display_mode': display_mode,
         'title': 'لیست مرخصی ها',
     })
 
@@ -389,11 +425,6 @@ def delete_leave(request, leave_id):
         logger.error(f"Error getting current shift and group: {e}", exc_info=True)
         current_group = request.user.userprofile.group if hasattr(request.user, 'userprofile') and hasattr(request.user.userprofile, 'group') else None
 
-    # بررسی مجوز کاربر برای حذف
-    if leave.crate_by != request.user.userprofile:
-        messages.error(request, 'شما اجازه حذف این مرخصی را ندارید.')
-        return JsonResponse({'success': False, 'error': 'شما اجازه حذف این مرخصی را ندارید.'})
-    
     # بررسی گروه کاری (فقط مرخصی‌های گروه کاری فعلی کاربر قابل حذف هستند)
     if leave.work_group != current_group:
         messages.error(request, 'شما فقط می‌توانید مرخصی‌های گروه کاری فعلی خود را حذف کنید.')
@@ -459,6 +490,12 @@ def add_leave(request):
         except ShiftReport.DoesNotExist:
             logger.error(f"Report with ID {report_id} not found")
             return JsonResponse({'success': False, 'error': 'گزارش مورد نظر یافت نشد.'})
+        
+        # دریافت نوع مرخصی
+        leave_type = request.POST.get('leave_type')
+        if not leave_type:
+            logger.error("Missing leave_type in request")
+            return JsonResponse({'success': False, 'error': 'نوع مرخصی یافت نشد.'})
         
         # بررسی توضیحات برای غیبت
         if leave_type == 'absence':
@@ -703,11 +740,6 @@ def shift_report_edit(request, report_id):
     report = get_object_or_404(ShiftReport, id=report_id)
     today = datetime.date.today()
 
-    # بررسی مجوز کاربر برای ویرایش گزارش
-    if report.crate_by != request.user.userprofile:
-        messages.error(request, 'شما اجازه ویرایش این گزارش را ندارید.')
-        return redirect('leave_reports:shift_report_list')
-    
     # بررسی گروه کاری (فقط گزارش‌های گروه کاری خود کاربر قابل ویرایش هستند)
     if report.work_group != request.user.userprofile.group:
         messages.error(request, 'شما فقط می‌توانید گزارش‌های گروه کاری خود را ویرایش کنید.')
