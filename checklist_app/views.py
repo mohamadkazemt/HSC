@@ -500,7 +500,7 @@ def general_question_form_view(request):
     
     return render(request, 'checklist_app/question_form.html', context)
 
-@permission_required("question_list")
+@permission_required("general_question_list")
 @login_required
 def general_question_list_view(request):
     questions = Question.objects.all()
@@ -554,7 +554,7 @@ def general_question_list_view(request):
     }
     return render(request, 'checklist_app/question_list.html', context)
 
-@permission_required("question_edit")
+@permission_required("general_question_edit")
 @login_required
 def general_question_edit_view(request, pk):
     question = get_object_or_404(Question, pk=pk)
@@ -598,7 +598,7 @@ def general_question_edit_view(request, pk):
     
     return render(request, 'checklist_app/question_form.html', context)
 
-@permission_required("question_delete")
+@permission_required("general_question_delete")
 @login_required
 @require_http_methods(["POST"])
 def general_question_delete_view(request):
