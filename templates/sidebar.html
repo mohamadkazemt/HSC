@@ -370,7 +370,7 @@
                                             </a>
                                         </div>
                                     {% endif %}
-                                    {% if request.user|has_permission:"question_form" or request.user|has_permission:"question_list" %}
+                                    {% if request.user|has_permission:"general_question_form" or request.user|has_permission:"general_question_list" %}
                                         <div class="menu-item">
                                             <a class="menu-link" href="{% url 'checklist_app:general_question_list' %}">
                                                 <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
@@ -378,7 +378,7 @@
                                             </a>
                                         </div>
                                     {% endif %}
-                                    {% if request.user|has_permission:"checklist_form" or request.user|has_permission:"checklist_list" %}
+                                    {% if request.user|has_permission:"general_checklist_form" or request.user|has_permission:"general_checklist_list" %}
                                         <div class="menu-item">
                                             <a class="menu-link" href="{% url 'machine_checklist:checklist_form' %}">
                                                 <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
