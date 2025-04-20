@@ -39,6 +39,7 @@
                                         <option value="">انتخاب کنید</option>
                                         <option value="machine">ماشین</option>
                                         <option value="location">مکان</option>
+                                        <option value="contractor_vehicle">ماشین‌آلات پیمانکار</option>
                                     </select>
                                 </div>
                             </div>
@@ -80,6 +81,29 @@
                                             <option value="">انتخاب کنید</option>
                                             {% for section in location_sections %}
                                             <option value="{{ section.id }}">{{ section }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="contractorVehicleSection" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label>ماشین‌آلات پیمانکار</label>
+                                        <select name="vehicle" id="vehicleSelect" class="form-control">
+                                            <option value="">انتخاب کنید</option>
+                                            {% for vehicle in contractor_vehicles %}
+                                            <option value="{{ vehicle.id }}" data-category="{{ vehicle.vehicle_category }}">
+                                                {{ vehicle.contractor.company_name }} - {{ vehicle.vehicle_type }} ({{ vehicle.license_plate }})
+                                                {% if vehicle.vehicle_category == 'mining' %}
+                                                [ماشین‌آلات معدنی]
+                                                {% else %}
+                                                [خودروی سبک]
+                                                {% endif %}
+                                            </option>
                                             {% endfor %}
                                         </select>
                                     </div>
@@ -200,9 +224,13 @@ $(document).ready(function() {
             data.machine_id = $('#machineSelect').val();
         } else if (type === 'location') {
             data.location_section_id = $('#locationSelect').val();
+        } else if (type === 'contractor_vehicle') {
+            data.vehicle_id = $('#vehicleSelect').val();
         }
 
-        if ((type === 'machine' && data.machine_id) || (type === 'location' && data.location_section_id)) {
+        if ((type === 'machine' && data.machine_id) || 
+            (type === 'location' && data.location_section_id) || 
+            (type === 'contractor_vehicle' && data.vehicle_id)) {
             $.ajax({
                 url: '{% url "checklist_app:get_general_questions" %}',
                 type: 'POST',
@@ -256,22 +284,34 @@ $(document).ready(function() {
         if (type === 'machine') {
             $('#machineSection').show();
             $('#locationSection').hide();
+            $('#contractorVehicleSection').hide();
             $('#machineSelect').prop('required', true);
             $('#locationSelect').prop('required', false);
+            $('#vehicleSelect').prop('required', false);
         } else if (type === 'location') {
             $('#machineSection').hide();
             $('#locationSection').show();
+            $('#contractorVehicleSection').hide();
             $('#machineSelect').prop('required', false);
             $('#locationSelect').prop('required', true);
+            $('#vehicleSelect').prop('required', false);
+        } else if (type === 'contractor_vehicle') {
+            $('#machineSection').hide();
+            $('#locationSection').hide();
+            $('#contractorVehicleSection').show();
+            $('#machineSelect').prop('required', false);
+            $('#locationSelect').prop('required', false);
+            $('#vehicleSelect').prop('required', true);
         } else {
             $('#machineSection').hide();
             $('#locationSection').hide();
+            $('#contractorVehicleSection').hide();
             $('#questionsSection').hide();
         }
         loadQuestions();
     });
 
-    $('#machineSelect, #locationSelect').change(loadQuestions);
+    $('#machineSelect, #locationSelect, #vehicleSelect').change(loadQuestions);
 
     $('#checklistForm').submit(function(e) {
         e.preventDefault();
@@ -286,6 +326,8 @@ $(document).ready(function() {
             formData.machine_id = $('#machineSelect').val();
         } else if (formData.checklist_type === 'location') {
             formData.location_section_id = $('#locationSelect').val();
+        } else if (formData.checklist_type === 'contractor_vehicle') {
+            formData.vehicle_id = $('#vehicleSelect').val();
         }
 
         $('[name^="answer_"]').each(function() {

@@ -8,6 +8,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Q
 from .models import Checklist, Question, Answer
 from BaseInfo.models import MiningMachine, TypeMachine
+from contractor_management.models import Vehicle
 from anomalis.models import (
     LocationSection, 
     AnomalyDescription, 
@@ -102,10 +103,12 @@ def general_checklist_list_view(request):
 def general_checklist_form_view(request):
     machines = MiningMachine.objects.all()
     location_sections = LocationSection.objects.all()
+    contractor_vehicles = Vehicle.objects.all()
     
     context = {
         'machines': machines,
         'location_sections': location_sections,
+        'contractor_vehicles': contractor_vehicles,
         'shift_choices': Checklist.CHECKLIST_SHIFT_CHOICES,
     }
     return render(request, 'checklist_app/checklist_form.html', context)
@@ -131,6 +134,7 @@ def get_general_questions(request):
     checklist_type = data.get('checklist_type')
     machine_id = data.get('machine_id')
     location_section_id = data.get('location_section_id')
+    vehicle_id = data.get('vehicle_id')
     
     questions = Question.objects.filter(question_scope=checklist_type)
     if checklist_type == 'machine' and machine_id:
@@ -138,6 +142,9 @@ def get_general_questions(request):
         questions = questions.filter(machine_type=machine.machine_type)
     elif checklist_type == 'location' and location_section_id:
         questions = questions.filter(location_section_id=location_section_id)
+    elif checklist_type == 'contractor_vehicle' and vehicle_id:
+        vehicle = Vehicle.objects.get(id=vehicle_id)
+        questions = questions.filter(vehicle_category=vehicle.vehicle_category)
     
     questions_data = [{
         'id': q.id,
@@ -165,6 +172,7 @@ def submit_general_checklist(request):
         checklist_type=data['checklist_type'],
         machine_id=data.get('machine_id'),
         location_section_id=data.get('location_section_id'),
+        contractor_vehicle_id=data.get('vehicle_id'),
         shift=data['shift'],
         shift_group=data['shift_group']
     )
@@ -272,6 +280,20 @@ def create_anomaly_from_failure_view(request):
                             section = first_section
                         else:
                             raise ValueError("هیچ بخش مکانی در سیستم تعریف نشده است")
+            elif checklist.checklist_type == 'contractor_vehicle' and checklist.contractor_vehicle:
+                # برای ماشین‌آلات پیمانکار، از location_section پیش‌فرض استفاده می‌کنیم
+                default_section = LocationSection.objects.filter(section__icontains='پیمانکاران').first()
+                if default_section:
+                    location = default_section.location
+                    section = default_section
+                else:
+                    # اگر بخش پیمانکاران وجود نداشت، از اولین بخش مکانی استفاده می‌کنیم
+                    first_section = LocationSection.objects.first()
+                    if first_section:
+                        location = first_section.location
+                        section = first_section
+                    else:
+                        raise ValueError("هیچ بخش مکانی در سیستم تعریف نشده است")
             else:
                 raise ValueError("نوع چک‌لیست نامعتبر است")
 
@@ -479,11 +501,13 @@ def general_question_form_view(request):
             is_required=True
         )
 
-        # اضافه کردن نوع ماشین یا بخش مکانی بر اساس نوع سوال
+        # اضافه کردن نوع ماشین، بخش مکانی یا دسته‌بندی خودرو بر اساس نوع سوال
         if data['question_scope'] == 'machine' and data.get('machine_type'):
             question.machine_type_id = data['machine_type']
         elif data['question_scope'] == 'location' and data.get('location_section'):
             question.location_section_id = data['location_section']
+        elif data['question_scope'] == 'contractor_vehicle' and data.get('vehicle_category'):
+            question.vehicle_category = data['vehicle_category']
         question.save()
         
         return redirect('checklist_app:general_question_list')
@@ -574,13 +598,19 @@ def general_question_edit_view(request, pk):
         question.default_corrective_action = data['default_corrective_action']
         question.default_anomaly_description_id = data.get('default_anomaly_description', '')
 
-        # به‌روزرسانی نوع ماشین یا بخش مکانی
+        # به‌روزرسانی نوع ماشین، بخش مکانی یا دسته‌بندی خودرو
         if data['question_scope'] == 'machine' and data.get('machine_type'):
             question.machine_type_id = data['machine_type']
             question.location_section = None
+            question.vehicle_category = None
         elif data['question_scope'] == 'location' and data.get('location_section'):
             question.location_section_id = data['location_section']
             question.machine_type = None
+            question.vehicle_category = None
+        elif data['question_scope'] == 'contractor_vehicle' and data.get('vehicle_category'):
+            question.vehicle_category = data['vehicle_category']
+            question.machine_type = None
+            question.location_section = None
         
         question.save()
         

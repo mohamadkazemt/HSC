@@ -102,7 +102,7 @@
                                         </tr>
                                         {% endif %}
                                     </table>
-                                    {% else %}
+                                    {% elif checklist.checklist_type == 'location' %}
                                     <table class="table table-bordered">
                                         <tr>
                                             <th>بخش</th>
@@ -111,6 +111,39 @@
                                         <tr>
                                             <th>محل</th>
                                             <td>{{ checklist.location_section.location }}</td>
+                                        </tr>
+                                    </table>
+                                    {% else %}
+                                    <table class="table table-bordered">
+                                        <tr>
+                                            <th>شرکت پیمانکار</th>
+                                            <td>{{ checklist.contractor_vehicle.contractor.company_name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>نوع خودرو</th>
+                                            <td>{{ checklist.contractor_vehicle.vehicle_type }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>دسته‌بندی خودرو</th>
+                                            <td>
+                                                {% if checklist.contractor_vehicle.vehicle_category == 'mining' %}
+                                                ماشین‌آلات معدنی
+                                                {% else %}
+                                                خودروی سبک
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>شماره پلاک</th>
+                                            <td>{{ checklist.contractor_vehicle.license_plate }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>نام راننده</th>
+                                            <td>{{ checklist.contractor_vehicle.driver_name }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>کد کارگاهی</th>
+                                            <td>{{ checklist.contractor_vehicle.vehicle_code|default:"-" }}</td>
                                         </tr>
                                     </table>
                                     {% endif %}

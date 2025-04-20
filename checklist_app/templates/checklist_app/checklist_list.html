@@ -232,8 +232,10 @@
                                                             <td>
                                                                 {% if checklist.checklist_type == 'machine' %}
                                                                     <span class="badge badge-light-info">{{ checklist.machine }}</span>
-                                                                {% else %}
+                                                                {% elif checklist.checklist_type == 'location' %}
                                                                     <span class="badge badge-light-warning">{{ checklist.location_section }}</span>
+                                                                {% else %}
+                                                                    <span class="badge badge-light-success">{{ checklist.contractor_vehicle.contractor.company_name }} - {{ checklist.contractor_vehicle.vehicle_type }} ({{ checklist.contractor_vehicle.license_plate }})</span>
                                                                 {% endif %}
                                                             </td>
                                                             <td>
