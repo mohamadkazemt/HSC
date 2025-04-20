@@ -684,7 +684,7 @@ def import_questions_view(request):
         print(f"Found headers: {headers}")
         
         required_headers = [
-            'متن سوال', 'محدوده', 'نوع سوال', 'نوع ماشین', 'بخش مکانی',
+            'متن سوال', 'محدوده', 'نوع سوال', 'نوع ماشین', 'بخش مکانی', 'دسته‌بندی خودرو',
             'گزینه‌ها', 'گزینه‌های غیرقابل قبول', 'نوع آنومالی', 'حوزه HSE',
             'شرح آنومالی پیش‌فرض', 'اولویت', 'اقدام اصلاحی پیش‌فرض'
         ]
@@ -717,6 +717,7 @@ def import_questions_view(request):
                 question_type = ws.cell(row=row, column=header_map['نوع سوال']).value
                 machine_type_name = ws.cell(row=row, column=header_map['نوع ماشین']).value
                 location_section_name = ws.cell(row=row, column=header_map['بخش مکانی']).value
+                vehicle_category_name = ws.cell(row=row, column=header_map['دسته‌بندی خودرو']).value
                 options = ws.cell(row=row, column=header_map['گزینه‌ها']).value
                 unacceptable_options = ws.cell(row=row, column=header_map['گزینه‌های غیرقابل قبول']).value
                 anomaly_type_name = ws.cell(row=row, column=header_map['نوع آنومالی']).value
@@ -726,13 +727,14 @@ def import_questions_view(request):
                 corrective_action = ws.cell(row=row, column=header_map['اقدام اصلاحی پیش‌فرض']).value
                 
                 print(f"Row data: text={text}, scope={scope}, type={question_type}, machine_type={machine_type_name}, "
-                      f"location={location_section_name}, anomaly_type={anomaly_type_name}, hse_type={hse_type}, "
-                      f"priority={priority_value}")
+                      f"location={location_section_name}, vehicle_category={vehicle_category_name}, anomaly_type={anomaly_type_name}, "
+                      f"hse_type={hse_type}, priority={priority_value}")
                 
                 # تبدیل مقادیر به فرمت مناسب
-                scope_map = {'ماشین': 'machine', 'مکان': 'location'}
+                scope_map = {'ماشین': 'machine', 'مکان': 'location', 'ماشین‌آلات پیمانکار': 'contractor_vehicle'}
                 type_map = {'متنی': 'text', 'گزینه‌ای': 'option'}
                 hse_map = {'H': 'H', 'S': 'S', 'E': 'E', 'Health': 'H', 'Safety': 'S', 'Environment': 'E'}
+                vehicle_category_map = {'ماشین‌آلات معدنی': 'mining', 'خودروهای سبک': 'light'}
                 
                 if not scope in scope_map:
                     raise ValueError(f'محدوده نامعتبر: {scope}. باید یکی از این مقادیر باشد: {", ".join(scope_map.keys())}')
@@ -742,6 +744,9 @@ def import_questions_view(request):
                 
                 if not hse_type in hse_map:
                     raise ValueError(f'نوع HSE نامعتبر: {hse_type}. باید یکی از این مقادیر باشد: {", ".join(hse_map.keys())}')
+                
+                if scope == 'ماشین‌آلات پیمانکار' and vehicle_category_name and not vehicle_category_name in vehicle_category_map:
+                    raise ValueError(f'دسته‌بندی خودرو نامعتبر: {vehicle_category_name}. باید یکی از این مقادیر باشد: {", ".join(vehicle_category_map.keys())}')
                 
                 # یافتن اولویت مشابه
                 similar_priority = find_similar_item(
@@ -802,46 +807,41 @@ def import_questions_view(request):
                     )
                     print(f"Created new corrective action: {corrective_action_obj}")
                 
-                # یافتن نوع ماشین مشابه
-                if scope_map[scope] == 'machine' and machine_type_name:
+                # ایجاد سوال
+                question = Question.objects.create(
+                    text=text,
+                    question_scope=scope_map[scope],
+                    question_type=type_map[question_type],
+                    options=options,
+                    unacceptable_options=unacceptable_options,
+                    anomaly_type=anomaly_type,
+                    hse_type=hse_map[hse_type],
+                    default_priority_on_fail=priority,
+                    default_corrective_action=corrective_action,
+                    default_anomaly_description=anomaly_desc,
+                    is_required=True
+                )
+
+                # تنظیم فیلدهای مربوط به نوع سوال
+                if scope == 'ماشین' and machine_type_name:
                     similar_machine_type = find_similar_item(
                         machine_type_name,
                         TypeMachine.objects.all(),
                         field_name='name'
                     )
                     if similar_machine_type:
-                        machine_type = similar_machine_type
-                        print(f"Found similar machine type: {machine_type}")
+                        question.machine_type = similar_machine_type
                     else:
-                        machine_type = TypeMachine.objects.create(name=machine_type_name)
-                        print(f"Created new machine type: {machine_type}")
-                    question = Question.objects.create(
-                        text=text,
-                        question_scope=scope_map[scope],
-                        question_type=type_map[question_type],
-                        options=options,
-                        unacceptable_options=unacceptable_options,
-                        anomaly_type=anomaly_type,
-                        hse_type=hse_map[hse_type],
-                        default_priority_on_fail=priority,
-                        default_corrective_action=corrective_action,
-                        default_anomaly_description=anomaly_desc,
-                        is_required=True
-                    )
-                    question.machine_type = machine_type
-                    print(f"Created new question: {question}")
-                
-                # یافتن بخش مکانی مشابه
-                elif scope_map[scope] == 'location' and location_section_name:
+                        question.machine_type = TypeMachine.objects.create(name=machine_type_name)
+                elif scope == 'مکان' and location_section_name:
                     similar_location_section = find_similar_item(
                         location_section_name,
                         LocationSection.objects.all(),
                         field_name='section',
-                        threshold=0.9  # دقت بیشتر برای بخش مکانی
+                        threshold=0.9
                     )
                     if similar_location_section:
-                        location_section = similar_location_section
-                        print(f"Found similar location section: {location_section}")
+                        question.location_section = similar_location_section
                     else:
                         default_location = Location.objects.first()
                         if not default_location:
@@ -849,27 +849,13 @@ def import_questions_view(request):
                                 name="مکان پیش‌فرض",
                                 description="مکان پیش‌فرض برای سوالات ایمپورت شده"
                             )
-                        location_section = LocationSection.objects.create(
+                        question.location_section = LocationSection.objects.create(
                             section=location_section_name,
                             location=default_location
                         )
-                        print(f"Created new location section: {location_section}")
-                    question = Question.objects.create(
-                        text=text,
-                        question_scope=scope_map[scope],
-                        question_type=type_map[question_type],
-                        options=options,
-                        unacceptable_options=unacceptable_options,
-                        anomaly_type=anomaly_type,
-                        hse_type=hse_map[hse_type],
-                        default_priority_on_fail=priority,
-                        default_corrective_action=corrective_action,
-                        default_anomaly_description=anomaly_desc,
-                        is_required=True
-                    )
-                    question.location_section = location_section
-                    print(f"Created new question: {question}")
-                
+                elif scope == 'ماشین‌آلات پیمانکار' and vehicle_category_name:
+                    question.vehicle_category = vehicle_category_map[vehicle_category_name]
+
                 question.save()
                 success_count += 1
                 print(f"Successfully saved question {success_count}")

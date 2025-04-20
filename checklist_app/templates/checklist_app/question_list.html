@@ -39,6 +39,32 @@
         transform: translateY(-50%);
         color: #6c757d;
     }
+    .import-section {
+        margin-bottom: 1.5rem;
+    }
+    .import-section .card {
+        border: 2px dashed #e4e6ef;
+        background-color: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+    .import-section .card:hover {
+        border-color: #009ef7;
+        background-color: #f1faff;
+    }
+    .import-section .upload-icon {
+        font-size: 2rem;
+        color: #009ef7;
+        margin-bottom: 1rem;
+    }
+    .import-section .sample-file-link {
+        color: #009ef7;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    .import-section .sample-file-link:hover {
+        color: #0095e8;
+        text-decoration: underline;
+    }
 </style>
 {% endblock %}
 
@@ -400,7 +426,7 @@
                         <div class="form-text">فرمت‌های مجاز: .xlsx, .xls</div>
                     </div>
                     <div class="mb-3">
-                        <a href="{% static 'checklist_app/sample_questions.xlsx' %}" class="btn btn-link">
+                        <a href="{% static 'checklist_app/sample_import_questions.xlsx' %}" class="btn btn-link">
                             <i class="fas fa-download me-2"></i>
                             دانلود نمونه فایل اکسل
                         </a>
