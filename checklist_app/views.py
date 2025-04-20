@@ -604,11 +604,20 @@ def general_question_edit_view(request, pk):
 def general_question_delete_view(request):
     data = json.loads(request.body)
     question_id = data.get('question_id')
+    question_ids = data.get('question_ids')
     
     try:
-        question = Question.objects.get(id=question_id)
-        question.delete()
-        return JsonResponse({'status': 'success'})
+        if question_id:
+            # حذف تک سوال
+            question = Question.objects.get(id=question_id)
+            question.delete()
+            return JsonResponse({'status': 'success'})
+        elif question_ids:
+            # حذف دسته‌جمعی
+            Question.objects.filter(id__in=question_ids).delete()
+            return JsonResponse({'status': 'success'})
+        else:
+            return JsonResponse({'status': 'error', 'message': 'شناسه سوال مشخص نشده است'}, status=400)
     except Question.DoesNotExist:
         return JsonResponse({'status': 'error', 'message': 'سوال مورد نظر یافت نشد'}, status=404)
     except Exception as e:

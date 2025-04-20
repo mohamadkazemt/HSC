@@ -30,6 +30,14 @@ from django.urls import reverse
 
 logger = logging.getLogger(__name__)
 
+def persian_to_english_numbers(persian_str):
+    persian_to_english = {
+        '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
+        '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
+        '/': '-'
+    }
+    return ''.join(persian_to_english.get(c, c) for c in persian_str)
+
 @permission_required("incident_report")
 @login_required
 def report_incident(request):
@@ -55,7 +63,7 @@ def report_incident(request):
     sections = LocationSection.objects.all()
 
     if request.method == 'POST':
-        incident_date_str = request.POST.get('incident_date')
+        incident_date_str = persian_to_english_numbers(request.POST.get('incident_date'))
         incident_time = request.POST.get('incident_time')
         location_id = request.POST.get('location')
         section_id = request.POST.get('section')
@@ -88,6 +96,22 @@ def report_incident(request):
             fire_truck_arrival_time = fire_truck_arrival_time if fire_truck_arrival_time else None
             ambulance_arrival_time = ambulance_arrival_time if ambulance_arrival_time else None
             hospitalized_time = hospitalized_time if hospitalized_time else None
+
+            # بررسی وجود گزارش تکراری
+            existing_report = IncidentReport.objects.filter(
+                incident_date=incident_date,
+                incident_time=incident_time,
+                location_id=location_id,
+                section_id=section_id
+            ).first()
+
+            if existing_report:
+                messages.warning(request, "گزارش مشابهی برای این تاریخ، ساعت و محل قبلاً ثبت شده است. لطفاً بررسی کنید.")
+                return render(request, 'hse_incidents/incident_report_form.html', {
+                    'locations': locations, 
+                    'sections': sections,
+                    'form_data': request.POST  # برگرداندن داده‌های فرم برای حفظ مقادیر
+                })
 
             incident = IncidentReport.objects.create(
                 incident_date=incident_date,
