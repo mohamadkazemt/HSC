@@ -378,11 +378,19 @@
                                             </a>
                                         </div>
                                     {% endif %}
-                                    {% if request.user|has_permission:"general_checklist_form" or request.user|has_permission:"general_checklist_list" %}
+                                    {% if request.user|has_permission:"checklist_form" or request.user|has_permission:"checklist_list" %}
                                         <div class="menu-item">
                                             <a class="menu-link" href="{% url 'machine_checklist:checklist_form' %}">
                                                 <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
                                                 <span class="menu-title">چک لیست ماشین آلات</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                    {% if request.user|has_permission:"checklist_form" or request.user|has_permission:"checklist_list" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'machine_checklist:checklist_list' %}">
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                                <span class="menu-title">لیست چک لیست ماشین آلات</span>
                                             </a>
                                         </div>
                                     {% endif %}
