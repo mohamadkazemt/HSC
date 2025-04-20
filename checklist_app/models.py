@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from BaseInfo.models import MiningMachine, TypeMachine
+from contractor_management.models import Vehicle
 from anomalis.models import LocationSection, AnomalyDescription, Priority, Anomalytype
 from accounts.models import UserProfile
 
@@ -9,6 +10,7 @@ class Checklist(models.Model):
     CHECKLIST_TYPE_CHOICES = [
         ('machine', 'ماشین'),
         ('location', 'مکان'),
+        ('contractor_vehicle', 'ماشین‌آلات پیمانکار'),
     ]
     CHECKLIST_SHIFT_CHOICES = [
         ('day', 'روزکاراول'),
@@ -20,9 +22,10 @@ class Checklist(models.Model):
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="ثبت کننده", related_name='general_checklists')
-    checklist_type = models.CharField(max_length=10, choices=CHECKLIST_TYPE_CHOICES, verbose_name="نوع چک لیست")
+    checklist_type = models.CharField(max_length=20, choices=CHECKLIST_TYPE_CHOICES, verbose_name="نوع چک لیست")
     machine = models.ForeignKey(MiningMachine, on_delete=models.CASCADE, null=True, blank=True, verbose_name="ماشین", related_name='general_checklists')
     location_section = models.ForeignKey(LocationSection, on_delete=models.CASCADE, null=True, blank=True, verbose_name="بخش مکانی")
+    contractor_vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, null=True, blank=True, verbose_name="ماشین‌آلات پیمانکار", related_name='general_checklists')
     date = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ثبت")
     shift = models.CharField(max_length=50, choices=CHECKLIST_SHIFT_CHOICES, verbose_name="شیفت کاری")
     shift_group = models.CharField(max_length=50, verbose_name="گروه شیفت")
@@ -34,21 +37,26 @@ class Checklist(models.Model):
     def __str__(self):
         if self.checklist_type == 'machine':
             return f"چک لیست ماشین {self.machine} - {self.date}"
-        else:
+        elif self.checklist_type == 'location':
             return f"چک لیست مکان {self.location_section} - {self.date}"
+        else:
+            return f"چک لیست ماشین‌آلات پیمانکار {self.contractor_vehicle} - {self.date}"
 
     def clean(self):
         if self.checklist_type == 'machine' and not self.machine:
             raise ValidationError('برای چک لیست ماشین، باید ماشین انتخاب شود.')
         elif self.checklist_type == 'location' and not self.location_section:
             raise ValidationError('برای چک لیست مکان، باید بخش مکانی انتخاب شود.')
-        if self.machine and self.location_section:
-            raise ValidationError('نمی‌توان همزمان هم ماشین و هم بخش مکانی را انتخاب کرد.')
+        elif self.checklist_type == 'contractor_vehicle' and not self.contractor_vehicle:
+            raise ValidationError('برای چک لیست ماشین‌آلات پیمانکار، باید ماشین پیمانکار انتخاب شود.')
+        if (self.machine and self.location_section) or (self.machine and self.contractor_vehicle) or (self.location_section and self.contractor_vehicle):
+            raise ValidationError('نمی‌توان همزمان بیش از یک نوع ماشین یا مکان را انتخاب کرد.')
 
 class Question(models.Model):
     QUESTION_SCOPE_CHOICES = [
         ('machine', 'ماشین'),
         ('location', 'مکان'),
+        ('contractor_vehicle', 'ماشین‌آلات پیمانکار'),
     ]
     QUESTION_TYPE_CHOICES = [
         ('text', 'متنی'),
@@ -60,9 +68,16 @@ class Question(models.Model):
         ('E', 'Environment'),
     ]
 
-    question_scope = models.CharField(max_length=10, choices=QUESTION_SCOPE_CHOICES, verbose_name="محدوده سوال")
+    question_scope = models.CharField(max_length=20, choices=QUESTION_SCOPE_CHOICES, verbose_name="محدوده سوال")
     machine_type = models.ForeignKey(TypeMachine, on_delete=models.CASCADE, null=True, blank=True, verbose_name="نوع ماشین", related_name='questions')
     location_section = models.ForeignKey(LocationSection, on_delete=models.CASCADE, null=True, blank=True, verbose_name="بخش مکانی")
+    vehicle_category = models.CharField(
+        max_length=10,
+        choices=Vehicle.VEHICLE_CATEGORY_CHOICES,
+        null=True,
+        blank=True,
+        verbose_name="دسته‌بندی خودرو"
+    )
     text = models.TextField(verbose_name="متن سوال")
     is_required = models.BooleanField(default=True, verbose_name="اجباری")
     question_type = models.CharField(max_length=10, choices=QUESTION_TYPE_CHOICES, verbose_name="نوع سوال")
@@ -122,8 +137,10 @@ class Question(models.Model):
             raise ValidationError('برای سوالات ماشین، باید نوع ماشین انتخاب شود.')
         elif self.question_scope == 'location' and not self.location_section:
             raise ValidationError('برای سوالات مکان، باید بخش مکانی انتخاب شود.')
-        if self.machine_type and self.location_section:
-            raise ValidationError('نمی‌توان همزمان هم نوع ماشین و هم بخش مکانی را انتخاب کرد.')
+        elif self.question_scope == 'contractor_vehicle' and not self.vehicle_category:
+            raise ValidationError('برای سوالات ماشین‌آلات پیمانکار، باید دسته‌بندی خودرو انتخاب شود.')
+        if (self.machine_type and self.location_section) or (self.machine_type and self.vehicle_category) or (self.location_section and self.vehicle_category):
+            raise ValidationError('نمی‌توان همزمان بیش از یک نوع ماشین یا مکان را انتخاب کرد.')
         if self.question_type == 'option' and not self.options:
             raise ValidationError('برای سوالات گزینه‌ای، باید گزینه‌ها تعریف شوند.')
         if self.unacceptable_options and self.question_type != 'option':

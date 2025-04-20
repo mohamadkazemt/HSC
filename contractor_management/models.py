@@ -61,8 +61,19 @@ class Employee(models.Model):
         verbose_name_plural = "کارمندان"
 
 class Vehicle(models.Model):
+    VEHICLE_CATEGORY_CHOICES = [
+        ('mining', 'ماشین آلات معدنی'),
+        ('light', 'خودروهای سبک'),
+    ]
+    
     contractor = models.ForeignKey(Contractor, on_delete=models.CASCADE, related_name="vehicles", verbose_name="پیمانکار")
     vehicle_type = models.CharField(max_length=255, verbose_name="نوع خودرو")
+    vehicle_category = models.CharField(
+        max_length=10,
+        choices=VEHICLE_CATEGORY_CHOICES,
+        default='light',
+        verbose_name="دسته‌بندی خودرو"
+    )
     vehicle_code = models.CharField(max_length=255, blank=True, null=True, verbose_name="کد کارگاهی خودرو")
     license_plate = models.CharField(max_length=20, unique=True, verbose_name="شماره پلاک خودرو")
     vehicle_card = models.FileField(upload_to='vehicle_cards/', null=True, blank=True, verbose_name="کارت خودرو")

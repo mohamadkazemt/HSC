@@ -340,6 +340,7 @@
                                                                         <option value="">انتخاب کنید</option>
                                                                         <option value="machine" {% if question.question_scope == 'machine' %}selected{% endif %}>ماشین</option>
                                                                         <option value="location" {% if question.question_scope == 'location' %}selected{% endif %}>مکان</option>
+                                                                        <option value="contractor_vehicle" {% if question.question_scope == 'contractor_vehicle' %}selected{% endif %}>ماشین‌آلات پیمانکار</option>
                                                                     </select>
                                                                     <span class="tooltip-icon" data-bs-toggle="tooltip" title="محدوده سوال را مشخص کنید">
                                                                         <i class="fas fa-info-circle"></i>
@@ -393,6 +394,20 @@
                                                                         {{ section.section }} - {{ section.location.name }}
                                                                     </option>
                                                                     {% endfor %}
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- بخش دسته‌بندی خودرو -->
+                                                    <div id="vehicleCategorySection" class="row" style="display: none;">
+                                                        <div class="col-md-6">
+                                                            <div class="form-group">
+                                                                <label class="form-label required">دسته‌بندی خودرو</label>
+                                                                <select name="vehicle_category" class="form-select select2-basic">
+                                                                    <option value="">انتخاب کنید</option>
+                                                                    <option value="mining" {% if question.vehicle_category == 'mining' %}selected{% endif %}>ماشین‌آلات معدنی</option>
+                                                                    <option value="light" {% if question.vehicle_category == 'light' %}selected{% endif %}>خودروهای سبک</option>
                                                                 </select>
                                                             </div>
                                                         </div>
@@ -614,18 +629,31 @@ $(document).ready(function() {
         if (scope === 'machine') {
             $('#machineTypeSection').slideDown(300);
             $('#locationSection').slideUp(300);
+            $('#vehicleCategorySection').slideUp(300);
             $('select[name="machine_type"]').prop('required', true);
             $('select[name="location_section"]').prop('required', false);
+            $('select[name="vehicle_category"]').prop('required', false);
         } else if (scope === 'location') {
             $('#machineTypeSection').slideUp(300);
             $('#locationSection').slideDown(300);
+            $('#vehicleCategorySection').slideUp(300);
             $('select[name="machine_type"]').prop('required', false);
             $('select[name="location_section"]').prop('required', true);
+            $('select[name="vehicle_category"]').prop('required', false);
+        } else if (scope === 'contractor_vehicle') {
+            $('#machineTypeSection').slideUp(300);
+            $('#locationSection').slideUp(300);
+            $('#vehicleCategorySection').slideDown(300);
+            $('select[name="machine_type"]').prop('required', false);
+            $('select[name="location_section"]').prop('required', false);
+            $('select[name="vehicle_category"]').prop('required', true);
         } else {
             $('#machineTypeSection').slideUp(300);
             $('#locationSection').slideUp(300);
+            $('#vehicleCategorySection').slideUp(300);
             $('select[name="machine_type"]').prop('required', false);
             $('select[name="location_section"]').prop('required', false);
+            $('select[name="vehicle_category"]').prop('required', false);
         }
 
         // نمایش/مخفی کردن بخش گزینه‌ها

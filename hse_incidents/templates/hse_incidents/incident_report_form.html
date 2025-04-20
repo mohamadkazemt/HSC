@@ -4,7 +4,7 @@
 {% load form_filters %}
 
 {% block style %}
-    <link type="text/css" rel="stylesheet" href="{% static 'assets/css/persianDatepicker-default.css' %}" /><style>
+<style>
         /* محل قرارگیری پیام ها */
         .alert-messages {
             position: fixed;
@@ -120,18 +120,6 @@
                         {% include 'toolbar.html' %}
                         <div id="kt_app_content" class="app-content flex-column-fluid">
                             <div id="kt_app_content_container" class="app-container container-fluid">
-                                <div class="alert-messages">
-                                    {% if messages %}
-                                        {% for message in messages %}
-                                            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-danger{% endif %} alert-dismissible fade show" role="alert">
-                                                {{ message }}
-                                                <button type="button" class="btn-close" data-bs-dismiss="alert"
-                                                        aria-label="Close"></button>
-                                            </div>
-                                        {% endfor %}
-                                    {% endif %}
-                                </div>
-
                                 <div class="card">
                                     <div class="card-body">
                                         <h2 class="card-title">فرم گزارش حادثه</h2>
@@ -142,23 +130,23 @@
                                                     <div class="col-md-6 mb-3">
                                                         <label class="form-label">تاریخ وقوع حادثه</label>
                                                         <input type="text" class="form-control persian-date-picker"
-                                                               name="incident_date" required>
+                                                               name="incident_date" required value="{{ form_data.incident_date|default:'' }}">
                                                     </div>
                                                     <div class="col-md-6 mb-3">
                                                         <label class="form-label">ساعت وقوع حادثه</label>
                                                         <input type="time" class="form-control" name="incident_time"
-                                                               required>
+                                                               required value="{{ form_data.incident_time|default:'' }}">
                                                     </div>
                                                 </div>
                                                 <div class="row">
                                                     <div class="col-md-6 mb-3">
                                                         <label class="form-label">سایت</label>
-                                                        <select name="location" id="location" class="form-control select2">
+                                                        <select name="location" id="location" class="form-control select2" data-selected="{{ form_data.location|default:'' }}">
                                                         </select>
                                                     </div>
                                                     <div class="col-md-6 mb-3">
                                                         <label class="form-label">محل شناسایی آنومالی</label>
-                                                        <select name="section" id="section" class="form-control select2">
+                                                        <select name="section" id="section" class="form-control select2" data-selected="{{ form_data.section|default:'' }}">
                                                         </select>
                                                     </div>
                                                 </div>
@@ -278,7 +266,7 @@
 {% endblock %}
 
 {% block extra_js %}
-    <script type="text/javascript" src="{% static 'assets/js/persianDatepicker.min.js' %}"></script>
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const alerts = document.querySelectorAll('.alert.fade.show');
@@ -295,9 +283,12 @@
         });
         $(document).ready(function () {
             $('#incident-form .persian-date-picker').persianDatepicker({
-                format: 'YYYY/MM/DD',
+                format: 'YYYY-MM-DD',
                 altFormat: 'YYYY-MM-DD',
-                altField: $('#incident-form input[name="incident_date"]')
+                altField: '#incident-form input[name="incident_date"]',
+                observer: true,
+                autoClose: true,
+                initialValue: false
             });
 
              $('#incident-form select[name="involved_person"]').select2({
@@ -510,6 +501,19 @@
                        hospitalizedTimeInput.value = '00:00';
                 }
         });
+
+    // اضافه کردن کد برای حفظ مقادیر انتخاب شده
+    if ($('#location').data('selected')) {
+        $('#location').val($('#location').data('selected')).trigger('change');
+    }
+    if ($('#section').data('selected')) {
+        $('#section').val($('#section').data('selected')).trigger('change');
+    }
+    
+    // کد موجود select2
+    $('#incident-form .select2').select2({
+        // ... تنظیمات موجود
+    });
     });
     </script>
 {% endblock %}
