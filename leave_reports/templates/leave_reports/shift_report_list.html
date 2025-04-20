@@ -57,6 +57,7 @@
                                             <div id="filterCollapse" class="collapse show">
                                                 <div class="card-body pt-4">
                                                     <form id="filterForm" method="get" class="row g-3">
+                                                        <input type="hidden" name="display_mode" value="{{ display_mode }}">
                                                         <div class="col-md-2">
                                                             <label class="form-label fw-bold">سال</label>
                                                             <select name="year" class="form-select form-select-solid">
@@ -101,7 +102,7 @@
                                                             <button type="submit" class="btn btn-primary">
                                                                 <i class="bi bi-funnel-fill me-1"></i>اعمال فیلترها
                                                             </button>
-                                                            <a href="{% url 'leave_reports:shift_report_list' %}" class="btn btn-light ms-2">
+                                                            <a href="{% url 'leave_reports:shift_report_list' %}?display_mode={{ display_mode }}" class="btn btn-light ms-2">
                                                                 <i class="bi bi-x-circle me-1"></i>حذف فیلترها
                                                             </a>
                                                         </div>
@@ -127,54 +128,124 @@
                                             </div>
                                             <div class="card-body p-0">
                                                 <div class="table-responsive">
-                                                    <table class="table table-hover table-rounded table-striped border gy-7 gs-7 mb-0">
+                                                    <!-- Display by person -->
+                                                    <div class="mb-5">
+                                                        <form id="searchForm" method="get" class="input-group">
+                                                            <span class="input-group-text">
+                                                                <i class="bi bi-search"></i>
+                                                            </span>
+                                                            <input type="text" class="form-control" id="searchInput" name="search" 
+                                                                   placeholder="جستجو در تمام ستون‌ها..." 
+                                                                   value="{{ request.GET.search|default:'' }}">
+                                                            <!-- حفظ پارامترهای دیگر -->
+                                                            {% if selected_year %}<input type="hidden" name="year" value="{{ selected_year }}">{% endif %}
+                                                            {% if selected_month %}<input type="hidden" name="month" value="{{ selected_month }}">{% endif %}
+                                                            {% if selected_day %}<input type="hidden" name="day" value="{{ selected_day }}">{% endif %}
+                                                            {% if selected_work_group %}<input type="hidden" name="work_group" value="{{ selected_work_group }}">{% endif %}
+                                                            {% if today_filter %}<input type="hidden" name="today" value="{{ today_filter }}">{% endif %}
+                                                            <button class="btn btn-primary" type="submit">جستجو</button>
+                                                            {% if request.GET.search %}
+                                                                <a href="?{% if selected_year %}&year={{ selected_year }}{% endif %}{% if selected_month %}&month={{ selected_month }}{% endif %}{% if selected_day %}&day={{ selected_day }}{% endif %}{% if selected_work_group %}&work_group={{ selected_work_group }}{% endif %}{% if today_filter %}&today={{ today_filter }}{% endif %}" 
+                                                                   class="btn btn-light">پاک کردن جستجو</a>
+                                                            {% endif %}
+                                                        </form>
+                                                    </div>
+                                                    <table class="table table-hover table-rounded table-striped border gy-7 gs-7 mb-0" id="personTable">
                                                         <thead>
                                                         <tr class="fw-bold fs-6 text-gray-800 border-bottom border-gray-200 bg-light">
+                                                            <th>نام و نام خانوادگی</th>
+                                                            <th>کد پرسنلی</th>
+                                                            <th>تاریخ مرخصی</th>
+                                                            <th>نوع مرخصی</th>
+                                                            <th>شیفت کاری</th>
+                                                            <th>توضیحات</th>
+                                                            <th>زمان شروع</th>
+                                                            <th>زمان پایان</th>
                                                             <th>ثبت کننده</th>
-                                                            <th>گروه کاری</th>
-                                                            <th>تاریخ شیفت</th>
-                                                            <th>زمان ثبت</th>
-                                                            <th>شیفت</th>
-                                                            <th>تعداد افراد</th>
-                                                            <th>مرخصی روزانه</th>
-                                                            <th>مرخصی ساعتی</th>
-                                                            <th>غیبت‌ها</th>
-                                                            <th>مرخصی استعلاجی</th>
+                                                            <th scope="col">تاریخ ثبت</th>
+                                                            <th scope="col">وضعیت</th>
+                                                            <th scope="col">خروجی اکسل</th>
+                                                            <th>وضعیت ثبت</th>
                                                             <th class="text-center">عملیات</th>
                                                         </tr>
                                                         </thead>
                                                         <tbody>
                                                         {% for report in reports.object_list %}
                                                             <tr>
-                                                                <td>{{ report.crate_by_name }}</td>
-                                                                <td>{{ report.work_group }}</td>
+                                                                <td>{{ report.user_name }}</td>
+                                                                <td>{{ report.personnel_code }}</td>
                                                                 <td>{{ report.shift_date }}</td>
-                                                                <td>{{ report.created_at|time:"H:i" }}</td>
+                                                                <td>
+                                                                    {% if report.leave_type == 'regular' %}
+                                                                        <span class="badge badge-light-primary">مرخصی روزانه</span>
+                                                                    {% elif report.leave_type == 'hourly' %}
+                                                                        <span class="badge badge-light-success">مرخصی ساعتی</span>
+                                                                    {% elif report.leave_type == 'absence' %}
+                                                                        <span class="badge badge-light-danger">غیبت</span>
+                                                                    {% elif report.leave_type == 'sick_leave' %}
+                                                                        <span class="badge badge-light-warning">مرخصی استعلاجی</span>
+                                                                    {% endif %}
+                                                                </td>
                                                                 <td>{{ report.shift }}</td>
-                                                                <td>{{ report.total_persons }}</td>
+                                                                <td>{{ report.description|default:'-' }}</td>
+                                                                <td>{{ report.start_time|default:'-' }}</td>
+                                                                <td>{{ report.end_time|default:'-' }}</td>
+                                                                <td>{{ report.crate_by }}</td>
+                                                                <td>{{ report.created_at }}</td>
                                                                 <td>
-                                                                    <span class="badge badge-light-primary">{{ report.total_regular }}</span>
+                                                                    {% if report.status %}
+                                                                        <span class="badge bg-success">تایید شده</span>
+                                                                    {% else %}
+                                                                        <span class="badge bg-secondary">در انتظار تایید</span>
+                                                                    {% endif %}
                                                                 </td>
                                                                 <td>
-                                                                    <span class="badge badge-light-success">{{ report.total_hourly }}</span>
+                                                                    {% if report.exported_to_excel %}
+                                                                        <span class="badge bg-success">خروجی گرفته شده</span>
+                                                                    {% else %}
+                                                                        <span class="badge bg-secondary">خروجی گرفته نشده</span>
+                                                                    {% endif %}
                                                                 </td>
                                                                 <td>
-                                                                    <span class="badge badge-light-danger">{{ report.total_absence }}</span>
-                                                                </td>
-                                                                <td>
-                                                                    <span class="badge badge-light-warning">{{ report.total_sick_leave }}</span>
+                                                                    <button class="btn btn-sm {% if report.registration %}btn-success{% else %}btn-warning{% endif %} toggle-registration"
+                                                                            data-report-id="{{ report.id }}"
+                                                                            data-is-registered="{{ report.registration|yesno:'true,false' }}">
+                                                                        {% if report.registration %}
+                                                                            <i class="fas fa-check"></i> ثبت شده
+                                                                        {% else %}
+                                                                            <i class="fas fa-times"></i> ثبت نشده
+                                                                        {% endif %}
+                                                                    </button>
                                                                 </td>
                                                                 <td class="text-center">
                                                                     {% if report.leave_ids %}
                                                                         <a href="{% url 'leave_reports:shift_report_detail' report.leave_ids.0 %}" class="btn btn-icon btn-sm btn-light-primary me-1" data-bs-toggle="tooltip" title="نمایش">
                                                                             <i class="bi bi-eye-fill"></i>
                                                                         </a>
+                                                                        {% if request.user.userprofile.is_hr_user %}
+                                                                            <button type="button" 
+                                                                                    class="btn btn-icon btn-sm {% if report.status %}btn-light-success{% else %}btn-light-warning{% endif %} me-1" 
+                                                                                    onclick="toggleStatus('{{ report.leave_ids.0 }}')"
+                                                                                    data-bs-toggle="tooltip" 
+                                                                                    title="تغییر وضعیت">
+                                                                                <i class="bi bi-check2-circle"></i>
+                                                                            </button>
+                                                                        {% endif %}
+                                                                        {% if perms.auth.کارشناس_اداری %}
+                                                                            <button type="button" 
+                                                                                    class="btn btn-icon btn-sm {% if report.registration %}btn-light-success{% else %}btn-light-warning{% endif %} me-1" 
+                                                                                    onclick="toggleRegistration('{{ report.leave_ids.0 }}')"
+                                                                                    data-bs-toggle="tooltip" 
+                                                                                    title="تغییر وضعیت ثبت">
+                                                                                <i class="bi bi-clipboard-check"></i>
+                                                                            </button>
+                                                                        {% endif %}
                                                                     {% endif %}
                                                                 </td>
                                                             </tr>
                                                         {% empty %}
                                                             <tr>
-                                                                <td colspan="9" class="text-center py-5">
+                                                                <td colspan="13" class="text-center py-5">
                                                                     <div class="d-flex flex-column align-items-center">
                                                                         <i class="bi bi-clipboard-x fs-3x text-muted mb-3"></i>
                                                                         <span class="text-muted">هیچ گزارشی یافت نشد.</span>
@@ -199,7 +270,7 @@
                                                 <ul class="pagination">
                                                     {% if page_obj.has_previous %}
                                                         <li class="page-item">
-                                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&year={{selected_year}}&month={{selected_month}}&day={{selected_day}}&work_group={{selected_work_group}}&today={{today_filter}}" aria-label="Previous">«</a>
+                                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&display_mode={{ display_mode }}&year={{selected_year}}&month={{selected_month}}&day={{selected_day}}&work_group={{selected_work_group}}&today={{today_filter}}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="Previous">«</a>
                                                         </li>
                                                     {% else %}
                                                         <li class="page-item disabled">
@@ -209,13 +280,13 @@
 
                                                     {% for i in page_obj.paginator.page_range %}
                                                         <li class="page-item {% if page_obj.number == i %}active{% endif %}">
-                                                            <a class="page-link" href="?page={{ i }}&year={{selected_year}}&month={{selected_month}}&day={{selected_day}}&work_group={{selected_work_group}}&today={{today_filter}}">{{ i }}</a>
+                                                            <a class="page-link" href="?page={{ i }}&display_mode={{ display_mode }}&year={{selected_year}}&month={{selected_month}}&day={{selected_day}}&work_group={{selected_work_group}}&today={{today_filter}}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ i }}</a>
                                                         </li>
                                                     {% endfor %}
 
                                                     {% if page_obj.has_next %}
                                                         <li class="page-item">
-                                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&year={{selected_year}}&month={{selected_month}}&day={{selected_day}}&work_group={{selected_work_group}}&today={{today_filter}}" aria-label="Next">»</a>
+                                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&display_mode={{ display_mode }}&year={{selected_year}}&month={{selected_month}}&day={{selected_day}}&work_group={{selected_work_group}}&today={{today_filter}}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="Next">»</a>
                                                         </li>
                                                     {% else %}
                                                         <li class="page-item disabled">
@@ -268,4 +339,104 @@
             </div>
         </div>
     </div>
+
+    <!-- اضافه کردن اسکریپت برای تغییر وضعیت -->
+    {% block extra_scripts %}
+    <script>
+    function toggleStatus(reportId) {
+        if (!confirm('آیا از تغییر وضعیت این مرخصی اطمینان دارید؟')) {
+            return;
+        }
+        
+        fetch(`/leave-reports/toggle-status/${reportId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.error || 'خطا در تغییر وضعیت');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('خطا در ارتباط با سرور');
+        });
+    }
+
+    function toggleRegistration(reportId) {
+        if (!confirm('آیا از تغییر وضعیت ثبت این مرخصی اطمینان دارید؟')) {
+            return;
+        }
+        
+        fetch(`/leave-reports/toggle-registration/${reportId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.error || 'خطا در تغییر وضعیت ثبت');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('خطا در ارتباط با سرور');
+        });
+    }
+
+    $(document).on('click', '.toggle-registration', function() {
+        var button = $(this);
+        var reportId = button.data('report-id');
+        
+        $.ajax({
+            url: '/leave-reports/toggle-registration/' + reportId + '/',
+            type: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            success: function(response) {
+                if (response.success) {
+                    if (response.registration) {
+                        button.removeClass('btn-warning').addClass('btn-success');
+                        button.html('<i class="fas fa-check"></i> ثبت شده');
+                    } else {
+                        button.removeClass('btn-success').addClass('btn-warning');
+                        button.html('<i class="fas fa-times"></i> ثبت نشده');
+                    }
+                    button.data('is-registered', response.registration);
+                    toastr.success(response.message);
+                }
+            },
+            error: function(xhr) {
+                var message = xhr.responseJSON ? xhr.responseJSON.message : 'خطا در ارتباط با سرور';
+                toastr.error(message);
+            }
+        });
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    </script>
+    {% endblock %}
 {% endblock content %}

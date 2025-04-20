@@ -52,6 +52,18 @@ URLS_WITH_LABELS = [
         "name": "export_shift_reports_excel",
         "label": "مرخصی_خروجی اکسل گزارش‌های شیفت",
     },
+    {
+        "path": "toggle-status/<int:report_id>/",
+        "view": views.toggle_status,
+        "name": "toggle_status",
+        "label": "مرخصی_تغییر وضعیت مرخصی",
+    },
+    {
+        "path": "toggle-registration/<int:report_id>/",
+        "view": views.toggle_registration,
+        "name": "toggle_registration",
+        "label": "مرخصی_تغییر وضعیت ثبت مرخصی",
+    },
 ]
 
 urlpatterns = [

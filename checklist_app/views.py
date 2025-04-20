@@ -202,7 +202,7 @@ def submit_general_checklist(request):
     
     return JsonResponse({'status': 'success', 'checklist_id': checklist.id})
 
-@permission_required("create_general_anomaly_from_failure")
+@permission_required("create_anomaly_from_failure")
 @login_required
 @require_http_methods(["POST"])
 def create_anomaly_from_failure_view(request):
@@ -457,7 +457,7 @@ def get_followup_users(request):
         print(f"Error in get_followup_users: {str(e)}")  # اضافه کردن لاگ خطا
         return JsonResponse({'error': str(e)}, status=500)
 
-@permission_required("question_form")
+@permission_required("general_question_form")
 @login_required
 def general_question_form_view(request):
     if request.method == 'POST':
@@ -704,6 +704,19 @@ def import_questions_view(request):
                 if not hse_type in hse_map:
                     raise ValueError(f'نوع HSE نامعتبر: {hse_type}. باید یکی از این مقادیر باشد: {", ".join(hse_map.keys())}')
                 
+                # یافتن اولویت مشابه
+                similar_priority = find_similar_item(
+                    priority_value,
+                    Priority.objects.all(),
+                    field_name='priority'
+                )
+                if similar_priority:
+                    priority = similar_priority
+                    print(f"Found similar priority: {priority}")
+                else:
+                    priority = Priority.objects.create(priority=priority_value)
+                    print(f"Created new priority: {priority}")
+                
                 # یافتن نوع آنومالی مشابه
                 similar_anomaly_type = find_similar_item(
                     anomaly_type_name,
@@ -771,7 +784,7 @@ def import_questions_view(request):
                         unacceptable_options=unacceptable_options,
                         anomaly_type=anomaly_type,
                         hse_type=hse_map[hse_type],
-                        default_priority_on_fail=priority_value,
+                        default_priority_on_fail=priority,
                         default_corrective_action=corrective_action,
                         default_anomaly_description=anomaly_desc,
                         is_required=True
@@ -810,7 +823,7 @@ def import_questions_view(request):
                         unacceptable_options=unacceptable_options,
                         anomaly_type=anomaly_type,
                         hse_type=hse_map[hse_type],
-                        default_priority_on_fail=priority_value,
+                        default_priority_on_fail=priority,
                         default_corrective_action=corrective_action,
                         default_anomaly_description=anomaly_desc,
                         is_required=True

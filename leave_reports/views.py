@@ -6,7 +6,7 @@ from accounts.models import UserProfile
 from django.contrib.auth.models import User
 from .forms import ShiftReportForm
 from .models import ShiftReport
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.forms import formset_factory
 from collections import defaultdict
 from django.utils.timezone import localdate
@@ -29,12 +29,11 @@ from shift_manager.utils import get_shift_for_date  # Import the function
 import openpyxl
 from django.utils import timezone
 from .utils import get_shift_for_date_and_time  # Import the new function
+from django.db import transaction, models
 
 
 logger = logging.getLogger(__name__)
 
-
-from django.db import transaction
 
 @login_required
 def create_shift_report(request):
@@ -207,9 +206,6 @@ def create_shift_report(request):
     return render(request, 'leave_reports/shift_report.html', context)
 
 
-
-
-
 @login_required
 def shift_report_list(request):
     # ثبت فعالیت مشاهده لیست مرخصی‌ها
@@ -223,21 +219,16 @@ def shift_report_list(request):
         request=request
     )
     
-    # بررسی عضویت کاربر در گروه مدیر
-    is_manager = request.user.groups.filter(name='مدیر').exists()
-
-    # دریافت گزارش‌ها بر اساس شرایط
-    if is_manager:
-        reports = ShiftReport.objects.all()  # مدیر می‌تواند همه گزارش‌ها را ببیند
-    else:
-        reports = ShiftReport.objects.filter(crate_by=request.user.userprofile)  # کاربر فقط گزارش‌های خودش را می‌بیند
-
     # Get filter parameters from request
     year = request.GET.get('year')
     month = request.GET.get('month')
     day = request.GET.get('day')
     work_group = request.GET.get('work_group')
     today_filter = request.GET.get('today')
+    search_query = request.GET.get('search', '').strip()
+    
+    # Get all reports without user restrictions
+    reports = ShiftReport.objects.select_related('user', 'user__userprofile', 'crate_by', 'crate_by__user').all()
 
     # Apply filters
     if work_group:
@@ -248,7 +239,6 @@ def shift_report_list(request):
 
     if year and month and day:
         try:
-            # تبدیل تاریخ شمسی به میلادی با استفاده از jdatetime
             gregorian_date = jdatetime.date(year=int(year), month=int(month), day=int(day)).togregorian()
             reports = reports.filter(shift_date=gregorian_date)
         except ValueError as e:
@@ -256,9 +246,7 @@ def shift_report_list(request):
             messages.error(request, 'خطا در تبدیل تاریخ')
     elif year and month:
         try:
-            # تبدیل تاریخ شمسی به میلادی برای شروع ماه
             gregorian_start = jdatetime.date(year=int(year), month=int(month), day=1).togregorian()
-            # تبدیل تاریخ شمسی به میلادی برای پایان ماه
             if int(month) < 12:
                 gregorian_end = jdatetime.date(year=int(year), month=int(month) + 1, day=1).togregorian()
             else:
@@ -269,67 +257,51 @@ def shift_report_list(request):
             messages.error(request, 'خطا در تبدیل تاریخ')
     elif year:
         try:
-            # تبدیل تاریخ شمسی به میلادی برای شروع سال
             gregorian_start = jdatetime.date(year=int(year), month=1, day=1).togregorian()
-            # تبدیل تاریخ شمسی به میلادی برای پایان سال
             gregorian_end = jdatetime.date(year=int(year) + 1, month=1, day=1).togregorian()
             reports = reports.filter(shift_date__gte=gregorian_start, shift_date__lt=gregorian_end)
         except ValueError as e:
             logger.error(f"Error converting Jalali to Gregorian: {e}")
             messages.error(request, 'خطا در تبدیل تاریخ')
 
-    # Group reports by user, shift_date, and work_group
-    aggregated_reports = defaultdict(lambda: {
-        'shift_date': None,
-        'work_group': None,
-        'crate_by_name': None,
-        'total_regular': 0,
-        'total_hourly': 0,
-        'total_absence': 0,
-        'total_sick_leave': 0,
-        'total_persons': 0,
-        'created_at': None,
-        'shift': None,
-        'leave_ids': [],  # Store leave IDs for detail view
-    })
-
+    # تغییر نحوه گروه‌بندی برای نمایش بر اساس پرسنل
+    report_list = []
     for report in reports:
-        key = (report.crate_by.user.id, report.shift_date, report.work_group)
+        # تبدیل تاریخ میلادی به شمسی
+        shift_date_jalali = jdatetime.date.fromgregorian(date=report.shift_date).strftime('%Y/%m/%d')
+        created_at_jalali = jdatetime.datetime.fromgregorian(datetime=report.created_at).strftime('%Y/%m/%d %H:%M')
         
-        # تبدیل تاریخ میلادی به شمسی برای نمایش
-        try:
-            shift_date_jalali = jdatetime.date.fromgregorian(date=report.shift_date)
-            aggregated_reports[key]['shift_date'] = shift_date_jalali.strftime('%Y/%m/%d')
-        except ValueError as e:
-            logger.error(f"Error converting Gregorian to Jalali: {e}")
-            aggregated_reports[key]['shift_date'] = report.shift_date.strftime('%Y/%m/%d')
+        report_data = {
+            'user_id': report.user.id,
+            'user_name': f"{report.user.first_name} {report.user.last_name}",
+            'personnel_code': report.user.userprofile.personnel_code if hasattr(report.user, 'userprofile') else '',
+            'shift_date': shift_date_jalali,
+            'leave_type': report.leave_type,
+            'leave_type_display': report.get_leave_type_display(),
+            'shift': report.get_shift_type_display(),
+            'description': report.description or '',
+            'start_time': report.start_time.strftime('%H:%M') if report.start_time else '-',
+            'end_time': report.end_time.strftime('%H:%M') if report.end_time else '-',
+            'crate_by': f"{report.crate_by.user.first_name} {report.crate_by.user.last_name}",
+            'created_at': created_at_jalali,
+            'status': report.status,
+            'exported_to_excel': report.exported_to_excel,
+            'registration': report.registration,
+            'leave_ids': [report.id]
+        }
+        report_list.append(report_data)
+        
+    # اعمال جستجو روی تمام فیلدها
+    if search_query:
+        filtered_list = []
+        search_query = search_query.lower()
+        for item in report_list:
+            if any(search_query in str(value).lower() for value in item.values()):
+                filtered_list.append(item)
+        report_list = filtered_list
 
-        # استفاده از shift_type به جای shift_info
-        aggregated_reports[key]['shift'] = report.get_shift_type_display()
-
-        if not aggregated_reports[key]['work_group']:
-            aggregated_reports[key]['work_group'] = report.work_group
-            aggregated_reports[key]['crate_by_name'] = f"{report.crate_by.user.first_name} {report.crate_by.user.last_name}"
-            aggregated_reports[key]['created_at'] = report.created_at
-
-        if report.leave_type == 'regular':
-            aggregated_reports[key]['total_regular'] += 1
-        elif report.leave_type == 'hourly':
-            aggregated_reports[key]['total_hourly'] += 1
-        elif report.leave_type == 'absence':
-            aggregated_reports[key]['total_absence'] += 1
-        elif report.leave_type == 'sick_leave':
-            aggregated_reports[key]['total_sick_leave'] += 1
-
-        # Aggregate leave IDs
-        aggregated_reports[key]['leave_ids'].append(report.id)
-        aggregated_reports[key]['total_persons'] = len(set(aggregated_reports[key]['leave_ids']))
-
-    # Convert the aggregated_reports dictionary to a list
-    report_list = list(aggregated_reports.values())
-
-    # Sort the report_list by created_at in reverse order
-    report_list.sort(key=lambda x: x['created_at'], reverse=True)
+    # مرتب‌سازی بر اساس تاریخ مرخصی و نام کاربر
+    report_list.sort(key=lambda x: (x['shift_date'], x['user_name']))
 
     # Implement pagination
     page = request.GET.get('page', 1)
@@ -342,19 +314,36 @@ def shift_report_list(request):
         reports_page = paginator.page(paginator.num_pages)
 
     # Extract years, months, and days
-    all_years = sorted(
-        list({int(r['shift_date'].split('/')[0]) for r in report_list}),
-        reverse=True
-    )
-    all_months = sorted(
-        list({int(r['shift_date'].split('/')[1]) for r in report_list})
-    )
-    all_days = sorted(
-        list({int(r['shift_date'].split('/')[2]) for r in report_list})
-    )
+    all_years = set()
+    all_months = set()
+    all_days = set()
+    
+    for r in report_list:
+        if 'shift_date' in r and r['shift_date']:
+            try:
+                date_parts = r['shift_date'].split('/')
+                if len(date_parts) == 3:
+                    all_years.add(int(date_parts[0]))
+                    all_months.add(int(date_parts[1]))
+                    all_days.add(int(date_parts[2]))
+            except (ValueError, IndexError) as e:
+                logger.error(f"Error parsing date: {e}")
+                continue
+
+    # تبدیل به لیست و مرتب‌سازی
+    all_years = sorted(list(all_years), reverse=True)
+    all_months = sorted(list(all_months))
+    all_days = sorted(list(all_days))
 
     # Extract work groups
-    all_work_groups = sorted(list({r.work_group for r in ShiftReport.objects.all()}))
+    all_work_groups = sorted(list({r.work_group for r in ShiftReport.objects.all() if r.work_group}))
+
+    # تمیز کردن پارامترهای None
+    year = year if year not in ['None', None] else ''
+    month = month if month not in ['None', None] else ''
+    day = day if day not in ['None', None] else ''
+    work_group = work_group if work_group not in ['None', None] else ''
+    today_filter = today_filter if today_filter not in ['None', None] else ''
 
     return render(request, 'leave_reports/shift_report_list.html', {
         'reports': reports_page,
@@ -390,11 +379,6 @@ def delete_leave(request, leave_id):
         logger.error(f"Error getting current shift and group: {e}", exc_info=True)
         current_group = request.user.userprofile.group if hasattr(request.user, 'userprofile') and hasattr(request.user.userprofile, 'group') else None
 
-    # بررسی مجوز کاربر برای حذف
-    if leave.crate_by != request.user.userprofile:
-        messages.error(request, 'شما اجازه حذف این مرخصی را ندارید.')
-        return JsonResponse({'success': False, 'error': 'شما اجازه حذف این مرخصی را ندارید.'})
-    
     # بررسی گروه کاری (فقط مرخصی‌های گروه کاری فعلی کاربر قابل حذف هستند)
     if leave.work_group != current_group:
         messages.error(request, 'شما فقط می‌توانید مرخصی‌های گروه کاری فعلی خود را حذف کنید.')
@@ -460,6 +444,12 @@ def add_leave(request):
         except ShiftReport.DoesNotExist:
             logger.error(f"Report with ID {report_id} not found")
             return JsonResponse({'success': False, 'error': 'گزارش مورد نظر یافت نشد.'})
+        
+        # دریافت نوع مرخصی
+        leave_type = request.POST.get('leave_type')
+        if not leave_type:
+            logger.error("Missing leave_type in request")
+            return JsonResponse({'success': False, 'error': 'نوع مرخصی یافت نشد.'})
         
         # بررسی توضیحات برای غیبت
         if leave_type == 'absence':
@@ -704,11 +694,6 @@ def shift_report_edit(request, report_id):
     report = get_object_or_404(ShiftReport, id=report_id)
     today = datetime.date.today()
 
-    # بررسی مجوز کاربر برای ویرایش گزارش
-    if report.crate_by != request.user.userprofile:
-        messages.error(request, 'شما اجازه ویرایش این گزارش را ندارید.')
-        return redirect('leave_reports:shift_report_list')
-    
     # بررسی گروه کاری (فقط گزارش‌های گروه کاری خود کاربر قابل ویرایش هستند)
     if report.work_group != request.user.userprofile.group:
         messages.error(request, 'شما فقط می‌توانید گزارش‌های گروه کاری خود را ویرایش کنید.')
@@ -762,29 +747,19 @@ def get_personnels(request):
 
 @login_required
 def export_shift_reports_excel(request):
-    # بررسی دسترسی کاربر (مثلاً، فقط کارشناسان اداری)
-    if not request.user.groups.filter(name='کارشناس اداری').exists():
-        return HttpResponse("شما دسترسی به این صفحه را ندارید.", status=403)
-
     try:
-        # دریافت و فیلتر کردن گزارش‌ها (مانند تابع shift_report_list)
-        if request.user.groups.filter(name='مدیر').exists():
-            reports = ShiftReport.objects.all()  # مدیر می‌تواند همه گزارش‌ها را ببیند
-        else:
-            reports = ShiftReport.objects.filter(crate_by=request.user.userprofile)  # کاربر فقط گزارش‌های خودش را می‌بیند
+        # دریافت همه گزارش‌ها
+        reports = ShiftReport.objects.all().select_related('user', 'user__userprofile', 'crate_by', 'crate_by__user')
 
+        # دریافت پارامترهای فیلتر
         year = request.GET.get('year')
         month = request.GET.get('month')
         day = request.GET.get('day')
         work_group = request.GET.get('work_group')
         today_filter = request.GET.get('today')
+        search_query = request.GET.get('search', '').strip()
 
-        # اگر هیچ فیلتری انتخاب نشده، گزارش‌های یک ماه اخیر رو نمایش بده
-        if not year and not month and not day and not work_group and not today_filter:
-            today = timezone.now().date()
-            one_month_ago = today - datetime.timedelta(days=30)
-            reports = reports.filter(shift_date__gte=one_month_ago, shift_date__lte=today)
-
+        # اعمال فیلترها
         if work_group:
             reports = reports.filter(work_group=work_group)
 
@@ -793,17 +768,13 @@ def export_shift_reports_excel(request):
 
         if year and month and day:
             try:
-                # تبدیل تاریخ شمسی به میلادی با استفاده از jdatetime
                 gregorian_date = jdatetime.date(year=int(year), month=int(month), day=int(day)).togregorian()
                 reports = reports.filter(shift_date=gregorian_date)
             except ValueError as e:
                 logger.error(f"Error converting Jalali to Gregorian: {e}")
-                messages.error(request, 'خطا در تبدیل تاریخ')
         elif year and month:
             try:
-                # تبدیل تاریخ شمسی به میلادی برای شروع ماه
                 gregorian_start = jdatetime.date(year=int(year), month=int(month), day=1).togregorian()
-                # تبدیل تاریخ شمسی به میلادی برای پایان ماه
                 if int(month) < 12:
                     gregorian_end = jdatetime.date(year=int(year), month=int(month) + 1, day=1).togregorian()
                 else:
@@ -811,56 +782,104 @@ def export_shift_reports_excel(request):
                 reports = reports.filter(shift_date__gte=gregorian_start, shift_date__lt=gregorian_end)
             except ValueError as e:
                 logger.error(f"Error converting Jalali to Gregorian: {e}")
-                messages.error(request, 'خطا در تبدیل تاریخ')
         elif year:
             try:
-                # تبدیل تاریخ شمسی به میلادی برای شروع سال
                 gregorian_start = jdatetime.date(year=int(year), month=1, day=1).togregorian()
-                # تبدیل تاریخ شمسی به میلادی برای پایان سال
                 gregorian_end = jdatetime.date(year=int(year) + 1, month=1, day=1).togregorian()
                 reports = reports.filter(shift_date__gte=gregorian_start, shift_date__lt=gregorian_end)
             except ValueError as e:
                 logger.error(f"Error converting Jalali to Gregorian: {e}")
-                messages.error(request, 'خطا در تبدیل تاریخ')
-        
-        logger.info(f"Number of reports found: {reports.count()}")  # لاگ تعداد گزارش‌ها
-        
+
+        # اعمال جستجو
+        if search_query:
+            reports = reports.filter(
+                models.Q(user__first_name__icontains=search_query) |
+                models.Q(user__last_name__icontains=search_query) |
+                models.Q(user__userprofile__personnel_code__icontains=search_query) |
+                models.Q(description__icontains=search_query) |
+                models.Q(shift_type__icontains=search_query) |
+                models.Q(leave_type__icontains=search_query)
+            )
+
+        # مرتب‌سازی بر اساس تاریخ مرخصی و نام کاربر
+        reports = reports.order_by('shift_date', 'user__first_name', 'user__last_name')
+
+        # تبدیل به لیست برای پردازش
+        report_list = []
+        for report in reports:
+            # تبدیل تاریخ میلادی به شمسی
+            shift_date_jalali = jdatetime.date.fromgregorian(date=report.shift_date).strftime('%Y/%m/%d')
+            created_at_jalali = jdatetime.datetime.fromgregorian(datetime=report.created_at).strftime('%Y/%m/%d %H:%M')
+            
+            report_data = {
+                'user_name': f"{report.user.first_name} {report.user.last_name}",
+                'personnel_code': report.user.userprofile.personnel_code if hasattr(report.user, 'userprofile') else '',
+                'shift_date': shift_date_jalali,
+                'leave_type': report.get_leave_type_display(),
+                'shift': report.get_shift_type_display(),
+                'description': report.description or '',
+                'start_time': report.start_time.strftime('%H:%M') if report.start_time else '',
+                'end_time': report.end_time.strftime('%H:%M') if report.end_time else '',
+                'crate_by': f"{report.crate_by.user.first_name} {report.crate_by.user.last_name}" if report.crate_by else '',
+                'created_at': created_at_jalali,
+                'registration': report.registration,
+                'leave_ids': [report.id]
+            }
+            report_list.append(report_data)
+
         # ایجاد فایل اکسل
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Shift Reports"
 
         # اضافه کردن سرفصل‌ها
-        ws.append([
-            'ثبت کننده', 'گروه کاری', 'شیفت کاری', 'نوع مرخصی', 'کاربر', 'کد پرسنلی', 'توضیحات',
-            'زمان شروع', 'زمان پایان', 'تاریخ ثبت', 'ساعت ثبت'
-        ])
+        headers = [
+            'نام و نام خانوادگی',
+            'کد پرسنلی',
+            'تاریخ مرخصی',
+            'نوع مرخصی',
+            'شیفت کاری',
+            'توضیحات',
+            'زمان شروع',
+            'زمان پایان',
+            'ثبت کننده',
+            'تاریخ ثبت',
+            'وضعیت ثبت'
+        ]
+        ws.append(headers)
 
         # اضافه کردن داده‌ها
-        for report in reports:
-            logger.info(f"Processing report: {report.id}")  # لاگ شناسه گزارش
-            
-            # Convert Gregorian dates to Jalali
-            created_at_jalali_date = jdatetime.datetime.fromgregorian(datetime=report.created_at).strftime('%Y/%m/%d')
-            created_at_jalali_time = jdatetime.datetime.fromgregorian(datetime=report.created_at).strftime('%H:%M')
+        for report in report_list:
+            row = [
+                report['user_name'],
+                report['personnel_code'],
+                report['shift_date'],
+                report['leave_type'],
+                report['shift'],
+                report['description'],
+                report['start_time'],
+                report['end_time'],
+                report['crate_by'],
+                report['created_at'],
+                'ثبت شده' if report['registration'] else 'ثبت نشده'
+            ]
+            ws.append(row)
 
-            # Get shift information
-            shift_info = get_shift_for_date_and_time(report.shift_date, report.created_at.time(), report.work_group)
-            shift = shift_info
+        # تنظیم عرض ستون‌ها
+        for column in ws.columns:
+            max_length = 0
+            column = list(column)
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = (max_length + 2)
+            ws.column_dimensions[column[0].column_letter].width = adjusted_width
 
-            ws.append([
-                f"{report.crate_by.user.first_name} {report.crate_by.user.last_name}",
-                report.work_group,
-                report.get_shift_type_display(),  # Use shift_type display
-                report.get_leave_type_display(),
-                report.user.get_full_name(),
-                report.user.userprofile.personnel_code if report.user.userprofile else '',
-                report.description or '',
-                report.start_time.strftime('%H:%M') if report.start_time else '',
-                report.end_time.strftime('%H:%M') if report.end_time else '',
-                created_at_jalali_date,  # Jalali created_at date
-                created_at_jalali_time,  # Jalali created_at time
-            ])
+        # علامت‌گذاری گزارش‌ها به عنوان خروجی گرفته شده
+        reports.update(exported_to_excel=True)
 
         # تنظیم پاسخ HTTP برای دانلود فایل
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -869,5 +888,75 @@ def export_shift_reports_excel(request):
         return response
 
     except Exception as e:
-        logger.error(f"Error in export_shift_reports_excel: {str(e)}", exc_info=True)  # لاگ کامل خطا
+        logger.error(f"Error in export_shift_reports_excel: {str(e)}", exc_info=True)
         return HttpResponse(f"خطا در ایجاد فایل اکسل: {str(e)}")
+
+@login_required
+def toggle_status(request, report_id):
+    if request.method == 'POST':
+        try:
+            # بررسی دسترسی کاربر
+            if not hasattr(request.user, 'userprofile') or not request.user.userprofile.is_hr_user:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'شما دسترسی لازم برای این عملیات را ندارید'
+                })
+
+            # دریافت گزارش
+            report = get_object_or_404(ShiftReport, id=report_id)
+            
+            # تغییر وضعیت
+            report.status = not report.status
+            report.save()
+
+            # ثبت فعالیت
+            status_text = 'ثبت شده' if report.status else 'ثبت نشده'
+            log_user_activity(
+                user=request.user,
+                activity_type='update',
+                description=f'تغییر وضعیت مرخصی {report_id} به {status_text}',
+                related_model='ShiftReport',
+                related_object_id=report_id,
+                url=request.META.get('HTTP_REFERER', '/'),
+                request=request
+            )
+
+            return JsonResponse({
+                'success': True,
+                'new_status': report.status
+            })
+
+        except Exception as e:
+            logger.error(f"Error toggling report status: {e}", exc_info=True)
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
+
+    return JsonResponse({
+        'success': False,
+        'error': 'درخواست نامعتبر'
+    })
+
+@login_required
+@permission_required('auth.کارشناس اداری', raise_exception=True)
+def toggle_registration(request, report_id):
+    try:
+        report = ShiftReport.objects.get(id=report_id)
+        report.registration = not report.registration
+        report.save()
+        return JsonResponse({
+            'success': True,
+            'message': 'وضعیت ثبت گزارش با موفقیت تغییر کرد',
+            'registration': report.registration
+        })
+    except ShiftReport.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'گزارش مورد نظر یافت نشد'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': str(e)
+        }, status=500)
