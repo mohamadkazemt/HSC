@@ -1,0 +1,315 @@
+/* تنظیمات پایه */
+@font-face {
+    font-family: 'IRANSans';
+    src: url('../fonts/IRANSansWeb.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+}
+
+/* استایل‌های عمومی */
+body {
+    font-family: 'IRANSans', Tahoma, sans-serif;
+    direction: rtl;
+    background-color: #f9f9f9;
+}
+
+/* کامپوننت‌های فرم */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: #343a40;
+}
+
+.form-control, .form-select {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #495057;
+    background-color: #fff;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    transition: all 0.15s ease-in-out;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* تقویم جلالی */
+.jalali_date-date {
+    position: relative;
+}
+
+.jalali_date-date .form-control {
+    padding-left: 30px;
+}
+
+.datepicker {
+    z-index: 10000 !important;
+}
+
+/* کارت‌ها */
+.card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 1rem;
+}
+
+.card-body {
+    padding: 1.25rem;
+}
+
+/* جداول */
+.table {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: #212529;
+    border-collapse: collapse;
+}
+
+.table th,
+.table td {
+    padding: 0.75rem;
+    vertical-align: middle;
+    border: 1px solid #dee2e6;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+}
+
+/* پیام‌های هشدار */
+.alert {
+    position: relative;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.375rem;
+}
+
+.alert-success {
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+}
+
+.alert-danger {
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.alert-warning {
+    color: #856404;
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+}
+
+.alert-info {
+    color: #084298;
+    background-color: #cff4fc;
+    border-color: #b6effb;
+}
+
+/* نشان‌ها */
+.badge {
+    display: inline-block;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.375rem;
+}
+
+.badge-light-primary { background-color: #e1f0ff; color: #0d6efd; }
+.badge-light-success { background-color: #e8fff3; color: #198754; }
+.badge-light-warning { background-color: #fff8dd; color: #ffc107; }
+.badge-light-danger { background-color: #ffe2e5; color: #dc3545; }
+.badge-light-info { background-color: #e7f5ff; color: #0dcaf0; }
+
+/* صفحه‌بندی */
+.pagination {
+    display: flex;
+    padding-left: 0;
+    list-style: none;
+    border-radius: 0.375rem;
+}
+
+.page-link {
+    position: relative;
+    display: block;
+    padding: 0.5rem 0.75rem;
+    margin-left: -1px;
+    line-height: 1.25;
+    color: #0d6efd;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+}
+
+.page-item.active .page-link {
+    z-index: 3;
+    color: #fff;
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+/* کلاس‌های کمکی */
+.hidden {
+    display: none !important;
+}
+
+.hover-elevate-up {
+    transition: transform 0.2s ease;
+}
+
+.hover-elevate-up:hover {
+    transform: translateY(-2px);
+}
+
+/* تنظیمات چاپ */
+@page {
+    size: A5 portrait;
+    margin: 0;
+}
+
+/* استایل‌های خاص چک‌لیست */
+.question-item {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+    background-color: #f8f9fa;
+}
+
+.answer-box {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background-color: #f8f9fa;
+}
+
+/* استایل‌های خاص گزارش شیفت */
+.shift-info {
+    font-size: 0.9rem;
+}
+
+.shift-group {
+    padding: 0.25rem;
+    margin: 0.125rem 0;
+    border-radius: 0.25rem;
+}
+
+.shift-group.A { background-color: rgba(0, 123, 255, 0.1); }
+.shift-group.B { background-color: rgba(40, 167, 69, 0.1); }
+.shift-group.C { background-color: rgba(255, 193, 7, 0.1); }
+.shift-group.D { background-color: rgba(220, 53, 69, 0.1); }
+
+/* حالت تاریک */
+[data-bs-theme="dark"] {
+    color-scheme: dark;
+
+    body {
+        color: #dee2e6;
+        background-color: #1a1a1a;
+    }
+
+    .card {
+        background-color: #2d2d2d;
+        border-color: #404040;
+    }
+
+    .form-control,
+    .form-select {
+        color: #dee2e6;
+        background-color: #343a40;
+        border-color: #495057;
+    }
+
+    .table {
+        color: #dee2e6;
+    }
+
+    .table th {
+        background-color: #343a40;
+    }
+
+    .table td {
+        border-color: #404040;
+    }
+
+    .question-item,
+    .answer-box {
+        background-color: #343a40;
+        border-color: #495057;
+    }
+}
+
+/* ریسپانسیو */
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.9rem;
+    }
+
+    .mobile-calendar {
+        display: grid;
+        grid-template-columns: repeat(1, 1fr);
+        gap: 10px;
+        padding: 10px;
+    }
+
+    .mobile-day-card {
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 12px;
+    }
+
+    .day-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #eee;
+        margin-bottom: 8px;
+    }
+
+    .day-number {
+        font-size: 1.2rem;
+        font-weight: bold;
+    }
+
+    .shift-container {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+}
+
+@media (min-width: 480px) and (max-width: 768px) {
+    .mobile-calendar {
+        grid-template-columns: repeat(2, 1fr);
+    }
+} 

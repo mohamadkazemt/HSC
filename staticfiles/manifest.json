@@ -1,0 +1,24 @@
+{
+  "name": "سوپر اپلیکیشن شرکت کاراوران",
+  "short_name": "کاراوران",
+  "description": "سوپر اپلیکیشن شرکت کاراوران",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fff",
+  "theme_color": "#000",
+  "icons": [
+    {
+      "src": "/static/assets/media/logos/logo-small.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/assets/media/logos/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+} 

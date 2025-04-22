@@ -2,7 +2,7 @@
 
 {% load static %}
 {% block style %}
-
+    <link rel="stylesheet" href="{% static 'assets/css/persianDatepicker-default.css' %}">
     <style>
         /* محل قرارگیری پیام ها */
         .alert-messages {
@@ -85,30 +85,30 @@
                         {% include 'toolbar.html' %}
                         <div id="kt_app_content" class="app-content flex-column-fluid">
                             <div id="kt_app_content_container" class="app-container container-fluid">
-                                <div class="alert-messages">
-                                    {% if messages %}
-                                        {% for message in messages %}
-                                            <div class="alert {% if message.tags %}alert-{{ message.tags }}{% else %}alert-danger{% endif %} alert-dismissible fade show" role="alert">
-                                                {{ message }}
-                                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                            </div>
-                                        {% endfor %}
-                                    {% endif %}
-                                </div>
+                               
                                 <div class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10" id="kt_create_account_stepper">
                                     <div id="kt_create_account_stepper" class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10">
                                         <div class="card d-flex flex-row-fluid flex-center">
 
                                             <div class="form-header"></div>
-                                            <form class="card-body py-20 w-100 mw-xl-700px px-9" method="post">
+                                            <form class="card-body py-20 w-100 mw-xl-700px px-9" method="post" id="report_form" novalidate>
                                                 {% csrf_token %}
-                                                <h2 class="fw-bold text-gray-900 mb-5"> کارکرد خودرو پیمانکاران</h2>
+                                                <h2 class="fw-bold text-gray-900 mb-5">کارکرد خودرو پیمانکاران</h2>
 
                                                <!--  فیلد پیمانکار حذف شد-->
 
                                                 <div class="form-group">
                                                     <label for="id_vehicle" class="form-label">خودرو</label>
                                                     {{ form.vehicle }}
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="id_report_date" class="form-label">تاریخ گزارش</label>
+                                                    <input type="text" name="report_date" id="id_report_date" class="form-control" required>
+                                                    {% if form.report_date.errors %}
+                                                        <div class="invalid-feedback d-block">
+                                                            {{ form.report_date.errors }}
+                                                        </div>
+                                                    {% endif %}
                                                 </div>
                                                 <div class="form-group">
                                                     <label for="id_status" class="form-label">وضعیت</label>
@@ -150,18 +150,16 @@
 {% endblock %}
 
 {% block extra_js %}
-
+<script src="{% static 'assets/js/persianDatepicker.min.js' %}"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
     $(document).ready(function() {
-        // دیگر به Select2 برای پیمانکار نیازی نیست
-
         $('#id_vehicle').select2({
             placeholder: 'انتخاب خودرو',
             allowClear: true,
             dir: 'rtl',
             ajax: {
-                url: '{% url "contractor_management:get_all_vehicles_ajax" %}',  // URL درست
+                url: '{% url "contractor_management:get_all_vehicles_ajax" %}',
                 dataType: 'json',
                 delay: 250,
                 data: function(params) {
@@ -178,8 +176,37 @@
             },
             minimumInputLength: 0,
         });
-      // دیگر به event handler  پیمانکار نیازی نیست
-      // $('#id_contractor').on('change', function() { ... });
+
+        // تنظیم تاریخ‌پیکر شمسی
+        $("#id_report_date").persianDatepicker({
+            format: 'YYYY/MM/DD',
+            initialValue: false,
+            autoClose: true,
+            persianDigit: false,
+            observer: true,
+            calendar: {
+                persian: {
+                    locale: 'fa'
+                }
+            },
+            onSelect: function() {
+                var selectedDate = $(this).val();
+                console.log('Selected date:', selectedDate);
+                $('#id_report_date').val(selectedDate).trigger('change');
+            }
+        });
+
+        // اعتبارسنجی فرم قبل از ارسال
+        $('#report_form').on('submit', function(e) {
+            var reportDate = $('#id_report_date').val();
+            console.log('Submitting form with date:', reportDate);
+            
+            if (!reportDate) {
+                e.preventDefault();
+                alert('لطفاً تاریخ را وارد کنید');
+                return false;
+            }
+        });
     });
 
   //بقیه کد های مربوط به نمایش فیلد های ساعت و توضیحات

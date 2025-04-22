@@ -2,6 +2,7 @@
 {% load static %}
 {% load jalali_tags %}
 {% load contractor_management_tags %}
+{% load jformat %}
 {% block style %}
     <link rel="stylesheet"
           href="{% static 'admin/jquery.ui.datepicker.jalali/themes/base/jquery-ui.min.css' %}">
@@ -157,7 +158,8 @@
                                             <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
                                                 <thead>
                                                     <tr class="fw-bold text-muted bg-light">
-                                                        <th class="min-w-100px">تاریخ گزارش</th>
+                                                        <th class="min-w-100px">تاریخ ثبت</th>
+                                                        <th class="min-w-100px">تاریخ کارکرد</th>
                                                         <th class="min-w-15px">تایید کننده</th>
                                                         <th class="min-w-140px">خودرو</th>
                                                         <th class="min-w-140px">پیمانکار</th>
@@ -172,6 +174,7 @@
                                                     {% for report in reports %}
                                                         <tr>
                                                             <td>{{ report.report_datetime|jformat:"%Y/%m/%d %H:%M:%S" }}</td>
+                                                            <td>{{ report.report_date|jformat:"%Y/%m/%d" }}</td>
                                                             <td>
                                                                 <div class="d-flex align-items-center">
                                                                     <div class="symbol symbol-30px me-2">
@@ -215,7 +218,7 @@
                                                         </tr>
                                                     {% empty %}
                                                         <tr>
-                                                            <td colspan="9" class="text-center py-5">
+                                                            <td colspan="10" class="text-center py-5">
                                                                 <div class="text-muted">هیچ گزارشی یافت نشد</div>
                                                             </td>
                                                         </tr>

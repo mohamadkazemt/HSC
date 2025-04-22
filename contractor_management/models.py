@@ -98,16 +98,29 @@ class Report(models.Model):
         ('inactive', 'غیر فعال'),
     ]
 
+    SHIFT_CHOICES = [
+        ('', '-- انتخاب شیفت --'),
+        ('روزکار اول', 'روزکار اول'),
+        ('روزکار دوم', 'روزکار دوم'),
+        ('عصرکار اول', 'عصرکار اول'),
+        ('عصرکار دوم', 'عصرکار دوم'),
+        ('شب کار اول', 'شب کار اول'),
+        ('شب کار دوم', 'شب کار دوم'),
+        ('OFF اول', 'OFF اول'),
+        ('OFF دوم', 'OFF دوم'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="کاربر")
     report_datetime = jmodels.jDateTimeField(auto_now_add=True, verbose_name="تاریخ و زمان ثبت گزارش")
+    report_date = jmodels.jDateField(null=True, blank=True, verbose_name="تاریخ گزارش")
     contractor = models.ForeignKey(Contractor, on_delete=models.CASCADE, verbose_name="پیمانکار")
     vehicle = models.ForeignKey('Vehicle', on_delete=models.CASCADE, verbose_name="خودرو")
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='full', verbose_name="وضعیت کارکرد")
     stop_start_time = models.TimeField(null=True, blank=True, verbose_name="ساعت شروع توقف")
     stop_end_time = models.TimeField(null=True, blank=True, verbose_name="ساعت پایان توقف")
     description = models.TextField(null=True, blank=True, verbose_name="توضیحات")
-    shift = models.CharField(max_length=20, blank=True, null=True, verbose_name="شیفت کاری") # فیلد جدید
-    group = models.CharField(max_length=1, blank=True, null=True, verbose_name="گروه کاری")  # فیلد جدید
+    shift = models.CharField(max_length=20, choices=SHIFT_CHOICES, blank=True, null=True, verbose_name="شیفت کاری")
+    group = models.CharField(max_length=1, blank=True, null=True, verbose_name="گروه کاری")
 
     def __str__(self):
         return f"گزارش {self.report_datetime.strftime('%Y-%m-%d %H:%M:%S')} برای خودرو {self.vehicle.license_plate}"
@@ -116,16 +129,4 @@ class Report(models.Model):
     class Meta:
         verbose_name = "گزارش کارکرد خودرو"
         verbose_name_plural = "گزارش کارکرد خودروها"
-        # یونیک کردن خودرو، تاریخ گزارش و شیفت
-        unique_together = ['vehicle', 'report_datetime', 'shift']
-    def clean(self):
-      if self.pk is None:
-        if self.report_datetime and self.shift: # چک میکنیم شیفت و تاریخ مقدار داشته باشند
-            existing_report = Report.objects.filter(
-              vehicle = self.vehicle,
-              report_datetime__date=self.report_datetime.date(),
-              shift = self.shift
-            ).exists()
-            if existing_report:
-               raise ValidationError("برای این خودرو در این شیفت و تاریخ یک گزارش ثبت شده است.")
-      super().clean()
+        unique_together = ['vehicle', 'report_date', 'shift', 'user']
