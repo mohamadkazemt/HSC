@@ -42,9 +42,16 @@ urlpatterns = [
     path('fire-reports/', include(('fire_reports.urls', 'fire_reports'), namespace='fire_reports')),
     path('meetings/', include('meetings.urls')),
     path('checklist_app/', include('checklist_app.urls')),
+    path('emergency/', include('emergency_services.urls', namespace='emergency_services')),
 ]
 
 # اضافه کردن مسیرهای media و static در حالت debug
 if getattr(settings, 'DEBUG', False):
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    
+    # اضافه کردن مسیرهای Django Debug Toolbar
+    import debug_toolbar
+    urlpatterns += [
+        path('__debug__/', include(debug_toolbar.urls)),
+    ]

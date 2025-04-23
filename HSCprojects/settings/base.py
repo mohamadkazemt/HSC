@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     'machine_checklist.apps.MachineChecklistConfig',
     'fire_reports.apps.FireReportsConfig',
     'checklist_app.apps.ChecklistAppConfig',
+    'emergency_services.apps.EmergencyServicesConfig',
 ]
 
 MIDDLEWARE = [

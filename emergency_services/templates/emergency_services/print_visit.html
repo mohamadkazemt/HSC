@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>چاپ مراجعه پزشکی</title>
+    <style>
+        @font-face {
+            font-family: 'Vazir';
+            src: url('/static/fonts/Vazir.eot');
+            src: url('/static/fonts/Vazir.eot?#iefix') format('embedded-opentype'),
+                 url('/static/fonts/Vazir.woff2') format('woff2'),
+                 url('/static/fonts/Vazir.woff') format('woff'),
+                 url('/static/fonts/Vazir.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        
+        body {
+            font-family: 'Vazir', Tahoma, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            direction: rtl;
+            text-align: right;
+        }
+        
+        .print-container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 1px solid #ddd;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #333;
+        }
+        
+        .logo {
+            max-width: 100px;
+            max-height: 100px;
+        }
+        
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .subtitle {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .visit-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        
+        .info-group {
+            margin-bottom: 15px;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        
+        .info-value {
+            margin-top: 5px;
+        }
+        
+        .visit-content {
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .services-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .service-item {
+            background-color: #f0f0f0;
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        
+        th, td {
+            padding: 8px;
+            text-align: right;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            margin-bottom: 20px;
+        }
+        
+        .signature-box {
+            border-top: 1px solid #333;
+            padding-top: 5px;
+            text-align: center;
+            width: 200px;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+                -webkit-print-color-adjust: exact;
+            }
+            
+            .print-actions {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-actions" style="text-align: center; margin-bottom: 20px;">
+        <button onclick="window.print();" style="padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">چاپ فرم</button>
+        <button onclick="window.close();" style="padding: 10px 20px; background-color: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px;">بستن</button>
+    </div>
+    
+    <div class="print-container">
+        <div class="header">
+            <div class="title">فرم مراجعه پزشکی اورژانس معدن</div>
+            <div class="subtitle">کد مراجعه: {{ visit.id }}</div>
+        </div>
+        
+        <div class="visit-info">
+            <div>
+                <div class="info-group">
+                    <div class="info-label">نام مراجعه کننده:</div>
+                    <div class="info-value">
+                        {% if visit.personnel_type == 'company' %}
+                        {{ visit.company_personnel }} (پرسنل شرکت)
+                        {% else %}
+                        {{ visit.contractor_personnel }} (پرسنل پیمانکار)
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div>
+                <div class="info-group">
+                    <div class="info-label">تاریخ و زمان مراجعه:</div>
+                    <div class="info-value">{{ visit.visit_time|date:"Y/m/d - H:i" }}</div>
+                </div>
+                
+                <div class="info-group">
+                    <div class="info-label">ثبت‌کننده:</div>
+                    <div class="info-value">{{ visit.created_by }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="visit-content">
+            <div class="section-title">علت مراجعه</div>
+            <div>{{ visit.visit_reason|linebreaks }}</div>
+        </div>
+        
+        <div class="visit-content">
+            <div class="section-title">توصیه پزشک</div>
+            <div>{{ visit.doctor_recommendation|linebreaks }}</div>
+        </div>
+        
+        <div class="visit-content">
+            <div class="section-title">خدمات درمانی انجام‌شده</div>
+            <div class="services-list">
+                {% for service in visit.services.all %}
+                <div class="service-item">{{ service.name }}</div>
+                {% empty %}
+                <div>هیچ خدمت درمانی ثبت نشده است.</div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="visit-content">
+            <div class="section-title">داروهای مصرف‌شده</div>
+            {% if medicine_usages %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>نام دارو</th>
+                        <th>دسته‌بندی</th>
+                        <th>تعداد</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for usage in medicine_usages %}
+                    <tr>
+                        <td>{{ usage.medicine.name }}</td>
+                        <td>{{ usage.medicine.category.name|default:"-" }}</td>
+                        <td>{{ usage.quantity }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div>هیچ دارویی ثبت نشده است.</div>
+            {% endif %}
+        </div>
+        
+        <div class="signature-section">
+            <div class="signature-box">
+                <div>امضای پزشک/پرستار</div>
+            </div>
+            
+            <div class="signature-box">
+                <div>امضای مراجعه کننده</div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>این فرم در تاریخ {{ visit.created_at|date:"Y/m/d - H:i" }} در سیستم ثبت شده است.</p>
+            <p>سیستم اورژانس معدن - {{ visit.created_at|date:"Y" }}</p>
+        </div>
+    </div>
+</body>
+</html> 

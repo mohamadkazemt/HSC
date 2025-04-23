@@ -1,0 +1,311 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}لیست مراجعات | اورژانس معدن{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'vendor/daterangepicker/daterangepicker.css' %}">
+<style>
+    .filter-card {
+        transition: all 0.3s;
+    }
+    .btn-filter-toggle {
+        cursor: pointer;
+    }
+    .visit-row {
+        cursor: pointer;
+    }
+    .visit-row:hover {
+        background-color: rgba(0, 123, 255, 0.1) !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- عنوان صفحه -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">لیست مراجعات پزشکی</h1>
+        <div>
+            <a href="{% url 'emergency_services:export_visits_csv' %}" class="d-none d-sm-inline-block btn btn-sm btn-info shadow-sm">
+                <i class="fas fa-file-csv fa-sm text-white-50"></i> خروجی CSV
+            </a>
+            <a href="{% url 'emergency_services:create_visit' %}" class="d-none d-sm-inline-block btn btn-sm btn-success shadow-sm">
+                <i class="fas fa-plus fa-sm text-white-50"></i> مراجعه جدید
+            </a>
+        </div>
+    </div>
+
+    <!-- فیلترها -->
+    <div class="card shadow mb-4 filter-card">
+        <a href="#collapseFilters" class="d-block card-header py-3 btn-filter-toggle" data-toggle="collapse">
+            <h6 class="m-0 font-weight-bold text-primary">فیلترها</h6>
+        </a>
+        <div class="collapse show" id="collapseFilters">
+            <div class="card-body">
+                <form method="get" id="filter-form">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="date-range">بازه زمانی:</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                    </div>
+                                    <input type="text" class="form-control" id="date-range" name="date_range">
+                                    <input type="hidden" id="date_from" name="date_from" value="{{ filters.date_from }}">
+                                    <input type="hidden" id="date_to" name="date_to" value="{{ filters.date_to }}">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="personnel_type">نوع پرسنل:</label>
+                                <select name="personnel_type" id="personnel_type" class="form-control">
+                                    <option value="">همه</option>
+                                    <option value="company" {% if filters.personnel_type == 'company' %}selected{% endif %}>پرسنل شرکت</option>
+                                    <option value="contractor" {% if filters.personnel_type == 'contractor' %}selected{% endif %}>پرسنل پیمانکار</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="service_type">نوع خدمت:</label>
+                                <select name="service_type" id="service_type" class="form-control">
+                                    <option value="">همه</option>
+                                    {% for service in services %}
+                                    <option value="{{ service.id }}" {% if filters.service_type == service.id|stringformat:"i" %}selected{% endif %}>{{ service.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="medicine_category">دسته دارویی:</label>
+                                <select name="medicine_category" id="medicine_category" class="form-control">
+                                    <option value="">همه</option>
+                                    {% for category in medicine_categories %}
+                                    <option value="{{ category.id }}" {% if filters.medicine_category == category.id|stringformat:"i" %}selected{% endif %}>{{ category.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-8 d-flex align-items-end">
+                            <div class="form-group mb-0 ml-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-filter"></i> اعمال فیلترها
+                                </button>
+                            </div>
+                            <div class="form-group mb-0">
+                                <a href="{% url 'emergency_services:visit_list' %}" class="btn btn-secondary">
+                                    <i class="fas fa-undo"></i> حذف فیلترها
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- لیست مراجعات -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">مراجعات ({{ visits.paginator.count|intcomma }})</h6>
+        </div>
+        <div class="card-body">
+            {% if visits %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="visitsTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>تاریخ مراجعه</th>
+                            <th>نام مراجعه کننده</th>
+                            <th>نوع پرسنل</th>
+                            <th>علت مراجعه</th>
+                            <th>خدمات</th>
+                            <th>داروها</th>
+                            <th>عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for visit in visits %}
+                        <tr class="visit-row" data-href="{% url 'emergency_services:visit_detail' pk=visit.pk %}">
+                            <td>{{ visit.visit_time|date:"Y/m/d - H:i" }}</td>
+                            <td>
+                                {% if visit.personnel_type == 'company' %}
+                                {{ visit.company_personnel.get_full_name }}
+                                {% else %}
+                                {{ visit.contractor_personnel }}
+                                {% endif %}
+                            </td>
+                            <td>{{ visit.get_personnel_type_display }}</td>
+                            <td>{{ visit.visit_reason|truncatechars:50 }}</td>
+                            <td>
+                                <small>
+                                    {% for service in visit.services.all %}
+                                    <span class="badge badge-info">{{ service.name }}</span>
+                                    {% empty %}
+                                    -
+                                    {% endfor %}
+                                </small>
+                            </td>
+                            <td>
+                                <small>
+                                    {% for usage in visit.medicine_usages.all %}
+                                    <span class="badge badge-secondary">{{ usage.medicine.name }} ({{ usage.quantity }})</span>
+                                    {% empty %}
+                                    -
+                                    {% endfor %}
+                                </small>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{% url 'emergency_services:visit_detail' pk=visit.pk %}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'emergency_services:edit_visit' pk=visit.pk %}" class="btn btn-sm btn-warning">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'emergency_services:print_visit' pk=visit.pk %}" class="btn btn-sm btn-secondary" target="_blank">
+                                        <i class="fas fa-print"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- صفحه‌بندی -->
+            {% if visits.paginator.num_pages > 1 %}
+            <div class="mt-4">
+                <nav aria-label="صفحه بندی">
+                    <ul class="pagination justify-content-center">
+                        {% if visits.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="صفحه اول">
+                                <span aria-hidden="true">&laquo;&laquo;</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ visits.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="قبلی">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">&laquo;&laquo;</a>
+                        </li>
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">&laquo;</a>
+                        </li>
+                        {% endif %}
+                        
+                        {% for num in visits.paginator.page_range %}
+                            {% if num == visits.number %}
+                            <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                            {% elif num > visits.number|add:'-3' and num < visits.number|add:'3' %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if visits.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ visits.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="بعدی">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ visits.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="صفحه آخر">
+                                <span aria-hidden="true">&raquo;&raquo;</span>
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">&raquo;</a>
+                        </li>
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">&raquo;&raquo;</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-gray-300 mb-3"></i>
+                <p class="text-gray-500">هیچ مراجعه‌ای یافت نشد. {% if request.GET %}<a href="{% url 'emergency_services:visit_list' %}">حذف فیلترها</a>{% endif %}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'vendor/moment/moment.min.js' %}"></script>
+<script src="{% static 'vendor/daterangepicker/daterangepicker.js' %}"></script>
+<script>
+    $(document).ready(function() {
+        // کلیک روی ردیف جدول
+        $(".visit-row").click(function(e) {
+            if (!$(e.target).closest('a').length) {
+                window.location = $(this).data("href");
+            }
+        });
+        
+        // تنظیم daterangepicker
+        $('#date-range').daterangepicker({
+            opens: 'right',
+            autoUpdateInput: false,
+            locale: {
+                format: 'YYYY/MM/DD',
+                separator: ' - ',
+                applyLabel: 'اعمال',
+                cancelLabel: 'لغو',
+                fromLabel: 'از',
+                toLabel: 'تا',
+                weekLabel: 'هفته',
+                customRangeLabel: 'بازه دلخواه',
+                daysOfWeek: ['یک', 'دو', 'سه', 'چهار', 'پنج', 'جمعه', 'شنبه'],
+                monthNames: ['ژانویه', 'فوریه', 'مارس', 'آوریل', 'می', 'ژوئن', 'جولای', 'آگوست', 'سپتامبر', 'اکتبر', 'نوامبر', 'دسامبر'],
+                firstDay: 6
+            },
+            ranges: {
+               'امروز': [moment(), moment()],
+               'دیروز': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+               '7 روز اخیر': [moment().subtract(6, 'days'), moment()],
+               '30 روز اخیر': [moment().subtract(29, 'days'), moment()],
+               'این ماه': [moment().startOf('month'), moment().endOf('month')],
+               'ماه قبل': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+            }
+        });
+        
+        $('#date-range').on('apply.daterangepicker', function(ev, picker) {
+            $(this).val(picker.startDate.format('YYYY/MM/DD') + ' - ' + picker.endDate.format('YYYY/MM/DD'));
+            $('#date_from').val(picker.startDate.format('YYYY-MM-DD'));
+            $('#date_to').val(picker.endDate.format('YYYY-MM-DD'));
+        });
+        
+        $('#date-range').on('cancel.daterangepicker', function(ev, picker) {
+            $(this).val('');
+            $('#date_from').val('');
+            $('#date_to').val('');
+        });
+        
+        // تنظیم مقدار اولیه date range اگر فیلتر فعال باشد
+        if ($('#date_from').val() && $('#date_to').val()) {
+            var dateFrom = moment($('#date_from').val());
+            var dateTo = moment($('#date_to').val());
+            $('#date-range').val(dateFrom.format('YYYY/MM/DD') + ' - ' + dateTo.format('YYYY/MM/DD'));
+        }
+    });
+</script>
+{% endblock %} 

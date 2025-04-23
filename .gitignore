@@ -60,4 +60,4 @@ debug.log
 *.log.*.*.*.*
 *.log.*.*.*.*.*
 /myenv/
-
+manage.py

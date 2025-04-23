@@ -1,0 +1,1 @@
+default_app_config = 'emergency_services.apps.EmergencyServicesConfig' 

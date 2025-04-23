@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }} | اورژانس معدن{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'vendor/select2/select2.min.css' %}">
+<link rel="stylesheet" href="{% static 'vendor/select2-bootstrap4-theme/select2-bootstrap4.min.css' %}">
+<link rel="stylesheet" href="{% static 'vendor/jdatepicker/jalalidatepicker.min.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- عنوان صفحه -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">{{ title }}</h1>
+        <a href="{% url 'emergency_services:medicine_list' %}" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+            <i class="fas fa-arrow-right fa-sm text-white-50"></i> بازگشت به لیست
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- فرم افزودن/ویرایش دارو -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">اطلاعات دارو</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="form-group">
+                                    {{ form.name.label_tag }}
+                                    {{ form.name }}
+                                    {% if form.name.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.name.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.category.label_tag }}
+                                    {{ form.category }}
+                                    {% if form.category.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.category.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.quantity.label_tag }}
+                                    {{ form.quantity }}
+                                    <small class="form-text text-muted">تعداد موجودی فعلی دارو</small>
+                                    {% if form.quantity.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.quantity.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.critical_threshold.label_tag }}
+                                    {{ form.critical_threshold }}
+                                    <small class="form-text text-muted">حداقل تعداد برای هشدار موجودی</small>
+                                    {% if form.critical_threshold.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.critical_threshold.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.expiry_date.label_tag }}
+                                    {{ form.expiry_date }}
+                                    <small class="form-text text-muted">تاریخ انقضای دارو</small>
+                                    {% if form.expiry_date.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.expiry_date.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="form-check">
+                                {{ form.is_active }}
+                                <label class="form-check-label" for="{{ form.is_active.id_for_label }}">
+                                    {{ form.is_active.label }}
+                                </label>
+                                <small class="form-text text-muted d-block">داروی غیرفعال در لیست داروهای قابل استفاده نمایش داده نمی‌شود.</small>
+                            </div>
+                            {% if form.is_active.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.is_active.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="fas fa-save mr-2"></i> ذخیره
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'vendor/select2/select2.min.js' %}"></script>
+<script src="{% static 'vendor/jdatepicker/jalalidatepicker.min.js' %}"></script>
+<script>
+    $(document).ready(function() {
+        // فعال‌سازی انتخاب‌گر پیشرفته
+        $('.select2').select2({
+            theme: 'bootstrap4',
+            language: 'fa',
+            dir: 'rtl'
+        });
+        
+        // فعال‌سازی دیت‌پیکر جلالی
+        jalaliDatepicker.startWatch();
+    });
+</script>
+{% endblock %} 

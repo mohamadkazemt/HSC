@@ -1,0 +1,316 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}ثبت مراجعه جدید | اورژانس معدن{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'vendor/select2/select2.min.css' %}">
+<link rel="stylesheet" href="{% static 'vendor/select2-bootstrap4-theme/select2-bootstrap4.min.css' %}">
+<style>
+    .formset-row {
+        padding: 10px;
+        margin-bottom: 5px;
+        border-radius: 5px;
+    }
+    .delete-row {
+        color: #dc3545;
+        cursor: pointer;
+    }
+    .add-row {
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- عنوان صفحه -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">ثبت مراجعه جدید</h1>
+        <a href="{% url 'emergency_services:dashboard' %}" class="d-none d-sm-inline-block btn btn-sm btn-secondary shadow-sm">
+            <i class="fas fa-arrow-right fa-sm text-white-50"></i> بازگشت به داشبورد
+        </a>
+    </div>
+
+    <!-- فرم مراجعه -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">اطلاعات مراجعه</h6>
+        </div>
+        <div class="card-body">
+            <form method="post" id="visit-form">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            {{ form.personnel_type.label_tag }}
+                            <div class="d-flex">
+                                {% for radio in form.personnel_type %}
+                                <div class="form-check form-check-inline">
+                                    {{ radio.tag }}
+                                    <label class="form-check-label" for="{{ radio.id_for_label }}">
+                                        {{ radio.choice_label }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <small class="form-text text-muted">نوع پرسنل مراجعه کننده را انتخاب کنید.</small>
+                            {% if form.personnel_type.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.personnel_type.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="form-group" id="company-personnel-group">
+                            {{ form.company_personnel.label_tag }}
+                            {{ form.company_personnel }}
+                            <small class="form-text text-muted">پرسنل شرکت مراجعه کننده را انتخاب کنید.</small>
+                            {% if form.company_personnel.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.company_personnel.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group" id="contractor-personnel-group" style="display: none;">
+                            {{ form.contractor_personnel.label_tag }}
+                            {{ form.contractor_personnel }}
+                            <small class="form-text text-muted">پرسنل پیمانکار مراجعه کننده را انتخاب کنید.</small>
+                            {% if form.contractor_personnel.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.contractor_personnel.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="form-group">
+                            {{ form.visit_reason.label_tag }}
+                            {{ form.visit_reason }}
+                            {% if form.visit_reason.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.visit_reason.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            {{ form.visit_time.label_tag }}
+                            {{ form.visit_time }}
+                            {% if form.visit_time.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.visit_time.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    {{ form.doctor_recommendation.label_tag }}
+                    {{ form.doctor_recommendation }}
+                    {% if form.doctor_recommendation.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.doctor_recommendation.errors }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="m-0 font-weight-bold text-info">خدمات درمانی انجام‌شده</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for service in form.services %}
+                            <div class="col-md-4 col-sm-6">
+                                <div class="form-check mb-2">
+                                    {{ service.tag }}
+                                    <label class="form-check-label" for="{{ service.id_for_label }}">
+                                        {{ service.choice_label }}
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 font-weight-bold text-info">داروهای تجویز شده</h6>
+                        <button type="button" class="btn btn-sm btn-primary add-medicine">
+                            <i class="fas fa-plus"></i> افزودن دارو
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        {{ medicine_formset.management_form }}
+                        <div id="medicine-formset">
+                            {% for medicine_form in medicine_formset %}
+                            <div class="row formset-row bg-light">
+                                <div class="col-md-7">
+                                    <div class="form-group">
+                                        {{ medicine_form.medicine.label_tag }}
+                                        {{ medicine_form.medicine }}
+                                        {% if medicine_form.medicine.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ medicine_form.medicine.errors }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        {{ medicine_form.quantity.label_tag }}
+                                        {{ medicine_form.quantity }}
+                                        {% if medicine_form.quantity.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {{ medicine_form.quantity.errors }}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-1 d-flex align-items-center">
+                                    {% if forloop.counter > 1 %}
+                                    <a href="#" class="delete-row">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group text-center">
+                    <button type="submit" class="btn btn-primary btn-lg px-5">
+                        <i class="fas fa-save mr-2"></i> ثبت مراجعه
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'vendor/select2/select2.min.js' %}"></script>
+<script>
+    $(document).ready(function() {
+        // فعال‌سازی انتخاب‌گر پیشرفته
+        $('.select2').select2({
+            theme: 'bootstrap4',
+            language: 'fa',
+            dir: 'rtl'
+        });
+        
+        // مدیریت نمایش فیلدهای مربوط به نوع پرسنل
+        $('input[name="personnel_type"]').change(function() {
+            var selectedType = $(this).val();
+            if (selectedType === 'company') {
+                $('#company-personnel-group').show();
+                $('#contractor-personnel-group').hide();
+            } else {
+                $('#company-personnel-group').hide();
+                $('#contractor-personnel-group').show();
+            }
+        });
+        
+        // تنظیم اولیه نمایش بر اساس مقدار پیش‌فرض
+        var initialType = $('input[name="personnel_type"]:checked').val() || 'company';
+        if (initialType === 'company') {
+            $('#company-personnel-group').show();
+            $('#contractor-personnel-group').hide();
+        } else {
+            $('#company-personnel-group').hide();
+            $('#contractor-personnel-group').show();
+        }
+        
+        // مدیریت فرم‌ست داروها
+        var medicineFormCount = $('#id_medicines-TOTAL_FORMS').val();
+        
+        // اضافه کردن ردیف جدید
+        $('.add-medicine').click(function() {
+            var formCopyTarget = $('#medicine-formset');
+            var emptyForm = $('#medicine-formset .formset-row:first').clone(true);
+            
+            emptyForm.find('input, select').each(function() {
+                var name = $(this).attr('name');
+                if (name) {
+                    name = name.replace('-0-', '-' + medicineFormCount + '-');
+                    $(this).attr('name', name);
+                }
+                
+                var id = $(this).attr('id');
+                if (id) {
+                    id = id.replace('-0-', '-' + medicineFormCount + '-');
+                    $(this).attr('id', id);
+                }
+                
+                // پاک کردن مقادیر
+                if ($(this).is('select')) {
+                    $(this).val(null).trigger('change');
+                } else {
+                    $(this).val('');
+                }
+            });
+            
+            // اضافه کردن دکمه حذف
+            if (emptyForm.find('.delete-row').length === 0) {
+                emptyForm.find('.col-md-1').append(
+                    '<a href="#" class="delete-row"><i class="fas fa-trash-alt"></i></a>'
+                );
+            }
+            
+            formCopyTarget.append(emptyForm);
+            medicineFormCount++;
+            $('#id_medicines-TOTAL_FORMS').val(medicineFormCount);
+            
+            // فعال‌سازی سلکت۲ برای فیلد جدید
+            emptyForm.find('.select2').select2({
+                theme: 'bootstrap4',
+                language: 'fa',
+                dir: 'rtl'
+            });
+        });
+        
+        // حذف ردیف
+        $(document).on('click', '.delete-row', function(e) {
+            e.preventDefault();
+            $(this).closest('.formset-row').remove();
+            
+            // بروزرسانی شمارنده فرم‌ها
+            medicineFormCount--;
+            $('#id_medicines-TOTAL_FORMS').val(medicineFormCount);
+            
+            // بروزرسانی اندیس‌های فرم‌ها
+            $('.formset-row').each(function(index) {
+                $(this).find('input, select').each(function() {
+                    var name = $(this).attr('name');
+                    if (name) {
+                        name = name.replace(/-\d+-/g, '-' + index + '-');
+                        $(this).attr('name', name);
+                    }
+                    
+                    var id = $(this).attr('id');
+                    if (id) {
+                        id = id.replace(/-\d+-/g, '-' + index + '-');
+                        $(this).attr('id', id);
+                    }
+                });
+            });
+        });
+    });
+</script>
+{% endblock %} 

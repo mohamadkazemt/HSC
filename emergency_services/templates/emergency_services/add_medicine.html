@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}افزودن دارو | اورژانس معدن{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'vendor/select2/select2.min.css' %}">
+<link rel="stylesheet" href="{% static 'vendor/select2-bootstrap4-theme/select2-bootstrap4.min.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- عنوان صفحه -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">افزودن دارو به مراجعه</h1>
+        <a href="{% url 'emergency_services:visit_detail' pk=visit.pk %}" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+            <i class="fas fa-arrow-right fa-sm text-white-50"></i> بازگشت به جزئیات
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <!-- اطلاعات مراجعه -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">خلاصه مراجعه</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <h6 class="font-weight-bold">نام مراجعه کننده:</h6>
+                            <p>
+                                {% if visit.personnel_type == 'company' %}
+                                {{ visit.company_personnel }} <span class="badge badge-info">پرسنل شرکت</span>
+                                {% else %}
+                                {{ visit.contractor_personnel }} <span class="badge badge-warning">پرسنل پیمانکار</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="font-weight-bold">تاریخ مراجعه:</h6>
+                            <p>{{ visit.visit_time|date:"Y/m/d - H:i" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- فرم افزودن دارو -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">افزودن دارو</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="form-group">
+                            {{ form.medicine.label_tag }}
+                            {{ form.medicine }}
+                            <small class="form-text text-muted">دارو را از لیست انتخاب کنید. موجودی هر دارو نمایش داده شده است.</small>
+                            {% if form.medicine.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.medicine.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group">
+                            {{ form.quantity.label_tag }}
+                            {{ form.quantity }}
+                            <small class="form-text text-muted">تعداد مورد نظر را وارد کنید. مقدار نباید از موجودی بیشتر باشد.</small>
+                            {% if form.quantity.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.quantity.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="text-center mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg px-5">
+                                <i class="fas fa-plus-circle mr-2"></i> افزودن دارو
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- داروهای فعلی -->
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">داروهای فعلی</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>نام دارو</th>
+                                    <th>دسته‌بندی</th>
+                                    <th>تعداد</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for usage in visit.medicine_usages.all %}
+                                <tr>
+                                    <td>{{ usage.medicine.name }}</td>
+                                    <td>{{ usage.medicine.category.name|default:"-" }}</td>
+                                    <td>{{ usage.quantity }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted">هیچ دارویی ثبت نشده است.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'vendor/select2/select2.min.js' %}"></script>
+<script>
+    $(document).ready(function() {
+        // فعال‌سازی انتخاب‌گر پیشرفته
+        $('.select2').select2({
+            theme: 'bootstrap4',
+            language: 'fa',
+            dir: 'rtl'
+        });
+    });
+</script>
+{% endblock %} 
