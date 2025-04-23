@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load jalali_tags %}
+{% load jformat %}
 
 {% block content %}
     <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
@@ -35,6 +36,10 @@
                                                                 <tr>
                                                                     <td class="text-gray-600 ps-0">شماره گزارش</td>
                                                                     <td class="fw-bold text-end">#{{ report.id }}</td>
+                                                                </tr>
+                                                                <tr>
+                                                                    <td class="text-gray-600 ps-0">تاریخ کارکرد</td>
+                                                                    <td class="fw-bold text-end">{{ report.report_date|jformat:"%Y/%m/%d" }}</td>
                                                                 </tr>
                                                                 <tr>
                                                                     <td class="text-gray-600 ps-0">تاریخ و زمان ثبت</td>

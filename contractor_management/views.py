@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.shortcuts import render, redirect
 from django.http import HttpResponseForbidden, JsonResponse, HttpResponse
 from permissions.utils import permission_required
-from .forms import ReportForm, ReportFilterForm
+from .forms import ReportForm, ReportFilterForm, persian_to_english_numbers
 from django.contrib.auth.decorators import login_required
 from .models import Report
 from django.utils import timezone
@@ -19,10 +19,18 @@ import json
 import jdatetime
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Side, Border
+import logging
+import re
+from shift_manager.utils import get_shift_for_date
+import datetime # Ensure datetime is imported
+
+logger = logging.getLogger(__name__)
 
 @permission_required("create_report")
 @login_required
 def create_report(request):
+    logger.info("Entering create_report view")
+    
     # ثبت فعالیت مشاهده فرم ایجاد گزارش
     if request.method == 'GET':
         log_user_activity(
@@ -36,63 +44,165 @@ def create_report(request):
         )
     
     if request.method == 'POST':
-        form = ReportForm(request.POST)
+        post_data = request.POST.copy()
+        logger.info(f"داده‌های POST اصلی: {post_data}")
+
+        gdate = None # Initialize gdate
+        report_date_input = post_data.get('reeport_date') or post_data.get('report_date')
+        if report_date_input:
+            try:
+                # تبدیل اعداد فارسی به انگلیسی
+                report_date = persian_to_english_numbers(report_date_input.strip())
+                # حذف کاراکترهای اضافی
+                report_date = re.sub(r'[^0-9/]', '', report_date)
+                year, month, day = map(int, report_date.split('/'))
+                
+                # تصحیح سال دو رقمی
+                if year < 100:
+                    year += 1400
+                
+                # ساخت تاریخ شمسی
+                jdate = jdatetime.date(year, month, day)
+                gdate = jdate.togregorian() # Assign the Gregorian date object
+                post_data['report_date'] = gdate.strftime('%Y-%m-%d')
+                
+                # دریافت شیفت کاری بر اساس تاریخ و گروه کاربر
+                if hasattr(request.user, 'userprofile'):
+                    shifts = get_shift_for_date(gdate, request.user.userprofile)
+                    user_shift = shifts.get('user_group_shift')
+                    if user_shift:
+                        post_data['shift'] = user_shift
+                        logger.info(f"شیفت کاری تشخیص داده شده: {user_shift}")
+                    else:
+                        logger.warning("شیفت کاری برای کاربر تشخیص داده نشد")
+                
+                logger.info(f"تاریخ میلادی محاسبه شده: {gdate}, Type: {type(gdate)}") # Log the calculated Gregorian date
+                logger.info(f"تاریخ رشته‌ای برای فرم: {post_data['report_date']}")
+            except (ValueError, IndexError, AttributeError) as e:
+                logger.error(f"خطا در تبدیل تاریخ: {str(e)}")
+                messages.error(request, 'لطفاً تاریخ را به فرمت صحیح وارد کنید (مثال: 1402/12/29)')
+                form = ReportForm()
+                return render(request, 'contractor_management/report_form.html', {'form': form})
+        else:
+             messages.error(request, 'فیلد تاریخ کارکرد الزامی است.')
+             return render(request, 'contractor_management/report_form.html', {'form': ReportForm(post_data)})
+
+        logger.info(f"داده‌های POST نهایی برای فرم: {post_data}")
+        form = ReportForm(post_data)
         if form.is_valid():
+            logger.info("فرم معتبر است")
             report = form.save(commit=False)
             report.user = request.user
             report.report_datetime = timezone.now()
 
+            # --- شروع اصلاح ---
+            # اطمینان از اینکه تاریخ میلادی استاندارد ذخیره می‌شود
+            # حتی اگر فرم به اشتباه jdatetime.date برگردانده باشد
+            if gdate and isinstance(gdate, datetime.date):
+                 report.report_date = gdate
+                 logger.info(f"Report.report_date explicitly set to Gregorian date: {report.report_date}, Type: {type(report.report_date)}")
+            else:
+                 # اگر gdate محاسبه نشده یا نوع آن اشتباه است، سعی کن از فرم بگیری
+                 # اما ممکن است هنوز مشکل داشته باشد.
+                 logger.warning(f"gdate was not a valid datetime.date. Using value from form: {report.report_date}, Type: {type(report.report_date)}")
+                 # اگر نوع تاریخ فرم همچنان jdatetime.date است، خطا بده
+                 if isinstance(report.report_date, jdatetime.date):
+                     logger.error("Form provided jdatetime.date, cannot save correctly.")
+                     messages.error(request, "خطای داخلی در پردازش تاریخ رخ داده است. لطفا با پشتیبانی تماس بگیرید.")
+                     return render(request, 'contractor_management/report_form.html', {'form': form})
+            # --- پایان اصلاح ---
+
             # اضافه کردن پیمانکار بر اساس خودرو
             selected_vehicle = form.cleaned_data.get('vehicle')
-            if selected_vehicle:  # چک برای اینکه مطمئن شویم خودرویی انتخاب شده
+            logger.info(f"خودروی انتخاب شده: {selected_vehicle}")
+            
+            if selected_vehicle:
                 report.contractor = selected_vehicle.contractor
+                logger.info(f"پیمانکار تنظیم شده: {report.contractor}")
 
             user_shift, user_group = get_current_user_shift_and_group(report.user)
+            logger.info(f"شیفت و گروه کاربر: شیفت={user_shift}, گروه={user_group}")
 
-            if user_shift and user_group:
-                report.shift = user_shift
+            if user_group:
                 report.group = user_group
             else:
-                messages.error(request, 'امکان ثبت گزارش در این بازه زمانی وجود ندارد.')
-                return render(request, 'contractor_management/report_form.html', {
-                    'form': form,
-                    'messages': messages.get_messages(request)
-                })
-
-            if report.report_datetime:
-                existing_report = Report.objects.filter(
-                    user=report.user,
-                    vehicle=report.vehicle,
-                    report_datetime__date=report.report_datetime.date(),
-                    shift=report.shift,
-                    group=report.group
-                ).exists()
-                if existing_report:
-                    messages.error(request, 'شما قبلاً برای این خودرو در این شیفت و گروه گزارش ثبت کرده‌اید.')
-                    return render(request, 'contractor_management/report_form.html', {
-                        'form': form,
-                        'messages': messages.get_messages(request)
-                    })
+                # اگر گروه کاری تشخیص داده نشد، از پروفایل کاربر استفاده کنیم
+                if hasattr(request.user, 'userprofile') and request.user.userprofile.group:
+                    report.group = request.user.userprofile.group
+                    logger.info(f"گروه کاری از پروفایل کاربر استخراج شد: {report.group}")
                 else:
-                    try:
-                        report.save()
+                    logger.warning("گروه کاری نامعتبر است")
+                    messages.error(request, 'امکان ثبت گزارش در این بازه زمانی وجود ندارد.')
+                    return render(request, 'contractor_management/report_form.html', {
+                        'form': form
+                    })
+
+            try:
+                logger.info("در حال ذخیره گزارش...")
+                
+                # بررسی شیفت کاری کاربر (با تاریخ میلادی صحیح)
+                if hasattr(request.user, 'userprofile') and report.report_date:
+                     try:
+                        shifts = get_shift_for_date(report.report_date, request.user.userprofile)
+                        user_shift = shifts.get('user_group_shift', '')
                         
-                        # ثبت فعالیت ایجاد گزارش
-                        log_user_activity(
-                            user=request.user,
-                            activity_type='create',
-                            description=f'ثبت گزارش جدید برای خودرو {report.vehicle.license_plate} متعلق به پیمانکار {report.contractor.company_name}',
-                            related_model='Report',
-                            related_object_id=report.id,
-                            url=reverse('contractor_management:report_detail', args=[report.id]),
-                            request=request
-                        )
-                        
-                        messages.success(request, 'گزارش با موفقیت ثبت شد.')
-                        return redirect('contractor_management:create_report')
-                    except Exception as e:
-                        messages.error(request, f'خطا در ثبت گزارش: {e}')
+                        if 'OFF' in user_shift:
+                            logger.warning(f"کاربر در تاریخ {report.report_date} در شیفت {user_shift} (OFF) است")
+                            # نمایش تاریخ شمسی در پیام خطا
+                            jdate_display = jdatetime.date.fromgregorian(date=report.report_date).strftime('%Y/%m/%d')
+                            messages.error(request, f'شما در تاریخ {jdate_display} در شیفت {user_shift} (OFF) هستید و امکان ثبت گزارش ندارید.')
+                            return render(request, 'contractor_management/report_form.html', {
+                                'form': form
+                            })
+                     except Exception as e:
+                         logger.error(f"Error getting shift for date {report.report_date}: {e}")
+                         # Handle error appropriately, maybe show a generic error message
+
+                # بررسی وجود گزارش قبلی برای این خودرو در این تاریخ و شیفت (با تاریخ میلادی صحیح)
+                if report.report_date:
+                    existing_report = Report.objects.filter(
+                        vehicle=report.vehicle,
+                        report_date=report.report_date, # Use the correct Gregorian date
+                        shift=report.shift,
+                        user=request.user
+                    ).first()
+                    
+                    if existing_report:
+                        logger.warning(f"گزارش قبلی برای این خودرو در تاریخ {report.report_date} و شیفت {report.shift} توسط همین کاربر وجود دارد")
+                        # نمایش تاریخ شمسی در پیام خطا
+                        jdate_display = jdatetime.date.fromgregorian(date=report.report_date).strftime('%Y/%m/%d')
+                        messages.error(request, f'شما قبلاً برای خودرو {report.vehicle} در تاریخ {jdate_display} و شیفت {report.shift} گزارش ثبت کرده‌اید. لطفاً از تاریخ یا شیفت دیگری استفاده کنید.')
+                        return render(request, 'contractor_management/report_form.html', {
+                            'form': form
+                        })
+                
+                logger.info(f"Saving Report - Report Date before save: {report.report_date}, Type: {type(report.report_date)}")
+                report.save()
+                logger.info(f"گزارش با موفقیت ذخیره شد. شناسه: {report.id}")
+                
+                # ثبت فعالیت ایجاد گزارش
+                log_user_activity(
+                    user=request.user,
+                    activity_type='create',
+                    description=f'ثبت گزارش جدید برای خودرو {report.vehicle.license_plate} متعلق به پیمانکار {report.contractor.company_name}',
+                    related_model='Report',
+                    related_object_id=report.id,
+                    url=reverse('contractor_management:report_detail', args=[report.id]),
+                    request=request
+                )
+                
+                messages.success(request, 'گزارش با موفقیت ثبت شد.')
+                return redirect('contractor_management:create_report')
+            except Exception as e:
+                error_message = str(e)
+                if "UNIQUE constraint failed" in error_message:
+                    logger.error(f"خطا در ذخیره گزارش (محدودیت یکتا): {error_message}")
+                    messages.error(request, f'شما قبلاً برای خودرو {report.vehicle} در تاریخ {report.report_date} و شیفت {report.shift} گزارش ثبت کرده‌اید. لطفاً از تاریخ یا شیفت دیگری استفاده کنید.')
+                else:
+                    logger.error(f"خطای غیرمنتظره در ذخیره گزارش: {error_message}")
+                    messages.error(request, 'خطایی در ثبت گزارش رخ داد. لطفاً دوباره تلاش کنید.')
         else:
+            logger.warning(f"خطاهای اعتبارسنجی فرم: {form.errors}")
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f"خطا در فیلد {form[field].label} : {error}")
@@ -105,6 +215,7 @@ def create_report(request):
 @login_required
 def all_reports(request):
     """نمایش همه گزارش‌های کارکرد خودروها"""
+    logger.info("Entering all_reports view")
     
     reports = Report.objects.all().order_by('-report_datetime')
     vehicles = Vehicle.objects.all()
@@ -138,6 +249,7 @@ def all_reports(request):
     query = Q()
     
     if request.method == 'GET' and any(request.GET.values()):
+        logger.info(f"Applying filters from GET request: {request.GET}")
         if form.is_valid():
             start_date = form.cleaned_data.get('start_date')
             end_date = form.cleaned_data.get('end_date')
@@ -148,31 +260,55 @@ def all_reports(request):
             
             if start_date:
                 try:
-                    start_date_obj = jdatetime.datetime.strptime(start_date, '%Y/%m/%d').togregorian()
-                    query &= Q(report_datetime__date__gte=start_date_obj.date())
-                except ValueError:
-                    pass
-            
+                    # تبدیل تاریخ شمسی به میلادی
+                    logger.debug(f"Original start_date string: {start_date}")
+                    # تبدیل اعداد فارسی به انگلیسی
+                    start_date_en = persian_to_english_numbers(start_date.strip())
+                    # حذف کاراکترهای اضافی
+                    start_date_en = re.sub(r'[^0-9/]', '', start_date_en)
+                    year, month, day = map(int, start_date_en.split('/'))
+                    if year < 100: year += 1400 # تصحیح سال دو رقمی
+                    start_date_j = jdatetime.date(year, month, day)
+                    start_date_g = start_date_j.togregorian()
+                    query &= Q(report_date__gte=start_date_g)
+                    logger.info(f"Applied start_date filter: report_date >= {start_date_g}")
+                except (ValueError, IndexError, AttributeError) as e:
+                    logger.warning(f"Invalid start_date format: {start_date}. Error: {e}")
+                    messages.error(request, f'فرمت تاریخ شروع ({start_date}) نامعتبر است. لطفا از فرمت YYYY/MM/DD استفاده کنید.')
+
             if end_date:
                 try:
-                    end_date_obj = jdatetime.datetime.strptime(end_date, '%Y/%m/%d').togregorian()
-                    query &= Q(report_datetime__date__lte=end_date_obj.date())
-                except ValueError:
-                    pass
-            
+                    # تبدیل تاریخ شمسی به میلادی
+                    logger.debug(f"Original end_date string: {end_date}")
+                    end_date_en = persian_to_english_numbers(end_date.strip())
+                    end_date_en = re.sub(r'[^0-9/]', '', end_date_en)
+                    year, month, day = map(int, end_date_en.split('/'))
+                    if year < 100: year += 1400 # تصحیح سال دو رقمی
+                    end_date_j = jdatetime.date(year, month, day)
+                    end_date_g = end_date_j.togregorian()
+                    query &= Q(report_date__lte=end_date_g)
+                    logger.info(f"Applied end_date filter: report_date <= {end_date_g}")
+                except (ValueError, IndexError, AttributeError) as e:
+                    logger.warning(f"Invalid end_date format: {end_date}. Error: {e}")
+                    messages.error(request, f'فرمت تاریخ پایان ({end_date}) نامعتبر است. لطفا از فرمت YYYY/MM/DD استفاده کنید.')
+
             if contractor:
                 query &= Q(contractor=contractor)
                 vehicles = vehicles.filter(contractor=contractor)
-            
+                logger.info(f"Applied contractor filter: {contractor}")
+
             if vehicle:
                 query &= Q(vehicle=vehicle)
-            
+                logger.info(f"Applied vehicle filter: {vehicle}")
+
             if shift:
                 query &= Q(shift=shift)
-            
+                logger.info(f"Applied shift filter: {shift}")
+
             if group:
                 query &= Q(group=group)
-            
+                logger.info(f"Applied group filter: {group}")
+
             # اگر فیلتری اعمال شده، فعالیت جستجو را هم ثبت کنیم
             if any([start_date, end_date, contractor, vehicle, shift, group]):
                 log_user_activity(
@@ -184,17 +320,36 @@ def all_reports(request):
                     url=request.get_full_path(),
                     request=request
                 )
+        else:
+            logger.warning(f"Filter form is invalid: {form.errors}")
 
     reports = reports.filter(query)
+    logger.info(f"Total reports after filtering: {reports.count()}")
+
+    # --- اضافه کردن لاگ برای بررسی مقادیر تاریخ ---
+    if reports.exists():
+        logger.info("Logging report_date values for the first few reports:")
+        for report in reports[:3]: # لاگ ۳ گزارش اول
+            logger.info(f"Report ID: {report.id}, Report Date: {report.report_date}, Type: {type(report.report_date)}")
+            try:
+                # تلاش برای تبدیل و لاگ تاریخ شمسی
+                jdate = jdatetime.date.fromgregorian(date=report.report_date)
+                logger.info(f"Report ID: {report.id}, Converted Shamsi Date: {jdate.strftime('%Y/%m/%d')}")
+            except Exception as e:
+                logger.error(f"Error converting date for Report ID {report.id}: {e}")
+    else:
+        logger.info("No reports found after filtering.")
+    # --- پایان بخش لاگ ---
+
     paginator = Paginator(reports, 10)  # Show 10 reports per page
 
     page = request.GET.get('page')
     try:
-        reports = paginator.page(page)
+        reports_page = paginator.page(page)
     except PageNotAnInteger:
-        reports = paginator.page(1)
+        reports_page = paginator.page(1)
     except EmptyPage:
-        reports = paginator.page(paginator.num_pages)
+        reports_page = paginator.page(paginator.num_pages)
     
     # محاسبه تعداد خودروهای فعال، نیمه فعال و غیرفعال
     active_count = sum(1 for status in vehicle_statuses.values() if status['status'] == 'فعال')
@@ -203,7 +358,7 @@ def all_reports(request):
     unknown_count = sum(1 for status in vehicle_statuses.values() if status['status'] == 'نامشخص')
     
     context = {
-        'reports': reports,
+        'reports': reports_page,
         'vehicles': vehicles,
         'vehicle_statuses': vehicle_statuses,
         'form': form,
@@ -213,7 +368,7 @@ def all_reports(request):
         'inactive_count': inactive_count,
         'unknown_count': unknown_count
     }
-    
+    logger.info("Rendering all_reports.html template.")
     return render(request, 'contractor_management/reports/all_reports.html', context)
 
 
@@ -734,28 +889,37 @@ def get_filtered_reports(request, vehicle):
 
 def apply_date_filters(reports_query, start_date, end_date):
     """اعمال فیلترهای تاریخ به کوئری"""
+    logger.debug(f"Applying date filters - Start: {start_date}, End: {end_date}")
     if start_date:
         try:
             # تبدیل تاریخ شمسی به میلادی
-            start_date_obj = jdatetime.datetime.strptime(start_date, '%Y-%m-%d').togregorian()
-            # تنظیم ساعت روی ابتدای روز با در نظر گرفتن timezone
-            start_date_obj = timezone.make_aware(start_date_obj.replace(hour=0, minute=0, second=0, microsecond=0))
-            reports_query = reports_query.filter(report_datetime__gte=start_date_obj)
-        except ValueError as e:
-            print(f"خطا در تبدیل تاریخ شروع: {e}")
+            start_date_en = persian_to_english_numbers(start_date.strip())
+            start_date_en = re.sub(r'[^0-9/]', '', start_date_en)
+            year, month, day = map(int, start_date_en.split('/'))
+            if year < 100: year += 1400
+            start_date_j = jdatetime.date(year, month, day)
+            start_date_g = start_date_j.togregorian()
+            reports_query = reports_query.filter(report_date__gte=start_date_g)
+            logger.info(f"Applied start_date filter (apply_date_filters): report_date >= {start_date_g}")
+        except (ValueError, IndexError, AttributeError) as e:
+            logger.warning(f"Error converting start_date in apply_date_filters: {start_date}. Error: {e}")
             pass
-    
+
     if end_date:
         try:
             # تبدیل تاریخ شمسی به میلادی
-            end_date_obj = jdatetime.datetime.strptime(end_date, '%Y-%m-%d').togregorian()
-            # تنظیم ساعت روی انتهای روز با در نظر گرفتن timezone
-            end_date_obj = timezone.make_aware(end_date_obj.replace(hour=23, minute=59, second=59, microsecond=999999))
-            reports_query = reports_query.filter(report_datetime__lte=end_date_obj)
-        except ValueError as e:
-            print(f"خطا در تبدیل تاریخ پایان: {e}")
+            end_date_en = persian_to_english_numbers(end_date.strip())
+            end_date_en = re.sub(r'[^0-9/]', '', end_date_en)
+            year, month, day = map(int, end_date_en.split('/'))
+            if year < 100: year += 1400
+            end_date_j = jdatetime.date(year, month, day)
+            end_date_g = end_date_j.togregorian()
+            reports_query = reports_query.filter(report_date__lte=end_date_g)
+            logger.info(f"Applied end_date filter (apply_date_filters): report_date <= {end_date_g}")
+        except (ValueError, IndexError, AttributeError) as e:
+            logger.warning(f"Error converting end_date in apply_date_filters: {end_date}. Error: {e}")
             pass
-    
+
     return reports_query
 
 

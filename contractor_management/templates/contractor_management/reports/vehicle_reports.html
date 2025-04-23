@@ -198,6 +198,7 @@
                                                 <thead>
                                                     <tr class="fw-bold text-muted bg-light">
                                                         <th class="min-w-100px">تاریخ گزارش</th>
+                                                        <th class="min-w-100px">تاریخ کارکرد</th>
                                                         <th class="min-w-15px">تایید کننده</th>
                                                         <th class="min-w-140px">شیفت</th>
                                                         <th class="min-w-140px">گروه</th>
@@ -211,6 +212,7 @@
                                                     {% for report in reports %}
                                                         <tr>
                                                             <td>{{ report.report_datetime|jformat:"%Y/%m/%d %H:%M:%S" }}</td>
+                                                            <td>{{ report.report_date|jformat:"%Y/%m/%d" }}</td>
                                                             <td>
                                                                 <div class="d-flex align-items-center">
                                                                     <div class="symbol symbol-30px me-2">
