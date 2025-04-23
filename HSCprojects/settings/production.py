@@ -1,10 +1,10 @@
 from .base import *
 import os
-from decouple import config
+from decouple import config, Csv
 
 # Security settings
 DEBUG = False
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=lambda v: [s.strip() for s in v.split(',')])
+ALLOWED_HOSTS = ['mtorkzadeh.ir', 'www.mtorkzadeh.ir', 'miepcoj.ir', 'www.miepcoj.ir', 'localhost', '65.109.220.72']
 
 # Database
 DATABASES = {
@@ -27,11 +27,11 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool, default=True)
 
 # Static files
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = '/var/www/HSC/static/'
 STATIC_URL = '/static/'
 
 # Media files
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = '/var/www/HSC/media/'
 MEDIA_URL = '/media/'
 
 # Security

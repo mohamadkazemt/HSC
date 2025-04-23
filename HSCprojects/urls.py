@@ -14,10 +14,11 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
-from HSCprojects import settings
+from django.conf import settings
+from django.conf.urls.static import static
+from HSCprojects import settings as project_settings
 from core import views  # وارد کردن views از اپلیکیشن core
 
 handler403 = views.custom_403_handler  # استفاده از هندلر از core
@@ -43,8 +44,7 @@ urlpatterns = [
     path('checklist_app/', include('checklist_app.urls')),
 ]
 
-
-if settings.DEBUG:
+# اضافه کردن مسیرهای media و static در حالت debug
+if getattr(settings, 'DEBUG', False):
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-else:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
