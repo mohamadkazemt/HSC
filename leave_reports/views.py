@@ -226,6 +226,7 @@ def shift_report_list(request):
     work_group = request.GET.get('work_group')
     today_filter = request.GET.get('today')
     search_query = request.GET.get('search', '').strip()
+    excel_status = request.GET.get('excel_status')
     
     # Get all reports without user restrictions
     reports = ShiftReport.objects.select_related('user', 'user__userprofile', 'crate_by', 'crate_by__user').all()
@@ -233,6 +234,9 @@ def shift_report_list(request):
     # Apply filters
     if work_group:
         reports = reports.filter(work_group=work_group)
+
+    if excel_status:
+        reports = reports.filter(exported_to_excel=(excel_status == 'true'))
 
     if today_filter == 'true':
         reports = reports.filter(shift_date=datetime.date.today())
