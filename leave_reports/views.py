@@ -756,16 +756,22 @@ def export_shift_reports_excel(request):
         reports = ShiftReport.objects.all().select_related('user', 'user__userprofile', 'crate_by', 'crate_by__user')
 
         # دریافت پارامترهای فیلتر
-        year = request.GET.get('year')
-        month = request.GET.get('month')
-        day = request.GET.get('day')
-        work_group = request.GET.get('work_group')
-        today_filter = request.GET.get('today')
+        year = request.GET.get('year', '')
+        month = request.GET.get('month', '')
+        day = request.GET.get('day', '')
+        work_group = request.GET.get('work_group', '')
+        today_filter = request.GET.get('today', '')
         search_query = request.GET.get('search', '').strip()
+        excel_status = request.GET.get('excel_status', '')
+
+        logger.info(f"Export filters - Year: {year}, Month: {month}, Day: {day}, Work Group: {work_group}, Today: {today_filter}, Excel Status: {excel_status}")
 
         # اعمال فیلترها
         if work_group:
             reports = reports.filter(work_group=work_group)
+
+        if excel_status:
+            reports = reports.filter(exported_to_excel=(excel_status == 'true'))
 
         if today_filter == 'true':
             reports = reports.filter(shift_date=datetime.date.today())
@@ -774,6 +780,7 @@ def export_shift_reports_excel(request):
             try:
                 gregorian_date = jdatetime.date(year=int(year), month=int(month), day=int(day)).togregorian()
                 reports = reports.filter(shift_date=gregorian_date)
+                logger.info(f"Filtering by full date: {gregorian_date}")
             except ValueError as e:
                 logger.error(f"Error converting Jalali to Gregorian: {e}")
         elif year and month:
@@ -784,6 +791,7 @@ def export_shift_reports_excel(request):
                 else:
                     gregorian_end = jdatetime.date(year=int(year) + 1, month=1, day=1).togregorian()
                 reports = reports.filter(shift_date__gte=gregorian_start, shift_date__lt=gregorian_end)
+                logger.info(f"Filtering by year and month: {gregorian_start} to {gregorian_end}")
             except ValueError as e:
                 logger.error(f"Error converting Jalali to Gregorian: {e}")
         elif year:
@@ -791,6 +799,7 @@ def export_shift_reports_excel(request):
                 gregorian_start = jdatetime.date(year=int(year), month=1, day=1).togregorian()
                 gregorian_end = jdatetime.date(year=int(year) + 1, month=1, day=1).togregorian()
                 reports = reports.filter(shift_date__gte=gregorian_start, shift_date__lt=gregorian_end)
+                logger.info(f"Filtering by year: {gregorian_start} to {gregorian_end}")
             except ValueError as e:
                 logger.error(f"Error converting Jalali to Gregorian: {e}")
 
@@ -808,33 +817,11 @@ def export_shift_reports_excel(request):
         # مرتب‌سازی بر اساس تاریخ مرخصی و نام کاربر
         reports = reports.order_by('shift_date', 'user__first_name', 'user__last_name')
 
-        # تبدیل به لیست برای پردازش
-        report_list = []
-        for report in reports:
-            # تبدیل تاریخ میلادی به شمسی
-            shift_date_jalali = jdatetime.date.fromgregorian(date=report.shift_date).strftime('%Y/%m/%d')
-            created_at_jalali = jdatetime.datetime.fromgregorian(datetime=report.created_at).strftime('%Y/%m/%d %H:%M')
-            
-            report_data = {
-                'user_name': f"{report.user.first_name} {report.user.last_name}",
-                'personnel_code': report.user.userprofile.personnel_code if hasattr(report.user, 'userprofile') else '',
-                'shift_date': shift_date_jalali,
-                'leave_type': report.get_leave_type_display(),
-                'shift': report.get_shift_type_display(),
-                'description': report.description or '',
-                'start_time': report.start_time.strftime('%H:%M') if report.start_time else '',
-                'end_time': report.end_time.strftime('%H:%M') if report.end_time else '',
-                'crate_by': f"{report.crate_by.user.first_name} {report.crate_by.user.last_name}" if report.crate_by else '',
-                'created_at': created_at_jalali,
-                'registration': report.registration,
-                'leave_ids': [report.id]
-            }
-            report_list.append(report_data)
-
         # ایجاد فایل اکسل
         wb = openpyxl.Workbook()
         ws = wb.active
-        ws.title = "Shift Reports"
+        ws.title = "گزارش مرخصی‌ها"
+        ws.right_to_left = True  # فعال کردن راست به چپ
 
         # اضافه کردن سرفصل‌ها
         headers = [
@@ -853,19 +840,23 @@ def export_shift_reports_excel(request):
         ws.append(headers)
 
         # اضافه کردن داده‌ها
-        for report in report_list:
+        for report in reports:
+            # تبدیل تاریخ میلادی به شمسی
+            shift_date_jalali = jdatetime.date.fromgregorian(date=report.shift_date).strftime('%Y/%m/%d')
+            created_at_jalali = jdatetime.datetime.fromgregorian(datetime=report.created_at).strftime('%Y/%m/%d %H:%M')
+            
             row = [
-                report['user_name'],
-                report['personnel_code'],
-                report['shift_date'],
-                report['leave_type'],
-                report['shift'],
-                report['description'],
-                report['start_time'],
-                report['end_time'],
-                report['crate_by'],
-                report['created_at'],
-                'ثبت شده' if report['registration'] else 'ثبت نشده'
+                f"{report.user.first_name} {report.user.last_name}",
+                report.user.userprofile.personnel_code if hasattr(report.user, 'userprofile') else '',
+                shift_date_jalali,
+                report.get_leave_type_display(),
+                report.get_shift_type_display(),
+                report.description or '',
+                report.start_time.strftime('%H:%M') if report.start_time else '',
+                report.end_time.strftime('%H:%M') if report.end_time else '',
+                f"{report.crate_by.user.first_name} {report.crate_by.user.last_name}" if report.crate_by else '',
+                created_at_jalali,
+                'ثبت شده' if report.registration else 'ثبت نشده'
             ]
             ws.append(row)
 
@@ -889,6 +880,8 @@ def export_shift_reports_excel(request):
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
         response['Content-Disposition'] = 'attachment; filename="shift_reports.xlsx"'
         wb.save(response)
+        
+        logger.info(f"Successfully exported {reports.count()} reports to Excel")
         return response
 
     except Exception as e:

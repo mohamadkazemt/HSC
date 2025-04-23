@@ -130,7 +130,7 @@
                                                     <span class="text-muted mt-1 fw-semibold fs-7">مدیریت گزارش‌های شیفت</span>
                                                 </h3>
                                                 <div class="card-toolbar">
-                                                    <a href="{% url 'leave_reports:export_shift_reports_excel' %}?year={{ selected_year }}&month={{ selected_month }}&day={{ selected_day }}&work_group={{ selected_work_group }}&today={{ today_filter }}" class="btn btn-sm btn-light-primary">
+                                                    <a href="{% url 'leave_reports:export_shift_reports_excel' %}?{% if request.GET.display_mode %}display_mode={{ request.GET.display_mode }}{% endif %}{% if request.GET.year %}&year={{ request.GET.year }}{% endif %}{% if request.GET.month %}&month={{ request.GET.month }}{% endif %}{% if request.GET.day %}&day={{ request.GET.day }}{% endif %}{% if request.GET.work_group %}&work_group={{ request.GET.work_group }}{% endif %}{% if request.GET.today %}&today={{ request.GET.today }}{% endif %}{% if request.GET.excel_status %}&excel_status={{ request.GET.excel_status }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" class="btn btn-sm btn-light-primary">
                                                         <i class="bi bi-file-excel me-1"></i>
                                                         خروجی اکسل
                                                     </a>
@@ -280,7 +280,7 @@
                                                 <ul class="pagination">
                                                     {% if page_obj.has_previous %}
                                                         <li class="page-item">
-                                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&display_mode={{ display_mode }}&year={{selected_year}}&month={{selected_month}}&day={{selected_day}}&work_group={{selected_work_group}}&today={{today_filter}}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="Previous">«</a>
+                                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&display_mode={{ display_mode }}&year={{selected_year}}&month={{selected_month}}&day={{selected_day}}&work_group={{selected_work_group}}&today={{today_filter}}&excel_status={{excel_status}}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="Previous">«</a>
                                                         </li>
                                                     {% else %}
                                                         <li class="page-item disabled">
@@ -290,13 +290,13 @@
 
                                                     {% for i in page_obj.paginator.page_range %}
                                                         <li class="page-item {% if page_obj.number == i %}active{% endif %}">
-                                                            <a class="page-link" href="?page={{ i }}&display_mode={{ display_mode }}&year={{selected_year}}&month={{selected_month}}&day={{selected_day}}&work_group={{selected_work_group}}&today={{today_filter}}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ i }}</a>
+                                                            <a class="page-link" href="?page={{ i }}&display_mode={{ display_mode }}&year={{selected_year}}&month={{selected_month}}&day={{selected_day}}&work_group={{selected_work_group}}&today={{today_filter}}&excel_status={{excel_status}}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ i }}</a>
                                                         </li>
                                                     {% endfor %}
 
                                                     {% if page_obj.has_next %}
                                                         <li class="page-item">
-                                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&display_mode={{ display_mode }}&year={{selected_year}}&month={{selected_month}}&day={{selected_day}}&work_group={{selected_work_group}}&today={{today_filter}}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="Next">»</a>
+                                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&display_mode={{ display_mode }}&year={{selected_year}}&month={{selected_month}}&day={{selected_day}}&work_group={{selected_work_group}}&today={{today_filter}}&excel_status={{excel_status}}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="Next">»</a>
                                                         </li>
                                                     {% else %}
                                                         <li class="page-item disabled">

@@ -15,11 +15,8 @@ from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime
 from django.conf.locale.fa import formats as fa_formats
 
-
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
-
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -32,9 +29,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1','mtorkzadeh.ir','miepcoj.ir', 'localhost']
 
-
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -49,17 +44,17 @@ INSTALLED_APPS = [
     'crispy_forms',
     'crispy_bootstrap5',
     'django_jalali',
-    'jalali_date', # شما هم django_jalali و هم jalali_date را دارید؟ معمولا یکی کافیست.
+    'jalali_date',
     'django_select2',
     'import_export',
     'formtools',
     'rest_framework',
 
     # Celery related apps
-    'django_celery_results',   # برای ذخیره نتایج تسک‌ها (فقط یک بار)
-    'django_celery_beat',    # <<<--- برای زمان‌بندی تسک‌ها (اضافه شد)
+    'django_celery_results',
+    'django_celery_beat',
 
-    # Your project apps (use Config class where defined)
+    # Your project apps
     'permissions.apps.PermissionsConfig',
     'meetings.apps.MeetingsConfig',
     "dashboard.apps.DashboardConfig",
@@ -75,7 +70,7 @@ INSTALLED_APPS = [
     'hse_incidents.apps.HseIncidentsConfig',
     'machine_checklist.apps.MachineChecklistConfig',
     'fire_reports.apps.FireReportsConfig',
-    'checklist_app.apps.ChecklistAppConfig',  # اضافه کردن اپلیکیشن چک‌لیست
+    'checklist_app.apps.ChecklistAppConfig',
 ]
 
 MIDDLEWARE = [
@@ -97,8 +92,8 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],  # مسیرهای اضافی برای تمپلیت‌ها (اختیاری)
-        'APP_DIRS': True,  # فعال کردن جستجو در دایرکتوری templates داخل اپ‌ها
+        'DIRS': [BASE_DIR / 'templates'],
+        'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
@@ -121,24 +116,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'HSCprojects.wsgi.application'
 
-
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
-
-
-
-
-
 # Password validation
-# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -154,57 +132,36 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
-# https://docs.djangoproject.com/en/5.1/topics/i18n/
-
 LANGUAGE_CODE = 'fa-ir'
-
 TIME_ZONE = 'Asia/Tehran'
-
 USE_I18N = True
-
 USE_L10N = True
-
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
-
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-
-
 # Default primary key field type
-# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = '/dashboard/'
 
-
-# ارسال پیامک
+# SMS settings
 SMSIR_API_KEY = 'gCLhWKiCoUXwUQiNBIXCpQ81IiGfujNmKgWyrQr19WwgDkv3dSfFSDgIbsSEoo03'
 SMSIR_LINE_NUMBER = '30007732001185'
 
-
-
-
+# Date formats
 fa_formats.DATETIME_FORMAT = "Y/m/d H:i"
 fa_formats.DATE_FORMAT = "Y/m/d"
 
-
-
-
+# Jalali date settings
 JALALI_DATE_DEFAULTS = {
-    # if change it to true then all dates of the list_display will convert to the Jalali.
     'LIST_DISPLAY_AUTO_CONVERT': False,
     'Strftime': {
         'date': '%y/%m/%d',
@@ -212,14 +169,7 @@ JALALI_DATE_DEFAULTS = {
     },
     'Static': {
         'js': [
-            # loading datepicker
             'admin/js/django_jalali.min.js',
-            # OR
-            # 'admin/jquery.ui.datepicker.jalali/scripts/jquery.ui.core.js',
-            # 'admin/jquery.ui.datepicker.jalali/scripts/calendar.js',
-            # 'admin/jquery.ui.datepicker.jalali/scripts/jquery.ui.datepicker-cc.js',
-            # 'admin/jquery.ui.datepicker.jalali/scripts/jquery.ui.datepicker-cc-fa.js',
-            # 'admin/js/main.js',
         ],
         'css': {
             'all': [
@@ -228,11 +178,13 @@ JALALI_DATE_DEFAULTS = {
         }
     },
 }
+
+# CORS settings
 CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:8000',    # برای محیط لوکال (اگر از پورت 8000 استفاده می‌کنید)
-    'http://127.0.0.1:8000',  # برای محیط لوکال (اگر از پورت 8000 استفاده می‌کنید)
-    'https://miepcoj.ir',       # برای محیط سرور
-    'https://www.miepcoj.ir',    # برای محیط سرور
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    'https://miepcoj.ir',
+    'https://www.miepcoj.ir',
 ]
 
 CORS_ALLOW_METHODS = [
@@ -254,10 +206,8 @@ CORS_ALLOW_HEADERS = [
     "user-agent",
     "x-csrftoken",
     "x-requested-with",
-    # سایر هدرهایی که فرانت‌اند شما استفاده می‌کند
 ]
 
-# اگر نیاز دارید که مرورگر کوکی‌ها را ارسال کند (مثلاً برای احراز هویت):
 CORS_ALLOW_CREDENTIALS = True
 
 # Celery Configuration
@@ -277,6 +227,7 @@ EMAIL_HOST_USER = 'your-email@gmail.com'
 EMAIL_HOST_PASSWORD = 'your-app-password'
 DEFAULT_FROM_EMAIL = 'your-email@gmail.com'
 
+# Logging Configuration
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -297,13 +248,13 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'logs', 'debug.log'),
             'formatter': 'verbose',
-            'encoding': 'utf-8',  # اضافه کردن کدگذاری UTF-8
+            'encoding': 'utf-8',
         },
         'console': {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
-            'stream': 'ext://sys.stdout',  # تغییر خروجی به stdout
+            'stream': 'ext://sys.stdout',
         },
     },
     'loggers': {
