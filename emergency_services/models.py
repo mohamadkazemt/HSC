@@ -49,15 +49,42 @@ class Medicine(models.Model):
             self.is_active = False
         super().save(*args, **kwargs)
         
-        # ایجاد نوتیفیکیشن در صورت رسیدن به حد بحرانی
+        # ایجاد نوتیفیکیشن در صورت رسیدن به حد بحرانی یا منقضی شدن
+        from dashboard.models import Notification
+        from django.contrib.auth.models import User, Group
+        
+        # دریافت گروه‌های مدیر HSE و مدیر اورژانس
+        hse_group = Group.objects.get(name='مدیر HSE')
+        emergency_group = Group.objects.get(name='مدیر اورژانس')
+        
+        # دریافت کاربران این گروه‌ها
+        hse_managers = User.objects.filter(groups=hse_group)
+        emergency_managers = User.objects.filter(groups=emergency_group)
+        
+        # ترکیب لیست مدیران
+        managers = list(hse_managers) + list(emergency_managers)
+        
         if self.is_critical():
-            from dashboard.models import Notification
-            Notification.objects.create(
-                title=f"هشدار موجودی دارو",
-                message=f"موجودی داروی {self.name} به حد بحرانی رسیده است ({self.quantity} عدد)",
-                notification_type="warning",
-                is_read=False
-            )
+            # ارسال نوتیفیکیشن هشدار موجودی به همه مدیران
+            for manager in managers:
+                Notification.objects.create(
+                    user=manager,
+                    title=f"هشدار موجودی دارو",
+                    message=f"موجودی داروی {self.name} به حد بحرانی رسیده است ({self.quantity} عدد)",
+                    notification_type="warning",
+                    is_read=False
+                )
+        
+        if self.is_expired():
+            # ارسال نوتیفیکیشن انقضا به همه مدیران
+            for manager in managers:
+                Notification.objects.create(
+                    user=manager,
+                    title=f"هشدار انقضای دارو",
+                    message=f"داروی {self.name} منقضی شده است",
+                    notification_type="error",
+                    is_read=False
+                )
 
 
 class MedicalService(models.Model):

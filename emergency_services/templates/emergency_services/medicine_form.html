@@ -5,9 +5,6 @@
 {% block title %}{{ title }} | اورژانس معدن{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css">
-<link rel="stylesheet" href="{% static 'vendor/jdatepicker/jalalidatepicker.min.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -55,7 +52,14 @@
                                                     <div class="col-md-4">
                                                         <div class="form-group">
                                                             {{ form.category.label_tag }}
-                                                            {{ form.category }}
+                                                            <select name="category" id="id_category" class="form-select">
+                                                                <option value="">انتخاب دسته‌بندی</option>
+                                                                {% for category in form.category.field.queryset %}
+                                                                <option value="{{ category.id }}" {% if form.category.value|stringformat:"s" == category.id|stringformat:"s" %}selected{% endif %}>
+                                                                    {{ category.name }}
+                                                                </option>
+                                                                {% endfor %}
+                                                            </select>
                                                             {% if form.category.errors %}
                                                             <div class="invalid-feedback d-block">
                                                                 {{ form.category.errors }}
@@ -93,7 +97,13 @@
                                                     <div class="col-md-4">
                                                         <div class="form-group">
                                                             {{ form.expiry_date.label_tag }}
-                                                            {{ form.expiry_date }}
+                                                            <div class="input-group input-group-sm">
+                                                                <input type="text" name="expiry_date" id="id_expiry_date" class="form-control persian-datepicker" 
+                                                                       value="{{ form.expiry_date.value|default:''|date:'Y/m/d' }}" placeholder="انتخاب تاریخ">
+                                                                <span class="input-group-text">
+                                                                    <i class="fas fa-calendar"></i>
+                                                                </span>
+                                                            </div>
                                                             <small class="form-text text-muted">تاریخ انقضای دارو</small>
                                                             {% if form.expiry_date.errors %}
                                                             <div class="invalid-feedback d-block">
@@ -148,37 +158,69 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="{% static 'vendor/jdatepicker/jalalidatepicker.min.js' %}"></script>
 <script>
     $(document).ready(function() {
         try {
             // فعال‌سازی انتخاب‌گر پیشرفته برای دسته‌بندی
             $('#id_category').select2({
                 theme: 'bootstrap-5',
-                language: {
-                    noResults: function() {
-                        return "نتیجه‌ای یافت نشد";
-                    },
-                    searching: function() {
-                        return "در حال جستجو...";
-                    }
-                },
                 dir: 'rtl',
-                width: '100%',
-                placeholder: 'انتخاب دسته‌بندی',
-                allowClear: true,
-                dropdownParent: $('#id_category').parent()
+                width: '100%'
             });
 
-            // فعال‌سازی دیت‌پیکر جلالی
-            jalaliDatepicker.startWatch();
+            // لاگ مقدار اولیه تاریخ
+            console.log('Initial date value:', $('#id_expiry_date').val());
 
-            // نمایش خطا در صورت وجود مشکل
-            console.log('Select2 initialized successfully');
+            // فعال‌سازی دیت‌پیکر فارسی
+            try {
+                $('.persian-datepicker').persianDatepicker({
+                    format: 'YYYY/MM/DD',
+                    autoClose: true,
+                    initialValue: false,
+                    observer: true,
+                    persianDigit: true,
+                    calendar: {
+                        persian: {
+                            locale: 'fa',
+                            showHint: true,
+                            leapYearMode: 'algorithmic'
+                        }
+                    },
+                    toolbox: {
+                        calendarSwitch: {
+                            enabled: false
+                        }
+                    },
+                    navigator: {
+                        scroll: {
+                            enabled: false
+                        }
+                    },
+                    dayPicker: {
+                        onSelect: function(selectedDayUnix) {
+                            var pd = new persianDate(selectedDayUnix);
+                            var formattedDate = pd.format('YYYY/MM/DD');
+                            console.log('Selected date (Unix):', selectedDayUnix);
+                            console.log('Formatted Persian date:', formattedDate);
+                            $(this.model.inputElement)
+                                .val(formattedDate)
+                                .addClass('is-valid');
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error('خطا در راه‌اندازی تاریخ‌پیکر:', e);
+            }
+
+            // اضافه کردن لاگ برای فرم submit
+            $('form').on('submit', function(e) {
+                var dateValue = $('#id_expiry_date').val();
+                console.log('Form submission - Date value:', dateValue);
+            });
+
+            console.log('Select2 and Persian Datepicker initialized successfully');
         } catch (error) {
-            console.error('Error initializing Select2:', error);
+            console.error('Error initializing Select2 or Persian Datepicker:', error);
         }
     });
 </script>

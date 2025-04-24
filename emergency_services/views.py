@@ -12,6 +12,8 @@ from django.forms import formset_factory
 from datetime import datetime, timedelta
 import csv
 from io import StringIO
+import jdatetime
+import re
 
 from accounts.models import UserProfile
 from permissions.utils import permission_required
@@ -34,6 +36,13 @@ from .forms import (
     MedicalServiceForm,
     MedicineReturnForm
 )
+
+def persian_to_english_numbers(text):
+    """تبدیل اعداد فارسی به انگلیسی"""
+    persian_numbers = '۰۱۲۳۴۵۶۷۸۹'
+    english_numbers = '0123456789'
+    translation_table = str.maketrans(persian_numbers, english_numbers)
+    return text.translate(translation_table)
 
 @permission_required("visit_list")
 @login_required
@@ -284,12 +293,49 @@ def medicine_list(request):
 def create_medicine(request):
     """ایجاد داروی جدید"""
     if request.method == 'POST':
-        form = MedicineForm(request.POST)
+        data = request.POST.copy()
+        expiry_date = data.get('expiry_date')
+        print('POST data:', request.POST)  # لاگ داده‌های POST
+        print('Expiry date from POST:', expiry_date)  # لاگ تاریخ دریافتی
+        
+        # تبدیل تاریخ شمسی به میلادی
+        if expiry_date:
+            try:
+                # تبدیل اعداد فارسی به انگلیسی
+                expiry_date = persian_to_english_numbers(expiry_date.strip())
+                # حذف کاراکترهای اضافی
+                expiry_date = re.sub(r'[^0-9/]', '', expiry_date)
+                year, month, day = map(int, expiry_date.split('/'))
+                
+                # تصحیح سال دو رقمی
+                if year < 100:
+                    year += 1400
+                
+                # تبدیل به تاریخ میلادی
+                jalali_date = jdatetime.date(year, month, day)
+                gregorian_date = jalali_date.togregorian()
+                data['expiry_date'] = gregorian_date.strftime('%Y-%m-%d')
+                print('Converted to Gregorian:', data['expiry_date'])
+            except (ValueError, IndexError, AttributeError) as e:
+                print('Error converting date:', str(e))
+                messages.error(request, 'لطفاً تاریخ را به فرمت صحیح وارد کنید (مثال: 1402/12/29)')
+                form = MedicineForm()
+                return render(request, 'emergency_services/medicine_form.html', {
+                    'form': form,
+                    'title': 'افزودن داروی جدید'
+                })
+        
+        form = MedicineForm(data)
         
         if form.is_valid():
+            print('Form is valid')
+            print('Cleaned expiry date:', form.cleaned_data.get('expiry_date'))  # لاگ تاریخ پردازش شده
             form.save()
             messages.success(request, 'داروی جدید با موفقیت اضافه شد.')
             return redirect('emergency_services:medicine_list')
+        else:
+            print('Form errors:', form.errors)  # لاگ خطاهای فرم
+            print('Form expiry_date errors:', form.errors.get('expiry_date'))  # لاگ خطاهای مربوط به تاریخ
     else:
         form = MedicineForm()
     
@@ -307,12 +353,50 @@ def edit_medicine(request, pk):
     medicine = get_object_or_404(Medicine, pk=pk)
     
     if request.method == 'POST':
-        form = MedicineForm(request.POST, instance=medicine)
+        data = request.POST.copy()
+        expiry_date = data.get('expiry_date')
+        print('POST data:', request.POST)  # لاگ داده‌های POST
+        print('Expiry date from POST:', expiry_date)  # لاگ تاریخ دریافتی
+        
+        # تبدیل تاریخ شمسی به میلادی
+        if expiry_date:
+            try:
+                # تبدیل اعداد فارسی به انگلیسی
+                expiry_date = persian_to_english_numbers(expiry_date.strip())
+                # حذف کاراکترهای اضافی
+                expiry_date = re.sub(r'[^0-9/]', '', expiry_date)
+                year, month, day = map(int, expiry_date.split('/'))
+                
+                # تصحیح سال دو رقمی
+                if year < 100:
+                    year += 1400
+                
+                # تبدیل به تاریخ میلادی
+                jalali_date = jdatetime.date(year, month, day)
+                gregorian_date = jalali_date.togregorian()
+                data['expiry_date'] = gregorian_date.strftime('%Y-%m-%d')
+                print('Converted to Gregorian:', data['expiry_date'])
+            except (ValueError, IndexError, AttributeError) as e:
+                print('Error converting date:', str(e))
+                messages.error(request, 'لطفاً تاریخ را به فرمت صحیح وارد کنید (مثال: 1402/12/29)')
+                form = MedicineForm(instance=medicine)
+                return render(request, 'emergency_services/medicine_form.html', {
+                    'form': form,
+                    'medicine': medicine,
+                    'title': f'ویرایش داروی {medicine.name}'
+                })
+        
+        form = MedicineForm(data, instance=medicine)
         
         if form.is_valid():
+            print('Form is valid')
+            print('Cleaned expiry date:', form.cleaned_data.get('expiry_date'))  # لاگ تاریخ پردازش شده
             form.save()
             messages.success(request, 'دارو با موفقیت بروزرسانی شد.')
             return redirect('emergency_services:medicine_list')
+        else:
+            print('Form errors:', form.errors)  # لاگ خطاهای فرم
+            print('Form expiry_date errors:', form.errors.get('expiry_date'))  # لاگ خطاهای مربوط به تاریخ
     else:
         form = MedicineForm(instance=medicine)
     

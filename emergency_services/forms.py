@@ -1,6 +1,7 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
+from django.forms.fields import DateField
 from jalali_date.fields import JalaliDateField
 from jalali_date.widgets import AdminJalaliDateWidget
 
@@ -149,9 +150,11 @@ class MedicineForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['expiry_date'] = JalaliDateField(
-            label=_('تاریخ انقضا'), 
-            widget=AdminJalaliDateWidget(attrs={'class': 'form-control jalali-datepicker'})
+        # استفاده از DateField معمولی به جای JalaliDateField
+        # چون تبدیل تاریخ در views.py انجام می‌شود
+        self.fields['expiry_date'] = DateField(
+            label=_('تاریخ انقضا'),
+            widget=forms.DateInput(attrs={'class': 'form-control jalali-datepicker'})
         )
 
 
