@@ -5,288 +5,304 @@
 {% block title %}داشبورد اورژانس معدن{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <!-- عنوان صفحه -->
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">داشبورد اورژانس معدن</h1>
-        <div>
-            <a href="{% url 'emergency_services:visit_list' %}" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
-                <i class="fas fa-list fa-sm text-white-50"></i> لیست مراجعات
-            </a>
-            <a href="{% url 'emergency_services:create_visit' %}" class="d-none d-sm-inline-block btn btn-sm btn-success shadow-sm">
-                <i class="fas fa-plus fa-sm text-white-50"></i> مراجعه جدید
-            </a>
-        </div>
-    </div>
+<div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+    <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+        {% include 'header.html' %}
+        <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+            {% include 'sidebar.html' %}
+            <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                <div class="d-flex flex-column flex-column-fluid">
+                    {% include 'toolbar.html' %}
+                    <div id="kt_app_content" class="app-content flex-column-fluid">
+                        <div id="kt_app_content_container" class="app-container container-fluid">
+                            <!-- عنوان صفحه -->
+                            <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                                <h1 class="h3 mb-0 text-gray-800">داشبورد اورژانس معدن</h1>
+                                <div>
+                                    <a href="{% url 'emergency_services:visit_list' %}" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+                                        <i class="fas fa-list fa-sm text-white-50"></i> لیست مراجعات
+                                    </a>
+                                    <a href="{% url 'emergency_services:create_visit' %}" class="d-none d-sm-inline-block btn btn-sm btn-success shadow-sm">
+                                        <i class="fas fa-plus fa-sm text-white-50"></i> مراجعه جدید
+                                    </a>
+                                </div>
+                            </div>
 
-    <!-- آمار کلی -->
-    <div class="row">
-        <!-- مراجعات کل -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-primary shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                مراجعات کل</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_visits|intcomma }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                            <!-- آمار کلی -->
+                            <div class="row">
+                                <!-- مراجعات کل -->
+                                <div class="col-xl-3 col-md-6 mb-4">
+                                    <div class="card border-left-primary shadow h-100 py-2">
+                                        <div class="card-body">
+                                            <div class="row no-gutters align-items-center">
+                                                <div class="col mr-2">
+                                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                                        مراجعات کل</div>
+                                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_visits|intcomma }}</div>
+                                                </div>
+                                                <div class="col-auto">
+                                                    <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- مراجعات امروز -->
+                                <div class="col-xl-3 col-md-6 mb-4">
+                                    <div class="card border-left-success shadow h-100 py-2">
+                                        <div class="card-body">
+                                            <div class="row no-gutters align-items-center">
+                                                <div class="col mr-2">
+                                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                                        مراجعات امروز</div>
+                                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ today_visits|intcomma }}</div>
+                                                </div>
+                                                <div class="col-auto">
+                                                    <i class="fas fa-calendar-day fa-2x text-gray-300"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- مراجعات پرسنل شرکت -->
+                                <div class="col-xl-3 col-md-6 mb-4">
+                                    <div class="card border-left-info shadow h-100 py-2">
+                                        <div class="card-body">
+                                            <div class="row no-gutters align-items-center">
+                                                <div class="col mr-2">
+                                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                                        مراجعات پرسنل شرکت</div>
+                                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ company_visits|intcomma }}</div>
+                                                </div>
+                                                <div class="col-auto">
+                                                    <i class="fas fa-user-tie fa-2x text-gray-300"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- مراجعات پرسنل پیمانکار -->
+                                <div class="col-xl-3 col-md-6 mb-4">
+                                    <div class="card border-left-warning shadow h-100 py-2">
+                                        <div class="card-body">
+                                            <div class="row no-gutters align-items-center">
+                                                <div class="col mr-2">
+                                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                                        مراجعات پرسنل پیمانکار</div>
+                                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ contractor_visits|intcomma }}</div>
+                                                </div>
+                                                <div class="col-auto">
+                                                    <i class="fas fa-hard-hat fa-2x text-gray-300"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- هشدارها و اطلاعات -->
+                            <div class="row">
+                                <!-- داروهای منقضی -->
+                                <div class="col-xl-6 col-lg-6">
+                                    <div class="card shadow mb-4">
+                                        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                            <h6 class="m-0 font-weight-bold text-danger">داروهای منقضی شده</h6>
+                                            <a href="{% url 'emergency_services:medicine_list' %}?is_expired=true" class="btn btn-sm btn-danger">
+                                                مشاهده همه
+                                            </a>
+                                        </div>
+                                        <div class="card-body">
+                                            {% if expired_medicines %}
+                                                <div class="table-responsive">
+                                                    <table class="table table-bordered table-sm">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>نام دارو</th>
+                                                                <th>دسته‌بندی</th>
+                                                                <th>تاریخ انقضا</th>
+                                                                <th>موجودی</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for medicine in expired_medicines|slice:":5" %}
+                                                                <tr>
+                                                                    <td>{{ medicine.name }}</td>
+                                                                    <td>{{ medicine.category.name|default:"-" }}</td>
+                                                                    <td class="text-danger">{{ medicine.expiry_date|date:"Y/m/d" }}</td>
+                                                                    <td>{{ medicine.quantity }}</td>
+                                                                </tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            {% else %}
+                                                <div class="text-center text-success">
+                                                    <i class="fas fa-check-circle fa-3x mb-3"></i>
+                                                    <p>هیچ داروی منقضی‌شده‌ای وجود ندارد.</p>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- داروهای بحرانی -->
+                                <div class="col-xl-6 col-lg-6">
+                                    <div class="card shadow mb-4">
+                                        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                            <h6 class="m-0 font-weight-bold text-warning">داروهای با موجودی بحرانی</h6>
+                                            <a href="{% url 'emergency_services:medicine_list' %}?is_critical=true" class="btn btn-sm btn-warning">
+                                                مشاهده همه
+                                            </a>
+                                        </div>
+                                        <div class="card-body">
+                                            {% if critical_medicines %}
+                                                <div class="table-responsive">
+                                                    <table class="table table-bordered table-sm">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>نام دارو</th>
+                                                                <th>دسته‌بندی</th>
+                                                                <th>موجودی فعلی</th>
+                                                                <th>حد بحرانی</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for medicine in critical_medicines|slice:":5" %}
+                                                                <tr>
+                                                                    <td>{{ medicine.name }}</td>
+                                                                    <td>{{ medicine.category.name|default:"-" }}</td>
+                                                                    <td class="text-danger">{{ medicine.quantity }}</td>
+                                                                    <td>{{ medicine.critical_threshold }}</td>
+                                                                </tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            {% else %}
+                                                <div class="text-center text-success">
+                                                    <i class="fas fa-check-circle fa-3x mb-3"></i>
+                                                    <p>هیچ دارویی در وضعیت بحرانی نیست.</p>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- آمار و تحلیل -->
+                            <div class="row">
+                                <!-- خدمات پرمصرف -->
+                                <div class="col-xl-6 col-lg-6">
+                                    <div class="card shadow mb-4">
+                                        <div class="card-header py-3">
+                                            <h6 class="m-0 font-weight-bold text-primary">خدمات پرمصرف</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            {% if popular_services %}
+                                                <div class="table-responsive">
+                                                    <table class="table table-bordered">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>نام خدمت</th>
+                                                                <th>تعداد استفاده</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for service in popular_services %}
+                                                                <tr>
+                                                                    <td>{{ service.name }}</td>
+                                                                    <td>{{ service.usage_count }}</td>
+                                                                </tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            {% else %}
+                                                <div class="text-center">
+                                                    <p>هیچ خدمتی ثبت نشده است.</p>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- داروهای پرمصرف -->
+                                <div class="col-xl-6 col-lg-6">
+                                    <div class="card shadow mb-4">
+                                        <div class="card-header py-3">
+                                            <h6 class="m-0 font-weight-bold text-primary">داروهای پرمصرف</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            {% if popular_medicines %}
+                                                <div class="table-responsive">
+                                                    <table class="table table-bordered">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>نام دارو</th>
+                                                                <th>تعداد مصرف</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {% for medicine in popular_medicines %}
+                                                                <tr>
+                                                                    <td>{{ medicine.name }}</td>
+                                                                    <td>{{ medicine.usage_count|default:0 }}</td>
+                                                                </tr>
+                                                            {% endfor %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            {% else %}
+                                                <div class="text-center">
+                                                    <p>هیچ دارویی مصرف نشده است.</p>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- دسترسی سریع -->
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="card shadow mb-4">
+                                        <div class="card-header py-3">
+                                            <h6 class="m-0 font-weight-bold text-primary">دسترسی سریع</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-md-3 col-sm-6 mb-3">
+                                                    <a href="{% url 'emergency_services:create_visit' %}" class="btn btn-success btn-block py-3">
+                                                        <i class="fas fa-plus-circle mr-2"></i> ثبت مراجعه جدید
+                                                    </a>
+                                                </div>
+                                                <div class="col-md-3 col-sm-6 mb-3">
+                                                    <a href="{% url 'emergency_services:medicine_list' %}" class="btn btn-info btn-block py-3">
+                                                        <i class="fas fa-pills mr-2"></i> مدیریت داروها
+                                                    </a>
+                                                </div>
+                                                <div class="col-md-3 col-sm-6 mb-3">
+                                                    <a href="{% url 'emergency_services:service_list' %}" class="btn btn-primary btn-block py-3">
+                                                        <i class="fas fa-hand-holding-medical mr-2"></i> خدمات درمانی
+                                                    </a>
+                                                </div>
+                                                <div class="col-md-3 col-sm-6 mb-3">
+                                                    <a href="{% url 'emergency_services:category_list' %}" class="btn btn-secondary btn-block py-3">
+                                                        <i class="fas fa-layer-group mr-2"></i> دسته‌بندی داروها
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- مراجعات امروز -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                مراجعات امروز</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ today_visits|intcomma }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-calendar-day fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- مراجعات پرسنل شرکت -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                مراجعات پرسنل شرکت</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ company_visits|intcomma }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-user-tie fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- مراجعات پرسنل پیمانکار -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                مراجعات پرسنل پیمانکار</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ contractor_visits|intcomma }}</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-hard-hat fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- هشدارها و اطلاعات -->
-    <div class="row">
-        <!-- داروهای منقضی -->
-        <div class="col-xl-6 col-lg-6">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-danger">داروهای منقضی شده</h6>
-                    <a href="{% url 'emergency_services:medicine_list' %}?is_expired=true" class="btn btn-sm btn-danger">
-                        مشاهده همه
-                    </a>
-                </div>
-                <div class="card-body">
-                    {% if expired_medicines %}
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>نام دارو</th>
-                                        <th>دسته‌بندی</th>
-                                        <th>تاریخ انقضا</th>
-                                        <th>موجودی</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for medicine in expired_medicines|slice:":5" %}
-                                        <tr>
-                                            <td>{{ medicine.name }}</td>
-                                            <td>{{ medicine.category.name|default:"-" }}</td>
-                                            <td class="text-danger">{{ medicine.expiry_date|date:"Y/m/d" }}</td>
-                                            <td>{{ medicine.quantity }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="text-center text-success">
-                            <i class="fas fa-check-circle fa-3x mb-3"></i>
-                            <p>هیچ داروی منقضی‌شده‌ای وجود ندارد.</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- داروهای بحرانی -->
-        <div class="col-xl-6 col-lg-6">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-warning">داروهای با موجودی بحرانی</h6>
-                    <a href="{% url 'emergency_services:medicine_list' %}?is_critical=true" class="btn btn-sm btn-warning">
-                        مشاهده همه
-                    </a>
-                </div>
-                <div class="card-body">
-                    {% if critical_medicines %}
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>نام دارو</th>
-                                        <th>دسته‌بندی</th>
-                                        <th>موجودی فعلی</th>
-                                        <th>حد بحرانی</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for medicine in critical_medicines|slice:":5" %}
-                                        <tr>
-                                            <td>{{ medicine.name }}</td>
-                                            <td>{{ medicine.category.name|default:"-" }}</td>
-                                            <td class="text-danger">{{ medicine.quantity }}</td>
-                                            <td>{{ medicine.critical_threshold }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="text-center text-success">
-                            <i class="fas fa-check-circle fa-3x mb-3"></i>
-                            <p>هیچ دارویی در وضعیت بحرانی نیست.</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- آمار و تحلیل -->
-    <div class="row">
-        <!-- خدمات پرمصرف -->
-        <div class="col-xl-6 col-lg-6">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">خدمات پرمصرف</h6>
-                </div>
-                <div class="card-body">
-                    {% if popular_services %}
-                        <div class="table-responsive">
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>نام خدمت</th>
-                                        <th>تعداد استفاده</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for service in popular_services %}
-                                        <tr>
-                                            <td>{{ service.name }}</td>
-                                            <td>{{ service.usage_count }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="text-center">
-                            <p>هیچ خدمتی ثبت نشده است.</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- داروهای پرمصرف -->
-        <div class="col-xl-6 col-lg-6">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">داروهای پرمصرف</h6>
-                </div>
-                <div class="card-body">
-                    {% if popular_medicines %}
-                        <div class="table-responsive">
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>نام دارو</th>
-                                        <th>تعداد مصرف</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for medicine in popular_medicines %}
-                                        <tr>
-                                            <td>{{ medicine.name }}</td>
-                                            <td>{{ medicine.usage_count|default:0 }}</td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="text-center">
-                            <p>هیچ دارویی مصرف نشده است.</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- دسترسی سریع -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">دسترسی سریع</h6>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3 col-sm-6 mb-3">
-                            <a href="{% url 'emergency_services:create_visit' %}" class="btn btn-success btn-block py-3">
-                                <i class="fas fa-plus-circle mr-2"></i> ثبت مراجعه جدید
-                            </a>
-                        </div>
-                        <div class="col-md-3 col-sm-6 mb-3">
-                            <a href="{% url 'emergency_services:medicine_list' %}" class="btn btn-info btn-block py-3">
-                                <i class="fas fa-pills mr-2"></i> مدیریت داروها
-                            </a>
-                        </div>
-                        <div class="col-md-3 col-sm-6 mb-3">
-                            <a href="{% url 'emergency_services:service_list' %}" class="btn btn-primary btn-block py-3">
-                                <i class="fas fa-hand-holding-medical mr-2"></i> خدمات درمانی
-                            </a>
-                        </div>
-                        <div class="col-md-3 col-sm-6 mb-3">
-                            <a href="{% url 'emergency_services:category_list' %}" class="btn btn-secondary btn-block py-3">
-                                <i class="fas fa-layer-group mr-2"></i> دسته‌بندی داروها
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                {% include 'footer.html' %}
             </div>
         </div>
     </div>

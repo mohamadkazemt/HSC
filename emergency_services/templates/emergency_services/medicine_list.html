@@ -4,278 +4,421 @@
 
 {% block title %}مدیریت داروها | اورژانس معدن{% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css">
+<style>
+    /* تنظیم استایل کلی Select2 برای تطبیق با فرم‌های بوت‌استرپ */
+    .select2-container .select2-selection--single {
+        height: 38px !important;
+        border: 1px solid #dee2e6 !important;
+        border-radius: 4px !important;
+        background-color: #fff !important;
+        padding: 0.375rem 0.75rem !important;
+    }
+
+    /* حذف بوردر اضافی در حالت فوکوس */
+    .select2-container--bootstrap-5.select2-container--focus .select2-selection,
+    .select2-container--bootstrap-5.select2-container--open .select2-selection {
+        border-color: #86b7fe !important;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+    }
+
+    /* تنظیم متن داخل سلکت */
+    .select2-container .select2-selection--single .select2-selection__rendered {
+        padding-right: 0 !important;
+        padding-left: 0 !important;
+        line-height: 24px !important;
+        color: #212529 !important;
+    }
+
+    /* تنظیم دکمه باز/بسته کردن */
+    .select2-selection__arrow {
+        height: 36px !important;
+        left: 1px !important;
+        right: auto !important;
+        width: 20px !important;
+    }
+
+    /* تنظیم دراپ‌داون */
+    .select2-dropdown {
+        border: 1px solid #dee2e6 !important;
+        border-radius: 4px !important;
+        margin-top: 1px !important;
+    }
+
+    /* تنظیم آیتم‌های دراپ‌داون */
+    .select2-results__option {
+        padding: 0.375rem 0.75rem !important;
+        font-size: 1rem !important;
+    }
+
+    /* تنظیم آیتم انتخاب شده */
+    .select2-container--bootstrap-5 .select2-results__option--highlighted[aria-selected] {
+        background-color: #0d6efd !important;
+        color: #fff !important;
+    }
+
+    /* تنظیم پلیس‌هولدر */
+    .select2-container--bootstrap-5 .select2-selection--single .select2-selection__placeholder {
+        color: #6c757d !important;
+    }
+
+    /* تنظیم عرض کانتینر */
+    .select2-container {
+        width: 100% !important;
+    }
+
+    /* راست‌چین کردن متن */
+    .select2-container--bootstrap-5 .select2-selection--single {
+        text-align: right !important;
+    }
+
+    .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+        text-align: right !important;
+        padding-right: 0 !important;
+    }
+
+    /* تنظیم جهت آیکون */
+    .select2-container--bootstrap-5 .select2-selection--single .select2-selection__arrow {
+        left: 3px !important;
+        right: auto !important;
+    }
+
+    /* تنظیم استایل برای موبایل */
+    @media (max-width: 768px) {
+        .select2-container .select2-selection--single {
+            height: 38px !important;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid">
-    <!-- عنوان صفحه -->
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">مدیریت داروها</h1>
-        <div>
-            <a href="{% url 'emergency_services:export_medicines_csv' %}" class="d-none d-sm-inline-block btn btn-sm btn-info shadow-sm">
-                <i class="fas fa-file-csv fa-sm text-white-50"></i> خروجی CSV
-            </a>
-            <a href="{% url 'emergency_services:create_medicine' %}" class="d-none d-sm-inline-block btn btn-sm btn-success shadow-sm">
-                <i class="fas fa-plus fa-sm text-white-50"></i> داروی جدید
-            </a>
-        </div>
-    </div>
-
-    <!-- فیلترها -->
-    <div class="card shadow mb-4">
-        <a href="#collapseFilters" class="d-block card-header py-3" data-toggle="collapse">
-            <h6 class="m-0 font-weight-bold text-primary">فیلترها</h6>
-        </a>
-        <div class="collapse show" id="collapseFilters">
-            <div class="card-body">
-                <form method="get" id="filter-form">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label for="category">دسته‌بندی:</label>
-                                <select name="category" id="category" class="form-control">
-                                    <option value="">همه</option>
-                                    {% for cat in categories %}
-                                    <option value="{{ cat.id }}" {% if filters.category == cat.id|stringformat:"i" %}selected{% endif %}>{{ cat.name }}</option>
-                                    {% endfor %}
-                                </select>
+<div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+    <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+        {% include 'header.html' %}
+        <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+            {% include 'sidebar.html' %}
+            <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                <div class="d-flex flex-column flex-column-fluid">
+                    {% include 'toolbar.html' %}
+                    <div id="kt_app_content" class="app-content flex-column-fluid">
+                        <div id="kt_app_content_container" class="app-container container-fluid">
+                            <!-- عنوان صفحه -->
+                            <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                                <h1 class="h3 mb-0 text-gray-800">مدیریت داروها</h1>
+                                <div>
+                                    <a href="{% url 'emergency_services:export_medicines_csv' %}" class="d-none d-sm-inline-block btn btn-sm btn-info shadow-sm">
+                                        <i class="fas fa-file-csv fa-sm text-white-50"></i> خروجی CSV
+                                    </a>
+                                    <a href="{% url 'emergency_services:create_medicine' %}" class="d-none d-sm-inline-block btn btn-sm btn-success shadow-sm">
+                                        <i class="fas fa-plus fa-sm text-white-50"></i> داروی جدید
+                                    </a>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label for="is_critical">وضعیت موجودی:</label>
-                                <select name="is_critical" id="is_critical" class="form-control">
-                                    <option value="">همه</option>
-                                    <option value="true" {% if filters.is_critical == 'true' %}selected{% endif %}>کمتر از حد بحرانی</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label for="is_expired">وضعیت انقضا:</label>
-                                <select name="is_expired" id="is_expired" class="form-control">
-                                    <option value="">همه</option>
-                                    <option value="true" {% if filters.is_expired == 'true' %}selected{% endif %}>منقضی شده</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label for="is_active">وضعیت فعال:</label>
-                                <select name="is_active" id="is_active" class="form-control">
-                                    <option value="">همه</option>
-                                    <option value="true" {% if filters.is_active == 'true' %}selected{% endif %}>فعال</option>
-                                    <option value="false" {% if filters.is_active == 'false' %}selected{% endif %}>غیرفعال</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-12 text-center">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-filter"></i> اعمال فیلترها
-                            </button>
-                            <a href="{% url 'emergency_services:medicine_list' %}" class="btn btn-secondary">
-                                <i class="fas fa-undo"></i> حذف فیلترها
-                            </a>
-                        </div>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
 
-    <!-- نمایش آمار سریع -->
-    <div class="row mb-4">
-        <!-- داروهای منقضی شده -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-danger shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">داروهای منقضی شده</div>
-                            <a href="{% url 'emergency_services:medicine_list' %}?is_expired=true" class="h5 mb-0 font-weight-bold text-gray-800">مشاهده</a>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-calendar-times fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- داروهای کمتر از حد بحرانی -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">موجودی بحرانی</div>
-                            <a href="{% url 'emergency_services:medicine_list' %}?is_critical=true" class="h5 mb-0 font-weight-bold text-gray-800">مشاهده</a>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- مدیریت دسته‌بندی‌ها -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">دسته‌بندی‌های دارو</div>
-                            <a href="{% url 'emergency_services:category_list' %}" class="h5 mb-0 font-weight-bold text-gray-800">مدیریت</a>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-layer-group fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- داروی جدید -->
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">داروی جدید</div>
-                            <a href="{% url 'emergency_services:create_medicine' %}" class="h5 mb-0 font-weight-bold text-gray-800">افزودن</a>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-pills fa-2x text-gray-300"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- لیست داروها -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">داروها ({{ medicines.paginator.count|intcomma }})</h6>
-        </div>
-        <div class="card-body">
-            {% if medicines %}
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover" id="medicinesTable" width="100%" cellspacing="0">
-                    <thead>
-                        <tr>
-                            <th>نام دارو</th>
-                            <th>دسته‌بندی</th>
-                            <th>موجودی</th>
-                            <th>حد بحرانی</th>
-                            <th>تاریخ انقضا</th>
-                            <th>وضعیت</th>
-                            <th>عملیات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for medicine in medicines %}
-                        <tr class="{% if medicine.is_expired %}table-danger{% elif medicine.is_critical %}table-warning{% endif %}">
-                            <td>{{ medicine.name }}</td>
-                            <td>{{ medicine.category.name|default:"-" }}</td>
-                            <td>
-                                {% if medicine.is_critical %}
-                                <span class="text-danger font-weight-bold">{{ medicine.quantity }}</span>
-                                {% else %}
-                                {{ medicine.quantity }}
-                                {% endif %}
-                            </td>
-                            <td>{{ medicine.critical_threshold }}</td>
-                            <td>
-                                {% if medicine.is_expired %}
-                                <span class="text-danger font-weight-bold">{{ medicine.expiry_date|date:"Y/m/d" }}</span>
-                                {% else %}
-                                {{ medicine.expiry_date|date:"Y/m/d" }}
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if medicine.is_active %}
-                                <span class="badge badge-success">فعال</span>
-                                {% else %}
-                                <span class="badge badge-danger">غیرفعال</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <a href="{% url 'emergency_services:edit_medicine' pk=medicine.pk %}" class="btn btn-sm btn-warning">
-                                    <i class="fas fa-edit"></i> ویرایش
+                            <!-- فیلترها -->
+                            <div class="card shadow mb-4">
+                                <a href="#collapseFilters" class="d-block card-header py-3" data-toggle="collapse">
+                                    <h6 class="m-0 font-weight-bold text-primary">فیلترها</h6>
                                 </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                <div class="collapse show" id="collapseFilters">
+                                    <div class="card-body">
+                                        <form method="get" id="filter-form">
+                                            <div class="row">
+                                                <div class="col-md-3">
+                                                    <div class="form-group">
+                                                        <label for="category">دسته‌بندی:</label>
+                                                        <select name="category" id="category" class="form-select">
+                                                            <option value="">همه</option>
+                                                            {% for cat in categories %}
+                                                            <option value="{{ cat.id }}" {% if filters.category == cat.id|stringformat:"i" %}selected{% endif %}>{{ cat.name }}</option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="form-group">
+                                                        <label for="is_critical">وضعیت موجودی:</label>
+                                                        <select name="is_critical" id="is_critical" class="form-control">
+                                                            <option value="">همه</option>
+                                                            <option value="true" {% if filters.is_critical == 'true' %}selected{% endif %}>کمتر از حد بحرانی</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="form-group">
+                                                        <label for="is_expired">وضعیت انقضا:</label>
+                                                        <select name="is_expired" id="is_expired" class="form-control">
+                                                            <option value="">همه</option>
+                                                            <option value="true" {% if filters.is_expired == 'true' %}selected{% endif %}>منقضی شده</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <div class="form-group">
+                                                        <label for="is_active">وضعیت فعال:</label>
+                                                        <select name="is_active" id="is_active" class="form-control">
+                                                            <option value="">همه</option>
+                                                            <option value="true" {% if filters.is_active == 'true' %}selected{% endif %}>فعال</option>
+                                                            <option value="false" {% if filters.is_active == 'false' %}selected{% endif %}>غیرفعال</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-12 text-center">
+                                                    <button type="submit" class="btn btn-primary">
+                                                        <i class="fas fa-filter"></i> اعمال فیلترها
+                                                    </button>
+                                                    <a href="{% url 'emergency_services:medicine_list' %}" class="btn btn-secondary">
+                                                        <i class="fas fa-undo"></i> حذف فیلترها
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- نمایش آمار سریع -->
+                            <div class="row mb-4">
+                                <!-- داروهای منقضی شده -->
+                                <div class="col-xl-3 col-md-6 mb-4">
+                                    <div class="card border-left-danger shadow h-100 py-2">
+                                        <div class="card-body">
+                                            <div class="row no-gutters align-items-center">
+                                                <div class="col mr-2">
+                                                    <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">داروهای منقضی شده</div>
+                                                    <a href="{% url 'emergency_services:medicine_list' %}?is_expired=true" class="h5 mb-0 font-weight-bold text-gray-800">مشاهده</a>
+                                                </div>
+                                                <div class="col-auto">
+                                                    <i class="fas fa-calendar-times fa-2x text-gray-300"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- داروهای کمتر از حد بحرانی -->
+                                <div class="col-xl-3 col-md-6 mb-4">
+                                    <div class="card border-left-warning shadow h-100 py-2">
+                                        <div class="card-body">
+                                            <div class="row no-gutters align-items-center">
+                                                <div class="col mr-2">
+                                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">موجودی بحرانی</div>
+                                                    <a href="{% url 'emergency_services:medicine_list' %}?is_critical=true" class="h5 mb-0 font-weight-bold text-gray-800">مشاهده</a>
+                                                </div>
+                                                <div class="col-auto">
+                                                    <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- مدیریت دسته‌بندی‌ها -->
+                                <div class="col-xl-3 col-md-6 mb-4">
+                                    <div class="card border-left-info shadow h-100 py-2">
+                                        <div class="card-body">
+                                            <div class="row no-gutters align-items-center">
+                                                <div class="col mr-2">
+                                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">دسته‌بندی‌های دارو</div>
+                                                    <a href="{% url 'emergency_services:category_list' %}" class="h5 mb-0 font-weight-bold text-gray-800">مدیریت</a>
+                                                </div>
+                                                <div class="col-auto">
+                                                    <i class="fas fa-layer-group fa-2x text-gray-300"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- داروی جدید -->
+                                <div class="col-xl-3 col-md-6 mb-4">
+                                    <div class="card border-left-success shadow h-100 py-2">
+                                        <div class="card-body">
+                                            <div class="row no-gutters align-items-center">
+                                                <div class="col mr-2">
+                                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">داروی جدید</div>
+                                                    <a href="{% url 'emergency_services:create_medicine' %}" class="h5 mb-0 font-weight-bold text-gray-800">افزودن</a>
+                                                </div>
+                                                <div class="col-auto">
+                                                    <i class="fas fa-pills fa-2x text-gray-300"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- لیست داروها -->
+                            <div class="card shadow mb-4">
+                                <div class="card-header py-3">
+                                    <h6 class="m-0 font-weight-bold text-primary">داروها ({{ medicines.paginator.count|intcomma }})</h6>
+                                </div>
+                                <div class="card-body">
+                                    {% if medicines %}
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-hover" id="medicinesTable" width="100%" cellspacing="0">
+                                            <thead>
+                                                <tr>
+                                                    <th>نام دارو</th>
+                                                    <th>دسته‌بندی</th>
+                                                    <th>موجودی</th>
+                                                    <th>حد بحرانی</th>
+                                                    <th>تاریخ انقضا</th>
+                                                    <th>وضعیت</th>
+                                                    <th>عملیات</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for medicine in medicines %}
+                                                <tr class="{% if medicine.is_expired %}table-danger{% elif medicine.is_critical %}table-warning{% endif %}">
+                                                    <td>{{ medicine.name }}</td>
+                                                    <td>{{ medicine.category.name|default:"-" }}</td>
+                                                    <td>
+                                                        {% if medicine.is_critical %}
+                                                        <span class="text-danger font-weight-bold">{{ medicine.quantity }}</span>
+                                                        {% else %}
+                                                        {{ medicine.quantity }}
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>{{ medicine.critical_threshold }}</td>
+                                                    <td>
+                                                        {% if medicine.is_expired %}
+                                                        <span class="text-danger font-weight-bold">{{ medicine.expiry_date|date:"Y/m/d" }}</span>
+                                                        {% else %}
+                                                        {{ medicine.expiry_date|date:"Y/m/d" }}
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {% if medicine.is_active %}
+                                                        <span class="badge badge-success">فعال</span>
+                                                        {% else %}
+                                                        <span class="badge badge-danger">غیرفعال</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        <a href="{% url 'emergency_services:edit_medicine' pk=medicine.pk %}" class="btn btn-sm btn-warning">
+                                                            <i class="fas fa-edit"></i> ویرایش
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                    <!-- صفحه‌بندی -->
+                                    {% if medicines.paginator.num_pages > 1 %}
+                                    <div class="mt-4">
+                                        <nav aria-label="صفحه بندی">
+                                            <ul class="pagination justify-content-center">
+                                                {% if medicines.has_previous %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="صفحه اول">
+                                                        <span aria-hidden="true">&laquo;&laquo;</span>
+                                                    </a>
+                                                </li>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page={{ medicines.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="قبلی">
+                                                        <span aria-hidden="true">&laquo;</span>
+                                                    </a>
+                                                </li>
+                                                {% else %}
+                                                <li class="page-item disabled">
+                                                    <a class="page-link" href="#" tabindex="-1" aria-disabled="true">&laquo;&laquo;</a>
+                                                </li>
+                                                <li class="page-item disabled">
+                                                    <a class="page-link" href="#" tabindex="-1" aria-disabled="true">&laquo;</a>
+                                                </li>
+                                                {% endif %}
+                                                
+                                                {% for num in medicines.paginator.page_range %}
+                                                    {% if num == medicines.number %}
+                                                    <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                                                    {% elif num > medicines.number|add:'-3' and num < medicines.number|add:'3' %}
+                                                    <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
+                                                    {% endif %}
+                                                {% endfor %}
+                                                
+                                                {% if medicines.has_next %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page={{ medicines.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="بعدی">
+                                                        <span aria-hidden="true">&raquo;</span>
+                                                    </a>
+                                                </li>
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?page={{ medicines.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="صفحه آخر">
+                                                        <span aria-hidden="true">&raquo;&raquo;</span>
+                                                    </a>
+                                                </li>
+                                                {% else %}
+                                                <li class="page-item disabled">
+                                                    <a class="page-link" href="#" tabindex="-1" aria-disabled="true">&raquo;</a>
+                                                </li>
+                                                <li class="page-item disabled">
+                                                    <a class="page-link" href="#" tabindex="-1" aria-disabled="true">&raquo;&raquo;</a>
+                                                </li>
+                                                {% endif %}
+                                            </ul>
+                                        </nav>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% else %}
+                                    <div class="text-center py-5">
+                                        <i class="fas fa-pills fa-3x text-gray-300 mb-3"></i>
+                                        <p class="text-gray-500">هیچ دارویی یافت نشد. {% if request.GET %}<a href="{% url 'emergency_services:medicine_list' %}">حذف فیلترها</a>{% endif %}</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% include 'footer.html' %}
             </div>
-            
-            <!-- صفحه‌بندی -->
-            {% if medicines.paginator.num_pages > 1 %}
-            <div class="mt-4">
-                <nav aria-label="صفحه بندی">
-                    <ul class="pagination justify-content-center">
-                        {% if medicines.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="صفحه اول">
-                                <span aria-hidden="true">&laquo;&laquo;</span>
-                            </a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ medicines.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="قبلی">
-                                <span aria-hidden="true">&laquo;</span>
-                            </a>
-                        </li>
-                        {% else %}
-                        <li class="page-item disabled">
-                            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">&laquo;&laquo;</a>
-                        </li>
-                        <li class="page-item disabled">
-                            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">&laquo;</a>
-                        </li>
-                        {% endif %}
-                        
-                        {% for num in medicines.paginator.page_range %}
-                            {% if num == medicines.number %}
-                            <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
-                            {% elif num > medicines.number|add:'-3' and num < medicines.number|add:'3' %}
-                            <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
-                            {% endif %}
-                        {% endfor %}
-                        
-                        {% if medicines.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ medicines.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="بعدی">
-                                <span aria-hidden="true">&raquo;</span>
-                            </a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ medicines.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" aria-label="صفحه آخر">
-                                <span aria-hidden="true">&raquo;&raquo;</span>
-                            </a>
-                        </li>
-                        {% else %}
-                        <li class="page-item disabled">
-                            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">&raquo;</a>
-                        </li>
-                        <li class="page-item disabled">
-                            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">&raquo;&raquo;</a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-            </div>
-            {% endif %}
-            
-            {% else %}
-            <div class="text-center py-5">
-                <i class="fas fa-pills fa-3x text-gray-300 mb-3"></i>
-                <p class="text-gray-500">هیچ دارویی یافت نشد. {% if request.GET %}<a href="{% url 'emergency_services:medicine_list' %}">حذف فیلترها</a>{% endif %}</p>
-            </div>
-            {% endif %}
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // فعال‌سازی انتخاب‌گر پیشرفته برای فیلتر دسته‌بندی
+        $('#category').select2({
+            theme: 'bootstrap-5',
+            language: {
+                noResults: function() {
+                    return "نتیجه‌ای یافت نشد";
+                },
+                searching: function() {
+                    return "در حال جستجو...";
+                }
+            },
+            dir: 'rtl',
+            width: '100%',
+            placeholder: 'انتخاب دسته‌بندی',
+            allowClear: true,
+            dropdownParent: $('#collapseFilters'),
+            selectionCssClass: 'select2--small',
+            dropdownCssClass: 'select2--small'
+        }).on('select2:open', function() {
+            // تنظیم جهت متن برای دراپ‌داون
+            $('.select2-dropdown').addClass('select2-dropdown--rtl');
+            document.querySelector('.select2-search__field').focus();
+        });
+
+        // اعمال تغییرات فرم به صورت خودکار
+        $('#category').on('change', function() {
+            $('#filter-form').submit();
+        });
+    });
+</script>
 {% endblock %} 

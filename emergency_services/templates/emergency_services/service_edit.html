@@ -5,52 +5,68 @@
 {% block title %}ویرایش خدمت درمانی | اورژانس معدن{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <!-- عنوان صفحه -->
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">ویرایش خدمت درمانی: {{ service.name }}</h1>
-        <a href="{% url 'emergency_services:service_list' %}" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
-            <i class="fas fa-arrow-right fa-sm text-white-50"></i> بازگشت به لیست
-        </a>
-    </div>
-    
-    <div class="row">
-        <div class="col-lg-8 mx-auto">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">اطلاعات خدمت درمانی</h6>
-                </div>
-                <div class="card-body">
-                    <form method="post">
-                        {% csrf_token %}
-                        
-                        <div class="form-group">
-                            {{ form.name.label_tag }}
-                            {{ form.name }}
-                            {% if form.name.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.name.errors }}
+<div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+    <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+        {% include 'header.html' %}
+        <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+            {% include 'sidebar.html' %}
+            <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                <div class="d-flex flex-column flex-column-fluid">
+                    {% include 'toolbar.html' %}
+                    <div id="kt_app_content" class="app-content flex-column-fluid">
+                        <div id="kt_app_content_container" class="app-container container-fluid">
+                            <!-- عنوان صفحه -->
+                            <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                                <h1 class="h3 mb-0 text-gray-800">ویرایش خدمت درمانی: {{ service.name }}</h1>
+                                <a href="{% url 'emergency_services:service_list' %}" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+                                    <i class="fas fa-arrow-right fa-sm text-white-50"></i> بازگشت به لیست
+                                </a>
                             </div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="form-group">
-                            {{ form.description.label_tag }}
-                            {{ form.description }}
-                            {% if form.description.errors %}
-                            <div class="invalid-feedback d-block">
-                                {{ form.description.errors }}
+                            
+                            <div class="row">
+                                <div class="col-lg-8 mx-auto">
+                                    <div class="card shadow mb-4">
+                                        <div class="card-header py-3">
+                                            <h6 class="m-0 font-weight-bold text-primary">اطلاعات خدمت درمانی</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <form method="post">
+                                                {% csrf_token %}
+                                                
+                                                <div class="form-group">
+                                                    {{ form.name.label_tag }}
+                                                    {{ form.name }}
+                                                    {% if form.name.errors %}
+                                                    <div class="invalid-feedback d-block">
+                                                        {{ form.name.errors }}
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+                                                
+                                                <div class="form-group">
+                                                    {{ form.description.label_tag }}
+                                                    {{ form.description }}
+                                                    {% if form.description.errors %}
+                                                    <div class="invalid-feedback d-block">
+                                                        {{ form.description.errors }}
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+                                                
+                                                <div class="form-group text-center">
+                                                    <button type="submit" class="btn btn-primary">
+                                                        <i class="fas fa-save mr-2"></i> ذخیره تغییرات
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            {% endif %}
                         </div>
-                        
-                        <div class="form-group text-center">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save mr-2"></i> ذخیره تغییرات
-                            </button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
+                {% include 'footer.html' %}
             </div>
         </div>
     </div>

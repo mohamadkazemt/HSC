@@ -35,9 +35,8 @@ from .forms import (
     MedicineReturnForm
 )
 
-
+@permission_required("visit_list")
 @login_required
-@permission_required('emergency_services.visit_list')
 def visit_list(request):
     """لیست مراجعات پزشکی"""
     visits = MedicalVisit.objects.all().order_by('-visit_time')
@@ -97,9 +96,8 @@ def visit_list(request):
     
     return render(request, 'emergency_services/visit_list.html', context)
 
-
+@permission_required("create_visit")
 @login_required
-@permission_required('emergency_services.create_visit')
 def create_visit(request):
     """ایجاد مراجعه جدید"""
     MedicineSelectFormSet = formset_factory(MedicineSelectForm, extra=1)
@@ -109,27 +107,35 @@ def create_visit(request):
         medicine_formset = MedicineSelectFormSet(request.POST, prefix='medicines')
         
         if form.is_valid() and medicine_formset.is_valid():
-            # ذخیره فرم مراجعه
-            visit = form.save(commit=False)
-            visit.created_by = UserProfile.objects.get(user=request.user)
-            visit.save()
-            form.save_m2m()  # ذخیره رابطه چند به چند خدمات
-            
-            # ذخیره داروهای انتخاب شده
-            for medicine_form in medicine_formset:
-                if medicine_form.cleaned_data and medicine_form.cleaned_data.get('medicine'):
-                    medicine = medicine_form.cleaned_data['medicine']
-                    quantity = medicine_form.cleaned_data['quantity']
-                    
-                    # ایجاد رکورد استفاده دارو
-                    MedicineUsage.objects.create(
-                        visit=visit,
-                        medicine=medicine,
-                        quantity=quantity
-                    )
-            
-            messages.success(request, 'مراجعه با موفقیت ثبت شد.')
-            return redirect('emergency_services:visit_detail', pk=visit.pk)
+            try:
+                # ذخیره فرم مراجعه
+                visit = form.save(commit=False)
+                visit.created_by = UserProfile.objects.get(user=request.user)
+                visit.save()
+                form.save_m2m()  # ذخیره رابطه چند به چند خدمات
+                
+                # ذخیره داروهای انتخاب شده
+                for medicine_form in medicine_formset:
+                    if medicine_form.cleaned_data and medicine_form.cleaned_data.get('medicine'):
+                        medicine = medicine_form.cleaned_data['medicine']
+                        quantity = medicine_form.cleaned_data['quantity']
+                        
+                        # ایجاد رکورد استفاده دارو
+                        MedicineUsage.objects.create(
+                            visit=visit,
+                            medicine=medicine,
+                            quantity=quantity
+                        )
+                
+                messages.success(request, 'مراجعه با موفقیت ثبت شد.')
+                return redirect('emergency_services:visit_detail', pk=visit.pk)
+            except Exception as e:
+                messages.error(request, f'خطا در ثبت مراجعه: {str(e)}')
+                return render(request, 'emergency_services/visit_form.html', {
+                    'form': form,
+                    'medicine_formset': medicine_formset,
+                    'services': MedicalService.objects.all(),
+                })
     else:
         form = MedicalVisitForm()
         medicine_formset = MedicineSelectFormSet(prefix='medicines')
@@ -144,9 +150,8 @@ def create_visit(request):
     
     return render(request, 'emergency_services/visit_form.html', context)
 
-
+@permission_required("visit_detail")
 @login_required
-@permission_required('emergency_services.visit_detail')
 def visit_detail(request, pk):
     """جزئیات مراجعه"""
     visit = get_object_or_404(MedicalVisit, pk=pk)
@@ -159,9 +164,8 @@ def visit_detail(request, pk):
     
     return render(request, 'emergency_services/visit_detail.html', context)
 
-
+@permission_required("edit_visit")
 @login_required
-@permission_required('emergency_services.edit_visit')
 def edit_visit(request, pk):
     """ویرایش مراجعه"""
     visit = get_object_or_404(MedicalVisit, pk=pk)
@@ -184,9 +188,8 @@ def edit_visit(request, pk):
     
     return render(request, 'emergency_services/visit_edit.html', context)
 
-
+@permission_required("add_medicine_to_visit")
 @login_required
-@permission_required('emergency_services.add_medicine_to_visit')
 def add_medicine_to_visit(request, visit_id):
     """افزودن دارو به مراجعه"""
     visit = get_object_or_404(MedicalVisit, pk=visit_id)
@@ -217,9 +220,8 @@ def add_medicine_to_visit(request, visit_id):
     
     return render(request, 'emergency_services/add_medicine.html', context)
 
-
+@permission_required("remove_medicine_from_visit")
 @login_required
-@permission_required('emergency_services.remove_medicine_from_visit')
 def remove_medicine_from_visit(request, usage_id):
     """حذف دارو از مراجعه"""
     usage = get_object_or_404(MedicineUsage, pk=usage_id)
@@ -231,9 +233,8 @@ def remove_medicine_from_visit(request, usage_id):
     messages.success(request, f'داروی {medicine_name} با موفقیت از مراجعه حذف شد.')
     return redirect('emergency_services:visit_detail', pk=visit_id)
 
-
+@permission_required("medicine_list")
 @login_required
-@permission_required('emergency_services.medicine_list')
 def medicine_list(request):
     """لیست داروها"""
     medicines = Medicine.objects.all().order_by('name')
@@ -278,9 +279,8 @@ def medicine_list(request):
     
     return render(request, 'emergency_services/medicine_list.html', context)
 
-
+@permission_required("create_medicine")
 @login_required
-@permission_required('emergency_services.create_medicine')
 def create_medicine(request):
     """ایجاد داروی جدید"""
     if request.method == 'POST':
@@ -300,9 +300,8 @@ def create_medicine(request):
     
     return render(request, 'emergency_services/medicine_form.html', context)
 
-
+@permission_required("edit_medicine")
 @login_required
-@permission_required('emergency_services.edit_medicine')
 def edit_medicine(request, pk):
     """ویرایش دارو"""
     medicine = get_object_or_404(Medicine, pk=pk)
@@ -325,9 +324,8 @@ def edit_medicine(request, pk):
     
     return render(request, 'emergency_services/medicine_form.html', context)
 
-
+@permission_required("category_list")
 @login_required
-@permission_required('emergency_services.category_list')
 def category_list(request):
     """لیست دسته‌بندی‌ها"""
     categories = MedicineCategory.objects.all()
@@ -349,9 +347,8 @@ def category_list(request):
     
     return render(request, 'emergency_services/category_list.html', context)
 
-
+@permission_required("edit_category")
 @login_required
-@permission_required('emergency_services.edit_category')
 def edit_category(request, pk):
     """ویرایش دسته‌بندی"""
     category = get_object_or_404(MedicineCategory, pk=pk)
@@ -373,9 +370,8 @@ def edit_category(request, pk):
     
     return render(request, 'emergency_services/category_edit.html', context)
 
-
+@permission_required("service_list")
 @login_required
-@permission_required('emergency_services.service_list')
 def service_list(request):
     """لیست خدمات درمانی"""
     services = MedicalService.objects.all()
@@ -397,9 +393,8 @@ def service_list(request):
     
     return render(request, 'emergency_services/service_list.html', context)
 
-
+@permission_required("edit_service")
 @login_required
-@permission_required('emergency_services.edit_service')
 def edit_service(request, pk):
     """ویرایش خدمت درمانی"""
     service = get_object_or_404(MedicalService, pk=pk)
@@ -421,9 +416,8 @@ def edit_service(request, pk):
     
     return render(request, 'emergency_services/service_edit.html', context)
 
-
+@permission_required("return_medicine")
 @login_required
-@permission_required('emergency_services.return_medicine')
 def return_medicine(request, usage_id):
     """برگشت دارو به انبار"""
     usage = get_object_or_404(MedicineUsage, pk=usage_id)
@@ -449,9 +443,8 @@ def return_medicine(request, usage_id):
     
     return render(request, 'emergency_services/return_medicine.html', context)
 
-
+@permission_required("dashboard")
 @login_required
-@permission_required('emergency_services.dashboard')
 def dashboard(request):
     """داشبورد اورژانس"""
     today = timezone.now().date()
@@ -493,9 +486,8 @@ def dashboard(request):
     
     return render(request, 'emergency_services/dashboard.html', context)
 
-
+@permission_required("export_visits_csv")
 @login_required
-@permission_required('emergency_services.export_visits_csv')
 def export_visits_csv(request):
     """خروجی CSV از مراجعات"""
     # فیلترها
@@ -558,9 +550,8 @@ def export_visits_csv(request):
     
     return response
 
-
+@permission_required("export_medicines_csv")
 @login_required
-@permission_required('emergency_services.export_medicines_csv')
 def export_medicines_csv(request):
     """خروجی CSV از داروها"""
     medicines = Medicine.objects.all().order_by('name')
@@ -587,9 +578,8 @@ def export_medicines_csv(request):
     
     return response
 
-
+@permission_required("print_visit")
 @login_required
-@permission_required('emergency_services.print_visit')
 def print_visit(request, pk):
     """چاپ فرم مراجعه"""
     visit = get_object_or_404(MedicalVisit, pk=pk)
