@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load humanize %}
+{% load custom_filters %}
 
 {% block title %}مدیریت داروها | اورژانس معدن{% endblock %}
 
@@ -288,9 +289,9 @@
                                                     <td>{{ medicine.critical_threshold }}</td>
                                                     <td>
                                                         {% if medicine.is_expired %}
-                                                        <span class="text-danger font-weight-bold">{{ medicine.expiry_date|date:"Y/m/d" }}</span>
+                                                        <span class="text-danger font-weight-bold">{{ medicine.expiry_date|to_jalali:"%Y/%m/%d" }}</span>
                                                         {% else %}
-                                                        {{ medicine.expiry_date|date:"Y/m/d" }}
+                                                        {{ medicine.expiry_date|to_jalali:"%Y/%m/%d" }}
                                                         {% endif %}
                                                     </td>
                                                     <td>

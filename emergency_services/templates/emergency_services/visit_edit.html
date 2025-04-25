@@ -1,12 +1,60 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load crispy_forms_tags %}
+{% load custom_filters %}
 
 {% block title %}ویرایش مراجعه | اورژانس معدن{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'vendor/select2/select2.min.css' %}">
-<link rel="stylesheet" href="{% static 'vendor/select2-bootstrap4-theme/select2-bootstrap4.min.css' %}">
+<!-- اضافه کردن jQuery -->
+<script src="{% static 'assets/js/jquery-1.10.1.min.js' %}"></script>
+
+<!-- اضافه کردن CSS مستقیم Select2 -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
+<!-- اضافه کردن CSS دیتاپیکر -->
+<link rel="stylesheet" href="{% static 'assets/css/persianDatepicker-default.css' %}" />
+
+<style>
+    /* تنظیمات جدید برای Select2 */
+    .select2-container {
+        width: 100% !important;
+        z-index: 9999;
+    }
+    .select2-container--bootstrap-5 .select2-selection {
+        min-height: 38px !important;
+        border: 1px solid #ced4da;
+    }
+    .select2-container--bootstrap-5 .select2-selection--single {
+        padding-top: 5px;
+    }
+    .select2-container--bootstrap-5 .select2-selection__arrow {
+        height: 37px !important;
+    }
+    .select2-dropdown {
+        z-index: 10000;
+    }
+    /* اصلاح مشکل z-index */
+    .modal-backdrop {
+        z-index: 1040 !important;
+    }
+    .modal-content {
+        z-index: 1050 !important;
+    }
+    .error-message {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+    /* تنظیمات دیتاپیکر */
+    .pwt-datepicker {
+        z-index: 99999 !important;
+    }
+    .pwt-datepicker-rtl {
+        direction: rtl;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -177,7 +225,7 @@
                                                     <td>{{ usage.medicine.name }}</td>
                                                     <td>{{ usage.medicine.category.name|default:"-" }}</td>
                                                     <td>{{ usage.quantity }}</td>
-                                                    <td>{{ usage.created_at|date:"Y/m/d - H:i" }}</td>
+                                                    <td>{{ usage.created_at|to_jalali:"%Y/%m/%d - %H:%M" }}</td>
                                                     <td>
                                                         <div class="btn-group" role="group">
                                                             <a href="{% url 'emergency_services:return_medicine' usage_id=usage.pk %}" class="btn btn-sm btn-info" title="برگشت دارو">
@@ -215,28 +263,62 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'vendor/select2/select2.min.js' %}"></script>
+<!-- اضافه کردن jQuery و Select2 -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/fa.js"></script>
+
+<!-- اضافه کردن JavaScript دیتاپیکر -->
+<script src="{% static 'assets/js/persianDatepicker.min.js' %}"></script>
+
 <script>
     $(document).ready(function() {
-        // فعال‌سازی انتخاب‌گر پیشرفته
-        $('.select2').select2({
-            theme: 'bootstrap4',
-            language: 'fa',
-            dir: 'rtl'
-        });
+        console.log('Document ready started');
         
+        // تنظیمات پایه Select2
+        const select2Config = {
+            theme: 'bootstrap-5',
+            width: '100%',
+            dir: 'rtl',
+            language: 'fa',
+            dropdownParent: $('body'),
+            allowClear: true,
+            placeholder: 'انتخاب کنید'
+        };
+
+        // راه‌اندازی Select2 برای یک المان
+        function initializeSelect2(element) {
+            if ($(element).data('select2')) {
+                $(element).select2('destroy');
+            }
+            $(element).select2(select2Config);
+            console.log('Select2 initialized for:', element.id);
+        }
+
+        // راه‌اندازی Select2 برای همه select‌ها
+        function initializeAllSelects() {
+            $('.select2').each(function() {
+                initializeSelect2(this);
+            });
+        }
+
+        // راه‌اندازی اولیه
+        initializeAllSelects();
+
         // مدیریت نمایش فیلدهای مربوط به نوع پرسنل
         $('input[name="personnel_type"]').change(function() {
-            var selectedType = $(this).val();
+            const selectedType = $(this).val();
             if (selectedType === 'company') {
                 $('#company-personnel-group').show();
                 $('#contractor-personnel-group').hide();
+                $('#id_contractor_personnel').val(null).trigger('change');
             } else {
                 $('#company-personnel-group').hide();
                 $('#contractor-personnel-group').show();
+                $('#id_company_personnel').val(null).trigger('change');
             }
         });
-        
+
         // تنظیم اولیه نمایش بر اساس مقدار پیش‌فرض
         var initialType = $('input[name="personnel_type"]:checked').val() || 'company';
         if (initialType === 'company') {
@@ -246,6 +328,39 @@
             $('#company-personnel-group').hide();
             $('#contractor-personnel-group').show();
         }
+
+        // راه‌اندازی دیتاپیکر
+        $("#id_visit_time").persianDatepicker({
+            formatDate: "YYYY/MM/DD hh:mm:ss:ms",
+            initialValue: true,
+            initialValueType: 'persian',
+            autoClose: true,
+            timePicker: {
+                enabled: true,
+                meridiem: {
+                    enabled: true
+                }
+            },
+            calendar: {
+                persian: {
+                    locale: 'fa'
+                }
+            },
+            toolbox: {
+                enabled: true,
+                calendarSwitch: {
+                    enabled: true
+                }
+            },
+            observer: true,
+            altField: '#id_visit_time',
+            altFormat: 'YYYY/MM/DD HH:mm'
+        });
+
+        // اطمینان از راه‌اندازی مجدد Select2 بعد از تغییرات دینامیک
+        $(document).ajaxComplete(function() {
+            initializeAllSelects();
+        });
     });
 </script>
 {% endblock %} 

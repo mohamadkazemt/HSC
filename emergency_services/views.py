@@ -530,42 +530,56 @@ def return_medicine(request, usage_id):
 @permission_required("dashboard")
 @login_required
 def dashboard(request):
-    """داشبورد اورژانس"""
-    today = timezone.now().date()
-    this_month_start = today.replace(day=1)
-    
-    # آمار بازدیدها
+    """داشبورد اورژانس معدن"""
+    # آمار کلی مراجعات
     total_visits = MedicalVisit.objects.count()
-    today_visits = MedicalVisit.objects.filter(visit_time__date=today).count()
-    monthly_visits = MedicalVisit.objects.filter(visit_time__date__gte=this_month_start).count()
+    today_visits = MedicalVisit.objects.filter(visit_time__date=timezone.now().date()).count()
+    monthly_visits = MedicalVisit.objects.filter(visit_time__month=timezone.now().month).count()
+    
+    # آمار مراجعات پرسنل شرکت و پیمانکار
+    company_visits = MedicalVisit.objects.filter(personnel_type='company').count()
+    contractor_visits = MedicalVisit.objects.filter(personnel_type='contractor').count()
     
     # آمار داروها
     total_medicines = Medicine.objects.count()
-    low_stock_medicines = Medicine.objects.filter(quantity__lt=F('critical_threshold')).count()
+    low_stock_medicines = Medicine.objects.filter(quantity__lte=F('critical_threshold')).count()
+    expired_medicines = Medicine.objects.filter(expiry_date__lt=timezone.now().date()).count()
+    critical_medicines = Medicine.objects.filter(quantity__lte=F('critical_threshold')).order_by('quantity')[:5]
     
-    # آمار مصرف دارو
-    recent_medicine_usages = MedicineUsage.objects.select_related(
-        'visit', 'medicine', 'visit__company_personnel'
-    ).order_by('-created_at')[:10]
+    # خدمات پرمصرف
+    popular_services = MedicalService.objects.annotate(
+        usage_count=Count('medicalvisit')
+    ).order_by('-usage_count')[:5]
+    
+    # داروهای پرمصرف
+    popular_medicines = Medicine.objects.annotate(
+        usage_count=Count('medicineusage')
+    ).order_by('-usage_count')[:5]
     
     # نمودار مراجعات هفتگی
-    week_days = []
-    visits_count = []
-    for i in range(7, 0, -1):
-        day = today - timedelta(days=i-1)
-        count = MedicalVisit.objects.filter(visit_time__date=day).count()
-        week_days.append(day.strftime('%Y-%m-%d'))
-        visits_count.append(count)
+    weekly_visits = []
+    for i in range(7):
+        date = timezone.now().date() - timedelta(days=i)
+        count = MedicalVisit.objects.filter(visit_time__date=date).count()
+        weekly_visits.append({
+            'date': date,
+            'count': count
+        })
+    weekly_visits.reverse()
     
     context = {
         'total_visits': total_visits,
         'today_visits': today_visits,
         'monthly_visits': monthly_visits,
+        'company_visits': company_visits,
+        'contractor_visits': contractor_visits,
         'total_medicines': total_medicines,
         'low_stock_medicines': low_stock_medicines,
-        'recent_medicine_usages': recent_medicine_usages,
-        'week_days': json.dumps(week_days),
-        'visits_count': json.dumps(visits_count),
+        'expired_medicines': expired_medicines,
+        'critical_medicines': critical_medicines,
+        'popular_services': popular_services,
+        'popular_medicines': popular_medicines,
+        'weekly_visits': weekly_visits,
     }
     
     return render(request, 'emergency_services/dashboard.html', context)

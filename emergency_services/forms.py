@@ -73,14 +73,22 @@ class MedicalVisitForm(forms.ModelForm):
         queryset=UserProfile.objects.all(),
         label=_("پرسنل شرکت"),
         required=False,
-        widget=forms.Select(attrs={'class': 'form-select select2'})
+        empty_label="انتخاب کنید",
+        widget=forms.Select(attrs={
+            'class': 'form-select select2',
+            'data-placeholder': 'پرسنل شرکت را انتخاب کنید'
+        })
     )
     
     contractor_personnel = forms.ModelChoiceField(
         queryset=Employee.objects.all(),
         label=_("پرسنل پیمانکار"),
         required=False,
-        widget=forms.Select(attrs={'class': 'form-select select2'})
+        empty_label="انتخاب کنید",
+        widget=forms.Select(attrs={
+            'class': 'form-select select2',
+            'data-placeholder': 'پرسنل پیمانکار را انتخاب کنید'
+        })
     )
     
     visit_reason = forms.CharField(
@@ -99,16 +107,35 @@ class MedicalVisitForm(forms.ModelForm):
         widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'})
     )
     
+    visit_time = forms.CharField(
+        label=_("زمان مراجعه"),
+        widget=forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'})
+    )
+    
     class Meta:
         model = MedicalVisit
         fields = [
             'personnel_type', 'company_personnel', 'contractor_personnel',
             'visit_reason', 'visit_time', 'doctor_recommendation', 'services'
         ]
-        widgets = {
-            'visit_time': forms.DateTimeInput(attrs={'class': 'form-control datetime-picker'})
-        }
     
+    def clean_visit_time(self):
+        visit_time = self.cleaned_data.get('visit_time')
+        if visit_time:
+            try:
+                # تبدیل تاریخ شمسی به میلادی
+                from persiantools.jdatetime import JalaliDateTime
+                from datetime import datetime
+                
+                # تبدیل رشته به تاریخ شمسی
+                jalali_date = JalaliDateTime.strptime(visit_time, '%Y/%m/%d %H:%M')
+                # تبدیل به تاریخ میلادی
+                gregorian_date = jalali_date.to_gregorian()
+                return gregorian_date
+            except ValueError:
+                raise ValidationError(_("لطفاً تاریخ و زمان را به فرمت صحیح وارد کنید (مثال: 1402/12/29 14:30)"))
+        return None
+
     def clean(self):
         cleaned_data = super().clean()
         personnel_type = cleaned_data.get('personnel_type')

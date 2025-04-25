@@ -186,6 +186,33 @@
                     </div>
                 {% endif %}
 
+                <!-- میانبرهای اورژانس -->
+                <div class="menu-item mb-2 mt-4">
+                    <div class="menu-heading text-uppercase fs-7">اورژانس</div>
+                </div>
+
+                {% if request.user|has_permission:"create_visit" %}
+                    <div class="menu-item">
+                        <a class="menu-link" href="{% url 'emergency_services:create_visit' %}">
+                            <span class="menu-icon">
+                                <i class="fas fa-ambulance text-danger fs-2"></i>
+                            </span>
+                            <span class="menu-title">ثبت مراجعه جدید</span>
+                        </a>
+                    </div>
+                {% endif %}
+
+                {% if request.user|has_permission:"visit_list" %}
+                    <div class="menu-item">
+                        <a class="menu-link" href="{% url 'emergency_services:visit_list' %}">
+                            <span class="menu-icon">
+                                <i class="fas fa-clipboard-list text-primary fs-2"></i>
+                            </span>
+                            <span class="menu-title">لیست مراجعات</span>
+                        </a>
+                    </div>
+                {% endif %}
+
             </div>
             <!-- End Shortcuts Menu -->
 
@@ -530,6 +557,94 @@
                                         </div>
                                     {% endif %}
                                 </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- منوی اورژانس -->
+                <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
+                    <span class="menu-link">
+                        <span class="menu-icon"><i class="fas fa-hospital text-danger fs-2"></i></span>
+                        <span class="menu-title">اورژانس</span>
+                        <span class="menu-arrow"></span>
+                    </span>
+                    <div class="menu-sub menu-sub-accordion">
+                        <!-- مراجعات -->
+                        {% if request.user|has_permission:"create_visit" or request.user|has_permission:"visit_list" %}
+                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
+                                <span class="menu-link">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">مراجعات</span>
+                                    <span class="menu-arrow"></span>
+                                </span>
+                                <div class="menu-sub menu-sub-accordion">
+                                    {% if request.user|has_permission:"create_visit" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'emergency_services:create_visit' %}">
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                                <span class="menu-title">ثبت مراجعه جدید</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                    {% if request.user|has_permission:"visit_list" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'emergency_services:visit_list' %}">
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                                <span class="menu-title">لیست مراجعات</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- خدمات درمانی -->
+                        {% if request.user|has_permission:"service_list" %}
+                            <div class="menu-item">
+                                <a class="menu-link" href="{% url 'emergency_services:service_list' %}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">خدمات درمانی</span>
+                                </a>
+                            </div>
+                        {% endif %}
+
+                        <!-- داروها -->
+                        {% if request.user|has_permission:"medicine_list" or request.user|has_permission:"create_medicine" %}
+                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
+                                <span class="menu-link">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">داروها</span>
+                                    <span class="menu-arrow"></span>
+                                </span>
+                                <div class="menu-sub menu-sub-accordion">
+                                    {% if request.user|has_permission:"medicine_list" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'emergency_services:medicine_list' %}">
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                                <span class="menu-title">لیست داروها</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                    {% if request.user|has_permission:"create_medicine" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'emergency_services:create_medicine' %}">
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                                <span class="menu-title">افزودن داروی جدید</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- دسته‌بندی داروها -->
+                        {% if request.user|has_permission:"category_list" %}
+                            <div class="menu-item">
+                                <a class="menu-link" href="{% url 'emergency_services:category_list' %}">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">دسته‌بندی داروها</span>
+                                </a>
                             </div>
                         {% endif %}
                     </div>

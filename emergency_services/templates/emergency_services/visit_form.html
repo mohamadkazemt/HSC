@@ -5,8 +5,16 @@
 {% block title %}ثبت مراجعه جدید | اورژانس معدن{% endblock %}
 
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'vendor/select2/select2.min.css' %}">
-<link rel="stylesheet" href="{% static 'vendor/select2-bootstrap4-theme/select2-bootstrap4.min.css' %}">
+<!-- اضافه کردن jQuery -->
+<script src="{% static 'assets/js/jquery-1.10.1.min.js' %}"></script>
+
+<!-- اضافه کردن CSS مستقیم Select2 -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
+<!-- اضافه کردن CSS دیتاپیکر -->
+<link rel="stylesheet" href="{% static 'assets/css/persianDatepicker-default.css' %}" />
+
 <style>
     .formset-row {
         padding: 10px;
@@ -19,6 +27,43 @@
     }
     .add-row {
         cursor: pointer;
+    }
+    /* تنظیمات جدید برای Select2 */
+    .select2-container {
+        width: 100% !important;
+        z-index: 9999;
+    }
+    .select2-container--bootstrap-5 .select2-selection {
+        min-height: 38px !important;
+        border: 1px solid #ced4da;
+    }
+    .select2-container--bootstrap-5 .select2-selection--single {
+        padding-top: 5px;
+    }
+    .select2-container--bootstrap-5 .select2-selection__arrow {
+        height: 37px !important;
+    }
+    .select2-dropdown {
+        z-index: 10000;
+    }
+    /* اصلاح مشکل z-index */
+    .modal-backdrop {
+        z-index: 1040 !important;
+    }
+    .modal-content {
+        z-index: 1050 !important;
+    }
+    .error-message {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+    /* تنظیمات دیتاپیکر */
+    .pwt-datepicker {
+        z-index: 99999 !important;
+    }
+    .pwt-datepicker-rtl {
+        direction: rtl;
     }
 </style>
 {% endblock %}
@@ -34,6 +79,35 @@
                     {% include 'toolbar.html' %}
                     <div id="kt_app_content" class="app-content flex-column-fluid">
                         <div id="kt_app_content_container" class="app-container container-fluid">
+                            <!-- نمایش پیام‌های خطا -->
+                            {% if form.errors %}
+                            <div class="alert alert-danger">
+                                <h4 class="alert-heading">خطا در ثبت فرم</h4>
+                                <ul>
+                                    {% for field, errors in form.errors.items %}
+                                        {% for error in errors %}
+                                            <li>{{ field }}: {{ error }}</li>
+                                        {% endfor %}
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+
+                            {% if medicine_formset.errors %}
+                            <div class="alert alert-danger">
+                                <h4 class="alert-heading">خطا در ثبت داروها</h4>
+                                <ul>
+                                    {% for form_errors in medicine_formset.errors %}
+                                        {% for field, errors in form_errors.items %}
+                                            {% for error in errors %}
+                                                <li>{{ field }}: {{ error }}</li>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+
                             <!-- عنوان صفحه -->
                             <div class="d-sm-flex align-items-center justify-content-between mb-4">
                                 <h1 class="h3 mb-0 text-gray-800">ثبت مراجعه جدید</h1>
@@ -65,9 +139,8 @@
                                                         </div>
                                                         {% endfor %}
                                                     </div>
-                                                    <small class="form-text text-muted">نوع پرسنل مراجعه کننده را انتخاب کنید.</small>
                                                     {% if form.personnel_type.errors %}
-                                                    <div class="invalid-feedback d-block">
+                                                    <div class="error-message">
                                                         {{ form.personnel_type.errors }}
                                                     </div>
                                                     {% endif %}
@@ -77,10 +150,16 @@
                                             <div class="col-md-6">
                                                 <div class="form-group" id="company-personnel-group">
                                                     {{ form.company_personnel.label_tag }}
-                                                    {{ form.company_personnel }}
-                                                    <small class="form-text text-muted">پرسنل شرکت مراجعه کننده را انتخاب کنید.</small>
+                                                    <select name="{{ form.company_personnel.name }}" id="id_company_personnel" class="form-select select2">
+                                                        <option value="">انتخاب کنید</option>
+                                                        {% for choice in form.company_personnel.field.choices %}
+                                                            <option value="{{ choice.0 }}" {% if form.company_personnel.value|stringformat:"s" == choice.0|stringformat:"s" %}selected{% endif %}>
+                                                                {{ choice.1 }}
+                                                            </option>
+                                                        {% endfor %}
+                                                    </select>
                                                     {% if form.company_personnel.errors %}
-                                                    <div class="invalid-feedback d-block">
+                                                    <div class="error-message">
                                                         {{ form.company_personnel.errors }}
                                                     </div>
                                                     {% endif %}
@@ -88,10 +167,16 @@
                                                 
                                                 <div class="form-group" id="contractor-personnel-group" style="display: none;">
                                                     {{ form.contractor_personnel.label_tag }}
-                                                    {{ form.contractor_personnel }}
-                                                    <small class="form-text text-muted">پرسنل پیمانکار مراجعه کننده را انتخاب کنید.</small>
+                                                    <select name="{{ form.contractor_personnel.name }}" id="id_contractor_personnel" class="form-select select2">
+                                                        <option value="">انتخاب کنید</option>
+                                                        {% for choice in form.contractor_personnel.field.choices %}
+                                                            <option value="{{ choice.0 }}" {% if form.contractor_personnel.value|stringformat:"s" == choice.0|stringformat:"s" %}selected{% endif %}>
+                                                                {{ choice.1 }}
+                                                            </option>
+                                                        {% endfor %}
+                                                    </select>
                                                     {% if form.contractor_personnel.errors %}
-                                                    <div class="invalid-feedback d-block">
+                                                    <div class="error-message">
                                                         {{ form.contractor_personnel.errors }}
                                                     </div>
                                                     {% endif %}
@@ -105,7 +190,7 @@
                                                     {{ form.visit_reason.label_tag }}
                                                     {{ form.visit_reason }}
                                                     {% if form.visit_reason.errors %}
-                                                    <div class="invalid-feedback d-block">
+                                                    <div class="error-message">
                                                         {{ form.visit_reason.errors }}
                                                     </div>
                                                     {% endif %}
@@ -115,9 +200,9 @@
                                             <div class="col-md-4">
                                                 <div class="form-group">
                                                     {{ form.visit_time.label_tag }}
-                                                    {{ form.visit_time }}
+                                                    <input type="text" name="{{ form.visit_time.name }}" id="id_visit_time" class="form-control" autocomplete="off" />
                                                     {% if form.visit_time.errors %}
-                                                    <div class="invalid-feedback d-block">
+                                                    <div class="error-message">
                                                         {{ form.visit_time.errors }}
                                                     </div>
                                                     {% endif %}
@@ -129,7 +214,7 @@
                                             {{ form.doctor_recommendation.label_tag }}
                                             {{ form.doctor_recommendation }}
                                             {% if form.doctor_recommendation.errors %}
-                                            <div class="invalid-feedback d-block">
+                                            <div class="error-message">
                                                 {{ form.doctor_recommendation.errors }}
                                             </div>
                                             {% endif %}
@@ -152,6 +237,11 @@
                                                     </div>
                                                     {% endfor %}
                                                 </div>
+                                                {% if form.services.errors %}
+                                                <div class="error-message">
+                                                    {{ form.services.errors }}
+                                                </div>
+                                                {% endif %}
                                             </div>
                                         </div>
                                         
@@ -172,7 +262,7 @@
                                                                 {{ medicine_form.medicine.label_tag }}
                                                                 {{ medicine_form.medicine }}
                                                                 {% if medicine_form.medicine.errors %}
-                                                                <div class="invalid-feedback d-block">
+                                                                <div class="error-message">
                                                                     {{ medicine_form.medicine.errors }}
                                                                 </div>
                                                                 {% endif %}
@@ -183,7 +273,7 @@
                                                                 {{ medicine_form.quantity.label_tag }}
                                                                 {{ medicine_form.quantity }}
                                                                 {% if medicine_form.quantity.errors %}
-                                                                <div class="invalid-feedback d-block">
+                                                                <div class="error-message">
                                                                     {{ medicine_form.quantity.errors }}
                                                                 </div>
                                                                 {% endif %}
@@ -221,111 +311,243 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'vendor/select2/select2.min.js' %}"></script>
+<!-- اضافه کردن jQuery و Select2 -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/fa.js"></script>
+
+<!-- اضافه کردن JavaScript دیتاپیکر -->
+<script src="{% static 'assets/js/persianDatepicker.min.js' %}"></script>
+
 <script>
     $(document).ready(function() {
-        // فعال‌سازی انتخاب‌گر پیشرفته
-        $('.select2').select2({
-            theme: 'bootstrap4',
-            language: 'fa',
-            dir: 'rtl'
-        });
+        console.log('Document ready started');
         
+        // تنظیمات پایه Select2
+        const select2Config = {
+            theme: 'bootstrap-5',
+            width: '100%',
+            dir: 'rtl',
+            language: 'fa',
+            dropdownParent: $('body'),
+            allowClear: true,
+            placeholder: 'انتخاب کنید'
+        };
+
+        // راه‌اندازی Select2 برای یک المان
+        function initializeSelect2(element) {
+            if ($(element).data('select2')) {
+                $(element).select2('destroy');
+            }
+            $(element).select2(select2Config);
+            console.log('Select2 initialized for:', element.id);
+        }
+
+        // راه‌اندازی Select2 برای همه select‌ها
+        function initializeAllSelects() {
+            $('.select2').each(function() {
+                initializeSelect2(this);
+            });
+        }
+
+        // راه‌اندازی اولیه
+        initializeAllSelects();
+
         // مدیریت نمایش فیلدهای مربوط به نوع پرسنل
         $('input[name="personnel_type"]').change(function() {
-            var selectedType = $(this).val();
+            const selectedType = $(this).val();
             if (selectedType === 'company') {
                 $('#company-personnel-group').show();
                 $('#contractor-personnel-group').hide();
+                $('#id_contractor_personnel').val(null).trigger('change');
             } else {
                 $('#company-personnel-group').hide();
                 $('#contractor-personnel-group').show();
+                $('#id_company_personnel').val(null).trigger('change');
             }
         });
-        
-        // تنظیم اولیه نمایش بر اساس مقدار پیش‌فرض
-        var initialType = $('input[name="personnel_type"]:checked').val() || 'company';
-        if (initialType === 'company') {
-            $('#company-personnel-group').show();
-            $('#contractor-personnel-group').hide();
-        } else {
-            $('#company-personnel-group').hide();
-            $('#contractor-personnel-group').show();
-        }
-        
+
         // مدیریت فرم‌ست داروها
-        var medicineFormCount = $('#id_medicines-TOTAL_FORMS').val();
-        
-        // اضافه کردن ردیف جدید
-        $('.add-medicine').click(function() {
-            var formCopyTarget = $('#medicine-formset');
-            var emptyForm = $('#medicine-formset .formset-row:first').clone(true);
+        let medicineFormCount = parseInt($('#id_medicines-TOTAL_FORMS').val());
+
+        $('.add-medicine').click(function(e) {
+            e.preventDefault();
+            console.log('Adding new medicine row');
             
-            emptyForm.find('input, select').each(function() {
-                var name = $(this).attr('name');
-                if (name) {
-                    name = name.replace('-0-', '-' + medicineFormCount + '-');
-                    $(this).attr('name', name);
+            // کپی کردن اولین ردیف
+            const emptyFormHtml = $('#medicine-formset .formset-row:first').clone();
+            const newFormHtml = $(emptyFormHtml).html();
+            
+            // ساخت ردیف جدید
+            const newRow = $('<div class="row formset-row bg-light"></div>');
+            newRow.html(newFormHtml);
+            
+            // بروزرسانی شناسه‌ها و نام‌ها
+            newRow.find('select, input').each(function() {
+                const oldName = $(this).attr('name');
+                const oldId = $(this).attr('id');
+                if (oldName) {
+                    const newName = oldName.replace(/-0-/, `-${medicineFormCount}-`);
+                    $(this).attr('name', newName);
                 }
-                
-                var id = $(this).attr('id');
-                if (id) {
-                    id = id.replace('-0-', '-' + medicineFormCount + '-');
-                    $(this).attr('id', id);
+                if (oldId) {
+                    const newId = oldId.replace(/-0-/, `-${medicineFormCount}-`);
+                    $(this).attr('id', newId);
                 }
-                
                 // پاک کردن مقادیر
-                if ($(this).is('select')) {
-                    $(this).val(null).trigger('change');
-                } else {
-                    $(this).val('');
-                }
+                $(this).val('').removeAttr('selected');
+                // حذف کلاس‌های Select2
+                $(this).removeClass('select2-hidden-accessible');
             });
             
+            // حذف کانتینر Select2 قبلی
+            newRow.find('.select2-container').remove();
+            
             // اضافه کردن دکمه حذف
-            if (emptyForm.find('.delete-row').length === 0) {
-                emptyForm.find('.col-md-1').append(
+            if (newRow.find('.delete-row').length === 0) {
+                newRow.find('.col-md-1').html(
                     '<a href="#" class="delete-row"><i class="fas fa-trash-alt"></i></a>'
                 );
             }
             
-            formCopyTarget.append(emptyForm);
+            // اضافه کردن ردیف جدید به فرم‌ست
+            $('#medicine-formset').append(newRow);
+            
+            // بروزرسانی شمارنده
             medicineFormCount++;
             $('#id_medicines-TOTAL_FORMS').val(medicineFormCount);
             
-            // فعال‌سازی سلکت۲ برای فیلد جدید
-            emptyForm.find('.select2').select2({
-                theme: 'bootstrap4',
-                language: 'fa',
-                dir: 'rtl'
+            // راه‌اندازی Select2 برای فیلد جدید
+            newRow.find('select').each(function() {
+                console.log('Initializing Select2 for new field:', this.id);
+                initializeSelect2(this);
             });
         });
-        
+
         // حذف ردیف
         $(document).on('click', '.delete-row', function(e) {
             e.preventDefault();
-            $(this).closest('.formset-row').remove();
+            const row = $(this).closest('.formset-row');
             
-            // بروزرسانی شمارنده فرم‌ها
+            // حذف Select2 قبل از حذف ردیف
+            row.find('select').each(function() {
+                if ($(this).data('select2')) {
+                    $(this).select2('destroy');
+                }
+            });
+            
+            row.remove();
             medicineFormCount--;
             $('#id_medicines-TOTAL_FORMS').val(medicineFormCount);
             
-            // بروزرسانی اندیس‌های فرم‌ها
+            // بروزرسانی اندیس‌ها
             $('.formset-row').each(function(index) {
-                $(this).find('input, select').each(function() {
-                    var name = $(this).attr('name');
-                    if (name) {
-                        name = name.replace(/-\d+-/g, '-' + index + '-');
-                        $(this).attr('name', name);
+                $(this).find('select, input').each(function() {
+                    const oldName = $(this).attr('name');
+                    const oldId = $(this).attr('id');
+                    if (oldName) {
+                        const newName = oldName.replace(/-\d+-/, `-${index}-`);
+                        $(this).attr('name', newName);
                     }
-                    
-                    var id = $(this).attr('id');
-                    if (id) {
-                        id = id.replace(/-\d+-/g, '-' + index + '-');
-                        $(this).attr('id', id);
+                    if (oldId) {
+                        const newId = oldId.replace(/-\d+-/, `-${index}-`);
+                        $(this).attr('id', newId);
                     }
                 });
             });
+        });
+
+        // اطمینان از راه‌اندازی مجدد Select2 بعد از تغییرات دینامیک
+        $(document).ajaxComplete(function() {
+            initializeAllSelects();
+        });
+
+        // اضافه کردن اعتبارسنجی فرم
+        $('#visit-form').submit(function(e) {
+            let isValid = true;
+            let firstError = null;
+
+            // بررسی نوع پرسنل و انتخاب پرسنل
+            const personnelType = $('input[name="personnel_type"]:checked').val();
+            if (personnelType === 'company') {
+                if (!$('#id_company_personnel').val()) {
+                    isValid = false;
+                    firstError = firstError || $('#id_company_personnel');
+                    $('#id_company_personnel').closest('.form-group').addClass('has-error');
+                }
+            } else if (personnelType === 'contractor') {
+                if (!$('#id_contractor_personnel').val()) {
+                    isValid = false;
+                    firstError = firstError || $('#id_contractor_personnel');
+                    $('#id_contractor_personnel').closest('.form-group').addClass('has-error');
+                }
+            }
+
+            // بررسی فیلدهای اجباری
+            if (!$('#id_visit_reason').val()) {
+                isValid = false;
+                firstError = firstError || $('#id_visit_reason');
+                $('#id_visit_reason').closest('.form-group').addClass('has-error');
+            }
+
+            if (!$('#id_visit_time').val()) {
+                isValid = false;
+                firstError = firstError || $('#id_visit_time');
+                $('#id_visit_time').closest('.form-group').addClass('has-error');
+            }
+
+            // بررسی داروها
+            $('.formset-row').each(function() {
+                const medicineSelect = $(this).find('select[id$="-medicine"]');
+                const quantityInput = $(this).find('input[id$="-quantity"]');
+                
+                if (medicineSelect.val() && !quantityInput.val()) {
+                    isValid = false;
+                    firstError = firstError || quantityInput;
+                    quantityInput.closest('.form-group').addClass('has-error');
+                }
+                if (!medicineSelect.val() && quantityInput.val()) {
+                    isValid = false;
+                    firstError = firstError || medicineSelect;
+                    medicineSelect.closest('.form-group').addClass('has-error');
+                }
+            });
+
+            if (!isValid) {
+                e.preventDefault();
+                if (firstError) {
+                    firstError.focus();
+                }
+                alert('لطفاً همه فیلدهای اجباری را پر کنید.');
+            }
+        });
+
+        // راه‌اندازی دیتاپیکر
+        $("#id_visit_time").persianDatepicker({
+            formatDate: "YYYY/MM/DD hh:mm:ss:ms",
+            initialValue: true,
+            initialValueType: 'persian',
+            autoClose: true,
+            timePicker: {
+                enabled: true,
+                meridiem: {
+                    enabled: true
+                }
+            },
+            calendar: {
+                persian: {
+                    locale: 'fa'
+                }
+            },
+            toolbox: {
+                enabled: true,
+                calendarSwitch: {
+                    enabled: true
+                }
+            },
+            observer: true,
+            altField: '#id_visit_time',
+            altFormat: 'YYYY/MM/DD HH:mm'
         });
     });
 </script>

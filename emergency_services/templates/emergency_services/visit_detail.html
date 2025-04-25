@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load humanize %}
+{% load custom_filters %}
 
 {% block title %}جزئیات مراجعه | اورژانس معدن{% endblock %}
 
@@ -37,7 +38,7 @@
                                     <div class="card shadow mb-4">
                                         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                                             <h6 class="m-0 font-weight-bold text-primary">اطلاعات مراجعه</h6>
-                                            <small class="text-muted">{{ visit.visit_time|date:"Y/m/d - H:i" }}</small>
+                                            <small class="text-muted">{{ visit.visit_time|to_jalali:"%Y/%m/%d - %H:%M" }}</small>
                                         </div>
                                         <div class="card-body">
                                             <div class="row mb-4">
@@ -97,11 +98,11 @@
                                             <div class="row mb-3">
                                                 <div class="col-6">
                                                     <h6 class="font-weight-bold">تاریخ ثبت:</h6>
-                                                    <p>{{ visit.created_at|date:"Y/m/d - H:i" }}</p>
+                                                    <p>{{ visit.created_at|to_jalali:"%Y/%m/%d - %H:%M" }}</p>
                                                 </div>
                                                 <div class="col-6">
                                                     <h6 class="font-weight-bold">آخرین بروزرسانی:</h6>
-                                                    <p>{{ visit.updated_at|date:"Y/m/d - H:i" }}</p>
+                                                    <p>{{ visit.updated_at|to_jalali:"%Y/%m/%d - %H:%M" }}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -136,7 +137,7 @@
                                                     <td>{{ usage.medicine.name }}</td>
                                                     <td>{{ usage.medicine.category.name|default:"-" }}</td>
                                                     <td>{{ usage.quantity }}</td>
-                                                    <td>{{ usage.created_at|date:"Y/m/d - H:i" }}</td>
+                                                    <td>{{ usage.created_at|to_jalali:"%Y/%m/%d - %H:%M" }}</td>
                                                     <td>
                                                         <div class="btn-group" role="group">
                                                             <a href="{% url 'emergency_services:return_medicine' usage_id=usage.pk %}" class="btn btn-sm btn-info" title="برگشت دارو">
