@@ -29,6 +29,7 @@ EMAIL_USE_TLS = config('EMAIL_USE_TLS', cast=bool, default=True)
 # Static files
 STATIC_ROOT = '/var/www/HSC/static/'
 STATIC_URL = '/static/'
+STATICFILES_DIRS = []
 
 # Media files
 MEDIA_ROOT = '/var/www/HSC/media/'
