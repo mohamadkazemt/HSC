@@ -113,6 +113,9 @@
                                     <a href="{% url 'emergency_services:export_medicines_csv' %}" class="d-none d-sm-inline-block btn btn-sm btn-info shadow-sm">
                                         <i class="fas fa-file-csv fa-sm text-white-50"></i> خروجی CSV
                                     </a>
+                                    <button type="button" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#importModal">
+                                        <i class="fas fa-file-excel fa-sm text-white-50"></i> ورودی اکسل
+                                    </button>
                                     <a href="{% url 'emergency_services:create_medicine' %}" class="d-none d-sm-inline-block btn btn-sm btn-success shadow-sm">
                                         <i class="fas fa-plus fa-sm text-white-50"></i> داروی جدید
                                     </a>
@@ -385,6 +388,46 @@
         </div>
     </div>
 </div>
+
+<!-- مودال ایمپورت اکسل -->
+<div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importModalLabel">ورود اطلاعات از اکسل</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" enctype="multipart/form-data" action="{% url 'emergency_services:import_medicines_excel' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="excel_file" class="form-label">فایل اکسل</label>
+                        <input type="file" class="form-control" id="excel_file" name="excel_file" accept=".xlsx,.xls" required>
+                        <div class="form-text">فقط فایل‌های اکسل با پسوند .xlsx یا .xls قابل قبول هستند.</div>
+                    </div>
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading">نکات مهم:</h6>
+                        <ul class="mb-0">
+                            <li>ستون‌های فایل اکسل باید به ترتیب زیر باشند:</li>
+                            <li>نام دارو، دسته‌بندی، موجودی، حد بحرانی، تاریخ انقضا، وضعیت</li>
+                            <li>تاریخ انقضا باید به فرمت شمسی (مثال: 1402/12/29) باشد</li>
+                            <li>وضعیت باید "فعال" یا "غیرفعال" باشد</li>
+                            <li class="mt-2">
+                                <a href="{% url 'emergency_services:download_sample_excel' %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-download"></i> دانلود نمونه فایل اکسل
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">انصراف</button>
+                    <button type="submit" class="btn btn-primary">آپلود و پردازش</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -419,6 +462,37 @@
         // اعمال تغییرات فرم به صورت خودکار
         $('#category').on('change', function() {
             $('#filter-form').submit();
+        });
+
+        // مدیریت فرم ایمپورت اکسل
+        $('#importModal form').on('submit', function(e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+            
+            $.ajax({
+                url: $(this).attr('action'),
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    if (response.status === 'success') {
+                        // نمایش پیام موفقیت
+                        alert(response.message);
+                        if (response.errors) {
+                            alert('خطاها:\n' + response.errors.join('\n'));
+                        }
+                        // رفرش صفحه
+                        window.location.reload();
+                    } else {
+                        // نمایش پیام خطا
+                        alert(response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    alert('خطا در ارتباط با سرور: ' + error);
+                }
+            });
         });
     });
 </script>

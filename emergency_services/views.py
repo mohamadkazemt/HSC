@@ -14,6 +14,11 @@ import csv
 from io import StringIO
 import jdatetime
 import re
+import pandas as pd
+from django.views.decorators.http import require_POST
+from django.utils.decorators import method_decorator
+from django.views import View
+import io
 
 from accounts.models import UserProfile
 from permissions.utils import permission_required
@@ -26,7 +31,8 @@ from .models import (
     Medicine, 
     MedicineCategory, 
     MedicalService,
-    MedicineReturn
+    MedicineReturn,
+    Hospital
 )
 from .forms import (
     MedicalVisitForm, 
@@ -34,7 +40,8 @@ from .forms import (
     MedicineForm, 
     MedicineCategoryForm, 
     MedicalServiceForm,
-    MedicineReturnForm
+    MedicineReturnForm,
+    HospitalForm
 )
 
 def persian_to_english_numbers(text):
@@ -112,16 +119,112 @@ def create_visit(request):
     MedicineSelectFormSet = formset_factory(MedicineSelectForm, extra=1)
     
     if request.method == 'POST':
-        form = MedicalVisitForm(request.POST)
-        medicine_formset = MedicineSelectFormSet(request.POST, prefix='medicines')
+        print('POST data:', request.POST)  # لاگ داده‌های POST دریافتی
+        
+        # کپی کردن داده‌های POST برای تغییر
+        data = request.POST.copy()
+        
+        # تبدیل تاریخ‌های دریافتی
+        try:
+            # تبدیل تاریخ مراجعه
+            if data.get('visit_time'):
+                visit_time = persian_to_english_numbers(data['visit_time'].strip())
+                visit_time = re.sub(r'[^0-9/ :]', '', visit_time)
+                date_part, time_part = visit_time.split(' ')
+                year, month, day = map(int, date_part.split('/'))
+                
+                # جدا کردن ساعت، دقیقه، ثانیه و میلی‌ثانیه
+                time_parts = time_part.split(':')
+                hour = int(time_parts[0])
+                minute = int(time_parts[1])
+                second = int(time_parts[2].split('.')[0]) if '.' in time_parts[2] else int(time_parts[2])
+                
+                # تصحیح سال دو رقمی
+                if year < 100:
+                    year += 1400
+                
+                # تبدیل به تاریخ میلادی
+                jalali_date = jdatetime.datetime(year, month, day, hour, minute, second)
+                gregorian_date = jalali_date.togregorian()
+                data['visit_time'] = gregorian_date.strftime('%Y-%m-%d %H:%M:%S')
+                print('Converted visit time:', data['visit_time'])
+            
+            # تبدیل تاریخ پذیرش در بیمارستان
+            if data.get('hospital_admission_time'):
+                admission_time = persian_to_english_numbers(data['hospital_admission_time'].strip())
+                admission_time = re.sub(r'[^0-9/ :]', '', admission_time)
+                date_part, time_part = admission_time.split(' ')
+                year, month, day = map(int, date_part.split('/'))
+                
+                # جدا کردن ساعت، دقیقه، ثانیه و میلی‌ثانیه
+                time_parts = time_part.split(':')
+                hour = int(time_parts[0])
+                minute = int(time_parts[1])
+                second = int(time_parts[2].split('.')[0]) if '.' in time_parts[2] else int(time_parts[2])
+                
+                # تصحیح سال دو رقمی
+                if year < 100:
+                    year += 1400
+                
+                # تبدیل به تاریخ میلادی
+                jalali_date = jdatetime.datetime(year, month, day, hour, minute, second)
+                gregorian_date = jalali_date.togregorian()
+                data['hospital_admission_time'] = gregorian_date.strftime('%Y-%m-%d %H:%M:%S')
+                print('Converted admission time:', data['hospital_admission_time'])
+            
+            # تبدیل تاریخ ترخیص از بیمارستان
+            if data.get('hospital_discharge_time'):
+                discharge_time = persian_to_english_numbers(data['hospital_discharge_time'].strip())
+                discharge_time = re.sub(r'[^0-9/ :]', '', discharge_time)
+                date_part, time_part = discharge_time.split(' ')
+                year, month, day = map(int, date_part.split('/'))
+                
+                # جدا کردن ساعت، دقیقه، ثانیه و میلی‌ثانیه
+                time_parts = time_part.split(':')
+                hour = int(time_parts[0])
+                minute = int(time_parts[1])
+                second = int(time_parts[2].split('.')[0]) if '.' in time_parts[2] else int(time_parts[2])
+                
+                # تصحیح سال دو رقمی
+                if year < 100:
+                    year += 1400
+                
+                # تبدیل به تاریخ میلادی
+                jalali_date = jdatetime.datetime(year, month, day, hour, minute, second)
+                gregorian_date = jalali_date.togregorian()
+                data['hospital_discharge_time'] = gregorian_date.strftime('%Y-%m-%d %H:%M:%S')
+                print('Converted discharge time:', data['hospital_discharge_time'])
+        except (ValueError, IndexError, AttributeError) as e:
+            print('Error converting dates:', str(e))
+            messages.error(request, 'لطفاً تاریخ‌ها را به فرمت صحیح وارد کنید (مثال: 1404/02/07 18:49:51)')
+            form = MedicalVisitForm()
+            medicine_formset = MedicineSelectFormSet(prefix='medicines')
+            return render(request, 'emergency_services/visit_form.html', {
+                'form': form,
+                'medicine_formset': medicine_formset,
+                'services': MedicalService.objects.all(),
+            })
+        
+        form = MedicalVisitForm(data)
+        medicine_formset = MedicineSelectFormSet(data, prefix='medicines')
         
         if form.is_valid() and medicine_formset.is_valid():
             try:
+                # لاگ مقادیر تاریخ قبل از ذخیره
+                print('Visit time from form:', form.cleaned_data.get('visit_time'))
+                print('Hospital admission time from form:', form.cleaned_data.get('hospital_admission_time'))
+                print('Hospital discharge time from form:', form.cleaned_data.get('hospital_discharge_time'))
+                
                 # ذخیره فرم مراجعه
                 visit = form.save(commit=False)
                 visit.created_by = UserProfile.objects.get(user=request.user)
                 visit.save()
                 form.save_m2m()  # ذخیره رابطه چند به چند خدمات
+                
+                # لاگ مقادیر تاریخ بعد از ذخیره
+                print('Visit time in model:', visit.visit_time)
+                print('Hospital admission time in model:', visit.hospital_admission_time)
+                print('Hospital discharge time in model:', visit.hospital_discharge_time)
                 
                 # ذخیره داروهای انتخاب شده
                 for medicine_form in medicine_formset:
@@ -139,12 +242,16 @@ def create_visit(request):
                 messages.success(request, 'مراجعه با موفقیت ثبت شد.')
                 return redirect('emergency_services:visit_detail', pk=visit.pk)
             except Exception as e:
+                print('Error in saving visit:', str(e))  # لاگ خطاهای احتمالی
                 messages.error(request, f'خطا در ثبت مراجعه: {str(e)}')
                 return render(request, 'emergency_services/visit_form.html', {
                     'form': form,
                     'medicine_formset': medicine_formset,
                     'services': MedicalService.objects.all(),
                 })
+        else:
+            print('Form errors:', form.errors)  # لاگ خطاهای فرم
+            print('Medicine formset errors:', medicine_formset.errors)  # لاگ خطاهای فرم‌ست داروها
     else:
         form = MedicalVisitForm()
         medicine_formset = MedicineSelectFormSet(prefix='medicines')
@@ -688,4 +795,181 @@ def print_visit(request, pk):
         'medicine_usages': medicine_usages,
     }
     
-    return render(request, 'emergency_services/print_visit.html', context) 
+    return render(request, 'emergency_services/print_visit.html', context)
+
+@permission_required("hospital_list")
+@login_required
+def hospital_list(request):
+    """لیست بیمارستان‌ها"""
+    hospitals = Hospital.objects.all().order_by('name')
+    
+    context = {
+        'hospitals': hospitals,
+    }
+    
+    return render(request, 'emergency_services/hospital_list.html', context)
+
+@permission_required("create_hospital")
+@login_required
+def create_hospital(request):
+    """ایجاد بیمارستان جدید"""
+    if request.method == 'POST':
+        form = HospitalForm(request.POST)
+        
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'بیمارستان با موفقیت ثبت شد.')
+            return redirect('emergency_services:hospital_list')
+    else:
+        form = HospitalForm()
+    
+    context = {
+        'form': form,
+    }
+    
+    return render(request, 'emergency_services/hospital_form.html', context)
+
+@permission_required("edit_hospital")
+@login_required
+def edit_hospital(request, pk):
+    """ویرایش بیمارستان"""
+    hospital = get_object_or_404(Hospital, pk=pk)
+    
+    if request.method == 'POST':
+        form = HospitalForm(request.POST, instance=hospital)
+        
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'بیمارستان با موفقیت بروزرسانی شد.')
+            return redirect('emergency_services:hospital_list')
+    else:
+        form = HospitalForm(instance=hospital)
+    
+    context = {
+        'form': form,
+        'hospital': hospital,
+    }
+    
+    return render(request, 'emergency_services/hospital_form.html', context)
+
+@permission_required("delete_hospital")
+@login_required
+def delete_hospital(request, pk):
+    """حذف بیمارستان"""
+    hospital = get_object_or_404(Hospital, pk=pk)
+    
+    # بررسی وجود مراجعات مرتبط
+    if MedicalVisit.objects.filter(hospital=hospital).exists():
+        messages.error(request, 'این بیمارستان دارای مراجعات مرتبط است و نمی‌توان آن را حذف کرد.')
+        return redirect('emergency_services:hospital_list')
+    
+    hospital.delete()
+    messages.success(request, 'بیمارستان با موفقیت حذف شد.')
+    return redirect('emergency_services:hospital_list')
+
+@method_decorator(permission_required("import_medicines_excel"), name='dispatch')
+class ImportMedicinesExcelView(View):
+    def post(self, request):
+        try:
+            excel_file = request.FILES['excel_file']
+            
+            # خواندن فایل اکسل
+            df = pd.read_excel(excel_file)
+            
+            # بررسی ستون‌های مورد نیاز
+            required_columns = ['نام دارو', 'دسته‌بندی', 'موجودی', 'حد بحرانی', 'تاریخ انقضا', 'وضعیت']
+            if not all(col in df.columns for col in required_columns):
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'ستون‌های فایل اکسل با فرمت مورد نظر مطابقت ندارد.'
+                })
+            
+            success_count = 0
+            error_count = 0
+            errors = []
+            
+            # پردازش هر ردیف
+            for index, row in df.iterrows():
+                try:
+                    # تبدیل تاریخ شمسی به میلادی
+                    expiry_date = row['تاریخ انقضا']
+                    if isinstance(expiry_date, str):
+                        year, month, day = map(int, expiry_date.split('/'))
+                        jalali_date = jdatetime.date(year, month, day)
+                        expiry_date = jalali_date.togregorian()
+                    
+                    # تبدیل وضعیت به بولین
+                    is_active = row['وضعیت'] == 'فعال'
+                    
+                    # یافتن یا ایجاد دسته‌بندی
+                    category_name = row['دسته‌بندی']
+                    category, created = MedicineCategory.objects.get_or_create(name=category_name)
+                    
+                    # ایجاد یا بروزرسانی دارو
+                    medicine, created = Medicine.objects.update_or_create(
+                        name=row['نام دارو'],
+                        defaults={
+                            'category': category,
+                            'quantity': int(row['موجودی']),
+                            'critical_threshold': int(row['حد بحرانی']),
+                            'expiry_date': expiry_date,
+                            'is_active': is_active
+                        }
+                    )
+                    
+                    success_count += 1
+                    
+                except Exception as e:
+                    error_count += 1
+                    errors.append(f'خطا در ردیف {index + 2}: {str(e)}')
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': f'تعداد {success_count} دارو با موفقیت وارد شدند.',
+                'errors': errors if errors else None
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'خطا در پردازش فایل: {str(e)}'
+            })
+
+@permission_required("import_medicines_excel")
+def download_sample_excel(request):
+    # ایجاد یک DataFrame نمونه
+    sample_data = {
+        'نام دارو': ['پاراستامول', 'آموکسی سیلین', 'ایبوپروفن'],
+        'دسته‌بندی': ['مسکن', 'آنتی‌بیوتیک', 'مسکن'],
+        'موجودی': [100, 50, 75],
+        'حد بحرانی': [20, 10, 15],
+        'تاریخ انقضا': ['1403/12/29', '1403/11/15', '1404/01/10'],
+        'وضعیت': ['فعال', 'فعال', 'غیرفعال']
+    }
+    
+    df = pd.DataFrame(sample_data)
+    
+    # ایجاد فایل اکسل در حافظه
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='داروها')
+        
+        # تنظیم عرض ستون‌ها
+        worksheet = writer.sheets['داروها']
+        for idx, col in enumerate(df.columns):
+            max_length = max(
+                df[col].astype(str).apply(len).max(),
+                len(col)
+            )
+            worksheet.column_dimensions[chr(65 + idx)].width = max_length + 2
+    
+    output.seek(0)
+    
+    # ایجاد پاسخ HTTP
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename=sample_medicines.xlsx'
+    
+    return response 

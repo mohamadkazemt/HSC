@@ -5,7 +5,8 @@ from .models import (
     Medicine, 
     MedicineCategory, 
     MedicalService,
-    MedicineReturn
+    MedicineReturn,
+    Hospital
 )
 
 
@@ -74,4 +75,12 @@ class MedicineReturnAdmin(admin.ModelAdmin):
     list_display = ('usage', 'quantity', 'return_reason', 'returned_by', 'created_at')
     list_filter = ('returned_by', 'created_at')
     search_fields = ('return_reason', 'usage__medicine__name')
-    readonly_fields = ('created_at',) 
+    readonly_fields = ('created_at',)
+
+
+@admin.register(Hospital)
+class HospitalAdmin(admin.ModelAdmin):
+    list_display = ('name', 'phone', 'is_active', 'created_at')
+    list_filter = ('is_active',)
+    search_fields = ('name', 'phone', 'address')
+    ordering = ('-created_at',) 

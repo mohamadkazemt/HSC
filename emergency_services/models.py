@@ -100,6 +100,23 @@ class MedicalService(models.Model):
         return self.name
 
 
+class Hospital(models.Model):
+    """مدل بیمارستان"""
+    name = models.CharField(_("نام بیمارستان"), max_length=200)
+    address = models.TextField(_("آدرس"))
+    phone = models.CharField(_("شماره تماس"), max_length=20)
+    is_active = models.BooleanField(_("فعال"), default=True)
+    created_at = models.DateTimeField(_("تاریخ ایجاد"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("تاریخ بروزرسانی"), auto_now=True)
+    
+    class Meta:
+        verbose_name = _("بیمارستان")
+        verbose_name_plural = _("بیمارستان‌ها")
+    
+    def __str__(self):
+        return self.name
+
+
 class MedicalVisit(models.Model):
     """مدل مراجعه و خدمات درمانی"""
     PERSONNEL_TYPE_CHOICES = [
@@ -115,6 +132,10 @@ class MedicalVisit(models.Model):
     visit_time = models.DateTimeField(_("زمان مراجعه"), default=timezone.now)
     doctor_recommendation = models.TextField(_("توصیه پزشک"))
     services = models.ManyToManyField(MedicalService, verbose_name=_("خدمات درمانی"))
+    hospital = models.ForeignKey(Hospital, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("بیمارستان"))
+    hospital_admission_time = models.DateTimeField(_("زمان پذیرش در بیمارستان"), null=True, blank=True)
+    hospital_discharge_time = models.DateTimeField(_("زمان ترخیص از بیمارستان"), null=True, blank=True)
+    hospital_diagnosis = models.TextField(_("تشخیص بیمارستان"), blank=True, null=True)
     created_by = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True, related_name="created_visits", verbose_name=_("ثبت کننده"))
     created_at = models.DateTimeField(_("تاریخ ثبت"), auto_now_add=True)
     updated_at = models.DateTimeField(_("تاریخ بروزرسانی"), auto_now=True)
@@ -135,6 +156,14 @@ class MedicalVisit(models.Model):
             raise ValidationError(_("برای پرسنل شرکت باید یک پرسنل انتخاب شود."))
         elif self.personnel_type == 'contractor' and not self.contractor_personnel:
             raise ValidationError(_("برای پرسنل پیمانکار باید یک پیمانکار انتخاب شود."))
+        
+        # اعتبارسنجی زمان‌های بیمارستان
+        if self.hospital:
+            if self.hospital_admission_time and self.hospital_discharge_time:
+                if self.hospital_admission_time > self.hospital_discharge_time:
+                    raise ValidationError(_("زمان ترخیص نمی‌تواند قبل از زمان پذیرش باشد."))
+            if self.hospital_admission_time and self.hospital_admission_time < self.visit_time:
+                raise ValidationError(_("زمان پذیرش در بیمارستان نمی‌تواند قبل از زمان مراجعه باشد."))
 
 
 class MedicineUsage(models.Model):

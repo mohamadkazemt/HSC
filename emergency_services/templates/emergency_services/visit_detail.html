@@ -2,6 +2,7 @@
 {% load static %}
 {% load humanize %}
 {% load custom_filters %}
+{% load i18n %}
 
 {% block title %}جزئیات مراجعه | اورژانس معدن{% endblock %}
 
@@ -164,6 +165,28 @@
                                     {% endif %}
                                 </div>
                             </div>
+
+                            {% if visit.hospital %}
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">{% trans "اطلاعات بیمارستان" %}</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p><strong>{% trans "نام بیمارستان:" %}</strong> {{ visit.hospital.name }}</p>
+                                            <p><strong>{% trans "آدرس:" %}</strong> {{ visit.hospital.address }}</p>
+                                            <p><strong>{% trans "شماره تماس:" %}</strong> {{ visit.hospital.phone }}</p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p><strong>{% trans "زمان پذیرش:" %}</strong> {{ visit.hospital_admission_time|to_jalali:"%Y/%m/%d - %H:%M" }}</p>
+                                            <p><strong>{% trans "زمان ترخیص:" %}</strong> {{ visit.hospital_discharge_time|to_jalali:"%Y/%m/%d - %H:%M" }}</p>
+                                            <p><strong>{% trans "تشخیص:" %}</strong> {{ visit.hospital_diagnosis }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

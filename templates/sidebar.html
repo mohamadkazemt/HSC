@@ -570,6 +570,20 @@
                         <span class="menu-arrow"></span>
                     </span>
                     <div class="menu-sub menu-sub-accordion">
+                        <!-- داشبورد اورژانس -->
+                        <div class="menu-item">
+                            <a class="menu-link" href="{% url 'emergency_services:dashboard' %}">
+                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                <span class="menu-title">داشبورد اورژانس</span>
+                            </a>
+                        </div>
+                        <!-- مدیریت بیمارستان‌ها -->
+                        <div class="menu-item">
+                            <a class="menu-link" href="{% url 'emergency_services:hospital_list' %}">
+                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                <span class="menu-title">مدیریت بیمارستان‌ها</span>
+                            </a>
+                        </div>
                         <!-- مراجعات -->
                         {% if request.user|has_permission:"create_visit" or request.user|has_permission:"visit_list" %}
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion">

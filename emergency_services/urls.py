@@ -83,6 +83,18 @@ URLS_WITH_LABELS = [
         "label": "اورژانس_خروجی CSV داروها"
     },
     {
+        "path": "medicines/import-excel/",
+        "view": views.ImportMedicinesExcelView.as_view(),
+        "name": "import_medicines_excel",
+        "label": "اورژانس_ورود داروها از اکسل"
+    },
+    {
+        "path": "medicines/download-sample/",
+        "view": views.download_sample_excel,
+        "name": "download_sample_excel",
+        "label": "اورژانس_دانلود نمونه فایل اکسل"
+    },
+    {
         "path": "categories/",
         "view": views.category_list,
         "name": "category_list",
@@ -112,8 +124,32 @@ URLS_WITH_LABELS = [
         "name": "return_medicine",
         "label": "اورژانس_برگشت دارو"
     },
+    {
+        "path": "hospitals/",
+        "view": views.hospital_list,
+        "name": "hospital_list",
+        "label": "اورژانس_لیست بیمارستان‌ها"
+    },
+    {
+        "path": "hospitals/create/",
+        "view": views.create_hospital,
+        "name": "create_hospital",
+        "label": "اورژانس_ایجاد بیمارستان جدید"
+    },
+    {
+        "path": "hospitals/<int:pk>/edit/",
+        "view": views.edit_hospital,
+        "name": "edit_hospital",
+        "label": "اورژانس_ویرایش بیمارستان"
+    },
+    {
+        "path": "hospitals/<int:pk>/delete/",
+        "view": views.delete_hospital,
+        "name": "delete_hospital",
+        "label": "اورژانس_حذف بیمارستان"
+    }
 ]
 
 urlpatterns = [
     path(url["path"], url["view"], name=url["name"]) for url in URLS_WITH_LABELS
-] 
+]

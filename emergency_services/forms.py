@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from django.forms.fields import DateField
 from jalali_date.fields import JalaliDateField
 from jalali_date.widgets import AdminJalaliDateWidget
+from django.forms import RadioSelect, CheckboxSelectMultiple
 
 from .models import (
     MedicalVisit, 
@@ -11,7 +12,8 @@ from .models import (
     Medicine, 
     MedicineCategory, 
     MedicalService,
-    MedicineReturn
+    MedicineReturn,
+    Hospital
 )
 from accounts.models import UserProfile
 from contractor_management.models import Employee
@@ -61,80 +63,45 @@ class MedicineSelectForm(forms.Form):
         return cleaned_data
 
 
+class HospitalForm(forms.ModelForm):
+    """فرم بیمارستان"""
+    class Meta:
+        model = Hospital
+        fields = ['name', 'address', 'phone', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+
+
 class MedicalVisitForm(forms.ModelForm):
-    """فرم ثبت مراجعه پزشکی"""
-    personnel_type = forms.ChoiceField(
-        choices=MedicalVisit.PERSONNEL_TYPE_CHOICES,
-        label=_("نوع پرسنل"),
-        widget=forms.RadioSelect(attrs={'class': 'form-check-input'})
-    )
-    
-    company_personnel = forms.ModelChoiceField(
-        queryset=UserProfile.objects.all(),
-        label=_("پرسنل شرکت"),
-        required=False,
-        empty_label="انتخاب کنید",
-        widget=forms.Select(attrs={
-            'class': 'form-select select2',
-            'data-placeholder': 'پرسنل شرکت را انتخاب کنید'
-        })
-    )
-    
-    contractor_personnel = forms.ModelChoiceField(
-        queryset=Employee.objects.all(),
-        label=_("پرسنل پیمانکار"),
-        required=False,
-        empty_label="انتخاب کنید",
-        widget=forms.Select(attrs={
-            'class': 'form-select select2',
-            'data-placeholder': 'پرسنل پیمانکار را انتخاب کنید'
-        })
-    )
-    
-    visit_reason = forms.CharField(
-        label=_("علت مراجعه"),
-        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3})
-    )
-    
-    doctor_recommendation = forms.CharField(
-        label=_("توصیه پزشک"),
-        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3})
-    )
-    
-    services = forms.ModelMultipleChoiceField(
-        queryset=MedicalService.objects.all(),
-        label=_("خدمات درمانی انجام‌شده"),
-        widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'})
-    )
-    
-    visit_time = forms.CharField(
-        label=_("زمان مراجعه"),
-        widget=forms.TextInput(attrs={'class': 'form-control', 'autocomplete': 'off'})
-    )
-    
+    """فرم مراجعه پزشکی"""
     class Meta:
         model = MedicalVisit
         fields = [
             'personnel_type', 'company_personnel', 'contractor_personnel',
-            'visit_reason', 'visit_time', 'doctor_recommendation', 'services'
+            'visit_reason', 'visit_time', 'doctor_recommendation', 'services',
+            'hospital', 'hospital_admission_time', 'hospital_discharge_time', 'hospital_diagnosis'
         ]
-    
-    def clean_visit_time(self):
-        visit_time = self.cleaned_data.get('visit_time')
-        if visit_time:
-            try:
-                # تبدیل تاریخ شمسی به میلادی
-                from persiantools.jdatetime import JalaliDateTime
-                from datetime import datetime
-                
-                # تبدیل رشته به تاریخ شمسی
-                jalali_date = JalaliDateTime.strptime(visit_time, '%Y/%m/%d %H:%M')
-                # تبدیل به تاریخ میلادی
-                gregorian_date = jalali_date.to_gregorian()
-                return gregorian_date
-            except ValueError:
-                raise ValidationError(_("لطفاً تاریخ و زمان را به فرمت صحیح وارد کنید (مثال: 1402/12/29 14:30)"))
-        return None
+        widgets = {
+            'personnel_type': RadioSelect(attrs={'class': 'form-check-input'}),
+            'company_personnel': forms.Select(attrs={'class': 'form-control'}),
+            'contractor_personnel': forms.Select(attrs={'class': 'form-control'}),
+            'visit_reason': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'visit_time': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'doctor_recommendation': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'services': CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
+            'hospital': forms.Select(attrs={'class': 'form-control'}),
+            'hospital_admission_time': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'hospital_discharge_time': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'hospital_diagnosis': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['personnel_type'].choices = [choice for choice in self.fields['personnel_type'].choices if choice[0] != '']
 
     def clean(self):
         cleaned_data = super().clean()

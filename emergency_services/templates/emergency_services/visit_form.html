@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load crispy_forms_tags %}
+{% load i18n %}
 
 {% block title %}ثبت مراجعه جدید | اورژانس معدن{% endblock %}
 
@@ -148,7 +149,7 @@
                                             </div>
                                             
                                             <div class="col-md-6">
-                                                <div class="form-group" id="company-personnel-group">
+                                                <div class="form-group" id="company-personnel-group" style="display: none;">
                                                     {{ form.company_personnel.label_tag }}
                                                     <select name="{{ form.company_personnel.name }}" id="id_company_personnel" class="form-select select2">
                                                         <option value="">انتخاب کنید</option>
@@ -205,6 +206,70 @@
                                                     <div class="error-message">
                                                         {{ form.visit_time.errors }}
                                                     </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <div class="form-group">
+                                                    <div class="form-check">
+                                                        <input type="checkbox" class="form-check-input" id="is_referred" name="is_referred">
+                                                        <label class="form-check-label" for="is_referred">اعزام به بیمارستان</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row" id="hospital-fields" style="display: none;">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="{{ form.hospital.id_for_label }}">{% trans "بیمارستان" %}</label>
+                                                    {{ form.hospital }}
+                                                    {% if form.hospital.errors %}
+                                                        <div class="invalid-feedback d-block">
+                                                            {{ form.hospital.errors }}
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row" id="hospital-time-fields" style="display: none;">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="{{ form.hospital_admission_time.id_for_label }}">{% trans "زمان پذیرش در بیمارستان" %}</label>
+                                                    <input type="text" name="{{ form.hospital_admission_time.name }}" id="id_hospital_admission_time" class="form-control" autocomplete="off" />
+                                                    {% if form.hospital_admission_time.errors %}
+                                                        <div class="invalid-feedback d-block">
+                                                            {{ form.hospital_admission_time.errors }}
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="{{ form.hospital_discharge_time.id_for_label }}">{% trans "زمان ترخیص از بیمارستان" %}</label>
+                                                    <input type="text" name="{{ form.hospital_discharge_time.name }}" id="id_hospital_discharge_time" class="form-control" autocomplete="off" />
+                                                    {% if form.hospital_discharge_time.errors %}
+                                                        <div class="invalid-feedback d-block">
+                                                            {{ form.hospital_discharge_time.errors }}
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row" id="hospital-diagnosis-field" style="display: none;">
+                                            <div class="col-12">
+                                                <div class="form-group">
+                                                    <label for="{{ form.hospital_diagnosis.id_for_label }}">{% trans "تشخیص بیمارستان" %}</label>
+                                                    {{ form.hospital_diagnosis }}
+                                                    {% if form.hospital_diagnosis.errors %}
+                                                        <div class="invalid-feedback d-block">
+                                                            {{ form.hospital_diagnosis.errors }}
+                                                        </div>
                                                     {% endif %}
                                                 </div>
                                             </div>
@@ -354,16 +419,44 @@
         initializeAllSelects();
 
         // مدیریت نمایش فیلدهای مربوط به نوع پرسنل
-        $('input[name="personnel_type"]').change(function() {
-            const selectedType = $(this).val();
+        function updatePersonnelFields() {
+            const selectedType = $('input[name="personnel_type"]:checked').val();
             if (selectedType === 'company') {
                 $('#company-personnel-group').show();
                 $('#contractor-personnel-group').hide();
                 $('#id_contractor_personnel').val(null).trigger('change');
-            } else {
+            } else if (selectedType === 'contractor') {
                 $('#company-personnel-group').hide();
                 $('#contractor-personnel-group').show();
                 $('#id_company_personnel').val(null).trigger('change');
+            } else {
+                $('#company-personnel-group').hide();
+                $('#contractor-personnel-group').hide();
+            }
+        }
+
+        // اجرای اولیه
+        updatePersonnelFields();
+
+        // تغییر نوع پرسنل
+        $('input[name="personnel_type"]').change(function() {
+            updatePersonnelFields();
+        });
+
+        // مدیریت نمایش فیلدهای بیمارستان
+        $('#is_referred').change(function() {
+            if ($(this).is(':checked')) {
+                $('#hospital-fields').show();
+                $('#hospital-time-fields').show();
+                $('#hospital-diagnosis-field').show();
+            } else {
+                $('#hospital-fields').hide();
+                $('#hospital-time-fields').hide();
+                $('#hospital-diagnosis-field').hide();
+                $('#id_hospital').val(null).trigger('change');
+                $('#id_hospital_admission_time').val('');
+                $('#id_hospital_discharge_time').val('');
+                $('#id_hospital_diagnosis').val('');
             }
         });
 
@@ -547,6 +640,62 @@
             },
             observer: true,
             altField: '#id_visit_time',
+            altFormat: 'YYYY/MM/DD HH:mm'
+        });
+
+        // راه‌اندازی دیتاپیکر برای زمان پذیرش بیمارستان
+        $("#id_hospital_admission_time").persianDatepicker({
+            formatDate: "YYYY/MM/DD hh:mm:ss:ms",
+            initialValue: true,
+            initialValueType: 'persian',
+            autoClose: true,
+            timePicker: {
+                enabled: true,
+                meridiem: {
+                    enabled: true
+                }
+            },
+            calendar: {
+                persian: {
+                    locale: 'fa'
+                }
+            },
+            toolbox: {
+                enabled: true,
+                calendarSwitch: {
+                    enabled: true
+                }
+            },
+            observer: true,
+            altField: '#id_hospital_admission_time',
+            altFormat: 'YYYY/MM/DD HH:mm'
+        });
+
+        // راه‌اندازی دیتاپیکر برای زمان ترخیص بیمارستان
+        $("#id_hospital_discharge_time").persianDatepicker({
+            formatDate: "YYYY/MM/DD hh:mm:ss:ms",
+            initialValue: true,
+            initialValueType: 'persian',
+            autoClose: true,
+            timePicker: {
+                enabled: true,
+                meridiem: {
+                    enabled: true
+                }
+            },
+            calendar: {
+                persian: {
+                    locale: 'fa'
+                }
+            },
+            toolbox: {
+                enabled: true,
+                calendarSwitch: {
+                    enabled: true
+                }
+            },
+            observer: true,
+            altField: '#id_hospital_discharge_time',
             altFormat: 'YYYY/MM/DD HH:mm'
         });
     });
