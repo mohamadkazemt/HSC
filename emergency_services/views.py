@@ -32,7 +32,8 @@ from .models import (
     MedicineCategory, 
     MedicalService,
     MedicineReturn,
-    Hospital
+    Hospital,
+    EmergencyEquipment
 )
 from .forms import (
     MedicalVisitForm, 
@@ -41,7 +42,8 @@ from .forms import (
     MedicineCategoryForm, 
     MedicalServiceForm,
     MedicineReturnForm,
-    HospitalForm
+    HospitalForm,
+    EmergencyEquipmentForm
 )
 
 def persian_to_english_numbers(text):
@@ -972,4 +974,129 @@ def download_sample_excel(request):
     )
     response['Content-Disposition'] = 'attachment; filename=sample_medicines.xlsx'
     
-    return response 
+    return response
+
+@permission_required("equipment_list")
+@login_required
+def equipment_list(request):
+    """لیست تجهیزات اورژانس"""
+    equipments = EmergencyEquipment.objects.all().order_by('next_calibration_date')
+    
+    # فیلترها
+    status = request.GET.get('status')
+    calibration_status = request.GET.get('calibration_status')
+    
+    if status == 'active':
+        equipments = equipments.filter(is_active=True)
+    elif status == 'inactive':
+        equipments = equipments.filter(is_active=False)
+    
+    if calibration_status == 'due':
+        equipments = equipments.filter(next_calibration_date__lte=timezone.now().date() + timedelta(days=30))
+    elif calibration_status == 'overdue':
+        equipments = equipments.filter(next_calibration_date__lt=timezone.now().date())
+    
+    # صفحه‌بندی
+    paginator = Paginator(equipments, 25)
+    page = request.GET.get('page')
+    equipments = paginator.get_page(page)
+    
+    context = {
+        'equipments': equipments,
+        'filters': {
+            'status': status,
+            'calibration_status': calibration_status,
+        }
+    }
+    
+    return render(request, 'emergency_services/equipment_list.html', context)
+
+@permission_required("create_equipment")
+@login_required
+def create_equipment(request):
+    """ایجاد تجهیز جدید"""
+    if request.method == 'POST':
+        data = request.POST.copy()
+        # تبدیل تاریخ شمسی به میلادی
+        for field in ['last_calibration_date', 'next_calibration_date']:
+            date_val = data.get(field)
+            if date_val:
+                try:
+                    date_val = persian_to_english_numbers(date_val.strip())
+                    date_val = re.sub(r'[^0-9/]', '', date_val)
+                    year, month, day = map(int, date_val.split('/'))
+                    if year < 100:
+                        year += 1400
+                    jalali_date = jdatetime.date(year, month, day)
+                    gregorian_date = jalali_date.togregorian()
+                    data[field] = gregorian_date.strftime('%Y-%m-%d')
+                except Exception as e:
+                    messages.error(request, 'لطفاً تاریخ را به فرمت صحیح وارد کنید (مثال: 1402/12/29)')
+                    form = EmergencyEquipmentForm()
+                    return render(request, 'emergency_services/equipment_form.html', {'form': form})
+        form = EmergencyEquipmentForm(data)
+        if form.is_valid():
+            try:
+                equipment = form.save()
+                messages.success(request, 'تجهیز با موفقیت ثبت شد.')
+                return redirect('emergency_services:equipment_list')
+            except Exception as e:
+                messages.error(request, f'خطا در ثبت تجهیز: {str(e)}')
+        else:
+            print(form.errors)
+    else:
+        form = EmergencyEquipmentForm()
+    return render(request, 'emergency_services/equipment_form.html', {'form': form})
+
+@permission_required("edit_equipment")
+@login_required
+def edit_equipment(request, pk):
+    """ویرایش تجهیز"""
+    equipment = get_object_or_404(EmergencyEquipment, pk=pk)
+    
+    if request.method == 'POST':
+        data = request.POST.copy()
+        for field in ['last_calibration_date', 'next_calibration_date']:
+            date_val = data.get(field)
+            if date_val:
+                try:
+                    date_val = persian_to_english_numbers(date_val.strip())
+                    date_val = re.sub(r'[^0-9/]', '', date_val)
+                    year, month, day = map(int, date_val.split('/'))
+                    if year < 100:
+                        year += 1400
+                    jalali_date = jdatetime.date(year, month, day)
+                    gregorian_date = jalali_date.togregorian()
+                    data[field] = gregorian_date.strftime('%Y-%m-%d')
+                except Exception as e:
+                    messages.error(request, 'لطفاً تاریخ را به فرمت صحیح وارد کنید (مثال: 1402/12/29)')
+                    form = EmergencyEquipmentForm(instance=equipment)
+                    return render(request, 'emergency_services/equipment_form.html', {'form': form, 'equipment': equipment})
+        form = EmergencyEquipmentForm(data, instance=equipment)
+        if form.is_valid():
+            try:
+                form.save()
+                messages.success(request, 'تجهیز با موفقیت بروزرسانی شد.')
+                return redirect('emergency_services:equipment_list')
+            except Exception as e:
+                messages.error(request, f'خطا در بروزرسانی تجهیز: {str(e)}')
+        else:
+            print(form.errors)
+    else:
+        form = EmergencyEquipmentForm(instance=equipment)
+    return render(request, 'emergency_services/equipment_form.html', {'form': form, 'equipment': equipment})
+
+@permission_required("delete_equipment")
+@login_required
+def delete_equipment(request, pk):
+    """حذف تجهیز"""
+    equipment = get_object_or_404(EmergencyEquipment, pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            equipment.delete()
+            messages.success(request, 'تجهیز با موفقیت حذف شد.')
+        except Exception as e:
+            messages.error(request, f'خطا در حذف تجهیز: {str(e)}')
+    
+    return redirect('emergency_services:equipment_list') 

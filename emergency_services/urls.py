@@ -147,6 +147,30 @@ URLS_WITH_LABELS = [
         "view": views.delete_hospital,
         "name": "delete_hospital",
         "label": "اورژانس_حذف بیمارستان"
+    },
+    {
+        "path": "equipment/",
+        "view": views.equipment_list,
+        "name": "equipment_list",
+        "label": "اورژانس_لیست تجهیزات"
+    },
+    {
+        "path": "equipment/create/",
+        "view": views.create_equipment,
+        "name": "create_equipment",
+        "label": "اورژانس_ایجاد تجهیز جدید"
+    },
+    {
+        "path": "equipment/<int:pk>/edit/",
+        "view": views.edit_equipment,
+        "name": "edit_equipment",
+        "label": "اورژانس_ویرایش تجهیز"
+    },
+    {
+        "path": "equipment/<int:pk>/delete/",
+        "view": views.delete_equipment,
+        "name": "delete_equipment",
+        "label": "اورژانس_حذف تجهیز"
     }
 ]
 

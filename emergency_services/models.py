@@ -236,4 +236,61 @@ class MedicineReturn(models.Model):
             self.usage.quantity -= self.quantity
             self.usage.save()
         
-        super().save(*args, **kwargs) 
+        super().save(*args, **kwargs)
+
+
+class EmergencyEquipment(models.Model):
+    """مدل تجهیزات اورژانس"""
+    name = models.CharField(_("نام تجهیز"), max_length=200)
+    serial_number = models.CharField(_("شماره سریال"), max_length=100, unique=True)
+    description = models.TextField(_("توضیحات"), blank=True, null=True)
+    last_calibration_date = models.DateField(_("تاریخ آخرین کالیبراسیون"))
+    next_calibration_date = models.DateField(_("تاریخ کالیبراسیون بعدی"))
+    calibration_alert_days = models.PositiveIntegerField(_("تعداد روز هشدار قبل از کالیبراسیون"), default=30)
+    is_active = models.BooleanField(_("فعال"), default=True)
+    created_at = models.DateTimeField(_("تاریخ ایجاد"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("تاریخ بروزرسانی"), auto_now=True)
+    
+    class Meta:
+        verbose_name = _("تجهیز اورژانس")
+        verbose_name_plural = _("تجهیزات اورژانس")
+    
+    def __str__(self):
+        return f"{self.name} - {self.serial_number}"
+    
+    def is_calibration_due(self):
+        """بررسی نیاز به کالیبراسیون"""
+        today = timezone.now().date()
+        days_until_calibration = (self.next_calibration_date - today).days
+        return days_until_calibration <= self.calibration_alert_days
+    
+    def save(self, *args, **kwargs):
+        """اعمال منطق کالیبراسیون و ارسال نوتیفیکیشن"""
+        super().save(*args, **kwargs)
+        
+        # ایجاد نوتیفیکیشن در صورت نزدیک شدن به تاریخ کالیبراسیون
+        from dashboard.models import Notification
+        from django.contrib.auth.models import User, Group
+        
+        # دریافت گروه‌های مدیر HSE و مدیر اورژانس
+        hse_group = Group.objects.get(name='مدیر HSE')
+        emergency_group = Group.objects.get(name='مدیر اورژانس')
+        
+        # دریافت کاربران این گروه‌ها
+        hse_managers = User.objects.filter(groups=hse_group)
+        emergency_managers = User.objects.filter(groups=emergency_group)
+        
+        # ترکیب لیست مدیران
+        managers = list(hse_managers) + list(emergency_managers)
+        
+        if self.is_calibration_due():
+            days_until_calibration = (self.next_calibration_date - timezone.now().date()).days
+            # ارسال نوتیفیکیشن هشدار کالیبراسیون به همه مدیران
+            for manager in managers:
+                Notification.objects.create(
+                    user=manager,
+                    title=f"هشدار کالیبراسیون تجهیز",
+                    message=f"تجهیز {self.name} با شماره سریال {self.serial_number} نیاز به کالیبراسیون دارد. {days_until_calibration} روز تا تاریخ کالیبراسیون باقی مانده است.",
+                    notification_type="warning",
+                    is_read=False
+                ) 

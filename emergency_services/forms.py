@@ -13,7 +13,8 @@ from .models import (
     MedicineCategory, 
     MedicalService,
     MedicineReturn,
-    Hospital
+    Hospital,
+    EmergencyEquipment
 )
 from accounts.models import UserProfile
 from contractor_management.models import Employee
@@ -190,3 +191,41 @@ class MedicineReturnForm(forms.ModelForm):
                 params={'used': self.usage.quantity},
             )
         return quantity 
+
+
+class EmergencyEquipmentForm(forms.ModelForm):
+    """فرم مدیریت تجهیزات اورژانس"""
+    class Meta:
+        model = EmergencyEquipment
+        fields = ['name', 'serial_number', 'description', 'last_calibration_date', 'next_calibration_date', 'calibration_alert_days', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'serial_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'calibration_alert_days': forms.NumberInput(attrs={'class': 'form-control'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # استفاده از DateField معمولی به جای JalaliDateField
+        # چون تبدیل تاریخ در views.py انجام می‌شود
+        self.fields['last_calibration_date'] = DateField(
+            label=_('تاریخ آخرین کالیبراسیون'),
+            widget=forms.DateInput(attrs={'class': 'form-control jalali-datepicker'})
+        )
+        self.fields['next_calibration_date'] = DateField(
+            label=_('تاریخ کالیبراسیون بعدی'),
+            widget=forms.DateInput(attrs={'class': 'form-control jalali-datepicker'})
+        )
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        last_calibration = cleaned_data.get('last_calibration_date')
+        next_calibration = cleaned_data.get('next_calibration_date')
+        
+        if last_calibration and next_calibration:
+            if last_calibration > next_calibration:
+                self.add_error('next_calibration_date', _("تاریخ کالیبراسیون بعدی نمی‌تواند قبل از تاریخ آخرین کالیبراسیون باشد."))
+        
+        return cleaned_data 

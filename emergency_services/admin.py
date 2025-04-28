@@ -6,7 +6,8 @@ from .models import (
     MedicineCategory, 
     MedicalService,
     MedicineReturn,
-    Hospital
+    Hospital,
+    EmergencyEquipment
 )
 
 
@@ -83,4 +84,14 @@ class HospitalAdmin(admin.ModelAdmin):
     list_display = ('name', 'phone', 'is_active', 'created_at')
     list_filter = ('is_active',)
     search_fields = ('name', 'phone', 'address')
-    ordering = ('-created_at',) 
+    ordering = ('-created_at',)
+
+
+@admin.register(EmergencyEquipment)
+class EmergencyEquipmentAdmin(admin.ModelAdmin):
+    list_display = ('name', 'serial_number', 'last_calibration_date', 'next_calibration_date', 'is_active')
+    list_filter = ('is_active', 'last_calibration_date', 'next_calibration_date')
+    search_fields = ('name', 'serial_number', 'description')
+    list_editable = ('is_active',)
+    readonly_fields = ('created_at', 'updated_at')
+    date_hierarchy = 'next_calibration_date' 

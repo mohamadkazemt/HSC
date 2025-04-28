@@ -584,6 +584,35 @@
                                 <span class="menu-title">مدیریت بیمارستان‌ها</span>
                             </a>
                         </div>
+                        <!-- تجهیزات -->
+                        {% if request.user|has_permission:"equipment_list" or request.user|has_permission:"create_equipment" %}
+                            <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
+                                <span class="menu-link">
+                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                    <span class="menu-title">تجهیزات</span>
+                                    <span class="menu-arrow"></span>
+                                </span>
+                                <div class="menu-sub menu-sub-accordion">
+                                    {% if request.user|has_permission:"equipment_list" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'emergency_services:equipment_list' %}">
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                                <span class="menu-title">لیست تجهیزات</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                    {% if request.user|has_permission:"create_equipment" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'emergency_services:create_equipment' %}">
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                                <span class="menu-title">افزودن تجهیز جدید</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+
                         <!-- مراجعات -->
                         {% if request.user|has_permission:"create_visit" or request.user|has_permission:"visit_list" %}
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion">

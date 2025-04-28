@@ -2,70 +2,87 @@
 {% load static %}
 {% load i18n %}
 
+
 {% block title %}{% trans "لیست بیمارستان‌ها" %}{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">{% trans "لیست بیمارستان‌ها" %}</h3>
-                    <div class="card-tools">
-                        {% if perms.emergency_services.create_hospital %}
-                        <a href="{% url 'emergency_services:create_hospital' %}" class="btn btn-primary">
-                            <i class="fas fa-plus"></i> {% trans "بیمارستان جدید" %}
-                        </a>
-                        {% endif %}
+<div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+    <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+        {% include 'header.html' %}
+        <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+            {% include 'sidebar.html' %}
+            <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                <div class="d-flex flex-column flex-column-fluid">
+                    {% include 'toolbar.html' %}
+                    <div id="kt_app_content" class="app-content flex-column-fluid">
+                        <div id="kt_app_content_container" class="app-container container-fluid">
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h3 class="card-title">{% trans "لیست بیمارستان‌ها" %}</h3>
+                                            <div class="card-tools">
+                                                {% if perms.emergency_services.create_hospital %}
+                                                <a href="{% url 'emergency_services:create_hospital' %}" class="btn btn-primary">
+                                                    <i class="fas fa-plus"></i> {% trans "بیمارستان جدید" %}
+                                                </a>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-bordered table-striped">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>{% trans "نام بیمارستان" %}</th>
+                                                            <th>{% trans "آدرس" %}</th>
+                                                            <th>{% trans "شماره تماس" %}</th>
+                                                            <th>{% trans "وضعیت" %}</th>
+                                                            <th>{% trans "عملیات" %}</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for hospital in hospitals %}
+                                                        <tr>
+                                                            <td>{{ hospital.name }}</td>
+                                                            <td>{{ hospital.address }}</td>
+                                                            <td>{{ hospital.phone }}</td>
+                                                            <td>
+                                                                {% if hospital.is_active %}
+                                                                <span class="badge badge-success">{% trans "فعال" %}</span>
+                                                                {% else %}
+                                                                <span class="badge badge-danger">{% trans "غیرفعال" %}</span>
+                                                                {% endif %}
+                                                            </td>
+                                                            <td>
+                                                                {% if perms.emergency_services.edit_hospital %}
+                                                                <a href="{% url 'emergency_services:edit_hospital' hospital.pk %}" class="btn btn-sm btn-info">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </a>
+                                                                {% endif %}
+                                                                {% if perms.emergency_services.delete_hospital %}
+                                                                <a href="{% url 'emergency_services:delete_hospital' hospital.pk %}" class="btn btn-sm btn-danger" onclick="return confirm('{% trans "آیا از حذف این بیمارستان اطمینان دارید؟" %}')">
+                                                                    <i class="fas fa-trash"></i>
+                                                                </a>
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                        {% empty %}
+                                                        <tr>
+                                                            <td colspan="5" class="text-center">{% trans "هیچ بیمارستانی ثبت نشده است." %}</td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-striped">
-                            <thead>
-                                <tr>
-                                    <th>{% trans "نام بیمارستان" %}</th>
-                                    <th>{% trans "آدرس" %}</th>
-                                    <th>{% trans "شماره تماس" %}</th>
-                                    <th>{% trans "وضعیت" %}</th>
-                                    <th>{% trans "عملیات" %}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for hospital in hospitals %}
-                                <tr>
-                                    <td>{{ hospital.name }}</td>
-                                    <td>{{ hospital.address }}</td>
-                                    <td>{{ hospital.phone }}</td>
-                                    <td>
-                                        {% if hospital.is_active %}
-                                        <span class="badge badge-success">{% trans "فعال" %}</span>
-                                        {% else %}
-                                        <span class="badge badge-danger">{% trans "غیرفعال" %}</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if perms.emergency_services.edit_hospital %}
-                                        <a href="{% url 'emergency_services:edit_hospital' hospital.pk %}" class="btn btn-sm btn-info">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        {% endif %}
-                                        {% if perms.emergency_services.delete_hospital %}
-                                        <a href="{% url 'emergency_services:delete_hospital' hospital.pk %}" class="btn btn-sm btn-danger" onclick="return confirm('{% trans "آیا از حذف این بیمارستان اطمینان دارید؟" %}')">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="5" class="text-center">{% trans "هیچ بیمارستانی ثبت نشده است." %}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                {% include 'footer.html' %}
             </div>
         </div>
     </div>
