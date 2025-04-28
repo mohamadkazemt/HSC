@@ -677,19 +677,17 @@
                                             </a>
                                         </div>
                                     {% endif %}
-                                    <!-- دسته‌بندی داروها -->
-                        {% if request.user|has_permission:"category_list" %}
-                        <div class="menu-item">
-                            <a class="menu-link" href="{% url 'emergency_services:category_list' %}">
-                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                <span class="menu-title">دسته‌بندی داروها</span>
-                            </a>
+                                    {% if request.user|has_permission:"category_list" %}
+                                        <div class="menu-item">
+                                            <a class="menu-link" href="{% url 'emergency_services:category_list' %}">
+                                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                                <span class="menu-title">دسته‌بندی داروها</span>
+                                            </a>
+                                        </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         {% endif %}
-
-
-                     {% endif %}
 
                     </div>
                 </div>
