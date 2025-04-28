@@ -653,7 +653,7 @@
                         {% endif %}
 
                         <!-- داروها -->
-                        {% if request.user|has_permission:"medicine_list" or request.user|has_permission:"create_medicine" %}
+                        {% if request.user|has_permission:"medicine_list" or request.user|has_permission:"create_medicine" or request.user|has_permission:"category_list" %}
                             <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
                                 <span class="menu-link">
                                     <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
@@ -677,19 +677,20 @@
                                             </a>
                                         </div>
                                     {% endif %}
+                                    <!-- دسته‌بندی داروها -->
+                        {% if request.user|has_permission:"category_list" %}
+                        <div class="menu-item">
+                            <a class="menu-link" href="{% url 'emergency_services:category_list' %}">
+                                <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
+                                <span class="menu-title">دسته‌بندی داروها</span>
+                            </a>
                                 </div>
                             </div>
                         {% endif %}
 
-                        <!-- دسته‌بندی داروها -->
-                        {% if request.user|has_permission:"category_list" %}
-                            <div class="menu-item">
-                                <a class="menu-link" href="{% url 'emergency_services:category_list' %}">
-                                    <span class="menu-bullet"><span class="bullet bullet-dot"></span></span>
-                                    <span class="menu-title">دسته‌بندی داروها</span>
-                                </a>
-                            </div>
-                        {% endif %}
+
+                     {% endif %}
+
                     </div>
                 </div>
 
