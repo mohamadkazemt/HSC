@@ -68,15 +68,26 @@ class Question(models.Model):
         ('E', 'Environment'),
     ]
 
-    question_scope = models.CharField(max_length=20, choices=QUESTION_SCOPE_CHOICES, verbose_name="محدوده سوال")
-    machine_type = models.ForeignKey(TypeMachine, on_delete=models.CASCADE, null=True, blank=True, verbose_name="نوع ماشین", related_name='questions')
-    location_section = models.ForeignKey(LocationSection, on_delete=models.CASCADE, null=True, blank=True, verbose_name="بخش مکانی")
-    vehicle_category = models.CharField(
-        max_length=10,
-        choices=Vehicle.VEHICLE_CATEGORY_CHOICES,
-        null=True,
+    question_scopes = models.JSONField(
+        default=list,
+        verbose_name="محدوده‌های سوال",
+        help_text="لیست محدوده‌هایی که این سوال در آن‌ها نمایش می‌شود"
+    )
+    machine_types = models.ManyToManyField(
+        TypeMachine,
         blank=True,
-        verbose_name="دسته‌بندی خودرو"
+        verbose_name="انواع ماشین",
+        related_name='questions'
+    )
+    location_sections = models.ManyToManyField(
+        LocationSection,
+        blank=True,
+        verbose_name="بخش‌های مکانی"
+    )
+    vehicle_categories = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="دسته‌بندی‌های خودرو"
     )
     text = models.TextField(verbose_name="متن سوال")
     is_required = models.BooleanField(default=True, verbose_name="اجباری")
@@ -133,16 +144,21 @@ class Question(models.Model):
         return self.text[:50]
 
     def clean(self):
-        if self.question_scope == 'machine' and not self.machine_type:
-            raise ValidationError('برای سوالات ماشین، باید نوع ماشین انتخاب شود.')
-        elif self.question_scope == 'location' and not self.location_section:
-            raise ValidationError('برای سوالات مکان، باید بخش مکانی انتخاب شود.')
-        elif self.question_scope == 'contractor_vehicle' and not self.vehicle_category:
-            raise ValidationError('برای سوالات ماشین‌آلات پیمانکار، باید دسته‌بندی خودرو انتخاب شود.')
-        if (self.machine_type and self.location_section) or (self.machine_type and self.vehicle_category) or (self.location_section and self.vehicle_category):
-            raise ValidationError('نمی‌توان همزمان بیش از یک نوع ماشین یا مکان را انتخاب کرد.')
+        if not self.question_scopes:
+            raise ValidationError('حداقل یک محدوده سوال باید انتخاب شود.')
+        
+        if 'machine' in self.question_scopes and not self.machine_types.exists():
+            raise ValidationError('برای سوالات ماشین، باید حداقل یک نوع ماشین انتخاب شود.')
+        
+        if 'location' in self.question_scopes and not self.location_sections.exists():
+            raise ValidationError('برای سوالات مکان، باید حداقل یک بخش مکانی انتخاب شود.')
+        
+        if 'contractor_vehicle' in self.question_scopes and not self.vehicle_categories:
+            raise ValidationError('برای سوالات ماشین‌آلات پیمانکار، باید حداقل یک دسته‌بندی خودرو انتخاب شود.')
+        
         if self.question_type == 'option' and not self.options:
             raise ValidationError('برای سوالات گزینه‌ای، باید گزینه‌ها تعریف شوند.')
+        
         if self.unacceptable_options and self.question_type != 'option':
             raise ValidationError('گزینه‌های غیرقابل قبول فقط برای سوالات گزینه‌ای قابل تعریف است.')
 

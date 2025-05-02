@@ -16,15 +16,25 @@ class ChecklistAdmin(admin.ModelAdmin):
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'question_scope', 'get_scope_item', 'text', 'is_required', 'question_type')
-    list_filter = ('question_scope', 'is_required', 'question_type')
-    search_fields = ('text', 'machine_type__name', 'location_section__section')
+    list_display = ('id', 'get_question_scopes', 'get_scope_items', 'text', 'is_required', 'question_type')
+    list_filter = ('is_required', 'question_type')
+    search_fields = ('text', 'machine_types__name', 'location_sections__section')
+    filter_horizontal = ('machine_types', 'location_sections')
 
-    def get_scope_item(self, obj):
-        if obj.question_scope == 'machine':
-            return obj.machine_type
-        return obj.location_section
-    get_scope_item.short_description = 'آیتم محدوده'
+    def get_question_scopes(self, obj):
+        return ", ".join(obj.question_scopes)
+    get_question_scopes.short_description = 'محدوده‌های سوال'
+
+    def get_scope_items(self, obj):
+        items = []
+        if 'machine' in obj.question_scopes:
+            items.extend([str(mt) for mt in obj.machine_types.all()])
+        if 'location' in obj.question_scopes:
+            items.extend([str(ls) for ls in obj.location_sections.all()])
+        if 'contractor_vehicle' in obj.question_scopes:
+            items.extend(obj.vehicle_categories)
+        return ", ".join(items) if items else "-"
+    get_scope_items.short_description = 'آیتم‌های محدوده'
 
 @admin.register(Answer)
 class AnswerAdmin(admin.ModelAdmin):

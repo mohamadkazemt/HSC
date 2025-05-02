@@ -334,17 +334,19 @@
                                                     <div class="row">
                                                         <div class="col-md-6">
                                                             <div class="form-group">
-                                                                <label class="form-label required">محدوده سوال</label>
+                                                                <label class="form-label required">محدوده‌های سوال</label>
                                                                 <div class="input-group">
-                                                                    <select name="question_scope" class="form-select" required>
-                                                                        <option value="">انتخاب کنید</option>
-                                                                        <option value="machine" {% if question.question_scope == 'machine' %}selected{% endif %}>ماشین</option>
-                                                                        <option value="location" {% if question.question_scope == 'location' %}selected{% endif %}>مکان</option>
-                                                                        <option value="contractor_vehicle" {% if question.question_scope == 'contractor_vehicle' %}selected{% endif %}>ماشین‌آلات پیمانکار</option>
+                                                                    <select name="question_scopes" class="form-select select2-basic" multiple required>
+                                                                        <option value="machine" {% if 'machine' in question.question_scopes %}selected{% endif %}>ماشین</option>
+                                                                        <option value="location" {% if 'location' in question.question_scopes %}selected{% endif %}>مکان</option>
+                                                                        <option value="contractor_vehicle" {% if 'contractor_vehicle' in question.question_scopes %}selected{% endif %}>ماشین‌آلات پیمانکار</option>
                                                                     </select>
-                                                                    <span class="tooltip-icon" data-bs-toggle="tooltip" title="محدوده سوال را مشخص کنید">
+                                                                    <span class="tooltip-icon" data-bs-toggle="tooltip" title="محدوده‌های سوال را انتخاب کنید">
                                                                         <i class="fas fa-info-circle"></i>
                                                                     </span>
+                                                                </div>
+                                                                <div class="form-text">
+                                                                    می‌توانید چندین محدوده را انتخاب کنید
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -369,15 +371,17 @@
                                                     <div id="machineTypeSection" class="row" style="display: none;">
                                                         <div class="col-md-6">
                                                             <div class="form-group">
-                                                                <label class="form-label required">نوع ماشین</label>
-                                                                <select name="machine_type" class="form-select select2-basic">
-                                                                    <option value="">انتخاب کنید</option>
+                                                                <label class="form-label required">انواع ماشین</label>
+                                                                <select name="machine_types" class="form-select select2-basic" multiple>
                                                                     {% for type in machine_types %}
-                                                                    <option value="{{ type.id }}" {% if question.machine_type_id == type.id %}selected{% endif %}>
+                                                                    <option value="{{ type.id }}" {% if type in question.machine_types.all %}selected{% endif %}>
                                                                         {{ type.name }}
                                                                     </option>
                                                                     {% endfor %}
                                                                 </select>
+                                                                <div class="form-text">
+                                                                    می‌توانید چندین نوع ماشین را انتخاب کنید
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -386,15 +390,17 @@
                                                     <div id="locationSection" class="row" style="display: none;">
                                                         <div class="col-md-6">
                                                             <div class="form-group">
-                                                                <label class="form-label required">بخش مکانی</label>
-                                                                <select name="location_section" class="form-select select2-basic">
-                                                                    <option value="">انتخاب کنید</option>
+                                                                <label class="form-label required">بخش‌های مکانی</label>
+                                                                <select name="location_sections" class="form-select select2-basic" multiple>
                                                                     {% for section in location_sections %}
-                                                                    <option value="{{ section.id }}" {% if question.location_section_id == section.id %}selected{% endif %}>
+                                                                    <option value="{{ section.id }}" {% if section in question.location_sections.all %}selected{% endif %}>
                                                                         {{ section.section }} - {{ section.location.name }}
                                                                     </option>
                                                                     {% endfor %}
                                                                 </select>
+                                                                <div class="form-text">
+                                                                    می‌توانید چندین بخش مکانی را انتخاب کنید
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -403,12 +409,14 @@
                                                     <div id="vehicleCategorySection" class="row" style="display: none;">
                                                         <div class="col-md-6">
                                                             <div class="form-group">
-                                                                <label class="form-label required">دسته‌بندی خودرو</label>
-                                                                <select name="vehicle_category" class="form-select select2-basic">
-                                                                    <option value="">انتخاب کنید</option>
-                                                                    <option value="mining" {% if question.vehicle_category == 'mining' %}selected{% endif %}>ماشین‌آلات معدنی</option>
-                                                                    <option value="light" {% if question.vehicle_category == 'light' %}selected{% endif %}>خودروهای سبک</option>
+                                                                <label class="form-label required">دسته‌بندی‌های خودرو</label>
+                                                                <select name="vehicle_categories" class="form-select select2-basic" multiple>
+                                                                    <option value="mining" {% if 'mining' in question.vehicle_categories %}selected{% endif %}>ماشین‌آلات معدنی</option>
+                                                                    <option value="light" {% if 'light' in question.vehicle_categories %}selected{% endif %}>خودروهای سبک</option>
                                                                 </select>
+                                                                <div class="form-text">
+                                                                    می‌توانید چندین دسته‌بندی را انتخاب کنید
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -620,40 +628,36 @@ $(document).ready(function() {
         minimumResultsForSearch: 1
     });
 
-    // نمایش/مخفی کردن بخش‌های مختلف بر اساس نوع سوال
+    // نمایش/مخفی کردن بخش‌های مختلف بر اساس محدوده‌های انتخاب شده
     function toggleSections() {
-        var scope = $('select[name="question_scope"]').val();
+        var scopes = $('select[name="question_scopes"]').val() || [];
         var type = $('select[name="question_type"]').val();
 
-        // نمایش/مخفی کردن بخش نوع ماشین و مکان
-        if (scope === 'machine') {
+        // نمایش/مخفی کردن بخش نوع ماشین
+        if (scopes.includes('machine')) {
             $('#machineTypeSection').slideDown(300);
-            $('#locationSection').slideUp(300);
-            $('#vehicleCategorySection').slideUp(300);
-            $('select[name="machine_type"]').prop('required', true);
-            $('select[name="location_section"]').prop('required', false);
-            $('select[name="vehicle_category"]').prop('required', false);
-        } else if (scope === 'location') {
-            $('#machineTypeSection').slideUp(300);
-            $('#locationSection').slideDown(300);
-            $('#vehicleCategorySection').slideUp(300);
-            $('select[name="machine_type"]').prop('required', false);
-            $('select[name="location_section"]').prop('required', true);
-            $('select[name="vehicle_category"]').prop('required', false);
-        } else if (scope === 'contractor_vehicle') {
-            $('#machineTypeSection').slideUp(300);
-            $('#locationSection').slideUp(300);
-            $('#vehicleCategorySection').slideDown(300);
-            $('select[name="machine_type"]').prop('required', false);
-            $('select[name="location_section"]').prop('required', false);
-            $('select[name="vehicle_category"]').prop('required', true);
+            $('select[name="machine_types"]').prop('required', true);
         } else {
             $('#machineTypeSection').slideUp(300);
+            $('select[name="machine_types"]').prop('required', false);
+        }
+
+        // نمایش/مخفی کردن بخش مکان
+        if (scopes.includes('location')) {
+            $('#locationSection').slideDown(300);
+            $('select[name="location_sections"]').prop('required', true);
+        } else {
             $('#locationSection').slideUp(300);
+            $('select[name="location_sections"]').prop('required', false);
+        }
+
+        // نمایش/مخفی کردن بخش دسته‌بندی خودرو
+        if (scopes.includes('contractor_vehicle')) {
+            $('#vehicleCategorySection').slideDown(300);
+            $('select[name="vehicle_categories"]').prop('required', true);
+        } else {
             $('#vehicleCategorySection').slideUp(300);
-            $('select[name="machine_type"]').prop('required', false);
-            $('select[name="location_section"]').prop('required', false);
-            $('select[name="vehicle_category"]').prop('required', false);
+            $('select[name="vehicle_categories"]').prop('required', false);
         }
 
         // نمایش/مخفی کردن بخش گزینه‌ها
@@ -672,7 +676,7 @@ $(document).ready(function() {
     toggleSections();
 
     // اضافه کردن event listener برای تغییرات
-    $('select[name="question_scope"]').change(function() {
+    $('select[name="question_scopes"]').change(function() {
         toggleSections();
         validateField($(this));
     });

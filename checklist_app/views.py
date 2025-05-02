@@ -136,15 +136,16 @@ def get_general_questions(request):
     location_section_id = data.get('location_section_id')
     vehicle_id = data.get('vehicle_id')
     
-    questions = Question.objects.filter(question_scope=checklist_type)
+    all_questions = Question.objects.all()
+    questions = [q for q in all_questions if checklist_type in q.question_scopes]
     if checklist_type == 'machine' and machine_id:
         machine = MiningMachine.objects.get(id=machine_id)
-        questions = questions.filter(machine_type=machine.machine_type)
+        questions = [q for q in questions if machine.machine_type in q.machine_types.all()]
     elif checklist_type == 'location' and location_section_id:
-        questions = questions.filter(location_section_id=location_section_id)
+        questions = [q for q in questions if int(location_section_id) in [ls.id for ls in q.location_sections.all()]]
     elif checklist_type == 'contractor_vehicle' and vehicle_id:
         vehicle = Vehicle.objects.get(id=vehicle_id)
-        questions = questions.filter(vehicle_category=vehicle.vehicle_category)
+        questions = [q for q in questions if vehicle.vehicle_category in q.vehicle_categories]
     
     questions_data = [{
         'id': q.id,
@@ -488,7 +489,7 @@ def general_question_form_view(request):
         
         # ایجاد سوال جدید
         question = Question.objects.create(
-            question_scope=data['question_scope'],
+            question_scopes=data.getlist('question_scopes'),
             question_type=data['question_type'],
             text=data['text'],
             options=data.get('options', ''),
@@ -498,19 +499,20 @@ def general_question_form_view(request):
             default_priority_on_fail_id=data['default_priority_on_fail'],
             default_corrective_action=data.get('default_corrective_action', ''),
             default_anomaly_description_id=data.get('default_anomaly_description', ''),
-            is_required=True
+            vehicle_categories=data.getlist('vehicle_categories', [])
         )
 
-        # اضافه کردن نوع ماشین، بخش مکانی یا دسته‌بندی خودرو بر اساس نوع سوال
-        if data['question_scope'] == 'machine' and data.get('machine_type'):
-            question.machine_type_id = data['machine_type']
-        elif data['question_scope'] == 'location' and data.get('location_section'):
-            question.location_section_id = data['location_section']
-        elif data['question_scope'] == 'contractor_vehicle' and data.get('vehicle_category'):
-            question.vehicle_category = data['vehicle_category']
-        question.save()
-        
-        return redirect('checklist_app:general_question_list')
+        # تنظیم انواع ماشین
+        if 'machine' in question.question_scopes:
+            machine_types = data.getlist('machine_types')
+            question.machine_types.set(machine_types)
+
+        # تنظیم بخش‌های مکانی
+        if 'location' in question.question_scopes:
+            location_sections = data.getlist('location_sections')
+            question.location_sections.set(location_sections)
+
+        return JsonResponse({'success': True, 'message': 'سوال با موفقیت ایجاد شد'})
     
     # دریافت داده‌های مورد نیاز برای فرم
     context = {
@@ -684,7 +686,7 @@ def import_questions_view(request):
         print(f"Found headers: {headers}")
         
         required_headers = [
-            'متن سوال', 'محدوده', 'نوع سوال', 'نوع ماشین', 'بخش مکانی', 'دسته‌بندی خودرو',
+            'متن سوال', 'محدوده‌ها', 'نوع سوال', 'انواع ماشین', 'بخش‌های مکانی', 'دسته‌بندی‌های خودرو',
             'گزینه‌ها', 'گزینه‌های غیرقابل قبول', 'نوع آنومالی', 'حوزه HSE',
             'شرح آنومالی پیش‌فرض', 'اولویت', 'اقدام اصلاحی پیش‌فرض'
         ]
@@ -713,11 +715,11 @@ def import_questions_view(request):
                 
                 # خواندن داده‌های سطر
                 text = ws.cell(row=row, column=header_map['متن سوال']).value
-                scope = ws.cell(row=row, column=header_map['محدوده']).value
+                scopes = ws.cell(row=row, column=header_map['محدوده‌ها']).value or ''
                 question_type = ws.cell(row=row, column=header_map['نوع سوال']).value
-                machine_type_name = ws.cell(row=row, column=header_map['نوع ماشین']).value
-                location_section_name = ws.cell(row=row, column=header_map['بخش مکانی']).value
-                vehicle_category_name = ws.cell(row=row, column=header_map['دسته‌بندی خودرو']).value
+                machine_types_str = ws.cell(row=row, column=header_map['انواع ماشین']).value or ''
+                location_sections_str = ws.cell(row=row, column=header_map['بخش‌های مکانی']).value or ''
+                vehicle_categories_str = ws.cell(row=row, column=header_map['دسته‌بندی‌های خودرو']).value or ''
                 options = ws.cell(row=row, column=header_map['گزینه‌ها']).value
                 unacceptable_options = ws.cell(row=row, column=header_map['گزینه‌های غیرقابل قبول']).value
                 anomaly_type_name = ws.cell(row=row, column=header_map['نوع آنومالی']).value
@@ -726,8 +728,8 @@ def import_questions_view(request):
                 priority_value = ws.cell(row=row, column=header_map['اولویت']).value
                 corrective_action = ws.cell(row=row, column=header_map['اقدام اصلاحی پیش‌فرض']).value
                 
-                print(f"Row data: text={text}, scope={scope}, type={question_type}, machine_type={machine_type_name}, "
-                      f"location={location_section_name}, vehicle_category={vehicle_category_name}, anomaly_type={anomaly_type_name}, "
+                print(f"Row data: text={text}, scopes={scopes}, type={question_type}, machine_types={machine_types_str}, "
+                      f"location_sections={location_sections_str}, vehicle_categories={vehicle_categories_str}, anomaly_type={anomaly_type_name}, "
                       f"hse_type={hse_type}, priority={priority_value}")
                 
                 # تبدیل مقادیر به فرمت مناسب
@@ -736,32 +738,25 @@ def import_questions_view(request):
                 hse_map = {'H': 'H', 'S': 'S', 'E': 'E', 'Health': 'H', 'Safety': 'S', 'Environment': 'E'}
                 vehicle_category_map = {'ماشین‌آلات معدنی': 'mining', 'خودروهای سبک': 'light'}
                 
-                if not scope in scope_map:
-                    raise ValueError(f'محدوده نامعتبر: {scope}. باید یکی از این مقادیر باشد: {", ".join(scope_map.keys())}')
-                
+                # محدوده‌ها
+                scope_list = [scope_map[s.strip()] for s in scopes.split(',') if s.strip() in scope_map]
+                if not scope_list:
+                    raise ValueError('حداقل یک محدوده معتبر باید وارد شود.')
+
+                # انواع ماشین
+                machine_type_names = [s.strip() for s in machine_types_str.split(',') if s.strip()]
+                # بخش‌های مکانی
+                location_section_names = [s.strip() for s in location_sections_str.split(',') if s.strip()]
+                # دسته‌بندی‌های خودرو
+                vehicle_category_list = [vehicle_category_map[s.strip()] for s in vehicle_categories_str.split(',') if s.strip() in vehicle_category_map]
+
+                # سایر اعتبارسنجی‌ها
                 if not question_type in type_map:
                     raise ValueError(f'نوع سوال نامعتبر: {question_type}. باید یکی از این مقادیر باشد: {", ".join(type_map.keys())}')
-                
                 if not hse_type in hse_map:
                     raise ValueError(f'نوع HSE نامعتبر: {hse_type}. باید یکی از این مقادیر باشد: {", ".join(hse_map.keys())}')
                 
-                if scope == 'ماشین‌آلات پیمانکار' and vehicle_category_name and not vehicle_category_name in vehicle_category_map:
-                    raise ValueError(f'دسته‌بندی خودرو نامعتبر: {vehicle_category_name}. باید یکی از این مقادیر باشد: {", ".join(vehicle_category_map.keys())}')
-                
-                # یافتن اولویت مشابه
-                similar_priority = find_similar_item(
-                    priority_value,
-                    Priority.objects.all(),
-                    field_name='priority'
-                )
-                if similar_priority:
-                    priority = similar_priority
-                    print(f"Found similar priority: {priority}")
-                else:
-                    priority = Priority.objects.create(priority=priority_value)
-                    print(f"Created new priority: {priority}")
-                
-                # یافتن نوع آنومالی مشابه
+                # یافتن یا ساخت نوع آنومالی
                 similar_anomaly_type = find_similar_item(
                     anomaly_type_name,
                     Anomalytype.objects.all(),
@@ -769,12 +764,10 @@ def import_questions_view(request):
                 )
                 if similar_anomaly_type:
                     anomaly_type = similar_anomaly_type
-                    print(f"Found similar anomaly type: {anomaly_type}")
                 else:
                     anomaly_type = Anomalytype.objects.create(type=anomaly_type_name)
-                    print(f"Created new anomaly type: {anomaly_type}")
-                
-                # یافتن شرح آنومالی مشابه
+
+                # یافتن یا ساخت شرح آنومالی
                 similar_anomaly_desc = find_similar_item(
                     anomaly_description,
                     AnomalyDescription.objects.filter(anomalytype=anomaly_type),
@@ -782,35 +775,28 @@ def import_questions_view(request):
                 )
                 if similar_anomaly_desc:
                     anomaly_desc = similar_anomaly_desc
-                    print(f"Found similar anomaly description: {anomaly_desc}")
                 else:
                     anomaly_desc = AnomalyDescription.objects.create(
                         description=anomaly_description,
                         anomalytype=anomaly_type,
                         hse_type=hse_map[hse_type]
                     )
-                    print(f"Created new anomaly description: {anomaly_desc}")
-                
-                # یافتن اقدام اصلاحی مشابه
-                similar_corrective_action = find_similar_item(
-                    corrective_action,
-                    CorrectiveAction.objects.filter(anomali_type=anomaly_desc),
-                    field_name='description'
+
+                # یافتن یا ساخت اولویت مشابه
+                similar_priority = find_similar_item(
+                    priority_value,
+                    Priority.objects.all(),
+                    field_name='priority'
                 )
-                if similar_corrective_action:
-                    corrective_action_obj = similar_corrective_action
-                    print(f"Found similar corrective action: {corrective_action_obj}")
+                if similar_priority:
+                    priority = similar_priority
                 else:
-                    corrective_action_obj = CorrectiveAction.objects.create(
-                        description=corrective_action,
-                        anomali_type=anomaly_desc
-                    )
-                    print(f"Created new corrective action: {corrective_action_obj}")
-                
+                    priority = Priority.objects.create(priority=priority_value)
+
                 # ایجاد سوال
                 question = Question.objects.create(
                     text=text,
-                    question_scope=scope_map[scope],
+                    question_scopes=scope_list,
                     question_type=type_map[question_type],
                     options=options,
                     unacceptable_options=unacceptable_options,
@@ -819,43 +805,47 @@ def import_questions_view(request):
                     default_priority_on_fail=priority,
                     default_corrective_action=corrective_action,
                     default_anomaly_description=anomaly_desc,
-                    is_required=True
+                    is_required=True,
+                    vehicle_categories=vehicle_category_list
                 )
-
-                # تنظیم فیلدهای مربوط به نوع سوال
-                if scope == 'ماشین' and machine_type_name:
-                    similar_machine_type = find_similar_item(
-                        machine_type_name,
-                        TypeMachine.objects.all(),
-                        field_name='name'
-                    )
-                    if similar_machine_type:
-                        question.machine_type = similar_machine_type
-                    else:
-                        question.machine_type = TypeMachine.objects.create(name=machine_type_name)
-                elif scope == 'مکان' and location_section_name:
-                    similar_location_section = find_similar_item(
-                        location_section_name,
-                        LocationSection.objects.all(),
-                        field_name='section',
-                        threshold=0.9
-                    )
-                    if similar_location_section:
-                        question.location_section = similar_location_section
-                    else:
-                        default_location = Location.objects.first()
-                        if not default_location:
-                            default_location = Location.objects.create(
-                                name="مکان پیش‌فرض",
-                                description="مکان پیش‌فرض برای سوالات ایمپورت شده"
-                            )
-                        question.location_section = LocationSection.objects.create(
-                            section=location_section_name,
-                            location=default_location
+                # تنظیم انواع ماشین
+                if 'machine' in scope_list and machine_type_names:
+                    machine_types = []
+                    for mt_name in machine_type_names:
+                        similar_machine_type = find_similar_item(
+                            mt_name,
+                            TypeMachine.objects.all(),
+                            field_name='name'
                         )
-                elif scope == 'ماشین‌آلات پیمانکار' and vehicle_category_name:
-                    question.vehicle_category = vehicle_category_map[vehicle_category_name]
-
+                        if similar_machine_type:
+                            machine_types.append(similar_machine_type)
+                        else:
+                            machine_types.append(TypeMachine.objects.create(name=mt_name))
+                    question.machine_types.set(machine_types)
+                # تنظیم بخش‌های مکانی
+                if 'location' in scope_list and location_section_names:
+                    location_sections = []
+                    for ls_name in location_section_names:
+                        similar_location_section = find_similar_item(
+                            ls_name,
+                            LocationSection.objects.all(),
+                            field_name='section',
+                            threshold=0.9
+                        )
+                        if similar_location_section:
+                            location_sections.append(similar_location_section)
+                        else:
+                            default_location = Location.objects.first()
+                            if not default_location:
+                                default_location = Location.objects.create(
+                                    name="مکان پیش‌فرض",
+                                    description="مکان پیش‌فرض برای سوالات ایمپورت شده"
+                                )
+                            location_sections.append(LocationSection.objects.create(
+                                section=ls_name,
+                                location=default_location
+                            ))
+                    question.location_sections.set(location_sections)
                 question.save()
                 success_count += 1
                 print(f"Successfully saved question {success_count}")
