@@ -329,7 +329,19 @@
                                                             </td>
                                                             <td>{{ forloop.counter }}</td>
                                                             <td>{{ question.text }}</td>
-                                                            <td>{{ question.get_question_scope_display }}</td>
+                                                            <td>
+                                                                {% for scope in question.question_scopes %}
+                                                                    {% if scope == 'machine' %}
+                                                                        <span class="badge badge-light-info">ماشین</span>
+                                                                    {% elif scope == 'location' %}
+                                                                        <span class="badge badge-light-info">مکان</span>
+                                                                    {% elif scope == 'contractor_vehicle' %}
+                                                                        <span class="badge badge-light-info">ماشین‌آلات پیمانکار</span>
+                                                                    {% else %}
+                                                                        <span class="badge badge-light-info">{{ scope }}</span>
+                                                                    {% endif %}
+                                                                {% endfor %}
+                                                            </td>
                                                             <td>{{ question.get_question_type_display }}</td>
                                                             <td>{{ question.anomaly_type.type }}</td>
                                                             <td>{{ question.get_hse_type_display }}</td>
