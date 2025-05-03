@@ -667,6 +667,15 @@ def find_similar_item(text, queryset, field_name='description', threshold=0.8):
             return item
     return None
 
+def find_all_similar_items(text, queryset, field_name='description', threshold=0.8):
+    """پیدا کردن همه موارد مشابه در کوئری‌ست"""
+    result = []
+    for item in queryset:
+        field_value = getattr(item, field_name)
+        if field_value and similar_text(text, field_value) >= threshold:
+            result.append(item)
+    return result
+
 @login_required
 @require_http_methods(["POST"])
 def import_questions_view(request):
@@ -812,13 +821,13 @@ def import_questions_view(request):
                 if 'machine' in scope_list and machine_type_names:
                     machine_types = []
                     for mt_name in machine_type_names:
-                        similar_machine_type = find_similar_item(
+                        similar_machine_types = find_all_similar_items(
                             mt_name,
                             TypeMachine.objects.all(),
                             field_name='name'
                         )
-                        if similar_machine_type:
-                            machine_types.append(similar_machine_type)
+                        if similar_machine_types:
+                            machine_types.extend(similar_machine_types)
                         else:
                             machine_types.append(TypeMachine.objects.create(name=mt_name))
                     question.machine_types.set(machine_types)
