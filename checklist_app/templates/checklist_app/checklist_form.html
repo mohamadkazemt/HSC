@@ -100,8 +100,10 @@
                                                 {{ vehicle.contractor.company_name }} - {{ vehicle.vehicle_type }} ({{ vehicle.license_plate }})
                                                 {% if vehicle.vehicle_category == 'mining' %}
                                                 [ماشین‌آلات معدنی]
-                                                {% else %}
+                                                {% elif vehicle.vehicle_category == 'light' %}  
                                                 [خودروی سبک]
+                                                {% elif vehicle.vehicle_category == 'transportation' %}
+                                                [حمل و نقل]
                                                 {% endif %}
                                             </option>
                                             {% endfor %}

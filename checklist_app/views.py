@@ -736,7 +736,7 @@ def import_questions_view(request):
                 scope_map = {'ماشین': 'machine', 'مکان': 'location', 'ماشین‌آلات پیمانکار': 'contractor_vehicle'}
                 type_map = {'متنی': 'text', 'گزینه‌ای': 'option'}
                 hse_map = {'H': 'H', 'S': 'S', 'E': 'E', 'Health': 'H', 'Safety': 'S', 'Environment': 'E'}
-                vehicle_category_map = {'ماشین‌آلات معدنی': 'mining', 'خودروهای سبک': 'light'}
+                vehicle_category_map = {'ماشین‌آلات معدنی': 'mining', 'خودروهای سبک': 'light', 'حمل و نقل': 'transportation'}
                 
                 # محدوده‌ها
                 scope_list = [scope_map[s.strip()] for s in scopes.split(',') if s.strip() in scope_map]

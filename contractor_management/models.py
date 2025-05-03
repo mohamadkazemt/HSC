@@ -64,12 +64,13 @@ class Vehicle(models.Model):
     VEHICLE_CATEGORY_CHOICES = [
         ('mining', 'ماشین آلات معدنی'),
         ('light', 'خودروهای سبک'),
+        ('transportation', 'حمل و نقل'),
     ]
     
     contractor = models.ForeignKey(Contractor, on_delete=models.CASCADE, related_name="vehicles", verbose_name="پیمانکار")
     vehicle_type = models.CharField(max_length=255, verbose_name="نوع خودرو")
     vehicle_category = models.CharField(
-        max_length=10,
+        max_length=15,
         choices=VEHICLE_CATEGORY_CHOICES,
         default='light',
         verbose_name="دسته‌بندی خودرو"
