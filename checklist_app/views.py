@@ -263,12 +263,13 @@ def create_anomaly_from_failure_view(request):
                 location = checklist.location_section.location
                 section = checklist.location_section
             elif checklist.checklist_type == 'machine' and checklist.machine:
-                # برای ماشین‌آلات، از location_section سوال استفاده می‌کنیم
-                if question.location_section:
-                    location = question.location_section.location
-                    section = question.location_section
+                # برای ماشین‌آلات، از location_sections سوال استفاده می‌کنیم
+                location_sections = question.location_sections.all()
+                if location_sections.exists():
+                    location = location_sections.first().location
+                    section = location_sections.first()
                 else:
-                    # اگر سوال location_section نداشت، از location_section پیش‌فرض استفاده می‌کنیم
+                    # اگر سوال location_sections نداشت، از location_section پیش‌فرض استفاده می‌کنیم
                     default_section = LocationSection.objects.filter(section__icontains='ماشین‌آلات').first()
                     if default_section:
                         location = default_section.location
