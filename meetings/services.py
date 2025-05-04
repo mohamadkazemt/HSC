@@ -30,13 +30,13 @@ class MeetingService:
 
     @staticmethod
     def send_notifications_to_all_users(meeting):
-        """فقط آبجکت‌های Notification را در دیتابیس برای همه کاربران ایجاد می‌کند."""
-        all_users = User.objects.all()
+        """فقط آبجکت‌های Notification را در دیتابیس برای شرکت‌کنندگان جلسه ایجاد می‌کند."""
+        participants = meeting.participants.all()
         notifications_to_create = []
-        for user in all_users:
+        for participant in participants:
             notifications_to_create.append(
                 Notification(
-                    user=user,
+                    user=participant,
                     message=f'جلسه جدید: {meeting.title}',
                     url=f'/meetings/{meeting.pk}/', # استفاده از pk
                     meeting=meeting
@@ -46,7 +46,7 @@ class MeetingService:
              Notification.objects.bulk_create(notifications_to_create)
              logger.info(f"Created {len(notifications_to_create)} Notification objects in DB via send_notifications_to_all_users for meeting {meeting.pk}")
         else:
-             logger.info(f"No users found to create notifications for meeting {meeting.pk}")
+             logger.info(f"No participants found to create notifications for meeting {meeting.pk}")
 
 
     @staticmethod
@@ -115,10 +115,14 @@ class MeetingService:
 
                     def task_schedule_reminders():
                         from .tasks import send_sms_reminder
-                        send_sms_reminder.apply_async(args=[meeting.pk], eta=reminder_time_before)
-                        logger.info(f"Scheduled day_before reminder via on_commit for meeting {meeting.pk} at {reminder_time_before}")
-                        send_sms_reminder.apply_async(args=[meeting.pk], eta=reminder_time_day_of)
-                        logger.info(f"Scheduled day_of_meeting reminder via on_commit for meeting {meeting.pk} at {reminder_time_day_of}")
+                        # فقط اگر جلسه لغو نشده باشد، یادآوری برنامه‌ریزی می‌شود
+                        if meeting.status != 'cancelled':
+                            send_sms_reminder.apply_async(args=[meeting.pk], eta=reminder_time_before)
+                            logger.info(f"Scheduled day_before reminder via on_commit for meeting {meeting.pk} at {reminder_time_before}")
+                            send_sms_reminder.apply_async(args=[meeting.pk], eta=reminder_time_day_of)
+                            logger.info(f"Scheduled day_of_meeting reminder via on_commit for meeting {meeting.pk} at {reminder_time_day_of}")
+                        else:
+                            logger.info(f"Meeting {meeting.pk} is cancelled, skipping reminder scheduling")
                     transaction.on_commit(task_schedule_reminders)
                     logger.info(f"Reminder tasks registered via on_commit for meeting {meeting.pk}")
 

@@ -248,8 +248,21 @@ LOGGING = {
     'handlers': {
         'file': {
             'level': 'DEBUG',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'debug.log'),
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'django.log'),
+            'when': 'midnight',
+            'interval': 1,
+            'backupCount': 30,
+            'formatter': 'verbose',
+            'encoding': 'utf-8',
+        },
+        'meetings_file': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'meetings.log'),
+            'when': 'midnight',
+            'interval': 1,
+            'backupCount': 30,
             'formatter': 'verbose',
             'encoding': 'utf-8',
         },
@@ -261,14 +274,19 @@ LOGGING = {
         },
     },
     'loggers': {
-        'contractor_management': {
-            'handlers': ['file', 'console'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
         'django': {
             'handlers': ['file', 'console'],
             'level': 'INFO',
+            'propagate': True,
+        },
+        'meetings': {
+            'handlers': ['meetings_file', 'console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'contractor_management': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',
             'propagate': True,
         },
     },

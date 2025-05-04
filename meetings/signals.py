@@ -6,12 +6,11 @@ from .models import Meeting, Notification
 @receiver(post_save, sender=Meeting)
 def create_notifications(sender, instance, created, **kwargs):
     if created:
-        # ارسال نوتیفیکیشن به تمام کاربران
-        users = User.objects.all()
-        for user in users:
+        # ارسال نوتیفیکیشن فقط به شرکت‌کنندگان جلسه
+        for participant in instance.participants.all():
             notification = Notification.objects.create(
                 meeting=instance,
-                user=user,
+                user=participant,
                 message=f'جلسه جدید "{instance.title}" ایجاد شد.'
             )
             # send_notification.delay(user.id, instance.id)  # موقتاً غیرفعال شده 

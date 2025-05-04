@@ -136,8 +136,17 @@ def send_sms_reminder(meeting_id):
     """تسک آسنکرون برای ارسال پیامک یادآوری جلسه."""
     try:
         meeting = Meeting.objects.get(id=meeting_id)
+        
+        # بررسی وضعیت جلسه قبل از ارسال پیامک
+        if meeting.status == 'cancelled':
+            logger.info(f"Meeting {meeting.id} is cancelled, skipping reminder SMS")
+            return
+            
         logger.info(f"Starting reminder SMS sending for meeting {meeting.id} ('{meeting.title}')")
         logger.debug(f"Reminder for Date: {meeting.date}, Start Time: {meeting.start_time}")
+
+        # لیست شماره‌های موبایل که قبلاً پیامک دریافت کرده‌اند
+        sent_mobiles = set()
 
         # ارسال به شرکت‌کنندگان
         logger.info("--- Sending Reminder SMS to Participants ---")
@@ -147,16 +156,18 @@ def send_sms_reminder(meeting_id):
              logger.debug(f"Checking participant: {participant.get_full_name()} (ID: {participant.id})")
              if hasattr(participant, 'userprofile') and participant.userprofile and participant.userprofile.mobile:
                 mobile = participant.userprofile.mobile
-                logger.info(f"Sending reminder SMS to participant {participant.username} at {mobile}")
-                send_meeting_reminder_sms(
-                    mobile,
-                    meeting.id,
-                    meeting.title,
-                    meeting.date,
-                    meeting.start_time
-                )
-             else:
-                 logger.warning(f"Participant {participant.username} has no profile or mobile number.")
+                if mobile not in sent_mobiles:
+                    logger.info(f"Sending reminder SMS to participant {participant.username} at {mobile}")
+                    send_meeting_reminder_sms(
+                        mobile,
+                        meeting.id,
+                        meeting.title,
+                        meeting.date,
+                        meeting.start_time
+                    )
+                    sent_mobiles.add(mobile)
+                else:
+                    logger.info(f"Skipping duplicate SMS for mobile {mobile} (already sent to participant {participant.username})")
 
         # ارسال به شماره‌های دستی
         if meeting.manual_numbers:
@@ -165,7 +176,7 @@ def send_sms_reminder(meeting_id):
             valid_manual_numbers = 0
             for number in numbers:
                  num_stripped = number.strip()
-                 if num_stripped:
+                 if num_stripped and num_stripped not in sent_mobiles:
                     valid_manual_numbers += 1
                     logger.info(f"Sending reminder SMS to manual number {num_stripped}")
                     send_meeting_reminder_sms(
@@ -175,6 +186,9 @@ def send_sms_reminder(meeting_id):
                         meeting.date,
                         meeting.start_time
                     )
+                    sent_mobiles.add(num_stripped)
+                elif num_stripped:
+                    logger.info(f"Skipping duplicate SMS for manual number {num_stripped}")
             logger.info(f"Processed {len(numbers)} lines, found {valid_manual_numbers} valid manual numbers.")
         else:
              logger.info("No manual numbers provided for reminder.")
@@ -188,14 +202,18 @@ def send_sms_reminder(meeting_id):
                 logger.debug(f"Checking coordinator: {coordinator.get_full_name()} (ID: {coordinator.id})")
                 if hasattr(coordinator, 'userprofile') and coordinator.userprofile and coordinator.userprofile.mobile:
                     mobile = coordinator.userprofile.mobile
-                    logger.info(f"Sending reminder SMS to coordinator {coordinator.username} at {mobile}")
-                    send_meeting_reminder_sms(
-                        mobile,
-                        meeting.id,
-                        meeting.title,
-                        meeting.date,
-                        meeting.start_time
-                    )
+                    if mobile not in sent_mobiles:
+                        logger.info(f"Sending reminder SMS to coordinator {coordinator.username} at {mobile}")
+                        send_meeting_reminder_sms(
+                            mobile,
+                            meeting.id,
+                            meeting.title,
+                            meeting.date,
+                            meeting.start_time
+                        )
+                        sent_mobiles.add(mobile)
+                    else:
+                        logger.info(f"Skipping duplicate SMS for coordinator {coordinator.username} at {mobile}")
                 else:
                     logger.warning(f"Coordinator {coordinator.username} has no profile or mobile number.")
         else:
@@ -207,7 +225,6 @@ def send_sms_reminder(meeting_id):
          logger.error(f"Meeting with ID {meeting_id} not found in send_sms_reminder task.")
     except Exception as e:
         logger.error(f"Error in send_sms_reminder for meeting {meeting_id}: {e}", exc_info=True)
-        # print(f"خطا در ارسال پیامک یادآوری: {str(e)}") # لاگ جایگزین شد
 
 # --- کد مربوط به ارسال ایمیل که قبلا اشتباها اینجا بود حذف شد ---
 
