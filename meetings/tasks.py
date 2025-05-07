@@ -187,7 +187,7 @@ def send_sms_reminder(meeting_id):
                         meeting.start_time
                     )
                     sent_mobiles.add(num_stripped)
-                elif num_stripped:
+                 elif num_stripped:
                     logger.info(f"Skipping duplicate SMS for manual number {num_stripped}")
             logger.info(f"Processed {len(numbers)} lines, found {valid_manual_numbers} valid manual numbers.")
         else:
