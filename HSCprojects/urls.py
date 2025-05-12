@@ -43,6 +43,7 @@ urlpatterns = [
     path('meetings/', include('meetings.urls')),
     path('checklist_app/', include('checklist_app.urls')),
     path('emergency/', include('emergency_services.urls', namespace='emergency_services')),
+    path('fire_extinguisher_management/', include('fire_extinguisher_management.urls', namespace='fire_extinguisher_management')),
 ]
 
 # اضافه کردن مسیرهای media و static در حالت debug

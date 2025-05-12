@@ -1,0 +1,203 @@
+{% extends "fire_extinguisher_management/base.html" %}
+{% load static %}
+
+{% block fire_extinguisher_content %}
+<div class="extinguisher-replace">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>جایگزینی کپسول آتش‌نشانی</h1>
+        <a href="{% url 'fire_extinguisher_management:extinguisher_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i> بازگشت به لیست
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.old_extinguisher.id_for_label }}">کپسول قدیمی</label>
+                            {{ form.old_extinguisher }}
+                            {% if form.old_extinguisher.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.old_extinguisher.errors }}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                کپسولی که می‌خواهید جایگزین شود را انتخاب کنید.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="{{ form.new_extinguisher.id_for_label }}">کپسول جدید</label>
+                            {{ form.new_extinguisher }}
+                            {% if form.new_extinguisher.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.new_extinguisher.errors }}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                کپسول جدیدی که می‌خواهید جایگزین شود را انتخاب کنید.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location Information -->
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <h5 class="mb-3">اطلاعات مکان</h5>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.content_type.id_for_label }}">نوع مکان</label>
+                                            {{ form.content_type }}
+                                            {% if form.content_type.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.content_type.errors }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="{{ form.object_id.id_for_label }}">شناسه مکان</label>
+                                            {{ form.object_id }}
+                                            {% if form.object_id.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {{ form.object_id.errors }}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label for="{{ form.replacement_notes.id_for_label }}">توضیحات جایگزینی</label>
+                            {{ form.replacement_notes }}
+                            {% if form.replacement_notes.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.replacement_notes.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-exchange-alt"></i> جایگزینی
+                        </button>
+                        <a href="{% url 'fire_extinguisher_management:extinguisher_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> انصراف
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+{{ block.super }}
+<script>
+    // Add Bootstrap classes to form fields
+    document.querySelectorAll('input, select, textarea').forEach(function(element) {
+        element.classList.add('form-control');
+    });
+
+    // Handle extinguisher selection change
+    document.getElementById('id_old_extinguisher').addEventListener('change', function() {
+        const oldExtinguisherId = this.value;
+        const newExtinguisherSelect = document.getElementById('id_new_extinguisher');
+        
+        // Reset and disable the new extinguisher select
+        newExtinguisherSelect.innerHTML = '<option value="">در حال بارگذاری...</option>';
+        newExtinguisherSelect.disabled = true;
+        
+        if (oldExtinguisherId) {
+            // Show loading state
+            const loadingOption = document.createElement('option');
+            loadingOption.value = '';
+            loadingOption.textContent = 'در حال بارگذاری...';
+            newExtinguisherSelect.innerHTML = '';
+            newExtinguisherSelect.appendChild(loadingOption);
+            
+            // Fetch old extinguisher details
+            fetch(`/fire-extinguisher-management/extinguishers/${oldExtinguisherId}/details/`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('خطا در دریافت اطلاعات');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Update form with old extinguisher details
+                    newExtinguisherSelect.innerHTML = '';
+                    
+                    // Add default option
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = 'کپسول جدید را انتخاب کنید';
+                    newExtinguisherSelect.appendChild(defaultOption);
+                    
+                    // Add available extinguishers
+                    if (data.available_extinguishers.length === 0) {
+                        const noOption = document.createElement('option');
+                        noOption.value = '';
+                        noOption.textContent = 'کپسول جدیدی در دسترس نیست';
+                        newExtinguisherSelect.appendChild(noOption);
+                    } else {
+                        data.available_extinguishers.forEach(extinguisher => {
+                            const option = document.createElement('option');
+                            option.value = extinguisher.id;
+                            option.textContent = `${extinguisher.serial_tag} - ${extinguisher.type}`;
+                            newExtinguisherSelect.appendChild(option);
+                        });
+                    }
+
+                    // Update location information
+                    if (data.location) {
+                        document.getElementById('id_content_type').value = data.location.content_type;
+                        document.getElementById('id_object_id').value = data.location.object_id;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    newExtinguisherSelect.innerHTML = '<option value="">خطا در دریافت اطلاعات</option>';
+                })
+                .finally(() => {
+                    newExtinguisherSelect.disabled = false;
+                });
+        } else {
+            // Reset the select if no old extinguisher is selected
+            newExtinguisherSelect.innerHTML = '<option value="">ابتدا کپسول قدیمی را انتخاب کنید</option>';
+            newExtinguisherSelect.disabled = true;
+        }
+    });
+
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+</script>
+{% endblock %} 

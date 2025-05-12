@@ -39,6 +39,13 @@ from django.db.models.functions import Concat
 from django.core.paginator import Paginator, EmptyPage, InvalidPage
 from jalali_date import datetime2jalali
 from django.core.exceptions import ValidationError
+from django.contrib.auth.decorators import login_required, user_passes_test
+import jdatetime
+from .models import Anomaly, UserProfile
+import openpyxl
+from rest_framework.decorators import api_view  # Correct import
+from rest_framework.response import Response    # Correct import
+
 
 
 
@@ -748,22 +755,6 @@ def get_all_sections_ajax(request):
 
 
 
-
-from django.shortcuts import render
-from .forms import AnomalyReportForm
-from django.db.models import Count, Q, F, CharField, Value
-from django.db.models.functions import Concat
-from django.core.paginator import Paginator, EmptyPage, InvalidPage
-from django.contrib.auth.decorators import login_required, user_passes_test
-import jdatetime
-from django.core.exceptions import ValidationError
-from .models import Anomaly, UserProfile
-from django.http import HttpResponse, JsonResponse  # Import JsonResponse
-import openpyxl
-from django.db.models import IntegerField
-from django.db.models.functions import Cast
-from rest_framework.decorators import api_view  # Correct import
-from rest_framework.response import Response    # Correct import
 
 
 @login_required

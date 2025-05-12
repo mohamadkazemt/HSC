@@ -1,0 +1,253 @@
+{% extends "fire_extinguisher_management/base.html" %}
+{% load static %}
+
+{% block fire_extinguisher_content %}
+<div class="extinguisher-form">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{% if form.instance.pk %}ویرایش{% else %}ثبت{% endif %} کپسول آتش‌نشانی</h1>
+        <a href="{% url 'fire_extinguisher_management:extinguisher_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i> بازگشت به لیست
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+
+                <div class="row">
+                    <!-- Basic Information -->
+                    <div class="col-md-6">
+                        <h5 class="mb-3">اطلاعات اصلی</h5>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.serial_tag.id_for_label }}">کد کپسول</label>
+                            {{ form.serial_tag }}
+                            {% if form.serial_tag.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.serial_tag.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.extinguisher_type.id_for_label }}">نوع کپسول</label>
+                            {{ form.extinguisher_type }}
+                            {% if form.extinguisher_type.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.extinguisher_type.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.capacity_value.id_for_label }}">ظرفیت</label>
+                                    {{ form.capacity_value }}
+                                    {% if form.capacity_value.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.capacity_value.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.capacity_unit.id_for_label }}">واحد ظرفیت</label>
+                                    {{ form.capacity_unit }}
+                                    {% if form.capacity_unit.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.capacity_unit.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.manufacturer.id_for_label }}">سازنده</label>
+                            {{ form.manufacturer }}
+                            {% if form.manufacturer.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.manufacturer.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.model_number.id_for_label }}">شماره مدل</label>
+                            {{ form.model_number }}
+                            {% if form.model_number.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.model_number.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Dates and Status -->
+                    <div class="col-md-6">
+                        <h5 class="mb-3">تاریخ‌ها و وضعیت</h5>
+
+                        <div class="form-group">
+                            <label for="{{ form.purchase_date.id_for_label }}">تاریخ خرید</label>
+                            {{ form.purchase_date }}
+                            {% if form.purchase_date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.purchase_date.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.manufacture_date.id_for_label }}">تاریخ ساخت</label>
+                            {{ form.manufacture_date }}
+                            {% if form.manufacture_date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.manufacture_date.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.commission_date.id_for_label }}">تاریخ بهره‌برداری</label>
+                            {{ form.commission_date }}
+                            {% if form.commission_date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.commission_date.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.expected_lifespan_years.id_for_label }}">عمر مفید (سال)</label>
+                            {{ form.expected_lifespan_years }}
+                            {% if form.expected_lifespan_years.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.expected_lifespan_years.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.status.id_for_label }}">وضعیت</label>
+                            {{ form.status }}
+                            {% if form.status.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.status.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Location -->
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <h5 class="mb-3">اطلاعات مکان</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.content_type.id_for_label }}">نوع مکان</label>
+                                    {{ form.content_type }}
+                                    {% if form.content_type.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.content_type.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.object_id.id_for_label }}">شناسه مکان</label>
+                                    {{ form.object_id }}
+                                    {% if form.object_id.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.object_id.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Replacement Info -->
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <h5 class="mb-3">اطلاعات جایگزینی</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.replaced_by_extinguisher.id_for_label }}">جایگزین شده با</label>
+                                    {{ form.replaced_by_extinguisher }}
+                                    {% if form.replaced_by_extinguisher.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.replaced_by_extinguisher.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ form.replaces_extinguisher.id_for_label }}">جایگزین شده از</label>
+                                    {{ form.replaces_extinguisher }}
+                                    {% if form.replaces_extinguisher.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.replaces_extinguisher.errors }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label for="{{ form.notes.id_for_label }}">توضیحات</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.notes.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> ذخیره
+                        </button>
+                        <a href="{% url 'fire_extinguisher_management:extinguisher_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> انصراف
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+{{ block.super }}
+<script>
+    // Add Bootstrap classes to form fields
+    document.querySelectorAll('input, select, textarea').forEach(function(element) {
+        element.classList.add('form-control');
+    });
+
+    // Initialize date pickers
+    document.querySelectorAll('input[type="date"]').forEach(function(element) {
+        element.classList.add('datepicker');
+    });
+</script>
+{% endblock %} 

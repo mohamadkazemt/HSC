@@ -1,0 +1,142 @@
+{% extends "fire_extinguisher_management/base.html" %}
+{% load static %}
+
+{% block fire_extinguisher_content %}
+<div class="service-record-form">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>ثبت سرویس کپسول آتش‌نشانی</h1>
+        <a href="{% url 'fire_extinguisher_management:extinguisher_detail' extinguisher.pk %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-right"></i> بازگشت به جزئیات
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+
+                <div class="row">
+                    <!-- Basic Information -->
+                    <div class="col-md-6">
+                        <h5 class="mb-3">اطلاعات اصلی</h5>
+                        
+                        <div class="form-group">
+                            <label for="{{ form.service_date.id_for_label }}">تاریخ سرویس</label>
+                            {{ form.service_date }}
+                            {% if form.service_date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.service_date.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.service_type.id_for_label }}">نوع سرویس</label>
+                            {{ form.service_type }}
+                            {% if form.service_type.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.service_type.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.outcome.id_for_label }}">نتیجه</label>
+                            {{ form.outcome }}
+                            {% if form.outcome.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.outcome.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Measurements -->
+                    <div class="col-md-6">
+                        <h5 class="mb-3">مقادیر اندازه‌گیری</h5>
+
+                        <div class="form-group">
+                            <label for="{{ form.pressure_reading.id_for_label }}">مقدار فشار</label>
+                            {{ form.pressure_reading }}
+                            {% if form.pressure_reading.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.pressure_reading.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.weight_reading.id_for_label }}">وزن</label>
+                            {{ form.weight_reading }}
+                            {% if form.weight_reading.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.weight_reading.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.performed_by_external.id_for_label }}">انجام شده توسط (خارجی)</label>
+                            {{ form.performed_by_external }}
+                            {% if form.performed_by_external.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.performed_by_external.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions and Notes -->
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label for="{{ form.actions_taken.id_for_label }}">اقدامات انجام شده</label>
+                            {{ form.actions_taken }}
+                            {% if form.actions_taken.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.actions_taken.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="form-group">
+                            <label for="{{ form.notes.id_for_label }}">توضیحات</label>
+                            {{ form.notes }}
+                            {% if form.notes.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.notes.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-md-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> ذخیره
+                        </button>
+                        <a href="{% url 'fire_extinguisher_management:extinguisher_detail' extinguisher.pk %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> انصراف
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+{{ block.super }}
+<script>
+    // Add Bootstrap classes to form fields
+    document.querySelectorAll('input, select, textarea').forEach(function(element) {
+        element.classList.add('form-control');
+    });
+
+    // Initialize date picker
+    document.querySelector('input[type="date"]').classList.add('datepicker');
+</script>
+{% endblock %} 

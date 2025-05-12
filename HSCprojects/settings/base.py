@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     'fire_reports.apps.FireReportsConfig',
     'checklist_app.apps.ChecklistAppConfig',
     'emergency_services.apps.EmergencyServicesConfig',
+    'fire_extinguisher_management.apps.FireExtinguisherManagementConfig',
 ]
 
 MIDDLEWARE = [
@@ -290,4 +291,10 @@ LOGGING = {
             'propagate': True,
         },
     },
-} 
+}
+
+# Fire Extinguisher Management settings
+SMS_ENABLED = True
+SMS_PROVIDER = 'smsir'  # Using the existing SMS provider
+SMS_API_KEY = SMSIR_API_KEY  # Using the existing API key
+SMS_LINE_NUMBER = SMSIR_LINE_NUMBER  # Using the existing line number 

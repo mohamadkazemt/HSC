@@ -1,0 +1,170 @@
+/* General Styles */
+.dashboard h1,
+.extinguisher-list h1,
+.extinguisher-detail h1,
+.extinguisher-form h1,
+.service-record-form h1,
+.extinguisher-replace h1,
+.extinguisher-location h1,
+.notification-list h1 {
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    color: #2c3e50;
+}
+
+/* Status Cards */
+.status-cards .card {
+    transition: transform 0.2s;
+    margin-bottom: 1rem;
+}
+
+.status-cards .card:hover {
+    transform: translateY(-5px);
+}
+
+.status-cards .card-title {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.status-cards .display-4 {
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+
+/* Tables */
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* Badges */
+.badge {
+    padding: 0.5em 0.8em;
+    font-size: 0.85rem;
+}
+
+.badge-operational {
+    background-color: #28a745;
+    color: white;
+}
+
+.badge-needs_maintenance {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.badge-expired {
+    background-color: #dc3545;
+    color: white;
+}
+
+.badge-under_test {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.badge-disposed {
+    background-color: #6c757d;
+    color: white;
+}
+
+.badge-reserved {
+    background-color: #007bff;
+    color: white;
+}
+
+/* Forms */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.form-control {
+    border-radius: 0.25rem;
+    border: 1px solid #ced4da;
+    padding: 0.5rem 0.75rem;
+}
+
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Buttons */
+.btn {
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+.btn-group .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+/* Notifications */
+.notification-list .list-group-item {
+    border-left: none;
+    border-right: none;
+    padding: 1rem;
+}
+
+.notification-list .list-group-item:first-child {
+    border-top: none;
+}
+
+.notification-list .list-group-item:last-child {
+    border-bottom: none;
+}
+
+.notification-list .list-group-item-primary {
+    background-color: #e3f2fd;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .status-cards .card {
+        margin-bottom: 1rem;
+    }
+
+    .table-responsive {
+        margin-bottom: 1rem;
+    }
+
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .btn-group .btn {
+        margin-bottom: 0.25rem;
+    }
+}
+
+/* RTL Specific Styles */
+[dir="rtl"] .btn-group .btn:not(:last-child) {
+    border-radius: 0 0.25rem 0.25rem 0;
+}
+
+[dir="rtl"] .btn-group .btn:not(:first-child) {
+    border-radius: 0.25rem 0 0 0.25rem;
+}
+
+[dir="rtl"] .table th {
+    text-align: right;
+}
+
+[dir="rtl"] .form-group label {
+    text-align: right;
+}
+
+[dir="rtl"] .invalid-feedback {
+    text-align: right;
+} 

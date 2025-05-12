@@ -1,0 +1,162 @@
+{% extends "fire_extinguisher_management/base.html" %}
+{% load static %}
+
+{% block fire_extinguisher_content %}
+<div class="extinguisher-list">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>لیست کپسول‌های آتش‌نشانی</h1>
+        <a href="{% url 'fire_extinguisher_management:extinguisher_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> ثبت کپسول جدید
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="status">وضعیت</label>
+                        <select name="status" id="status" class="form-control">
+                            <option value="">همه</option>
+                            <option value="OPERATIONAL" {% if current_status == 'OPERATIONAL' %}selected{% endif %}>عملیاتی</option>
+                            <option value="NEEDS_MAINTENANCE" {% if current_status == 'NEEDS_MAINTENANCE' %}selected{% endif %}>نیاز به تعمیر</option>
+                            <option value="EXPIRED" {% if current_status == 'EXPIRED' %}selected{% endif %}>منقضی شده</option>
+                            <option value="UNDER_TEST" {% if current_status == 'UNDER_TEST' %}selected{% endif %}>تحت تست</option>
+                            <option value="DISPOSED" {% if current_status == 'DISPOSED' %}selected{% endif %}>اسقاط شده</option>
+                            <option value="RESERVED" {% if current_status == 'RESERVED' %}selected{% endif %}>رزرو</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="type">نوع کپسول</label>
+                        <select name="type" id="type" class="form-control">
+                            <option value="">همه</option>
+                            {% for type in types %}
+                            <option value="{{ type.id }}" {% if current_type == type.id|stringformat:"i" %}selected{% endif %}>
+                                {{ type.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <label for="search">جستجو</label>
+                        <input type="text" name="search" id="search" class="form-control" 
+                               value="{{ current_search }}" placeholder="جستجو در کد، سازنده یا مدل">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <button type="submit" class="btn btn-primary btn-block">فیلتر</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Extinguisher List -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>کد کپسول</th>
+                            <th>نوع</th>
+                            <th>سازنده</th>
+                            <th>وضعیت</th>
+                            <th>مکان</th>
+                            <th>تاریخ سرویس بعدی</th>
+                            <th>عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for extinguisher in extinguishers %}
+                        <tr>
+                            <td>{{ extinguisher.serial_tag }}</td>
+                            <td>{{ extinguisher.extinguisher_type.name }}</td>
+                            <td>{{ extinguisher.manufacturer }}</td>
+                            <td>
+                                <span class="badge badge-{{ extinguisher.status|lower }}">
+                                    {{ extinguisher.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if extinguisher.location_object %}
+                                    {{ extinguisher.location_object }}
+                                    <small class="text-muted d-block">{{ extinguisher.get_location_type_display }}</small>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if extinguisher.next_scheduled_service_date %}
+                                    {{ extinguisher.next_scheduled_service_date|date:"Y/m/d" }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'fire_extinguisher_management:extinguisher_detail' extinguisher.pk %}" 
+                                       class="btn btn-sm btn-info" title="جزئیات">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'fire_extinguisher_management:extinguisher_edit' extinguisher.pk %}" 
+                                       class="btn btn-sm btn-warning" title="ویرایش">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'fire_extinguisher_management:extinguisher_change_location' extinguisher.pk %}" 
+                                       class="btn btn-sm btn-primary" title="تغییر مکان">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center">هیچ کپسول آتش‌نشانی یافت نشد.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if extinguishers.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if extinguishers.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ extinguishers.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}">
+                            قبلی
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in extinguishers.paginator.page_range %}
+                    <li class="page-item {% if num == extinguishers.number %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}">
+                            {{ num }}
+                        </a>
+                    </li>
+                    {% endfor %}
+
+                    {% if extinguishers.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ extinguishers.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_type %}&type={{ current_type }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}">
+                            بعدی
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 
