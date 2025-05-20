@@ -1,216 +1,103 @@
-{% extends "fire_extinguisher_management/base.html" %}
+{% extends 'base.html' %}
 {% load static %}
 
-{% block fire_extinguisher_content %}
-<div class="extinguisher-detail">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>جزئیات کپسول آتش‌نشانی</h1>
-        <div class="btn-group">
-            <a href="{% url 'fire_extinguisher_management:extinguisher_edit' extinguisher.pk %}" class="btn btn-warning">
-                <i class="fas fa-edit"></i> ویرایش
-            </a>
-            <a href="{% url 'fire_extinguisher_management:extinguisher_change_location' extinguisher.pk %}" class="btn btn-info">
-                <i class="fas fa-map-marker-alt"></i> تغییر مکان
-            </a>
-            {% if extinguisher.status == 'OPERATIONAL' %}
-            <a href="{% url 'fire_extinguisher_management:service_record_create' extinguisher.pk %}" class="btn btn-primary">
-                <i class="fas fa-tools"></i> ثبت سرویس
-            </a>
-            {% endif %}
-        </div>
-    </div>
+{% block title %}جزئیات کپسول{% endblock %}
 
-    <!-- Extinguisher Info -->
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">اطلاعات اصلی</h5>
-                </div>
-                <div class="card-body">
-                    <table class="table">
-                        <tr>
-                            <th>کد کپسول</th>
-                            <td>{{ extinguisher.serial_tag }}</td>
-                        </tr>
-                        <tr>
-                            <th>نوع کپسول</th>
-                            <td>{{ extinguisher.extinguisher_type.name }}</td>
-                        </tr>
-                        <tr>
-                            <th>ظرفیت</th>
-                            <td>{{ extinguisher.capacity_value }} {{ extinguisher.capacity_unit }}</td>
-                        </tr>
-                        <tr>
-                            <th>سازنده</th>
-                            <td>{{ extinguisher.manufacturer }}</td>
-                        </tr>
-                        <tr>
-                            <th>شماره مدل</th>
-                            <td>{{ extinguisher.model_number }}</td>
-                        </tr>
-                        <tr>
-                            <th>وضعیت</th>
-                            <td>
-                                <span class="badge badge-{{ extinguisher.status|lower }}">
-                                    {{ extinguisher.get_status_display }}
-                                </span>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
+{% block content %}
+    {% include 'header.html' %}
+    <div class="container-fluid">
+        <div class="row min-vh-100">
+            <div class="col-lg-2 d-none d-lg-block px-0">
+                {% include 'sidebar.html' %}
             </div>
-        </div>
-
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">اطلاعات زمانی</h5>
+            <div class="col-12 col-lg-10 px-0">
+                {% include 'toolbar.html' %}
+                <div class="app-container container-fluid mt-4">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h3 class="card-title mb-0">اطلاعات کپسول</h3>
+                            <div>
+                                <a href="{% url 'fire_extinguisher_management:extinguisher_edit' extinguisher.pk %}" class="btn btn-sm btn-warning">ویرایش</a>
+                                <a href="{% url 'fire_extinguisher_management:extinguisher_change_location' extinguisher.pk %}" class="btn btn-sm btn-info">تغییر مکان</a>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-4"><strong>سریال:</strong> {{ extinguisher.serial_tag }}</div>
+                                <div class="col-md-4"><strong>نوع:</strong> {{ extinguisher.extinguisher_type.name }}</div>
+                                <div class="col-md-4"><strong>وضعیت:</strong> 
+                                    {% if extinguisher.status == 'OPERATIONAL' %}
+                                        <span class="badge bg-success">سالم</span>
+                                    {% elif extinguisher.status == 'NEEDS_MAINTENANCE' %}
+                                        <span class="badge bg-warning text-dark">نیازمند سرویس</span>
+                                    {% elif extinguisher.status == 'EXPIRED' %}
+                                        <span class="badge bg-danger">منقضی</span>
+                                    {% elif extinguisher.status == 'RESERVED' %}
+                                        <span class="badge bg-info text-dark">رزرو شده</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4"><strong>سازنده:</strong> {{ extinguisher.manufacturer }}</div>
+                                <div class="col-md-4"><strong>مدل:</strong> {{ extinguisher.model_number }}</div>
+                                <div class="col-md-4"><strong>تاریخ ساخت:</strong> {{ extinguisher.manufacture_date|date:'Y/m/d' }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4"><strong>آخرین سرویس:</strong> {{ extinguisher.last_serviced_date|date:'Y/m/d' }}</div>
+                                <div class="col-md-4"><strong>سرویس بعدی:</strong> {{ extinguisher.next_scheduled_service_date|date:'Y/m/d' }}</div>
+                                <div class="col-md-4"><strong>تست فشار بعدی:</strong> {{ extinguisher.pressure_test_due_date|date:'Y/m/d' }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4"><strong>مکان:</strong> {{ extinguisher.get_location_display }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card shadow-sm">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h4 class="card-title mb-0">سوابق سرویس</h4>
+                            <a href="{% url 'fire_extinguisher_management:service_record_create' extinguisher.pk %}" class="btn btn-sm btn-primary">ثبت سرویس جدید</a>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-striped align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>تاریخ</th>
+                                            <th>نوع سرویس</th>
+                                            <th>نتیجه</th>
+                                            <th>توضیحات</th>
+                                            <th>توسط</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for sr in service_records %}
+                                        <tr>
+                                            <td>{{ sr.service_date|date:'Y/m/d' }}</td>
+                                            <td>{{ sr.get_service_type_display }}</td>
+                                            <td>
+                                                {% if sr.outcome == 'PASS' %}
+                                                    <span class="badge bg-success">قبول</span>
+                                                {% elif sr.outcome == 'FAIL' %}
+                                                    <span class="badge bg-danger">رد</span>
+                                                {% elif sr.outcome == 'COMPLETED' %}
+                                                    <span class="badge bg-info text-dark">انجام شد</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ sr.notes|default:'-' }}</td>
+                                            <td>{{ sr.performed_by_user.get_full_name }}</td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr><td colspan="5" class="text-center text-muted">سابقه‌ای ثبت نشده است.</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <table class="table">
-                        <tr>
-                            <th>تاریخ خرید</th>
-                            <td>{{ extinguisher.purchase_date|date:"Y/m/d" }}</td>
-                        </tr>
-                        <tr>
-                            <th>تاریخ ساخت</th>
-                            <td>{{ extinguisher.manufacture_date|date:"Y/m/d" }}</td>
-                        </tr>
-                        <tr>
-                            <th>تاریخ بهره‌برداری</th>
-                            <td>{{ extinguisher.commission_date|date:"Y/m/d" }}</td>
-                        </tr>
-                        <tr>
-                            <th>عمر مفید</th>
-                            <td>{{ extinguisher.expected_lifespan_years }} سال</td>
-                        </tr>
-                        <tr>
-                            <th>آخرین سرویس</th>
-                            <td>{{ extinguisher.last_serviced_date|date:"Y/m/d"|default:"-" }}</td>
-                        </tr>
-                        <tr>
-                            <th>سرویس بعدی</th>
-                            <td>{{ extinguisher.next_scheduled_service_date|date:"Y/m/d"|default:"-" }}</td>
-                        </tr>
-                        <tr>
-                            <th>تست فشار</th>
-                            <td>{{ extinguisher.pressure_test_due_date|date:"Y/m/d"|default:"-" }}</td>
-                        </tr>
-                    </table>
-                </div>
+                {% include 'footer.html' %}
             </div>
         </div>
     </div>
-
-    <!-- Location and Replacement Info -->
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">اطلاعات مکان</h5>
-                </div>
-                <div class="card-body">
-                    <table class="table">
-                        <tr>
-                            <th>مکان فعلی</th>
-                            <td>{{ extinguisher.location_object }}</td>
-                        </tr>
-                        <tr>
-                            <th>نوع مکان</th>
-                            <td>{{ extinguisher.get_location_type_display }}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">اطلاعات جایگزینی</h5>
-                </div>
-                <div class="card-body">
-                    <table class="table">
-                        {% if extinguisher.replaced_by_extinguisher %}
-                        <tr>
-                            <th>جایگزین شده با</th>
-                            <td>
-                                <a href="{% url 'fire_extinguisher_management:extinguisher_detail' extinguisher.replaced_by_extinguisher.pk %}">
-                                    {{ extinguisher.replaced_by_extinguisher.serial_tag }}
-                                </a>
-                            </td>
-                        </tr>
-                        {% endif %}
-                        {% if extinguisher.replaces_extinguisher %}
-                        <tr>
-                            <th>جایگزین شده از</th>
-                            <td>
-                                <a href="{% url 'fire_extinguisher_management:extinguisher_detail' extinguisher.replaces_extinguisher.pk %}">
-                                    {{ extinguisher.replaces_extinguisher.serial_tag }}
-                                </a>
-                            </td>
-                        </tr>
-                        {% endif %}
-                        {% if extinguisher.replacement_notes %}
-                        <tr>
-                            <th>توضیحات جایگزینی</th>
-                            <td>{{ extinguisher.replacement_notes }}</td>
-                        </tr>
-                        {% endif %}
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Service Records -->
-    <div class="card">
-        <div class="card-header">
-            <h5 class="card-title mb-0">سوابق سرویس</h5>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>تاریخ</th>
-                            <th>نوع سرویس</th>
-                            <th>انجام شده توسط</th>
-                            <th>نتیجه</th>
-                            <th>اقدامات</th>
-                            <th>توضیحات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for service in service_records %}
-                        <tr>
-                            <td>{{ service.service_date|date:"Y/m/d" }}</td>
-                            <td>{{ service.get_service_type_display }}</td>
-                            <td>
-                                {% if service.performed_by_user %}
-                                    {{ service.performed_by_user.get_full_name }}
-                                {% else %}
-                                    {{ service.performed_by_external }}
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="badge badge-{{ service.outcome|lower }}">
-                                    {{ service.get_outcome_display }}
-                                </span>
-                            </td>
-                            <td>{{ service.actions_taken }}</td>
-                            <td>{{ service.notes|default:"-" }}</td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center">هیچ سابقه سرویسی ثبت نشده است.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
+    {% include 'bottom_navbar.html' %}
 {% endblock %} 

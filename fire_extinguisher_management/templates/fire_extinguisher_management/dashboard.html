@@ -1,168 +1,153 @@
-{% extends "fire_extinguisher_management/base.html" %}
+{% extends 'base.html' %}
 {% load static %}
 
-{% block fire_extinguisher_content %}
-<div class="dashboard">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>داشبورد مدیریت کپسول‌های آتش‌نشانی</h1>
-        <div class="btn-group">
-            <a href="{% url 'fire_extinguisher_management:extinguisher_create' %}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> ثبت کپسول جدید
-            </a>
-            <a href="{% url 'fire_extinguisher_management:extinguisher_list' %}" class="btn btn-secondary">
-                <i class="fas fa-list"></i> لیست کپسول‌ها
-            </a>
-        </div>
-    </div>
+{% block title %}داشبورد کپسول آتش‌نشانی{% endblock %}
 
-    <!-- Status Cards -->
-    <div class="row status-cards mb-4">
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h5 class="card-title">کپسول‌های عملیاتی</h5>
-                    <p class="display-4">{{ operational_count }}</p>
-                </div>
+{% block content %}
+    {% include 'header.html' %}
+    <div class="container-fluid">
+        <div class="row min-vh-100">
+            <div class="col-lg-2 d-none d-lg-block px-0">
+                {% include 'sidebar.html' %}
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-dark">
-                <div class="card-body">
-                    <h5 class="card-title">نیازمند تعمیر</h5>
-                    <p class="display-4">{{ needs_maintenance_count }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-danger text-white">
-                <div class="card-body">
-                    <h5 class="card-title">منقضی شده</h5>
-                    <p class="display-4">{{ expired_count }}</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <h5 class="card-title">در انتظار تست</h5>
-                    <p class="display-4">{{ under_test_count }}</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="card-title mb-0">عملیات سریع</h5>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-4">
-                    <a href="{% url 'fire_extinguisher_management:extinguisher_create' %}" class="btn btn-primary btn-block mb-2">
-                        <i class="fas fa-plus"></i> ثبت کپسول جدید
-                    </a>
-                </div>
-                <div class="col-md-4">
-                    <a href="{% url 'fire_extinguisher_management:extinguisher_list' %}?status=needs_maintenance,expired" class="btn btn-warning btn-block mb-2">
-                        <i class="fas fa-exchange-alt"></i> جایگزینی کپسول
-                    </a>
-                </div>
-                <div class="col-md-4">
-                    <a href="{% url 'fire_extinguisher_management:extinguisher_list' %}" class="btn btn-info btn-block mb-2">
-                        <i class="fas fa-list"></i> مشاهده لیست کپسول‌ها
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Upcoming Services -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="card-title mb-0">خدمات پیش رو</h5>
-        </div>
-        <div class="card-body">
-            {% if upcoming_services %}
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>کد کپسول</th>
-                            <th>نوع کپسول</th>
-                            <th>نوع خدمت</th>
-                            <th>تاریخ موعد</th>
-                            <th>عملیات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for service in upcoming_services %}
-                        <tr>
-                            <td>{{ service.extinguisher.serial_tag }}</td>
-                            <td>{{ service.extinguisher.extinguisher_type.name }}</td>
-                            <td>{{ service.get_service_type_display }}</td>
-                            <td>{{ service.due_date|date:"Y/m/d" }}</td>
-                            <td>
-                                <a href="{% url 'fire_extinguisher_management:service_record_create' service.extinguisher.pk %}" class="btn btn-sm btn-primary">
-                                    <i class="fas fa-clipboard-check"></i> ثبت خدمت
+            <div class="col-12 col-lg-10 px-0">
+                {% include 'toolbar.html' %}
+                <div class="app-container container-fluid mt-4">
+                    <!-- Quick Actions -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="d-flex flex-wrap gap-2 justify-content-start">
+                                <a href="{% url 'fire_extinguisher_management:extinguisher_list' %}" class="btn btn-outline-primary">
+                                    <i class="fas fa-list-ul ms-1"></i> لیست کپسول‌ها
                                 </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                <a href="{% url 'fire_extinguisher_management:extinguisher_create' %}" class="btn btn-outline-success">
+                                    <i class="fas fa-plus ms-1"></i> افزودن کپسول
+                                </a>
+                                <a href="{% url 'fire_extinguisher_management:extinguisher_replace' %}" class="btn btn-outline-warning">
+                                    <i class="fas fa-exchange-alt ms-1"></i> جایگزینی کپسول
+                                </a>
+                                <a href="{% url 'fire_extinguisher_management:notification_list' %}" class="btn btn-outline-info">
+                                    <i class="fas fa-bell ms-1"></i> اعلان‌ها
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- /Quick Actions -->
+                    <div class="card shadow-sm">
+                        <div class="card-header d-flex align-items-center">
+                            <h3 class="card-title mb-0">داشبورد کپسول آتش‌نشانی</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-4 mb-5">
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <div class="card shadow-sm border-0 h-100">
+                                        <div class="card-body text-center">
+                                            <div class="mb-2">
+                                                <i class="ki-outline ki-shield-tick fs-2x text-success"></i>
+                                            </div>
+                                            <div class="fw-bold fs-5 mb-1">کپسول‌های سالم</div>
+                                            <div class="display-5 fw-bolder text-success">{{ status_counts.operational }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <div class="card shadow-sm border-0 h-100">
+                                        <div class="card-body text-center">
+                                            <div class="mb-2">
+                                                <i class="ki-outline ki-alert-triangle fs-2x text-warning"></i>
+                                            </div>
+                                            <div class="fw-bold fs-5 mb-1">نیازمند سرویس</div>
+                                            <div class="display-5 fw-bolder text-warning">{{ status_counts.needs_maintenance }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <div class="card shadow-sm border-0 h-100">
+                                        <div class="card-body text-center">
+                                            <div class="mb-2">
+                                                <i class="ki-outline ki-close-circle fs-2x text-danger"></i>
+                                            </div>
+                                            <div class="fw-bold fs-5 mb-1">منقضی</div>
+                                            <div class="display-5 fw-bolder text-danger">{{ status_counts.expired }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <div class="card shadow-sm border-0 h-100">
+                                        <div class="card-body text-center">
+                                            <div class="mb-2">
+                                                <i class="ki-outline ki-calendar-bookmark fs-2x text-info"></i>
+                                            </div>
+                                            <div class="fw-bold fs-5 mb-1">رزرو شده</div>
+                                            <div class="display-5 fw-bolder text-info">{{ status_counts.reserved }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-4">
+                                <div class="col-12 col-lg-6">
+                                    <div class="card shadow-sm border-0 h-100">
+                                        <div class="card-header bg-light fw-bold">
+                                            <i class="ki-outline ki-calendar fs-2 text-primary me-2"></i>
+                                            سرویس‌های آتی
+                                        </div>
+                                        <div class="card-body">
+                                            {% if upcoming_services %}
+                                                <ul class="list-group list-group-flush">
+                                                    {% for ex in upcoming_services %}
+                                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                            <span>
+                                                                <i class="ki-outline ki-fire fs-5 text-danger me-1"></i>
+                                                                {{ ex.serial_tag }} - {{ ex.extinguisher_type.name }}
+                                                            </span>
+                                                            <span class="badge bg-warning text-dark">تا {{ ex.next_scheduled_service_date|date:'Y/m/d' }}</span>
+                                                        </li>
+                                                    {% endfor %}
+                                                </ul>
+                                            {% else %}
+                                                <div class="text-center text-muted py-5">
+                                                    <i class="ki-outline ki-calendar-remove fs-1 text-gray-400 mb-2"></i>
+                                                    <div>سرویسی در آینده نزدیک وجود ندارد.</div>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-lg-6">
+                                    <div class="card shadow-sm border-0 h-100">
+                                        <div class="card-header bg-light fw-bold">
+                                            <i class="ki-outline ki-history fs-2 text-primary me-2"></i>
+                                            آخرین سرویس‌ها
+                                        </div>
+                                        <div class="card-body">
+                                            {% if recent_services %}
+                                                <ul class="list-group list-group-flush">
+                                                    {% for sr in recent_services %}
+                                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                            <span>
+                                                                <i class="ki-outline ki-fire fs-5 text-danger me-1"></i>
+                                                                {{ sr.extinguisher.serial_tag }} - {{ sr.service_type }}
+                                                            </span>
+                                                            <span class="text-muted fs-7">{{ sr.service_date|date:'Y/m/d' }}</span>
+                                                        </li>
+                                                    {% endfor %}
+                                                </ul>
+                                            {% else %}
+                                                <div class="text-center text-muted py-5">
+                                                    <i class="ki-outline ki-history fs-1 text-gray-400 mb-2"></i>
+                                                    <div>سرویسی ثبت نشده است.</div>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% include 'footer.html' %}
             </div>
-            {% else %}
-            <div class="alert alert-info mb-0">
-                <i class="fas fa-info-circle"></i> هیچ خدمت پیش رویی وجود ندارد.
-            </div>
-            {% endif %}
         </div>
     </div>
-
-    <!-- Recent Services -->
-    <div class="card">
-        <div class="card-header">
-            <h5 class="card-title mb-0">خدمات اخیر</h5>
-        </div>
-        <div class="card-body">
-            {% if recent_services %}
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>کد کپسول</th>
-                            <th>نوع خدمت</th>
-                            <th>تاریخ</th>
-                            <th>نتیجه</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for service in recent_services %}
-                        <tr>
-                            <td>{{ service.extinguisher.serial_tag }}</td>
-                            <td>{{ service.get_service_type_display }}</td>
-                            <td>{{ service.service_date|date:"Y/m/d" }}</td>
-                            <td>
-                                {% if service.outcome == 'passed' %}
-                                <span class="badge bg-success">قبول</span>
-                                {% elif service.outcome == 'failed' %}
-                                <span class="badge bg-danger">رد</span>
-                                {% else %}
-                                <span class="badge bg-warning">نیازمند تعمیر</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="alert alert-info mb-0">
-                <i class="fas fa-info-circle"></i> هیچ خدمت اخیری ثبت نشده است.
-            </div>
-            {% endif %}
-        </div>
-    </div>
-</div>
+    {% include 'bottom_navbar.html' %}
 {% endblock %} 

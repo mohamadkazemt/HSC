@@ -1,113 +1,30 @@
-{% extends "fire_extinguisher_management/base.html" %}
+{% extends 'base.html' %}
 {% load static %}
 
-{% block fire_extinguisher_content %}
-<div class="notification-list">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>اعلان‌ها</h1>
-        <div>
-            <button id="mark-all-read" class="btn btn-secondary">
-                <i class="fas fa-check-double"></i> علامت‌گذاری همه به عنوان خوانده شده
-            </button>
-        </div>
-    </div>
+{% block title %}لیست اعلان‌ها{% endblock %}
 
-    <div class="card">
-        <div class="card-body">
-            {% if notifications %}
-            <div class="list-group">
-                {% for notification in notifications %}
-                <div class="list-group-item list-group-item-action {% if not notification.is_read %}list-group-item-primary{% endif %}" 
-                     data-notification-id="{{ notification.id }}">
-                    <div class="d-flex w-100 justify-content-between align-items-center">
-                        <div>
-                            <h5 class="mb-1">{{ notification.message }}</h5>
-                            <small class="text-muted">{{ notification.created_at|date:"Y/m/d H:i" }}</small>
+{% block content %}
+    {% include 'header.html' %}
+    <div class="container-fluid">
+        <div class="row min-vh-100">
+            <div class="col-lg-2 d-none d-lg-block px-0">
+                {% include 'sidebar.html' %}
+            </div>
+            <div class="col-12 col-lg-10 px-0">
+                {% include 'toolbar.html' %}
+                <div class="app-container container-fluid mt-4">
+                    <div class="card shadow-sm">
+                        <div class="card-header d-flex align-items-center">
+                            <h3 class="card-title mb-0">لیست اعلان‌ها</h3>
                         </div>
-                        <div>
-                            {% if not notification.is_read %}
-                            <button class="btn btn-sm btn-outline-primary mark-read" data-notification-id="{{ notification.id }}">
-                                <i class="fas fa-check"></i> خوانده شد
-                            </button>
-                            {% endif %}
-                            {% if notification.url %}
-                            <a href="{{ notification.url }}" class="btn btn-sm btn-outline-secondary">
-                                <i class="fas fa-external-link-alt"></i> مشاهده
-                            </a>
-                            {% endif %}
+                        <div class="card-body">
+                            {% include 'notification.html' %}
                         </div>
                     </div>
                 </div>
-                {% endfor %}
+                {% include 'footer.html' %}
             </div>
-            {% else %}
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle"></i> هیچ اعلانی وجود ندارد.
-            </div>
-            {% endif %}
         </div>
     </div>
-</div>
-{% endblock %}
-
-{% block extrajs %}
-{{ block.super }}
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Mark single notification as read
-        document.querySelectorAll('.mark-read').forEach(function(button) {
-            button.addEventListener('click', function() {
-                const notificationId = this.dataset.notificationId;
-                markNotificationAsRead(notificationId);
-            });
-        });
-
-        // Mark all notifications as read
-        document.getElementById('mark-all-read').addEventListener('click', function() {
-            const unreadNotifications = document.querySelectorAll('.list-group-item-primary');
-            unreadNotifications.forEach(function(notification) {
-                const notificationId = notification.dataset.notificationId;
-                markNotificationAsRead(notificationId);
-            });
-        });
-
-        function markNotificationAsRead(notificationId) {
-            fetch(`/fire-extinguisher-management/notifications/${notificationId}/mark-read/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken'),
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const notification = document.querySelector(`[data-notification-id="${notificationId}"]`);
-                    notification.classList.remove('list-group-item-primary');
-                    const markReadButton = notification.querySelector('.mark-read');
-                    if (markReadButton) {
-                        markReadButton.remove();
-                    }
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        }
-
-        // Helper function to get CSRF token
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-    });
-</script>
+    {% include 'bottom_navbar.html' %}
 {% endblock %} 

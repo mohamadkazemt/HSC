@@ -12,7 +12,7 @@ urlpatterns = [
     path('extinguishers/create/', views.extinguisher_create, name='extinguisher_create'),
     path('extinguishers/<int:pk>/', views.extinguisher_detail, name='extinguisher_detail'),
     path('extinguishers/<int:pk>/edit/', views.extinguisher_edit, name='extinguisher_edit'),
-    path('extinguishers/<int:pk>/replace/', views.extinguisher_replace, name='extinguisher_replace'),
+    path('extinguishers/replace/', views.extinguisher_replace, name='extinguisher_replace'),
     path('extinguishers/<int:pk>/change-location/', views.extinguisher_change_location, name='extinguisher_change_location'),
 
     # Service Records
