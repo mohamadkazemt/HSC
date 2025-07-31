@@ -17,6 +17,8 @@ class FireExtinguisherForm(forms.ModelForm):
         widgets = {
             'notes': forms.Textarea(attrs={'rows': 3}),
             'replacement_notes': forms.Textarea(attrs={'rows': 3}),
+            'last_service_date': forms.DateInput(attrs={'class': 'jalali-datepicker'}),
+            'next_service_date': forms.DateInput(attrs={'class': 'jalali-datepicker'}),
         }
 
 class ServiceRecordForm(forms.ModelForm):
@@ -26,6 +28,7 @@ class ServiceRecordForm(forms.ModelForm):
         widgets = {
             'notes': forms.Textarea(attrs={'rows': 3}),
             'actions_taken': forms.Textarea(attrs={'rows': 3}),
+            'service_date': forms.DateInput(attrs={'class': 'jalali-datepicker'}),
         }
 
 class FireExtinguisherReplacementForm(forms.Form):
