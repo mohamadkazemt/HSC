@@ -2,6 +2,7 @@ from django.db import models
 from shift_manager.utils import get_shift_for_date
 from accounts.models import UserProfile
 from BaseInfo.models import MiningMachine, MiningBlock
+from core.validators import validate_document_file
 
 # مدل شیفت برای هر عملیات بارگیری
 class LoadingOperation(models.Model):
@@ -91,7 +92,8 @@ class ShiftReport(models.Model):
         upload_to='shift_reports/%Y/%m/%d/',
         verbose_name="فایل ضمیمه",
         null=True,
-        blank=True
+        blank=True,
+        validators=[validate_document_file]
     )
     loading_operations = models.ManyToManyField('LoadingOperation', related_name='shift_reports', blank=True)
     shift_leaves = models.ManyToManyField('ShiftLeave', related_name='shift_reports', blank=True)

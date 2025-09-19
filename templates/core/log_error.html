@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}خطا در مشاهده لاگ{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+    <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+        {% include 'header.html' %}
+        <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+            {% include 'sidebar.html' %}
+            <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                <div class="d-flex flex-column flex-column-fluid">
+                    {% include 'toolbar.html' %}
+                    <div id="kt_app_content" class="app-content flex-column-fluid">
+                        <div id="kt_app_content_container" class="app-container container-fluid">
+                            
+                            <div class="row justify-content-center">
+                                <div class="col-md-8">
+                                    <div class="card">
+                                        <div class="card-body text-center py-5">
+                                            <i class="fas fa-exclamation-triangle text-warning" style="font-size: 4rem;"></i>
+                                            <h3 class="text-danger mt-4">خطا در مشاهده لاگ</h3>
+                                            <p class="text-muted mb-4">{{ error }}</p>
+                                            
+                                            <div class="d-flex justify-content-center gap-3">
+                                                <a href="{% url 'core:log_dashboard' %}" class="btn btn-primary">
+                                                    <i class="fas fa-arrow-left me-2"></i>
+                                                    بازگشت به لیست لاگ‌ها
+                                                </a>
+                                                <button class="btn btn-light" onclick="history.back()">
+                                                    <i class="fas fa-undo me-2"></i>
+                                                    بازگشت
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

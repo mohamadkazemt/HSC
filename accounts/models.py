@@ -8,6 +8,7 @@ from django.core.files.base import ContentFile
 from io import BytesIO
 from PIL import Image
 import os
+from core.validators import validate_image_file, validate_signature_image
 
 def remove_background(image_file):
     try:
@@ -51,8 +52,8 @@ class UserProfile(models.Model):
     mobile = models.CharField(max_length=11, blank=True)
     verification_code = models.CharField(max_length=6, blank=True, null=True)
     code_generated_at = models.DateTimeField(blank=True, null=True)
-    image = models.ImageField(upload_to='profile_pics', blank=True)
-    signature = models.ImageField(upload_to='signatures/', blank=True, null=True, verbose_name="امضای کاربر")
+    image = models.ImageField(upload_to='profile_pics', blank=True, validators=[validate_image_file])
+    signature = models.ImageField(upload_to='signatures/', blank=True, null=True, verbose_name="امضای کاربر", validators=[validate_signature_image])
 
     def generate_verification_code(self):
         self.verification_code = str(random.randint(100000, 999999))
@@ -173,8 +174,8 @@ class DriverLicense(models.Model):
     expiry_date = models.DateField(verbose_name='تاریخ انقضا')
     has_special = models.BooleanField(default=False, verbose_name='ویژه دارد')
     special_codes = models.JSONField(default=list, blank=True, verbose_name='کدهای ویژه')
-    front_image = models.ImageField(upload_to='license_images/', verbose_name='عکس روی گواهینامه')
-    back_image = models.ImageField(upload_to='license_images/', verbose_name='عکس پشت گواهینامه')
+    front_image = models.ImageField(upload_to='license_images/', verbose_name='عکس روی گواهینامه', validators=[validate_image_file])
+    back_image = models.ImageField(upload_to='license_images/', verbose_name='عکس پشت گواهینامه', validators=[validate_image_file])
     is_verified = models.BooleanField(default=False, verbose_name='تایید شده')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

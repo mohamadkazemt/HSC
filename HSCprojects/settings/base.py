@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-ygf6#b*bj-ko2fimc)sg=u2vo6c)5a1#c5#zr=@#8&o7nd*tpt
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1','mtorkzadeh.ir','miepcoj.ir', 'localhost', '65.109.220.72']
+ALLOWED_HOSTS = ['127.0.0.1', '0.0.0.0', 'mtorkzadeh.ir','miepcoj.ir', 'localhost', '65.109.220.72']
 
 # Application definition
 INSTALLED_APPS = [
@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'django_celery_beat',
 
     # Your project apps
+    'core',
     'permissions.apps.PermissionsConfig',
     'meetings.apps.MeetingsConfig',
     "dashboard.apps.DashboardConfig",
@@ -77,13 +78,12 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.common.CommonMiddleware',
 ]
 
 ROOT_URLCONF = 'HSCprojects.urls'
@@ -139,6 +139,14 @@ TIME_ZONE = 'Asia/Tehran'
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
+
+# Fix for naive datetime warnings
+import warnings
+warnings.filterwarnings(
+    'ignore',
+    message=r'.*received a naive datetime.*while time zone support is active.*',
+    category=RuntimeWarning,
+)
 
 # برای حالت تولید (production)
 STATIC_URL = '/static/'
@@ -196,6 +204,56 @@ CORS_ALLOW_HEADERS = [
 
 CORS_ALLOW_CREDENTIALS = True
 
+# Cache Configuration
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'SERIALIZER': 'django_redis.serializers.pickle.PickleSerializer',
+            'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
+            'IGNORE_EXCEPTIONS': True,
+            'CONNECTION_POOL_KWARGS': {
+                'max_connections': 50,
+                'retry_on_timeout': True,
+            }
+        },
+        'TIMEOUT': 300,  # 5 minutes
+        'KEY_PREFIX': 'hsc_cache',
+        'VERSION': 1,
+    },
+    'sessions': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/2',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'SERIALIZER': 'django_redis.serializers.pickle.PickleSerializer',
+        },
+        'TIMEOUT': 86400,  # 1 day
+        'KEY_PREFIX': 'hsc_session',
+    },
+    'fallback': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'hsc-fallback-cache',
+        'TIMEOUT': 300,
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+        }
+    }
+}
+
+# Session Configuration
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_CACHE_ALIAS = 'sessions'
+SESSION_COOKIE_AGE = 86400  # 1 day
+SESSION_SAVE_EVERY_REQUEST = True
+
+# Cache middleware settings
+CACHE_MIDDLEWARE_ALIAS = 'default'
+CACHE_MIDDLEWARE_SECONDS = 300  # 5 minutes
+CACHE_MIDDLEWARE_KEY_PREFIX = 'hsc_middleware'
+
 # Celery Configuration
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'django-db'
@@ -219,58 +277,166 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'format': '[{asctime}] {levelname} {name} {module}:{lineno} | {message}',
             'style': '{',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
         },
         'simple': {
             'format': '[{asctime}] {levelname} | {message}',
             'style': '{',
             'datefmt': '%Y-%m-%d %H:%M:%S',
         },
+        'json': {
+            'format': '%(asctime)s %(name)s %(levelname)s %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+    },
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
     },
     'handlers': {
-        'file': {
-            'level': 'DEBUG',
+        # File handlers
+        'app_file': {
+            'level': 'INFO',
             'class': 'logging.handlers.TimedRotatingFileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'django.log'),
+            'filename': os.path.join(BASE_DIR, 'logs', 'application.log'),
             'when': 'midnight',
             'interval': 1,
-            'backupCount': 30,
+            'backupCount': 15,  # Keep logs for 15 days
+            'formatter': 'verbose',
+            'encoding': 'utf-8',
+            'filters': ['require_debug_false'],
+        },
+        'error_file': {
+            'level': 'ERROR',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'errors.log'),
+            'when': 'midnight',
+            'interval': 1,
+            'backupCount': 30,  # Keep error logs for 30 days
             'formatter': 'verbose',
             'encoding': 'utf-8',
         },
-        'meetings_file': {
-            'level': 'DEBUG',
+        'security_file': {
+            'level': 'INFO',
             'class': 'logging.handlers.TimedRotatingFileHandler',
-            'filename': os.path.join(BASE_DIR, 'logs', 'meetings.log'),
+            'filename': os.path.join(BASE_DIR, 'logs', 'security.log'),
             'when': 'midnight',
             'interval': 1,
-            'backupCount': 30,
+            'backupCount': 90,  # Keep security logs for 3 months
             'formatter': 'verbose',
             'encoding': 'utf-8',
         },
+        'performance_file': {
+            'level': 'WARNING',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'performance.log'),
+            'when': 'midnight',
+            'interval': 1,
+            'backupCount': 7,  # Keep performance logs for 1 week
+            'formatter': 'verbose',
+            'encoding': 'utf-8',
+        },
+        # Console handler (only in DEBUG mode)
         'console': {
-            'level': 'DEBUG',
+            'level': 'INFO',
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
-            'stream': 'ext://sys.stdout',
+            'filters': ['require_debug_true'],
+        },
+        # Mail handler for critical errors (production only)
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+            'filters': ['require_debug_false'],
+            'formatter': 'verbose',
+            'include_html': False,
         },
     },
+    'root': {
+        'level': 'INFO',
+        'handlers': ['console', 'app_file'],
+    },
     'loggers': {
+        # Django core loggers
         'django': {
-            'handlers': ['file', 'console'],
+            'handlers': ['console', 'app_file'],
             'level': 'INFO',
-            'propagate': True,
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['error_file', 'mail_admins'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'django.security': {
+            'handlers': ['security_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.db.backends': {
+            'handlers': ['performance_file'],
+            'level': 'WARNING',  # Only log slow queries
+            'propagate': False,
+        },
+        # Application specific loggers
+        'accounts': {
+            'handlers': ['app_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'BaseInfo': {
+            'handlers': ['app_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'OperationsShiftReports': {
+            'handlers': ['app_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
         },
         'meetings': {
-            'handlers': ['meetings_file', 'console'],
-            'level': 'DEBUG',
-            'propagate': True,
+            'handlers': ['app_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
         },
         'contractor_management': {
-            'handlers': ['file', 'console'],
-            'level': 'DEBUG',
-            'propagate': True,
+            'handlers': ['app_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'anomalis': {
+            'handlers': ['app_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'hse_incidents': {
+            'handlers': ['security_file', 'app_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        # Cache and performance
+        'django_redis': {
+            'handlers': ['performance_file'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'celery': {
+            'handlers': ['app_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        # Third-party loggers (reduce noise)
+        'urllib3': {
+            'level': 'WARNING',
+        },
+        'requests': {
+            'level': 'WARNING',
         },
     },
 }

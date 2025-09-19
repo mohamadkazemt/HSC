@@ -1,0 +1,369 @@
+/**
+ * Performance Enhancement CSS
+ * HSC Project Optimization
+ */
+
+/* Critical CSS Variables */
+:root {
+    --animation-duration: 0.3s;
+    --transition-duration: 0.2s;
+    --border-radius: 8px;
+    --box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    --backdrop-blur: blur(10px);
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --animation-duration: 0.001ms;
+        --transition-duration: 0.001ms;
+    }
+    
+    *, *::before, *::after {
+        animation-duration: var(--animation-duration) !important;
+        animation-delay: var(--animation-duration) !important;
+        transition-duration: var(--transition-duration) !important;
+        transition-delay: var(--transition-duration) !important;
+    }
+}
+
+/* Image optimization */
+img {
+    max-width: 100%;
+    height: auto;
+    /* Optimize rendering */
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+}
+
+img[loading="lazy"] {
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+img[loading="lazy"].loaded,
+img:not([loading="lazy"]) {
+    opacity: 1;
+}
+
+/* WebP support detection */
+.webp img {
+    content: url(attr(data-webp));
+}
+
+/* Font optimization */
+@font-face {
+    font-family: 'Vazir';
+    src: url('../fonts/vazir.woff2') format('woff2'),
+         url('../fonts/vazir.woff') format('woff');
+    font-display: swap; /* Improve font loading performance */
+    unicode-range: U+0600-06FF, U+200C-200D, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE80-FEFC;
+}
+
+/* Critical above-the-fold styles */
+.critical-content {
+    contain: layout style paint;
+    will-change: auto;
+}
+
+/* Lazy loading placeholder */
+.lazy-placeholder {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading-shimmer 1.5s infinite;
+    border-radius: var(--border-radius);
+}
+
+@keyframes loading-shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* Performance-optimized animations */
+.fade-in {
+    animation: fadeIn var(--animation-duration) ease-out;
+}
+
+.slide-up {
+    animation: slideUp var(--animation-duration) ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0; 
+        transform: translateY(20px);
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0);
+    }
+}
+
+/* GPU acceleration for smooth animations */
+.gpu-accelerated {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    will-change: transform;
+}
+
+/* Optimize scrolling */
+.smooth-scroll {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Contain layout shifts */
+.layout-stable {
+    contain: layout;
+}
+
+/* Optimize repaints */
+.paint-optimized {
+    contain: paint;
+}
+
+/* CSS Grid optimization */
+.grid-optimized {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    min-height: 100vh;
+    contain: layout;
+}
+
+/* Flexbox optimization */
+.flex-optimized {
+    display: flex;
+    contain: layout;
+}
+
+/* Critical resource hints */
+.preload-font {
+    font-family: 'Vazir', sans-serif;
+}
+
+/* Optimize table rendering */
+.optimized-table {
+    table-layout: fixed;
+    width: 100%;
+    contain: layout;
+}
+
+.optimized-table th,
+.optimized-table td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Chart container optimization */
+.chart-container {
+    contain: layout style paint;
+    position: relative;
+    min-height: 300px;
+}
+
+.chart-loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* DataTable optimization */
+.dataTables_wrapper {
+    contain: layout;
+}
+
+.dataTables_scrollBody {
+    contain: strict;
+}
+
+/* Modal optimization */
+.modal {
+    contain: layout style paint;
+}
+
+.modal-backdrop {
+    backdrop-filter: var(--backdrop-blur);
+}
+
+/* Button optimization */
+.btn {
+    contain: layout style;
+    transition: background-color var(--transition-duration),
+                border-color var(--transition-duration),
+                box-shadow var(--transition-duration),
+                transform var(--transition-duration);
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Form optimization */
+.form-control,
+.form-select {
+    contain: layout style;
+    transition: border-color var(--transition-duration),
+                box-shadow var(--transition-duration);
+}
+
+/* Card optimization */
+.card {
+    contain: layout style paint;
+    box-shadow: var(--box-shadow);
+    transition: box-shadow var(--transition-duration),
+                transform var(--transition-duration);
+}
+
+.card:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+/* Sidebar optimization */
+.sidebar {
+    contain: layout style paint;
+    will-change: transform;
+}
+
+.sidebar-collapsed {
+    transform: translateX(-100%);
+}
+
+/* Header optimization */
+.header {
+    contain: layout style;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    backdrop-filter: var(--backdrop-blur);
+}
+
+/* Content optimization */
+.main-content {
+    contain: layout;
+    min-height: calc(100vh - 60px);
+}
+
+/* Footer optimization */
+.footer {
+    contain: layout style;
+}
+
+/* Utility classes for performance */
+.will-change-transform {
+    will-change: transform;
+}
+
+.will-change-opacity {
+    will-change: opacity;
+}
+
+.will-change-scroll {
+    will-change: scroll-position;
+}
+
+/* Remove will-change after animation */
+.animation-end {
+    will-change: auto;
+}
+
+/* Optimize text rendering */
+.optimize-text {
+    text-rendering: optimizeSpeed;
+    font-kerning: none;
+}
+
+.optimize-legibility {
+    text-rendering: optimizeLegibility;
+}
+
+/* Print optimization */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .print-optimized {
+        color: black !important;
+        background: white !important;
+        box-shadow: none !important;
+    }
+    
+    * {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* Dark mode optimization */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --box-shadow: 0 2px 12px rgba(255,255,255,0.1);
+    }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .card,
+    .btn,
+    .form-control {
+        border: 2px solid;
+    }
+}
+
+/* Mobile optimization */
+@media (max-width: 768px) {
+    .hide-mobile {
+        display: none;
+    }
+    
+    .mobile-optimized {
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+    
+    /* Optimize touch targets */
+    .btn,
+    .form-control,
+    .nav-link {
+        min-height: 44px;
+        min-width: 44px;
+    }
+}
+
+/* High DPI screens */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .high-dpi-optimized {
+        image-rendering: -webkit-optimize-contrast;
+    }
+}
+
+/* Offline styles */
+.offline {
+    filter: grayscale(100%);
+    opacity: 0.7;
+}
+
+.offline::after {
+    content: "آفلاین";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: var(--border-radius);
+    font-size: 12px;
+    z-index: 1000;
+}

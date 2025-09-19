@@ -63,6 +63,12 @@ logger = logging.getLogger('anomalis')  # لاگر اختصاصی برای اپ�
 @permission_required("anomalis")
 @login_required
 def anomalis(request):
+    # Get filter parameters
+    search_query = request.GET.get('search', '')
+    priority_filter = request.GET.get('priority', 'همه')
+    status_filter = request.GET.get('status', 'نا ایمن')
+    time_filter = request.GET.get('time', 'همه')
+    
     if request.method == 'POST':
         logger.info(f"Received POST request from user {request.user.username}")
 
@@ -201,10 +207,104 @@ def anomalis(request):
             request=request
         )
 
+    # Get anomaly list (same logic as anomaly_list view)
+    if request.user.groups.filter(name='مسئول پیگیری').exists():
+        if request.user.groups.filter(name='مدیر HSE').exists():
+            anomalies = Anomaly.objects.all().order_by('-created_at')
+        else:
+            user_profile = UserProfile.objects.get(user=request.user)
+            anomalies = Anomaly.objects.filter(followup=user_profile).order_by('-created_at')
+    else:
+        anomalies = Anomaly.objects.all().order_by('-created_at')
+
+    # Apply filters
+    if search_query:
+        anomalies = anomalies.filter(
+            Q(description__icontains=search_query) |
+            Q(location__name__icontains=search_query) |
+            Q(followup__user__first_name__icontains=search_query) |
+            Q(created_by__user__first_name__icontains=search_query) |
+            Q(created_by__user__last_name__icontains=search_query) |
+            Q(followup__mobile__icontains=search_query)
+        )
+
+    if priority_filter != 'همه':
+        anomalies = anomalies.filter(priority__priority=priority_filter)
+
+    if status_filter == 'ایمن':
+        anomalies = anomalies.filter(action=True)
+    elif status_filter == 'نا ایمن':
+        anomalies = anomalies.filter(action=False)
+
+    # Apply time filter (same logic as anomaly_list view)
+    if time_filter == 'امسال':
+        jalali_now = jdatetime.date.today()
+        start_of_year = jalali_now.replace(month=1, day=1).togregorian()
+        end_of_year = jalali_now.replace(month=12, day=31).togregorian()
+
+        start_of_year_aware = make_aware(datetime.combine(start_of_year, datetime.min.time()))
+        end_of_year_aware = make_aware(datetime.combine(end_of_year, datetime.max.time()))
+
+        anomalies = anomalies.filter(
+            created_at__gte=start_of_year_aware,
+            created_at__lte=end_of_year_aware
+        )
+    elif time_filter == 'این ماه':
+        jalali_now = jdatetime.date.today()
+        start_of_month = jalali_now.replace(day=1).togregorian()
+        end_of_month = (jdatetime.date(jalali_now.year, jalali_now.month, 1) +
+                        jdatetime.timedelta(days=31)).replace(day=1) - jdatetime.timedelta(days=1)
+        end_of_month = end_of_month.togregorian()
+
+        start_of_month_aware = make_aware(datetime.combine(start_of_month, datetime.min.time()))
+        end_of_month_aware = make_aware(datetime.combine(end_of_month, datetime.max.time()))
+
+        anomalies = anomalies.filter(
+            created_at__gte=start_of_month_aware,
+            created_at__lte=end_of_month_aware
+        )
+    elif time_filter == 'ماه گذشته':
+        jalali_now = jdatetime.date.today()
+        start_of_last_month_jalali = (jalali_now.replace(day=1) - jdatetime.timedelta(days=1)).replace(day=1)
+        end_of_last_month_jalali = jalali_now.replace(day=1) - jdatetime.timedelta(days=1)
+
+        start_of_last_month = start_of_last_month_jalali.togregorian()
+        end_of_last_month = end_of_last_month_jalali.togregorian()
+
+        start_of_last_month_aware = make_aware(datetime.combine(start_of_last_month, datetime.min.time()))
+        end_of_last_month_aware = make_aware(datetime.combine(end_of_last_month, datetime.max.time()))
+
+        anomalies = anomalies.filter(
+            created_at__gte=start_of_last_month_aware,
+            created_at__lte=end_of_last_month_aware
+        )
+    elif time_filter == '90 روز اخیر':
+        end_date = datetime.now()
+        start_date = end_date - jdatetime.timedelta(days=90)
+        start_date_aware = make_aware(start_date)
+        end_date_aware = make_aware(end_date)
+
+        anomalies = anomalies.filter(
+            created_at__gte=start_date_aware,
+            created_at__lte=end_date_aware
+        )
+
+    # Pagination
+    paginator = Paginator(anomalies, 10)  # 10 anomalies per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     return render(request, 'anomalis/new-anomalie.html', {
         'form': form,
         'pagetitle': 'افزودن آنومالی جدید',
         'title': 'افزودن آنومالی جدید',
+        # List data
+        'page_obj': page_obj,
+        'anomalies': anomalies,
+        'search_query': search_query,
+        'priority_filter': priority_filter,
+        'status_filter': status_filter,
+        'time_filter': time_filter,
     })
 
 
