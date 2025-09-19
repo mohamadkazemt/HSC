@@ -13,8 +13,6 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 
-<!-- اضافه کردن CSS دیتاپیکر -->
-<link rel="stylesheet" href="{% static 'assets/css/persianDatepicker-default.css' %}" />
 
 <style>
     /* تنظیمات جدید برای Select2 */
@@ -149,7 +147,10 @@
                                             <div class="col-md-4">
                                                 <div class="form-group">
                                                     {{ form.visit_time.label_tag }}
-                                                    {{ form.visit_time }}
+                                                    <input type="text" name="{{ form.visit_time.name }}" id="{{ form.visit_time.id_for_label }}" 
+                                                           class="form-control" data-jdp data-jdp-time="true" 
+                                                           placeholder="انتخاب تاریخ و زمان مراجعه" 
+                                                           value="{{ form.visit_time.value|default:'' }}" />
                                                     {% if form.visit_time.errors %}
                                                     <div class="invalid-feedback d-block">
                                                         {{ form.visit_time.errors }}
@@ -268,8 +269,6 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/fa.js"></script>
 
-<!-- اضافه کردن JavaScript دیتاپیکر -->
-<script src="{% static 'assets/js/persianDatepicker.min.js' %}"></script>
 
 <script>
     $(document).ready(function() {
@@ -329,33 +328,26 @@
             $('#contractor-personnel-group').show();
         }
 
-        // راه‌اندازی دیتاپیکر
-        $("#id_visit_time").persianDatepicker({
-            formatDate: "YYYY/MM/DD hh:mm:ss:ms",
-            initialValue: true,
-            initialValueType: 'persian',
-            autoClose: true,
-            timePicker: {
-                enabled: true,
-                meridiem: {
-                    enabled: true
-                }
-            },
-            calendar: {
-                persian: {
-                    locale: 'fa'
-                }
-            },
-            toolbox: {
-                enabled: true,
-                calendarSwitch: {
-                    enabled: true
-                }
-            },
-            observer: true,
-            altField: '#id_visit_time',
-            altFormat: 'YYYY/MM/DD HH:mm'
-        });
+        // راه‌اندازی دیتاپیکر جلالی
+        if (typeof jalaliDatepicker !== 'undefined') {
+            jalaliDatepicker.startWatch({
+                date: true,
+                time: true,
+                hasSecond: false,
+                persianDigits: true,
+                autoShow: true,
+                autoHide: true,
+                hideAfterChange: true,
+                useDropDownYears: true,
+                showTodayBtn: true,
+                showEmptyBtn: true,
+                showCloseBtn: true,
+                zIndex: 9999
+            });
+            console.log('JalaliDatePicker initialized successfully!');
+        } else {
+            console.error('JalaliDatePicker library not found!');
+        }
 
         // اطمینان از راه‌اندازی مجدد Select2 بعد از تغییرات دینامیک
         $(document).ajaxComplete(function() {

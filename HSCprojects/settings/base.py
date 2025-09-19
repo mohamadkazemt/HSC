@@ -43,8 +43,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'crispy_forms',
     'crispy_bootstrap5',
-    'django_jalali',
-    'jalali_date',
+    'jalali_date',  # Django Jalali Date package
     'django_select2',
     'import_export',
     'formtools',
@@ -110,7 +109,7 @@ TEMPLATES = [
                 'permissions.context_processors.permission_context',
             ],
             'builtins': [
-                'django_jalali.templatetags.jformat',
+                # Django jalali template tags removed
             ],
         },
     },
@@ -164,24 +163,7 @@ SMSIR_LINE_NUMBER = '30007732001185'
 fa_formats.DATETIME_FORMAT = "Y/m/d H:i"
 fa_formats.DATE_FORMAT = "Y/m/d"
 
-# Jalali date settings
-JALALI_DATE_DEFAULTS = {
-    'LIST_DISPLAY_AUTO_CONVERT': False,
-    'Strftime': {
-        'date': '%y/%m/%d',
-        'datetime': '%H:%M:%S _ %y/%m/%d',
-    },
-    'Static': {
-        'js': [
-            'admin/js/django_jalali.min.js',
-        ],
-        'css': {
-            'all': [
-                'admin/jquery.ui.datepicker.jalali/themes/base/jquery-ui.min.css',
-            ]
-        }
-    },
-}
+# Persian date settings removed
 
 # CORS settings
 CSRF_TRUSTED_ORIGINS = [

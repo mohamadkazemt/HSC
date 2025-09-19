@@ -16,14 +16,7 @@
     .table th {
         white-space: nowrap;
     }
-    .persian-datepicker-container {
-        z-index: 1000;
-    }
-    .persian-datepicker {
-        font-family: Vazir, Tahoma, Arial;
-    }
 </style>
-<link type="text/css" rel="stylesheet" href="{% static 'assets/css/persianDatepicker-default.css' %}" />
 {% endblock style %}
 
 {% block content %}
@@ -84,11 +77,11 @@
                                             <!-- فیلترهای پیشرفته -->
                                             <div class="col-md-3">
                                                 <label class="form-label">از تاریخ</label>
-                                                <input type="text" name="start_date" class="form-control persian-date-picker" value="{{ request.GET.start_date }}" readonly>
+                                                <input type="text" name="start_date" class="form-control" value="{{ request.GET.start_date }}" readonly>
                                             </div>
                                             <div class="col-md-3">
                                                 <label class="form-label">تا تاریخ</label>
-                                                <input type="text" name="end_date" class="form-control persian-date-picker" value="{{ request.GET.end_date }}" readonly>
+                                                <input type="text" name="end_date" class="form-control" value="{{ request.GET.end_date }}" readonly>
                                             </div>
                                             <div class="col-md-3">
                                                 <label class="form-label">مکان</label>
@@ -264,11 +257,8 @@
 <!--end::Drawers-->
 
 {% block extra_js %}
-<script type="text/javascript" src="{% static 'assets/js/persianDatepicker.min.js' %}"></script>  
-    <script>
-        $(".persian-date-picker").persianDatepicker({
-            formatDate: "YYYY/0M/0D",
-        });
+<script>
+        // Persian datepicker removed
     </script>
 {% endblock extra_js %}
 {% endblock content %} 

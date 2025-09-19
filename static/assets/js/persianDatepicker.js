@@ -1,33 +1,15 @@
 /*!
- * persianDatepicker v0.1.0
- * http://github.com/behzadi/persianDatepicker/
- *
- * Copyright (c) 2013 Mohammad hasan Behzadi  All rights reserved.
- *
- * Released under the MIT license.
- *
- * jalali Date Functions
- *
- * Date: Tue Jan 1 2013
- * 
- * Last Update: Mon April 15 2019
- * 
+ * Persian Date Picker functionality has been removed from this project
+ * This file is kept as a placeholder to prevent 404 errors
  */
-;
+
+// Empty placeholder to prevent JavaScript errors
 (function ($) {
   $.fn.persianDatepicker = function (options) {
-    var pluginName = 'persianDatepicker';
-    var instance = this.data(pluginName);
-    if (!instance) {
-      return this.each(function () {
-        return $(this).data(pluginName, new persianDatepicker(this, options));
-      });
-    }
-    return (options === true) ? instance : this;
+    console.warn('Date picker has been disabled in this project');
+    return this;
   };
-  // persianDatepicker object
-  var persianDatepicker = (function () {
-    function persianDatepicker(element, userOptions) {
+})(jQuery);
       var defaults = {
         months: ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"],
         dowTitle: ["شنبه", "یکشنبه", "دوشنبه", "سه شنبه", "چهارشنبه", "پنج شنبه", "جمعه"],

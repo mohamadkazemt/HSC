@@ -6,7 +6,7 @@ from django.utils import timezone
 from datetime import timedelta, time
 from .models import Meeting
 from dashboard.models import Notification
-import jdatetime # <<<--- این خط اضافه شود
+# jdatetime import removed
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class MeetingService:
             with transaction.atomic():
                 meeting = Meeting.objects.create(
                     title=title,
-                    date=date, # تاریخ اینجا هنوز شمسی است (شیء jDateField یا رشته)
+                    date=date, # تاریخ اینجا یک تاریخ استاندارد است
                     start_time=start_time,
                     end_time=end_time,
                     creator=creator,
@@ -84,29 +84,20 @@ class MeetingService:
 
                 # ثبت تسک‌های یادآوری برای اجرا *بعد* از کامیت
                 try:
-                    # تبدیل تاریخ ورودی (که شمسی است) به میلادی برای محاسبات timedelta
-                    # فرض می‌کنیم 'date' که از فرم آمده، شیء date شمسی یا رشته YYYY-MM-DD است
+                    # تاریخ ورودی اکنون تاریخ میلادی استاندارد است
+                    from datetime import date as date_type
                     if isinstance(date, str):
-                         # اطمینان از فرمت و تبدیل به شیء jdatetime.date
+                         # اطمینان از فرمت و تبدیل به شیء date
                          try:
-                             jalali_date_obj = jdatetime.date.fromisoformat(date)
+                             gregorian_date = date_type.fromisoformat(date)
                          except ValueError:
                              logger.error(f"Invalid date format '{date}' received for reminder scheduling.")
                              raise ValueError(f"فرمت تاریخ نامعتبر: {date}")
-                    elif isinstance(date, jdatetime.date):
-                         jalali_date_obj = date
-                    # --- اضافه کردن بررسی برای نوع date جنگو (اگر jDateField مستقیما شی date برگرداند) ---
-                    elif isinstance(date, datetime.date) and not isinstance(date, jdatetime.date):
-                        # اگر به نحوی تاریخ میلادی به اینجا رسیده، باید به شمسی تبدیل شود یا منطق تغییر کند
-                        # فعلا فرض میکنیم ورودی شمسی است طبق فرم
-                        logger.warning(f"Received standard python date {date}, expected jdatetime.date. Attempting conversion.")
-                        # این تبدیل ممکن است بسته به تنظیمات TIME_ZONE نیاز به دقت داشته باشد
-                        jalali_date_obj = jdatetime.date.fromgregorian(date=date)
+                    elif isinstance(date, date_type):
+                         gregorian_date = date
                     else:
                         logger.error(f"Unexpected date type '{type(date)}' received for reminder scheduling.")
                         raise TypeError(f"نوع تاریخ نامشخص: {type(date)}")
-
-                    gregorian_date = jalali_date_obj.togregorian() # تبدیل به میلادی
 
                     day_before = gregorian_date - timedelta(days=1)
                     reminder_time_before = timezone.make_aware(timezone.datetime.combine(day_before, time(18, 0)))

@@ -98,8 +98,8 @@
                                                         <div class="form-group">
                                                             {{ form.expiry_date.label_tag }}
                                                             <div class="input-group input-group-sm">
-                                                                <input type="text" name="expiry_date" id="id_expiry_date" class="form-control persian-datepicker" 
-                                                                       value="{{ form.expiry_date.value|default:''|date:'Y/m/d' }}" placeholder="انتخاب تاریخ">
+                                                                <input type="date" name="expiry_date" id="id_expiry_date" class="form-control" 
+                                                                       value="{{ form.expiry_date.value|default:'' }}">
                                                                 <span class="input-group-text">
                                                                     <i class="fas fa-calendar"></i>
                                                                 </span>
@@ -171,46 +171,7 @@
             // لاگ مقدار اولیه تاریخ
             console.log('Initial date value:', $('#id_expiry_date').val());
 
-            // فعال‌سازی دیت‌پیکر فارسی
-            try {
-                $('.persian-datepicker').persianDatepicker({
-                    format: 'YYYY/MM/DD',
-                    autoClose: true,
-                    initialValue: false,
-                    observer: true,
-                    persianDigit: true,
-                    calendar: {
-                        persian: {
-                            locale: 'fa',
-                            showHint: true,
-                            leapYearMode: 'algorithmic'
-                        }
-                    },
-                    toolbox: {
-                        calendarSwitch: {
-                            enabled: false
-                        }
-                    },
-                    navigator: {
-                        scroll: {
-                            enabled: false
-                        }
-                    },
-                    dayPicker: {
-                        onSelect: function(selectedDayUnix) {
-                            var pd = new persianDate(selectedDayUnix);
-                            var formattedDate = pd.format('YYYY/MM/DD');
-                            console.log('Selected date (Unix):', selectedDayUnix);
-                            console.log('Formatted Persian date:', formattedDate);
-                            $(this.model.inputElement)
-                                .val(formattedDate)
-                                .addClass('is-valid');
-                        }
-                    }
-                });
-            } catch (e) {
-                console.error('خطا در راه‌اندازی تاریخ‌پیکر:', e);
-            }
+            // Persian Datepicker removed
 
             // اضافه کردن لاگ برای فرم submit
             $('form').on('submit', function(e) {

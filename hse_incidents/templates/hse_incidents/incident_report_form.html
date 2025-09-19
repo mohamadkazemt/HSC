@@ -129,8 +129,9 @@
                                                 <div class="row">
                                                     <div class="col-md-6 mb-3">
                                                         <label class="form-label">تاریخ وقوع حادثه</label>
-                                                        <input type="text" class="form-control persian-date-picker"
-                                                               name="incident_date" required value="{{ form_data.incident_date|default:'' }}">
+                                                        <input type="text" class="form-control" data-jdp
+                                                               name="incident_date" required value="{{ form_data.incident_date|default:'' }}" 
+                                                               placeholder="انتخاب تاریخ وقوع حادثه">
                                                     </div>
                                                     <div class="col-md-6 mb-3">
                                                         <label class="form-label">ساعت وقوع حادثه</label>
@@ -458,15 +459,25 @@
                 }
             });
 
-            // تنظیم تاریخ شمسی
-            $('.persian-date-picker').persianDatepicker({
-                format: 'YYYY-MM-DD',
-                altFormat: 'YYYY-MM-DD',
-                altField: '#incident-form input[name="incident_date"]',
-                observer: true,
-                autoClose: true,
-                initialValue: false
-            });
+            // راه‌اندازی دیتاپیکر جلالی
+            if (typeof jalaliDatepicker !== 'undefined') {
+                jalaliDatepicker.startWatch({
+                    date: true,
+                    time: false,
+                    persianDigits: true,
+                    autoShow: true,
+                    autoHide: true,
+                    hideAfterChange: true,
+                    useDropDownYears: true,
+                    showTodayBtn: true,
+                    showEmptyBtn: true,
+                    showCloseBtn: true,
+                    zIndex: 9999
+                });
+                console.log('JalaliDatePicker initialized successfully!');
+            } else {
+                console.error('JalaliDatePicker library not found!');
+            }
 
             // مدیریت ارسال فرم
             $('#incident-form').on('submit', function(event) {

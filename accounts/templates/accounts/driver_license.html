@@ -118,16 +118,7 @@
             placeholder: 'کدهای ویژه را انتخاب کنید'
         });
 
-        // راه‌اندازی تاریخ شمسی با persianDatepicker
-        $('#id_expiry_date').addClass('persian-date-picker');
-        var datePicker = $('.persian-date-picker').persianDatepicker({
-            formatDate: "YYYY-0M-0D",
-            onSelect: function(unix) {
-                var date = new persianDate(unix);
-                var gregorianDate = date.toCalendar('gregorian').format('YYYY-MM-DD');
-                $('#id_expiry_date').val(gregorianDate);
-            }
-        });
+        // Persian Datepicker removed
     });
 </script>
 {% endblock %} 

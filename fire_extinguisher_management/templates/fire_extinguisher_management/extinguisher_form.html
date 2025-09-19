@@ -331,28 +331,16 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     document.head.appendChild(style);
 
-    // فعال‌سازی دیتاپیکر جلالی روی همه فیلدهای تاریخ
-    if (window.persianDatepicker) {
-        document.querySelectorAll('.jalali-datepicker').forEach(function(input) {
-            $(input).persianDatepicker({
-                format: 'YYYY/MM/DD',
-                initialValue: false,
-                autoClose: true,
-                observer: true,
-                calendarType: 'persian',
-                toolbox: { calendarSwitch: { enabled: false } }
-            });
-        });
-    } else if (window.flatpickr) {
-        document.querySelectorAll('.jalali-datepicker').forEach(function(input) {
-            flatpickr(input, {
-                locale: 'fa',
-                calendarType: 'jalali',
-                dateFormat: 'Y/m/d',
-                allowInput: true
-            });
-        });
-    }
+    // Initialize JalaliDatePicker for date fields
+    jalaliDatepicker.startWatch({
+        persian: {
+            showHint: true,
+            showTodayBtn: true,
+            enableTimePicker: false,
+            calType: 'persian',
+            format: 'YYYY/MM/DD'
+        }
+    });
 });
 </script>
 {% endblock %} 

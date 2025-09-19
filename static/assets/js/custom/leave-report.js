@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function () {
     initializeStepper();
     initializeFormHandlers();
     initializeSelect2();
-    initializePersianDatePickers();
+    // Persian datepicker initialization removed
 
     setTimeout(() => {
         updateStepContent(1);
@@ -76,80 +76,8 @@ function initializeSelect2() {
 }
 
 function initializePersianDatePickers() {
-    $(function() {
-        $(".persian-date-picker").each(function() {
-            const inputId = $(this).attr("id");
-            $(this).persianDatepicker({
-                formatDate: "YYYY-0M-0D",
-                format: "YYYY-0M-0D",
-                persianNumbers: true,
-                altField: '#' + inputId + '_alt',
-                altFormat: 'YYYY-0M-0D',
-                observer: true,
-                initialValue: false,
-                autoClose: true,
-                theme: 'default',
-                cellWidth: 35,
-                cellHeight: 30,
-                fontSize: 14,
-                isRTL: true,
-                calendarPosition: {
-                    x: 0,
-                    y: 0,
-                },
-                toolbox: {
-                    enabled: true,
-                    calendarSwitch: {
-                        enabled: false
-                    }
-                },
-                navigator: {
-                    scroll: {
-                        enabled: false
-                    }
-                },
-                dayPicker: {
-                    enabled: true,
-                    titleFormat: 'YYYY-0M-0D'
-                },
-                onSelect: function(unix) {
-                    try {
-                        // دریافت تاریخ شمسی از picker
-                        const pdate = this.model.state.selected;
-                        const persianYear = pdate.year;
-                        const persianMonth = String(pdate.month).padStart(2, '0');
-                        const persianDay = String(pdate.date).padStart(2, '0');
-                        
-                        // تنظیم تاریخ شمسی در فیلد نمایشی و مخفی
-                        const persianDateStr = `${persianYear}-${persianMonth}-${persianDay}`;
-                        $(this.model.input.elem).val(persianDateStr);
-                        $(this.altField).val(persianDateStr);
-                        
-                        console.log('تاریخ انتخاب شده:', {
-                            unix: unix,
-                            persianDate: persianDateStr,
-                            state: {
-                                year: persianYear,
-                                month: pdate.month,
-                                day: pdate.date
-                            }
-                        });
-                    } catch (error) {
-                        console.error('خطا در تنظیم تاریخ:', error);
-                        $(this.model.input.elem).val('');
-                        $(this.altField).val('');
-                        showError('خطا در تنظیم تاریخ. لطفا دوباره تلاش کنید');
-                    }
-                },
-                onShow: function() {
-                    $('.datepicker-plot-area').addClass('rtl-calendar');
-                },
-                onHide: function() {
-                    $('.datepicker-plot-area').removeClass('rtl-calendar');
-                }
-            });
-        });
-    });
+    // Persian datepicker function removed
+    console.log('Persian datepicker initialization skipped');
 }
 
 

@@ -17,8 +17,12 @@ class FireExtinguisherForm(forms.ModelForm):
         widgets = {
             'notes': forms.Textarea(attrs={'rows': 3}),
             'replacement_notes': forms.Textarea(attrs={'rows': 3}),
-            'last_service_date': forms.DateInput(attrs={'class': 'jalali-datepicker'}),
-            'next_service_date': forms.DateInput(attrs={'class': 'jalali-datepicker'}),
+            'purchase_date': forms.TextInput(attrs={'class': 'form-control', 'data-jdp': 'true'}),
+            'manufacture_date': forms.TextInput(attrs={'class': 'form-control', 'data-jdp': 'true'}),
+            'commission_date': forms.TextInput(attrs={'class': 'form-control', 'data-jdp': 'true'}),
+            'last_serviced_date': forms.TextInput(attrs={'class': 'form-control', 'data-jdp': 'true'}),
+            'next_scheduled_service_date': forms.TextInput(attrs={'class': 'form-control', 'data-jdp': 'true'}),
+            'pressure_test_due_date': forms.TextInput(attrs={'class': 'form-control', 'data-jdp': 'true'}),
         }
 
 class ServiceRecordForm(forms.ModelForm):
@@ -28,7 +32,7 @@ class ServiceRecordForm(forms.ModelForm):
         widgets = {
             'notes': forms.Textarea(attrs={'rows': 3}),
             'actions_taken': forms.Textarea(attrs={'rows': 3}),
-            'service_date': forms.DateInput(attrs={'class': 'jalali-datepicker'}),
+            'service_date': forms.TextInput(attrs={'class': 'form-control', 'data-jdp': 'true'}),
         }
 
 class FireExtinguisherReplacementForm(forms.Form):

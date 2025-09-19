@@ -1,11 +1,8 @@
+/*
+ * Persian Date Picker functionality has been removed from admin
+ * Standard date inputs will be used instead
+ */
 $(function () {
-    if (!$.datepicker){$ = django.jQuery;}
-    $('.vjDateField').datepicker({
-        dateFormat: 'yy-mm-dd',
-        changeMonth: true,
-        changeYear: true,
-        showOn: 'button',
-        buttonImage: '/static/admin/jquery.ui.datepicker.jalali/themes/base/images/icon-calendar.svg',
-        buttonImageOnly: true
-    });
+    // Persian date picker functionality removed
+    console.info('Admin Persian date picker has been disabled');
 });

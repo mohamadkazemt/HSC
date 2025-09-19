@@ -9,7 +9,6 @@
 
 {% block style %}
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link type="text/css" rel="stylesheet" href="{% static 'assets/css/persianDatepicker-default.css' %}" />
     <style>
         .select2-container {
             width: 100% !important;
@@ -220,7 +219,10 @@
                                             </div>
                                             <div class="col-md-6 mb-3">
                                                 <label for="{{ form.date.id_for_label }}" class="form-label">{{ form.date.label }}</label>
-                                                {{ form.date }}
+                                                <input type="text" name="{{ form.date.name }}" id="{{ form.date.id_for_label }}" 
+                                                       class="form-control" data-jdp 
+                                                       placeholder="انتخاب تاریخ جلسه" 
+                                                       value="{{ form.date.value|default:'' }}" />
                                                 {% if form.date.help_text %}
                                                 <small class="form-text">{{ form.date.help_text }}</small>
                                                 {% endif %}
@@ -391,18 +393,27 @@
 
 {% block extra_js %}
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script type="text/javascript" src="{% static 'assets/js/persianDatepicker.min.js' %}"></script>
     <script>
     $(document).ready(function() {
-        // Initialize Persian Datepicker
-        var datePicker = $('.persian-date-picker').persianDatepicker({
-            formatDate: "YYYY-0M-0D",
-        });
-
-        // اضافه کردن event listener برای کلیک
-        $('.persian-date-picker').on('click', function() {
-            $(this).persianDatepicker('show');
-        });
+        // راه‌اندازی دیتاپیکر جلالی
+        if (typeof jalaliDatepicker !== 'undefined') {
+            jalaliDatepicker.startWatch({
+                date: true,
+                time: false,
+                persianDigits: true,
+                autoShow: true,
+                autoHide: true,
+                hideAfterChange: true,
+                useDropDownYears: true,
+                showTodayBtn: true,
+                showEmptyBtn: true,
+                showCloseBtn: true,
+                zIndex: 9999
+            });
+            console.log('JalaliDatePicker initialized successfully in meeting form!');
+        } else {
+            console.error('JalaliDatePicker library not found!');
+        }
 
         // Initialize Select2 for participants
         $('#{{ form.participants.id_for_label }}').select2({

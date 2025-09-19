@@ -168,6 +168,15 @@ document.addEventListener('DOMContentLoaded', function() {
             validateField(this);
         });
     });
+    
+    // Initialize Select2 for select fields
+    $('select').select2({
+        theme: 'bootstrap4',
+        width: '100%',
+        placeholder: 'انتخاب کنید...',
+        allowClear: true
+    });
+    
     function validateField(field) {
         const wrapper = field.closest('.form-field-wrapper');
         const errorMessage = wrapper.querySelector('.error-message');

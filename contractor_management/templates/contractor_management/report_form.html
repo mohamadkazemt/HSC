@@ -2,7 +2,6 @@
 
 {% load static %}
 {% block style %}
-    <link rel="stylesheet" href="{% static 'assets/css/persianDatepicker-default.css' %}">
     <style>
         /* محل قرارگیری پیام ها */
         .alert-messages {
@@ -103,7 +102,8 @@
                                                 </div>
                                                 <div class="form-group">
                                                     <label for="id_report_date" class="form-label">تاریخ گزارش</label>
-                                                    <input type="text" name="report_date" id="id_report_date" class="form-control" required>
+                                                    <input type="text" name="report_date" id="id_report_date" class="form-control" data-jdp 
+                                                           placeholder="انتخاب تاریخ گزارش" required>
                                                     {% if form.report_date.errors %}
                                                         <div class="invalid-feedback d-block">
                                                             {{ form.report_date.errors }}
@@ -150,7 +150,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'assets/js/persianDatepicker.min.js' %}"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
     $(document).ready(function() {
@@ -177,24 +176,25 @@
             minimumInputLength: 0,
         });
 
-        // تنظیم تاریخ‌پیکر شمسی
-        $("#id_report_date").persianDatepicker({
-            format: 'YYYY/MM/DD',
-            initialValue: false,
-            autoClose: true,
-            persianDigit: false,
-            observer: true,
-            calendar: {
-                persian: {
-                    locale: 'fa'
-                }
-            },
-            onSelect: function() {
-                var selectedDate = $(this).val();
-                console.log('Selected date:', selectedDate);
-                $('#id_report_date').val(selectedDate).trigger('change');
-            }
-        });
+        // راه‌اندازی دیتاپیکر جلالی
+        if (typeof jalaliDatepicker !== 'undefined') {
+            jalaliDatepicker.startWatch({
+                date: true,
+                time: false,
+                persianDigits: true,
+                autoShow: true,
+                autoHide: true,
+                hideAfterChange: true,
+                useDropDownYears: true,
+                showTodayBtn: true,
+                showEmptyBtn: true,
+                showCloseBtn: true,
+                zIndex: 9999
+            });
+            console.log('JalaliDatePicker initialized successfully in contractor report form!');
+        } else {
+            console.error('JalaliDatePicker library not found!');
+        }
 
         // اعتبارسنجی فرم قبل از ارسال
         $('#report_form').on('submit', function(e) {

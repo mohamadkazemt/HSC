@@ -2,9 +2,8 @@ from django import forms
 from django.contrib.auth.models import User
 from .models import Meeting
 from django.utils.translation import gettext_lazy as _
-from django_jalali.forms.widgets import jDateInput
 from accounts.models import UserProfile
-import jdatetime
+# Persian date imports removed
 import re
 import logging
 
@@ -54,8 +53,8 @@ class MeetingForm(forms.ModelForm):
                 'data-bs-toggle': 'tooltip',
                 'title': 'عنوان جلسه را وارد کنید'
             }),
-            'date': jDateInput(attrs={
-                'class': 'form-control persian-date-picker',
+            'date': forms.TextInput(attrs={
+                'class': 'form-control',
                 'placeholder': 'تاریخ جلسه را انتخاب کنید',
                 'data-bs-toggle': 'tooltip',
                 'title': 'برای انتخاب تاریخ کلیک کنید'
@@ -114,34 +113,9 @@ class MeetingForm(forms.ModelForm):
         } 
 
     def clean_date(self):
+        """اعتبارسنجی تاریخ - Persian date validation removed"""
         date = self.cleaned_data.get('date')
-        if isinstance(date, str):
-            try:
-                # تبدیل اعداد فارسی به انگلیسی
-                date = convert_persian_to_english(date)
-                
-                # بررسی فرمت تاریخ
-                if not re.match(r'^\d{4}-\d{2}-\d{2}$', date):
-                    raise forms.ValidationError('فرمت تاریخ باید به صورت YYYY-MM-DD باشد.')
-                
-                # بررسی معتبر بودن تاریخ شمسی
-                year, month, day = map(int, date.split('-'))
-                
-                # بررسی معتبر بودن تاریخ شمسی
-                if not (1 <= month <= 12 and 1 <= day <= 31):
-                    raise forms.ValidationError('تاریخ وارد شده معتبر نیست.')
-                
-                try:
-                    # بررسی معتبر بودن تاریخ شمسی
-                    jdatetime.date(year, month, day)
-                    return date  # برگرداندن تاریخ شمسی
-                except ValueError as e:
-                    logger.error(f"Error validating Persian date: {str(e)}")
-                    raise forms.ValidationError('تاریخ شمسی وارد شده معتبر نیست.')
-                    
-            except (ValueError, TypeError) as e:
-                logger.error(f"Error processing date: {str(e)}")
-                raise forms.ValidationError('لطفاً یک تاریخ معتبر وارد کنید.')
+        # Simple date validation - Persian date processing removed
         return date
 
     def clean(self):

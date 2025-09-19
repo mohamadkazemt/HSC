@@ -71,8 +71,8 @@
                                                                 <div class="form-group">
                                                                     <label class="form-label fw-bold">از تاریخ</label>
                                                                     <div class="input-group input-group-sm">
-                                                                        <input type="text" name="date_from" class="form-control persian-datepicker" 
-                                                                               value="{{ current_filters.date_from }}" placeholder="انتخاب تاریخ">
+                                                                        <input type="date" name="date_from" class="form-control" 
+                                                                               value="{{ current_filters.date_from }}">
                                                                         <span class="input-group-text">
                                                                             <i class="fas fa-calendar"></i>
                                                                         </span>
@@ -83,8 +83,8 @@
                                                                 <div class="form-group">
                                                                     <label class="form-label fw-bold">تا تاریخ</label>
                                                                     <div class="input-group input-group-sm">
-                                                                        <input type="text" name="date_to" class="form-control persian-datepicker" 
-                                                                               value="{{ current_filters.date_to }}" placeholder="انتخاب تاریخ">
+                                                                        <input type="date" name="date_to" class="form-control" 
+                                                                               value="{{ current_filters.date_to }}">
                                                                         <span class="input-group-text">
                                                                             <i class="fas fa-calendar"></i>
                                                                         </span>
@@ -327,43 +327,7 @@
 {% block extra_js %}
 <script>
     $(document).ready(function() {
-        // تنظیم تاریخ‌پیکر با persianDatepicker
-        try {
-            $('.persian-datepicker').persianDatepicker({
-                format: 'YYYY/MM/DD',
-                autoClose: true,
-                initialValue: false,
-                observer: true,
-                persianDigit: true,
-                calendar: {
-                    persian: {
-                        locale: 'fa',
-                        showHint: true,
-                        leapYearMode: 'algorithmic'
-                    }
-                },
-                toolbox: {
-                    calendarSwitch: {
-                        enabled: false
-                    }
-                },
-                navigator: {
-                    scroll: {
-                        enabled: false
-                    }
-                },
-                dayPicker: {
-                    onSelect: function(selectedDayUnix) {
-                        var pd = new persianDate(selectedDayUnix);
-                        $(this.model.inputElement)
-                            .val(pd.format('YYYY/MM/DD'))
-                            .addClass('is-valid');
-                    }
-                }
-            });
-        } catch (e) {
-            console.error('خطا در راه‌اندازی تاریخ‌پیکر:', e);
-        }
+        // Persian datepicker removed
         
         // تنظیمات Select2
         $('.select2-basic').select2({

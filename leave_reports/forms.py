@@ -3,8 +3,8 @@ from .models import ShiftReport
 import jdatetime
 
 class ShiftReportForm(forms.ModelForm):
-    shift_date = forms.DateField(
-        widget=forms.DateInput(attrs={'type': 'date'}),
+    shift_date = forms.CharField(
+        widget=forms.TextInput(attrs={'class': 'form-control', 'data-jdp': 'true'}),
         label='تاریخ'
     )
     
@@ -14,8 +14,28 @@ class ShiftReportForm(forms.ModelForm):
         widgets = {
             'start_time': forms.TimeInput(attrs={'type': 'time'}),  # ویجت ساعت شروع
             'end_time': forms.TimeInput(attrs={'type': 'time'}),  # ویجت ساعت پایان
-            'shift_date': forms.DateInput(attrs={'type': 'date'}),
+            'shift_date': forms.TextInput(attrs={'class': 'form-control', 'data-jdp': 'true'}),
         }
+
+    def clean_shift_date(self):
+        shift_date = self.cleaned_data.get('shift_date')
+        if shift_date:
+            try:
+                # تبدیل تاریخ شمسی به میلادی
+                if isinstance(shift_date, str):
+                    # اگر فرمت YYYY/MM/DD باشد
+                    if '/' in shift_date:
+                        year, month, day = map(int, shift_date.split('/'))
+                        jalali_date = jdatetime.date(year, month, day)
+                        return jalali_date.togregorian()
+                    # اگر فرمت YYYY-MM-DD باشد
+                    elif '-' in shift_date:
+                        year, month, day = map(int, shift_date.split('-'))
+                        jalali_date = jdatetime.date(year, month, day)
+                        return jalali_date.togregorian()
+            except (ValueError, TypeError):
+                raise forms.ValidationError('تاریخ نامعتبر است')
+        return shift_date
 
     def clean(self):
         cleaned_data = super().clean()  # Get cleaned data from parent

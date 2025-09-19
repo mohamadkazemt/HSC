@@ -6,15 +6,11 @@
 {% block title %}ثبت مراجعه جدید | اورژانس معدن{% endblock %}
 
 {% block extra_head %}
-<!-- اضافه کردن jQuery -->
-<script src="{% static 'assets/js/jquery-1.10.1.min.js' %}"></script>
+<!-- Select2 CSS قبلاً در base.html بارگیری شده -->
 
-<!-- اضافه کردن CSS مستقیم Select2 -->
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<!-- اضافه کردن CSS دیتاپیکر جلالی -->
+{{ form.media.css }}
 
-<!-- اضافه کردن CSS دیتاپیکر -->
-<link rel="stylesheet" href="{% static 'assets/css/persianDatepicker-default.css' %}" />
 
 <style>
     .formset-row {
@@ -32,39 +28,169 @@
     /* تنظیمات جدید برای Select2 */
     .select2-container {
         width: 100% !important;
-        z-index: 9999;
+        position: relative !important;
     }
-    .select2-container--bootstrap-5 .select2-selection {
-        min-height: 38px !important;
-        border: 1px solid #ced4da;
-    }
-    .select2-container--bootstrap-5 .select2-selection--single {
-        padding-top: 5px;
-    }
-    .select2-container--bootstrap-5 .select2-selection__arrow {
-        height: 37px !important;
-    }
+    
     .select2-dropdown {
-        z-index: 10000;
+        z-index: 999999 !important;
+        position: absolute !important;
+        background: white !important;
+        border: 1px solid #aaa !important;
+        border-radius: 4px !important;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.175) !important;
     }
-    /* اصلاح مشکل z-index */
-    .modal-backdrop {
-        z-index: 1040 !important;
+    
+    .select2-container--default .select2-selection--single {
+        height: 38px !important;
+        border: 1px solid #ced4da !important;
+        border-radius: 0.375rem !important;
+        background: white !important;
     }
-    .modal-content {
-        z-index: 1050 !important;
+    
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 36px !important;
+        padding-left: 12px !important;
+        padding-right: 30px !important;
+    }
+    
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 36px !important;
+        right: 12px !important;
+    }
+    
+    /* اصلاح مشکل dropdown باز نشدن */
+    .select2-container--open .select2-dropdown {
+        z-index: 999999 !important;
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+    
+    .select2-results {
+        max-height: 200px !important;
+        overflow-y: auto !important;
+    }
+    
+    .select2-results__option {
+        padding: 8px 12px !important;
+        cursor: pointer !important;
+    }
+    
+    .select2-results__option:hover {
+        background-color: #f5f5f5 !important;
     }
     .error-message {
         color: #dc3545;
         font-size: 0.875rem;
         margin-top: 0.25rem;
     }
-    /* تنظیمات دیتاپیکر */
+    /* تنظیمات دیتاپیکر جلالی */
     .pwt-datepicker {
         z-index: 99999 !important;
     }
     .pwt-datepicker-rtl {
         direction: rtl;
+    }
+    
+    /* اصلاح تداخل با Bootstrap و سایر CSS ها */
+    .calendar {
+        z-index: 10000 !important;
+        position: absolute !important;
+    }
+    
+    .calendar table {
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .calendar td, .calendar th {
+        text-align: center;
+        padding: 8px;
+        border: none;
+    }
+    
+    .calendar .selected {
+        background-color: #007bff !important;
+        color: white !important;
+    }
+    
+    .calendar .today {
+        background-color: #28a745 !important;
+        color: white !important;
+    }
+    
+    .calendar .noday {
+        color: #ccc;
+    }
+    
+    /* اصلاح فیلد datetime split */
+    .datetime {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    
+    .datetime input {
+        flex: 1;
+    }
+    
+    /* استایل‌های تکمیلی JalaliDatePicker */
+    .jdp-container {
+        z-index: 10000 !important;
+        position: absolute !important;
+        background: white !important;
+        border: 1px solid #ddd !important;
+        border-radius: 4px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+        direction: rtl;
+    }
+    
+    .jdp-month-day {
+        text-align: center;
+        padding: 8px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.2s ease;
+    }
+    
+    .jdp-month-day:hover {
+        background-color: #f0f0f0 !important;
+    }
+    
+    .jdp-month-day.jdp-selected {
+        background-color: #007bff !important;
+        color: white !important;
+    }
+    
+    .jdp-month-day.jdp-today {
+        background-color: #28a745 !important;
+        color: white !important;
+    }
+    
+    .jdp-btn {
+        padding: 5px 10px;
+        margin: 2px;
+        border: 1px solid #ccc;
+        background: white;
+        cursor: pointer;
+        border-radius: 3px;
+        font-size: 12px;
+    }
+    
+    .jdp-btn:hover {
+        background-color: #e9ecef;
+    }
+    
+    /* تنظیمات فیلدهای تاریخ */
+    input[data-jdp] {
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23212529'%3e%3cpath d='M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z'/%3e%3cpath d='M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: left 0.75rem center;
+        background-size: 1rem 1rem;
+        padding-left: 2.5rem;
+        cursor: pointer;
     }
 </style>
 {% endblock %}
@@ -151,14 +277,7 @@
                                             <div class="col-md-6">
                                                 <div class="form-group" id="company-personnel-group" style="display: none;">
                                                     {{ form.company_personnel.label_tag }}
-                                                    <select name="{{ form.company_personnel.name }}" id="id_company_personnel" class="form-select select2">
-                                                        <option value="">انتخاب کنید</option>
-                                                        {% for choice in form.company_personnel.field.choices %}
-                                                            <option value="{{ choice.0 }}" {% if form.company_personnel.value|stringformat:"s" == choice.0|stringformat:"s" %}selected{% endif %}>
-                                                                {{ choice.1 }}
-                                                            </option>
-                                                        {% endfor %}
-                                                    </select>
+                                                    {{ form.company_personnel }}
                                                     {% if form.company_personnel.errors %}
                                                     <div class="error-message">
                                                         {{ form.company_personnel.errors }}
@@ -168,14 +287,7 @@
                                                 
                                                 <div class="form-group" id="contractor-personnel-group" style="display: none;">
                                                     {{ form.contractor_personnel.label_tag }}
-                                                    <select name="{{ form.contractor_personnel.name }}" id="id_contractor_personnel" class="form-select select2">
-                                                        <option value="">انتخاب کنید</option>
-                                                        {% for choice in form.contractor_personnel.field.choices %}
-                                                            <option value="{{ choice.0 }}" {% if form.contractor_personnel.value|stringformat:"s" == choice.0|stringformat:"s" %}selected{% endif %}>
-                                                                {{ choice.1 }}
-                                                            </option>
-                                                        {% endfor %}
-                                                    </select>
+                                                    {{ form.contractor_personnel }}
                                                     {% if form.contractor_personnel.errors %}
                                                     <div class="error-message">
                                                         {{ form.contractor_personnel.errors }}
@@ -201,7 +313,10 @@
                                             <div class="col-md-4">
                                                 <div class="form-group">
                                                     {{ form.visit_time.label_tag }}
-                                                    <input type="text" name="{{ form.visit_time.name }}" id="id_visit_time" class="form-control" autocomplete="off" />
+                                                    <input type="text" name="{{ form.visit_time.name }}" id="{{ form.visit_time.id_for_label }}" 
+                                                           class="form-control" data-jdp data-jdp-time="true" 
+                                                           placeholder="انتخاب تاریخ و زمان مراجعه" 
+                                                           value="{{ form.visit_time.value|default:'' }}" />
                                                     {% if form.visit_time.errors %}
                                                     <div class="error-message">
                                                         {{ form.visit_time.errors }}
@@ -239,8 +354,12 @@
                                         <div class="row" id="hospital-time-fields" style="display: none;">
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label for="{{ form.hospital_admission_time.id_for_label }}">{% trans "زمان پذیرش در بیمارستان" %}</label>
-                                                    <input type="text" name="{{ form.hospital_admission_time.name }}" id="id_hospital_admission_time" class="form-control" autocomplete="off" />
+                                                    {{ form.hospital_admission_time.label_tag }}
+                                                    <input type="text" name="{{ form.hospital_admission_time.name }}" 
+                                                           id="{{ form.hospital_admission_time.id_for_label }}" 
+                                                           class="form-control" data-jdp data-jdp-time="true" 
+                                                           placeholder="انتخاب تاریخ و زمان پذیرش" 
+                                                           value="{{ form.hospital_admission_time.value|default:'' }}" />
                                                     {% if form.hospital_admission_time.errors %}
                                                         <div class="invalid-feedback d-block">
                                                             {{ form.hospital_admission_time.errors }}
@@ -250,8 +369,12 @@
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label for="{{ form.hospital_discharge_time.id_for_label }}">{% trans "زمان ترخیص از بیمارستان" %}</label>
-                                                    <input type="text" name="{{ form.hospital_discharge_time.name }}" id="id_hospital_discharge_time" class="form-control" autocomplete="off" />
+                                                    {{ form.hospital_discharge_time.label_tag }}
+                                                    <input type="text" name="{{ form.hospital_discharge_time.name }}" 
+                                                           id="{{ form.hospital_discharge_time.id_for_label }}" 
+                                                           class="form-control" data-jdp data-jdp-time="true" 
+                                                           placeholder="انتخاب تاریخ و زمان ترخیص" 
+                                                           value="{{ form.hospital_discharge_time.value|default:'' }}" />
                                                     {% if form.hospital_discharge_time.errors %}
                                                         <div class="invalid-feedback d-block">
                                                             {{ form.hospital_discharge_time.errors }}
@@ -376,328 +499,130 @@
 {% endblock %}
 
 {% block extra_js %}
-<!-- اضافه کردن jQuery و Select2 -->
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/i18n/fa.js"></script>
+<!-- فعلاً بدون django-jalali کار می‌کنیم -->
 
-<!-- اضافه کردن JavaScript دیتاپیکر -->
-<script src="{% static 'assets/js/persianDatepicker.min.js' %}"></script>
+<!-- Select2 قبلاً در plugins.bundle.js بارگیری شده است -->
+
+<!-- gettext functions قبلاً در base.html تعریف شده -->
+
 
 <script>
-    $(document).ready(function() {
-        console.log('Document ready started');
-        
-        // تنظیمات پایه Select2
-        const select2Config = {
-            theme: 'bootstrap-5',
+$(document).ready(function() {
+    console.log('Document ready, initializing Select2...');
+    
+    // بررسی وجود Select2
+    if (typeof $.fn.select2 === 'undefined') {
+        console.error('Select2 not found!');
+        return;
+    }
+    
+    console.log('Select2 found, initializing dropdowns...');
+    
+    // راه‌اندازی Select2 برای همه فیلدهای select
+    $('select').each(function() {
+        console.log('Initializing Select2 for select:', this.id || this.name);
+        $(this).select2({
             width: '100%',
-            dir: 'rtl',
-            language: 'fa',
-            dropdownParent: $('body'),
+            placeholder: 'انتخاب کنید...',
             allowClear: true,
-            placeholder: 'انتخاب کنید'
-        };
-
-        // راه‌اندازی Select2 برای یک المان
-        function initializeSelect2(element) {
-            if ($(element).data('select2')) {
-                $(element).select2('destroy');
-            }
-            $(element).select2(select2Config);
-            console.log('Select2 initialized for:', element.id);
-        }
-
-        // راه‌اندازی Select2 برای همه select‌ها
-        function initializeAllSelects() {
-            $('.select2').each(function() {
-                initializeSelect2(this);
-            });
-        }
-
-        // راه‌اندازی اولیه
-        initializeAllSelects();
-
-        // مدیریت نمایش فیلدهای مربوط به نوع پرسنل
-        function updatePersonnelFields() {
-            const selectedType = $('input[name="personnel_type"]:checked').val();
-            if (selectedType === 'company') {
-                $('#company-personnel-group').show();
-                $('#contractor-personnel-group').hide();
-                $('#id_contractor_personnel').val(null).trigger('change');
-            } else if (selectedType === 'contractor') {
-                $('#company-personnel-group').hide();
-                $('#contractor-personnel-group').show();
-                $('#id_company_personnel').val(null).trigger('change');
-            } else {
-                $('#company-personnel-group').hide();
-                $('#contractor-personnel-group').hide();
-            }
-        }
-
-        // اجرای اولیه
-        updatePersonnelFields();
-
-        // تغییر نوع پرسنل
-        $('input[name="personnel_type"]').change(function() {
-            updatePersonnelFields();
-        });
-
-        // مدیریت نمایش فیلدهای بیمارستان
-        $('#is_referred').change(function() {
-            if ($(this).is(':checked')) {
-                $('#hospital-fields').show();
-                $('#hospital-time-fields').show();
-                $('#hospital-diagnosis-field').show();
-            } else {
-                $('#hospital-fields').hide();
-                $('#hospital-time-fields').hide();
-                $('#hospital-diagnosis-field').hide();
-                $('#id_hospital').val(null).trigger('change');
-                $('#id_hospital_admission_time').val('');
-                $('#id_hospital_discharge_time').val('');
-                $('#id_hospital_diagnosis').val('');
-            }
-        });
-
-        // مدیریت فرم‌ست داروها
-        let medicineFormCount = parseInt($('#id_medicines-TOTAL_FORMS').val());
-
-        $('.add-medicine').click(function(e) {
-            e.preventDefault();
-            console.log('Adding new medicine row');
-            
-            // کپی کردن اولین ردیف
-            const emptyFormHtml = $('#medicine-formset .formset-row:first').clone();
-            const newFormHtml = $(emptyFormHtml).html();
-            
-            // ساخت ردیف جدید
-            const newRow = $('<div class="row formset-row bg-light"></div>');
-            newRow.html(newFormHtml);
-            
-            // بروزرسانی شناسه‌ها و نام‌ها
-            newRow.find('select, input').each(function() {
-                const oldName = $(this).attr('name');
-                const oldId = $(this).attr('id');
-                if (oldName) {
-                    const newName = oldName.replace(/-0-/, `-${medicineFormCount}-`);
-                    $(this).attr('name', newName);
-                }
-                if (oldId) {
-                    const newId = oldId.replace(/-0-/, `-${medicineFormCount}-`);
-                    $(this).attr('id', newId);
-                }
-                // پاک کردن مقادیر
-                $(this).val('').removeAttr('selected');
-                // حذف کلاس‌های Select2
-                $(this).removeClass('select2-hidden-accessible');
-            });
-            
-            // حذف کانتینر Select2 قبلی
-            newRow.find('.select2-container').remove();
-            
-            // اضافه کردن دکمه حذف
-            if (newRow.find('.delete-row').length === 0) {
-                newRow.find('.col-md-1').html(
-                    '<a href="#" class="delete-row"><i class="fas fa-trash-alt"></i></a>'
-                );
-            }
-            
-            // اضافه کردن ردیف جدید به فرم‌ست
-            $('#medicine-formset').append(newRow);
-            
-            // بروزرسانی شمارنده
-            medicineFormCount++;
-            $('#id_medicines-TOTAL_FORMS').val(medicineFormCount);
-            
-            // راه‌اندازی Select2 برای فیلد جدید
-            newRow.find('select').each(function() {
-                console.log('Initializing Select2 for new field:', this.id);
-                initializeSelect2(this);
-            });
-        });
-
-        // حذف ردیف
-        $(document).on('click', '.delete-row', function(e) {
-            e.preventDefault();
-            const row = $(this).closest('.formset-row');
-            
-            // حذف Select2 قبل از حذف ردیف
-            row.find('select').each(function() {
-                if ($(this).data('select2')) {
-                    $(this).select2('destroy');
-                }
-            });
-            
-            row.remove();
-            medicineFormCount--;
-            $('#id_medicines-TOTAL_FORMS').val(medicineFormCount);
-            
-            // بروزرسانی اندیس‌ها
-            $('.formset-row').each(function(index) {
-                $(this).find('select, input').each(function() {
-                    const oldName = $(this).attr('name');
-                    const oldId = $(this).attr('id');
-                    if (oldName) {
-                        const newName = oldName.replace(/-\d+-/, `-${index}-`);
-                        $(this).attr('name', newName);
-                    }
-                    if (oldId) {
-                        const newId = oldId.replace(/-\d+-/, `-${index}-`);
-                        $(this).attr('id', newId);
-                    }
-                });
-            });
-        });
-
-        // اطمینان از راه‌اندازی مجدد Select2 بعد از تغییرات دینامیک
-        $(document).ajaxComplete(function() {
-            initializeAllSelects();
-        });
-
-        // اضافه کردن اعتبارسنجی فرم
-        $('#visit-form').submit(function(e) {
-            let isValid = true;
-            let firstError = null;
-
-            // بررسی نوع پرسنل و انتخاب پرسنل
-            const personnelType = $('input[name="personnel_type"]:checked').val();
-            if (personnelType === 'company') {
-                if (!$('#id_company_personnel').val()) {
-                    isValid = false;
-                    firstError = firstError || $('#id_company_personnel');
-                    $('#id_company_personnel').closest('.form-group').addClass('has-error');
-                }
-            } else if (personnelType === 'contractor') {
-                if (!$('#id_contractor_personnel').val()) {
-                    isValid = false;
-                    firstError = firstError || $('#id_contractor_personnel');
-                    $('#id_contractor_personnel').closest('.form-group').addClass('has-error');
-                }
-            }
-
-            // بررسی فیلدهای اجباری
-            if (!$('#id_visit_reason').val()) {
-                isValid = false;
-                firstError = firstError || $('#id_visit_reason');
-                $('#id_visit_reason').closest('.form-group').addClass('has-error');
-            }
-
-            if (!$('#id_visit_time').val()) {
-                isValid = false;
-                firstError = firstError || $('#id_visit_time');
-                $('#id_visit_time').closest('.form-group').addClass('has-error');
-            }
-
-            // بررسی داروها
-            $('.formset-row').each(function() {
-                const medicineSelect = $(this).find('select[id$="-medicine"]');
-                const quantityInput = $(this).find('input[id$="-quantity"]');
-                
-                if (medicineSelect.val() && !quantityInput.val()) {
-                    isValid = false;
-                    firstError = firstError || quantityInput;
-                    quantityInput.closest('.form-group').addClass('has-error');
-                }
-                if (!medicineSelect.val() && quantityInput.val()) {
-                    isValid = false;
-                    firstError = firstError || medicineSelect;
-                    medicineSelect.closest('.form-group').addClass('has-error');
-                }
-            });
-
-            if (!isValid) {
-                e.preventDefault();
-                if (firstError) {
-                    firstError.focus();
-                }
-                alert('لطفاً همه فیلدهای اجباری را پر کنید.');
-            }
-        });
-
-        // راه‌اندازی دیتاپیکر
-        $("#id_visit_time").persianDatepicker({
-            formatDate: "YYYY/MM/DD hh:mm:ss:ms",
-            initialValue: true,
-            initialValueType: 'persian',
-            autoClose: true,
-            timePicker: {
-                enabled: true,
-                meridiem: {
-                    enabled: true
-                }
-            },
-            calendar: {
-                persian: {
-                    locale: 'fa'
-                }
-            },
-            toolbox: {
-                enabled: true,
-                calendarSwitch: {
-                    enabled: true
-                }
-            },
-            observer: true,
-            altField: '#id_visit_time',
-            altFormat: 'YYYY/MM/DD HH:mm'
-        });
-
-        // راه‌اندازی دیتاپیکر برای زمان پذیرش بیمارستان
-        $("#id_hospital_admission_time").persianDatepicker({
-            formatDate: "YYYY/MM/DD hh:mm:ss:ms",
-            initialValue: true,
-            initialValueType: 'persian',
-            autoClose: true,
-            timePicker: {
-                enabled: true,
-                meridiem: {
-                    enabled: true
-                }
-            },
-            calendar: {
-                persian: {
-                    locale: 'fa'
-                }
-            },
-            toolbox: {
-                enabled: true,
-                calendarSwitch: {
-                    enabled: true
-                }
-            },
-            observer: true,
-            altField: '#id_hospital_admission_time',
-            altFormat: 'YYYY/MM/DD HH:mm'
-        });
-
-        // راه‌اندازی دیتاپیکر برای زمان ترخیص بیمارستان
-        $("#id_hospital_discharge_time").persianDatepicker({
-            formatDate: "YYYY/MM/DD hh:mm:ss:ms",
-            initialValue: true,
-            initialValueType: 'persian',
-            autoClose: true,
-            timePicker: {
-                enabled: true,
-                meridiem: {
-                    enabled: true
-                }
-            },
-            calendar: {
-                persian: {
-                    locale: 'fa'
-                }
-            },
-            toolbox: {
-                enabled: true,
-                calendarSwitch: {
-                    enabled: true
-                }
-            },
-            observer: true,
-            altField: '#id_hospital_discharge_time',
-            altFormat: 'YYYY/MM/DD HH:mm'
+            dir: 'rtl'
         });
     });
+    
+    // منطق نمایش فیلدهای پرسنل
+    function updatePersonnelFields() {
+        const selectedType = $('input[name="personnel_type"]:checked').val();
+        console.log('Personnel type selected:', selectedType);
+        
+        if (selectedType === 'company') {
+            $('#company-personnel-group').show();
+            $('#contractor-personnel-group').hide();
+        } else if (selectedType === 'contractor') {
+            $('#company-personnel-group').hide();
+            $('#contractor-personnel-group').show();
+        } else {
+            $('#company-personnel-group').hide();
+            $('#contractor-personnel-group').hide();
+        }
+    }
+    
+    // اجرای اولیه
+    updatePersonnelFields();
+    
+    // گوش دادن به تغییر نوع پرسنل
+    $('input[name="personnel_type"]').change(updatePersonnelFields);
+    
+    // منطق نمایش فیلدهای بیمارستان
+    $('#is_referred').change(function() {
+        if ($(this).is(':checked')) {
+            $('#hospital-fields').show();
+            $('#hospital-time-fields').show();
+            $('#hospital-diagnosis-field').show();
+        } else {
+            $('#hospital-fields').hide();
+            $('#hospital-time-fields').hide();
+            $('#hospital-diagnosis-field').hide();
+        }
+    });
+    
+    console.log('Form initialization complete!');
+    
+    // فنکشن تست برای باز کردن دستی dropdown
+    // برای استفاده در console مرورگر: testSelect2()
+    window.testSelect2 = function() {
+        console.log('Testing Select2 dropdowns...');
+        
+        // تست برای هر select element
+        $('select').each(function() {
+            var $select = $(this);
+            console.log('Testing select:', this.id || this.name);
+            
+            // باز کردن dropdown
+            $select.select2('open');
+            
+            // بستن بعد از 2 ثانیه
+            setTimeout(function() {
+                $select.select2('close');
+            }, 2000);
+        });
+    };
+    
+    console.log('Test function available: testSelect2()');
+    
+    // راه‌اندازی دیتاپیکر جلالی
+    console.log('Initializing Jalali DatePicker...');
+    
+    if (typeof jalaliDatepicker !== 'undefined') {
+        jalaliDatepicker.startWatch({
+            date: true,
+            time: true,
+            hasSecond: false,
+            persianDigits: true,
+            autoShow: true,
+            autoHide: true,
+            hideAfterChange: true,
+            useDropDownYears: true,
+            showTodayBtn: true,
+            showEmptyBtn: true,
+            showCloseBtn: true,
+            separatorChars: {
+                date: '/',
+                between: ' ',
+                time: ':'
+            },
+            // تنظیم زمان پیشفرض
+            initTime: null,
+            // تنظیم تاریخ امروز
+            today: null,
+            // z-index برای جلوگیری از تداخل
+            zIndex: 9999
+        });
+        
+        console.log('Jalali DatePicker initialized successfully!');
+    } else {
+        console.error('JalaliDatePicker library not found!');
+    }
+});
+
 </script>
-{% endblock %} 
+{% endblock %}

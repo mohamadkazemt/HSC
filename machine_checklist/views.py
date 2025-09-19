@@ -10,8 +10,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.db.models import Q
 from datetime import datetime
-from django_jalali.db import models as jmodels
-import jdatetime
+# Persian date functionality removed
 import openpyxl
 from openpyxl.utils import get_column_letter
 from shift_manager.utils import get_current_shift_and_group  # حذف import اضافی
@@ -145,17 +144,14 @@ def checklist_list_view(request):
     checklists = Checklist.objects.all().order_by('-date')
     if from_date_str:
         try:
-            from_date_parts = list(map(int, from_date_str.split('-')))
-            from_date_gregorian = jdatetime.date(from_date_parts[0], from_date_parts[1], from_date_parts[2]).togregorian()
-            from_date_gregorian = datetime.combine(from_date_gregorian, datetime.min.time())
+            from_date_gregorian = datetime.strptime(from_date_str, '%Y-%m-%d')
             checklists = checklists.filter(date__gte=from_date_gregorian)
         except ValueError:
             pass
     if to_date_str:
         try:
-            to_date_parts = list(map(int, to_date_str.split('-')))
-            to_date_gregorian = jdatetime.date(to_date_parts[0], to_date_parts[1], to_date_parts[2]).togregorian()
-            to_date_gregorian = datetime.combine(to_date_gregorian, datetime.max.time())
+            to_date_gregorian = datetime.strptime(to_date_str, '%Y-%m-%d')
+            to_date_gregorian = datetime.combine(to_date_gregorian.date(), datetime.max.time())
             checklists = checklists.filter(date__lte=to_date_gregorian)
         except ValueError:
             pass

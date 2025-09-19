@@ -2,7 +2,6 @@
 {% load static %}
 {% load jformat %}
 {% block style %}
-    <link rel="stylesheet" href="https://unpkg.com/persian-datepicker@1.2.0/dist/css/persian-datepicker.css">
     <style>
         .search-container {
             margin-bottom: 20px;
@@ -100,9 +99,9 @@
                                         <div class="search-container">
                                             <form method="get" action="">
                                                 <input type="text" class="search-input" name="search" placeholder="جستجو در گزارشات..." value="{{search_query}}">
-                                                <input type="text" class="date-input persian-date-picker" id="from_date_picker"   placeholder="از تاریخ"  >
+                                                <input type="text" class="date-input" id="from_date_picker"   placeholder="از تاریخ"  >
                                                 <input type="hidden"  name="from_date"  id="from_date" value="{{ from_date }}">
-                                                <input type="text" class="date-input persian-date-picker"  id="to_date_picker"  placeholder="تا تاریخ" >
+                                                <input type="text" class="date-input"  id="to_date_picker"  placeholder="تا تاریخ" >
                                                 <input type="hidden" name="to_date"  id="to_date" value="{{ to_date }}">
                                                 <button type="submit" class="search-button">جستجو</button>
                                             </form>
@@ -171,20 +170,9 @@
 
 {% endblock %}
 {% block extra_js %}
-    <script src="https://unpkg.com/persian-date@1.1.0/dist/persian-date.min.js"></script>
-    <script src="https://unpkg.com/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
     <script>
         $(document).ready(function() {
-            $('#from_date_picker').persianDatepicker({
-                format: 'YYYY/MM/DD',
-                altField: '#from_date',
-                altFormat: 'YYYY-MM-DD',
-            });
-            $('#to_date_picker').persianDatepicker({
-                format: 'YYYY/MM/DD',
-                altField: '#to_date',
-                altFormat: 'YYYY-MM-DD',
-            });
+            // Persian datepicker removed
         });
     </script>
 {% endblock %}

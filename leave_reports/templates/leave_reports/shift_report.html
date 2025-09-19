@@ -2,8 +2,6 @@
 {% load static %}
 
 {% block style %}
-    <link type="text/css" rel="stylesheet" href="{% static 'assets/css/persianDatepicker-default.css' %}" />
-    <link type="text/css" rel="stylesheet" href="{% static 'assets/css/custom/datepicker.css' %}" />
 {% endblock %}
 
 {% block content %}
@@ -125,8 +123,7 @@
                                                                         </div>
                                                                         <div class="col-md-4">
                                                                             <label class="form-label">تاریخ</label>
-                                                                            <input type="text" name="regular_leave_date" class="form-control persian-date-picker" id="regular_leave_date">
-                                                                            <input type="hidden" id="regular_leave_date_alt">
+                                                                            <input type="text" name="regular_leave_date" class="form-control" id="regular_leave_date" data-jdp="true">
                                                                         </div>
                                                                         <div class="col-md-4">
                                                                             <label class="form-label">شیفت کاری</label>
@@ -179,8 +176,7 @@
                                                                     </div>
                                                                     <div class="col-md-4">
                                                                         <label class="form-label">تاریخ</label>
-                                                                        <input type="text" name="absence_date" class="form-control persian-date-picker" id="absence_date">
-                                                                        <input type="hidden" id="absence_date_alt">
+                                                                        <input type="text" name="absence_date" class="form-control" id="absence_date" data-jdp="true">
                                                                     </div>
                                                                     <div class="col-md-4">
                                                                         <label class="form-label">شیفت کاری</label>
@@ -239,8 +235,7 @@
                                                                     </div>
                                                                     <div class="col-md-4">
                                                                         <label class="form-label">تاریخ</label>
-                                                                        <input type="text" name="sick_leave_date" class="form-control persian-date-picker" id="sick_leave_date">
-                                                                        <input type="hidden" id="sick_leave_date_alt">
+                                                                        <input type="text" name="sick_leave_date" class="form-control" id="sick_leave_date" data-jdp="true">
                                                                     </div>
                                                                     <div class="col-md-4">
                                                                         <label class="form-label">شیفت کاری</label>
@@ -297,8 +292,7 @@
                                                                     </div>
                                                                     <div class="col-md-4">
                                                                         <label class="form-label">تاریخ</label>
-                                                                        <input type="text" name="hourly_leave_date" class="form-control persian-date-picker"  id="hourly_leave_date">
-                                                                        <input type="hidden" id="hourly_leave_date_alt">
+                                                                        <input type="text" name="hourly_leave_date" class="form-control" id="hourly_leave_date" data-jdp="true">
                                                                     </div>
                                                                     <div class="col-md-4">
                                                                         <label class="form-label">شیفت کاری</label>
@@ -385,6 +379,22 @@
 {% endblock %}
 
 {% block extra_js %}
-    <script type="text/javascript" src="{% static 'assets/js/persianDatepicker.min.js' %}"></script>  
     <script src="{% static 'assets/js/custom/leave-report.js' %}"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize JalaliDatePicker for all date fields
+        jalaliDatepicker.startWatch({
+            persian: {
+                showHint: true,
+                showTodayBtn: true,
+                enableTimePicker: false,
+                calType: 'persian',
+                format: 'YYYY/MM/DD'
+            }
+        });
+        
+        // Select2 is already initialized in leave-report.js
+        // No need to initialize again here
+    });
+    </script>
 {% endblock %}

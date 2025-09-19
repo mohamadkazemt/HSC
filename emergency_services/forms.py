@@ -2,8 +2,8 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 from django.forms.fields import DateField
-from jalali_date.fields import JalaliDateField
-from jalali_date.widgets import AdminJalaliDateWidget
+# from jalali_date.fields import JalaliDateField, JalaliDateTimeField
+# from jalali_date.widgets import AdminJalaliDateWidget, AdminSplitJalaliDateTime
 from django.forms import RadioSelect, CheckboxSelectMultiple
 
 from .models import (
@@ -79,6 +79,21 @@ class HospitalForm(forms.ModelForm):
 
 class MedicalVisitForm(forms.ModelForm):
     """فرم مراجعه پزشکی"""
+    visit_time = forms.DateTimeField(
+        label=_('زمان مراجعه'),
+        widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'})
+    )
+    hospital_admission_time = forms.DateTimeField(
+        label=_('زمان بستری در بیمارستان'),
+        required=False,
+        widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'})
+    )
+    hospital_discharge_time = forms.DateTimeField(
+        label=_('زمان ترخیص از بیمارستان'),
+        required=False,
+        widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'})
+    )
+    
     class Meta:
         model = MedicalVisit
         fields = [
@@ -88,15 +103,12 @@ class MedicalVisitForm(forms.ModelForm):
         ]
         widgets = {
             'personnel_type': RadioSelect(attrs={'class': 'form-check-input'}),
-            'company_personnel': forms.Select(attrs={'class': 'form-control'}),
-            'contractor_personnel': forms.Select(attrs={'class': 'form-control'}),
+            'company_personnel': forms.Select(attrs={'class': 'form-select'}),
+            'contractor_personnel': forms.Select(attrs={'class': 'form-select'}),
             'visit_reason': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'visit_time': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
             'doctor_recommendation': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'services': CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
-            'hospital': forms.Select(attrs={'class': 'form-control'}),
-            'hospital_admission_time': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
-            'hospital_discharge_time': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+            'hospital': forms.Select(attrs={'class': 'form-select'}),
             'hospital_diagnosis': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
@@ -132,6 +144,11 @@ class MedicineCategoryForm(forms.ModelForm):
 
 class MedicineForm(forms.ModelForm):
     """فرم مدیریت دارو"""
+    expiry_date = forms.DateField(
+        label=_('تاریخ انقضا'),
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+    )
+    
     class Meta:
         model = Medicine
         fields = ['name', 'category', 'quantity', 'expiry_date', 'critical_threshold', 'is_active']
@@ -142,15 +159,6 @@ class MedicineForm(forms.ModelForm):
             'critical_threshold': forms.NumberInput(attrs={'class': 'form-control'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # استفاده از DateField معمولی به جای JalaliDateField
-        # چون تبدیل تاریخ در views.py انجام می‌شود
-        self.fields['expiry_date'] = DateField(
-            label=_('تاریخ انقضا'),
-            widget=forms.DateInput(attrs={'class': 'form-control jalali-datepicker'})
-        )
 
 
 class MedicalServiceForm(forms.ModelForm):
@@ -195,6 +203,15 @@ class MedicineReturnForm(forms.ModelForm):
 
 class EmergencyEquipmentForm(forms.ModelForm):
     """فرم مدیریت تجهیزات اورژانس"""
+    last_calibration_date = forms.DateField(
+        label=_('تاریخ آخرین کالیبراسیون'),
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+    )
+    next_calibration_date = forms.DateField(
+        label=_('تاریخ کالیبراسیون بعدی'),
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+    )
+    
     class Meta:
         model = EmergencyEquipment
         fields = ['name', 'serial_number', 'description', 'last_calibration_date', 'next_calibration_date', 'calibration_alert_days', 'is_active']
@@ -205,19 +222,6 @@ class EmergencyEquipmentForm(forms.ModelForm):
             'calibration_alert_days': forms.NumberInput(attrs={'class': 'form-control'}),
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # استفاده از DateField معمولی به جای JalaliDateField
-        # چون تبدیل تاریخ در views.py انجام می‌شود
-        self.fields['last_calibration_date'] = DateField(
-            label=_('تاریخ آخرین کالیبراسیون'),
-            widget=forms.DateInput(attrs={'class': 'form-control jalali-datepicker'})
-        )
-        self.fields['next_calibration_date'] = DateField(
-            label=_('تاریخ کالیبراسیون بعدی'),
-            widget=forms.DateInput(attrs={'class': 'form-control jalali-datepicker'})
-        )
     
     def clean(self):
         cleaned_data = super().clean()
