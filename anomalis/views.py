@@ -54,7 +54,134 @@ from rest_framework.response import Response    # Correct import
 name = 'anomalis'
 
 
-
+def filter_anomalies(request, base_queryset):
+    """
+    تابع کمکی برای فیلتر و جستجو در آنومالی‌ها
+    
+    Args:
+        request: شیء درخواست HTTP
+        base_queryset: کوئری‌ست پایه برای فیلتر کردن
+    
+    Returns:
+        tuple: (queryset فیلتر شده، دیکشنری مقادیر فیلتر)
+    """
+    # دریافت پارامترهای فیلتر
+    search_query = request.GET.get('search', '')
+    priority_filter = request.GET.get('priority', 'همه')
+    status_filter = request.GET.get('status', 'همه')  # تغییر به 'همه' به عنوان پیش‌فرض
+    time_filter = request.GET.get('time', 'همه')
+    
+    anomalies = base_queryset
+    
+    # فیلتر جستجو با قابلیت‌های بهبود یافته
+    if search_query:
+        # ساخت کوئری Q برای جستجو
+        search_conditions = Q(description__icontains=search_query) | \
+                          Q(location__name__icontains=search_query) | \
+                          Q(followup__mobile__icontains=search_query) | \
+                          Q(anomalydescription__description__icontains=search_query)
+        
+        # جستجو بر اساس ID اگر عدد باشد
+        if search_query.isdigit():
+            search_conditions |= Q(id=int(search_query))
+        
+        # جستجو بر اساس نام کامل (first_name + last_name) برای followup و created_by
+        anomalies = anomalies.annotate(
+            followup_full_name=Concat(
+                'followup__user__first_name', 
+                Value(' '), 
+                'followup__user__last_name',
+                output_field=CharField()
+            ),
+            creator_full_name=Concat(
+                'created_by__user__first_name',
+                Value(' '),
+                'created_by__user__last_name',
+                output_field=CharField()
+            )
+        )
+        
+        search_conditions |= Q(followup_full_name__icontains=search_query) | \
+                           Q(creator_full_name__icontains=search_query) | \
+                           Q(followup__user__first_name__icontains=search_query) | \
+                           Q(created_by__user__first_name__icontains=search_query) | \
+                           Q(created_by__user__last_name__icontains=search_query)
+        
+        anomalies = anomalies.filter(search_conditions)
+    
+    # فیلتر اولویت
+    if priority_filter != 'همه':
+        anomalies = anomalies.filter(priority__priority=priority_filter)
+    
+    # فیلتر وضعیت
+    if status_filter == 'ایمن':
+        anomalies = anomalies.filter(action=True)
+    elif status_filter == 'نا ایمن':
+        anomalies = anomalies.filter(action=False)
+    # اگر 'همه' باشد، فیلتری اعمال نمی‌شود
+    
+    # فیلتر زمان
+    if time_filter == 'امسال':
+        jalali_now = jdatetime.date.today()
+        start_of_year = jalali_now.replace(month=1, day=1).togregorian()
+        end_of_year = jalali_now.replace(month=12, day=31).togregorian()
+        
+        start_of_year_aware = make_aware(datetime.combine(start_of_year, datetime.min.time()))
+        end_of_year_aware = make_aware(datetime.combine(end_of_year, datetime.max.time()))
+        
+        anomalies = anomalies.filter(
+            created_at__gte=start_of_year_aware,
+            created_at__lte=end_of_year_aware
+        )
+    elif time_filter == 'این ماه':
+        jalali_now = jdatetime.date.today()
+        start_of_month = jalali_now.replace(day=1).togregorian()
+        end_of_month = (jdatetime.date(jalali_now.year, jalali_now.month, 1) +
+                        jdatetime.timedelta(days=31)).replace(day=1) - jdatetime.timedelta(days=1)
+        end_of_month = end_of_month.togregorian()
+        
+        start_of_month_aware = make_aware(datetime.combine(start_of_month, datetime.min.time()))
+        end_of_month_aware = make_aware(datetime.combine(end_of_month, datetime.max.time()))
+        
+        anomalies = anomalies.filter(
+            created_at__gte=start_of_month_aware,
+            created_at__lte=end_of_month_aware
+        )
+    elif time_filter == 'ماه گذشته':
+        jalali_now = jdatetime.date.today()
+        start_of_last_month_jalali = (jalali_now.replace(day=1) - jdatetime.timedelta(days=1)).replace(day=1)
+        end_of_last_month_jalali = jalali_now.replace(day=1) - jdatetime.timedelta(days=1)
+        
+        start_of_last_month = start_of_last_month_jalali.togregorian()
+        end_of_last_month = end_of_last_month_jalali.togregorian()
+        
+        start_of_last_month_aware = make_aware(datetime.combine(start_of_last_month, datetime.min.time()))
+        end_of_last_month_aware = make_aware(datetime.combine(end_of_last_month, datetime.max.time()))
+        
+        anomalies = anomalies.filter(
+            created_at__gte=start_of_last_month_aware,
+            created_at__lte=end_of_last_month_aware
+        )
+    elif time_filter == '90 روز اخیر':
+        end_date = datetime.now()
+        start_date = end_date - jdatetime.timedelta(days=90)
+        start_date_aware = make_aware(start_date)
+        end_date_aware = make_aware(end_date)
+        
+        anomalies = anomalies.filter(
+            created_at__gte=start_date_aware,
+            created_at__lte=end_date_aware
+        )
+    
+    # دیکشنری مقادیر فیلتر برای استفاده در context
+    filter_context = {
+        'search_query': search_query,
+        'priority_filter': priority_filter,
+        'status_filter': status_filter,
+        'time_filter': time_filter,
+    }
+    
+    return anomalies, filter_context
 
 
 logger = logging.getLogger('anomalis')  # لاگر اختصاصی برای اپلیکیشن
@@ -63,12 +190,6 @@ logger = logging.getLogger('anomalis')  # لاگر اختصاصی برای اپ�
 @permission_required("anomalis")
 @login_required
 def anomalis(request):
-    # Get filter parameters
-    search_query = request.GET.get('search', '')
-    priority_filter = request.GET.get('priority', 'همه')
-    status_filter = request.GET.get('status', 'نا ایمن')
-    time_filter = request.GET.get('time', 'همه')
-    
     if request.method == 'POST':
         logger.info(f"Received POST request from user {request.user.username}")
 
@@ -207,105 +328,34 @@ def anomalis(request):
             request=request
         )
 
-    # Get anomaly list (same logic as anomaly_list view)
+    # Get base anomaly queryset
     if request.user.groups.filter(name='مسئول پیگیری').exists():
         if request.user.groups.filter(name='مدیر HSE').exists():
-            anomalies = Anomaly.objects.all().order_by('-created_at')
+            base_queryset = Anomaly.objects.all().order_by('-created_at')
         else:
             user_profile = UserProfile.objects.get(user=request.user)
-            anomalies = Anomaly.objects.filter(followup=user_profile).order_by('-created_at')
+            base_queryset = Anomaly.objects.filter(followup=user_profile).order_by('-created_at')
     else:
-        anomalies = Anomaly.objects.all().order_by('-created_at')
-
-    # Apply filters
-    if search_query:
-        anomalies = anomalies.filter(
-            Q(description__icontains=search_query) |
-            Q(location__name__icontains=search_query) |
-            Q(followup__user__first_name__icontains=search_query) |
-            Q(created_by__user__first_name__icontains=search_query) |
-            Q(created_by__user__last_name__icontains=search_query) |
-            Q(followup__mobile__icontains=search_query)
-        )
-
-    if priority_filter != 'همه':
-        anomalies = anomalies.filter(priority__priority=priority_filter)
-
-    if status_filter == 'ایمن':
-        anomalies = anomalies.filter(action=True)
-    elif status_filter == 'نا ایمن':
-        anomalies = anomalies.filter(action=False)
-
-    # Apply time filter (same logic as anomaly_list view)
-    if time_filter == 'امسال':
-        jalali_now = jdatetime.date.today()
-        start_of_year = jalali_now.replace(month=1, day=1).togregorian()
-        end_of_year = jalali_now.replace(month=12, day=31).togregorian()
-
-        start_of_year_aware = make_aware(datetime.combine(start_of_year, datetime.min.time()))
-        end_of_year_aware = make_aware(datetime.combine(end_of_year, datetime.max.time()))
-
-        anomalies = anomalies.filter(
-            created_at__gte=start_of_year_aware,
-            created_at__lte=end_of_year_aware
-        )
-    elif time_filter == 'این ماه':
-        jalali_now = jdatetime.date.today()
-        start_of_month = jalali_now.replace(day=1).togregorian()
-        end_of_month = (jdatetime.date(jalali_now.year, jalali_now.month, 1) +
-                        jdatetime.timedelta(days=31)).replace(day=1) - jdatetime.timedelta(days=1)
-        end_of_month = end_of_month.togregorian()
-
-        start_of_month_aware = make_aware(datetime.combine(start_of_month, datetime.min.time()))
-        end_of_month_aware = make_aware(datetime.combine(end_of_month, datetime.max.time()))
-
-        anomalies = anomalies.filter(
-            created_at__gte=start_of_month_aware,
-            created_at__lte=end_of_month_aware
-        )
-    elif time_filter == 'ماه گذشته':
-        jalali_now = jdatetime.date.today()
-        start_of_last_month_jalali = (jalali_now.replace(day=1) - jdatetime.timedelta(days=1)).replace(day=1)
-        end_of_last_month_jalali = jalali_now.replace(day=1) - jdatetime.timedelta(days=1)
-
-        start_of_last_month = start_of_last_month_jalali.togregorian()
-        end_of_last_month = end_of_last_month_jalali.togregorian()
-
-        start_of_last_month_aware = make_aware(datetime.combine(start_of_last_month, datetime.min.time()))
-        end_of_last_month_aware = make_aware(datetime.combine(end_of_last_month, datetime.max.time()))
-
-        anomalies = anomalies.filter(
-            created_at__gte=start_of_last_month_aware,
-            created_at__lte=end_of_last_month_aware
-        )
-    elif time_filter == '90 روز اخیر':
-        end_date = datetime.now()
-        start_date = end_date - jdatetime.timedelta(days=90)
-        start_date_aware = make_aware(start_date)
-        end_date_aware = make_aware(end_date)
-
-        anomalies = anomalies.filter(
-            created_at__gte=start_date_aware,
-            created_at__lte=end_date_aware
-        )
+        base_queryset = Anomaly.objects.all().order_by('-created_at')
+    
+    # Apply filters using the helper function
+    anomalies, filter_context = filter_anomalies(request, base_queryset)
 
     # Pagination
     paginator = Paginator(anomalies, 10)  # 10 anomalies per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'anomalis/new-anomalie.html', {
+    context = {
         'form': form,
         'pagetitle': 'افزودن آنومالی جدید',
         'title': 'افزودن آنومالی جدید',
-        # List data
         'page_obj': page_obj,
         'anomalies': anomalies,
-        'search_query': search_query,
-        'priority_filter': priority_filter,
-        'status_filter': status_filter,
-        'time_filter': time_filter,
-    })
+    }
+    context.update(filter_context)
+    
+    return render(request, 'anomalis/new-anomalie.html', context)
 
 
 
@@ -344,118 +394,33 @@ def get_corrective_action(request, description_id):
 
 @login_required
 def anomaly_list(request):
-    search_query = request.GET.get('search', '')
-    priority_filter = request.GET.get('priority', 'همه')
-    status_filter = request.GET.get('status', 'نا ایمن')
-    time_filter = request.GET.get('time', 'همه')
-
-
+    # Get base anomaly queryset
     if request.user.groups.filter(name='مسئول پیگیری').exists():
         if request.user.groups.filter(name='مدیر HSE').exists():
-            anomalies = Anomaly.objects.all().order_by('-created_at')
+            base_queryset = Anomaly.objects.all().order_by('-created_at')
         else:
             user_profile = UserProfile.objects.get(user=request.user)
-            anomalies = Anomaly.objects.filter(followup=user_profile)
+            base_queryset = Anomaly.objects.filter(followup=user_profile).order_by('-created_at')
     else:
-        anomalies = Anomaly.objects.all().order_by('-created_at')
-
-    # فیلتر جستجو
-    if search_query:
-        anomalies = anomalies.filter(
-            Q(description__icontains=search_query) |
-            Q(location__name__icontains=search_query) |
-            Q(followup__user__first_name__icontains=search_query) |
-            Q(created_by__user__first_name__icontains=search_query) |
-            Q(created_by__user__last_name__icontains=search_query)|
-            Q(followup__mobile__icontains=search_query)
-        )
-
-    # فیلتر اولویت
-    if priority_filter != 'همه':
-        anomalies = anomalies.filter(priority__priority=priority_filter)
-
-    # فیلتر وضعیت
-    if status_filter == 'ایمن':
-        anomalies = anomalies.filter(action=True)
-    elif status_filter == 'نا ایمن':
-        anomalies = anomalies.filter(action=False)
-
-    # فیلتر زمان
-    if time_filter == 'امسال':
-        jalali_now = jdatetime.date.today()
-        start_of_year = jalali_now.replace(month=1, day=1).togregorian()
-        end_of_year = jalali_now.replace(month=12, day=31).togregorian()
-
-        start_of_year_aware = make_aware(datetime.combine(start_of_year, datetime.min.time()))
-        end_of_year_aware = make_aware(datetime.combine(end_of_year, datetime.max.time()))
-
-        anomalies = anomalies.filter(
-            created_at__gte=start_of_year_aware,
-            created_at__lte=end_of_year_aware
-        )
-    elif time_filter == 'این ماه':
-        jalali_now = jdatetime.date.today()
-
-        # محاسبه شروع ماه جاری
-        start_of_month = jalali_now.replace(day=1).togregorian()
-
-        # محاسبه پایان ماه جاری
-        end_of_month = (jdatetime.date(jalali_now.year, jalali_now.month, 1) +
-                        jdatetime.timedelta(days=31)).replace(day=1) - jdatetime.timedelta(days=1)
-        end_of_month = end_of_month.togregorian()
-
-        # تبدیل به datetime و افزودن منطقه زمانی
-        start_of_month_aware = make_aware(datetime.combine(start_of_month, datetime.min.time()))
-        end_of_month_aware = make_aware(datetime.combine(end_of_month, datetime.max.time()))
-
-        anomalies = anomalies.filter(
-            created_at__gte=start_of_month_aware,
-            created_at__lte=end_of_month_aware
-        )
-    elif time_filter == 'ماه گذشته':
-        jalali_now = jdatetime.date.today()
-
-        start_of_last_month_jalali = (jalali_now.replace(day=1) - jdatetime.timedelta(days=1)).replace(day=1)
-        end_of_last_month_jalali = jalali_now.replace(day=1) - jdatetime.timedelta(days=1)
-
-        start_of_last_month = start_of_last_month_jalali.togregorian()
-        end_of_last_month = end_of_last_month_jalali.togregorian()
-
-        start_of_last_month_aware = make_aware(datetime.combine(start_of_last_month, datetime.min.time()))
-        end_of_last_month_aware = make_aware(datetime.combine(end_of_last_month, datetime.max.time()))
-
-        anomalies = anomalies.filter(
-            created_at__gte=start_of_last_month_aware,
-            created_at__lte=end_of_last_month_aware
-        )
-    elif time_filter == '90 روز اخیر':
-        end_date = datetime.now()
-        start_date = end_date - jdatetime.timedelta(days=90)
-        start_date_aware = make_aware(start_date)
-        end_date_aware = make_aware(end_date)
-
-        anomalies = anomalies.filter(
-            created_at__gte=start_date_aware,
-            created_at__lte=end_date_aware
-        )
+        base_queryset = Anomaly.objects.all().order_by('-created_at')
+    
+    # Apply filters using the helper function
+    anomalies, filter_context = filter_anomalies(request, base_queryset)
 
     # صفحه‌بندی
     paginator = Paginator(anomalies, 10)  # 10 آنومالی در هر صفحه
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-
-
-    return render(request, 'anomalis/list.html', {
+    context = {
         'page_obj': page_obj,
         'anomalies': anomalies,
         'pagetitle': 'لیست آنومالی‌ها',
         'title': 'لیست آنومالی‌ها',
-        'search_query': search_query,
-        'priority_filter': priority_filter,
-        'status_filter': status_filter,
-        'time_filter': time_filter,
-    })
+    }
+    context.update(filter_context)
+
+    return render(request, 'anomalis/list.html', context)
 
 #خذوجی اکسل
 
@@ -463,72 +428,11 @@ def anomaly_list(request):
 @login_required
 @user_passes_test(lambda u: u.groups.filter(name='مدیر HSE').exists())
 def export_anomalies_to_excel(request):
-    search_query = request.GET.get('search', '')
-    priority_filter = request.GET.get('priority', 'همه')
-    status_filter = request.GET.get('status', 'همه')
-    time_filter = request.GET.get('time', 'همه')
-
-    anomalies = Anomaly.objects.all()
-
-    # فیلتر جستجو
-    if search_query:
-        anomalies = anomalies.filter(
-            Q(description__icontains=search_query) |
-            Q(location__name__icontains=search_query) |
-            Q(followup__user__first_name__icontains=search_query) |
-            Q(created_by__user__first_name__icontains=search_query) |
-            Q(created_by__user__last_name__icontains=search_query) |
-            Q(followup__mobile__icontains=search_query)
-        )
-
-    # فیلتر اولویت
-    if priority_filter != 'همه':
-        anomalies = anomalies.filter(priority__priority=priority_filter)
-
-    # فیلتر وضعیت
-    if status_filter == 'ایمن':
-        anomalies = anomalies.filter(action=True)
-    elif status_filter == 'نا ایمن':
-        anomalies = anomalies.filter(action=False)
-
-    # فیلتر زمان (شمسی)
-    if time_filter == 'امسال':
-        jalali_now = jdatetime.date.today()
-        start_of_year = jalali_now.replace(month=1, day=1).togregorian()
-        end_of_year = jalali_now.replace(month=12, day=31).togregorian()
-
-        anomalies = anomalies.filter(
-            created_at__gte=make_aware(datetime.combine(start_of_year, datetime.min.time())),
-            created_at__lte=make_aware(datetime.combine(end_of_year, datetime.max.time()))
-        )
-    elif time_filter == 'این ماه':
-        jalali_now = jdatetime.date.today()
-        start_of_month = jalali_now.replace(day=1).togregorian()
-        end_of_month = (jdatetime.date(jalali_now.year, jalali_now.month, 1) +
-                        jdatetime.timedelta(days=31)).replace(day=1) - jdatetime.timedelta(days=1)
-        end_of_month = end_of_month.togregorian()
-
-        anomalies = anomalies.filter(
-            created_at__gte=make_aware(datetime.combine(start_of_month, datetime.min.time())),
-            created_at__lte=make_aware(datetime.combine(end_of_month, datetime.max.time()))
-        )
-    elif time_filter == 'ماه گذشته':
-        jalali_now = jdatetime.date.today()
-        start_of_last_month = (jalali_now.replace(day=1) - jdatetime.timedelta(days=1)).replace(day=1).togregorian()
-        end_of_last_month = (jalali_now.replace(day=1) - jdatetime.timedelta(days=1)).togregorian()
-
-        anomalies = anomalies.filter(
-            created_at__gte=make_aware(datetime.combine(start_of_last_month, datetime.min.time())),
-            created_at__lte=make_aware(datetime.combine(end_of_last_month, datetime.max.time()))
-        )
-    elif time_filter == '90 روز اخیر':
-        end_date = datetime.now()
-        start_date = end_date - jdatetime.timedelta(days=90)
-
-        anomalies = anomalies.filter(
-            created_at__gte=make_aware(start_date),
-            created_at__lte=make_aware(end_date)
-        )
+    # Get base anomaly queryset
+    base_queryset = Anomaly.objects.all()
+    
+    # Apply filters using the helper function
+    anomalies, filter_context = filter_anomalies(request, base_queryset)
 
     # ایجاد فایل اکسل
     wb = openpyxl.Workbook()
@@ -1301,232 +1205,6 @@ def anomaly_reports_api(request):
     }
     return Response(data)  # Use rest_framework's Response
 
-
-@login_required
-@user_passes_test(lambda u: u.groups.filter(name='مدیر HSE').exists())
-def export_report_to_excel(request):
-    form = AnomalyReportForm(request.GET)
-    start_date_str = request.GET.get('start_date')
-    end_date_str = request.GET.get('end_date')
-
-    start_date_gregorian = None
-    end_date_gregorian = None
-
-    if form.is_valid():
-        start_date = None  # Initialize start_date
-        end_date = None  # Initialize end_date
-        try:
-            if start_date_str:
-                start_date = jdatetime.datetime.strptime(start_date_str, "%Y/%m/%d").date()
-                start_date_gregorian = start_date.togregorian()
-                print("start_date_gregorian:", start_date_gregorian)
-            if end_date_str:
-                end_date = jdatetime.datetime.strptime(end_date_str, "%Y/%m/%d").date()
-                end_date_gregorian = end_date.togregorian()
-                print("end_date_gregorian:", end_date_gregorian)
-
-            if start_date and end_date and start_date > end_date:
-                raise ValidationError("تاریخ شروع باید قبل از تاریخ پایان باشد.")
-        except ValueError:
-            form.add_error(None, "فرمت تاریخ وارد شده صحیح نیست. لطفا از فرمت YYYY/MM/DD استفاده کنید.")
-        except ValidationError as e:
-            form.add_error(None, str(e))
-
-    anomalies = Anomaly.objects.all()
-
-    if start_date_gregorian:
-        anomalies = anomalies.filter(created_at__date__gte=start_date_gregorian)
-
-    if end_date_gregorian:
-        anomalies = anomalies.filter(created_at__date__lte=end_date_gregorian)
-
-    # Get ordering parameters for each tab
-    tab = request.GET.get('tab', 'unit')  # Default tab
-
-    order_by_unit = request.GET.get('order_by_unit', None)
-    order_direction_unit = request.GET.get('direction_unit', 'asc')
-
-    order_by_location = request.GET.get('order_by_location', None)
-    order_direction_location = request.GET.get('direction_location', 'asc')
-
-    order_by_shift = request.GET.get('order_by_shift', None)
-    order_direction_shift = request.GET.get('direction_shift', 'asc')
-
-    order_by_user = request.GET.get('order_by_user', None)
-    order_direction_user = request.GET.get('direction_user', 'asc')
-
-    order_by_description = request.GET.get('order_by_description', None)
-    order_direction_description = request.GET.get('direction_description', 'asc')
-
-    order_by_type = request.GET.get('order_by_type', None)
-    order_direction_type = request.GET.get('direction_type', 'asc')
-
-    # Helper function to apply ordering
-    def apply_ordering(queryset, order_by, order_direction, valid_fields):
-        if order_by in valid_fields:
-            ordering = ('-' if order_direction == 'desc' else '') + order_by
-            return queryset.order_by(ordering), order_by, order_direction
-        return queryset, None, 'asc'
-
-    # Apply ordering for each tab
-    valid_unit_fields = ['unit', 'total', 'safe', 'unsafe']
-    anomalies_by_unit, ordering_unit, order_direction_unit = apply_ordering(
-        anomalies.values(unit=F('followup__section__name')).annotate(
-            total=Count('id'),
-            safe=Count('id', filter=Q(action=True)),
-            unsafe=Count('id', filter=Q(action=False))
-        ).distinct(),
-        order_by_unit, order_direction_unit, valid_unit_fields
-    )
-
-    valid_location_fields = ['location__name', 'total', 'safe', 'unsafe']
-    anomalies_by_location, ordering_location, order_direction_location = apply_ordering(
-        anomalies.values('location__name').annotate(
-            total=Count('id'),
-            safe=Count('id', filter=Q(action=True)),
-            unsafe=Count('id', filter=Q(action=False))
-        ).distinct(),
-        order_by_location, order_direction_location, valid_location_fields
-    )
-
-    valid_shift_fields = ['shift', 'total', 'safe', 'unsafe']
-    anomalies_by_shift, ordering_shift, order_direction_shift = apply_ordering(
-        anomalies.values(shift=F('created_by__group')).annotate(
-            total=Count('id'),
-            safe=Count('id', filter=Q(action=True)),
-            unsafe=Count('id', filter=Q(action=False))
-        ).distinct(),
-        order_by_shift, order_direction_shift, valid_shift_fields
-    )
-
-    valid_user_fields = ['full_name', 'total', 'safe', 'unsafe']
-    anomalies_by_user, ordering_user, order_direction_user = apply_ordering(
-        anomalies.annotate(
-            full_name=Concat('created_by__user__first_name', Value(' '), 'created_by__user__last_name',
-                             output_field=CharField()),
-            personnel_code=F('created_by__personnel_code')
-        ).values('full_name', 'personnel_code').annotate(
-            total=Count('id'),
-            safe=Count('id', filter=Q(action=True)),
-            unsafe=Count('id', filter=Q(action=False))
-        ).distinct(),
-        order_by_user, order_direction_user, valid_user_fields
-    )
-
-    valid_description_fields = ['anomalydescription__description', 'total', 'safe', 'unsafe']
-    anomaly_frequency_by_description, ordering_description, order_direction_description = apply_ordering(
-        anomalies.values('anomalydescription__description').annotate(
-            total=Count('id'),
-            safe=Count('id', filter=Q(action=True)),
-            unsafe=Count('id', filter=Q(action=False))
-        ).distinct(),
-        order_by_description, order_direction_description, valid_description_fields
-    )
-
-    valid_type_fields = ['anomalytype__type', 'total']
-    anomaly_count_by_type, ordering_type, order_direction_type = apply_ordering(
-        anomalies.values('anomalytype__type').annotate(total=Count('id')),
-        order_by_type, order_direction_type, valid_type_fields
-    )
-
-    # Most Frequent Anomaly by Description in each section
-    sections = UserProfile.objects.values_list('section__name', flat=True).distinct()
-    most_frequent_anomalies = {}
-    for section in sections:
-        most_frequent_anomaly = anomalies.filter(followup__section__name=section).values(
-            'anomalydescription__description').annotate(total=Count('id')).order_by('-total').first()
-        if most_frequent_anomaly:
-            most_frequent_anomalies[section] = most_frequent_anomaly
-        else:
-            most_frequent_anomalies[section] = None
-
-    # Most Cooperative Follow-up Officers
-    followup_officers = UserProfile.objects.filter(user__groups__name='مسئول پیگیری',
-                                                   followup_anomalies__isnull=False).annotate(
-        total_anomalies=Count('followup_anomalies'),
-        safe_anomalies=Count('followup_anomalies', filter=Q(followup_anomalies__action=True)),
-        unsafe_anomalies=Count('followup_anomalies', filter=Q(followup_anomalies__action=False))
-    ).order_by('-safe_anomalies')
-
-    wb = openpyxl.Workbook()
-
-    # Create a worksheet for each report type
-    ws_unit = wb.create_sheet("گزارش واحد")
-    ws_location = wb.create_sheet("گزارش موقعیت")
-    ws_shift = wb.create_sheet("گزارش شیفت")
-    ws_user = wb.create_sheet("گزارش کاربر")
-    ws_description = wb.create_sheet("گزارش شرح")
-    ws_type = wb.create_sheet("گزارش نوع")
-
-    # Calculate percentages for each report type
-    total_anomalies = anomalies.count()
-
-    # Unit Report
-    ws_unit.append(['واحد', 'مجموع', 'ایمن', 'ناایمن', 'درصد ایمنی', 'درصد ناایمنی'])
-    for item in anomalies_by_unit:
-        safe_percentage = (item['safe'] / item['total']) * 100 if item['total'] > 0 else 0
-        unsafe_percentage = (item['unsafe'] / item['total']) * 100 if item['total'] > 0 else 0
-        ws_unit.append([item['unit'], item['total'], item['safe'], item['unsafe'], safe_percentage, unsafe_percentage])
-
-    # Location Report
-    ws_location.append(['موقعیت', 'مجموع', 'ایمن', 'ناایمن', 'درصد ایمنی', 'درصد ناایمنی'])
-    for item in anomalies_by_location:
-        safe_percentage = (item['safe'] / item['total']) * 100 if item['total'] > 0 else 0
-        unsafe_percentage = (item['unsafe'] / item['total']) * 100 if item['total'] > 0 else 0
-        ws_location.append(
-            [item['location__name'], item['total'], item['safe'], item['unsafe'], safe_percentage, unsafe_percentage])
-
-    # Shift Report
-    ws_shift.append(['شیفت', 'مجموع', 'ایمن', 'ناایمن', 'درصد ایمنی', 'درصد ناایمنی'])
-    for item in anomalies_by_shift:
-        safe_percentage = (item['safe'] / item['total']) * 100 if item['total'] > 0 else 0
-        unsafe_percentage = (item['unsafe'] / item['total']) * 100 if item['total'] > 0 else 0
-        ws_shift.append(
-            [item['shift'], item['total'], item['safe'], item['unsafe'], safe_percentage, unsafe_percentage])
-
-    # User Report
-    ws_user.append(['نام کامل', 'کد پرسنلی', 'مجموع', 'ایمن', 'ناایمن', 'درصد ایمنی', 'درصد ناایمنی', 'درصد از کل'])
-    for item in anomalies_by_user:
-        safe_percentage = (item['safe'] / item['total']) * 100 if item['total'] > 0 else 0
-        unsafe_percentage = (item['unsafe'] / item['total']) * 100 if item['total'] > 0 else 0
-        total_percentage = (item['total'] / total_anomalies) * 100 if total_anomalies > 0 else 0
-        ws_user.append(
-            [item['full_name'], item['personnel_code'], item['total'], item['safe'], item['unsafe'], safe_percentage,
-             unsafe_percentage, total_percentage])
-
-    # Description Report
-    ws_description.append(['شرح', 'مجموع', 'ایمن', 'ناایمن', 'درصد ایمنی', 'درصد ناایمنی', 'درصد از کل'])
-    for item in anomaly_frequency_by_description:
-        safe_percentage = (item['safe'] / item['total']) * 100 if item['total'] > 0 else 0
-        unsafe_percentage = (item['unsafe'] / item['total']) * 100 if item['total'] > 0 else 0
-        total_percentage = (item['total'] / total_anomalies) * 100 if total_anomalies > 0 else 0
-        ws_description.append(
-            [item['anomalydescription__description'], item['total'], item['safe'], item['unsafe'], safe_percentage,
-             unsafe_percentage, total_percentage])
-
-    # Type Report
-    ws_type.append(['نوع', 'مجموع'])
-    for item in anomaly_count_by_type:
-        ws_type.append([item['anomalytype__type'], item['total']])
-
-    # Determine filename
-    if start_date_str and end_date_str:
-        # Convert Gregorian dates to Jalali dates
-        start_date_jalali = jdatetime.date.fromgregorian(date=start_date_gregorian).strftime("%Y/%m/%d")
-        end_date_jalali = jdatetime.date.fromgregorian(date=end_date_gregorian).strftime("%Y/%m/%d")
-
-        filename = f"report_{start_date_jalali}_to_{end_date_jalali}.xlsx"
-    else:
-        filename = "گزارش کلی.xlsx"
-
-    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-
-    # Encode filename for UTF-8 compatibility
-    filename_encoded = filename.encode('utf-8')
-    response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{filename_encoded.decode("unicode_escape")}'
-
-    wb.save(response)
-    return response
 
 @login_required
 @user_passes_test(lambda u: u.groups.filter(name='مدیر HSE').exists())

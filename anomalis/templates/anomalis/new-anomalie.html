@@ -64,7 +64,7 @@
                                             </div>
                                             <!--begin::کارت toolbar-->
                                             <div class="card-toolbar my-1">
-                                                <form method="get" action="{% url 'anomalis:anomalis' %}" class="d-flex align-items-center flex-wrap">
+                                                <form method="get" action="" id="anomaly_filter_form" class="d-flex align-items-center flex-wrap">
                                                     <div class="me-2">
                                                         <select id="kt_filter_year" name="time" class="form-select form-select-solid form-select-sm">
                                                             <option value="همه" {% if time_filter == 'همه' %}selected{% endif %}>همه زمان</option>
@@ -96,7 +96,7 @@
                                                                value="{{ search_query }}">
                                                     </div>
                                                     <div class="me-2">
-                                                        <button type="submit" class="btn btn-primary">اعمال فیلترها</button>
+                                                        <button type="button" id="apply_filters_button" class="btn btn-primary">اعمال فیلترها</button>
                                                     </div>
                                                     {% if user.is_superuser %}
                                                         <div>
@@ -573,22 +573,36 @@
                 });
             };
 
-            // تابع غیرفعال/فعال کردن دکمه submit
+            // تابع غیرفعال/فعال کردن دکمه submit و تمام فیلدهای فرم
             const toggleSubmitButton = (loading = true) => {
                 submitButton.disabled = loading;
                 submitButton.setAttribute('data-kt-indicator', loading ? 'on' : 'off');
+                
+                // غیرفعال/فعال کردن تمام فیلدهای فرم
+                form.querySelectorAll('input, select, textarea').forEach(field => {
+                    field.disabled = loading;
+                });
+                
+                // مدیریت فیلدهای Select2
+                form.querySelectorAll('.modal-select2').forEach(select => {
+                    $(select).prop('disabled', loading);
+                });
             };
 
             // مدیریت submit فرم
             form.addEventListener('submit', async function(e) {
                 e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
                 clearErrors();
-                toggleSubmitButton(true);
 
                 try {
-                    // ساخت FormData و اضافه کردن CSRF token
+                    // ۱. ابتدا اطلاعات فرم را در formData ذخیره کن (قبل از غیرفعال کردن)
                     const formData = new FormData(this);
                     const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                    
+                    // ۲. حالا فرم را غیرفعال کن
+                    toggleSubmitButton(true);
 
                     const response = await fetch(this.getAttribute('action'), {
                         method: 'POST',
@@ -619,11 +633,11 @@
                         if (data.errors) {
                             showErrors(data.errors);
                         }
+                        toggleSubmitButton(false);
                     }
                 } catch (error) {
                     console.error('Error:', error);
                     showMessage('خطا در ارسال فرم. لطفا دوباره تلاش کنید.', 'danger');
-                } finally {
                     toggleSubmitButton(false);
                 }
             });
@@ -696,5 +710,27 @@
             });
         });
 
+    </script>
+    
+    <!-- مدیریت دستی ارسال فرم فیلتر -->
+    <script>
+        $(document).ready(function () {
+            // مدیریت دستی ارسال فرم فیلتر برای دور زدن تداخل اسکریپت‌ها
+            $('#apply_filters_button').on('click', function (e) {
+                // 1. از هرگونه رفتار پیش‌فرض دکمه جلوگیری کن
+                e.preventDefault();
+                e.stopPropagation();
+
+                // 2. فرم را پیدا کن و داده‌های آن را به صورت رشته کوئری دربیاور
+                var form = $('#anomaly_filter_form');
+                var formData = form.serialize();
+                
+                // 3. URL فعلی صفحه را بدون پارامترهای قبلی استخراج کن
+                var baseUrl = window.location.href.split('?')[0];
+
+                // 4. مرورگر را به آدرس جدید با پارامترهای فیلتر هدایت کن
+                window.location.href = baseUrl + '?' + formData;
+            });
+        });
     </script>
 {% endblock extra_js %}

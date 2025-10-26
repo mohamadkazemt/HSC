@@ -39,7 +39,7 @@
                                             </div>
                                             <!--begin::کارت toolbar-->
                                             <div class="card-toolbar my-1">
-                                                <form method="get" action="{% url 'anomalis:list' %}" class="d-flex align-items-center flex-wrap">
+                                                <form method="get" action="" id="anomaly_filter_form" class="d-flex align-items-center flex-wrap">
                                                     <div class="me-2">
                                                         <select id="kt_filter_year" name="time" class="form-select form-select-solid form-select-sm">
                                                             <option value="همه" {% if time_filter == 'همه' %}selected{% endif %}>همه زمان</option>
@@ -71,7 +71,7 @@
                                                                value="{{ search_query }}">
                                                     </div>
                                                     <div class="me-2">
-                                                        <button type="submit" class="btn btn-primary">اعمال فیلترها</button>
+                                                        <button type="button" id="apply_filters_button" class="btn btn-primary">اعمال فیلترها</button>
                                                     </div>
                                                     {% if user.is_superuser %}
                                                         <div>
@@ -223,3 +223,27 @@
         <!--end::notification drawer-->
 
 {% endblock content %}
+
+{% block extra_js %}
+    <!-- مدیریت دستی ارسال فرم فیلتر -->
+    <script>
+        $(document).ready(function () {
+            // مدیریت دستی ارسال فرم فیلتر برای دور زدن تداخل اسکریپت‌ها
+            $('#apply_filters_button').on('click', function (e) {
+                // 1. از هرگونه رفتار پیش‌فرض دکمه جلوگیری کن
+                e.preventDefault();
+                e.stopPropagation();
+
+                // 2. فرم را پیدا کن و داده‌های آن را به صورت رشته کوئری دربیاور
+                var form = $('#anomaly_filter_form');
+                var formData = form.serialize();
+                
+                // 3. URL فعلی صفحه را بدون پارامترهای قبلی استخراج کن
+                var baseUrl = window.location.href.split('?')[0];
+
+                // 4. مرورگر را به آدرس جدید با پارامترهای فیلتر هدایت کن
+                window.location.href = baseUrl + '?' + formData;
+            });
+        });
+    </script>
+{% endblock extra_js %}
