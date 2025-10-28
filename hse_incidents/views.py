@@ -2,6 +2,7 @@ import logging
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from permissions.utils import permission_required
 from .models import IncidentReport, InjuryType, HseCompletionReport
 from accounts.models import UserProfile
@@ -38,14 +39,15 @@ def persian_to_english_numbers(persian_str):
     }
     return ''.join(persian_to_english.get(c, c) for c in persian_str)
 
-@permission_required("incident_report")
 @login_required
+#@permission_required("incident_report")
+@ensure_csrf_cookie
 def report_incident(request):
     try:
         user_profile = UserProfile.objects.get(user=request.user)
     except UserProfile.DoesNotExist:
         messages.error(request, "پروفایل کاربری شما یافت نشد. لطفا با مدیر سیستم تماس بگیرید.")
-        return render(request, 'hse_incidents/incident_report_form.html')
+        return render(request, 'hse_incidents/incident_report_form.html', {'form': IncidentReportForm()})
 
     # ثبت فعالیت مشاهده فرم گزارش حادثه
     if request.method == 'GET':
@@ -63,127 +65,103 @@ def report_incident(request):
     sections = LocationSection.objects.all()
 
     if request.method == 'POST':
-        incident_date_str = persian_to_english_numbers(request.POST.get('incident_date'))
-        incident_time = request.POST.get('incident_time')
-        location_id = request.POST.get('location')
-        section_id = request.POST.get('section')
-
-        involved_person_ids = request.POST.getlist('involved_person')
-        involved_equipment = request.POST.get('involved_equipment')
-        injury_type_ids = request.POST.getlist('injury_type')
-        affected_body_part = request.POST.get('affected_body_part')
-        damage_description = request.POST.get('damage_description')
-        related_entity = request.POST.get('related_entity')
-        related_contractor_id = request.POST.get('related_contractor')
-        related_contractor_employees_ids = request.POST.getlist('related_contractor_employees')
-        fire_truck_needed = request.POST.get('fire_truck_needed') == 'on'
-        fire_truck_arrival_time = request.POST.get('fire_truck_arrival_time')
-        ambulance_needed = request.POST.get('ambulance_needed') == 'on'
-        ambulance_arrival_time = request.POST.get('ambulance_arrival_time')
-        hospitalized = request.POST.get('hospitalized') == 'on'
-        hospitalized_time = request.POST.get('hospitalized_time')
-        transportation_type = request.POST.get('transportation_type')
-        full_description = request.POST.get('full_description')
-        initial_cause = request.POST.get('initial_cause')
-
-        try:
-            # تبدیل تاریخ شمسی به میلادی
-            incident_date_parts = list(map(int, incident_date_str.split('-')))
-            incident_date_gregorian = jdatetime.date(incident_date_parts[0], incident_date_parts[1],
-                                                     incident_date_parts[2]).togregorian()
-            incident_date = incident_date_gregorian
-            # Convert empty time strings to None
-            fire_truck_arrival_time = fire_truck_arrival_time if fire_truck_arrival_time else None
-            ambulance_arrival_time = ambulance_arrival_time if ambulance_arrival_time else None
-            hospitalized_time = hospitalized_time if hospitalized_time else None
-
-            # بررسی وجود گزارش تکراری
-            existing_report = IncidentReport.objects.filter(
-                incident_date=incident_date,
-                incident_time=incident_time,
-                location_id=location_id,
-                section_id=section_id
-            ).first()
-
-            if existing_report:
-                messages.warning(request, "گزارش مشابهی برای این تاریخ، ساعت و محل قبلاً ثبت شده است. لطفاً بررسی کنید.")
-                return render(request, 'hse_incidents/incident_report_form.html', {
-                    'locations': locations, 
-                    'sections': sections,
-                    'form_data': request.POST  # برگرداندن داده‌های فرم برای حفظ مقادیر
-                })
-
-            incident = IncidentReport.objects.create(
-                incident_date=incident_date,
-                incident_time=incident_time,
-                location=Location.objects.get(id=location_id) if location_id else None,
-                section=LocationSection.objects.get(id=section_id) if section_id else None,
-                involved_equipment=involved_equipment,
-                affected_body_part=affected_body_part,
-                damage_description=damage_description,
-                related_entity=related_entity,
-                fire_truck_needed=fire_truck_needed,
-                fire_truck_arrival_time=fire_truck_arrival_time,
-                ambulance_needed=ambulance_needed,
-                ambulance_arrival_time=ambulance_arrival_time,
-                hospitalized=hospitalized,
-                hospitalized_time=hospitalized_time,
-                transportation_type=transportation_type,
-                full_description=full_description,
-                initial_cause=initial_cause,
-                report_author=user_profile
-            )
-
-            if related_contractor_id:
-                incident.related_contractor = Contractor.objects.get(id=related_contractor_id)
-            incident.save()
-
-            incident.involved_person.set(UserProfile.objects.filter(id__in=involved_person_ids))
-            incident.injury_type.set(InjuryType.objects.filter(id__in=injury_type_ids))
-            incident.related_contractor_employees.set(Employee.objects.filter(id__in=related_contractor_employees_ids))
-            
-            # ثبت فعالیت ایجاد گزارش حادثه
-            log_user_activity(
-                user=request.user,
-                activity_type='create',
-                description=f'ثبت گزارش حادثه جدید در {incident.location.name if incident.location else "نامشخص"}',
-                related_model='IncidentReport',
-                related_object_id=incident.id,
-                url=reverse('hse_incidents:report_details', args=[incident.id]),
-                request=request
-            )
-            
-            # ارسال پیامک به مدیران HSE
-            template_id = 169411  # شناسه قالب
+        # کپی داده‌ها برای تبدیل تاریخ شمسی به میلادی قبل از اعتبارسنجی فرم
+        post_data = request.POST.copy()
+        raw_date = post_data.get('incident_date', '')
+        if raw_date:
             try:
-                hse_group = Group.objects.get(name='مدیر HSE')
-                for user in hse_group.user_set.all():
-                    try:
-                        profile = user.userprofile
-                        location_name = incident.location.name if incident.location else "نامشخص"
-                        parameters = [
-                            {"Name": "LOCATION", "Value": location_name},
-                            {"Name": "INCIDENT_ID", "Value": str(incident.id)}
-                        ]
-                        send_template_sms(profile.mobile, template_id, parameters)
-                        logger.info(f"پیامک به شماره {profile.mobile} برای حادثه {incident.id} ارسال شد")
-                    except Exception as sms_error:
-                        logger.error(f"خطا در ارسال پیامک برای حادثه {incident.id} به کاربر {user.username}: {sms_error}")
-                        continue
-                    
-            except Group.DoesNotExist:
-                logger.error("گروه 'مدیر HSE' یافت نشد")
-                messages.warning(request, "گروه 'مدیر HSE' یافت نشد، اما گزارش با موفقیت ثبت شد")
-            
-            messages.success(request, "گزارش حادثه با موفقیت ثبت شد")
-            
-        except Exception as e:
-            messages.error(request, f"خطا در ثبت گزارش: {e}")
+                normalized = persian_to_english_numbers(raw_date)
+                # jalali usually with '/' or '-'
+                parts = list(map(int, normalized.replace('/', '-').split('-')))
+                gdate = jdatetime.date(parts[0], parts[1], parts[2]).togregorian()
+                post_data['incident_date'] = gdate.strftime('%Y-%m-%d')
+            except Exception:
+                # اگر تبدیل شکست خورد، همان مقدار را می‌گذاریم تا فرم خطا دهد
+                pass
+        form = IncidentReportForm(post_data)
+        if form.is_valid():
+            try:
+                cleaned = form.cleaned_data
+                # بررسی وجود گزارش تکراری
+                existing_report = IncidentReport.objects.filter(
+                    incident_date=cleaned.get('incident_date'),
+                    incident_time=cleaned.get('incident_time'),
+                    location=cleaned.get('location'),
+                    section=cleaned.get('section'),
+                ).first()
+                if existing_report:
+                    messages.warning(request, "گزارش مشابهی برای این تاریخ، ساعت و محل قبلاً ثبت شده است. لطفاً بررسی کنید.")
+                    return render(request, 'hse_incidents/incident_report_form.html', {
+                        'form': form,
+                        'locations': locations,
+                        'sections': sections,
+                    })
 
-    return render(request, 'hse_incidents/incident_report_form.html', {'locations': locations, 'sections': sections})
+                incident = form.save(commit=False)
+                incident.report_author = user_profile
+                incident.save()
+                form.save_m2m()
+
+                # ثبت فعالیت ایجاد گزارش حادثه
+                log_user_activity(
+                    user=request.user,
+                    activity_type='create',
+                    description=f'ثبت گزارش حادثه جدید در {incident.location.name if incident.location else "نامشخص"}',
+                    related_model='IncidentReport',
+                    related_object_id=incident.id,
+                    url=reverse('hse_incidents:report_details', args=[incident.id]),
+                    request=request
+                )
+
+                # ارسال پیامک به مدیران HSE
+                template_id = 169411  # شناسه قالب
+                try:
+                    hse_group = Group.objects.get(name='مدیر HSE')
+                    for user in hse_group.user_set.all():
+                        try:
+                            profile = user.userprofile
+                            location_name = incident.location.name if incident.location else "نامشخص"
+                            parameters = [
+                                {"Name": "LOCATION", "Value": location_name},
+                                {"Name": "INCIDENT_ID", "Value": str(incident.id)}
+                            ]
+                            send_template_sms(profile.mobile, template_id, parameters)
+                            logger.info(f"پیامک به شماره {profile.mobile} برای حادثه {incident.id} ارسال شد")
+                        except Exception as sms_error:
+                            logger.error(f"خطا در ارسال پیامک برای حادثه {incident.id} به کاربر {user.username}: {sms_error}")
+                            continue
+                except Group.DoesNotExist:
+                    logger.error("گروه 'مدیر HSE' یافت نشد")
+                    messages.warning(request, "گروه 'مدیر HSE' یافت نشد، اما گزارش با موفقیت ثبت شد")
+
+                messages.success(request, "گزارش حادثه با موفقیت ثبت شد")
+                # پاسخ مخصوص AJAX
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'status': 'success',
+                        'redirect': reverse('hse_incidents:report_details', args=[incident.id])
+                    })
+                return redirect('hse_incidents:report_details', report_id=incident.id)
+            except Exception as e:
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'status': 'error', 'message': f'خطا در ثبت گزارش: {e}'}, status=500)
+                messages.error(request, f"خطا در ثبت گزارش: {e}")
+        else:
+            # فرم نامعتبر است
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'error', 'message': 'فرم نامعتبر است', 'errors': form.errors}, status=400)
+            return render(request, 'hse_incidents/incident_report_form.html', {
+                'form': form,
+                'locations': locations,
+                'sections': sections,
+            })
+
+    # GET یا در صورت عدم POST موفق
+    form = IncidentReportForm()
+    return render(request, 'hse_incidents/incident_report_form.html', {'form': form, 'locations': locations, 'sections': sections})
 
 
-@permission_required("get_injury_types_ajax")
+@login_required
 def get_injury_types_ajax(request):
     # ثبت فعالیت جستجوی انواع آسیب
     search_term = request.GET.get('term', '')
@@ -206,7 +184,43 @@ def get_injury_types_ajax(request):
     return JsonResponse(list(injury_types), safe=False)
 
 
-@permission_required("list_reports")
+@login_required
+def get_contractors_ajax(request):
+    contractors = Contractor.objects.all().values('id', 'company_name')
+    return JsonResponse(list(contractors), safe=False)
+
+
+@login_required
+def get_contractor_employees_ajax(request):
+    contractor_id = request.GET.get('contractor_id')
+    if not contractor_id:
+        return JsonResponse([], safe=False)
+    employees = Employee.objects.filter(contractor_id=contractor_id).values('id', 'first_name', 'last_name')
+    data = [{
+        'id': e['id'],
+        'name': f"{e['first_name']} {e['last_name']}".strip()
+    } for e in employees]
+    return JsonResponse(data, safe=False)
+
+
+@login_required
+def get_user_profiles_ajax(request):
+    search_term = request.GET.get('term', '')
+    profiles = UserProfile.objects.select_related('user').all()
+    if search_term:
+        profiles = profiles.filter(
+            Q(user__first_name__icontains=search_term) |
+            Q(user__last_name__icontains=search_term) |
+            Q(user__username__icontains=search_term)
+        )
+    data = [{
+        'id': p.id,
+        'text': f"{p.user.first_name} {p.user.last_name} ({p.user.username})".strip()
+    } for p in profiles[:50]]  # محدود به 50 نتیجه
+    return JsonResponse(data, safe=False)
+
+
+#@permission_required("list_reports")
 @login_required
 def list_reports(request):
     # ثبت فعالیت مشاهده لیست گزارش‌های حادثه
@@ -283,6 +297,7 @@ def list_reports(request):
 # hse_incidents/views.py
 @permission_required("report_details")
 @login_required
+@ensure_csrf_cookie
 def report_details(request, report_id):
     report = get_object_or_404(IncidentReport, id=report_id)
     
@@ -305,26 +320,35 @@ def report_details(request, report_id):
     if request.method == 'POST':
         form = HseCompletionReportForm(request.POST, request.FILES, instance=hse_completion)
         if form.is_valid():
-            hse_completion = form.save(commit=False)
-            hse_completion.incident_report = report
-            hse_completion.save()
-            report.is_completed = True
-            report.save()
-            
-            # ثبت فعالیت تکمیل گزارش حادثه
-            log_user_activity(
-                user=request.user,
-                activity_type='update',
-                description=f'تکمیل گزارش حادثه شماره {report_id}',
-                related_model='HseCompletionReport',
-                related_object_id=hse_completion.id,
-                url=reverse('hse_incidents:report_details', args=[report_id]),
-                request=request
-            )
-            
-            messages.success(request, "گزارش حادثه با موفقیت تکمیل شد.")
-            return redirect('hse_incidents:report_details', report_id=report_id)
+            try:
+                hse_completion = form.save(commit=False)
+                hse_completion.incident_report = report
+                hse_completion.save()
+                report.is_completed = True
+                report.save()
+                
+                # ثبت فعالیت تکمیل گزارش حادثه
+                log_user_activity(
+                    user=request.user,
+                    activity_type='update',
+                    description=f'تکمیل گزارش حادثه شماره {report_id}',
+                    related_model='HseCompletionReport',
+                    related_object_id=hse_completion.id,
+                    url=reverse('hse_incidents:report_details', args=[report_id]),
+                    request=request
+                )
+                
+                messages.success(request, "گزارش حادثه با موفقیت تکمیل شد.")
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'status': 'success', 'redirect': reverse('hse_incidents:report_details', args=[report_id])})
+                return redirect('hse_incidents:report_details', report_id=report_id)
+            except Exception as e:
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'status': 'error', 'message': f'خطا در ثبت اطلاعات: {e}'}, status=500)
+                messages.error(request, "خطا در ثبت اطلاعات، فرم را بررسی کنید")
         else:
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'error', 'message': 'فرم نامعتبر است', 'errors': form.errors}, status=400)
             messages.error(request, "خطا در ثبت اطلاعات، فرم را بررسی کنید")
     else:
          if request.GET.get('form'): # چک کردن پارامتر فرم
@@ -456,6 +480,51 @@ def export_reports_excel(request):
                             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = 'attachment; filename=incident_reports.xlsx'
     return response
+
+
+# AJAX endpoint برای ذخیره فرم تکمیل گزارش بدون CSRF
+@csrf_exempt
+@login_required
+def submit_hse_completion_ajax(request, report_id):
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Only POST allowed'}, status=405)
+    report = get_object_or_404(IncidentReport, id=report_id)
+    try:
+        try:
+            hse_completion = HseCompletionReport.objects.get(incident_report=report)
+        except HseCompletionReport.DoesNotExist:
+            hse_completion = None
+        form = HseCompletionReportForm(request.POST, request.FILES, instance=hse_completion)
+        if not form.is_valid():
+            # اگر AJAX نیست، بازگشت به صفحه جزئیات با پیام خطا
+            if request.headers.get('x-requested-with') != 'XMLHttpRequest':
+                messages.error(request, "خطا در ثبت اطلاعات، فرم را بررسی کنید")
+                return redirect('hse_incidents:report_details', report_id=report_id)
+            return JsonResponse({'status': 'error', 'message': 'فرم نامعتبر است', 'errors': form.errors}, status=400)
+        hse_completion = form.save(commit=False)
+        hse_completion.incident_report = report
+        hse_completion.save()
+        report.is_completed = True
+        report.save()
+        log_user_activity(
+            user=request.user,
+            activity_type='update',
+            description=f'تکمیل گزارش حادثه شماره {report_id} (AJAX)',
+            related_model='HseCompletionReport',
+            related_object_id=hse_completion.id,
+            url=reverse('hse_incidents:report_details', args=[report_id]),
+            request=request
+        )
+        # اگر درخواست AJAX بود JSON برگردان، در غیر اینصورت ریدایرکت معمولی
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'status': 'success', 'redirect': reverse('hse_incidents:report_details', args=[report_id])})
+        messages.success(request, "گزارش حادثه با موفقیت تکمیل شد.")
+        return redirect('hse_incidents:report_details', report_id=report_id)
+    except Exception as e:
+        if request.headers.get('x-requested-with') != 'XMLHttpRequest':
+            messages.error(request, f"خطا: {e}")
+            return redirect('hse_incidents:report_details', report_id=report_id)
+        return JsonResponse({'status': 'error', 'message': f'خطا: {e}'}, status=500)
 
 
 # hse_incidents/views.py

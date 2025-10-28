@@ -1,465 +1,469 @@
-<!-- hse_incidents/incident_report_form.html -->
 {% extends 'base.html' %}
 {% load static %}
-{% load form_filters %}
 
-{% block style %}
-<style>
-        /* محل قرارگیری پیام ها */
-        .alert-messages {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 400px;
-            z-index: 1000;
-        }
-
-        /* استایل پایه برای همه پیام ها */
-        .alert {
-            margin-bottom: 10px;
-            padding: 15px;
-            border-radius: 5px;
-            position: relative;
-            border: 1px solid transparent;
-            display: flex;
-            align-items: center;
-        }
-
-        /* استایل پیام های موفقیت */
-        .alert-success {
-            background-color: #d4edda; /* سبز روشن */
-            color: #155724; /* سبز تیره */
-            border-color: #c3e6cb; /* سبز روشن */
-        }
-
-        /* استایل پیام های خطا */
-        .alert-error, .alert-danger {
-            background-color: #f8d7da; /* قرمز روشن */
-            color: #721c24; /* قرمز تیره */
-            border-color: #f5c6cb; /* قرمز روشن */
-        }
-
-        /* استایل پیام های هشدار */
-        .alert-warning {
-            background-color: #fff3cd; /* زرد روشن */
-            color: #856404; /* زرد تیره */
-            border-color: #ffeeba; /* زرد روشن */
-        }
-
-        /* استایل پیام های اطلاع رسانی */
-        .alert-info {
-            background-color: #cff4fc; /* آبی روشن */
-            color: #084298; /* آبی تیره */
-            border-color: #b6effb; /* آبی روشن */
-        }
-
-        /* استایل دکمه بستن */
-        .alert-dismissible .btn-close {
-            position: absolute;
-            top: 0;
-            left: 0;
-            padding: 10px;
-            background-color: transparent;
-            border: none;
-            cursor: pointer;
-            font-size: 20px;
-            opacity: 0.5;
-        }
-
-        .alert-dismissible .btn-close:hover {
-            opacity: 1;
-        }
-
-        .hidden {
-            display: none !important
-        }
-
-
-    </style>
-{% endblock %}
+{% block title %}ثبت گزارش حادثه{% endblock %}
 
 {% block content %}
-    <div class="d-flex flex-column flex-root app-root" id="kt_app_root">
-        <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
-            {% include 'header.html' %}
-            <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
-                {% include 'sidebar.html' %}
-                <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
-                    <div class="d-flex flex-column flex-column-fluid">
-                        {% include 'toolbar.html' %}
-                        <div id="kt_app_content" class="app-content flex-column-fluid">
-                            <div id="kt_app_content_container" class="app-container container-fluid">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h2 class="card-title">فرم گزارش حادثه</h2>
-                                        <div id="dynamic-form-container">
-                                            <form method="post" id="incident-form">
-                                                {% csrf_token %}
-                                                <div class="row">
-                                                    <div class="col-md-6 mb-3">
-                                                        <label class="form-label">تاریخ وقوع حادثه</label>
-                                                        <input type="text" class="form-control" data-jdp
-                                                               name="incident_date" required value="{{ form_data.incident_date|default:'' }}" 
-                                                               placeholder="انتخاب تاریخ وقوع حادثه">
-                                                    </div>
-                                                    <div class="col-md-6 mb-3">
-                                                        <label class="form-label">ساعت وقوع حادثه</label>
-                                                        <input type="time" class="form-control" name="incident_time"
-                                                               required value="{{ form_data.incident_time|default:'' }}">
-                                                    </div>
-                                                </div>
-                                                <div class="row">
-                                                    <div class="col-md-6 mb-3">
-                                                        <label class="form-label">سایت</label>
-                                                        <select name="location" id="location" class="form-control select2" data-selected="{{ form_data.location|default:'' }}">
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-6 mb-3">
-                                                        <label class="form-label">محل شناسایی آنومالی</label>
-                                                        <select name="section" id="section" class="form-control select2" data-selected="{{ form_data.section|default:'' }}">
-                                                        </select>
-                                                    </div>
-                                                </div>
-
-                                                <div class="mb-3">
-                                                    <label class="form-label">شخص/اشخاص مرتبط با حادثه</label>
-                                                    <select name="involved_person" id="involved_person"
-                                                            class="form-control select2" multiple></select>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label">تجهیزات مرتبط با حادثه</label>
-                                                    <textarea class="form-control"
-                                                              name="involved_equipment"></textarea>
-                                                </div>
-                                                <div class="row">
-                                                    <div class="col-md-6 mb-3">
-                                                        <label class="form-label">نوع جراحت</label>
-                                                        <select name="injury_type" id="injury_type"
-                                                                class="form-control select2" multiple></select>
-                                                    </div>
-                                                    <div class="col-md-6 mb-3">
-                                                        <label class="form-label">عضو آسیب دیده</label>
-                                                        <input type="text" class="form-control" name="affected_body_part"
-                                                               required>
-                                                    </div>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label">شرح آسیب وارده</label>
-                                                    <textarea class="form-control" name="damage_description"
-                                                              required></textarea>
-                                                </div>
-                                                <div class="row">
-                                                    <div class="col-md-6 mb-3">
-                                                        <label class="form-label">نوع ارتباط</label>
-                                                        <select name="related_entity" class="form-control" required>
-                                                            <option value="" disabled selected>انتخاب کنید</option>
-                                                            <option value="کاراوران">شرکت کاراوران</option>
-                                                            <option value="پیمانکار">پیمانکاران</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-6 mb-3">
-                                                        <label class="form-label">پیمانکار</label>
-                                                        <select name="related_contractor" id="related_contractor"
-                                                                class="form-control select2" multiple></select>
-                                                    </div>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label">پرسنل پیمانکار مرتبط با حادثه</label>
-                                                    <select name="related_contractor_employees"
-                                                            id="related_contractor_employees"
-                                                            class="form-control select2" multiple></select>
-                                                </div>
-                                                <div class="row">
-                                                    <div class="col-md-4 mb-3">
-                                                        <label class="form-label">خودرو آتش نشانی اعزام گردید؟</label>
-                                                        <input type="checkbox" class="form-check-input"
-                                                               name="fire_truck_needed" id="fire_truck_needed">
-                                                        <div id="fire_truck_time_container" class="mt-2 hidden">
-                                                            <label class="form-label">زمان رسیدن خودرو آتش نشانی</label>
-                                                            <input type="time" class="form-control"
-                                                                   name="fire_truck_arrival_time">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4 mb-3">
-                                                        <label class="form-label">آمبولانس اعزام گردید؟</label>
-                                                        <input type="checkbox" class="form-check-input"
-                                                               name="ambulance_needed" id="ambulance_needed">
-                                                        <div id="ambulance_time_container" class="mt-2 hidden">
-                                                            <label class="form-label">زمان رسیدن آمبولانس</label>
-                                                            <input type="time" class="form-control"
-                                                                   name="ambulance_arrival_time">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4 mb-3">
-                                                        <label class="form-label">فرد حادثه به بیمارستان اعزام گردید؟</label>
-                                                        <input type="checkbox" class="form-check-input"
-                                                               name="hospitalized" id="hospitalized">
-                                                        <div id="hospitalized_time_container" class="mt-2 hidden">
-                                                            <label class="form-label">زمان اعزام به بیمارستان</label>
-                                                            <input type="time" class="form-control"
-                                                                   name="hospitalized_time">
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label">نوع وسیله نقلیه جهت اعزام</label>
-                                                    <select name="transportation_type" class="form-control">
-                                                        <option value="" disabled selected>انتخاب کنید</option>
-                                                        <option value="آمبولانس">آمبولانس</option>
-                                                        <option value="خودرو_شخصی">خودرو شخصی</option>
-                                                    </select>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label">شرح کامل حادثه با ذکر جزئیات</label>
-                                                    <textarea class="form-control" name="full_description"
-                                                              required></textarea>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label">علت وقوع حادثه در بررسی های اولیه انجام
-                                                        شده</label>
-                                                    <textarea class="form-control" name="initial_cause"
-                                                              required></textarea>
-                                                </div>
-                                                <button type="submit" class="btn btn-primary">ارسال</button>
-                                            </form>
+<div class="d-flex flex-column flex-root app-root" id="kt_app_root">
+    <div class="app-page flex-column flex-column-fluid" id="kt_app_page">
+        {% include 'header.html' %}
+        <div class="app-wrapper flex-column flex-row-fluid" id="kt_app_wrapper">
+            {% include 'sidebar.html' %}
+            <div class="app-main flex-column flex-row-fluid" id="kt_app_main">
+                <div class="d-flex flex-column flex-column-fluid">
+                    {% include 'toolbar.html' with pagetitle='ثبت گزارش حادثه جدید' %}
+                    <div id="kt_app_content" class="app-content flex-column-fluid">
+                        <div id="kt_app_content_container" class="app-container container-fluid">
+                            
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="ki-outline ki-information-2 fs-2 me-2"></i>
+                                        فرم ثبت گزارش حادثه
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <form method="post" id="incident-form">
+                                        {% csrf_token %}
+                                        
+                                        <div class="row mb-6">
+                                            <h4 class="text-primary mb-4">اطلاعات اولیه حادثه</h4>
+                                            
+                                            <div class="col-md-6 mb-4">
+                                                <label class="form-label required">تاریخ وقوع حادثه</label>
+                                                <input type="text" name="incident_date" id="incident_date" 
+                                                       class="form-control" autocomplete="off" 
+                                                       data-jdp data-jdp-min-date="today" required>
+                                                {% if form.incident_date.errors %}
+                                                    <div class="text-danger mt-2">{{ form.incident_date.errors.0 }}</div>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <div class="col-md-6 mb-4">
+                                                <label class="form-label required">ساعت وقوع حادثه</label>
+                                                <input type="time" name="incident_time" class="form-control" required>
+                                                {% if form.incident_time.errors %}
+                                                    <div class="text-danger mt-2">{{ form.incident_time.errors.0 }}</div>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <div class="col-md-6 mb-4">
+                                                <label class="form-label required">سایت حادثه</label>
+                                                <select name="location" id="location" class="form-select" required>
+                                                    <option value="">انتخاب کنید</option>
+                                                    {% for location in locations %}
+                                                        <option value="{{ location.id }}">{{ location.name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                                {% if form.location.errors %}
+                                                    <div class="text-danger mt-2">{{ form.location.errors.0 }}</div>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <div class="col-md-6 mb-4">
+                                                <label class="form-label">محل حادثه</label>
+                                                <select name="section" id="section" class="form-select">
+                                                    <option value="">انتخاب کنید</option>
+                                                    {% for section in sections %}
+                                                        <option value="{{ section.id }}">{{ section.section }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                                {% if form.section.errors %}
+                                                    <div class="text-danger mt-2">{{ form.section.errors.0 }}</div>
+                                                {% endif %}
+                                            </div>
                                         </div>
-                                    </div>
+                                        
+                                        <div class="separator my-6"></div>
+                                        
+                                        <div class="row mb-6">
+                                            <h4 class="text-primary mb-4">اطلاعات اشخاص و تجهیزات</h4>
+                                            
+                                            <div class="col-md-12 mb-4">
+                                                <label class="form-label">اشخاص مرتبط با حادثه</label>
+                                                <select name="involved_person" id="involved_person" 
+                                                        class="form-select" multiple data-control="select2" 
+                                                        data-placeholder="انتخاب افراد">
+                                                </select>
+                                            </div>
+                                            
+                                            <div class="col-md-12 mb-4">
+                                                <label class="form-label required">تجهیزات مرتبط با حادثه</label>
+                                                <textarea name="involved_equipment" class="form-control" 
+                                                          rows="3" required>{{ form.involved_equipment.value|default:"" }}</textarea>
+                                                {% if form.involved_equipment.errors %}
+                                                    <div class="text-danger mt-2">{{ form.involved_equipment.errors.0 }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="separator my-6"></div>
+                                        
+                                        <div class="row mb-6">
+                                            <h4 class="text-primary mb-4">نوع آسیب و خسارت</h4>
+                                            
+                                            <div class="col-md-12 mb-4">
+                                                <label class="form-label">نوع جراحت</label>
+                                                <select name="injury_type" id="injury_type" 
+                                                        class="form-select" multiple data-control="select2"
+                                                        data-placeholder="جستجوی نوع جراحت">
+                                                </select>
+                                            </div>
+                                            
+                                            <div class="col-md-6 mb-4">
+                                                <label class="form-label required">عضو آسیب دیده</label>
+                                                <input type="text" name="affected_body_part" 
+                                                       class="form-control" value="{{ form.affected_body_part.value|default:"" }}" required>
+                                                {% if form.affected_body_part.errors %}
+                                                    <div class="text-danger mt-2">{{ form.affected_body_part.errors.0 }}</div>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <div class="col-md-6 mb-4">
+                                                <label class="form-label required">شرح آسیب وارده</label>
+                                                <textarea name="damage_description" class="form-control" 
+                                                          rows="3" required>{{ form.damage_description.value|default:"" }}</textarea>
+                                                {% if form.damage_description.errors %}
+                                                    <div class="text-danger mt-2">{{ form.damage_description.errors.0 }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="separator my-6"></div>
+                                        
+                                        <div class="row mb-6">
+                                            <h4 class="text-primary mb-4">نوع ارتباط</h4>
+                                            
+                                            <div class="col-md-12 mb-4">
+                                                <label class="form-label required">نوع ارتباط</label>
+                                                <select name="related_entity" id="related_entity" class="form-select" required>
+                                                    <option value="">انتخاب کنید</option>
+                                                    <option value="شرکت">شرکت</option>
+                                                    <option value="پیمانکار">پیمانکار</option>
+                                                    <option value="بازدیدکننده">بازدیدکننده</option>
+                                                    <option value="سایر">سایر</option>
+                                                </select>
+                                                {% if form.related_entity.errors %}
+                                                    <div class="text-danger mt-2">{{ form.related_entity.errors.0 }}</div>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <div class="col-md-6 mb-4" id="contractor_field" style="display:none;">
+                                                <label class="form-label">پیمانکار مرتبط</label>
+                                                <select name="related_contractor" id="related_contractor" class="form-select">
+                                                    <option value="">انتخاب کنید</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <div class="col-md-6 mb-4" id="contractor_employees_field" style="display:none;">
+                                                <label class="form-label">پرسنل پیمانکار مرتبط</label>
+                                                <select name="related_contractor_employees" id="related_contractor_employees" 
+                                                        class="form-select" multiple data-control="select2"
+                                                        data-placeholder="انتخاب پرسنل">
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="separator my-6"></div>
+                                        
+                                        <div class="row mb-6">
+                                            <h4 class="text-primary mb-4">خدمات اضطراری</h4>
+                                            
+                                            <div class="col-md-6 mb-4">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           name="fire_truck_needed" id="fire_truck_needed">
+                                                    <label class="form-check-label">خودرو آتش نشانی اعزام گردید؟</label>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-6 mb-4" id="fire_truck_time_field" style="display:none;">
+                                                <label class="form-label">زمان رسیدن خودرو آتش نشانی</label>
+                                                <input type="time" name="fire_truck_arrival_time" class="form-control">
+                                            </div>
+                                            
+                                            <div class="col-md-6 mb-4">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           name="ambulance_needed" id="ambulance_needed">
+                                                    <label class="form-check-label">آمبولانس اعزام گردید؟</label>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-6 mb-4" id="ambulance_time_field" style="display:none;">
+                                                <label class="form-label">زمان رسیدن آمبولانس</label>
+                                                <input type="time" name="ambulance_arrival_time" class="form-control">
+                                            </div>
+                                            
+                                            <div class="col-md-6 mb-4">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" 
+                                                           name="hospitalized" id="hospitalized">
+                                                    <label class="form-check-label">فرد به بیمارستان اعزام گردید؟</label>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-md-6 mb-4" id="hospitalized_time_field" style="display:none;">
+                                                <label class="form-label">زمان اعزام به بیمارستان</label>
+                                                <input type="time" name="hospitalized_time" class="form-control">
+                                            </div>
+                                            
+                                            <div class="col-md-12 mb-4" id="transportation_field" style="display:none;">
+                                                <label class="form-label">نوع وسیله نقلیه جهت اعزام</label>
+                                                <input type="text" name="transportation_type" class="form-control"
+                                                       value="{{ form.transportation_type.value|default:"" }}">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="separator my-6"></div>
+                                        
+                                        <div class="row mb-6">
+                                            <h4 class="text-primary mb-4">توضیحات کامل</h4>
+                                            
+                                            <div class="col-md-12 mb-4">
+                                                <label class="form-label required">شرح کامل حادثه با ذکر جزئیات</label>
+                                                <textarea name="full_description" class="form-control" 
+                                                          rows="5" required>{{ form.full_description.value|default:"" }}</textarea>
+                                                {% if form.full_description.errors %}
+                                                    <div class="text-danger mt-2">{{ form.full_description.errors.0 }}</div>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <div class="col-md-12 mb-4">
+                                                <label class="form-label required">علت وقوع حادثه در بررسی های اولیه</label>
+                                                <textarea name="initial_cause" class="form-control" 
+                                                          rows="5" required>{{ form.initial_cause.value|default:"" }}</textarea>
+                                                {% if form.initial_cause.errors %}
+                                                    <div class="text-danger mt-2">{{ form.initial_cause.errors.0 }}</div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="d-flex justify-content-end gap-3">
+                                            <a href="{% url 'hse_incidents:list_reports' %}" class="btn btn-light">انصراف</a>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="ki-outline ki-check fs-2"></i>
+                                                ثبت گزارش
+                                            </button>
+                                        </div>
+                                    </form>
                                 </div>
                             </div>
+                            
                         </div>
-                        {% include 'footer.html' %}
                     </div>
                 </div>
+                {% include 'footer.html' %}
             </div>
         </div>
     </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
-    <script>
-        $(document).ready(function() {
-            // تنظیمات عمومی Select2
-            $.fn.select2.defaults.set('language', 'fa');
-            
-            // تنظیمات مشترک برای همه Select2 ها
-            const select2Options = {
-                width: '100%',
-                dir: 'rtl',
-                language: {
-                    noResults: function() {
-                        return "نتیجه‌ای یافت نشد";
+<script>
+$(document).ready(function() {
+    // هندل ارسال فرم شبیه اپ آنومالی (AJAX)
+    const formEl = document.getElementById('incident-form');
+    if (formEl) {
+        formEl.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const submitBtn = formEl.querySelector('button[type="submit"]');
+            submitBtn && submitBtn.setAttribute('data-kt-indicator', 'on');
+            submitBtn && (submitBtn.disabled = true);
+            const formData = new FormData(formEl);
+            const csrftoken = formEl.querySelector('[name="csrfmiddlewaretoken"]').value;
+            try {
+                const resp = await fetch(window.location.href, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': csrftoken
                     },
-                    searching: function() {
-                        return "در حال جستجو...";
-                    }
-                },
-                placeholder: "انتخاب کنید",
-                allowClear: true,
-                dropdownParent: $('#dynamic-form-container'),
-                theme: 'bootstrap-5',
-                selectionCssClass: 'form-select',
-                dropdownCssClass: 'select2-dropdown',
-                containerCssClass: 'select2-container'
-            };
-
-            // مقداردهی اولیه Select2 ها
-            function initializeSelect2(selector, options = {}) {
-                const element = $(selector);
-                if (element.length) {
-                    element.select2({
-                        ...select2Options,
-                        ...options
-                    });
-                    
-                    // مقداردهی اولیه اگر داده‌ای وجود داشته باشد
-                    if (element.data('selected')) {
-                        element.val(element.data('selected')).trigger('change');
-                    }
-                }
-            }
-
-            // مقداردهی Select2 برای فیلدهای مختلف
-            initializeSelect2('#location', {
-                ajax: {
-                    url: '{% url "anomalis:get_locations_ajax" %}',
-                    dataType: 'json',
-                    delay: 250,
-                    processResults: function(data) {
-                        return {
-                            results: data.map(location => ({ id: location.id, text: location.name }))
-                        };
-                    },
-                    cache: true
-                }
-            });
-
-            initializeSelect2('#section', {
-                ajax: {
-                    url: '{% url "anomalis:get_all_sections_ajax" %}',
-                    dataType: 'json',
-                    delay: 250,
-                    processResults: function(data) {
-                        return {
-                            results: data.map(section => ({
-                                id: section.id,
-                                text: section.section,
-                                location_id: section.location_id
-                            }))
-                        };
-                    },
-                    cache: true
-                }
-            });
-
-            initializeSelect2('#involved_person', {
-                ajax: {
-                    url: '{% url "accounts:get_users_ajax" %}',
-                    dataType: 'json',
-                    delay: 250,
-                    processResults: function(data) {
-                        return {
-                            results: data.map(user => ({id: user.id, text: user.name}))
-                        };
-                    },
-                    cache: true
-                }
-            });
-
-            initializeSelect2('#injury_type', {
-                ajax: {
-                    url: '{% url "hse_incidents:get_injury_types_ajax" %}',
-                    dataType: 'json',
-                    delay: 250,
-                    processResults: function(data) {
-                        return {
-                            results: data.map(injury_type => ({id: injury_type.id, text: injury_type.name}))
-                        };
-                    },
-                    cache: true
-                }
-            });
-
-            initializeSelect2('#related_contractor', {
-                ajax: {
-                    url: '{% url "contractor_management:get_contractors_ajax" %}',
-                    dataType: 'json',
-                    delay: 250,
-                    processResults: function(data) {
-                        return {
-                            results: data.map(contractor => ({
-                                id: contractor.id,
-                                text: contractor.company_name
-                            }))
-                        };
-                    },
-                    cache: true
-                }
-            });
-
-            initializeSelect2('#related_contractor_employees', {
-                ajax: {
-                    url: '{% url "contractor_management:get_contractor_employees_ajax" %}',
-                    dataType: 'json',
-                    delay: 250,
-                    processResults: function(data) {
-                        return {
-                            results: data.map(employee => ({id: employee.id, text: employee.name}))
-                        };
-                    },
-                    cache: true
-                }
-            });
-
-            // مدیریت تغییرات location و section
-            $('#location').on('change', function() {
-                const locationId = $(this).val();
-                const sectionSelect = $('#section');
-                
-                sectionSelect.empty().append('<option value="">انتخاب محل</option>');
-                
-                if (locationId) {
-                    $.ajax({
-                        url: '{% url "anomalis:get_sections" %}',
-                        data: {'location_id': locationId},
-                        dataType: 'json',
-                        success: function(data) {
-                            $.each(data.sections, function(key, value) {
-                                sectionSelect.append(
-                                    $('<option></option>').val(value.id).text(value.section)
-                                );
-                            });
-                            sectionSelect.trigger('change');
-                        }
-                    });
-                }
-            });
-
-            // کدهای مربوط به چک‌باکس‌ها و فیلدهای زمان
-            const fireTruckCheckbox = $('#fire_truck_needed');
-            const fireTruckTimeContainer = $('#fire_truck_time_container');
-            const fireTruckTimeInput = fireTruckTimeContainer.find('input[type="time"]');
-
-            const ambulanceCheckbox = $('#ambulance_needed');
-            const ambulanceTimeContainer = $('#ambulance_time_container');
-            const ambulanceTimeInput = ambulanceTimeContainer.find('input[type="time"]');
-
-            const hospitalizedCheckbox = $('#hospitalized');
-            const hospitalizedTimeContainer = $('#hospitalized_time_container');
-            const hospitalizedTimeInput = hospitalizedTimeContainer.find('input[type="time"]');
-
-            fireTruckCheckbox.on('change', function() {
-                fireTruckTimeContainer.toggleClass('hidden', !this.checked);
-                if (!this.checked) {
-                    fireTruckTimeInput.val('');
-                }
-            });
-
-            ambulanceCheckbox.on('change', function() {
-                ambulanceTimeContainer.toggleClass('hidden', !this.checked);
-                if (!this.checked) {
-                    ambulanceTimeInput.val('');
-                }
-            });
-
-            hospitalizedCheckbox.on('change', function() {
-                hospitalizedTimeContainer.toggleClass('hidden', !this.checked);
-                if (!this.checked) {
-                    hospitalizedTimeInput.val('');
-                }
-            });
-
-            // راه‌اندازی دیتاپیکر جلالی
-            if (typeof jalaliDatepicker !== 'undefined') {
-                jalaliDatepicker.startWatch({
-                    date: true,
-                    time: false,
-                    persianDigits: true,
-                    autoShow: true,
-                    autoHide: true,
-                    hideAfterChange: true,
-                    useDropDownYears: true,
-                    showTodayBtn: true,
-                    showEmptyBtn: true,
-                    showCloseBtn: true,
-                    zIndex: 9999
+                    credentials: 'same-origin'
                 });
-                console.log('JalaliDatePicker initialized successfully!');
-            } else {
-                console.error('JalaliDatePicker library not found!');
+                if (!resp.ok) {
+                    throw new Error('HTTP ' + resp.status);
+                }
+                const data = await resp.json();
+                if (data.status === 'success' && data.redirect) {
+                    window.location.href = data.redirect;
+                } else {
+                    toastr.error(data.message || 'خطا در ثبت اطلاعات');
+                }
+            } catch (err) {
+                // در صورت خطا، سعی می‌کنیم ارسال معمولی انجام شود تا پیام خطا نمایش یابد
+                formEl.submit();
+            } finally {
+                submitBtn && submitBtn.setAttribute('data-kt-indicator', 'off');
+                submitBtn && (submitBtn.disabled = false);
             }
-
-            // مدیریت ارسال فرم
-            $('#incident-form').on('submit', function(event) {
-                if (!fireTruckTimeContainer.hasClass('hidden') && !fireTruckTimeInput.val()) {
-                    fireTruckTimeInput.val('00:00');
-                }
-                if (!ambulanceTimeContainer.hasClass('hidden') && !ambulanceTimeInput.val()) {
-                    ambulanceTimeInput.val('00:00');
-                }
-                if (!hospitalizedTimeContainer.hasClass('hidden') && !hospitalizedTimeInput.val()) {
-                    hospitalizedTimeInput.val('00:00');
+        }, { once: true });
+    }
+    // تقویم جلالی برای فیلدهای تاریخ
+    jalaliDatepicker.startWatch();
+    
+    // Select2 برای فیلد نوع جراحت با AJAX
+    $('#injury_type').select2({
+        ajax: {
+            url: '{% url "hse_incidents:get_injury_types_ajax" %}',
+            dataType: 'json',
+            delay: 250,
+            data: function(params) {
+                return {
+                    term: params.term
+                };
+            },
+            processResults: function(data) {
+                return {
+                    results: data.map(function(item) {
+                        return {
+                            id: item.id,
+                            text: item.name
+                        };
+                    })
+                };
+            },
+            cache: true
+        },
+        minimumInputLength: 0,
+        language: {
+            inputTooShort: function() {
+                return 'لطفاً حداقل یک کاراکتر وارد کنید';
+            },
+            noResults: function() {
+                return 'نتیجه‌ای یافت نشد';
+            },
+            searching: function() {
+                return 'در حال جستجو...';
+            }
+        }
+    });
+    
+    // Select2 برای فیلد اشخاص مرتبط با AJAX
+    $('#involved_person').select2({
+        ajax: {
+            url: '{% url "hse_incidents:get_user_profiles_ajax" %}',
+            dataType: 'json',
+            delay: 250,
+            data: function(params) {
+                return {
+                    term: params.term
+                };
+            },
+            processResults: function(data) {
+                return {
+                    results: data
+                };
+            },
+            cache: true
+        },
+        minimumInputLength: 0,
+        placeholder: 'جستجو و انتخاب افراد',
+        allowClear: true,
+        language: {
+            inputTooShort: function() {
+                return 'لطفاً حداقل یک کاراکتر وارد کنید';
+            },
+            noResults: function() {
+                return 'نتیجه‌ای یافت نشد';
+            },
+            searching: function() {
+                return 'در حال جستجو...';
+            }
+        }
+    });
+    
+    $('#related_contractor_employees').select2({
+        placeholder: 'انتخاب پرسنل',
+        allowClear: true
+    });
+    
+    // نمایش/مخفی کردن فیلدهای پیمانکار
+    $('#related_entity').on('change', function() {
+        var value = $(this).val();
+        if (value === 'پیمانکار') {
+            $('#contractor_field').show();
+            $('#contractor_employees_field').show();
+            loadContractors();
+        } else {
+            $('#contractor_field').hide();
+            $('#contractor_employees_field').hide();
+            $('#related_contractor').val('').trigger('change');
+            $('#related_contractor_employees').empty().trigger('change');
+        }
+    });
+    
+    // بارگذاری لیست پیمانکاران
+    function loadContractors() {
+        $.ajax({
+            url: '{% url "hse_incidents:get_contractors_ajax" %}',
+            type: 'GET',
+            success: function(data) {
+                var options = '<option value="">انتخاب کنید</option>';
+                data.forEach(function(contractor) {
+                    options += '<option value="' + contractor.id + '">' + contractor.company_name + '</option>';
+                });
+                $('#related_contractor').html(options);
+            },
+            error: function() {
+                toastr.error('خطا در بارگذاری لیست پیمانکاران');
+            }
+        });
+    }
+    
+    // بارگذاری پرسنل پیمانکار هنگام انتخاب پیمانکار
+    $('#related_contractor').on('change', function() {
+        var contractorId = $(this).val();
+        if (contractorId) {
+            $.ajax({
+                url: '{% url "hse_incidents:get_contractor_employees_ajax" %}',
+                type: 'GET',
+                data: { contractor_id: contractorId },
+                success: function(data) {
+                    $('#related_contractor_employees').empty();
+                    data.forEach(function(employee) {
+                        var option = new Option(employee.name, employee.id, false, false);
+                        $('#related_contractor_employees').append(option);
+                    });
+                    $('#related_contractor_employees').trigger('change');
+                },
+                error: function() {
+                    toastr.error('خطا در بارگذاری لیست پرسنل');
                 }
             });
-        });
-    </script>
+        } else {
+            $('#related_contractor_employees').empty().trigger('change');
+        }
+    });
+    
+    // نمایش/مخفی کردن فیلدهای زمانی خدمات اضطراری
+    $('#fire_truck_needed').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#fire_truck_time_field').show();
+        } else {
+            $('#fire_truck_time_field').hide();
+        }
+    });
+    
+    $('#ambulance_needed').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#ambulance_time_field').show();
+        } else {
+            $('#ambulance_time_field').hide();
+        }
+    });
+    
+    $('#hospitalized').on('change', function() {
+        if ($(this).is(':checked')) {
+            $('#hospitalized_time_field').show();
+            $('#transportation_field').show();
+        } else {
+            $('#hospitalized_time_field').hide();
+            $('#transportation_field').hide();
+        }
+    });
+});
+</script>
 {% endblock %}

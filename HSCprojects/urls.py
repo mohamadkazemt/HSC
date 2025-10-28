@@ -18,6 +18,8 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic.base import RedirectView
+from django.templatetags.static import static as static_url
 from HSCprojects import settings as project_settings
 from core import views  # وارد کردن views از اپلیکیشن core
 
@@ -57,3 +59,8 @@ if getattr(settings, 'DEBUG', False):
     urlpatterns += [
         path('__debug__/', include(debug_toolbar.urls)),
     ]
+
+# favicon redirect
+urlpatterns += [
+    path('favicon.ico', RedirectView.as_view(url=static_url('assets/media/logos/favicon.ico'), permanent=True)),
+]

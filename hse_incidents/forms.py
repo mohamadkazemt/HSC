@@ -11,12 +11,18 @@ class IncidentReportForm(forms.ModelForm):
             'involved_person', 'involved_equipment',
             'injury_type', 'affected_body_part', 'damage_description',
             'related_entity', 'related_contractor','related_contractor_employees',
-            'fire_truck_needed', 'ambulance_needed', 'hospitalized', 'transportation_type',
+            'fire_truck_needed', 'fire_truck_arrival_time',
+            'ambulance_needed', 'ambulance_arrival_time',
+            'hospitalized', 'hospitalized_time',
+            'transportation_type',
             'full_description', 'initial_cause',
         ]
         widgets = {
-            'incident_date': forms.DateInput(attrs={'type': 'date'}),
-            'incident_time': forms.TimeInput(attrs={'type': 'time'})
+            'incident_date': forms.TextInput(attrs={'autocomplete': 'off'}),
+            'incident_time': forms.TimeInput(attrs={'type': 'time'}),
+            'fire_truck_arrival_time': forms.TimeInput(attrs={'type': 'time'}),
+            'ambulance_arrival_time': forms.TimeInput(attrs={'type': 'time'}),
+            'hospitalized_time': forms.TimeInput(attrs={'type': 'time'}),
         }
 
 
@@ -61,5 +67,5 @@ class HseCompletionReportForm(forms.ModelForm):
         widgets = {
             'incident_report_time': forms.TimeInput(attrs={'type': 'time'}),
             'hospital_admission_time': forms.TimeInput(attrs={'type': 'time'}),
-            'incident_committee_date': forms.DateInput(attrs={'type': 'date'}),
+            'incident_committee_date': forms.TextInput(attrs={'autocomplete': 'off'}),
         }

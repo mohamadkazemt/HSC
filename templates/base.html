@@ -16,9 +16,14 @@
     <meta property="og:site_name" content="HSE by MKT" />
     <link rel="canonical" href="https://index.html" />
     <link rel="shortcut icon" href="{% static 'assets/media/logos/favicon.ico' %}" />
+    <link rel="icon" type="image/x-icon" href="{% static 'assets/media/logos/favicon.ico' %}">
     <link rel="manifest" href="{% static 'manifest.json' %}">
     <meta name="theme-color" content="#000">
     <link rel="apple-touch-icon" href="{% static 'images/icon-192x192.png' %}">
+    
+    <!-- Global CSRF token to ensure cookie is set on all pages -->
+    <meta name="csrf-token" content="{% csrf_token %}">
+
     <!--begin::Fonts(mandatory for all pages)-->
     <link rel="preload" href="{% static 'assets/fonts/Inter-Regular.ttf' %}" as="font" type="font/ttf" crossorigin>
     <link rel="preload" href="{% static 'assets/fonts/Inter-Medium.ttf' %}" as="font" type="font/ttf" crossorigin>
@@ -99,6 +104,38 @@
 <script src="{% static 'assets/plugins/global/plugins.bundle.js' %}"></script>
 <script src="{% static 'assets/js/scripts.bundle.js' %}"></script>
 <script src="{% static 'assets/plugins/custom/datatables/datatables.bundle.js' %}"></script>
+
+<!-- CSRF for AJAX only -->
+<script>
+// تنظیم CSRF فقط برای AJAX requests
+$(document).ready(function() {
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    const csrftoken = getCookie('csrftoken');
+    
+    // تنظیم CSRF برای AJAX
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+});
+</script>
 <!--end::Vendors Javascript-->
 <!--begin::سفارشی Javascript(used for this page only)-->
 <script src="{% static 'assets/js/widgets.bundle.js' %}"></script>
@@ -185,17 +222,20 @@
 </script>
 
 <script>
+  // Service Worker disabled globally; unregister any existing registrations and clear caches
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-      navigator.serviceWorker.register('/static/service-worker.js')
-        .then(function(registration) {
-          console.log('Service Worker registered successfully:', registration);
-        })
-        .catch(function(error) {
-          console.log('Service Worker registration failed:', error);
-        });
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      registrations.forEach(function(registration) {
+        registration.unregister();
+      });
     });
   }
+  if (window.caches && caches.keys) {
+    caches.keys().then(function(names) {
+      names.forEach(function(name) { caches.delete(name); });
+    });
+  }
+  console.log('Service Worker is disabled and existing registrations (if any) are unregistered.');
 </script>
 
 <!-- Performance Optimization Scripts -->

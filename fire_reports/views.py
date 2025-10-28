@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.utils import timezone
+from django.views.decorators.csrf import ensure_csrf_cookie
 from .models import FireReport, VehicleStatusReport
 from .forms import FireReportForm, VehicleStatusFormSet
 from shift_manager.utils import get_current_shift_and_group
@@ -89,6 +90,7 @@ def fire_report_list(request):
 
 @permission_required("report_create")
 @login_required
+@ensure_csrf_cookie
 def fire_report_create(request):
     if request.method == 'POST':
         logger.info("Received POST request for fire report creation")
@@ -138,15 +140,21 @@ def fire_report_create(request):
                             'ثبت شده'
                         )
 
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'status': 'success', 'redirect': reverse('fire_reports:report_detail', args=[report.pk])})
                 messages.success(request, 'گزارش با موفقیت ثبت شد.')
                 return redirect('fire_reports:report_detail', pk=report.pk)
             except Exception as e:
                 logger.error(f"Error saving report: {e}")
+                if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                    return JsonResponse({'status': 'error', 'message': 'خطا در ذخیره گزارش.'}, status=500)
                 messages.error(request, 'خطا در ذخیره گزارش.')
                 return redirect('fire_reports:report_create')
         else:
             logger.error(f"Form validation failed: {form.errors}")
             logger.error(f"Formset validation failed: {formset.errors}")
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'status': 'error', 'message': 'لطفاً تمام فیلدهای الزامی را پر کنید.', 'errors': {'form': form.errors, 'formset': formset.errors}}, status=400)
             messages.error(request, 'لطفاً تمام فیلدهای الزامی را پر کنید.')
     else:
         # دریافت شیفت کاری و گروه کاری فعلی

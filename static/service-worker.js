@@ -120,8 +120,9 @@ self.addEventListener('fetch', event => {
         return;
     }
     
-    // Skip admin and API requests
+    // Skip admin and API requests and sensitive app routes
     if (url.pathname.startsWith('/admin/') || 
+        url.pathname.startsWith('/hse_incidents/') ||
         url.pathname.includes('csrf')) {
         return;
     }

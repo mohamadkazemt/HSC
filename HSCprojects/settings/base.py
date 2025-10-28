@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-ygf6#b*bj-ko2fimc)sg=u2vo6c)5a1#c5#zr=@#8&o7nd*tpt
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', '0.0.0.0', 'mtorkzadeh.ir','miepcoj.ir', 'localhost', '65.109.220.72']
+ALLOWED_HOSTS = ['127.0.0.1', '0.0.0.0', 'mtorkzadeh.ir','miepcoj.ir', 'localhost', '65.109.220.72', 'testserver']
 
 # Application definition
 INSTALLED_APPS = [
@@ -179,6 +179,8 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:8000',
     'https://miepcoj.ir',
     'https://www.miepcoj.ir',
+    'https://mtorkzadeh.ir',
+    'https://www.mtorkzadeh.ir',
 ]
 
 CORS_ALLOW_METHODS = [
@@ -248,6 +250,15 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
 SESSION_CACHE_ALIAS = 'sessions'
 SESSION_COOKIE_AGE = 86400  # 1 day
 SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+
+# CSRF Configuration
+CSRF_USE_SESSIONS = False  # استفاده از cookie برای CSRF token
+CSRF_COOKIE_HTTPONLY = False  # باید False باشد تا JavaScript بتواند بخواند
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SECURE = False  # برای production به True تغییر دهید
+CSRF_COOKIE_AGE = 31449600  # 1 year
 
 # Cache middleware settings
 CACHE_MIDDLEWARE_ALIAS = 'default'

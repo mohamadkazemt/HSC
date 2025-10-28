@@ -142,7 +142,7 @@
                                         <h3 class="card-title mb-0">{{ title }}</h3>
                                     </div>
                                     <div class="card-body">
-                                        <form method="post" id="kt_fire_report_form" class="form" novalidate="novalidate">
+<form method="post" id="kt_fire_report_form" class="form" novalidate="novalidate" action="{{ request.path }}">
                                             {% csrf_token %}
                                             {{ formset.management_form }}
                                             
@@ -434,7 +434,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // اعتبارسنجی فرم
     const form = document.getElementById('kt_fire_report_form');
-    form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
         const requiredFields = form.querySelectorAll('[required]');
         let isValid = true;
         
@@ -448,8 +449,38 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         if (!isValid) {
-            e.preventDefault();
             toastr.error('لطفاً تمام فیلدهای الزامی را پر کنید.');
+            return;
+        }
+        // ارسال AJAX با CSRF
+        const formData = new FormData(form);
+        const csrftoken = form.querySelector('[name="csrfmiddlewaretoken"]').value;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn && submitBtn.setAttribute('data-kt-indicator', 'on');
+        submitBtn && (submitBtn.disabled = true);
+        try {
+            const resp = await fetch(form.getAttribute('action') || window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrftoken
+                },
+                credentials: 'same-origin'
+            });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status);
+            const data = await resp.json();
+            if (data.status === 'success' && data.redirect) {
+                window.location.href = data.redirect;
+            } else {
+                toastr.error(data.message || 'خطا در ثبت گزارش');
+            }
+        } catch (err) {
+            // در صورت خطا، ارسال معمولی انجام شود
+            form.submit();
+        } finally {
+            submitBtn && submitBtn.setAttribute('data-kt-indicator', 'off');
+            submitBtn && (submitBtn.disabled = false);
         }
     });
 
