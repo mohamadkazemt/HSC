@@ -3,6 +3,9 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
 from .models import UserProfile, DriverLicense
 from django.core.exceptions import ValidationError
+import logging
+
+logger = logging.getLogger(__name__)
 
 class LoginForm(AuthenticationForm):
     username = forms.CharField(widget=forms.TextInput(attrs={
@@ -106,7 +109,7 @@ class DriverLicenseForm(forms.ModelForm):
             'class': 'form-select',
         })
     )
-    
+
     special_codes = forms.MultipleChoiceField(
         choices=DriverLicense.SPECIAL_CODES,
         required=False,
@@ -141,21 +144,24 @@ class DriverLicenseForm(forms.ModelForm):
             })
         }
 
+
     def clean_front_image(self):
         image = self.cleaned_data.get('front_image')
-        if image:
+        # Validate ONLY when a NEW file is uploaded in this request
+        if 'front_image' in self.files and image:
             if image.size > 2 * 1024 * 1024:  # 2MB
                 raise ValidationError('حجم فایل نباید بیشتر از ۲ مگابایت باشد.')
-            if not image.content_type in ['image/jpeg', 'image/png']:
+            if getattr(image, 'content_type', '') not in ['image/jpeg', 'image/png']:
                 raise ValidationError('فرمت فایل باید jpg یا png باشد.')
         return image
 
     def clean_back_image(self):
         image = self.cleaned_data.get('back_image')
-        if image:
+        # Validate ONLY when a NEW file is uploaded in this request
+        if 'back_image' in self.files and image:
             if image.size > 2 * 1024 * 1024:  # 2MB
                 raise ValidationError('حجم فایل نباید بیشتر از ۲ مگابایت باشد.')
-            if not image.content_type in ['image/jpeg', 'image/png']:
+            if getattr(image, 'content_type', '') not in ['image/jpeg', 'image/png']:
                 raise ValidationError('فرمت فایل باید jpg یا png باشد.')
         return image
 

@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}تنظیمات پروفایل{% endblock %}
+
+{% block content %}
+<div x-data="{ currentTab: 'settings', imagePreview: '{{ userprofile.image.url|default:'' }}' }">
+    <!-- Profile Header -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm mb-6 overflow-hidden">
+        <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-32"></div>
+        <div class="px-6 pb-6">
+            <div class="flex flex-col sm:flex-row items-center sm:items-end -mt-16">
+                <div class="relative">
+                    {% if user.userprofile.image %}
+                        <img src="{{ user.userprofile.image.url }}" 
+                             alt="{{ user.get_full_name }}" 
+                             class="w-32 h-32 rounded-full border-4 border-white dark:border-gray-800 shadow-lg object-cover">
+                    {% else %}
+                        <div class="w-32 h-32 rounded-full border-4 border-white dark:border-gray-800 shadow-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                            <svg class="w-16 h-16 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mt-4 sm:mt-0 sm:mr-6 text-center sm:text-right flex-1">
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ user.get_full_name|default:"کاربر" }}</h1>
+                    <p class="text-gray-600 dark:text-gray-400 mt-1">
+                        {% if user.userprofile.position %}
+                            {{ user.userprofile.position.name }}
+                        {% else %}
+                            کارمند
+                        {% endif %}
+                        {% if user.userprofile.personnel_code %}
+                            - کد پرسنلی: {{ user.userprofile.personnel_code }}
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm mb-6">
+        <div class="border-b border-gray-200 dark:border-gray-700">
+            <nav class="flex -mb-px overflow-x-auto" aria-label="Tabs">
+                <a href="{% url 'accounts:profile' %}"
+                   class="whitespace-nowrap py-4 px-6 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 font-medium text-sm transition duration-200">
+                    <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    نمای کلی
+                </a>
+                <a href="{% url 'accounts:settings' %}"
+                   class="whitespace-nowrap py-4 px-6 border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400 font-medium text-sm transition duration-200">
+                    <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    تنظیمات
+                </a>
+                <a href="{% url 'accounts:driver_license' %}"
+                   class="whitespace-nowrap py-4 px-6 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 font-medium text-sm transition duration-200">
+                    <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    گواهینامه
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+        <div class="mb-6 space-y-2">
+            {% for message in messages %}
+                <div class="p-4 rounded-lg {% if message.tags == 'success' %}bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800{% elif message.tags == 'error' %}bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800{% else %}bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800{% endif %}">
+                    <div class="flex items-center">
+                        {% if message.tags == 'success' %}
+                            <svg class="w-5 h-5 text-green-500 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="text-sm text-green-800 dark:text-green-300">{{ message }}</span>
+                        {% elif message.tags == 'error' %}
+                            <svg class="w-5 h-5 text-red-500 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                            </svg>
+                            <span class="text-sm text-red-800 dark:text-red-300">{{ message }}</span>
+                        {% else %}
+                            <span class="text-sm text-blue-800 dark:text-blue-300">{{ message }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Settings Form -->
+    <form method="POST" enctype="multipart/form-data" action="{% url 'accounts:settings' %}">
+        {% csrf_token %}
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Personal Details Card -->
+            <div class="lg:col-span-2">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+                        اطلاعات شخصی
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- First Name -->
+                        <div>
+                            <label for="{{ user_form.first_name.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                نام
+                            </label>
+                            {{ user_form.first_name }}
+                        </div>
+
+                        <!-- Last Name -->
+                        <div>
+                            <label for="{{ user_form.last_name.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                نام خانوادگی
+                            </label>
+                            {{ user_form.last_name }}
+                        </div>
+
+                        <!-- Email -->
+                        <div>
+                            <label for="{{ user_form.email.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                ایمیل
+                            </label>
+                            {{ user_form.email }}
+                        </div>
+
+                        <!-- Mobile -->
+                        <div>
+                            <label for="{{ profile_form.mobile.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                شماره موبایل
+                            </label>
+                            {{ profile_form.mobile }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Change Password Card -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+                        تغییر رمز عبور
+                    </h2>
+                    
+                    <div class="space-y-6">
+                        <!-- Old Password -->
+                        <div>
+                            <label for="{{ password_form.old_password.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                رمز عبور فعلی
+                            </label>
+                            {{ password_form.old_password }}
+                        </div>
+
+                        <!-- New Password -->
+                        <div>
+                            <label for="{{ password_form.new_password1.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                رمز عبور جدید
+                            </label>
+                            {{ password_form.new_password1 }}
+                        </div>
+
+                        <!-- Confirm New Password -->
+                        <div>
+                            <label for="{{ password_form.new_password2.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                تکرار رمز عبور جدید
+                            </label>
+                            {{ password_form.new_password2 }}
+                        </div>
+
+                        <div class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                            <p class="text-xs text-blue-800 dark:text-blue-300">
+                                برای تغییر رمز عبور، تمامی فیلدهای رمز عبور را پر کنید. در غیر این صورت، خالی بگذارید.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Picture Card -->
+            <div class="lg:col-span-1">
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 sticky top-6">
+                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+                        تصویر پروفایل
+                    </h2>
+                    
+                    <div class="text-center mb-6">
+                        <template x-if="imagePreview">
+                            <img :src="imagePreview" 
+                                 alt="Profile Preview" 
+                                 class="w-40 h-40 rounded-full mx-auto mb-4 object-cover border-4 border-gray-100 dark:border-gray-700 shadow-lg">
+                        </template>
+                        <template x-if="!imagePreview">
+                            <div class="w-40 h-40 rounded-full mx-auto mb-4 bg-gray-200 dark:bg-gray-700 flex items-center justify-center border-4 border-gray-100 dark:border-gray-700 shadow-lg">
+                                <svg class="w-20 h-20 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                        </template>
+                        
+                        <div class="space-y-2">
+                            <label for="{{ profile_form.image.id_for_label }}" 
+                                   class="cursor-pointer inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white text-sm font-medium rounded-lg transition duration-200">
+                                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                انتخاب تصویر
+                            </label>
+                            <input type="file" 
+                                   id="{{ profile_form.image.id_for_label }}"
+                                   name="image"
+                                   accept="image/jpeg,image/png,image/jpg"
+                                   class="hidden"
+                                   @change="
+                                       const file = $event.target.files[0];
+                                       if (file) {
+                                           const reader = new FileReader();
+                                           reader.onload = (e) => { imagePreview = e.target.result; };
+                                           reader.readAsDataURL(file);
+                                       }
+                                   ">
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                فرمت: JPG, PNG | حداکثر: 2MB
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Save Button -->
+                    <button type="submit" 
+                            class="w-full bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg">
+                        <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        ذخیره تغییرات
+                    </button>
+
+                    <a href="{% url 'accounts:profile' %}" 
+                       class="block w-full text-center mt-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium py-2.5 px-4 rounded-lg transition duration-200">
+                        انصراف
+                    </a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

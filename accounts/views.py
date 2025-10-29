@@ -234,14 +234,21 @@ def driver_license(request):
         form = DriverLicenseForm()
 
     if request.method == 'POST':
+        logger.info("[DriverLicense] POST received. raw expiry_date=%s", request.POST.get('expiry_date'))
         form = DriverLicenseForm(request.POST, request.FILES, instance=driver_license if 'driver_license' in locals() else None)
+        logger.info("[DriverLicense] form.data expiry_date=%s", form.data.get('expiry_date'))
         if form.is_valid():
+            cleaned_expiry = form.cleaned_data.get('expiry_date')
+            logger.info("[DriverLicense] form.is_valid True. cleaned expiry_date=%s (type=%s)", cleaned_expiry, type(cleaned_expiry))
             license = form.save(commit=False)
             license.user = request.user
+            logger.info("[DriverLicense] about to save: model.expiry_date(before set)=%s", getattr(license, 'expiry_date', None))
             license.save()
+            logger.info("[DriverLicense] saved: model.expiry_date(after save)=%s (type=%s)", license.expiry_date, type(license.expiry_date))
             messages.success(request, 'اطلاعات گواهینامه با موفقیت ذخیره شد.')
             return redirect('accounts:profile')
         else:
+            logger.error("[DriverLicense] form.is_valid False. errors=%s", form.errors.as_json())
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f"خطا در فیلد {field}: {error}")

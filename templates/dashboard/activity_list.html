@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}فعالیت‌ها{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  <div class="flex items-center justify-between">
+    <h1 class="text-lg font-semibold">لیست فعالیت‌ها</h1>
+    <form method="get" class="flex items-center gap-2">
+      <label class="text-sm text-gray-600 dark:text-gray-300">فیلتر نوع:</label>
+      <select name="type" onchange="this.form.submit()" class="text-sm rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-800">
+        {% with current=activity_type %}
+        <option value="" {% if not current %}selected{% endif %}>همه</option>
+        <option value="login" {% if current == 'login' %}selected{% endif %}>ورود</option>
+        <option value="logout" {% if current == 'logout' %}selected{% endif %}>خروج</option>
+        <option value="create" {% if current == 'create' %}selected{% endif %}>ایجاد</option>
+        <option value="update" {% if current == 'update' %}selected{% endif %}>بروزرسانی</option>
+        <option value="delete" {% if current == 'delete' %}selected{% endif %}>حذف</option>
+        <option value="view" {% if current == 'view' %}selected{% endif %}>مشاهده</option>
+        <option value="other" {% if current == 'other' %}selected{% endif %}>سایر</option>
+        {% endwith %}
+      </select>
+    </form>
+  </div>
+
+  <div class="rounded-xl bg-white dark:bg-gray-800 shadow overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+<thead class="table-header-gradient">
+        <tr>
+          <th class="px-4 py-3 text-right text-xs font-medium text-gray-500">نوع</th>
+          <th class="px-4 py-3 text-right text-xs font-medium text-gray-500">توضیحات</th>
+          <th class="px-4 py-3 text-right text-xs font-medium text-gray-500">IP</th>
+          <th class="px-4 py-3 text-right text-xs font-medium text-gray-500">مدل مرتبط</th>
+          <th class="px-4 py-3 text-right text-xs font-medium text-gray-500">زمان</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+        {% for a in activities %}
+        <tr class="bg-white dark:bg-gray-800">
+          <td class="px-4 py-3 text-sm">{{ a.get_activity_type_display }}</td>
+          <td class="px-4 py-3 text-sm">{{ a.description }}</td>
+          <td class="px-4 py-3 text-sm">{{ a.ip_address|default:'-' }}</td>
+          <td class="px-4 py-3 text-sm">{{ a.related_model|default:'-' }}</td>
+          <td class="px-4 py-3 text-sm">{{ a.created_at|timesince }} پیش</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="px-4 py-8 text-center text-sm text-gray-500">موردی یافت نشد.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    {% if activities.paginator.num_pages > 1 %}
+    <div class="px-4 py-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-sm">
+      <div>
+        صفحه {{ activities.number }} از {{ activities.paginator.num_pages }}
+      </div>
+      <div class="flex items-center gap-2">
+        {% if activities.has_previous %}
+        <a class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600" href="?type={{ activity_type }}&page={{ activities.previous_page_number }}">قبلی</a>
+        {% endif %}
+        {% with current=activities.number total=activities.paginator.num_pages %}
+          {% if current > 2 %}
+            <a class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600" href="?type={{ activity_type }}&page=1">1</a>
+          {% endif %}
+          {% if current > 3 %}<span class="px-2">…</span>{% endif %}
+          {% for num in activities.paginator.page_range %}
+            {% if num >= current|add:"-1" and num <= current|add:"1" %}
+              {% if num == current %}
+                <span class="px-3 py-1 rounded bg-indigo-600 text-white">{{ num }}</span>
+              {% else %}
+                <a class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600" href="?type={{ activity_type }}&page={{ num }}">{{ num }}</a>
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+          {% if current < total|add:"-2" %}<span class="px-2">…</span>{% endif %}
+          {% if current < total|add:"-1" %}
+            <a class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600" href="?type={{ activity_type }}&page={{ total }}">{{ total }}</a>
+          {% endif %}
+        {% endwith %}
+        {% if activities.has_next %}
+        <a class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600" href="?type={{ activity_type }}&page={{ activities.next_page_number }}">بعدی</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

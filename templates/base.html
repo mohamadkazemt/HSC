@@ -1,0 +1,56 @@
+{% load static %}
+<!doctype html>
+<html lang="fa" dir="rtl" class="h-full" x-data="layout()" x-init="initTheme()">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Dashboard{% endblock %}</title>
+
+    <!-- Tailwind CSS via CDN for development; consider compiling to static/css/styles.css for production -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      window.tailwind = window.tailwind || {};
+      window.tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            container: { center: true, padding: '1rem' }
+          }
+        }
+      };
+    </script>
+
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    {% block styles %}{% endblock %}
+    
+    <style>
+      [x-cloak] { display: none !important; }
+    </style>
+  </head>
+  <body class="h-full font-sans antialiased bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+    <!-- Sidebar -->
+    {% include 'partials/sidebar.html' %}
+
+    <!-- Main Content Wrapper (with right margin to offset sidebar on desktop) -->
+    <div class="flex flex-col flex-1 min-h-screen lg:mr-72">
+      <!-- Header -->
+      {% include 'partials/header.html' %}
+
+      <!-- Main Content Area -->
+      <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900">
+        <div class="container mx-auto px-4 py-6 sm:px-6 lg:px-8">
+          {% block content %}{% endblock %}
+        </div>
+      </main>
+
+      <!-- Footer -->
+      {% include 'partials/footer.html' %}
+    </div>
+
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- App JS -->
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

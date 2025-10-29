@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% block title %}اعلان‌ها{% endblock %}
+{% block content %}
+<div class="space-y-6">
+  <!-- Unread --> -->
+  <div class="rounded-xl bg-white dark:bg-gray-800 shadow">
+<div class="px-5 py-4 gradient-header rounded-t-xl flex items-center justify-between shadow-soft">
+      <h2 class="font-semibold">اعلان‌های جدید</h2>
+    </div>
+    <div class="divide-y divide-gray-100 dark:divide-gray-700">
+      {% for n in unread_notifications %}
+      <a href="{{ n.get_absolute_url }}" class="flex items-start gap-3 px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/40">
+        <div class="mt-0.5 h-8 w-8 flex items-center justify-center rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/></svg>
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-medium">{{ n.title|default:"اعلان" }}</p>
+            <span class="text-xs text-gray-500">{{ n.created_at|timesince }} پیش</span>
+          </div>
+          <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">{{ n.message }}</p>
+        </div>
+      </a>
+      {% empty %}
+      <div class="px-5 py-8 text-center text-sm text-gray-500">اعلان خوانده‌نشده‌ای وجود ندارد.</div>
+      {% endfor %}
+    </div>
+    {% if unread_notifications.paginator.num_pages > 1 %}
+    <div class="px-4 py-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-end gap-2 text-sm">
+      {% if unread_notifications.has_previous %}
+      <a class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600" href="?page_unread={{ unread_notifications.previous_page_number }}&page_read={{ read_notifications.number }}">قبلی</a>
+      {% endif %}
+      {% with current=unread_notifications.number total=unread_notifications.paginator.num_pages %}
+        {% if current > 2 %}
+          <a class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600" href="?page_unread=1&page_read={{ read_notifications.number }}">1</a>
+        {% endif %}
+        {% if current > 3 %}<span class="px-2">…</span>{% endif %}
+        {% for num in unread_notifications.paginator.page_range %}
+          {% if num >= current|add:"-1" and num <= current|add:"1" %}
+            {% if num == current %}
+              <span class="px-3 py-1 rounded bg-indigo-600 text-white">{{ num }}</span>
+            {% else %}
+              <a class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600" href="?page_unread={{ num }}&page_read={{ read_notifications.number }}">{{ num }}</a>
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        {% if current < total|add:"-2" %}<span class="px-2">…</span>{% endif %}
+        {% if current < total|add:"-1" %}
+          <a class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600" href="?page_unread={{ total }}&page_read={{ read_notifications.number }}">{{ total }}</a>
+        {% endif %}
+      {% endwith %}
+      {% if unread_notifications.has_next %}
+      <a class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600" href="?page_unread={{ unread_notifications.next_page_number }}&page_read={{ read_notifications.number }}">بعدی</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Read -->
+  <div class="rounded-xl bg-white dark:bg-gray-800 shadow">
+<div class="px-5 py-4 gradient-header rounded-t-xl flex items-center justify-between shadow-soft">
+      <h2 class="font-semibold">اعلان‌های خوانده‌شده</h2>
+    </div>
+    <div class="divide-y divide-gray-100 dark:divide-gray-700">
+      {% for n in read_notifications %}
+      <a href="{{ n.get_absolute_url }}" class="flex items-start gap-3 px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/40 opacity-70">
+        <div class="mt-0.5 h-8 w-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/></svg>
+        </div>
+        <div class="flex-1">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-medium">{{ n.title|default:"اعلان" }}</p>
+            <span class="text-xs text-gray-500">{{ n.created_at|timesince }} پیش</span>
+          </div>
+          <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">{{ n.message }}</p>
+        </div>
+      </a>
+      {% empty %}
+      <div class="px-5 py-8 text-center text-sm text-gray-500">اعلان خوانده‌شده‌ای وجود ندارد.</div>
+      {% endfor %}
+    </div>
+    {% if read_notifications.paginator.num_pages > 1 %}
+    <div class="px-4 py-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-end gap-2 text-sm">
+      {% if read_notifications.has_previous %}
+      <a class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600" href="?page_unread={{ unread_notifications.number }}&page_read={{ read_notifications.previous_page_number }}">قبلی</a>
+      {% endif %}
+      {% with current=read_notifications.number total=read_notifications.paginator.num_pages %}
+        {% if current > 2 %}
+          <a class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600" href="?page_unread={{ unread_notifications.number }}&page_read=1">1</a>
+        {% endif %}
+        {% if current > 3 %}<span class="px-2">…</span>{% endif %}
+        {% for num in read_notifications.paginator.page_range %}
+          {% if num >= current|add:"-1" and num <= current|add:"1" %}
+            {% if num == current %}
+              <span class="px-3 py-1 rounded bg-indigo-600 text-white">{{ num }}</span>
+            {% else %}
+              <a class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600" href="?page_unread={{ unread_notifications.number }}&page_read={{ num }}">{{ num }}</a>
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        {% if current < total|add:"-2" %}<span class="px-2">…</span>{% endif %}
+        {% if current < total|add:"-1" %}
+          <a class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600" href="?page_unread={{ unread_notifications.number }}&page_read={{ total }}">{{ total }}</a>
+        {% endif %}
+      {% endwith %}
+      {% if read_notifications.has_next %}
+      <a class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600" href="?page_unread={{ unread_notifications.number }}&page_read={{ read_notifications.next_page_number }}">بعدی</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

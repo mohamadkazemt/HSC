@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}جزئیات اعلان{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="rounded-xl bg-white dark:bg-gray-800 shadow">
+<div class="px-6 py-5 gradient-header rounded-t-xl">
+      <h1 class="text-lg font-semibold">{{ notification.title|default:"اعلان" }}</h1>
+      <p class="mt-1 text-xs text-gray-500">ایجاد شده {{ notification.created_at|timesince }} پیش</p>
+    </div>
+    <div class="px-6 py-6">
+      <p class="text-sm leading-7">{{ notification.message }}</p>
+      {% if notification.url %}
+      <a href="{{ notification.url }}" class="inline-flex mt-4 items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400">
+        رفتن به صفحه مرتبط
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12l-7.5 7.5M21 12H3"/></svg>
+      </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,191 @@
+<header class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8 dark:bg-gray-800 dark:border-gray-700">
+  <!-- Mobile menu button (visible on mobile only) -->
+  <button type="button" 
+          @click="toggleSidebar()" 
+          class="-m-2.5 p-2.5 text-gray-700 lg:hidden dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+    <span class="sr-only">باز کردن منو</span>
+    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+    </svg>
+  </button>
+
+  <!-- Separator -->
+  <div class="h-6 w-px bg-gray-200 lg:hidden dark:bg-gray-700"></div>
+
+  <!-- Brand/Logo (visible on desktop) -->
+  <div class="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
+    <div class="flex items-center gap-x-3">
+      <div class="hidden lg:flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-600 dark:bg-indigo-500">
+        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+        </svg>
+      </div>
+      <div class="hidden lg:block">
+        <h1 class="text-base font-semibold text-gray-900 dark:text-white">سیستم مدیریت</h1>
+        <p class="text-xs text-gray-500 dark:text-gray-400">پنل کاربری</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right side: Actions -->
+  <div class="flex items-center gap-x-4 lg:gap-x-6">
+    <!-- Search button (optional) -->
+    <button type="button" class="-m-2.5 p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors hidden sm:block">
+      <span class="sr-only">جستجو</span>
+      <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+      </svg>
+    </button>
+
+    <!-- Notifications: bell + dropdown -->
+    <div x-data="notificationsComponent({{ unread_notifications_count|default:0 }})" class="relative hidden sm:block">
+      <button type="button" @click="open = !open" @click.outside="open = false" class="-m-2.5 p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors relative">
+        <span class="sr-only">اعلانات</span>
+        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+        </svg>
+        <!-- Badge -->
+        <template x-if="count > 0">
+          <span class="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] leading-[18px] text-center"> 
+            <span x-text="count"></span>
+          </span>
+        </template>
+      </button>
+
+      <!-- Dropdown -->
+      <div x-show="open" x-cloak x-transition class="absolute left-0 mt-2 w-80 sm:w-96 origin-top-left rounded-lg bg-white shadow-lg ring-1 ring-black/5 dark:bg-gray-800 dark:ring-gray-700 z-50">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+          <h3 class="text-sm font-semibold">اعلانات</h3>
+<button @click="markAll()" class="btn btn-primary text-xs px-3 py-1">علامت‌گذاری همه بعنوان خوانده</button>
+        </div>
+        <div class="max-h-80 overflow-y-auto divide-y divide-gray-100 dark:divide-gray-700">
+          {% for notification in unread_notifications %}
+          <a href="{{ notification.get_absolute_url }}" data-notification-item class="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+            <!-- icon -->
+            <div class="mt-0.5 h-8 w-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+              <!-- Fallback bell icon -->
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+              </svg>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ notification.title|default:"اعلان" }}</p>
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{ notification.created_at|timesince }} پیش</span>
+              </div>
+              <p class="mt-1 text-sm text-gray-600 line-clamp-2 dark:text-gray-300">{{ notification.message }}</p>
+            </div>
+          </a>
+          {% empty %}
+          <div class="px-4 py-6 text-center text-sm text-gray-500 dark:text-gray-400">اعلان خوانده‌نشده‌ای وجود ندارد.</div>
+          {% endfor %}
+        </div>
+        <div class="px-4 py-2 border-t border-gray-200 dark:border-gray-700">
+          <a href="{% url 'dashboard:notification_list' %}" class="block text-center text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">مشاهده همه اعلان‌ها</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Separator -->
+    <div class="hidden lg:block lg:h-6 lg:w-px lg:bg-gray-200 dark:lg:bg-gray-700"></div>
+
+    <!-- Theme switcher -->
+    <button type="button" 
+            @click="toggleTheme()" 
+            class="-m-2.5 p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors">
+      <span class="sr-only">تغییر تم</span>
+      <!-- Sun icon (visible in dark mode) -->
+      <svg x-show="isDark" x-cloak class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+      </svg>
+      <!-- Moon icon (visible in light mode) -->
+      <svg x-show="!isDark" x-cloak class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+      </svg>
+    </button>
+
+    <!-- Profile dropdown -->
+    <div x-data="{ open: false }" class="relative">
+      <button type="button" 
+              @click="open = !open" 
+              @click.outside="open = false" 
+              class="flex items-center gap-x-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg p-1.5 transition-colors">
+        <span class="sr-only">منوی کاربر</span>
+        {% if user.is_authenticated and user.userprofile.image %}
+          <img class="h-8 w-8 rounded-full bg-gray-50 object-cover" src="{{ user.userprofile.image.url }}" alt="{{ user.get_full_name }}">
+        {% else %}
+          <span class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-sm font-semibold text-white">
+            {% if user.is_authenticated %}{{ user.first_name|first|default:"U" }}{% else %}U{% endif %}
+          </span>
+        {% endif %}
+        <span class="hidden lg:flex lg:items-center">
+          <span class="text-sm font-semibold text-gray-900 dark:text-white" aria-hidden="true">
+            {% if user.is_authenticated %}{{ user.get_full_name|default:user.username }}{% else %}کاربر{% endif %}
+          </span>
+          <svg class="mr-2 h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+          </svg>
+        </span>
+      </button>
+
+      <!-- Dropdown menu -->
+      <div x-show="open" 
+           x-cloak
+           x-transition:enter="transition ease-out duration-100"
+           x-transition:enter-start="transform opacity-0 scale-95"
+           x-transition:enter-end="transform opacity-100 scale-100"
+           x-transition:leave="transition ease-in duration-75"
+           x-transition:leave-start="transform opacity-100 scale-100"
+           x-transition:leave-end="transform opacity-0 scale-95"
+           class="absolute left-0 z-10 mt-2.5 w-56 origin-top-left rounded-md bg-white shadow-lg ring-1 ring-gray-900/5 focus:outline-none dark:bg-gray-800 dark:ring-gray-700">
+        <div class="py-1">
+          <a href="{% url 'accounts:profile' %}" class="flex items-center gap-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700">
+            <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+            </svg>
+            پروفایل من
+          </a>
+          <a href="{% url 'accounts:settings' %}" class="flex items-center gap-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700">
+            <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+            </svg>
+            تنظیمات
+          </a>
+          <div class="my-1 border-t border-gray-100 dark:border-gray-700"></div>
+          <a href="{% url 'accounts:logout' %}" class="flex items-center gap-x-3 px-4 py-2 text-sm text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+            </svg>
+            خروج از حساب
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notifications Alpine helper -->
+  <script>
+    function notificationsComponent(initialCount){
+      return {
+        open: false,
+        count: initialCount || 0,
+        markAll(){
+          fetch('{% url "dashboard:mark_all_notifications_read" %}',{
+            method:'POST',
+            headers:{
+              'X-CSRFToken': (document.cookie.match(/csrftoken=([^;]+)/)||[])[1],
+              'X-Requested-With':'XMLHttpRequest'
+            }
+          }).then(r=>r.ok?r.json():Promise.reject())
+            .then(()=>{
+              this.count = 0;
+              document.querySelectorAll('[data-notification-item]').forEach(el=>{
+                el.classList.add('opacity-60');
+              });
+            }).catch(()=>{});
+        }
+      }
+    }
+  </script>
+</header>

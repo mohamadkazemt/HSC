@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+
+{% block title %}داشبورد{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  {% if license_warning %}
+  <div x-data="{show:true}" x-show="show" class="rounded-lg border border-yellow-300 bg-yellow-50 text-yellow-900 dark:bg-yellow-900/20 dark:text-yellow-200 p-4 flex items-start gap-3">
+    <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303.75a9.003 9.003 0 0 1 17.106 0A9.003 9.003 0 0 1 2.697 13.5ZM12 15.75h.007v.008H12v-.008Z" />
+    </svg>
+    <div class="flex-1 text-sm">
+      <p>{{ license_warning }}</p>
+      <a class="inline-block mt-2 text-indigo-700 dark:text-indigo-400 hover:underline" href="{% url 'accounts:driver_license' %}">تکمیل اطلاعات گواهینامه</a>
+    </div>
+    <button @click="show=false" class="text-yellow-700 dark:text-yellow-200">
+      <span class="sr-only">بستن</span>
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
+  {% endif %}
+
+  <!-- Stat cards -->
+  {% if stats %}
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+<div class="rounded-xl card-gradient-brand shadow-soft p-5 flex items-center gap-4">
+      <div class="h-12 w-12 rounded-lg bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 flex items-center justify-center">
+        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z"/></svg>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">کل ناهنجاری‌ها</p>
+        <p class="text-2xl font-bold">{{ stats.total_anomalies }}</p>
+      </div>
+    </div>
+<div class="rounded-xl card-gradient-success shadow-soft p-5 flex items-center gap-4">
+      <div class="h-12 w-12 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
+        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">تکمیل شده</p>
+        <p class="text-2xl font-bold">{{ stats.completed_anomalies }}</p>
+      </div>
+    </div>
+<div class="rounded-xl card-gradient-warning shadow-soft p-5 flex items-center gap-4">
+      <div class="h-12 w-12 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/></svg>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">در حال پیگیری</p>
+        <p class="text-2xl font-bold">{{ stats.in_progress_anomalies }}</p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Main grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Recent notifications -->
+    <div class="lg:col-span-1">
+      <div class="rounded-xl bg-white dark:bg-gray-800 shadow">
+<div class="px-5 py-4 gradient-header rounded-t-xl flex items-center justify-between shadow-soft">
+          <h3 class="font-semibold">آخرین اعلان‌ها</h3>
+          <a href="{% url 'dashboard:notification_list' %}" class="text-sm text-indigo-600 dark:text-indigo-400">مشاهده همه</a>
+        </div>
+        <div class="divide-y divide-gray-100 dark:divide-gray-700">
+          {% for notification in recent_notifications %}
+          <a href="{{ notification.get_absolute_url }}" class="flex items-start gap-3 px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/40">
+            <div class="mt-0.5 h-8 w-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/></svg>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <p class="text-sm font-medium">{{ notification.title|default:"اعلان" }}</p>
+                <span class="text-xs text-gray-500">{{ notification.created_at|timesince }} پیش</span>
+              </div>
+              <p class="mt-1 text-sm text-gray-600 dark:text-gray-300 line-clamp-2">{{ notification.message }}</p>
+            </div>
+          </a>
+          {% empty %}
+          <div class="px-5 py-8 text-center text-sm text-gray-500">اعلانی موجود نیست.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent activities -->
+    <div class="lg:col-span-2">
+      <div class="rounded-xl bg-white dark:bg-gray-800 shadow">
+<div class="px-5 py-4 gradient-header rounded-t-xl flex items-center justify-between shadow-soft">
+          <h3 class="font-semibold">فعالیت‌های اخیر شما</h3>
+          <a href="{% url 'dashboard:activity_list' %}" class="text-sm text-indigo-600 dark:text-indigo-400">مشاهده همه</a>
+        </div>
+        <ul class="divide-y divide-gray-100 dark:divide-gray-700">
+          {% for activity in recent_activities %}
+          <li class="px-5 py-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200 text-xs font-semibold">{{ activity.get_activity_type_display }}</span>
+                <div>
+                  <p class="text-sm font-medium">{{ activity.description }}</p>
+                  <p class="text-xs text-gray-500">{{ activity.created_at|timesince }} پیش</p>
+                </div>
+              </div>
+            </div>
+          </li>
+          {% empty %}
+          <li class="px-5 py-8 text-center text-sm text-gray-500">فعالیتی ثبت نشده است.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Permissions table -->
+  <div class="rounded-xl bg-white dark:bg-gray-800 shadow">
+    <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+      <h3 class="font-semibold">دسترسی‌های شما</h3>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+<thead class="table-header-gradient">
+          <tr>
+            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500">نوع دسترسی</th>
+            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500">نام صفحه/ماژول</th>
+            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500">مشاهده</th>
+            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500">ایجاد</th>
+            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500">ویرایش</th>
+            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500">حذف</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          {% for perm in user_access_permissions %}
+          <tr class="bg-white dark:bg-gray-800">
+            <td class="px-4 py-3 text-sm">{{ perm.type }}</td>
+            <td class="px-4 py-3 text-sm">{{ perm.view_label }}</td>
+            <td class="px-4 py-3 text-center">
+              {% if perm.can_view %}
+              <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+              </span>
+              {% else %}
+              <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+              </span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-center">
+              {% if perm.can_add %}
+              <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+              </span>
+              {% else %}
+              <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+              </span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-center">
+              {% if perm.can_edit %}
+              <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+              </span>
+              {% else %}
+              <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+              </span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-center">
+              {% if perm.can_delete %}
+              <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
+              </span>
+              {% else %}
+              <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+              </span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="px-4 py-8 text-center text-sm text-gray-500">دسترسی‌ای ثبت نشده است.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if user_access_permissions.paginator.num_pages > 1 %}
+    <div class="px-4 py-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between text-sm">
+      <div>
+        صفحه {{ user_access_permissions.number }} از {{ user_access_permissions.paginator.num_pages }}
+      </div>
+      <div class="flex items-center gap-2">
+        {% if user_access_permissions.has_previous %}
+        <a class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700" href="?page={{ user_access_permissions.previous_page_number }}">قبلی</a>
+        {% endif %}
+        {% with current=user_access_permissions.number total=user_access_permissions.paginator.num_pages %}
+          {% if current > 2 %}
+            <a class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700" href="?page=1">1</a>
+          {% endif %}
+          {% if current > 3 %}
+            <span class="px-2">…</span>
+          {% endif %}
+          {% for num in user_access_permissions.paginator.page_range %}
+            {% if num >= current|add:"-1" and num <= current|add:"1" %}
+              {% if num == current %}
+                <span class="px-3 py-1 rounded bg-indigo-600 text-white">{{ num }}</span>
+              {% else %}
+                <a class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700" href="?page={{ num }}">{{ num }}</a>
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+          {% if current < total|add:"-2" %}
+            <span class="px-2">…</span>
+          {% endif %}
+          {% if current < total|add:"-1" %}
+            <a class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700" href="?page={{ total }}">{{ total }}</a>
+          {% endif %}
+        {% endwith %}
+        {% if user_access_permissions.has_next %}
+        <a class="px-3 py-1 rounded border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700" href="?page={{ user_access_permissions.next_page_number }}">بعدی</a>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

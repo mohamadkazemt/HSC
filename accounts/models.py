@@ -61,17 +61,35 @@ class UserProfile(models.Model):
         self.save()
 
     def save(self, *args, **kwargs):
-        if self.signature and hasattr(self.signature, 'file'):
+        """
+        Only process the signature image when a NEW file is uploaded in the current request.
+        This avoids FileNotFoundError when the previous file is missing and prevents nested paths.
+        """
+        # Determine old and new names without touching the file on disk
+        old_name = ''
+        if self.pk:
+            old = type(self).objects.filter(pk=self.pk).only('signature').first()
+            old_name = old.signature.name if old and getattr(old, 'signature', None) else ''
+        new_name = self.signature.name if getattr(self, 'signature', None) else ''
+
+        # A new signature is considered uploaded if name is non-empty and changed (or it's a new instance)
+        signature_updated = bool(new_name) and (not self.pk or new_name != old_name)
+
+        if signature_updated:
             try:
-                # حذف پس‌زمینه تصویر امضا
+                # حذف پس‌زمینه تصویر امضا - work directly with in-memory uploaded file
                 img_no_bg = remove_background(self.signature.file)
                 if img_no_bg:
-                    # ذخیره تصویر بدون پس‌زمینه
+                    # ذخیره تصویر بدون پس‌زمینه با جلوگیری از مسیر تو در تو
                     buffer = BytesIO()
                     img_no_bg.save(buffer, format='PNG')
-                    filename = f'{os.path.splitext(self.signature.name)[0]}_no_bg.png'
+                    base = os.path.splitext(os.path.basename(new_name))[0]
+                    filename = f'{base}_no_bg.png'
+                    upload_dir = getattr(self.signature.field, 'upload_to', '') or ''
+                    # Ensure we save back into the original upload_to directory (e.g., 'signatures/')
+                    final_name = os.path.join(upload_dir.strip('/'), filename) if upload_dir else filename
                     contentfile = ContentFile(buffer.getvalue())
-                    self.signature.save(filename, contentfile, save=False)
+                    self.signature.save(final_name, contentfile, save=False)
             except Exception as e:
                 print(f"خطا در پردازش تصویر: {str(e)}")
 

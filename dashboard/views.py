@@ -217,7 +217,7 @@ def notification_list(request):
     except EmptyPage:
         read_notifications = paginator_read.get_page(paginator_read.num_pages)
 
-    return render(request, 'notification.html', {
+    return render(request, 'dashboard/notification.html', {
         'unread_notifications': unread_notifications,
         'read_notifications': read_notifications,
     })
@@ -345,4 +345,4 @@ def notification_detail(request, pk):
         'title': 'جزئیات اعلان',
     }
     
-    return render(request, 'notification_detail.html', context)
+    return render(request, 'dashboard/notification_detail.html', context)

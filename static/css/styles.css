@@ -1,0 +1,46 @@
+/* Tailwind-driven project: this file is for small custom styles and overrides.
+   In production, compile your Tailwind build into this file. */
+
+/* Optional Persian-friendly font stack (adjust if you have the font locally)
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap');
+:root { --app-font: 'Vazirmatn', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol'; }
+body { font-family: var(--app-font); }
+*/
+
+:root {
+  --brand-500: #6366f1; --brand-600: #5850EC; --brand-700: #4C51E0;
+  --accent-500: #06b6d4; --accent-600: #0891b2;
+}
+
+/* Prevent layout shift when showing/hiding scrollbars */
+html { scrollbar-gutter: stable; }
+
+/* Hide [x-cloak] until Alpine initializes */
+[x-cloak] { display: none !important; }
+
+/* Utility tweaks for this starter */
+.backdrop-blur { backdrop-filter: blur(8px); }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; font-weight: 600; border-radius: .65rem; padding: .6rem 1rem; transition: all .2s ease; }
+.btn-primary { color: #fff; background-image: linear-gradient(90deg, var(--brand-600), var(--brand-500)); box-shadow: 0 8px 20px rgba(88,80,236,.25); }
+.btn-primary:hover { filter: brightness(1.05); box-shadow: 0 10px 24px rgba(88,80,236,.35); }
+.btn-primary:focus { outline: 3px solid rgba(99,102,241,.35); outline-offset: 2px; }
+
+/* Gradient helpers */
+.gradient-header { color: #fff; background-image: linear-gradient(90deg, var(--brand-700), var(--brand-500)); }
+.card-gradient-brand { background-image: linear-gradient(135deg, rgba(99,102,241,.12), rgba(88,80,236,.22)); }
+.card-gradient-success { background-image: linear-gradient(135deg, rgba(16,185,129,.10), rgba(5,150,105,.20)); }
+.card-gradient-warning { background-image: linear-gradient(135deg, rgba(249,115,22,.10), rgba(234,88,12,.20)); }
+
+/* Table */
+.table-header-gradient { color:#fff; background-image: linear-gradient(90deg, var(--brand-700), var(--brand-500)); }
+.table-row-hover:hover { background-color: rgba(99,102,241,0.06); }
+
+/* Inputs */
+input[type="text"], input[type="email"], input[type="password"], select, textarea { border-radius: .5rem; border: 1px solid #e5e7eb; padding: .55rem .75rem; }
+input:focus, select:focus, textarea:focus { border-color: var(--brand-500); box-shadow: 0 0 0 3px rgba(99,102,241,.25); outline: none; }
+
+/* Respect RTL where appropriate */
+html[dir="rtl"] .border-l { border-left-width: 1px; }
+html[dir="rtl"] .border-r { border-right-width: 1px; }
