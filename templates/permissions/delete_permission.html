@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}حذف دسترسی{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-red-300 dark:border-red-700">
+    <div class="p-5 border-b border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20 rounded-t-xl">
+      <h1 class="text-lg font-semibold text-red-700 dark:text-red-400">تایید حذف دسترسی</h1>
+    </div>
+    <form method="post" class="p-5 space-y-5">
+      {% csrf_token %}
+      <p class="text-sm">آیا مطمئن هستید که می‌خواهید دسترسی {{ permission_type }}
+        {% if permission.part %}{{ permission.part.name }}{% elif permission.section %}{{ permission.section.name }}{% elif permission.position %}{{ permission.position.name }}{% elif permission.unit_group %}{{ permission.unit_group.name }}{% elif permission.user %}{{ permission.user.get_full_name|default:permission.user.username }}{% endif %}
+        برای صفحه {{ view_label }} را حذف کنید؟
+      </p>
+      <div class="flex items-center gap-3">
+        <button type="submit" class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700">تایید و حذف</button>
+        <a href="{% url 'permissions:list_permissions' %}" class="px-4 py-2 rounded-lg border">انصراف</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

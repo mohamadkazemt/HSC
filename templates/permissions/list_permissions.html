@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% block title %}لیست دسترسی‌ها{% endblock %}
+{% block styles %}
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+{% endblock %}
+{% block content %}
+<div id="permissions-content" class="space-y-6" x-data>
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+    <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+      <h1 class="text-base font-semibold">فیلترها</h1>
+      <form method="get" id="permissions-filter-form" class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 js-permissions-filter">
+        <div>
+          <label class="block text-xs mb-1 text-gray-600 dark:text-gray-300">قسمت</label>
+          <select name="part" class="rounded-lg border-gray-300 dark:bg-gray-900 dark:border-gray-700 js-filter-select" data-placeholder="فیلتر بر اساس قسمت">
+            <option value="">همه قسمت‌ها</option>
+            {% for p in parts %}
+              <option value="{{ p.id }}" {% if request.GET.part|default:'' == p.id|stringformat:'s' %}selected{% endif %}>{{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs mb-1 text-gray-600 dark:text-gray-300">بخش</label>
+          <select name="section" class="rounded-lg border-gray-300 dark:bg-gray-900 dark:border-gray-700 js-filter-select" data-placeholder="فیلتر بر اساس بخش">
+            <option value="">همه بخش‌ها</option>
+            {% for s in sections %}
+              <option value="{{ s.id }}" {% if request.GET.section|default:'' == s.id|stringformat:'s' %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs mb-1 text-gray-600 dark:text-gray-300">سمت</label>
+          <select name="position" class="rounded-lg border-gray-300 dark:bg-gray-900 dark:border-gray-700 js-filter-select" data-placeholder="فیلتر بر اساس سمت">
+            <option value="">همه سمت‌ها</option>
+            {% for pos in positions %}
+              <option value="{{ pos.id }}" {% if request.GET.position|default:'' == pos.id|stringformat:'s' %}selected{% endif %}>{{ pos.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs mb-1 text-gray-600 dark:text-gray-300">گروه</label>
+          <select name="unit_group" class="rounded-lg border-gray-300 dark:bg-gray-900 dark:border-gray-700 js-filter-select" data-placeholder="فیلتر بر اساس گروه">
+            <option value="">همه گروه‌ها</option>
+            {% for ug in unit_groups %}
+              <option value="{{ ug.id }}" {% if request.GET.unit_group|default:'' == ug.id|stringformat:'s' %}selected{% endif %}>{{ ug.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs mb-1 text-gray-600 dark:text-gray-300">کاربر</label>
+          <select name="user" class="rounded-lg border-gray-300 dark:bg-gray-900 dark:border-gray-700 js-filter-select" data-placeholder="فیلتر بر اساس کاربر">
+            <option value="">همه کاربران</option>
+            {% for u in users %}
+              <option value="{{ u.id }}" {% if request.GET.user|default:'' == u.id|stringformat:'s' %}selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-span-1 sm:col-span-2 lg:col-span-5 flex justify-end">
+          <a href="{% url 'permissions:list_permissions' %}" class="js-clear-filters inline-flex items-center gap-1 text-sm px-3 py-2 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">پاک کردن فیلترها</a>
+        </div>
+      </form>
+    </div>
+
+    <div class="p-4 sm:p-6 overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+        <thead class="bg-gray-50 dark:bg-gray-900/40">
+          <tr>
+            <th class="px-3 py-2 text-right font-medium">نوع</th>
+            <th class="px-3 py-2 text-right font-medium">نام</th>
+            <th class="px-3 py-2 text-right font-medium">صفحه</th>
+            <th class="px-3 py-2 text-center font-medium">مشاهده</th>
+            <th class="px-3 py-2 text-center font-medium">افزودن</th>
+            <th class="px-3 py-2 text-center font-medium">ویرایش</th>
+            <th class="px-3 py-2 text-center font-medium">حذف</th>
+            <th class="px-3 py-2 text-center font-medium">اقدامات</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          {% for item in permissions %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+            <td class="px-3 py-2">{{ item.type }}</td>
+            <td class="px-3 py-2">{{ item.name }}</td>
+            <td class="px-3 py-2">{{ item.view_label }}</td>
+            <td class="px-3 py-2 text-center">
+              {% if item.can_view %}
+                <span class="text-green-600">✔</span>
+              {% else %}
+                <span class="text-red-600">✖</span>
+              {% endif %}
+            </td>
+            <td class="px-3 py-2 text-center">
+              {% if item.can_add %}
+                <span class="text-green-600">✔</span>
+              {% else %}
+                <span class="text-red-600">✖</span>
+              {% endif %}
+            </td>
+            <td class="px-3 py-2 text-center">
+              {% if item.can_edit %}
+                <span class="text-green-600">✔</span>
+              {% else %}
+                <span class="text-red-600">✖</span>
+              {% endif %}
+            </td>
+            <td class="px-3 py-2 text-center">
+              {% if item.can_delete %}
+                <span class="text-green-600">✔</span>
+              {% else %}
+                <span class="text-red-600">✖</span>
+              {% endif %}
+            </td>
+            <td class="px-3 py-2 text-center">
+              <div class="flex items-center justify-center gap-2">
+                <a href="{% url 'permissions:edit_permission' item.id %}?type={{ item.type }}" class="px-2 py-1 text-indigo-700 hover:text-white hover:bg-indigo-600 border border-indigo-600 rounded-md text-xs">ویرایش</a>
+                <div x-data="{ open:false }" class="inline-block">
+                  <button @click="open=true" class="px-2 py-1 text-red-700 hover:text-white hover:bg-red-600 border border-red-600 rounded-md text-xs">حذف</button>
+                  <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center">
+                    <div @click="open=false" class="absolute inset-0 bg-black/40"></div>
+                    <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6">
+                      <h3 class="text-base font-semibold text-red-600 mb-2">تایید حذف</h3>
+                      <p class="text-sm mb-4">آیا از حذف این دسترسی مطمئن هستید؟</p>
+                      <div class="flex items-center justify-end gap-2">
+                        <button @click="open=false" class="px-3 py-1.5 text-sm rounded-md border">انصراف</button>
+                        <form method="post" action="{% url 'permissions:delete_permission' item.id %}?type={{ item.type }}">
+                          {% csrf_token %}
+                          <button type="submit" class="px-3 py-1.5 text-sm rounded-md bg-red-600 text-white">تایید و حذف</button>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="px-3 py-6 text-center text-gray-500">دسترسی‌ای یافت نشد.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+</div>
+</div>
+{% endblock %}
+{% block scripts %}
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script>
+    (function(){
+      const form = document.getElementById('permissions-filter-form');
+      if(!form) return;
+      $('.js-filter-select').each(function(){
+        const ph = this.dataset.placeholder || 'فیلتر...';
+        $(this).select2({ width:'100%', dir:'rtl', placeholder: ph, allowClear:true });
+      }).on('change select2:select select2:clear select2:unselect', function(){ form.submit(); });
+      // Clear filters navigates to base URL
+      const clear = form.querySelector('.js-clear-filters');
+      if(clear){ clear.addEventListener('click', function(e){ /* allow navigation when standalone */ }); }
+    })();
+  </script>
+{% endblock %}

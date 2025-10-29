@@ -1,0 +1,294 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}مدیریت دسترسی‌ها{% endblock %}
+
+{% block styles %}
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <style>
+    .select2-container--default .select2-selection--single { height: 42px; padding: 6px 8px; }
+    .select2-container--default .select2-selection--multiple { min-height: 42px; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div x-data="permissionsPage()" x-init="init()" class="space-y-6">
+  <!-- Page header -->
+  <div class="flex items-center justify-between">
+    <h1 class="text-xl font-semibold">مدیریت دسترسی‌ها</h1>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    <div class="space-y-2">
+      {% for message in messages %}
+        <div class="px-4 py-3 rounded-lg border text-sm {{ message.tags|default:'' }}"
+             :class="{
+               'bg-green-50 border-green-200 text-green-800': '{{ message.tags }}'.includes('success'),
+               'bg-yellow-50 border-yellow-200 text-yellow-800': '{{ message.tags }}'.includes('warning'),
+               'bg-red-50 border-red-200 text-red-800': '{{ message.tags }}'.includes('error')
+             }">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- Tabs -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+    <div class="border-b border-gray-200 dark:border-gray-700 px-4">
+      <nav class="flex space-x-2 space-x-reverse" aria-label="Tabs">
+        <button @click="activeTab='add'" :class="activeTab==='add' ? 'text-indigo-600 border-indigo-600' : 'text-gray-500 border-transparent hover:text-gray-700'" class="py-3 px-4 text-sm font-medium border-b-2">
+          افزودن دسترسی جدید
+        </button>
+        <button @click="activeTab='manage'; loadPermissions()" :class="activeTab==='manage' ? 'text-indigo-600 border-indigo-600' : 'text-gray-500 border-transparent hover:text-gray-700'" class="py-3 px-4 text-sm font-medium border-b-2">
+          مشاهده و مدیریت دسترسی‌ها
+        </button>
+      </nav>
+    </div>
+
+    <!-- Tab panels -->
+    <div class="p-4 sm:p-6">
+      <!-- Add New Permission -->
+      <section x-show="activeTab==='add'" x-cloak>
+        <form method="post" action="{% url 'permissions:manage_access' %}" @submit="ensureEntityId()" class="space-y-6">
+          {% csrf_token %}
+
+          <!-- Step 1: Select Entity Type -->
+          <div class="space-y-2">
+            <label class="block text-sm font-medium">نوع دسترسی</label>
+            <select x-model="entityType" name="entity_type" class="w-full rounded-lg border-gray-300 dark:bg-gray-900 dark:border-gray-700 focus:ring-indigo-500 focus:border-indigo-500">
+              <option value="" disabled selected>انتخاب کنید...</option>
+              <option value="part">قسمت</option>
+              <option value="section">بخش</option>
+              <option value="unit_group">گروه</option>
+              <option value="position">سمت</option>
+              <option value="user">کاربر</option>
+            </select>
+          </div>
+
+          <!-- Step 2: Select Specific Entity (dynamic) -->
+          <div class="grid grid-cols-1 gap-4">
+            <!-- Part -->
+            <div x-show="entityType==='part'" x-cloak>
+              <label class="block text-sm font-medium">انتخاب قسمت</label>
+              <select x-ref="partSelect" class="entity-select w-full"></select>
+            </div>
+            <!-- Section -->
+            <div x-show="entityType==='section'" x-cloak>
+              <label class="block text-sm font-medium">انتخاب بخش</label>
+              <select x-ref="sectionSelect" class="entity-select w-full"></select>
+            </div>
+            <!-- Unit Group -->
+            <div x-show="entityType==='unit_group'" x-cloak>
+              <label class="block text-sm font-medium">انتخاب گروه</label>
+              <select x-ref="unitGroupSelect" class="entity-select w-full"></select>
+            </div>
+            <!-- Position -->
+            <div x-show="entityType==='position'" x-cloak>
+              <label class="block text-sm font-medium">انتخاب سمت</label>
+              <select x-ref="positionSelect" class="entity-select w-full"></select>
+            </div>
+            <!-- User -->
+            <div x-show="entityType==='user'" x-cloak>
+              <label class="block text-sm font-medium">انتخاب کاربر</label>
+              <select x-ref="userSelect" class="entity-select w-full"></select>
+            </div>
+            <!-- Hidden input that actually submits selected entity id -->
+            <input type="hidden" name="entity_id" :value="selectedEntityId">
+          </div>
+
+          <!-- Step 3: Select Pages (Views) -->
+          <div class="space-y-2">
+            <label class="block text-sm font-medium">انتخاب صفحات</label>
+            <select x-ref="viewsSelect" name="view_name" multiple class="views-select w-full">
+              {% for v in views_with_labels %}
+                <option value="{{ v.name }}">{{ v.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Step 4: Access Levels -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="text-sm font-medium">سطوح دسترسی</label>
+              <button type="button" @click="toggleAllPermissions()" class="text-xs text-indigo-600 hover:text-indigo-700">انتخاب/لغو همه</button>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <label class="inline-flex items-center gap-2">
+                <input x-model="perm.view" type="checkbox" name="can_view" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                <span class="text-sm">مشاهده</span>
+              </label>
+              <label class="inline-flex items-center gap-2">
+                <input x-model="perm.add" type="checkbox" name="can_add" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                <span class="text-sm">افزودن</span>
+              </label>
+              <label class="inline-flex items-center gap-2">
+                <input x-model="perm.edit" type="checkbox" name="can_edit" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                <span class="text-sm">ویرایش</span>
+              </label>
+              <label class="inline-flex items-center gap-2">
+                <input x-model="perm.delete" type="checkbox" name="can_delete" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                <span class="text-sm">حذف</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="pt-2">
+            <button type="submit" class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              ذخیره دسترسی
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- View & Manage Permissions -->
+      <section x-show="activeTab==='manage'" x-cloak>
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-base font-semibold">لیست دسترسی‌ها</h2>
+          <button @click="loadPermissions(true)" class="text-sm text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white">
+            بروزرسانی
+          </button>
+        </div>
+        <div id="permissionsListContainer" class="min-h-[200px]">
+          <div class="flex items-center justify-center py-10 text-gray-500">
+            برای بارگذاری لیست، روی تب «مشاهده و مدیریت دسترسی‌ها» کلیک کنید.
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script>
+    function permissionsPage(){
+      return {
+        activeTab: 'add',
+        entityType: '',
+        selectedEntityId: '',
+        perm: { view: true, add: false, edit: false, delete: false },
+        dataSets: {
+          part: {{ parts|safe }},
+          section: {{ sections|safe }},
+          position: {{ positions|safe }},
+          unit_group: {{ unit_groups|safe }},
+          user: {{ users|safe }}
+        },
+        init(){
+          // Initialize select2 for entity selects lazily when entityType changes
+          this.$watch('entityType', (type)=>{
+            this.selectedEntityId = '';
+            this.setupEntitySelect(type);
+          });
+          // Initialize views select
+          this.initViewsSelect();
+        },
+        setupEntitySelect(type){
+          const mapping = {
+            part: this.$refs.partSelect,
+            section: this.$refs.sectionSelect,
+            unit_group: this.$refs.unitGroupSelect,
+            position: this.$refs.positionSelect,
+            user: this.$refs.userSelect,
+          };
+          // Destroy any existing select2 to prevent duplicates
+          Object.values(mapping).forEach((el)=>{ if(el && $(el).hasClass('select2-hidden-accessible')){ $(el).select2('destroy'); }});
+          if(!type || !mapping[type]) return;
+          const el = mapping[type];
+          // Populate options
+          const items = this.dataSets[type] || [];
+          $(el).empty();
+          $(el).append(new Option('انتخاب کنید...', '', true, false));
+          items.forEach(i=>{ $(el).append(new Option(i.name, i.id, false, false)); });
+          // Init select2
+          $(el).select2({
+            width: '100%',
+            dir: 'rtl',
+            placeholder: 'جستجو و انتخاب...'
+          }).on('change', (e)=>{
+            this.selectedEntityId = e.target.value;
+          });
+        },
+        initViewsSelect(){
+          const el = this.$refs.viewsSelect;
+          // Init select2 multi on existing options
+          $(el).select2({ width: '100%', dir: 'rtl', placeholder: 'انتخاب صفحه(ها)...' });
+        },
+        toggleAllPermissions(){
+          const allOn = this.perm.view && this.perm.add && this.perm.edit && this.perm.delete;
+          this.perm.view = this.perm.add = this.perm.edit = this.perm.delete = !allOn;
+        },
+        ensureEntityId(){
+          if(!this.entityType || !this.selectedEntityId){
+            alert('لطفاً نوع و موجودیت مربوطه را انتخاب کنید.');
+            event.preventDefault();
+          }
+        },
+        async loadPermissions(force){
+          const container = document.getElementById('permissionsListContainer');
+          container.innerHTML = '<div class="py-10 text-center text-gray-500">در حال بارگذاری...</div>';
+          try{
+            const res = await fetch('{% url "permissions:list_permissions" %}', { headers: { 'X-Requested-With': 'fetch' }});
+            const html = await res.text();
+            // Extract content inside #permissions-content
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            const inner = tmp.querySelector('#permissions-content');
+            container.innerHTML = inner ? inner.innerHTML : html;
+            // Initialize Select2 on filters and intercept submissions for AJAX
+            this.initListFilters(container);
+          }catch(e){
+            container.innerHTML = '<div class="py-10 text-center text-red-600">خطا در بارگذاری لیست</div>';
+          }
+        },
+        initListFilters(container){
+          const form = container.querySelector('.js-permissions-filter');
+          if(!form) return;
+          // Init select2 on filter selects
+          $(form).find('.js-filter-select').each(function(){
+            const $el = $(this);
+            if($el.hasClass('select2-hidden-accessible')){ $el.select2('destroy'); }
+            const ph = $el.data('placeholder') || 'فیلتر...';
+            $el.select2({ width: '100%', dir: 'rtl', placeholder: ph, allowClear: true });
+          });
+          const submitAjax = async ()=>{
+            const params = new URLSearchParams(new FormData(form));
+            const url = '{% url "permissions:list_permissions" %}?'+params.toString();
+            const res = await fetch(url, { headers: { 'X-Requested-With':'fetch' } });
+            const html = await res.text();
+            const tmp = document.createElement('div'); tmp.innerHTML = html;
+            const inner = tmp.querySelector('#permissions-content');
+            container.innerHTML = inner ? inner.innerHTML : html;
+            // Re-init after replace
+            this.initListFilters(container);
+          };
+          form.addEventListener('submit', (e)=>{ e.preventDefault(); submitAjax(); });
+          // Auto submit on change/select/clear
+          const auto = ()=> form.dispatchEvent(new Event('submit', {cancelable:true}));
+          $(form).find('.js-filter-select')
+            .on('change', auto)
+            .on('select2:select', auto)
+            .on('select2:clear', auto)
+            .on('select2:unselect', auto);
+          // Clear filters (AJAX)
+          const clear = form.querySelector('.js-clear-filters');
+          if(clear){
+            clear.addEventListener('click', async (e)=>{
+              e.preventDefault();
+              const url = clear.getAttribute('href') || '{% url "permissions:list_permissions" %}';
+              const res = await fetch(url, { headers: { 'X-Requested-With':'fetch' } });
+              const html = await res.text();
+              const tmp = document.createElement('div'); tmp.innerHTML = html;
+              const inner = tmp.querySelector('#permissions-content');
+              container.innerHTML = inner ? inner.innerHTML : html;
+              this.initListFilters(container);
+            });
+          }
+        }
+      }
+    }
+  </script>
+{% endblock %}
