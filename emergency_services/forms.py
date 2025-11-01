@@ -81,17 +81,17 @@ class MedicalVisitForm(forms.ModelForm):
     """فرم مراجعه پزشکی"""
     visit_time = forms.DateTimeField(
         label=_('زمان مراجعه'),
-        widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'})
+        widget=forms.TextInput(attrs={'class': 'form-control jalali-datetime'})
     )
     hospital_admission_time = forms.DateTimeField(
         label=_('زمان بستری در بیمارستان'),
         required=False,
-        widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'})
+        widget=forms.TextInput(attrs={'class': 'form-control jalali-datetime'})
     )
     hospital_discharge_time = forms.DateTimeField(
         label=_('زمان ترخیص از بیمارستان'),
         required=False,
-        widget=forms.DateTimeInput(attrs={'type': 'datetime-local', 'class': 'form-control'})
+        widget=forms.TextInput(attrs={'class': 'form-control jalali-datetime'})
     )
     
     class Meta:
@@ -146,7 +146,7 @@ class MedicineForm(forms.ModelForm):
     """فرم مدیریت دارو"""
     expiry_date = forms.DateField(
         label=_('تاریخ انقضا'),
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+        widget=forms.TextInput(attrs={'class': 'form-control jalali-date'})
     )
     
     class Meta:
@@ -205,11 +205,11 @@ class EmergencyEquipmentForm(forms.ModelForm):
     """فرم مدیریت تجهیزات اورژانس"""
     last_calibration_date = forms.DateField(
         label=_('تاریخ آخرین کالیبراسیون'),
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+        widget=forms.TextInput(attrs={'class': 'form-control jalali-date'})
     )
     next_calibration_date = forms.DateField(
         label=_('تاریخ کالیبراسیون بعدی'),
-        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
+        widget=forms.TextInput(attrs={'class': 'form-control jalali-date'})
     )
     
     class Meta:

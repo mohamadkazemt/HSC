@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}جزئیات گزارش روزانه HSE{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-4">
+  <!-- Header -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+    <div class="px-4 sm:px-6 py-4 bg-gradient-to-l from-indigo-600 to-indigo-500 text-white flex items-center gap-3">
+      <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75c-2.7 0-5.25-.9-7.5-2.25 0 7.5 3.75 12.75 7.5 15 3.75-2.25 7.5-7.5 7.5-15-2.25 1.35-4.8 2.25-7.5 2.25Z"/></svg>
+      <h3 class="text-base font-semibold">جزئیات گزارش</h3>
+      <a href="{% url 'dailyreport_hse:daily_report_list' %}" class="ml-auto text-sm underline">بازگشت به لیست</a>
+      <a href="{% url 'dailyreport_hse:daily_report_pdf' report.id %}" class="ml-3 inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-md bg-emerald-600 hover:bg-emerald-700 text-white">PDF</a>
+    </div>
+
+    <!-- Summary -->
+    <div class="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="rounded-lg border p-3 dark:border-gray-700">
+        <div class="text-xs text-gray-500">تاریخ</div>
+        <div class="font-medium">{{ report.created_at|date:"Y/m/d H:i" }}</div>
+      </div>
+      <div class="rounded-lg border p-3 dark:border-gray-700">
+        <div class="text-xs text-gray-500">کاربر</div>
+        <div class="font-medium">{{ report.user.get_full_name|default:report.user.username }}</div>
+      </div>
+      <div class="rounded-lg border p-3 dark:border-gray-700">
+        <div class="text-xs text-gray-500">شیفت</div>
+        <div class="font-medium">{{ report.shift }}</div>
+      </div>
+      <div class="rounded-lg border p-3 dark:border-gray-700">
+        <div class="text-xs text-gray-500">گروه</div>
+        <div class="font-medium">{{ report.work_group }}</div>
+      </div>
+      {% if report.supervisor_comments %}
+      <div class="md:col-span-4 rounded-lg border p-3 dark:border-gray-700">
+        <div class="text-xs text-gray-500 mb-1">توضیحات سرشیفت</div>
+        <div class="text-sm">{{ report.supervisor_comments }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Sections -->
+  <div class="grid grid-cols-1 gap-4">
+    <!-- Blasting -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+      <div class="px-4 sm:px-6 py-3 border-b dark:border-gray-700 flex items-center gap-2">
+        <h4 class="font-medium">آتشباری</h4>
+      </div>
+      <div class="p-4 sm:p-6">
+        {% if blasting_details %}
+        <div class="overflow-x-auto border rounded-lg">
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-700/40"><tr class="text-gray-600 dark:text-gray-300"><th class="p-2 text-right">انفجار</th><th class="p-2 text-right">بلوک</th><th class="p-2 text-right">توضیحات</th></tr></thead>
+            <tbody>
+              {% for i in blasting_details %}
+                <tr class="border-t"><td class="p-2">{% if i.explosion_occurred %}بله{% else %}خیر{% endif %}</td><td class="p-2">{{ i.block.block_name|default:'-' }}</td><td class="p-2">{{ i.description|default:'-' }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <div class="empty-state">رکوردی ثبت نشده است.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Drilling -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+      <div class="px-4 sm:px-6 py-3 border-b dark:border-gray-700 flex items-center gap-2">
+        <h4 class="font-medium">حفاری</h4>
+      </div>
+      <div class="p-4 sm:p-6">
+        {% if drilling_details %}
+        <div class="overflow-x-auto border rounded-lg">
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-700/40"><tr class="text-gray-600 dark:text-gray-300"><th class="p-2 text-right">بلوک</th><th class="p-2 text-right">دستگاه</th><th class="p-2 text-right">وضعیت</th><th class="p-2 text-right">توضیحات</th></tr></thead>
+            <tbody>
+              {% for i in drilling_details %}
+                <tr class="border-t"><td class="p-2">{{ i.block.block_name|default:'-' }}</td><td class="p-2">{{ i.machine.workshop_code|default:'-' }}{% if i.machine.machine_type %} - {{ i.machine.machine_type.name }}{% endif %}</td><td class="p-2">{% if i.status == 'safe' %}ایمن{% elif i.status == 'unsafe' %}ناایمن{% else %}-{% endif %}</td><td class="p-2">{{ i.description|default:'-' }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <div class="empty-state">رکوردی ثبت نشده است.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+      <div class="px-4 sm:px-6 py-3 border-b dark:border-gray-700 flex items-center gap-2">
+        <h4 class="font-medium">بارگیری</h4>
+      </div>
+      <div class="p-4 sm:p-6">
+        {% if loading_details %}
+        <div class="overflow-x-auto border rounded-lg">
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-700/40"><tr class="text-gray-600 dark:text-gray-300"><th class="p-2 text-right">بلوک</th><th class="p-2 text-right">دستگاه</th><th class="p-2 text-right">وضعیت</th><th class="p-2 text-right">توضیحات</th></tr></thead>
+            <tbody>
+              {% for i in loading_details %}
+                <tr class="border-t"><td class="p-2">{{ i.block.block_name|default:'-' }}</td><td class="p-2">{{ i.machine.workshop_code|default:'-' }}{% if i.machine.machine_type %} - {{ i.machine.machine_type.name }}{% endif %}</td><td class="p-2">{% if i.status == 'safe' %}ایمن{% elif i.status == 'unsafe' %}ناایمن{% else %}-{% endif %}</td><td class="p-2">{{ i.description|default:'-' }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <div class="empty-state">رکوردی ثبت نشده است.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Dumping -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+      <div class="px-4 sm:px-6 py-3 border-b dark:border-gray-700 flex items-center gap-2">
+        <h4 class="font-medium">تخلیه</h4>
+      </div>
+      <div class="p-4 sm:p-6">
+        {% if dump_details %}
+        <div class="overflow-x-auto border rounded-lg">
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-700/40"><tr class="text-gray-600 dark:text-gray-300"><th class="p-2 text-right">دامپ</th><th class="p-2 text-right">وضعیت</th><th class="p-2 text-right">توضیحات</th></tr></thead>
+            <tbody>
+              {% for i in dump_details %}
+                <tr class="border-t"><td class="p-2">{{ i.dump.dump_name|default:'-' }}</td><td class="p-2">{% if i.status == 'safe' %}ایمن{% elif i.status == 'unsafe' %}ناایمن{% else %}-{% endif %}</td><td class="p-2">{{ i.description|default:'-' }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <div class="empty-state">رکوردی ثبت نشده است.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Stoppages -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+      <div class="px-4 sm:px-6 py-3 border-b dark:border-gray-700 flex items-center gap-2">
+        <h4 class="font-medium">توقفات</h4>
+      </div>
+      <div class="p-4 sm:p-6">
+        {% if stoppage_details %}
+        <div class="overflow-x-auto border rounded-lg">
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-700/40"><tr class="text-gray-600 dark:text-gray-300"><th class="p-2 text-right">علت</th><th class="p-2 text-right">شروع</th><th class="p-2 text-right">پایان</th><th class="p-2 text-right">توضیحات</th></tr></thead>
+            <tbody>
+              {% for i in stoppage_details %}
+                <tr class="border-t"><td class="p-2">{{ i.reason|default:'-' }}</td><td class="p-2">{{ i.start_time|default:'-' }}</td><td class="p-2">{{ i.end_time|default:'-' }}</td><td class="p-2">{{ i.description|default:'-' }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <div class="empty-state">رکوردی ثبت نشده است.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Inspections -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+      <div class="px-4 sm:px-6 py-3 border-b dark:border-gray-700 flex items-center gap-2">
+        <h4 class="font-medium">بازرسی‌ها</h4>
+      </div>
+      <div class="p-4 sm:p-6">
+        {% if inspection_details %}
+        <div class="overflow-x-auto border rounded-lg">
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-700/40"><tr class="text-gray-600 dark:text-gray-300"><th class="p-2 text-right">انجام شد</th><th class="p-2 text-right">عنوان</th><th class="p-2 text-right">وضعیت</th><th class="p-2 text-right">توضیحات</th></tr></thead>
+            <tbody>
+              {% for i in inspection_details %}
+                <tr class="border-t"><td class="p-2">{% if i.inspection_done %}بله{% else %}خیر{% endif %}</td><td class="p-2">{{ i.inspection|default:'-' }}</td><td class="p-2">{% if i.status == 'safe' %}ایمن{% elif i.status == 'unsafe' %}ناایمن{% else %}-{% endif %}</td><td class="p-2">{{ i.description|default:'-' }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+          <div class="empty-state">رکوردی ثبت نشده است.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

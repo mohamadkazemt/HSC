@@ -1,0 +1,459 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load jalali %}
+
+{% block title %}ثبت و لیست آنومالی‌ها{% endblock %}
+
+{% block content %}
+<div x-data="{ modalOpen: false }">
+  <!-- Header actions -->
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">آنومالی‌ها</h1>
+    <button id="openAnomalyBtn" @click="modalOpen=true" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition">
+      <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+      ثبت آنومالی جدید
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="rounded-xl border border-gray-200 bg-white p-4 mb-6 shadow-sm dark:bg-gray-800 dark:border-gray-700">
+    <form method="get" class="grid grid-cols-1 md:grid-cols-5 gap-3">
+      <input type="text" name="search" value="{{ search_query }}" placeholder="جستجو در توضیحات، مکان، ایجادکننده..." class="md:col-span-2 w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+      <select name="priority" class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+        <option {% if priority_filter == 'همه' %}selected{% endif %}>همه</option>
+        <option value="بالا" {% if priority_filter == 'بالا' %}selected{% endif %}>بالا</option>
+        <option value="متوسط" {% if priority_filter == 'متوسط' %}selected{% endif %}>متوسط</option>
+        <option value="پایین" {% if priority_filter == 'پایین' %}selected{% endif %}>پایین</option>
+      </select>
+      <select name="status" class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+        <option value="همه" {% if status_filter == 'همه' %}selected{% endif %}>همه</option>
+        <option value="ایمن" {% if status_filter == 'ایمن' %}selected{% endif %}>ایمن</option>
+        <option value="نا ایمن" {% if status_filter == 'نا ایمن' %}selected{% endif %}>نا ایمن</option>
+      </select>
+      <select name="time" class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm text-gray-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+        <option value="همه" {% if time_filter == 'همه' %}selected{% endif %}>کل بازه</option>
+        <option value="امسال" {% if time_filter == 'امسال' %}selected{% endif %}>امسال</option>
+        <option value="این ماه" {% if time_filter == 'این ماه' %}selected{% endif %}>این ماه</option>
+        <option value="ماه گذشته" {% if time_filter == 'ماه گذشته' %}selected{% endif %}>ماه گذشته</option>
+        <option value="90 روز اخیر" {% if time_filter == '90 روز اخیر' %}selected{% endif %}>90 روز اخیر</option>
+      </select>
+      <div class="flex gap-2 md:justify-end">
+        <button type="submit" class="px-4 py-2 rounded-lg bg-indigo-600 text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 text-sm transition">اعمال</button>
+        {% with q=request.GET.urlencode %}
+        <a href="{% url 'anomalis:export_anomalies_to_excel' %}?{{ q }}" class="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 text-sm">
+          خروجی اکسل
+        </a>
+        {% endwith %}
+      </div>
+    </form>
+  </div>
+
+  <!-- List of anomalies -->
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {% for anomaly in page_obj %}
+    <div class="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition dark:bg-gray-800 dark:border-gray-700">
+      <!-- Card Header -->
+      <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">#{{ anomaly.id }}</span>
+        <span class="text-xs px-2.5 py-1 rounded-full font-medium 
+          {% if anomaly.priority.priority == 'بالا' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
+          {% elif anomaly.priority.priority == 'متوسط' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300
+          {% elif anomaly.priority.priority == 'پایین' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+          {% else %}bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300{% endif %}">
+          {{ anomaly.priority.priority|default:'نامشخص' }}
+        </span>
+      </div>
+      <!-- Card Body -->
+      <div class="p-4">
+        <div class="flex gap-4">
+          {% if anomaly.image %}
+          <img src="{{ anomaly.image.url }}" alt="anomaly" class="h-24 w-32 object-cover rounded-lg flex-shrink-0" onerror="this.onerror=null;this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'320\' height=\'180\'><rect width=\'100%\' height=\'100%\' fill=\'%23e5e7eb\'/><text x=\'50%\' y=\'50%\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'%239ca3af\' font-family=\'sans-serif\' font-size=\'14\'>No Image</text></svg>';">
+          {% else %}
+          <div class="h-24 w-32 bg-gray-100 rounded-lg flex items-center justify-center text-xs text-gray-400 dark:bg-gray-700">No Image</div>
+          {% endif %}
+          <div class="flex-1 min-w-0 space-y-2">
+            <p class="text-sm text-gray-800 line-clamp-3 dark:text-gray-100">{{ anomaly.description|truncatewords:20 }}</p>
+            <div class="text-xs text-gray-500 grid grid-cols-2 gap-y-1 dark:text-gray-400">
+              <div>سایت: <span class="font-medium text-gray-700 dark:text-gray-200">{{ anomaly.location.name }}</span></div>
+              <div>ایجاد کننده: <span class="font-medium text-gray-700 dark:text-gray-200">{{ anomaly.created_by.user.first_name }} {{ anomaly.created_by.user.last_name }}</span></div>
+              <div>محل: <span class="font-medium text-gray-700 dark:text-gray-200">{{ anomaly.section.section }}</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Card Footer -->
+      <div class="flex items-center justify-between px-4 py-3 bg-gray-50 border-t border-gray-100 dark:bg-gray-900 dark:border-gray-700">
+        <div class="text-xs text-gray-600 dark:text-gray-400">
+          پیگیر: <span class="font-medium">{{ anomaly.followup.user.first_name }} {{ anomaly.followup.user.last_name }}</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-xs px-2 py-0.5 rounded-full font-medium 
+            {% if anomaly.action %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+            {% else %}bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300{% endif %}">
+            {% if anomaly.action %}ایمن{% else %}نا ایمن{% endif %}
+          </span>
+          <span class="text-xs text-gray-500">{{ anomaly.created_at|to_jalali:'%Y/%m/%d' }}</span>
+          <a href="{% url 'anomalis:anomaly_detail' anomaly.id %}" class="text-xs px-3 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200">جزئیات</a>
+        </div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-span-full text-center py-10 text-gray-500">موردی یافت نشد.</div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if page_obj.paginator.num_pages > 1 %}
+  <div class="mt-6 flex items-center justify-center gap-2">
+    {% with q=request.GET.urlencode %}
+      {% if page_obj.has_previous %}
+        <a class="px-3 py-1.5 rounded-md border text-sm" href="?page={{ page_obj.previous_page_number }}&{{ q }}">قبلی</a>
+      {% endif %}
+      <span class="text-sm">صفحه {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a class="px-3 py-1.5 rounded-md border text-sm" href="?page={{ page_obj.next_page_number }}&{{ q }}">بعدی</a>
+      {% endif %}
+    {% endwith %}
+  </div>
+  {% endif %}
+
+  <!-- Fullscreen Modal -->
+  <div x-show="modalOpen" x-cloak class="fixed inset-0 z-50">
+    <div class="absolute inset-0 bg-gray-900/70" @click="modalOpen=false"></div>
+    <div class="absolute inset-0 overflow-y-auto">
+      <div class="min-h-full flex items-start justify-center p-4">
+        <div id="anomalyModal" class="w-full max-w-4xl bg-white rounded-xl shadow-2xl dark:bg-gray-800 pointer-events-auto">
+          <div class="flex items-center justify-between px-8 py-5 border-b border-gray-100 dark:border-gray-700">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">ثبت آنومالی جدید</h2>
+            <button @click="modalOpen=false" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-700 dark:text-gray-300" aria-label="Close">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+
+          <form id="anomalyForm" method="post" enctype="multipart/form-data" action="{% url 'anomalis:anomalis' %}" class="p-8 space-y-6">
+            {% csrf_token %}
+
+            <div id="formAlert" class="hidden rounded-lg border border-rose-200 bg-rose-50 text-rose-700 text-sm px-3 py-2"></div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">سایت</label>
+                {{ form.location }}
+                <p class="mt-1 text-xs text-rose-600 hidden" data-error-for="location"></p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">محل</label>
+                {{ form.section }}
+                <p class="mt-1 text-xs text-rose-600 hidden" data-error-for="section"></p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">نوع آنومالی</label>
+                {{ form.anomalytype }}
+                <p class="mt-1 text-xs text-rose-600 hidden" data-error-for="anomalytype"></p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">شرح آنومالی</label>
+                {{ form.anomalydescription }}
+                <p class="mt-1 text-xs text-rose-600 hidden" data-error-for="anomalydescription"></p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">نوع HSE</label>
+                {{ form.hse_type }}
+                <p class="mt-1 text-xs text-rose-600 hidden" data-error-for="hse_type"></p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">اقدام اصلاحی</label>
+                {{ form.correctiveaction }}
+                <p class="mt-1 text-xs text-rose-600 hidden" data-error-for="correctiveaction"></p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">مسئول پیگیری</label>
+                {{ form.followup }}
+                <p class="mt-1 text-xs text-rose-600 hidden" data-error-for="followup"></p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">اولویت</label>
+                {{ form.priority }}
+                <p class="mt-1 text-xs text-rose-600 hidden" data-error-for="priority"></p>
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">توضیحات</label>
+                {{ form.description }}
+                <p class="mt-1 text-xs text-rose-600 hidden" data-error-for="description"></p>
+              </div>
+
+              <!-- Styled Checkbox -->
+              <div class="flex items-center gap-2">
+                <input id="id_action_custom" type="checkbox" class="h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                <label for="id_action_custom" class="text-sm text-gray-700 dark:text-gray-300">ایمن است؟</label>
+                <span class="hidden">{{ form.action }}</span>
+              </div>
+
+              <!-- Dropzone for Image -->
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">تصویر</label>
+                <div id="dropzone" class="relative flex items-center justify-between gap-4 rounded-lg border-2 border-dashed border-gray-300 p-4 bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:border-gray-600 dark:hover:bg-gray-600 transition cursor-pointer">
+                  <div class="flex items-center gap-3">
+                    <svg class="w-6 h-6 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 7.5L12 3m0 0L7.5 7.5M12 3v13.5"/></svg>
+                    <div class="text-sm">
+                      <div class="text-gray-700 dark:text-gray-200">فایل را بکشید و رها کنید یا</div>
+                      <div class="text-indigo-600 hover:text-indigo-500">انتخاب فایل</div>
+                    </div>
+                  </div>
+                  <img id="imagePreview" class="hidden h-16 w-24 object-cover rounded-md" alt="preview" />
+                </div>
+                <div class="hidden">
+                  {{ form.image }}
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2">
+              <button type="button" @click="modalOpen=false" class="px-4 py-2 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">انصراف</button>
+              <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white shadow-sm hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                ثبت
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+  <!-- Choices CSS (replaces Select2) -->
+  <link href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" rel="stylesheet" />
+  <style>
+    /* Tailwind-like look for Choices */
+.choices { width: 100%; }
+    .choices__inner { min-height: 42px; border-radius: 0.5rem; background:#f9fafb; border:1px solid #d1d5db; }
+    .dark .choices__inner { background:#374151; border-color:#4b5563; color:#fff; }
+    .choices.is-open .choices__list--dropdown { z-index: 999999; }
+
+    /* Make default form widgets look like inputs */
+    select.modal-select2, .form-control, textarea.form-control, input.form-control, #id_hse_type {
+      width: 100%; background-color: #f9fafb; border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 0.5rem 0.75rem; color: #111827;
+    }
+    .dark select.modal-select2, .dark .form-control, .dark textarea.form-control, .dark input.form-control, .dark #id_hse_type {
+      background-color: #374151; border-color: #4b5563; color: #fff;
+    }
+    select.modal-select2:focus, .form-control:focus, textarea.form-control:focus, input.form-control:focus, #id_hse_type:focus {
+      outline: 2px solid transparent; box-shadow: 0 0 0 2px #6366f1; border-color: #6366f1;
+    }
+  </style>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+<script>
+  document.addEventListener('alpine:init', () => {})
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const qs = (s) => document.querySelector(s);
+    const id = (n) => document.getElementById(n);
+
+    const locationEl = id('id_location');
+    const sectionEl = id('id_section');
+    const anomalyTypeEl = id('id_anomalytype');
+    const anomalyDescEl = id('id_anomalydescription');
+    const hseTypeEl = id('id_hse_type');
+    const correctiveEl = id('id_correctiveaction');
+    const imageEl = id('id_image');
+    const actionEl = id('id_action');
+
+    // Helper to enable/disable
+    const setDisabled = (el, disabled=true) => { if (el) { el.disabled = disabled; el.classList.toggle('opacity-60', disabled); if (el._choices) el._choices.disable(); if (!disabled && el._choices) el._choices.enable(); } };
+    const clearOptions = (el, placeholder='انتخاب کنید') => { if (!el) return; el.innerHTML = ''; const opt = document.createElement('option'); opt.value=''; opt.textContent=placeholder; el.appendChild(opt); if (el._choices) el._choices.setChoices([], 'value', 'label', true); };
+
+    // Initial state
+    setDisabled(sectionEl, true);
+    setDisabled(anomalyDescEl, true);
+    setDisabled(correctiveEl, true);
+
+    // Reflect checkbox visually
+    if (actionEl) {
+      const custom = document.getElementById('id_action_custom');
+      if (custom) {
+        custom.checked = actionEl.checked;
+        custom.addEventListener('change', () => { actionEl.checked = custom.checked; });
+      }
+    }
+    // Endpoints
+    const urlSections = "{% url 'anomalis:get_sections' %}"; // ?location_id=
+    const urlDesc = "{% url 'anomalis:get_anomalydescription' %}"; // ?anomalytype_id=
+    const urlHse = "{% url 'anomalis:get_hse_type' 0 %}"; // replace 0
+    const urlAction = "{% url 'anomalis:get_corrective_action' 0 %}"; // replace 0
+
+    const fetchJSON = (url) => fetch(url, {headers: {'X-Requested-With':'XMLHttpRequest'}}).then(r=>r.json());
+
+    // Initialize Choices for all selects (no jQuery dependency)
+    function initChoices(){
+      document.querySelectorAll('select.modal-select2').forEach(el => {
+        try {
+          if (el._choices) { el._choices.destroy(); el._choices = null; }
+          el._choices = new Choices(el, { shouldSort: false, placeholder: true, searchEnabled: true, removeItemButton: false, allowHTML: true });
+        } catch(err) { console.error('choices init error', err); }
+      });
+    }
+    initChoices();
+    const openBtn = id('openAnomalyBtn');
+    if (openBtn) openBtn.addEventListener('click', () => setTimeout(initChoices, 80));
+    const modal = document.getElementById('anomalyModal');
+    if (modal && 'MutationObserver' in window) {
+      const obs = new MutationObserver(initChoices);
+      obs.observe(modal, { attributes: true, attributeFilter: ['style','class'] });
+    }
+
+    // Location -> Sections
+    if (locationEl) {
+      locationEl.addEventListener('change', async (e) => {
+        const val = e.target.value;
+        clearOptions(sectionEl, 'ابتدا بخش را انتخاب کنید');
+        setDisabled(sectionEl, true);
+        if (val) {
+          try {
+            const data = await fetchJSON(`${urlSections}?location_id=${val}`);
+            clearOptions(sectionEl, 'بخش مرتبط را انتخاب کنید');
+            (data.sections || []).forEach(s => {
+              const opt = document.createElement('option');
+              opt.value = s.id; opt.textContent = s.section; sectionEl.appendChild(opt);
+            });
+            setDisabled(sectionEl, false);
+            if (sectionEl._choices) sectionEl._choices.setChoices(Array.from(sectionEl.options).map(o=>({value:o.value,label:o.text})), 'value','label', true);
+          } catch (err) { console.error(err); }
+        }
+      });
+    }
+
+    // AnomalyType -> Descriptions
+    if (anomalyTypeEl) {
+      anomalyTypeEl.addEventListener('change', async (e) => {
+        const val = e.target.value;
+        clearOptions(anomalyDescEl, 'ابتدا شرح را انتخاب کنید');
+        setDisabled(anomalyDescEl, true);
+        clearOptions(correctiveEl, 'ابتدا اقدام اصلاحی را انتخاب کنید');
+        setDisabled(correctiveEl, true);
+        hseTypeEl && (hseTypeEl.value = '');
+        if (val) {
+          try {
+            const data = await fetchJSON(`${urlDesc}?anomalytype_id=${val}`);
+            clearOptions(anomalyDescEl, 'شرح مرتبط را انتخاب کنید');
+            (data.descriptions || []).forEach(d => {
+              const opt = document.createElement('option'); opt.value = d.id; opt.textContent = d.description; anomalyDescEl.appendChild(opt);
+            });
+            setDisabled(anomalyDescEl, false);
+            if (anomalyDescEl._choices) anomalyDescEl._choices.setChoices(Array.from(anomalyDescEl.options).map(o=>({value:o.value,label:o.text})), 'value','label', true);
+          } catch (err) { console.error(err); }
+        }
+      });
+    }
+
+    // Description -> HSE type and Corrective Actions
+    if (anomalyDescEl) {
+      anomalyDescEl.addEventListener('change', async (e) => {
+        const idVal = e.target.value;
+        setDisabled(correctiveEl, true);
+        hseTypeEl && (hseTypeEl.value = '');
+        clearOptions(correctiveEl, 'اقدام اصلاحی ...');
+        if (idVal) {
+          try {
+            const hseData = await fetchJSON(urlHse.replace(/0\/?$/, `${idVal}/`));
+            if (hseTypeEl && hseData && hseData.hse_type) {
+              hseTypeEl.value = hseData.hse_type;
+            }
+          } catch (err) { console.error(err); }
+          try {
+            const actData = await fetchJSON(urlAction.replace(/0\/?$/, `${idVal}/`));
+            (actData.actions || []).forEach(a => { const opt = document.createElement('option'); opt.value=a.id; opt.textContent=a.description; correctiveEl.appendChild(opt); });
+            setDisabled(correctiveEl, false);
+            if (correctiveEl._choices) correctiveEl._choices.setChoices(Array.from(correctiveEl.options).map(o=>({value:o.value,label:o.text})), 'value','label', true);
+          } catch (err) { console.error(err); }
+        }
+      });
+    }
+
+    // AJAX submit with inline error rendering
+    const form = document.getElementById('anomalyForm');
+    const alertBox = document.getElementById('formAlert');
+    function clearErrors(){
+      alertBox.classList.add('hidden'); alertBox.textContent='';
+      document.querySelectorAll('[data-error-for]').forEach(n=>{ n.textContent=''; n.classList.add('hidden'); });
+      ['location','section','anomalytype','anomalydescription','hse_type','correctiveaction','followup','priority','description','image','action']
+        .forEach(name=>{ const el = document.getElementById('id_'+name); if(el){ el.classList.remove('ring-2','ring-rose-500','border-rose-300'); }});
+    }
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        clearErrors();
+        const fd = new FormData(form);
+        try {
+          const actionUrl = form.getAttribute('action');
+          const res = await fetch(actionUrl, { method:'POST', body: fd, headers:{'X-Requested-With':'XMLHttpRequest'} });
+          const ct = (res.headers.get('content-type') || '').toLowerCase();
+          let data = null;
+          if (ct.includes('application/json')) {
+            data = await res.json();
+          } else {
+            const text = await res.text();
+            try { data = JSON.parse(text); } catch {
+              // Try to extract Django errorlist
+              const errListMatch = text.match(/<ul class=\"errorlist\">([\s\S]*?)<\/ul>/i);
+              const snippet = (errListMatch ? errListMatch[1] : text).replace(/<[^>]+>/g, ' ').replace(/\s+/g,' ').trim().slice(0, 500);
+              alertBox.textContent = snippet || 'پاسخ غیرمنتظره از سرور دریافت شد.';
+              alertBox.classList.remove('hidden');
+              return;
+            }
+          }
+          if (data && data.status === 'success') {
+            window.location = data.redirect || window.location.href;
+            return;
+          }
+          // Show errors
+          if (data && data.message) { alertBox.textContent = data.message; alertBox.classList.remove('hidden'); }
+          if (data && data.errors) {
+            Object.entries(data.errors).forEach(([field, msgs]) => {
+              const holder = document.querySelector(`[data-error-for=\"${field}\"]`);
+              if (holder) { holder.textContent = Array.isArray(msgs) ? msgs.join(' ') : msgs; holder.classList.remove('hidden'); }
+              const input = document.getElementById('id_'+field);
+              if (input) { input.classList.add('ring-2','ring-rose-500','border-rose-300'); }
+            });
+          }
+        } catch (err) {
+          alertBox.textContent = `خطا در ارسال فرم: ${err && err.message ? err.message : ''}`.trim();
+          alertBox.classList.remove('hidden');
+        }
+      });
+    }
+
+    // Dropzone interactions
+    const dz = document.getElementById('dropzone');
+    const preview = document.getElementById('imagePreview');
+    if (dz && imageEl) {
+      dz.addEventListener('click', () => imageEl.click());
+      dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('ring-2','ring-indigo-500'); });
+      dz.addEventListener('dragleave', () => dz.classList.remove('ring-2','ring-indigo-500'));
+      dz.addEventListener('drop', (e) => {
+        e.preventDefault(); dz.classList.remove('ring-2','ring-indigo-500');
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          imageEl.files = e.dataTransfer.files;
+          const file = e.dataTransfer.files[0];
+          const reader = new FileReader();
+          reader.onload = (ev) => { preview.src = ev.target.result; preview.classList.remove('hidden'); };
+          reader.readAsDataURL(file);
+        }
+      });
+      imageEl.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (ev) => { preview.src = ev.target.result; preview.classList.remove('hidden'); };
+          reader.readAsDataURL(file);
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

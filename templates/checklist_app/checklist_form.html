@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+{% block title %}شروع چک‌لیست{% endblock %}
+
+{% block styles %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+  .select2-container{ width:100% !important; }
+  .select2-container .select2-selection--single{ height:40px; min-height:40px; border:1px solid #d1d5db; border-radius:0.375rem; display:flex; align-items:center; }
+  .select2-container .select2-selection__rendered{ line-height:38px; }
+  .option-card{ border:1px solid #e5e7eb; border-radius:0.5rem; padding:.5rem .75rem; cursor:pointer; display:inline-flex; align-items:center; gap:.5rem; }
+  .option-card.selected{ border-color:#6366f1; background:#eef2ff; }
+</style>
+{% endblock %}
+{% block content %}
+<div x-data="generalChecklist()" x-init="init()" class="space-y-6">
+  <!-- Step 1: setup -->
+  <div class="rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 shadow-md">
+    <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+      <svg class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M3 12h18M3 18h18"/></svg>
+      <h2 class="text-base font-semibold">۱. انتخاب جزئیات چک‌لیست</h2>
+    </div>
+    <div class="p-4">
+    <div class="grid md:grid-cols-3 gap-4">
+      <label class="block">
+        <span class="block text-sm font-medium mb-1">نوع چک‌لیست</span>
+        <select x-model="form.checklist_type" class="w-full rounded border border-gray-300 p-2">
+          <option value="machine">ماشین</option>
+          <option value="location">مکان</option>
+          <option value="contractor_vehicle">ماشین‌آلات پیمانکار</option>
+        </select>
+      </label>
+      <label class="block">
+        <span class="block text-sm font-medium mb-1">شیفت</span>
+        <select x-ref="shift" x-model="form.shift" class="w-full rounded border border-gray-300 p-2">
+          {% for k,v in shift_choices %}
+          <option value="{{ k }}">{{ v }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <div class="block">
+        <span class="block text-sm font-medium mb-1" x-text="labelForType()">انتخاب مورد مرتبط</span>
+        <div class="grid grid-cols-1 gap-2">
+          <div x-show="form.checklist_type==='machine'">
+            <select x-ref="machine" x-model="form.machine_id" :required="form.checklist_type==='machine'" class="w-full rounded border border-gray-300 p-2">
+              <option value="">— انتخاب ماشین —</option>
+              {% for m in machines %}
+              <option value="{{ m.id }}">{{ m.workshop_code }} - {{ m.machine_type.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div x-show="form.checklist_type==='location'">
+            <select x-ref="location" x-model="form.location_section_id" :required="form.checklist_type==='location'" class="w-full rounded border border-gray-300 p-2">
+              <option value="">— انتخاب بخش —</option>
+              {% for ls in location_sections %}
+              <option value="{{ ls.id }}">{{ ls.location.name }} - {{ ls.section }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div x-show="form.checklist_type==='contractor_vehicle'">
+            <select x-ref="vehicle" x-model="form.vehicle_id" :required="form.checklist_type==='contractor_vehicle'" class="w-full rounded border border-gray-300 p-2">
+              <option value="">— انتخاب خودرو پیمانکار —</option>
+              {% for v in contractor_vehicles %}
+              <option value="{{ v.id }}">{{ v.plate_number }} - {{ v.vehicle_category }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="flex items-center justify-end">
+      <button @click="start()" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 shadow">
+        <span>شروع و دریافت سوالات</span>
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg>
+      </button>
+    </div>
+    </div>
+  </div>
+
+  <!-- Step 2: questions -->
+  <template x-if="questions.length">
+    <div class="space-y-4">
+      <div class="space-y-4">
+        <template x-for="q in questions" :key="q.id">
+          <div class="rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 shadow p-4">
+            <div class="font-medium mb-3" x-text="q.text"></div>
+            <div x-show="q.question_type==='option'" class="flex flex-wrap gap-2">
+              <template x-for="opt in q.options" :key="opt">
+                <div @click="setOption(q.id, opt); q.selected_option = opt" :class="['option-card', q.selected_option===opt ? 'selected' : '']">
+                  <svg class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m9 12 2 2 4-4"/></svg>
+                  <span x-text="opt"></span>
+                </div>
+              </template>
+            </div>
+            <div x-show="q.question_type==='text'" class="">
+              <textarea class="w-full rounded border border-gray-300 p-2" rows="2" @input="setText(q.id, $event.target.value)"></textarea>
+            </div>
+            <div class="mt-3">
+              <input type="text" class="w-full rounded border border-gray-300 p-2" placeholder="توضیحات (اختیاری)" @input="setDesc(q.id, $event.target.value)">
+            </div>
+          </div>
+        </template>
+        <div class="flex items-center justify-end pt-2">
+          <button @click="finalize()" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 shadow">نهایی‌سازی و ارسال
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- Step 3: Anomaly modal -->
+  <div x-show="modal.open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <div class="w-full max-w-xl bg-white dark:bg-gray-800 rounded-lg shadow-md border border-red-200" @click.away="modal.open=false">
+      <div class="flex items-center gap-2 px-4 py-3 rounded-t-lg bg-red-600 text-white">
+        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3h.008v.008H12V15.75Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/></svg>
+        <h3 class="font-semibold">ناهنجاری شناسایی شد!</h3>
+      </div>
+      <div class="p-5">
+        <p class="text-sm mb-2">موارد زیر دارای پاسخ غیرقابل قبول بودند:</p>
+        <ul class="list-disc pr-6 text-sm space-y-1 max-h-40 overflow-y-auto">
+          <template x-for="a in modal.unacceptable" :key="a.id"><li x-text="a.text"></li></template>
+        </ul>
+        <div class="mt-4">
+          <label class="block text-sm font-medium mb-1">انتخاب مسئول پیگیری</label>
+          <select id="followup_select" x-model="modal.followup_id" class="w-full rounded border border-gray-300 p-2">
+            <option value="">— انتخاب کاربر —</option>
+            <template x-for="u in modal.users" :key="u.id"><option :value="u.id" x-text="u.name"></option></template>
+          </select>
+        </div>
+        <div class="mt-4 flex items-center justify-end gap-2">
+          <button class="px-4 py-2 rounded border" @click="modal.open=false">انصراف</button>
+          <button class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700" @click="createAnomaly()">ایجاد آنومالی و ثبت</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+  function getCSRF(){ return (document.cookie.match(/csrftoken=([^;]+)/)||[])[1]; }
+  function generalChecklist(){
+    return {
+      form:{ checklist_type:'machine', machine_id:'', location_section_id:'', vehicle_id:'', shift:'{% firstof shift_choices.0.0 'day' %}' },
+      questions:[],
+      checklist_id:null,
+      modal:{ open:false, unacceptable:[], users:[], followup_id:'' },
+      init(){
+        // فقط شیفت را یک‌بار تقویت می‌کنیم
+        $(this.$refs.shift).select2({ width:'100%', dir:'rtl', allowClear:true, placeholder:'انتخاب کنید' });
+        // اولین حالت: نوع ماشین
+        this.initDynamicSelect();
+        this.$watch('form.checklist_type', (val)=>{
+          // پاک‌سازی مقادیر غیرمرتبط
+          this.form.machine_id=''; this.form.location_section_id=''; this.form.vehicle_id='';
+          // راه‌اندازی مجدد فقط برای سلکت مرتبط
+          this.initDynamicSelect();
+        });
+      },
+      initDynamicSelect(){
+        // نابود کردن نمونه‌های قبلی فقط برای سلکت‌های پویا
+        if(this.$refs.machine) { try { $(this.$refs.machine).select2('destroy'); } catch(e){} }
+        if(this.$refs.location) { try { $(this.$refs.location).select2('destroy'); } catch(e){} }
+        if(this.$refs.vehicle) { try { $(this.$refs.vehicle).select2('destroy'); } catch(e){} }
+        // بعد از رندر
+        setTimeout(()=>{
+          const opts = { width:'100%', dir:'rtl', allowClear:true, placeholder:'انتخاب کنید' };
+          if(this.form.checklist_type==='machine' && this.$refs.machine){ $(this.$refs.machine).select2(opts); }
+          if(this.form.checklist_type==='location' && this.$refs.location){ $(this.$refs.location).select2(opts); }
+          if(this.form.checklist_type==='contractor_vehicle' && this.$refs.vehicle){ $(this.$refs.vehicle).select2(opts); }
+        }, 0);
+      },
+      async start(){
+        // اعتبارسنجی بر اساس نوع چک‌لیست
+        if(this.form.checklist_type==='machine' && !this.form.machine_id){ alert('لطفاً ماشین را انتخاب کنید'); return; }
+        if(this.form.checklist_type==='location' && !this.form.location_section_id){ alert('لطفاً بخش مکانی را انتخاب کنید'); return; }
+        if(this.form.checklist_type==='contractor_vehicle' && !this.form.vehicle_id){ alert('لطفاً خودرو پیمانکار را انتخاب کنید'); return; }
+        // fetch questions
+        const res = await fetch('{% url "checklist_app:get_general_questions" %}',{
+          method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':getCSRF()},
+          body: JSON.stringify(this.form)
+        });
+        const data = await res.json();
+        this.questions = data.questions.map(q=>({ ...q, answer_text:'', selected_option:'', description:'' }));
+        // scroll to questions
+        setTimeout(()=>window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'}),50);
+      },
+      setOption(id, opt){ const q=this.questions.find(q=>q.id===id); if(q){ q.selected_option=opt; } },
+      setText(id, val){ const q=this.questions.find(q=>q.id===id); if(q){ q.answer_text=val; } },
+      setDesc(id, val){ const q=this.questions.find(q=>q.id===id); if(q){ q.description=val; } },
+      async finalize(){
+        const payload={...this.form, answers: this.questions.map(q=>({ question_id:q.id, answer_text:q.answer_text, selected_option:q.selected_option, description:q.description })) };
+        const res = await fetch('{% url "checklist_app:submit_general_checklist" %}',{ method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':getCSRF()}, body: JSON.stringify(payload)});
+        const data = await res.json();
+        if(data.status==='failure_detected'){
+          this.checklist_id = data.checklist_id;
+          this.modal.unacceptable = data.unacceptable_answers;
+          // load users
+          const ur = await fetch('{% url "checklist_app:get_followup_users" %}');
+          const uj = await ur.json();
+          this.modal.users = uj.users||[];
+          this.modal.open = true;
+        } else if(data.status==='success'){
+          window.location = `{% url 'checklist_app:general_checklist_detail' 0 %}`.replace('/0/','/'+data.checklist_id+'/');
+        } else {
+          alert('خطا در ارسال');
+        }
+      },
+      labelForType(){
+        if(this.form.checklist_type==='machine') return 'انتخاب ماشین';
+        if(this.form.checklist_type==='location') return 'انتخاب بخش مکانی';
+        if(this.form.checklist_type==='contractor_vehicle') return 'انتخاب خودرو پیمانکار';
+        return 'انتخاب مورد مرتبط';
+      },
+      async createAnomaly(){
+        if(!this.modal.followup_id){ alert('مسئول پیگیری را انتخاب کنید'); return; }
+        const res = await fetch('{% url "checklist_app:create_anomaly_from_failure" %}',{ method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':getCSRF()}, body: JSON.stringify({ checklist_id:this.checklist_id, followup_id:this.modal.followup_id }) });
+        const data = await res.json();
+        if(data.status==='success'){
+          window.location = `{% url 'checklist_app:general_checklist_detail' 0 %}`.replace('/0/','/'+this.checklist_id+'/');
+        } else {
+          alert(data.message||'خطا در ایجاد آنومالی');
+        }
+      }
+    }
+  }
+</script>
+{% endblock %}

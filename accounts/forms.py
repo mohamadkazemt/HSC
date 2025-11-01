@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.models import User
-from .models import UserProfile, DriverLicense
+from .models import UserProfile, DriverLicense, Section, Part, UnitGroup, Position
 from django.core.exceptions import ValidationError
 import logging
 
@@ -78,6 +78,51 @@ class ChangePasswordForm(forms.Form):
 
         return cleaned_data
 
+
+class PersonnelEditForm(forms.ModelForm):
+    first_name = forms.CharField(label='نام', max_length=150, required=False, widget=forms.TextInput(attrs={'class': 'form-control form-control-lg form-control-solid', 'placeholder': 'نام'}))
+    last_name = forms.CharField(label='نام خانوادگی', max_length=150, required=False, widget=forms.TextInput(attrs={'class': 'form-control form-control-lg form-control-solid', 'placeholder': 'نام خانوادگی'}))
+
+    class Meta:
+        model = UserProfile
+        fields = ['first_name', 'last_name', 'personnel_code', 'mobile', 'section', 'part', 'unit_group', 'position', 'group']
+        widgets = {
+            'personnel_code': forms.TextInput(attrs={'class': 'form-control form-control-lg form-control-solid', 'placeholder': 'کد پرسنلی'}),
+            'mobile': forms.TextInput(attrs={'class': 'form-control form-control-lg form-control-solid', 'placeholder': 'شماره موبایل'}),
+            'section': forms.Select(attrs={'class': 'form-select'}),
+            'part': forms.Select(attrs={'class': 'form-select'}),
+            'unit_group': forms.Select(attrs={'class': 'form-select'}),
+            'position': forms.Select(attrs={'class': 'form-select'}),
+            'group': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        user_instance = kwargs.pop('user_instance', None)
+        super().__init__(*args, **kwargs)
+        # Populate user fields initial values
+        if user_instance:
+            self.fields['first_name'].initial = user_instance.first_name
+            self.fields['last_name'].initial = user_instance.last_name
+
+        # Ensure proper querysets for dropdowns
+        self.fields['section'].queryset = Section.objects.all()
+        self.fields['part'].queryset = Part.objects.all()
+        self.fields['unit_group'].queryset = UnitGroup.objects.all()
+        self.fields['position'].queryset = Position.objects.all()
+
+    def save(self, commit=True):
+        profile = super().save(commit=False)
+        # Update related User's first_name/last_name
+        if profile.user_id:
+            if 'first_name' in self.cleaned_data:
+                profile.user.first_name = self.cleaned_data.get('first_name', profile.user.first_name)
+            if 'last_name' in self.cleaned_data:
+                profile.user.last_name = self.cleaned_data.get('last_name', profile.user.last_name)
+            if commit:
+                profile.user.save()
+        if commit:
+            profile.save()
+        return profile
 class PasswordResetSMSForm(forms.Form):
     username = forms.CharField(widget=forms.TextInput(attrs={
         'class': 'form-control',

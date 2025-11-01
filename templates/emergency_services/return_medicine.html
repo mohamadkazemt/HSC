@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}ثبت برگشت دارو{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto rounded-lg shadow-lg bg-white dark:bg-gray-800">
+  <div class="p-4 rounded-t-lg bg-gradient-to-l from-amber-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+    <i class="fa-solid fa-rotate-left text-amber-600"></i>
+    <h3 class="font-semibold">ثبت برگشت دارو</h3>
+  </div>
+  <form method="post" class="p-4 space-y-4">
+    {% csrf_token %}
+    <div>
+      <label class="block text-sm mb-1">تعداد برگشتی</label>
+      {{ form.quantity }}
+      {% if form.fields.quantity.help_text %}
+        <p class="text-xs text-gray-500 mt-1">{{ form.fields.quantity.help_text }}</p>
+      {% endif %}
+    </div>
+    <div>
+      <label class="block text-sm mb-1">دلیل برگشت</label>
+      {{ form.return_reason }}
+    </div>
+    <div class="flex items-center justify-end gap-2">
+      <a href="{% url 'emergency_services:visit_detail' usage.visit.id %}" class="px-4 py-2 rounded-md bg-gray-100 text-gray-700">انصراف</a>
+      <button type="submit" class="px-4 py-2 rounded-md bg-amber-600 text-white">ثبت</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

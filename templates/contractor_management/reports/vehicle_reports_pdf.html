@@ -1,0 +1,246 @@
+{% load calendar_tags %}
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <title>گزارش کارکرد خودرو {{ vehicle.license_plate }}</title>
+    <style>
+        @font-face {
+            font-family: 'Vazir';
+            src: url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/Vazir-Regular.ttf') format('truetype');
+            font-weight: normal;
+        }
+        @font-face {
+            font-family: 'Vazir';
+            src: url('https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/Vazir-Bold.ttf') format('truetype');
+            font-weight: bold;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Vazir', sans-serif;
+            direction: rtl;
+            background: white;
+            padding: 20px;
+            font-size: 12px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #3b82f6;
+            padding-bottom: 20px;
+        }
+        
+        .header img {
+            max-width: 100px;
+            max-height: 100px;
+            margin-bottom: 10px;
+        }
+        
+        .header h1 {
+            color: #1e40af;
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+        
+        .header h2 {
+            color: #3b82f6;
+            font-size: 16px;
+            font-weight: normal;
+        }
+        
+        .vehicle-info {
+            background: #f3f4f6;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .vehicle-info h3 {
+            color: #1e40af;
+            font-size: 14px;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 5px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .info-item {
+            display: flex;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #374151;
+            min-width: 120px;
+        }
+        
+        .info-value {
+            color: #1f2937;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 11px;
+        }
+        
+        thead {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        th {
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #2563eb;
+        }
+        
+        td {
+            padding: 10px 8px;
+            text-align: center;
+            border: 1px solid #d1d5db;
+        }
+        
+        tbody tr:nth-child(even) {
+            background: #f9fafb;
+        }
+        
+        tbody tr:nth-child(odd) {
+            background: white;
+        }
+        
+        .status-full {
+            color: #059669;
+            font-weight: bold;
+        }
+        
+        .status-partial {
+            color: #d97706;
+            font-weight: bold;
+        }
+        
+        .status-inactive {
+            color: #dc2626;
+            font-weight: bold;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 10px;
+            color: #6b7280;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 10px;
+        }
+        
+        @page {
+            size: A4 landscape;
+            margin: 1cm;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        {% if site_settings.company_logo %}
+        <img src="{{ site_settings.company_logo.url }}" alt="لوگو">
+        {% endif %}
+        <h1>{{ site_settings.site_name|default:"گزارش کارکرد خودرو" }}</h1>
+        <h2>گزارش کارکرد خودرو {{ vehicle.license_plate }}</h2>
+    </div>
+    
+    <!-- Vehicle Info -->
+    <div class="vehicle-info">
+        <h3>مشخصات خودرو</h3>
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">شماره پلاک:</span>
+                <span class="info-value">{{ vehicle.license_plate }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">نوع خودرو:</span>
+                <span class="info-value">{{ vehicle.vehicle_type }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">پیمانکار:</span>
+                <span class="info-value">{{ vehicle.contractor.company_name }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">نام راننده:</span>
+                <span class="info-value">{{ vehicle.driver_name }}</span>
+            </div>
+            {% if vehicle.vehicle_code %}
+            <div class="info-item">
+                <span class="info-label">کد کارگاهی:</span>
+                <span class="info-value">{{ vehicle.vehicle_code }}</span>
+            </div>
+            {% endif %}
+            <div class="info-item">
+                <span class="info-label">دسته‌بندی:</span>
+                <span class="info-value">{{ vehicle.get_vehicle_category_display }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reports Table -->
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 5%;">ردیف</th>
+                <th style="width: 10%;">تاریخ</th>
+                <th style="width: 12%;">شیفت</th>
+                <th style="width: 8%;">گروه</th>
+                <th style="width: 10%;">وضعیت</th>
+                <th style="width: 10%;">ساعت شروع توقف</th>
+                <th style="width: 10%;">ساعت پایان توقف</th>
+                <th style="width: 20%;">توضیحات</th>
+                <th style="width: 15%;">گزارش‌دهنده</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for report in reports %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ report.report_date|to_jalali }}</td>
+                <td>{{ report.shift|default:"—" }}</td>
+                <td>{{ report.group|default:"—" }}</td>
+                <td class="{% if report.status == 'full' %}status-full{% elif report.status == 'partial' %}status-partial{% elif report.status == 'inactive' %}status-inactive{% endif %}">
+                    {{ report.get_status_display }}
+                </td>
+                <td>{{ report.stop_start_time|default:"—" }}</td>
+                <td>{{ report.stop_end_time|default:"—" }}</td>
+                <td style="text-align: right; padding-right: 5px;">{{ report.description|default:"—"|truncatewords:10 }}</td>
+                <td>{{ report.user.get_full_name|default:report.user.username }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" style="text-align: center; padding: 20px; color: #6b7280;">
+                    هیچ گزارشی یافت نشد
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <!-- Footer -->
+    <div class="footer">
+        <p>تاریخ تهیه گزارش: {{ current_date }}</p>
+        <p>تعداد کل گزارش‌ها: {{ reports|length }}</p>
+    </div>
+</body>
+</html>

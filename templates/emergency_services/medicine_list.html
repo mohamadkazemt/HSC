@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}انبار دارو{% endblock %}
+
+{% block content %}
+<div class="rounded-lg shadow-lg bg-white dark:bg-gray-800">
+  <div class="p-4 rounded-t-lg bg-gradient-to-l from-indigo-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <i class="fa-solid fa-capsules text-indigo-600"></i>
+      <h3 class="font-semibold">لیست داروها</h3>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="{% url 'emergency_services:create_medicine' %}" class="px-3 py-1.5 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 text-sm">
+        <i class="fa-solid fa-plus ml-1"></i> افزودن دارو
+      </a>
+      <a href="{% url 'emergency_services:download_sample_excel' %}" class="px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 text-sm">نمونه اکسل</a>
+      <form id="importForm" action="{% url 'emergency_services:import_medicines_excel' %}" method="post" enctype="multipart/form-data" class="inline-flex items-center gap-2">
+        {% csrf_token %}
+        <label class="cursor-pointer text-sm px-3 py-1.5 rounded-md bg-amber-50 text-amber-700 hover:bg-amber-100">
+          <input type="file" name="excel_file" accept=".xls,.xlsx" class="hidden" onchange="document.getElementById('importForm').submit()">
+          ورود از اکسل
+        </label>
+      </form>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div x-data="{ open: false }" class="border-b border-gray-100 dark:border-gray-700">
+    <button @click="open = !open" class="w-full flex items-center justify-between p-4 text-sm">
+      <span class="flex items-center gap-2">
+        <i class="fa-solid fa-filter text-gray-500"></i>
+        فیلتر پیشرفته
+      </span>
+      <i :class="open ? 'fa-chevron-up' : 'fa-chevron-down'" class="fa-solid text-gray-400"></i>
+    </button>
+    <div x-show="open" x-collapse class="p-4 pt-0">
+      <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div>
+          <label class="block text-sm mb-1">دسته‌بندی</label>
+          <select name="category" id="id_filter_category" class="select2 w-full">
+            <option value="">همه</option>
+            {% for c in categories %}
+              <option value="{{ c.id }}" {% if filters.category|default:''|stringformat:'s' == c.id|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" name="is_expired" value="true" id="id_is_expired" class="rounded" {% if filters.is_expired == 'true' %}checked{% endif %}>
+          <label for="id_is_expired" class="text-sm">منقضی</label>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" name="is_critical" value="true" id="id_is_critical" class="rounded" {% if filters.is_critical == 'true' %}checked{% endif %}>
+          <label for="id_is_critical" class="text-sm">در آستانه بحرانی</label>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-sm">وضعیت:</label>
+          <select name="is_active" class="select2 w-full">
+            <option value="">همه</option>
+            <option value="true" {% if filters.is_active == 'true' %}selected{% endif %}>فعال</option>
+            <option value="false" {% if filters.is_active == 'false' %}selected{% endif %}>غیرفعال</option>
+          </select>
+        </div>
+        <div class="md:col-span-4 flex justify-end gap-2">
+          <a href="?" class="px-3 py-1.5 rounded-md bg-gray-100 text-gray-700">حذف فیلتر</a>
+          <button type="submit" class="px-3 py-1.5 rounded-md bg-indigo-600 text-white">اعمال</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-700/50">
+        <tr class="text-right">
+          <th class="px-4 py-2">نام دارو</th>
+          <th class="px-4 py-2">دسته</th>
+          <th class="px-4 py-2">موجودی</th>
+          <th class="px-4 py-2">حد بحرانی</th>
+          <th class="px-4 py-2">وضعیت</th>
+          <th class="px-4 py-2">عملیات</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+        {% for m in medicines %}
+          <tr class="{% if m.is_expired %}bg-red-50 dark:bg-red-900/20{% elif m.is_critical %}bg-amber-50 dark:bg-amber-900/20{% endif %}">
+            <td class="px-4 py-2 font-medium">{{ m.name }}</td>
+            <td class="px-4 py-2">{{ m.category.name|default:'-' }}</td>
+            <td class="px-4 py-2">
+              <div class="flex items-center gap-2">
+                <progress max="{{ m.critical_threshold }}" value="{{ m.quantity }}" class="w-40 h-2"></progress>
+                <span class="text-xs">{{ m.quantity }} / {{ m.critical_threshold }}</span>
+              </div>
+            </td>
+            <td class="px-4 py-2">{{ m.critical_threshold }}</td>
+            <td class="px-4 py-2">
+              {% if m.is_expired %}
+                <span class="px-2 py-1 rounded text-xs bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">منقضی</span>
+              {% elif m.is_critical %}
+                <span class="px-2 py-1 rounded text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">بحرانی</span>
+              {% else %}
+                <span class="px-2 py-1 rounded text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">سالم</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2">
+              <a href="{% url 'emergency_services:edit_medicine' m.id %}" class="text-indigo-600 hover:underline">ویرایش</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="px-4 py-6 text-center text-gray-500">رکوردی یافت نشد</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="p-4">
+    {% if medicines.has_other_pages %}
+      <div class="flex items-center justify-center gap-1">
+        {% if medicines.has_previous %}
+          <a class="px-3 py-1 rounded bg-gray-100" href="?page={{ medicines.previous_page_number }}">قبلی</a>
+        {% endif %}
+        <span class="px-3 py-1">صفحه {{ medicines.number }} از {{ medicines.paginator.num_pages }}</span>
+        {% if medicines.has_next %}
+          <a class="px-3 py-1 rounded bg-gray-100" href="?page={{ medicines.next_page_number }}">بعدی</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+  $(function(){ $('.select2').select2({ width:'100%', dir:'rtl' }); });
+</script>
+{% endblock %}

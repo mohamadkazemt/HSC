@@ -1,0 +1,368 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load calendar_tags %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block styles %}
+<!-- Persian Date Picker CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@latest/dist/css/persian-datepicker.min.css">
+<style>
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+    body {
+      background: white !important;
+    }
+    .print-container {
+      margin: 0;
+      padding: 20px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-6">
+  <!-- Page Header -->
+  <div class="mb-6 no-print">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          <i class="fas fa-car text-blue-600 ml-2"></i>
+          {{ title }}
+        </h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400">
+          مشاهده تمام گزارش‌های کارکرد خودرو
+        </p>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="window.print()" 
+                class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+          <i class="fas fa-print ml-2"></i>
+          چاپ
+        </button>
+        <a href="{% url 'contractor_management:vehicle_reports_pdf' vehicle.id %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}" 
+           class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+          <i class="fas fa-file-pdf ml-2"></i>
+          خروجی PDF
+        </a>
+        <a href="{% url 'contractor_management:all_reports' %}" 
+           class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
+          <i class="fas fa-arrow-right ml-2"></i>
+          بازگشت
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vehicle Info Card -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg mb-6 overflow-hidden">
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+      <h2 class="text-xl font-bold text-white flex items-center">
+        <i class="fas fa-info-circle ml-2"></i>
+        اطلاعات خودرو
+      </h2>
+    </div>
+    <div class="p-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="flex items-center">
+          <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center ml-4">
+            <i class="fas fa-id-card text-blue-600 text-xl"></i>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">شماره پلاک</p>
+            <p class="text-lg font-bold text-gray-900 dark:text-white">{{ vehicle.license_plate }}</p>
+          </div>
+        </div>
+        
+        <div class="flex items-center">
+          <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center ml-4">
+            <i class="fas fa-truck text-green-600 text-xl"></i>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">نوع خودرو</p>
+            <p class="text-lg font-bold text-gray-900 dark:text-white">{{ vehicle.vehicle_type }}</p>
+          </div>
+        </div>
+        
+        <div class="flex items-center">
+          <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center ml-4">
+            <i class="fas fa-building text-purple-600 text-xl"></i>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">پیمانکار</p>
+            <p class="text-lg font-bold text-gray-900 dark:text-white">{{ vehicle.contractor.company_name }}</p>
+          </div>
+        </div>
+        
+        <div class="flex items-center">
+          <div class="w-12 h-12 
+            {% if status_class == 'success' %}bg-green-100 dark:bg-green-900{% endif %}
+            {% if status_class == 'warning' %}bg-yellow-100 dark:bg-yellow-900{% endif %}
+            {% if status_class == 'danger' %}bg-red-100 dark:bg-red-900{% endif %}
+            {% if status_class == 'secondary' %}bg-gray-100 dark:bg-gray-700{% endif %}
+            rounded-lg flex items-center justify-center ml-4">
+            <i class="fas fa-check-circle 
+              {% if status_class == 'success' %}text-green-600{% endif %}
+              {% if status_class == 'warning' %}text-yellow-600{% endif %}
+              {% if status_class == 'danger' %}text-red-600{% endif %}
+              {% if status_class == 'secondary' %}text-gray-600{% endif %}
+              text-xl"></i>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">وضعیت</p>
+            <p class="text-lg font-bold 
+              {% if status_class == 'success' %}text-green-600{% endif %}
+              {% if status_class == 'warning' %}text-yellow-600{% endif %}
+              {% if status_class == 'danger' %}text-red-600{% endif %}
+              {% if status_class == 'secondary' %}text-gray-600{% endif %}">
+              {{ vehicle_status }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg mb-6 overflow-hidden no-print">
+    <div class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-4">
+      <h2 class="text-xl font-bold text-white flex items-center">
+        <i class="fas fa-filter ml-2"></i>
+        فیلترهای جستجو
+      </h2>
+    </div>
+    <form method="get" class="p-6" x-data="filterForm()" x-init="init()">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- Start Date -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <i class="fas fa-calendar-alt text-purple-600 ml-1"></i>
+            از تاریخ
+          </label>
+          <input type="text" 
+                 name="start_date" 
+                 id="start_date"
+                 value="{{ request.GET.start_date }}"
+                 placeholder="1403/01/01"
+                 class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white">
+        </div>
+        
+        <!-- End Date -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <i class="fas fa-calendar-alt text-purple-600 ml-1"></i>
+            تا تاریخ
+          </label>
+          <input type="text" 
+                 name="end_date" 
+                 id="end_date"
+                 value="{{ request.GET.end_date }}"
+                 placeholder="1403/12/29"
+                 class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white">
+        </div>
+        
+        <!-- Shift Filter -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <i class="fas fa-clock text-purple-600 ml-1"></i>
+            شیفت
+          </label>
+          <select name="shift" 
+                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white">
+            <option value="">همه شیفت‌ها</option>
+            <option value="روزکار اول" {% if request.GET.shift == 'روزکار اول' %}selected{% endif %}>روزکار اول</option>
+            <option value="روزکار دوم" {% if request.GET.shift == 'روزکار دوم' %}selected{% endif %}>روزکار دوم</option>
+            <option value="عصرکار اول" {% if request.GET.shift == 'عصرکار اول' %}selected{% endif %}>عصرکار اول</option>
+            <option value="عصرکار دوم" {% if request.GET.shift == 'عصرکار دوم' %}selected{% endif %}>عصرکار دوم</option>
+            <option value="شب کار اول" {% if request.GET.shift == 'شب کار اول' %}selected{% endif %}>شب کار اول</option>
+            <option value="شب کار دوم" {% if request.GET.shift == 'شب کار دوم' %}selected{% endif %}>شب کار دوم</option>
+          </select>
+        </div>
+        
+        <!-- Group Filter -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <i class="fas fa-users text-purple-600 ml-1"></i>
+            گروه
+          </label>
+          <select name="group" 
+                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white">
+            <option value="">همه گروه‌ها</option>
+            <option value="A" {% if request.GET.group == 'A' %}selected{% endif %}>A</option>
+            <option value="B" {% if request.GET.group == 'B' %}selected{% endif %}>B</option>
+            <option value="C" {% if request.GET.group == 'C' %}selected{% endif %}>C</option>
+            <option value="D" {% if request.GET.group == 'D' %}selected{% endif %}>D</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="flex gap-2 mt-4">
+        <button type="submit" 
+                class="inline-flex items-center px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+          <i class="fas fa-search ml-2"></i>
+          اعمال فیلتر
+        </button>
+        <a href="{% url 'contractor_management:vehicle_reports' vehicle.id %}" 
+           class="inline-flex items-center px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors">
+          <i class="fas fa-redo ml-2"></i>
+          پاک کردن فیلتر
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Reports Table -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden print-container">
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4">
+      <h2 class="text-xl font-bold text-white flex items-center">
+        <i class="fas fa-list ml-2"></i>
+        لیست گزارش‌ها
+      </h2>
+    </div>
+    
+    {% if reports %}
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-gray-50 dark:bg-gray-900">
+          <tr>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              تاریخ گزارش
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              شیفت
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              وضعیت
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              گزارش دهنده
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              زمان ثبت
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              عملیات
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          {% for report in reports %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+              {{ report.report_date|to_jalali }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+              {{ report.shift|default:"—" }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
+                {% if report.status == 'full' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% endif %}
+                {% if report.status == 'partial' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200{% endif %}
+                {% if report.status == 'inactive' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200{% endif %}">
+                {{ report.get_status_display }}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+              {{ report.user.get_full_name|default:report.user.username }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+              {{ report.report_datetime|datetime_to_jalali }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <a href="{% url 'contractor_management:report_detail' report.id %}" 
+                 class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
+                <i class="fas fa-eye ml-1"></i>
+                مشاهده
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if reports.has_other_pages %}
+    <div class="bg-gray-50 dark:bg-gray-900 px-6 py-4 border-t border-gray-200 dark:border-gray-700 no-print">
+      <div class="flex items-center justify-between">
+        <div class="text-sm text-gray-700 dark:text-gray-300">
+          نمایش {{ reports.start_index }} تا {{ reports.end_index }} از {{ reports.paginator.count }} گزارش
+        </div>
+        <div class="flex gap-2">
+          {% if reports.has_previous %}
+          <a href="?{% if request.GET.start_date %}start_date={{ request.GET.start_date }}&{% endif %}{% if request.GET.end_date %}end_date={{ request.GET.end_date }}&{% endif %}{% if request.GET.shift %}shift={{ request.GET.shift }}&{% endif %}{% if request.GET.group %}group={{ request.GET.group }}&{% endif %}page={{ reports.previous_page_number }}" 
+             class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+            <i class="fas fa-chevron-right"></i>
+          </a>
+          {% endif %}
+          
+          <span class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg">
+            {{ reports.number }}
+          </span>
+          
+          {% if reports.has_next %}
+          <a href="?{% if request.GET.start_date %}start_date={{ request.GET.start_date }}&{% endif %}{% if request.GET.end_date %}end_date={{ request.GET.end_date }}&{% endif %}{% if request.GET.shift %}shift={{ request.GET.shift }}&{% endif %}{% if request.GET.group %}group={{ request.GET.group }}&{% endif %}page={{ reports.next_page_number }}" 
+             class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+            <i class="fas fa-chevron-left"></i>
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    
+    {% else %}
+    <div class="p-12 text-center">
+      <i class="fas fa-inbox text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+      <p class="text-xl text-gray-500 dark:text-gray-400">هیچ گزارشی برای این خودرو ثبت نشده است</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Persian Date -->
+<script src="https://cdn.jsdelivr.net/npm/persian-date@latest/dist/persian-date.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/persian-datepicker@latest/dist/js/persian-datepicker.min.js"></script>
+<script>
+  function filterForm() {
+    return {
+      init() {
+        // Wait for Alpine to finish rendering
+        this.$nextTick(() => {
+          // Initialize Persian Date Pickers after DOM is ready
+          setTimeout(() => {
+            $('#start_date').persianDatepicker({
+              format: 'YYYY/MM/DD',
+              initialValue: true,
+              autoClose: true,
+              calendar: { persian: { locale: 'fa' } },
+              observer: true,
+              onSelect: function() {
+                // Optional: trigger change event
+              }
+            });
+            
+            $('#end_date').persianDatepicker({
+              format: 'YYYY/MM/DD',
+              initialValue: true,
+              autoClose: true,
+              calendar: { persian: { locale: 'fa' } },
+              observer: true,
+              onSelect: function() {
+                // Optional: trigger change event
+              }
+            });
+          }, 100);
+        });
+      }
+    };
+  }
+</script>
+{% endblock %}

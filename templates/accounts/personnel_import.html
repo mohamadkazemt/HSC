@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}ایمپورت پرسنل{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-xl font-bold">ایمپورت کاربران از اکسل</h1>
+    <a href="{% url 'accounts:personnel_list' %}" class="text-sm text-gray-600 dark:text-gray-300">بازگشت به مدیریت پرسنل</a>
+  </div>
+
+  {% if messages %}
+  <div class="space-y-2">
+    {% for message in messages %}
+      <div class="p-3 rounded border text-sm {% if message.tags == 'success' %}bg-green-50 border-green-200 text-green-800{% elif message.tags == 'error' %}bg-red-50 border-red-200 text-red-800{% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm space-y-4">
+    <p class="text-sm text-gray-600 dark:text-gray-300">
+      فایل نمونه شامل ستون‌های زیر است: «کد پرسنلی، نام، نام خانوادگی، بخش، قسمت، گروه، سمت، موبایل، کد ملی، گروه کاری»
+    </p>
+    <div>
+      <a href="{% url 'accounts:personnel_import' %}?download=sample" class="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">
+        دانلود فایل نمونه
+      </a>
+    </div>
+    <form method="post" enctype="multipart/form-data" class="space-y-3">
+      {% csrf_token %}
+      <input type="file" name="excel_file" accept=".xlsx,.xls" class="block w-full text-sm text-gray-700 dark:text-gray-200" required />
+      <button class="inline-flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-white hover:bg-green-700">بارگذاری و پردازش</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

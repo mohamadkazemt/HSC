@@ -1,0 +1,342 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}گزارش‌ها و تحلیل آنومالی{% endblock %}
+
+{% block content %}
+<div x-data="{ activeTab: '{{ tab|default:'unit' }}' }">
+  <!-- Filters -->
+  <div class="rounded-2xl border border-gray-200 bg-white p-4 mb-6 shadow-sm dark:bg-gray-800 dark:border-gray-700">
+    <form method="get" class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+      <div class="md:col-span-2">
+        <label class="block text-sm mb-1">تاریخ شروع (شمسی)</label>
+        {{ form.start_date }}
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm mb-1">تاریخ پایان (شمسی)</label>
+        {{ form.end_date }}
+      </div>
+      <div>
+        <button type="submit" class="w-full px-4 py-2 rounded-md bg-gray-900 text-white hover:opacity-90 dark:bg-gray-700">اعمال فیلتر</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Summary widgets -->
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 mb-6">
+    <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:bg-gray-800 dark:border-gray-700">
+      <div class="text-xs text-gray-500 mb-1">همکارترین مسئول پیگیری</div>
+      {% if most_cooperative_officer %}
+      <div class="text-base font-semibold">{{ most_cooperative_officer.user.first_name }} {{ most_cooperative_officer.user.last_name }}</div>
+      <div class="text-xs text-gray-500">ایمن: {{ most_cooperative_officer.safe_anomalies }} | مجموع: {{ most_cooperative_officer.total_anomalies }}</div>
+      {% else %}
+      <div class="text-sm text-gray-500">داده‌ای موجود نیست</div>
+      {% endif %}
+    </div>
+    <!-- Add more widgets if needed -->
+  </div>
+
+  <!-- Tabs -->
+  <div class="border-b border-gray-200 dark:border-gray-700 mb-4 flex flex-wrap gap-2">
+    <button @click="activeTab='unit'" :class="activeTab==='unit' ? 'bg-gray-900 text-white dark:bg-gray-700' : 'bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-200'" class="px-3 py-1.5 rounded-md border">بر اساس واحد</button>
+    <button @click="activeTab='location'" :class="activeTab==='location' ? 'bg-gray-900 text-white dark:bg-gray-700' : 'bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-200'" class="px-3 py-1.5 rounded-md border">بر اساس موقعیت</button>
+    <button @click="activeTab='shift'" :class="activeTab==='shift' ? 'bg-gray-900 text-white dark:bg-gray-700' : 'bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-200'" class="px-3 py-1.5 rounded-md border">بر اساس شیفت</button>
+    <button @click="activeTab='user'" :class="activeTab==='user' ? 'bg-gray-900 text-white dark:bg-gray-700' : 'bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-200'" class="px-3 py-1.5 rounded-md border">بر اساس کاربر</button>
+    <button @click="activeTab='description'" :class="activeTab==='description' ? 'bg-gray-900 text-white dark:bg-gray-700' : 'bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-200'" class="px-3 py-1.5 rounded-md border">بر اساس شرح</button>
+    <button @click="activeTab='type'" :class="activeTab==='type' ? 'bg-gray-900 text-white dark:bg-gray-700' : 'bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-200'" class="px-3 py-1.5 rounded-md border">بر اساس نوع</button>
+  </div>
+
+  <!-- Tab Contents -->
+  <template x-for="tab in ['unit','location','shift','user','description','type']" :key="tab">
+    <section x-show="activeTab===tab" class="space-y-4">
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:bg-gray-800 dark:border-gray-700">
+        <div class="h-72">
+          <canvas :id="`chart_${tab}`"></canvas>
+        </div>
+      </div>
+
+      <!-- Tables per tab -->
+      {% if tab == 'unit' %}{% endif %}
+      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm overflow-x-auto dark:bg-gray-800 dark:border-gray-700">
+        {% if tab == 'unit' %}
+          <table class="min-w-full text-sm">
+            <thead class="text-left text-gray-500">
+              <tr>
+<th class="py-2"><a href="?tab=unit&order_by_unit=unit&direction_unit={% if order_direction_unit == 'asc' %}desc{% else %}asc{% endif %}">واحد</a></th>
+<th class="py-2"><a href="?tab=unit&order_by_unit=total&direction_unit={% if order_direction_unit == 'asc' %}desc{% else %}asc{% endif %}">مجموع</a></th>
+<th class="py-2"><a href="?tab=unit&order_by_unit=safe&direction_unit={% if order_direction_unit == 'asc' %}desc{% else %}asc{% endif %}">ایمن</a></th>
+<th class="py-2"><a href="?tab=unit&order_by_unit=unsafe&direction_unit={% if order_direction_unit == 'asc' %}desc{% else %}asc{% endif %}">ناایمن</a></th>
+                <th class="py-2">% ایمن</th>
+                <th class="py-2">% ناایمن</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in anomalies_by_unit_paginated %}
+              <tr class="border-t border-gray-100 dark:border-gray-700">
+                <td class="py-2">{{ item.unit }}</td>
+                <td class="py-2">{{ item.total }}</td>
+                <td class="py-2">{{ item.safe }}</td>
+                <td class="py-2">{{ item.unsafe }}</td>
+                <td class="py-2">{{ item.safe_percentage|floatformat:1 }}%</td>
+                <td class="py-2">{{ item.unsafe_percentage|floatformat:1 }}%</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <div class="mt-3 flex items-center justify-center gap-2">
+            {% with q=request.GET.urlencode %}
+              {% if anomalies_by_unit_paginated.has_previous %}
+                <a class="px-3 py-1.5 rounded-md border text-sm" href="?tab=unit&page_unit={{ anomalies_by_unit_paginated.previous_page_number }}&{{ q }}">قبلی</a>
+              {% endif %}
+              <span class="text-sm">صفحه {{ anomalies_by_unit_paginated.number }} از {{ paginator_unit.num_pages }}</span>
+              {% if anomalies_by_unit_paginated.has_next %}
+                <a class="px-3 py-1.5 rounded-md border text-sm" href="?tab=unit&page_unit={{ anomalies_by_unit_paginated.next_page_number }}&{{ q }}">بعدی</a>
+              {% endif %}
+            {% endwith %}
+          </div>
+        {% elif tab == 'location' %}
+          <table class="min-w-full text-sm">
+            <thead class="text-left text-gray-500">
+              <tr>
+<th class="py-2"><a href="?tab=location&order_by_location=location__name&direction_location={% if order_direction_location == 'asc' %}desc{% else %}asc{% endif %}">موقعیت</a></th>
+<th class="py-2"><a href="?tab=location&order_by_location=total&direction_location={% if order_direction_location == 'asc' %}desc{% else %}asc{% endif %}">مجموع</a></th>
+<th class="py-2"><a href="?tab=location&order_by_location=safe&direction_location={% if order_direction_location == 'asc' %}desc{% else %}asc{% endif %}">ایمن</a></th>
+<th class="py-2"><a href="?tab=location&order_by_location=unsafe&direction_location={% if order_direction_location == 'asc' %}desc{% else %}asc{% endif %}">ناایمن</a></th>
+                <th class="py-2">% ایمن</th>
+                <th class="py-2">% ناایمن</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in anomalies_by_location_paginated %}
+              <tr class="border-t border-gray-100 dark:border-gray-700">
+                <td class="py-2">{{ item.location__name }}</td>
+                <td class="py-2">{{ item.total }}</td>
+                <td class="py-2">{{ item.safe }}</td>
+                <td class="py-2">{{ item.unsafe }}</td>
+                <td class="py-2">{{ item.safe_percentage|floatformat:1 }}%</td>
+                <td class="py-2">{{ item.unsafe_percentage|floatformat:1 }}%</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <div class="mt-3 flex items-center justify-center gap-2">
+            {% with q=request.GET.urlencode %}
+              {% if anomalies_by_location_paginated.has_previous %}
+                <a class="px-3 py-1.5 rounded-md border text-sm" href="?tab=location&page_location={{ anomalies_by_location_paginated.previous_page_number }}&{{ q }}">قبلی</a>
+              {% endif %}
+              <span class="text-sm">صفحه {{ anomalies_by_location_paginated.number }} از {{ paginator_location.num_pages }}</span>
+              {% if anomalies_by_location_paginated.has_next %}
+                <a class="px-3 py-1.5 rounded-md border text-sm" href="?tab=location&page_location={{ anomalies_by_location_paginated.next_page_number }}&{{ q }}">بعدی</a>
+              {% endif %}
+            {% endwith %}
+          </div>
+        {% elif tab == 'shift' %}
+          <table class="min-w-full text-sm">
+            <thead class="text-left text-gray-500">
+              <tr>
+<th class="py-2"><a href="?tab=shift&order_by_shift=shift&direction_shift={% if order_direction_shift == 'asc' %}desc{% else %}asc{% endif %}">شیفت</a></th>
+<th class="py-2"><a href="?tab=shift&order_by_shift=total&direction_shift={% if order_direction_shift == 'asc' %}desc{% else %}asc{% endif %}">مجموع</a></th>
+<th class="py-2"><a href="?tab=shift&order_by_shift=safe&direction_shift={% if order_direction_shift == 'asc' %}desc{% else %}asc{% endif %}">ایمن</a></th>
+<th class="py-2"><a href="?tab=shift&order_by_shift=unsafe&direction_shift={% if order_direction_shift == 'asc' %}desc{% else %}asc{% endif %}">ناایمن</a></th>
+                <th class="py-2">% ایمن</th>
+                <th class="py-2">% ناایمن</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in anomalies_by_shift_paginated %}
+              <tr class="border-t border-gray-100 dark:border-gray-700">
+                <td class="py-2">{{ item.shift }}</td>
+                <td class="py-2">{{ item.total }}</td>
+                <td class="py-2">{{ item.safe }}</td>
+                <td class="py-2">{{ item.unsafe }}</td>
+                <td class="py-2">{{ item.safe_percentage|floatformat:1 }}%</td>
+                <td class="py-2">{{ item.unsafe_percentage|floatformat:1 }}%</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <div class="mt-3 flex items-center justify-center gap-2">
+            {% with q=request.GET.urlencode %}
+              {% if anomalies_by_shift_paginated.has_previous %}
+                <a class="px-3 py-1.5 rounded-md border text-sm" href="?tab=shift&page_shift={{ anomalies_by_shift_paginated.previous_page_number }}&{{ q }}">قبلی</a>
+              {% endif %}
+              <span class="text-sm">صفحه {{ anomalies_by_shift_paginated.number }} از {{ paginator_shift.num_pages }}</span>
+              {% if anomalies_by_shift_paginated.has_next %}
+                <a class="px-3 py-1.5 rounded-md border text-sm" href="?tab=shift&page_shift={{ anomalies_by_shift_paginated.next_page_number }}&{{ q }}">بعدی</a>
+              {% endif %}
+            {% endwith %}
+          </div>
+        {% elif tab == 'user' %}
+          <table class="min-w-full text-sm">
+            <thead class="text-left text-gray-500">
+              <tr>
+<th class="py-2"><a href="?tab=user&order_by_user=full_name&direction_user={% if order_direction_user == 'asc' %}desc{% else %}asc{% endif %}">کاربر</a></th>
+                <th class="py-2">کد پرسنلی</th>
+<th class="py-2"><a href="?tab=user&order_by_user=total&direction_user={% if order_direction_user == 'asc' %}desc{% else %}asc{% endif %}">مجموع</a></th>
+<th class="py-2"><a href="?tab=user&order_by_user=safe&direction_user={% if order_direction_user == 'asc' %}desc{% else %}asc{% endif %}">ایمن</a></th>
+<th class="py-2"><a href="?tab=user&order_by_user=unsafe&direction_user={% if order_direction_user == 'asc' %}desc{% else %}asc{% endif %}">ناایمن</a></th>
+                <th class="py-2">% ایمن</th>
+                <th class="py-2">% ناایمن</th>
+                <th class="py-2">% از کل</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in anomalies_by_user_paginated %}
+              <tr class="border-t border-gray-100 dark:border-gray-700">
+                <td class="py-2">{{ item.full_name }}</td>
+                <td class="py-2">{{ item.personnel_code }}</td>
+                <td class="py-2">{{ item.total }}</td>
+                <td class="py-2">{{ item.safe }}</td>
+                <td class="py-2">{{ item.unsafe }}</td>
+                <td class="py-2">{{ item.safe_percentage|floatformat:1 }}%</td>
+                <td class="py-2">{{ item.unsafe_percentage|floatformat:1 }}%</td>
+                <td class="py-2">{{ item.total_percentage|floatformat:1 }}%</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <div class="mt-3 flex items-center justify-center gap-2">
+            {% with q=request.GET.urlencode %}
+              {% if anomalies_by_user_paginated.has_previous %}
+                <a class="px-3 py-1.5 rounded-md border text-sm" href="?tab=user&page_user={{ anomalies_by_user_paginated.previous_page_number }}&{{ q }}">قبلی</a>
+              {% endif %}
+              <span class="text-sm">صفحه {{ anomalies_by_user_paginated.number }} از {{ paginator_user.num_pages }}</span>
+              {% if anomalies_by_user_paginated.has_next %}
+                <a class="px-3 py-1.5 rounded-md border text-sm" href="?tab=user&page_user={{ anomalies_by_user_paginated.next_page_number }}&{{ q }}">بعدی</a>
+              {% endif %}
+            {% endwith %}
+          </div>
+        {% elif tab == 'description' %}
+          <table class="min-w-full text-sm">
+            <thead class="text-left text-gray-500">
+              <tr>
+<th class="py-2"><a href="?tab=description&order_by_description=anomalydescription__description&direction_description={% if order_direction_description == 'asc' %}desc{% else %}asc{% endif %}">شرح</a></th>
+<th class="py-2"><a href="?tab=description&order_by_description=total&direction_description={% if order_direction_description == 'asc' %}desc{% else %}asc{% endif %}">مجموع</a></th>
+<th class="py-2"><a href="?tab=description&order_by_description=safe&direction_description={% if order_direction_description == 'asc' %}desc{% else %}asc{% endif %}">ایمن</a></th>
+<th class="py-2"><a href="?tab=description&order_by_description=unsafe&direction_description={% if order_direction_description == 'asc' %}desc{% else %}asc{% endif %}">ناایمن</a></th>
+                <th class="py-2">% ایمن</th>
+                <th class="py-2">% ناایمن</th>
+                <th class="py-2">% از کل</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in anomaly_frequency_by_description_paginated %}
+              <tr class="border-t border-gray-100 dark:border-gray-700">
+                <td class="py-2">{{ item.anomalydescription__description }}</td>
+                <td class="py-2">{{ item.total }}</td>
+                <td class="py-2">{{ item.safe }}</td>
+                <td class="py-2">{{ item.unsafe }}</td>
+                <td class="py-2">{{ item.safe_percentage|floatformat:1 }}%</td>
+                <td class="py-2">{{ item.unsafe_percentage|floatformat:1 }}%</td>
+                <td class="py-2">{{ item.total_percentage|floatformat:1 }}%</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <div class="mt-3 flex items-center justify-center gap-2">
+            {% with q=request.GET.urlencode %}
+              {% if anomaly_frequency_by_description_paginated.has_previous %}
+                <a class="px-3 py-1.5 rounded-md border text-sm" href="?tab=description&page_description={{ anomaly_frequency_by_description_paginated.previous_page_number }}&{{ q }}">قبلی</a>
+              {% endif %}
+              <span class="text-sm">صفحه {{ anomaly_frequency_by_description_paginated.number }} از {{ paginator_description.num_pages }}</span>
+              {% if anomaly_frequency_by_description_paginated.has_next %}
+                <a class="px-3 py-1.5 rounded-md border text-sm" href="?tab=description&page_description={{ anomaly_frequency_by_description_paginated.next_page_number }}&{{ q }}">بعدی</a>
+              {% endif %}
+            {% endwith %}
+          </div>
+        {% elif tab == 'type' %}
+          <table class="min-w-full text-sm">
+            <thead class="text-left text-gray-500">
+              <tr>
+                <th class="py-2">نوع</th>
+                <th class="py-2">مجموع</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in anomaly_count_by_type %}
+              <tr class="border-t border-gray-100 dark:border-gray-700">
+                <td class="py-2">{{ item.anomalytype__type }}</td>
+                <td class="py-2">{{ item.total }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      </div>
+    </section>
+  </template>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+    // Prefer server-provided context; as a fallback, fetch API
+    const apiUrl = new URL("{% url 'anomalis:anomaly_reports_api' %}", window.location.origin);
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('start_date')) apiUrl.searchParams.set('start_date', params.get('start_date'));
+    if (params.get('end_date')) apiUrl.searchParams.set('end_date', params.get('end_date'));
+
+    try {
+      const res = await fetch(apiUrl);
+      const data = await res.json();
+
+      const charts = {
+        unit: {
+          labels: data.anomalies_by_unit.map(i => i.unit || 'نامشخص'),
+          datasets: [
+            {label:'مجموع', data: data.anomalies_by_unit.map(i=>i.total), backgroundColor:'rgba(54,162,235,0.5)'},
+            {label:'ایمن', data: data.anomalies_by_unit.map(i=>i.safe), backgroundColor:'rgba(75,192,192,0.5)'},
+            {label:'ناایمن', data: data.anomalies_by_unit.map(i=>i.unsafe), backgroundColor:'rgba(255,99,132,0.5)'}
+          ]
+        },
+        location: {
+          labels: data.anomalies_by_location.map(i => i["location__name"] || 'نامشخص'),
+          datasets: [
+            {label:'مجموع', data: data.anomalies_by_location.map(i=>i.total), backgroundColor:'rgba(54,162,235,0.5)'},
+            {label:'ایمن', data: data.anomalies_by_location.map(i=>i.safe), backgroundColor:'rgba(75,192,192,0.5)'},
+            {label:'ناایمن', data: data.anomalies_by_location.map(i=>i.unsafe), backgroundColor:'rgba(255,99,132,0.5)'}
+          ]
+        },
+        shift: {
+          labels: data.anomalies_by_shift.map(i => i.shift || 'نامشخص'),
+          datasets: [
+            {label:'مجموع', data: data.anomalies_by_shift.map(i=>i.total), backgroundColor:'rgba(54,162,235,0.5)'},
+            {label:'ایمن', data: data.anomalies_by_shift.map(i=>i.safe), backgroundColor:'rgba(75,192,192,0.5)'},
+            {label:'ناایمن', data: data.anomalies_by_shift.map(i=>i.unsafe), backgroundColor:'rgba(255,99,132,0.5)'}
+          ]
+        },
+        user: {
+          labels: data.anomalies_by_user.map(i => `${i.full_name} (${i.personnel_code||''})`),
+          datasets: [
+            {label:'مجموع', data: data.anomalies_by_user.map(i=>i.total), backgroundColor:'rgba(54,162,235,0.5)'},
+            {label:'ایمن', data: data.anomalies_by_user.map(i=>i.safe), backgroundColor:'rgba(75,192,192,0.5)'},
+            {label:'ناایمن', data: data.anomalies_by_user.map(i=>i.unsafe), backgroundColor:'rgba(255,99,132,0.5)'}
+          ]
+        },
+        description: {
+          labels: data.anomaly_frequency_by_description.map(i => i["anomalydescription__description"] || 'نامشخص'),
+          datasets: [
+            {label:'مجموع', data: data.anomaly_frequency_by_description.map(i=>i.total), backgroundColor:'rgba(54,162,235,0.5)'},
+            {label:'ایمن', data: data.anomaly_frequency_by_description.map(i=>i.safe), backgroundColor:'rgba(75,192,192,0.5)'},
+            {label:'ناایمن', data: data.anomaly_frequency_by_description.map(i=>i.unsafe), backgroundColor:'rgba(255,99,132,0.5)'}
+          ]
+        },
+        type: {
+          labels: data.anomaly_count_by_type.map(i => i["anomalytype__type"] || 'نامشخص'),
+          datasets: [
+            {label:'مجموع', data: data.anomaly_count_by_type.map(i=>i.total), backgroundColor:'rgba(54,162,235,0.5)'}
+          ]
+        }
+      };
+
+      const options = {responsive:true, maintainAspectRatio:false, scales:{y:{beginAtZero:true}}};
+      Object.keys(charts).forEach(key => {
+        const ctx = document.getElementById(`chart_${key}`);
+        if (ctx) new Chart(ctx, {type: key==='type' ? 'pie' : 'bar', data: charts[key], options});
+      });
+    } catch (e) { console.error(e); }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}بانک سوالات چک‌لیست{% endblock %}
+
+{% block content %}
+<div x-data="questionList()" x-init="init()" class="space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-xl font-bold">بانک سوالات چک‌لیست</h1>
+    <div class="flex items-center gap-2">
+      <a href="{% url 'checklist_app:general_question_form' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 shadow">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+        افزودن سوال جدید
+      </a>
+      <button @click="openImport=true" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 shadow">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M7.5 12 12 16.5m0 0L16.5 12M12 16.5V3"/></svg>
+        ایمپورت از اکسل
+      </button>
+      <button :disabled="selected.size===0" @click="confirmBulkDelete" :class="selected.size? 'bg-red-600 hover:bg-red-700 text-white shadow' : 'bg-gray-200 text-gray-500 cursor-not-allowed'" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg">
+        حذف دسته‌جمعی
+      </button>
+    </div>
+  </div>
+
+  <form method="get" class="grid grid-cols-1 md:grid-cols-5 gap-3">
+    <input name="search" value="{{ search_query }}" placeholder="جستجو در متن سوال..." class="md:col-span-2 rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+    <select name="scope" class="rounded-md border border-gray-300 px-3 py-2">
+      <option value="">همه محدوده‌ها</option>
+      <option value="machine" {% if scope_filter == 'machine' %}selected{% endif %}>ماشین</option>
+      <option value="location" {% if scope_filter == 'location' %}selected{% endif %}>مکان</option>
+      <option value="contractor_vehicle" {% if scope_filter == 'contractor_vehicle' %}selected{% endif %}>ماشین‌آلات پیمانکار</option>
+    </select>
+    <select name="type" class="rounded-md border border-gray-300 px-3 py-2">
+      <option value="">همه انواع</option>
+      <option value="text" {% if type_filter == 'text' %}selected{% endif %}>متنی</option>
+      <option value="option" {% if type_filter == 'option' %}selected{% endif %}>گزینه‌ای</option>
+    </select>
+    <button class="rounded-md bg-gray-800 text-white px-4 py-2 hover:bg-gray-900">اعمال فیلتر</button>
+  </form>
+
+  <div class="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-100 dark:border-gray-700">
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+        <tr>
+          <th class="p-3 w-10 text-center"><input @change="toggleAll($event)" type="checkbox" class="h-4 w-4 rounded border-gray-300"></th>
+          <th class="p-3 text-right">متن سوال</th>
+          <th class="p-3 text-right">محدوده‌ها</th>
+          <th class="p-3 text-right">نوع</th>
+          <th class="p-3 text-right">آیتم‌های مرتبط</th>
+          <th class="p-3 text-center">اقدامات</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+        {% for q in questions %}
+        <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-700/50">
+          <td class="p-3 text-center">
+            <input @change="toggle({{ q.id }}, $event)" type="checkbox" class="h-4 w-4 rounded border-gray-300">
+          </td>
+          <td class="p-3 align-top max-w-xl"><div class="line-clamp-2">{{ q.text }}</div></td>
+          <td class="p-3 align-top">
+            {% for s in q.question_scopes %}
+              {% if s == 'machine' %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs ml-1">ماشین</span>
+              {% elif s == 'location' %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs ml-1">مکان</span>
+              {% else %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs ml-1">پیمانکار</span>
+              {% endif %}
+            {% endfor %}
+          </td>
+          <td class="p-3 align-top">
+            {% if q.question_type == 'text' %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-xs">متنی</span>
+            {% else %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 text-xs">گزینه‌ای</span>
+            {% endif %}
+          </td>
+          <td class="p-3 align-top text-xs text-gray-700 dark:text-gray-300">
+            {% if 'machine' in q.question_scopes %}
+              <div><span class="font-medium">انواع ماشین:</span> {{ q.machine_types.all|join:", " }}</div>
+            {% endif %}
+            {% if 'location' in q.question_scopes %}
+              <div><span class="font-medium">بخش‌های مکانی:</span> {{ q.location_sections.all|join:", " }}</div>
+            {% endif %}
+            {% if 'contractor_vehicle' in q.question_scopes %}
+              <div><span class="font-medium">دسته‌بندی خودرو:</span> {{ q.vehicle_categories|join:", " }}</div>
+            {% endif %}
+          </td>
+          <td class="p-3 text-center">
+            <div class="flex items-center justify-center gap-2">
+              <a href="{% url 'checklist_app:general_question_edit' q.id %}" class="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-indigo-50 text-indigo-600" title="ویرایش">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652l-9.546 9.546a4.5 4.5 0 0 1-1.897 1.13l-3.017.906.906-3.017a4.5 4.5 0 0 1 1.13-1.897l7.085-7.085"/></svg>
+              </a>
+              <button @click="confirmDelete({{ q.id }})" class="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-red-50 text-red-600" title="حذف">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9M9 5.25h6M4.5 7.5h15M6 7.5l1 12.75a2.25 2.25 0 0 0 2.244 2.25h5.512A2.25 2.25 0 0 0 17 20.25L18 7.5"/></svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="p-6 text-center text-gray-500">موردی یافت نشد.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flex items-center justify-between">
+    <div class="text-sm text-gray-500">صفحه {{ questions.number }} از {{ questions.paginator.num_pages }}</div>
+    <div class="flex items-center gap-2">
+      {% if questions.has_previous %}
+      <a class="px-3 py-1 rounded border" href="?page={{ questions.previous_page_number }}">قبلی</a>
+      {% endif %}
+      {% if questions.has_next %}
+      <a class="px-3 py-1 rounded border" href="?page={{ questions.next_page_number }}">بعدی</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Import Modal -->
+  <div x-show="openImport" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div @click.away="openImport=false" class="w-full max-w-lg rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800">
+      <h3 class="text-lg font-semibold mb-4">ایمپورت سوالات از اکسل</h3>
+      <form @submit.prevent="importExcel" class="space-y-4">
+        <input type="file" x-ref="file" accept=".xlsx,.xls" class="w-full rounded border border-gray-300 p-2 bg-white">
+        <div class="flex items-center justify-end gap-2">
+          <button type="button" @click="openImport=false" class="px-4 py-2 rounded border">انصراف</button>
+          <button type="submit" class="px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700">آپلود و پردازش</button>
+        </div>
+      </form>
+      <template x-if="importResult">
+        <div class="mt-4 text-sm">
+          <div class="font-medium" x-text="importResult.message"></div>
+          <ul class="mt-2 list-disc pr-5 max-h-40 overflow-y-auto" >
+            <template x-for="e in importResult.errors" :key="e">
+              <li class="text-red-600" x-text="e"></li>
+            </template>
+          </ul>
+        </div>
+      </template>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function getCSRF(){ return (document.cookie.match(/csrftoken=([^;]+)/)||[])[1]; }
+  function questionList(){
+    return {
+      selected: new Set(),
+      openImport: false,
+      importResult: null,
+      init(){},
+      toggle(id, e){ if(e.target.checked){ this.selected.add(id); } else { this.selected.delete(id);} },
+      toggleAll(e){
+        this.selected.clear();
+        document.querySelectorAll('tbody input[type=checkbox]').forEach(cb=>{ cb.checked = e.target.checked; if(e.target.checked){ this.selected.add(parseInt(cb.getAttribute('x-on:change')?.match(/\d+/)[0]||cb.value)||NaN); }});
+      },
+      async confirmDelete(id){
+        if(!confirm('آیا از حذف این سوال مطمئن هستید؟')) return;
+        await fetch('{% url "checklist_app:general_question_delete" %}',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','X-CSRFToken':getCSRF()},
+          body: JSON.stringify({question_id:id})
+        });
+        location.reload();
+      },
+      async confirmBulkDelete(){
+        if(this.selected.size===0) return;
+        if(!confirm('حذف دسته‌جمعی سوالات انتخاب‌شده؟')) return;
+        await fetch('{% url "checklist_app:general_question_delete" %}',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','X-CSRFToken':getCSRF()},
+          body: JSON.stringify({question_ids:[...this.selected]})
+        });
+        location.reload();
+      },
+      async importExcel(e){
+        const f = this.$refs.file.files[0];
+        if(!f){ alert('فایل را انتخاب کنید'); return; }
+        const fd = new FormData();
+        fd.append('excel_file', f);
+        const res = await fetch('{% url "checklist_app:import_questions" %}', { method:'POST', headers:{'X-CSRFToken':getCSRF()}, body: fd });
+        this.importResult = await res.json();
+      }
+    }
+  }
+</script>
+{% endblock %}

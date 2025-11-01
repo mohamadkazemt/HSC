@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load jalali_utils %}
+{% block title %}تجهیزات اورژانس{% endblock %}
+
+{% block content %}
+<div class="rounded-lg shadow-lg bg-white dark:bg-gray-800">
+  <div class="p-4 rounded-t-lg bg-gradient-to-l from-rose-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <i class="fa-solid fa-screwdriver-wrench text-rose-600"></i>
+      <h3 class="font-semibold">لیست تجهیزات</h3>
+    </div>
+    <a href="{% url 'emergency_services:create_equipment' %}" class="px-3 py-1.5 rounded-md bg-rose-600 text-white hover:bg-rose-700 text-sm">
+      <i class="fa-solid fa-plus ml-1"></i> افزودن تجهیز
+    </a>
+  </div>
+
+  <!-- Filters -->
+  <div class="p-4 grid grid-cols-1 md:grid-cols-4 gap-3 border-b border-gray-100 dark:border-gray-700">
+    <form method="get" class="contents">
+      <div>
+        <label class="block text-sm mb-1">وضعیت</label>
+        <select name="status" class="select2 w-full">
+          <option value="">همه</option>
+          <option value="active" {% if filters.status == 'active' %}selected{% endif %}>فعال</option>
+          <option value="inactive" {% if filters.status == 'inactive' %}selected{% endif %}>غیرفعال</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm mb-1">کالیبراسیون</label>
+        <select name="calibration_status" class="select2 w-full">
+          <option value="">همه</option>
+          <option value="due" {% if filters.calibration_status == 'due' %}selected{% endif %}>نزدیک</option>
+          <option value="overdue" {% if filters.calibration_status == 'overdue' %}selected{% endif %}>عقب‌افتاده</option>
+        </select>
+      </div>
+      <div class="md:col-span-2 flex items-end justify-end gap-2">
+        <a href="?" class="px-3 py-1.5 rounded-md bg-gray-100 text-gray-700">حذف فیلتر</a>
+        <button type="submit" class="px-3 py-1.5 rounded-md bg-rose-600 text-white">جستجو</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Table -->
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-700/50">
+        <tr class="text-right">
+          <th class="px-4 py-2">نام تجهیز</th>
+          <th class="px-4 py-2">سریال</th>
+          <th class="px-4 py-2">آخرین کالیبراسیون</th>
+          <th class="px-4 py-2">کالیبراسیون بعدی</th>
+          <th class="px-4 py-2">وضعیت کالیبراسیون</th>
+          <th class="px-4 py-2">عملیات</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+        {% now 'U' as now_ts %}
+        {% for e in equipments %}
+          {% with e_ts=e.next_calibration_date|date:'U' %}
+          <tr>
+            <td class="px-4 py-2 font-medium">{{ e.name }}</td>
+            <td class="px-4 py-2">{{ e.serial_number }}</td>
+            <td class="px-4 py-2">{{ e.last_calibration_date|to_jalali:'%Y/%m/%d' }}</td>
+            <td class="px-4 py-2">{{ e.next_calibration_date|to_jalali:'%Y/%m/%d' }}</td>
+            <td class="px-4 py-2">
+              {% if e_ts < now_ts %}
+                <span class="px-2 py-1 rounded text-xs bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">کالیبراسیون عقب‌افتاده</span>
+              {% elif e.is_calibration_due %}
+                <span class="px-2 py-1 rounded text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">نزدیک به کالیبراسیون</span>
+              {% else %}
+                <span class="px-2 py-1 rounded text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">معتبر</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2 space-x-2 space-x-reverse">
+              <a href="{% url 'emergency_services:edit_equipment' e.id %}" class="text-indigo-600 hover:underline">ویرایش</a>
+            </td>
+          </tr>
+          {% endwith %}
+        {% empty %}
+          <tr><td colspan="6" class="px-4 py-6 text-center text-gray-500">رکوردی یافت نشد</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="p-4">
+    {% if equipments.has_other_pages %}
+      <div class="flex items-center justify-center gap-1">
+        {% if equipments.has_previous %}
+          <a class="px-3 py-1 rounded bg-gray-100" href="?page={{ equipments.previous_page_number }}">قبلی</a>
+        {% endif %}
+        <span class="px-3 py-1">صفحه {{ equipments.number }} از {{ equipments.paginator.num_pages }}</span>
+        {% if equipments.has_next %}
+          <a class="px-3 py-1 rounded bg-gray-100" href="?page={{ equipments.next_page_number }}">بعدی</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+  $(function(){ $('.select2').select2({ width:'100%', dir:'rtl' }); });
+</script>
+{% endblock %}

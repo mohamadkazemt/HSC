@@ -1,0 +1,4 @@
+workshop_code,machine_type,machine_workgroup,ownership,contractor,is_active
+M-001,بلدوزر,حفاری,Company,,True
+M-002,لودر,بارگیری,Contractor,پیمانکار احمدی,True
+M-003,دریل,حفاری,Company,,True

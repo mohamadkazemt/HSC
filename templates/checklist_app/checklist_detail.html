@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}جزئیات چک‌لیست {{ checklist.id }}{% endblock %}
+{% load checklist_filters %}
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-xl font-bold">جزئیات چک‌لیست #{{ checklist.id }}</h1>
+    <div class="flex items-center gap-2">
+      <a href="{% url 'checklist_app:general_checklist_list' %}" class="text-sm text-gray-600 hover:text-gray-900">بازگشت</a>
+      <a href="{% url 'checklist_app:export_checklist_pdf' checklist.id %}" class="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-indigo-600 text-white hover:bg-indigo-700">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5v-1.5A2.25 2.25 0 0 1 9 3.75h6A2.25 2.25 0 0 1 17.25 6v1.5M6.75 16.5H5.25A2.25 2.25 0 0 1 3 14.25v-3A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v3a2.25 2.25 0 0 1-2.25 2.25h-1.5M6.75 16.5v2.25A2.25 2.25 0 0 0 9 21h6a2.25 2.25 0 0 0 2.25-2.25V16.5M6.75 16.5h10.5"/></svg>
+        خروجی PDF
+      </a>
+    </div>
+  </div>
+
+  <!-- Info card -->
+  <div class="rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 shadow-md p-4">
+    <h3 class="font-semibold mb-3">اطلاعات کلی</h3>
+    <dl class="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 text-sm">
+      <dt class="text-gray-500">تاریخ</dt><dd>{{ checklist.date|to_jalali }}</dd>
+      <dt class="text-gray-500">نوع</dt><dd>{{ checklist.get_checklist_type_display }}</dd>
+      <dt class="text-gray-500">شیفت</dt><dd>{{ checklist.get_shift_display }}</dd>
+      <dt class="text-gray-500">گروه</dt><dd>{{ checklist.shift_group }}</dd>
+      <dt class="text-gray-500">ثبت‌کننده</dt><dd>{{ checklist.user.get_full_name|default:checklist.user.username }}</dd>
+      <dt class="text-gray-500">مورد</dt>
+      <dd>
+        {% if checklist.checklist_type == 'machine' %}
+          {{ checklist.machine.workshop_code }}
+        {% elif checklist.checklist_type == 'location' %}
+          {{ checklist.location_section.location.name }} - {{ checklist.location_section.section }}
+        {% else %}
+          {{ checklist.contractor_vehicle.plate_number }}
+        {% endif %}
+      </dd>
+    </dl>
+  </div>
+
+  <!-- Answers card -->
+  <div class="rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 shadow-md">
+    <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+      <svg class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12m-12 4.5h12m-12 4.5h12M3.75 6.75h.008v.008H3.75V6.75Zm0 4.5h.008v.008H3.75v-.008Zm0 4.5h.008v.008H3.75v-.008Z"/></svg>
+      <h3 class="font-semibold">سوالات و پاسخ‌ها</h3>
+    </div>
+    <ul class="divide-y divide-gray-100 dark:divide-gray-700">
+      {% for a in answers %}
+      <li class="px-4 py-3 {% if a.is_unacceptable %}bg-red-50{% endif %}">
+        <div class="font-medium mb-1 flex items-center gap-2">
+          {% if a.is_unacceptable %}
+            <svg class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3h.008v.008H12V15.75Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/></svg>
+          {% endif %}
+          <span>{{ a.question.text }}</span>
+        </div>
+        <div class="text-sm">
+          {% if a.selected_option %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs
+              {% if a.is_unacceptable %}bg-red-100 text-red-700{% else %}bg-emerald-100 text-emerald-700{% endif %}">
+              {{ a.selected_option }}
+            </span>
+          {% else %}
+            {{ a.answer_text }}
+          {% endif %}
+          {% if a.description %}
+            <div class="text-gray-500 mt-1">توضیحات: {{ a.description }}</div>
+          {% endif %}
+        </div>
+      </li>
+      {% empty %}
+      <li class="py-6 text-center text-gray-500">پاسخی ثبت نشده است.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

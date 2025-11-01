@@ -12,9 +12,17 @@
 
 {% block content %}
 <div x-data="permissionsPage()" x-init="init()" class="space-y-6">
-  <!-- Page header -->
-  <div class="flex items-center justify-between">
-    <h1 class="text-xl font-semibold">مدیریت دسترسی‌ها</h1>
+  <!-- Page header with icon -->
+  <div class="flex items-center gap-x-3">
+    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg">
+      <svg class="h-7 w-7 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+      </svg>
+    </div>
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">مدیریت دسترسی‌ها</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400">تعریف و مدیریت دسترسی‌های کاربران، قسمت‌ها، بخش‌ها و گروه‌ها</p>
+    </div>
   </div>
 
   <!-- Messages -->
@@ -34,13 +42,23 @@
   {% endif %}
 
   <!-- Tabs -->
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
     <div class="border-b border-gray-200 dark:border-gray-700 px-4">
       <nav class="flex space-x-2 space-x-reverse" aria-label="Tabs">
-        <button @click="activeTab='add'" :class="activeTab==='add' ? 'text-indigo-600 border-indigo-600' : 'text-gray-500 border-transparent hover:text-gray-700'" class="py-3 px-4 text-sm font-medium border-b-2">
+        <button @click="activeTab='add'" 
+                :class="activeTab==='add' ? 'text-indigo-600 border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/20' : 'text-gray-500 border-transparent hover:text-gray-700 dark:hover:text-gray-300'" 
+                class="py-3 px-5 text-sm font-semibold border-b-2 transition-all duration-200 flex items-center gap-2 rounded-t-lg">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
           افزودن دسترسی جدید
         </button>
-        <button @click="activeTab='manage'; loadPermissions()" :class="activeTab==='manage' ? 'text-indigo-600 border-indigo-600' : 'text-gray-500 border-transparent hover:text-gray-700'" class="py-3 px-4 text-sm font-medium border-b-2">
+        <button @click="activeTab='manage'; loadPermissions()" 
+                :class="activeTab==='manage' ? 'text-indigo-600 border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/20' : 'text-gray-500 border-transparent hover:text-gray-700 dark:hover:text-gray-300'" 
+                class="py-3 px-5 text-sm font-semibold border-b-2 transition-all duration-200 flex items-center gap-2 rounded-t-lg">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 0 1 0 3.75H5.625a1.875 1.875 0 0 1 0-3.75Z" />
+          </svg>
           مشاهده و مدیریت دسترسی‌ها
         </button>
       </nav>
@@ -55,43 +73,74 @@
 
           <!-- Step 1: Select Entity Type -->
           <div class="space-y-2">
-            <label class="block text-sm font-medium">نوع دسترسی</label>
-            <select x-model="entityType" name="entity_type" class="w-full rounded-lg border-gray-300 dark:bg-gray-900 dark:border-gray-700 focus:ring-indigo-500 focus:border-indigo-500">
+            <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+              <svg class="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z" />
+              </svg>
+              نوع دسترسی
+            </label>
+            <select x-model="entityType" name="entity_type" class="w-full rounded-lg border-gray-300 dark:bg-gray-900 dark:border-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-shadow">
               <option value="" disabled selected>انتخاب کنید...</option>
-              <option value="part">قسمت</option>
-              <option value="section">بخش</option>
-              <option value="unit_group">گروه</option>
-              <option value="position">سمت</option>
-              <option value="user">کاربر</option>
+              <option value="part">📦 قسمت</option>
+              <option value="section">🏢 بخش</option>
+              <option value="unit_group">👥 گروه</option>
+              <option value="position">🎯 سمت</option>
+              <option value="user">👤 کاربر</option>
             </select>
           </div>
 
           <!-- Step 2: Select Specific Entity (dynamic) -->
-          <div class="grid grid-cols-1 gap-4">
+          <div class="space-y-4">
             <!-- Part -->
-            <div x-show="entityType==='part'" x-cloak>
-              <label class="block text-sm font-medium">انتخاب قسمت</label>
-              <select x-ref="partSelect" class="entity-select w-full"></select>
+            <div x-show="entityType==='part'" x-cloak class="space-y-2">
+              <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                <svg class="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9" />
+                </svg>
+                انتخاب قسمت
+              </label>
+              <select x-ref="partSelect" class="entity-select w-full rounded-lg"></select>
             </div>
             <!-- Section -->
-            <div x-show="entityType==='section'" x-cloak>
-              <label class="block text-sm font-medium">انتخاب بخش</label>
-              <select x-ref="sectionSelect" class="entity-select w-full"></select>
+            <div x-show="entityType==='section'" x-cloak class="space-y-2">
+              <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                <svg class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+                </svg>
+                انتخاب بخش
+              </label>
+              <select x-ref="sectionSelect" class="entity-select w-full rounded-lg"></select>
             </div>
             <!-- Unit Group -->
-            <div x-show="entityType==='unit_group'" x-cloak>
-              <label class="block text-sm font-medium">انتخاب گروه</label>
-              <select x-ref="unitGroupSelect" class="entity-select w-full"></select>
+            <div x-show="entityType==='unit_group'" x-cloak class="space-y-2">
+              <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                <svg class="h-5 w-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                </svg>
+                انتخاب گروه
+              </label>
+              <select x-ref="unitGroupSelect" class="entity-select w-full rounded-lg"></select>
             </div>
             <!-- Position -->
-            <div x-show="entityType==='position'" x-cloak>
-              <label class="block text-sm font-medium">انتخاب سمت</label>
-              <select x-ref="positionSelect" class="entity-select w-full"></select>
+            <div x-show="entityType==='position'" x-cloak class="space-y-2">
+              <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                <svg class="h-5 w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                </svg>
+                انتخاب سمت
+              </label>
+              <select x-ref="positionSelect" class="entity-select w-full rounded-lg"></select>
             </div>
             <!-- User -->
-            <div x-show="entityType==='user'" x-cloak>
-              <label class="block text-sm font-medium">انتخاب کاربر</label>
-              <select x-ref="userSelect" class="entity-select w-full"></select>
+            <div x-show="entityType==='user'" x-cloak class="space-y-2">
+              <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                <svg class="h-5 w-5 text-pink-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                </svg>
+                انتخاب کاربر
+              </label>
+              <select x-ref="userSelect" class="entity-select w-full rounded-lg"></select>
             </div>
             <!-- Hidden input that actually submits selected entity id -->
             <input type="hidden" name="entity_id" :value="selectedEntityId">
@@ -99,44 +148,110 @@
 
           <!-- Step 3: Select Pages (Views) -->
           <div class="space-y-2">
-            <label class="block text-sm font-medium">انتخاب صفحات</label>
-            <select x-ref="viewsSelect" name="view_name" multiple class="views-select w-full">
-              {% for v in views_with_labels %}
-                <option value="{{ v.name }}">{{ v.label }}</option>
-              {% endfor %}
+            <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+              <svg class="h-5 w-5 text-teal-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 16.875h3.375m0 0h3.375m-3.375 0V13.5m0 3.375v3.375M6 10.5h2.25a2.25 2.25 0 0 0 2.25-2.25V6a2.25 2.25 0 0 0-2.25-2.25H6A2.25 2.25 0 0 0 3.75 6v2.25A2.25 2.25 0 0 0 6 10.5Zm0 9.75h2.25A2.25 2.25 0 0 0 10.5 18v-2.25a2.25 2.25 0 0 0-2.25-2.25H6a2.25 2.25 0 0 0-2.25 2.25V18A2.25 2.25 0 0 0 6 20.25Zm9.75-9.75H18a2.25 2.25 0 0 0 2.25-2.25V6A2.25 2.25 0 0 0 18 3.75h-2.25A2.25 2.25 0 0 0 13.5 6v2.25a2.25 2.25 0 0 0 2.25 2.25Z" />
+              </svg>
+              انتخاب صفحات (چندگانه)
+            </label>
+            <select x-ref="viewsSelect" name="view_name" multiple class="views-select w-full rounded-lg" :disabled="!selectedEntityId">
+              <!-- لیست به صورت داینامیک پر می‌شود -->
             </select>
+            <p x-show="!selectedEntityId" class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              لطفاً ابتدا موجودیت را انتخاب کنید
+            </p>
           </div>
 
-          <!-- Step 4: Access Levels -->
+          <!-- Step 4: Access Levels with Toggle Switches -->
           <div class="space-y-3">
             <div class="flex items-center justify-between">
-              <label class="text-sm font-medium">سطوح دسترسی</label>
-              <button type="button" @click="toggleAllPermissions()" class="text-xs text-indigo-600 hover:text-indigo-700">انتخاب/لغو همه</button>
+              <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                <svg class="h-5 w-5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+                </svg>
+                سطوح دسترسی
+              </label>
+              <button type="button" @click="toggleAllPermissions()" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-900/50 transition-colors">
+                انتخاب/لغو همه
+              </button>
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <label class="inline-flex items-center gap-2">
-                <input x-model="perm.view" type="checkbox" name="can_view" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                <span class="text-sm">مشاهده</span>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 dark:bg-gray-900/30 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+              <!-- View Permission -->
+              <label class="relative flex items-center justify-between p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all cursor-pointer">
+                <div class="flex items-center gap-3">
+                  <svg class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  </svg>
+                  <span class="text-sm font-medium">مشاهده</span>
+                </div>
+                <input x-model="perm.view" type="checkbox" name="can_view" class="sr-only peer">
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
               </label>
-              <label class="inline-flex items-center gap-2">
-                <input x-model="perm.add" type="checkbox" name="can_add" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                <span class="text-sm">افزودن</span>
+              <!-- Add Permission -->
+              <label class="relative flex items-center justify-between p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all cursor-pointer">
+                <div class="flex items-center gap-3">
+                  <svg class="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  <span class="text-sm font-medium">افزودن</span>
+                </div>
+                <input x-model="perm.add" type="checkbox" name="can_add" class="sr-only peer">
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
               </label>
-              <label class="inline-flex items-center gap-2">
-                <input x-model="perm.edit" type="checkbox" name="can_edit" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                <span class="text-sm">ویرایش</span>
+              <!-- Edit Permission -->
+              <label class="relative flex items-center justify-between p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all cursor-pointer">
+                <div class="flex items-center gap-3">
+                  <svg class="h-5 w-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                  </svg>
+                  <span class="text-sm font-medium">ویرایش</span>
+                </div>
+                <input x-model="perm.edit" type="checkbox" name="can_edit" class="sr-only peer">
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
               </label>
-              <label class="inline-flex items-center gap-2">
-                <input x-model="perm.delete" type="checkbox" name="can_delete" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                <span class="text-sm">حذف</span>
+              <!-- Delete Permission -->
+              <label class="relative flex items-center justify-between p-3 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all cursor-pointer">
+                <div class="flex items-center gap-3">
+                  <svg class="h-5 w-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                  </svg>
+                  <span class="text-sm font-medium">حذف</span>
+                </div>
+                <input x-model="perm.delete" type="checkbox" name="can_delete" class="sr-only peer">
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
               </label>
             </div>
           </div>
 
-          <div class="pt-2">
-            <button type="submit" class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              ذخیره دسترسی
-            </button>
+          <div class="pt-4 flex flex-col gap-3">
+            <!-- پیغام هشدار وقتی هیچ صفحه‌ای موجود نیست -->
+            <div x-show="selectedEntityId && availableViewsCount === 0" class="flex items-center gap-2 px-4 py-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-sm">
+              <svg class="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+              </svg>
+              <span>تمام دسترسی‌ها برای این موجودیت قبلاً تعریف شده‌اند. لطفاً موجودیت دیگری انتخاب کنید.</span>
+            </div>
+            
+            <div class="flex items-center gap-3">
+              <button type="submit" 
+                      :disabled="!selectedEntityId || availableViewsCount === 0"
+                      :class="(!selectedEntityId || availableViewsCount === 0) ? 'opacity-50 cursor-not-allowed' : 'hover:from-indigo-700 hover:to-purple-700 hover:shadow-xl'"
+                      class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 shadow-lg transition-all duration-200">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                ذخیره دسترسی
+              </button>
+              <button type="reset" 
+                      @click="availableViewsCount = 0; selectedEntityId = ''; entityType = ''; resetViewsSelect();"
+                      class="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                </svg>
+                پاک کردن فرم
+              </button>
+            </div>
           </div>
         </form>
       </section>
@@ -169,6 +284,7 @@
         activeTab: 'add',
         entityType: '',
         selectedEntityId: '',
+        availableViewsCount: 0,
         perm: { view: true, add: false, edit: false, delete: false },
         dataSets: {
           part: {{ parts|safe }},
@@ -181,6 +297,9 @@
           // Initialize select2 for entity selects lazily when entityType changes
           this.$watch('entityType', (type)=>{
             this.selectedEntityId = '';
+            this.availableViewsCount = 0;
+            // خالی کردن لیست صفحات هنگام تغییر نوع
+            this.resetViewsSelect();
             this.setupEntitySelect(type);
           });
           // Initialize views select
@@ -210,12 +329,96 @@
             placeholder: 'جستجو و انتخاب...'
           }).on('change', (e)=>{
             this.selectedEntityId = e.target.value;
+            // به‌روزرسانی لیست صفحات بر اساس موجودیت انتخاب شده
+            if(this.selectedEntityId){
+              this.updateAvailableViews();
+            }
           });
         },
         initViewsSelect(){
           const el = this.$refs.viewsSelect;
-          // Init select2 multi on existing options
-          $(el).select2({ width: '100%', dir: 'rtl', placeholder: 'انتخاب صفحه(ها)...' });
+          // خالی کردن لیست در ابتدا
+          $(el).empty();
+          $(el).append(new Option('لطفاً ابتدا موجودیت را انتخاب کنید', '', true, true));
+          // Init select2 multi
+          $(el).select2({ 
+            width: '100%', 
+            dir: 'rtl', 
+            placeholder: 'انتخاب صفحه(ها)...',
+            disabled: true
+          });
+        },
+        resetViewsSelect(){
+          const el = this.$refs.viewsSelect;
+          if($(el).hasClass('select2-hidden-accessible')){
+            $(el).select2('destroy');
+          }
+          $(el).empty();
+          $(el).append(new Option('لطفاً ابتدا موجودیت را انتخاب کنید', '', true, true));
+          $(el).select2({ 
+            width: '100%', 
+            dir: 'rtl', 
+            placeholder: 'انتخاب صفحه(ها)...',
+            disabled: true
+          });
+        },
+        async updateAvailableViews(){
+          // دریافت صفحات موجود از سرور
+          const el = this.$refs.viewsSelect;
+          if(!this.entityType || !this.selectedEntityId){
+            return;
+          }
+          
+          try{
+            // نمایش پیغام بارگذاری
+            $(el).prop('disabled', true);
+            
+            const url = '{% url "permissions:get_available_views" %}?entity_type=' + this.entityType + '&entity_id=' + this.selectedEntityId;
+            console.log('Fetching available views:', url);
+            const response = await fetch(url);
+            const data = await response.json();
+            console.log('Received data:', data);
+            
+            // حذف select2 قبلی
+            if($(el).hasClass('select2-hidden-accessible')){
+              $(el).select2('destroy');
+            }
+            
+            // پاک کردن لیست
+            $(el).empty();
+            
+            // اضافه کردن صفحات جدید
+            if(data.views && data.views.length > 0){
+              this.availableViewsCount = data.views.length;
+              console.log('Adding', data.views.length, 'views');
+              data.views.forEach(view => {
+                $(el).append(new Option(view.label, view.name, false, false));
+              });
+            } else {
+              // اگر هیچ صفحه‌ای موجود نبود
+              this.availableViewsCount = 0;
+              console.log('No views available');
+              $(el).append(new Option('همه دسترسی‌ها قبلاً تعریف شده‌اند', '', false, false));
+            }
+            
+            // راه‌اندازی مجدد select2
+            $(el).select2({ 
+              width: '100%', 
+              dir: 'rtl', 
+              placeholder: 'انتخاب صفحه(ها)...',
+              language: {
+                noResults: function(){
+                  return 'همه دسترسی‌ها قبلاً تعریف شده‌اند';
+                }
+              }
+            });
+            
+            // فعال کردن لیست فقط اگر صفحه موجود باشد
+            $(el).prop('disabled', this.availableViewsCount === 0);
+          }catch(e){
+            console.error('خطا در بارگذاری صفحات:', e);
+            $(el).prop('disabled', false);
+          }
         },
         toggleAllPermissions(){
           const allOn = this.perm.view && this.perm.add && this.perm.edit && this.perm.delete;

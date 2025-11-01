@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}ویرایش مراجعه{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto rounded-lg shadow-lg bg-white dark:bg-gray-800">
+  <div class="p-4 rounded-t-lg bg-gradient-to-l from-indigo-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+    <i class="fa-solid fa-pen-to-square text-indigo-600"></i>
+    <h3 class="font-semibold">ویرایش مراجعه</h3>
+  </div>
+  <form method="post" class="p-4 space-y-4">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm mb-1">نوع پرسنل</label>
+        {{ form.personnel_type }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">پرسنل شرکت</label>
+        {{ form.company_personnel }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">پرسنل پیمانکار</label>
+        {{ form.contractor_personnel }}
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm mb-1">علت مراجعه</label>
+        {{ form.visit_reason }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">زمان مراجعه</label>
+        {{ form.visit_time }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">توصیه پزشک</label>
+        {{ form.doctor_recommendation }}
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm mb-1">خدمات درمانی</label>
+        {{ form.services }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">بیمارستان</label>
+        {{ form.hospital }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">پذیرش</label>
+        {{ form.hospital_admission_time }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">ترخیص</label>
+        {{ form.hospital_discharge_time }}
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm mb-1">تشخیص بیمارستان</label>
+        {{ form.hospital_diagnosis }}
+      </div>
+    </div>
+    <div class="flex items-center justify-end gap-2">
+      <a href="{% url 'emergency_services:visit_detail' visit.id %}" class="px-4 py-2 rounded-md bg-gray-100 text-gray-700">انصراف</a>
+      <button type="submit" class="px-4 py-2 rounded-md bg-indigo-600 text-white">ذخیره</button>
+    </div>
+  </form>
+
+  <div class="p-4 border-t border-gray-100 dark:border-gray-700">
+    <h4 class="font-medium mb-2">داروهای مصرفی</h4>
+    <ul class="list-disc pr-6 text-sm">
+      {% for u in medicine_usages %}
+        <li>{{ u.medicine.name }} ({{ u.quantity }})</li>
+      {% empty %}
+        <li class="text-gray-500">موردی نیست</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  $(function(){
+    $('#id_hospital').addClass('select2').select2({ width:'100%', dir:'rtl' });
+    $('.jalali-datetime').each(function(){
+      const $el = $(this);
+      try { $el.prop('type','text'); } catch(e) {}
+      $el.persianDatepicker({ format:'YYYY/MM/DD HH:mm:ss', timePicker:{ enabled:true, second:true }, autoClose:true });
+    });
+  });
+</script>
+{% endblock %}

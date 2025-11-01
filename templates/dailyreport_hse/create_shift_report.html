@@ -1,0 +1,376 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}ثبت گزارش روزانه HSE{% endblock %}
+
+{% block styles %}
+  <style>
+    /* Stepper */
+    .wizard-step { position: relative; display: flex; align-items: center; }
+    .wizard-step::before, .wizard-step::after { content: ""; position: absolute; top: 50%; width: 50%; height: 2px; background: #e5e7eb; transform: translateY(-50%); z-index: 0; }
+    .wizard-step::before { right: 50%; }
+    .wizard-step::after { left: 50%; }
+    .wizard-step:first-child::before { display: none; }
+    .wizard-step:last-child::after { display: none; }
+    .wizard-circle { position: relative; z-index: 1; }
+
+    /* Select2 + Upload visuals */
+    .select2-container--default .select2-selection--single { height: 40px; border-color: #e5e7eb; }
+    .select2-selection__rendered { line-height: 38px !important; }
+    .select2-selection__arrow { height: 38px !important; }
+    .dropzone { border: 2px dashed #cbd5e1; border-radius: .75rem; }
+
+    /* Empty state */
+    .empty-state { border: 1px dashed #cbd5e1; border-radius: .75rem; padding: 1rem; color: #64748b; display: flex; align-items: center; gap: .5rem; }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div x-data="reportWizard()" x-init="init()" class="space-y-4 max-w-7xl mx-auto">
+  <!-- Stepper -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6">
+    <ol class="flex items-center justify-between">
+      <template x-for="(s,i) in steps" :key="i">
+        <li class="wizard-step flex-1">
+          <button type="button" class="w-full flex items-center gap-3 group" :class="{ 'cursor-pointer': i <= maxStepReached, 'cursor-not-allowed opacity-50': i > maxStepReached }" @click="goToStep(i)" :disabled="i > maxStepReached">
+<div class="wizard-circle h-9 w-9 rounded-full flex items-center justify-center transition" :class="{ 'bg-indigo-600 text-white ring-2 ring-indigo-500': currentStep===i, 'bg-emerald-600 text-white': i < currentStep, 'bg-gray-100 dark:bg-gray-700 text-gray-500': i > currentStep }">
+              <template x-if="i < currentStep"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg></template>
+              <template x-if="i >= currentStep"><span x-text="i+1"></span></template>
+            </div>
+<span class="text-sm font-medium" :class="currentStep===i ? 'text-indigo-700' : 'text-gray-500'" x-text="s"></span>
+          </button>
+        </li>
+      </template>
+    </ol>
+  </div>
+
+  <!-- Card -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
+    <!-- Header -->
+<div class="px-4 sm:px-6 py-4 bg-gradient-to-l from-indigo-600 to-indigo-500 text-white flex items-center gap-3">
+      <svg class="h-6 w-6 opacity-95" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75c-2.708 0-5.25-.9-7.5-2.25 0 7.5 3.75 12.75 7.5 15 3.75-2.25 7.5-7.5 7.5-15-2.25 1.35-4.792 2.25-7.5 2.25Z" /></svg>
+      <h3 class="text-base font-semibold" x-text="steps[currentStep]"></h3>
+      <div class="ml-auto text-xs bg-white/20 px-2 py-0.5 rounded-full" x-text="`مرحله ${currentStep+1} از ${steps.length}`"></div>
+    </div>
+
+    <!-- Body -->
+    <div class="p-4 sm:p-6">
+      <!-- Step 0 -->
+      <template x-if="currentStep === 0">
+        <section class="space-y-4">
+          <div class="rounded-lg border border-amber-200 bg-amber-50 text-amber-800 p-3 text-sm">
+            <strong>اطلاع:</strong>
+            <span> شما در حال ثبت گزارش برای شیفت <span class="font-semibold">{{ current_shift|default:'-' }}</span> و گروه کاری <span class="font-semibold">{{ current_group|default:'-' }}</span> هستید.</span>
+          </div>
+          <div class="grid grid-cols-1 gap-4">
+            <label class="block">
+              <span class="block text-sm text-gray-600 mb-1">توضیحات سرشیفت</span>
+              <textarea x-model="form.supervisor_comments" class="w-full rounded-lg border-gray-300 dark:bg-gray-700" rows="4" placeholder="توضیحات ..."></textarea>
+            </label>
+          </div>
+        </section>
+      </template>
+
+      <!-- Step 1: Blasting -->
+      <template x-if="currentStep === 1">
+        <section class="space-y-4">
+          <!-- Entry form -->
+          <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <label class="flex items-center gap-2">
+                <input type="checkbox" x-model="temp.blasting.explosion_occurred" class="rounded">
+                <span class="text-sm">انفجار انجام شد؟</span>
+              </label>
+              <label x-show="temp.blasting.explosion_occurred">
+                <span class="block text-sm text-gray-600 mb-1">بلوک</span>
+                <select x-init="$nextTick(()=>initSelect2($el))" x-model="temp.blasting.block_id" class="w-full">
+                  <option value="">انتخاب بلوک</option>
+                  {% for b in mining_blocks %}<option value="{{ b.id }}">{{ b.block_name }}</option>{% endfor %}
+                </select>
+              </label>
+            </div>
+            <label class="block" x-show="temp.blasting.explosion_occurred">
+              <span class="block text-sm text-gray-600 mb-1">توضیحات</span>
+              <textarea x-model="temp.blasting.description" class="w-full rounded-lg border-gray-300 dark:bg-gray-700" rows="2"></textarea>
+            </label>
+            <div>
+              <button type="button" @click="addBlastingToList()" :disabled="!temp.blasting.explosion_occurred || (!temp.blasting.block_id && !temp.blasting.description)" class="w-full px-4 py-2 rounded-lg text-white text-sm focus:outline-none focus:ring-2"
+                :class="!temp.blasting.explosion_occurred || (!temp.blasting.block_id && !temp.blasting.description) ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700 focus:ring-indigo-500'">
+                افزودن به لیست گزارش
+              </button>
+            </div>
+          </div>
+          <!-- Summary -->
+          <template x-if="form.blasting_details.length === 0">
+            <div class="empty-state"><svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M4 3h12v2H4z"/></svg><span>رکوردی ثبت نشده است. از فرم بالا اضافه کنید.</span></div>
+          </template>
+          <template x-if="form.blasting_details.length">
+            <div class="overflow-x-auto border rounded-lg">
+              <table class="min-w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-700/40"><tr class="text-gray-600 dark:text-gray-300"><th class="p-2 text-right">انفجار</th><th class="p-2 text-right">بلوک</th><th class="p-2 text-right">توضیحات</th><th class="p-2 text-right">عملیات</th></tr></thead>
+                <tbody>
+                  <template x-for="(item, idx) in form.blasting_details" :key="'btable'+idx">
+                    <tr class="border-t"><td class="p-2" x-text="item.explosion_occurred ? 'بله' : 'خیر'"></td><td class="p-2" x-text="item.block_label"></td><td class="p-2 truncate" x-text="item.description"></td><td class="p-2"><button class="text-rose-600 text-xs" @click="removeBlasting(idx)">حذف</button></td></tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </template>
+        </section>
+      </template>
+
+      <!-- Step 2: Drilling -->
+      <template x-if="currentStep === 2">
+        <section class="space-y-4">
+          <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <label><span class="block text-sm text-gray-600 mb-1">بلوک</span>
+                <select x-init="$nextTick(()=>initSelect2($el))" x-model="temp.drilling.block_id" class="w-full"><option value="">انتخاب بلوک</option>{% for b in mining_blocks %}<option value="{{ b.id }}">{{ b.block_name }}</option>{% endfor %}</select>
+              </label>
+              <label><span class="block text-sm text-gray-600 mb-1">دستگاه</span>
+                <select x-init="$nextTick(()=>initSelect2($el))" x-model="temp.drilling.machine_id" class="w-full"><option value="">انتخاب دستگاه حفاری</option>{% for m in drilling_machines %}<option value="{{ m.id }}">{{ m.workshop_code }}{% if m.machine_type %} - {{ m.machine_type.name }}{% endif %}</option>{% endfor %}</select>
+              </label>
+              <label><span class="block text-sm text-gray-600 mb-1">وضعیت</span>
+                <select x-model="temp.drilling.status" class="w-full rounded-lg border-gray-300 dark:bg-gray-700"><option value="">--</option><option value="safe">ایمن</option><option value="unsafe">ناایمن</option></select>
+              </label>
+            </div>
+            <label class="block"><span class="block text-sm text-gray-600 mb-1">توضیحات</span><textarea x-model="temp.drilling.description" class="w-full rounded-lg border-gray-300 dark:bg-gray-700" rows="2"></textarea></label>
+<div><button type="button" @click="addDrillingToList()" class="w-full px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">افزودن به لیست گزارش</button></div>
+          </div>
+          <template x-if="form.drilling_details.length === 0"><div class="empty-state"><svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M4 3h12v2H4z"/></svg><span>هیچ عملیات حفاری ثبت نشده است.</span></div></template>
+          <template x-if="form.drilling_details.length">
+            <div class="overflow-x-auto border rounded-lg"><table class="min-w-full text-sm"><thead class="bg-gray-50 dark:bg-gray-700/40"><tr class="text-gray-600 dark:text-gray-300"><th class="p-2 text-right">بلوک</th><th class="p-2 text-right">دستگاه</th><th class="p-2 text-right">وضعیت</th><th class="p-2 text-right">توضیحات</th><th class="p-2 text-right">عملیات</th></tr></thead><tbody><template x-for="(item, idx) in form.drilling_details" :key="'dtable'+idx"><tr class="border-t"><td class="p-2" x-text="item.block_label"></td><td class="p-2" x-text="item.machine_label"></td><td class="p-2" x-text="item.status"></td><td class="p-2 truncate" x-text="item.description"></td><td class="p-2"><button class="text-rose-600 text-xs" @click="removeDrilling(idx)">حذف</button></td></tr></template></tbody></table></div>
+          </template>
+        </section>
+      </template>
+
+      <!-- Step 3: Loading -->
+      <template x-if="currentStep === 3">
+        <section class="space-y-4">
+          <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <label><span class="block text-sm text-gray-600 mb-1">بلوک</span>
+                <select x-init="$nextTick(()=>initSelect2($el))" x-model="temp.loading.block_id" class="w-full"><option value="">انتخاب بلوک</option>{% for b in mining_blocks %}<option value="{{ b.id }}">{{ b.block_name }}</option>{% endfor %}</select>
+              </label>
+              <label><span class="block text-sm text-gray-600 mb-1">دستگاه</span>
+                <select x-init="$nextTick(()=>initSelect2($el))" x-model="temp.loading.machine_id" class="w-full"><option value="">انتخاب دستگاه بارگیری</option>{% for m in loading_machines %}<option value="{{ m.id }}">{{ m.workshop_code }}{% if m.machine_type %} - {{ m.machine_type.name }}{% endif %}</option>{% endfor %}</select>
+              </label>
+              <label><span class="block text-sm text-gray-600 mb-1">وضعیت</span>
+                <select x-model="temp.loading.status" class="w-full rounded-lg border-gray-300 dark:bg-gray-700"><option value="">--</option><option value="safe">ایمن</option><option value="unsafe">ناایمن</option></select>
+              </label>
+            </div>
+            <label class="block"><span class="block text-sm text-gray-600 mb-1">توضیحات</span><textarea x-model="temp.loading.description" class="w-full rounded-lg border-gray-300 dark:bg-gray-700" rows="2"></textarea></label>
+<div><button type="button" @click="addLoadingToList()" class="w-full px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">افزودن به لیست گزارش</button></div>
+          </div>
+          <template x-if="form.loading_details.length === 0"><div class="empty-state"><svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M4 3h12v2H4z"/></svg><span>هیچ عملیات بارگیری ثبت نشده است.</span></div></template>
+          <template x-if="form.loading_details.length">
+            <div class="overflow-x-auto border rounded-lg"><table class="min-w-full text-sm"><thead class="bg-gray-50 dark:bg-gray-700/40"><tr class="text-gray-600 dark:text-gray-300"><th class="p-2 text-right">بلوک</th><th class="p-2 text-right">دستگاه</th><th class="p-2 text-right">وضعیت</th><th class="p-2 text-right">توضیحات</th><th class="p-2 text-right">عملیات</th></tr></thead><tbody><template x-for="(item, idx) in form.loading_details" :key="'ltable'+idx"><tr class="border-t"><td class="p-2" x-text="item.block_label || item.block_id"></td><td class="p-2" x-text="item.machine_label || item.machine_id"></td><td class="p-2" x-text="item.status"></td><td class="p-2 truncate" x-text="item.description"></td><td class="p-2"><button class="text-rose-600 text-xs" @click="removeLoading(idx)">حذف</button></td></tr></template></tbody></table></div>
+          </template>
+        </section>
+      </template>
+
+      <!-- Step 4: Dumping -->
+      <template x-if="currentStep === 4">
+        <section class="space-y-4">
+          <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <label><span class="block text-sm text-gray-600 mb-1">دامپ</span>
+                <select x-init="$nextTick(()=>initSelect2($el))" x-model="temp.dump.dump_id" class="w-full"><option value="">انتخاب دامپ</option>{% for d in dumps %}<option value="{{ d.id }}">{{ d.dump_name }}</option>{% endfor %}</select>
+              </label>
+              <label><span class="block text-sm text-gray-600 mb-1">وضعیت</span>
+                <select x-model="temp.dump.status" class="w-full rounded-lg border-gray-300 dark:bg-gray-700"><option value="">--</option><option value="safe">ایمن</option><option value="unsafe">ناایمن</option></select>
+              </label>
+            </div>
+            <label class="block"><span class="block text-sm text-gray-600 mb-1">توضیحات</span><textarea x-model="temp.dump.description" class="w-full rounded-lg border-gray-300 dark:bg-gray-700" rows="2"></textarea></label>
+<div><button type="button" @click="addDumpToList()" class="w-full px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">افزودن به لیست گزارش</button></div>
+          </div>
+          <template x-if="form.dump_details.length === 0"><div class="empty-state"><svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M4 3h12v2H4z"/></svg><span>هیچ تخلیه‌ای ثبت نشده است.</span></div></template>
+          <template x-if="form.dump_details.length">
+            <div class="overflow-x-auto border rounded-lg"><table class="min-w-full text-sm"><thead class="bg-gray-50 dark:bg-gray-700/40"><tr class="text-gray-600 dark:text-gray-300"><th class="p-2 text-right">دامپ</th><th class="p-2 text-right">وضعیت</th><th class="p-2 text-right">توضیحات</th><th class="p-2 text-right">عملیات</th></tr></thead><tbody><template x-for="(item, idx) in form.dump_details" :key="'dumptable'+idx"><tr class="border-t"><td class="p-2" x-text="item.dump_label || item.dump_id"></td><td class="p-2" x-text="item.status"></td><td class="p-2 truncate" x-text="item.description"></td><td class="p-2"><button class="text-rose-600 text-xs" @click="removeDump(idx)">حذف</button></td></tr></template></tbody></table></div>
+          </template>
+        </section>
+      </template>
+
+      <!-- Step 5: Stoppages -->
+      <template x-if="currentStep === 5">
+        <section class="space-y-4">
+          <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <label class="md:col-span-2"><span class="block text-sm text-gray-600 mb-1">علت</span><input type="text" x-model="temp.stoppage.reason" class="w-full rounded-lg border-gray-300 dark:bg-gray-700" placeholder="علت توقف"></label>
+              <label><span class="block text-sm text-gray-600 mb-1">شروع</span><input type="text" x-init="$nextTick(()=>initPersianTime($el))" x-model="temp.stoppage.start_time" class="w-full rounded-lg border-gray-300 dark:bg-gray-700 ptimepicker" placeholder="HH:mm"></label>
+              <label><span class="block text-sm text-gray-600 mb-1">پایان</span><input type="text" x-init="$nextTick(()=>initPersianTime($el))" x-model="temp.stoppage.end_time" class="w-full rounded-lg border-gray-300 dark:bg-gray-700 ptimepicker" placeholder="HH:mm"></label>
+            </div>
+            <label class="block"><span class="block text-sm text-gray-600 mb-1">توضیحات</span><textarea x-model="temp.stoppage.description" class="w-full rounded-lg border-gray-300 dark:bg-gray-700" rows="2"></textarea></label>
+<div><button type="button" @click="addStoppageToList()" class="w-full px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">افزودن به لیست گزارش</button></div>
+          </div>
+          <template x-if="form.stoppage_details.length === 0"><div class="empty-state"><svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M4 3h12v2H4z"/></svg><span>هیچ توقفی ثبت نشده است.</span></div></template>
+          <template x-if="form.stoppage_details.length">
+            <div class="overflow-x-auto border rounded-lg"><table class="min-w-full text-sm"><thead class="bg-gray-50 dark:bg-gray-700/40"><tr class="text-gray-600 dark:text-gray-300"><th class="p-2 text-right">علت</th><th class="p-2 text-right">شروع</th><th class="p-2 text-right">پایان</th><th class="p-2 text-right">توضیحات</th><th class="p-2 text-right">عملیات</th></tr></thead><tbody><template x-for="(item, idx) in form.stoppage_details" :key="'stptable'+idx"><tr class="border-t"><td class="p-2" x-text="item.reason"></td><td class="p-2" x-text="item.start_time"></td><td class="p-2" x-text="item.end_time"></td><td class="p-2 truncate" x-text="item.description"></td><td class="p-2"><button class="text-rose-600 text-xs" @click="removeStoppage(idx)">حذف</button></td></tr></template></tbody></table></div>
+          </template>
+        </section>
+      </template>
+
+      <!-- Step 6: Inspections -->
+      <template x-if="currentStep === 6">
+        <section class="space-y-4">
+          <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-3">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+              <label class="flex items-center gap-2"><input type="checkbox" x-model="temp.inspection.inspection_done" class="rounded"><span class="text-sm">انجام شد</span></label>
+              <label><span class="block text-sm text-gray-600 mb-1">عنوان بازرسی</span><input type="text" x-model="temp.inspection.inspection" class="w-full rounded-lg border-gray-300 dark:bg-gray-700" placeholder="مثلاً بازدید از بلوک A"></label>
+              <label><span class="block text-sm text-gray-600 mb-1">وضعیت</span><select x-model="temp.inspection.status" class="w-full rounded-lg border-gray-300 dark:bg-gray-700"><option value="">--</option><option value="safe">ایمن</option><option value="unsafe">ناایمن</option></select></label>
+            </div>
+            <label class="block"><span class="block text-sm text-gray-600 mb-1">توضیحات</span><textarea x-model="temp.inspection.description" class="w-full rounded-lg border-gray-300 dark:bg-gray-700" rows="2"></textarea></label>
+<div><button type="button" @click="addInspectionToList()" class="w-full px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm">افزودن به لیست گزارش</button></div>
+          </div>
+          <template x-if="form.inspection_details.length === 0"><div class="empty-state"><svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M4 3h12v2H4z"/></svg><span>هیچ بازرسی ثبت نشده است.</span></div></template>
+          <template x-if="form.inspection_details.length">
+            <div class="overflow-x-auto border rounded-lg"><table class="min-w-full text-sm"><thead class="bg-gray-50 dark:bg-gray-700/40"><tr class="text-gray-600 dark:text-gray-300"><th class="p-2 text-right">انجام شد</th><th class="p-2 text-right">عنوان</th><th class="p-2 text-right">وضعیت</th><th class="p-2 text-right">توضیحات</th><th class="p-2 text-right">عملیات</th></tr></thead><tbody><template x-for="(item, idx) in form.inspection_details" :key="'instable'+idx"><tr class="border-t"><td class="p-2" x-text="item.inspection_done ? 'بله' : 'خیر'"></td><td class="p-2" x-text="item.inspection"></td><td class="p-2" x-text="item.status"></td><td class="p-2 truncate" x-text="item.description"></td><td class="p-2"><button class="text-rose-600 text-xs" @click="removeInspection(idx)">حذف</button></td></tr></template></tbody></table></div>
+          </template>
+        </section>
+      </template>
+
+      <!-- Step 7: Follow-ups -->
+      <template x-if="currentStep === 7">
+        <section class="space-y-4">
+          <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 space-y-4">
+            <label class="block"><span class="block text-sm text-gray-600 mb-1">توضیحات</span><textarea x-model="form.followup.description" class="w-full rounded-lg border-gray-300 dark:bg-gray-700" rows="3"></textarea></label>
+            <div class="space-y-2"><span class="block text-sm text-gray-600">پیوست‌ها</span>
+              <div class="dropzone p-6 bg-gray-50 dark:bg-gray-700/30 flex flex-col items-center justify-center text-center" @dragover.prevent @drop.prevent="handleDrop($event)" @click="$refs.fileInput.click()">
+                <svg class="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3-3 3M6.75 19.5h10.5A2.25 2.25 0 0021.5 17.25V6.75A2.25 2.25 0 0019.25 4.5H4.75A2.25 2.25 0 002.5 6.75v10.5A2.25 2.25 0 004.75 19.5z"/></svg>
+                <p class="text-sm text-gray-500 mt-2">کشیدن و رها کردن فایل‌ها یا کلیک برای انتخاب</p>
+                <input x-ref="fileInput" type="file" class="hidden" multiple @change="handleFiles($event.target.files)">
+              </div>
+              <template x-if="uploads.length"><ul class="space-y-2"><template x-for="(f, i) in uploads" :key="i"><li class="flex items-center justify-between text-sm"><span class="truncate max-w-[70%]" x-text="f.name"></span><button class="text-rose-600" @click="removeUpload(i)">حذف</button></li></template></ul></template>
+            </div>
+          </div>
+        </section>
+      </template>
+
+      <!-- Alerts -->
+      <template x-if="alert.message"><div class="mt-4 rounded-lg p-3 text-sm" :class="alert.type==='success' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'" x-text="alert.message"></div></template>
+
+      <!-- Footer Nav -->
+      <div class="mt-6 flex items-center justify-between">
+<button type="button" @click="prev()" x-show="currentStep > 0" class="px-4 py-2 rounded-lg border border-gray-500 text-gray-300 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-gray-400">مرحله قبل</button>
+        <div class="ml-auto flex items-center gap-3">
+<button type="button" @click="next()" x-show="isOptionalStep(currentStep) && currentStep < (steps.length - 1)" class="px-4 py-2 rounded-lg border border-gray-500 text-gray-300 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-gray-400">رد کردن مرحله</button>
+<button type="button" @click="next()" x-show="currentStep < (steps.length - 1)" class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">مرحله بعد</button>
+<button type="button" x-show="currentStep === (steps.length - 1)" @click="submitReport" class="px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">ثبت نهایی گزارش</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+
+  <script>
+    function reportWizard() {
+      return {
+        steps: ['اطلاعات عمومی','آتشباری','حفاری','بارگیری','تخلیه','توقفات','بازرسی‌ها','پیگیری‌ها'],
+        currentStep: 0,
+        maxStepReached: 0,
+        form: {
+          supervisor_comments: '',
+          blasting_details: [],
+          drilling_details: [],
+          loading_details: [],
+          dump_details: [],
+          stoppage_details: [],
+          inspection_details: [],
+          followup: { description: '' }
+        },
+        temp: {
+          blasting: { explosion_occurred:false, block_id:'', description:'' },
+          drilling: { block_id:'', machine_id:'', status:'', description:'' },
+          loading: { block_id:'', machine_id:'', status:'', description:'' },
+          dump: { dump_id:'', status:'', description:'' },
+          stoppage: { reason:'', start_time:'', end_time:'', description:'' },
+          inspection: { inspection_done:false, inspection:'', status:'', description:'' }
+        },
+        uploads: [],
+        alert: { type: '', message: '' },
+        init() { try{ sessionStorage.removeItem('hse_daily_wizard'); }catch(e){} },
+        next(){ if(this.currentStep < this.steps.length-1){ this.blurFocusAndCloseSelects(); this.currentStep++; if(this.currentStep>this.maxStepReached) this.maxStepReached=this.currentStep; this.$nextTick(()=>{ this.refreshDynamicPlugins(); }); this.saveDraft(); } },
+        prev(){ if(this.currentStep>0){ this.blurFocusAndCloseSelects(); this.currentStep--; this.saveDraft(); } },
+        goToStep(i){ if(i <= this.maxStepReached){ this.blurFocusAndCloseSelects(); this.currentStep = i; this.$nextTick(()=>this.refreshDynamicPlugins()); } },
+        isOptionalStep(i){ return [1,4,5,6,7].includes(i); },
+        // Add-to-list
+        addBlastingToList(){ const v=this.temp.blasting; if(!v.explosion_occurred) return; if(!(v.block_id || v.description)) return; const blockLabel = this.getSelectedLabel('select[x-model="temp.blasting.block_id"]'); this.form.blasting_details.push({ explosion_occurred:true, block_id:v.block_id, block_label:blockLabel, description:v.description||'' }); this.temp.blasting={ explosion_occurred:false, block_id:'', description:'' }; this.$nextTick(()=>{ $('select[x-model=\"temp.blasting.block_id\"]').val('').trigger('change'); }); this.saveDraft(); },
+        removeBlasting(i){ this.form.blasting_details.splice(i,1); this.saveDraft(); },
+        addDrillingToList(){ const v=this.temp.drilling; if(!(v.block_id && v.machine_id)) return; const blabel=this.getSelectedLabel('select[x-model="temp.drilling.block_id"]'); const mlabel=this.getSelectedLabel('select[x-model="temp.drilling.machine_id"]'); this.form.drilling_details.push({ block_id:v.block_id, block_label:blabel, machine_id:v.machine_id, machine_label:mlabel, status:v.status||'', description:v.description||'' }); this.temp.drilling={ block_id:'', machine_id:'', status:'', description:'' }; this.$nextTick(()=>{ $('select[x-model=\"temp.drilling.block_id\"]').val('').trigger('change'); $('select[x-model=\"temp.drilling.machine_id\"]').val('').trigger('change'); }); this.saveDraft(); },
+        removeDrilling(i){ this.form.drilling_details.splice(i,1); this.saveDraft(); },
+        addLoadingToList(){ const v=this.temp.loading; if(!(v.block_id && v.machine_id)) return; const blabel=this.getSelectedLabel('select[x-model="temp.loading.block_id"]'); const mlabel=this.getSelectedLabel('select[x-model="temp.loading.machine_id"]'); this.form.loading_details.push({ block_id:v.block_id, block_label:blabel, machine_id:v.machine_id, machine_label:mlabel, status:v.status||'', description:v.description||'' }); this.temp.loading={ block_id:'', machine_id:'', status:'', description:'' }; this.$nextTick(()=>{ $('select[x-model=\"temp.loading.block_id\"]').val('').trigger('change'); $('select[x-model=\"temp.loading.machine_id\"]').val('').trigger('change'); }); this.saveDraft(); },
+        removeLoading(i){ this.form.loading_details.splice(i,1); this.saveDraft(); },
+        addDumpToList(){ const v=this.temp.dump; if(!v.dump_id) return; const dlabel=this.getSelectedLabel('select[x-model="temp.dump.dump_id"]'); this.form.dump_details.push({ dump_id:v.dump_id, dump_label:dlabel, status:v.status||'', description:v.description||'' }); this.temp.dump={ dump_id:'', status:'', description:'' }; this.$nextTick(()=>{ $('select[x-model=\"temp.dump.dump_id\"]').val('').trigger('change'); }); this.saveDraft(); },
+        removeDump(i){ this.form.dump_details.splice(i,1); this.saveDraft(); },
+        addStoppageToList(){ const v=this.temp.stoppage; if(!(v.reason || v.start_time || v.end_time || v.description)) return; this.form.stoppage_details.push({ reason:v.reason||'', start_time:v.start_time||'', end_time:v.end_time||'', description:v.description||'' }); this.temp.stoppage={ reason:'', start_time:'', end_time:'', description:'' }; this.saveDraft(); },
+        removeStoppage(i){ this.form.stoppage_details.splice(i,1); this.saveDraft(); },
+        addInspectionToList(){ const v=this.temp.inspection; if(!(v.inspection || v.status || v.description || v.inspection_done)) return; this.form.inspection_details.push({ inspection_done:!!v.inspection_done, inspection:v.inspection||'', status:v.status||'', description:v.description||'' }); this.temp.inspection={ inspection_done:false, inspection:'', status:'', description:'' }; this.saveDraft(); },
+        removeInspection(i){ this.form.inspection_details.splice(i,1); this.saveDraft(); },
+        // Files
+        handleFiles(files){ for (const f of files) this.uploads.push(f); this.saveDraft(); }, handleDrop(e){ this.handleFiles(e.dataTransfer.files); }, removeUpload(i){ this.uploads.splice(i,1); this.saveDraft(); },
+        // Plugins
+        initSelect2(el){
+          const modelPath = el.getAttribute('x-model');
+          $(el).select2({ width: '100%', dir: 'rtl', dropdownParent: $(document.body) });
+          $(el).on('change', ()=>{
+            const val = $(el).val();
+            if(modelPath) this.setByPath(this, modelPath, val);
+            this.saveDraft();
+          });
+        },
+        setByPath(obj, path, value){
+          if(!path) return; const keys = path.split('.'); let ref = obj;
+          while(keys.length > 1){ const k = keys.shift(); if(!(k in ref)) ref[k] = {}; ref = ref[k]; }
+          ref[keys[0]] = value;
+        },
+        getSelectedLabel(query){ const el = document.querySelector(query); if(!el) return ''; const idx = el.selectedIndex; return idx >= 0 ? el.options[idx].text : ''; },
+        initPersianTime(el){ $(el).persianDatepicker({ initialValue: false, format: 'HH:mm', timePicker: { enabled: true, second: false, meridiem: { enabled: false } }, calendar: { persian: { locale: 'fa' } } }); },
+        refreshDynamicPlugins(){
+          $('.select2-hidden-accessible').each(function(){ try { $(this).select2('destroy'); } catch(e){} });
+          $('select').each((i,el)=>{ if(!$(el).data('select2')) this.initSelect2(el); });
+          $('.ptimepicker').each((i,el)=>{ if(!$(el).data('pDatepicker')) $(el).persianDatepicker({ initialValue: false, format: 'HH:mm', timePicker: { enabled: true, second: false, meridiem: { enabled: false } }, calendar: { persian: { locale: 'fa' } } }); });
+        },
+        blurFocusAndCloseSelects(){ try{ document.activeElement && document.activeElement.blur(); }catch(e){} $('.select2-hidden-accessible').each(function(){ try { $(this).select2('close'); } catch(e){} }); },
+        // Draft
+        saveDraft(){},
+        loadDraft(){ try{ sessionStorage.removeItem('hse_daily_wizard'); }catch(e){} },
+        resetDraft(){ try{ sessionStorage.removeItem('hse_daily_wizard'); }catch(e){}; this.currentStep=0; this.maxStepReached=0; this.form={ supervisor_comments:'', blasting_details:[], drilling_details:[], loading_details:[], dump_details:[], stoppage_details:[], inspection_details:[], followup:{ description:'' } }; this.temp={ blasting:{ explosion_occurred:false, block_id:'', description:'' }, drilling:{ block_id:'', machine_id:'', status:'', description:'' }, loading:{ block_id:'', machine_id:'', status:'', description:'' }, dump:{ dump_id:'', status:'', description:'' }, stoppage:{ reason:'', start_time:'', end_time:'', description:'' }, inspection:{ inspection_done:false, inspection:'', status:'', description:'' } }; this.uploads=[]; this.alert={ type:'', message:'' }; this.$nextTick(()=>{ this.refreshDynamicPlugins(); }); },
+        // CSRF + Submit
+        getCookie(name){ let cookieValue=null; if(document.cookie && document.cookie!==''){ const cookies=document.cookie.split(';'); for(let i=0;i<cookies.length;i++){ const cookie=cookies[i].trim(); if(cookie.substring(0, name.length+1)===(name+'=')){ cookieValue=decodeURIComponent(cookie.substring(name.length+1)); break; } } } return cookieValue; },
+        async submitReport(){
+          try{
+            const fd = new FormData();
+            fd.append('supervisor_comments', this.form.supervisor_comments || '');
+            const blasting = this.form.blasting_details.filter(b=>b.block_id || b.description || b.explosion_occurred);
+            const drilling = this.form.drilling_details.filter(d=>d.block_id && d.machine_id);
+            const loading = this.form.loading_details.filter(l=>l.block_id && l.machine_id);
+            const dumping = this.form.dump_details.filter(d=>d.dump_id);
+            const stps = this.form.stoppage_details.map(s=>({ reason:s.reason||null, start_time:s.start_time||null, end_time:s.end_time||null, description:s.description||'' })).filter(s=>s.reason || s.start_time || s.end_time || s.description);
+            const inspections = this.form.inspection_details.filter(i=>i.inspection || i.status || i.description || i.inspection_done);
+            fd.append('blasting_details', JSON.stringify(blasting));
+            fd.append('drilling_details', JSON.stringify(drilling));
+            fd.append('loading_details', JSON.stringify(loading));
+            fd.append('dump_details', JSON.stringify(dumping));
+            fd.append('stoppage_details', JSON.stringify(stps));
+            fd.append('inspection_details', JSON.stringify(inspections));
+            fd.append('followups[0][followup_description]', this.form.followup.description || '');
+            this.uploads.forEach((f)=> fd.append('followups[0][followup_file]', f, f.name));
+            const res = await fetch('/dailyreport_hse/API/', { method: 'POST', headers: { 'X-CSRFToken': this.getCookie('csrftoken') }, body: fd });
+            const data = await res.json();
+            if(!res.ok) throw new Error(data.error || 'خطا در ثبت گزارش');
+            this.alert = { type: 'success', message: 'گزارش با موفقیت ثبت شد.' };
+            try{ sessionStorage.removeItem('hse_daily_wizard'); }catch(e){}
+            setTimeout(()=>{ window.location.href = '/dailyreport_hse/list/'; }, 1200);
+          }catch(e){ this.alert = { type: 'error', message: e.message || 'خطای ناشناخته' }; }
+        }
+      }
+    }
+  </script>
+{% endblock %}

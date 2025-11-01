@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}لیست مراجعات{% endblock %}
+{% block content %}
+<div class="rounded-lg shadow-lg bg-white dark:bg-gray-800">
+  <div class="p-4 rounded-t-lg bg-gradient-to-l from-blue-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <i class="fa-solid fa-notes-medical text-blue-600"></i>
+      <h3 class="font-semibold">لیست مراجعات</h3>
+    </div>
+    <a href="{% url 'emergency_services:create_visit' %}" class="px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 text-sm">ثبت مراجعه جدید</a>
+  </div>
+  <div class="p-4">
+    <p class="text-sm text-gray-500">فیلترها و جدول پیشرفته می‌تواند بعداً تکمیل شود.</p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}چاپ مراجعه{% endblock %}
+{% load jalali_utils %}
+{% block content %}
+<div class="rounded-lg shadow bg-white dark:bg-gray-800 p-6 print:p-0">
+  <div class="flex items-center justify-between mb-4 print:hidden">
+    <h1 class="text-lg font-semibold">فرم چاپ مراجعه</h1>
+    <button onclick="window.print()" class="px-3 py-1.5 rounded bg-gray-100">چاپ</button>
+  </div>
+  <div class="space-y-2 text-sm">
+    <div>نوع پرسنل: {{ visit.get_personnel_type_display }}</div>
+    <div>نام: {% if visit.personnel_type == 'company' %}{{ visit.company_personnel }}{% else %}{{ visit.contractor_personnel }}{% endif %}</div>
+    <div>زمان مراجعه: {{ visit.visit_time|to_jalali:'%Y/%m/%d %H:%M' }}</div>
+    <div>علت مراجعه: {{ visit.visit_reason }}</div>
+    <div>توصیه پزشک: {{ visit.doctor_recommendation }}</div>
+    <div>خدمات: {{ visit.services.all|join:', ' }}</div>
+  </div>
+  <hr class="my-4"/>
+  <div>
+    <h2 class="font-medium mb-2">داروها</h2>
+    <ul class="list-disc pr-6 text-sm">
+      {% for u in medicine_usages %}
+        <li>{{ u.medicine.name }} ({{ u.quantity }})</li>
+      {% empty %}
+        <li>موردی نیست</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

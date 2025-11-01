@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}جزئیات مراجعه{% endblock %}
+{% load jalali_utils %}
+{% block content %}
+<div class="space-y-6">
+  <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800">
+    <div class="p-4 rounded-t-lg bg-gradient-to-l from-blue-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-notes-medical text-blue-600"></i>
+        <h3 class="font-semibold">جزئیات مراجعه</h3>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="{% url 'emergency_services:edit_visit' visit.id %}" class="px-3 py-1.5 rounded-md bg-indigo-600 text-white text-sm">ویرایش</a>
+        <a target="_blank" href="{% url 'emergency_services:print_visit' visit.id %}" class="px-3 py-1.5 rounded-md bg-gray-100 text-gray-700 text-sm">چاپ</a>
+      </div>
+    </div>
+    <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      <div><span class="text-gray-500">نوع پرسنل:</span> <span class="font-medium">{{ visit.get_personnel_type_display }}</span></div>
+      <div><span class="text-gray-500">مراجع:</span> <span class="font-medium">{% if visit.personnel_type == 'company' %}{{ visit.company_personnel }}{% else %}{{ visit.contractor_personnel }}{% endif %}</span></div>
+      <div><span class="text-gray-500">زمان مراجعه:</span> <span class="font-medium">{{ visit.visit_time|to_jalali:'%Y/%m/%d %H:%M' }}</span></div>
+      <div><span class="text-gray-500">بیمارستان:</span> <span class="font-medium">{{ visit.hospital|default:'-' }}</span></div>
+      <div class="md:col-span-2"><span class="text-gray-500">علت مراجعه:</span><div class="mt-1">{{ visit.visit_reason|linebreaksbr }}</div></div>
+      <div class="md:col-span-2"><span class="text-gray-500">توصیه پزشک:</span><div class="mt-1">{{ visit.doctor_recommendation|linebreaksbr }}</div></div>
+      <div class="md:col-span-2"><span class="text-gray-500">خدمات:</span> {{ visit.services.all|join:', ' }}</div>
+    </div>
+  </div>
+
+  <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800">
+    <div class="p-4 rounded-t-lg bg-gradient-to-l from-amber-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-capsules text-amber-600"></i>
+        <h3 class="font-semibold">داروهای مصرفی</h3>
+      </div>
+      <a href="{% url 'emergency_services:add_medicine_to_visit' visit.id %}" class="px-3 py-1.5 rounded-md bg-amber-600 text-white text-sm">افزودن دارو</a>
+    </div>
+    <div class="p-4">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-gray-700/50">
+          <tr class="text-right">
+            <th class="px-4 py-2">دارو</th>
+            <th class="px-4 py-2">تعداد</th>
+            <th class="px-4 py-2">عملیات</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+          {% for u in medicine_usages %}
+            <tr>
+              <td class="px-4 py-2">{{ u.medicine.name }}</td>
+              <td class="px-4 py-2">{{ u.quantity }}</td>
+              <td class="px-4 py-2 space-x-2 space-x-reverse">
+                <a href="{% url 'emergency_services:return_medicine' u.id %}" class="text-amber-700 hover:underline">برگشت</a>
+                <a href="{% url 'emergency_services:remove_medicine_from_visit' u.id %}" class="text-red-600 hover:underline" onclick="return confirm('حذف شود؟')">حذف</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="3" class="px-4 py-6 text-center text-gray-500">دارویی ثبت نشده است</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

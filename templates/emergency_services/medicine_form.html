@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ title|default:'ثبت دارو' }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto rounded-lg shadow-lg bg-white dark:bg-gray-800">
+  <div class="p-4 rounded-t-lg bg-gradient-to-l from-emerald-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+    <i class="fa-solid fa-pills text-emerald-600"></i>
+    <h3 class="font-semibold">{{ title|default:'ثبت دارو' }}</h3>
+  </div>
+  <form method="post" class="p-4 space-y-4">
+    {% csrf_token %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">نام دارو</label>
+        {{ form.name }}
+        {% if form.errors.name %}<p class="text-xs text-red-600 mt-1">{{ form.errors.name }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">دسته‌بندی</label>
+        {{ form.category }}
+        {% if form.errors.category %}<p class="text-xs text-red-600 mt-1">{{ form.errors.category }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">موجودی</label>
+        {{ form.quantity }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">حد بحرانی</label>
+        {{ form.critical_threshold }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">تاریخ انقضا (جلالی)</label>
+        {{ form.expiry_date }}
+        {% if form.errors.expiry_date %}<p class="text-xs text-red-600 mt-1">{{ form.errors.expiry_date }}</p>{% endif %}
+      </div>
+      <div class="flex items-center gap-2 mt-6">
+        {{ form.is_active }}
+        <label class="text-sm">فعال</label>
+      </div>
+    </div>
+    <div class="flex items-center justify-end gap-2">
+      <a href="{% url 'emergency_services:medicine_list' %}" class="px-4 py-2 rounded-md bg-gray-100 text-gray-700">انصراف</a>
+      <button type="submit" class="px-4 py-2 rounded-md bg-emerald-600 text-white">ذخیره</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  $(function(){
+    $('#id_category').addClass('select2').select2({ width: '100%', dir: 'rtl' });
+    $('.jalali-date').each(function(){
+      const $el = $(this);
+      try { $el.prop('type','text'); } catch(e) {}
+      $el.persianDatepicker({ format: 'YYYY/MM/DD', autoClose: true });
+    });
+  });
+</script>
+{% endblock %}

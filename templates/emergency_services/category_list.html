@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}دسته‌بندی داروها{% endblock %}
+{% block content %}
+<div class="rounded-lg shadow-lg bg-white dark:bg-gray-800">
+  <div class="p-4 rounded-t-lg bg-gradient-to-l from-indigo-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+    <i class="fa-solid fa-tags text-indigo-600"></i>
+    <h3 class="font-semibold">دسته‌بندی داروها</h3>
+  </div>
+  <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="md:col-span-2">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-gray-700/50">
+          <tr class="text-right">
+            <th class="px-4 py-2">نام</th>
+            <th class="px-4 py-2">توضیحات</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+          {% for c in categories %}
+            <tr>
+              <td class="px-4 py-2 font-medium">{{ c.name }}</td>
+              <td class="px-4 py-2">{{ c.description|default:'-' }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="2" class="px-4 py-6 text-center text-gray-500">موردی نیست</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div class="rounded-lg border border-gray-100 dark:border-gray-700">
+        <div class="px-4 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-t-lg text-sm font-medium">افزودن دسته‌بندی</div>
+        <form method="post" class="p-4 space-y-3">
+          {% csrf_token %}
+          <div>
+            <label class="block text-sm mb-1">نام</label>
+            {{ form.name }}
+          </div>
+          <div>
+            <label class="block text-sm mb-1">توضیحات</label>
+            {{ form.description }}
+          </div>
+          <div class="flex justify-end">
+            <button type="submit" class="px-3 py-1.5 rounded-md bg-indigo-600 text-white">ثبت</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

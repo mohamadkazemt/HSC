@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}ویرایش پرسنل{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-xl font-bold">ویرایش اطلاعات: {{ edit_user.get_full_name|default:edit_user.username }}</h1>
+    <a href="{% url 'accounts:personnel_list' %}" class="text-sm text-gray-600 dark:text-gray-300">بازگشت به لیست</a>
+  </div>
+
+  {% if messages %}
+  <div class="space-y-2">
+    {% for message in messages %}
+      <div class="p-3 rounded border text-sm {% if message.tags == 'success' %}bg-green-50 border-green-200 text-green-800{% elif message.tags == 'error' %}bg-red-50 border-red-200 text-red-800{% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <form method="post" class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm space-y-4">
+    {% csrf_token %}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm mb-1">نام</label>
+        {{ form.first_name }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">نام خانوادگی</label>
+        {{ form.last_name }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">کد پرسنلی</label>
+        {{ form.personnel_code }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">موبایل</label>
+        {{ form.mobile }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">بخش</label>
+        {{ form.section }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">قسمت</label>
+        {{ form.part }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">گروه</label>
+        {{ form.unit_group }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">سمت</label>
+        {{ form.position }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">گروه کاری</label>
+        {{ form.group }}
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2 mt-4">
+      <button class="inline-flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-white hover:bg-green-700">ذخیره تغییرات</button>
+      <a href="{% url 'accounts:personnel_list' %}" class="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm">انصراف</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

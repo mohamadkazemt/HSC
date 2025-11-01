@@ -1,0 +1,490 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}ثبت گزارش کارکرد خودرو{% endblock %}
+
+{% block styles %}
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+<!-- Persian Datepicker -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@latest/dist/css/persian-datepicker.min.css">
+<style>
+  .required-field::after {
+    content: " *";
+    color: #ef4444;
+    font-weight: bold;
+  }
+  .select2-container--bootstrap-5 .select2-selection {
+    min-height: 42px;
+  }
+  .field-icon {
+    color: #6366f1;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <!-- Page Header -->
+  <div class="mb-6">
+    <div class="flex items-center mb-2">
+      <svg class="w-8 h-8 text-indigo-600 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+      </svg>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">ثبت گزارش کارکرد روزانه</h1>
+    </div>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mr-11">فرم ثبت گزارش کارکرد خودروهای پیمانکاران</p>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+    <div class="mb-6 space-y-3">
+      {% for message in messages %}
+        <div class="rounded-lg p-4 {% if message.tags == 'success' %}bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800{% elif message.tags == 'error' %}bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800{% else %}bg-blue-50 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800{% endif %}">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              {% if message.tags == 'success' %}
+                <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+              {% elif message.tags == 'error' %}
+                <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                </svg>
+              {% endif %}
+            </div>
+            <div class="mr-3">
+              <p class="text-sm font-medium {% if message.tags == 'success' %}text-green-800 dark:text-green-200{% elif message.tags == 'error' %}text-red-800 dark:text-red-200{% else %}text-blue-800 dark:text-blue-200{% endif %}">
+                {{ message }}
+              </p>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <!-- Main Form Card -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden" x-data="reportForm()">
+    <!-- Card Header with Gradient -->
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center">
+          <svg class="w-6 h-6 text-white ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+          </svg>
+          <h2 class="text-xl font-bold text-white">فرم ثبت گزارش</h2>
+        </div>
+        <span class="px-3 py-1 bg-white bg-opacity-20 rounded-full text-sm text-white">
+          {{ request.user.get_full_name }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Form Body -->
+    <form method="post" class="p-6 space-y-6" @submit.prevent="submitForm" id="reportForm">
+      {% csrf_token %}
+      
+      <!-- Success/Error Messages -->
+      <div x-show="message" x-transition class="rounded-lg p-4" :class="messageType === 'success' ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700' : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700'">
+        <div class="flex items-center">
+          <svg x-show="messageType === 'success'" class="w-5 h-5 ml-2" :class="messageType === 'success' ? 'text-green-600' : 'text-red-600'" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+          </svg>
+          <svg x-show="messageType === 'error'" class="w-5 h-5 ml-2 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+          </svg>
+          <p class="text-sm font-medium" :class="messageType === 'success' ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'" x-text="message"></p>
+        </div>
+      </div>
+      
+      <!-- Report Date and Vehicle Section -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Report Date -->
+        <div>
+          <label for="id_report_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 required-field">
+            <svg class="w-5 h-5 inline-block field-icon ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            تاریخ کارکرد
+          </label>
+          <input type="text" 
+                 name="report_date" 
+                 id="id_report_date"
+                 class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-gray-700 dark:text-white transition-all duration-200"
+                 placeholder="تاریخ را انتخاب کنید"
+                 required>
+          <p class="text-red-600 text-sm mt-1" id="error-report_date"></p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">تاریخ گزارش به صورت شمسی</p>
+        </div>
+
+        <!-- Vehicle Selection -->
+        <div>
+          <label for="id_vehicle" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 required-field">
+            <svg class="w-5 h-5 inline-block field-icon ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            خودرو
+          </label>
+          {{ form.vehicle }}
+          <p class="text-red-600 text-sm mt-1" id="error-vehicle"></p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">راننده و پلاک خودرو</p>
+        </div>
+      </div>
+
+      <!-- Work Status Section -->
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+          <svg class="w-5 h-5 text-indigo-600 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+          </svg>
+          وضعیت کارکرد
+        </h3>
+        
+        <div class="space-y-4">
+          <!-- Status Radio Buttons -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <label class="relative flex items-center p-4 cursor-pointer border-2 rounded-lg transition-all duration-200"
+                   :class="status === 'full' ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-300 dark:border-gray-600 hover:border-green-300'"
+                   @click="status = 'full'">
+              <input type="radio" 
+                     name="status" 
+                     value="full" 
+                     x-model="status"
+                     class="h-4 w-4 text-green-600 focus:ring-green-500"
+                     checked>
+              <div class="mr-3">
+                <div class="flex items-center">
+                  <svg class="w-5 h-5 text-green-600 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                  </svg>
+                  <span class="font-medium text-gray-900 dark:text-white">کارکرد کامل</span>
+                </div>
+                <span class="text-xs text-gray-500 dark:text-gray-400">8 ساعت کاری</span>
+              </div>
+            </label>
+
+            <label class="relative flex items-center p-4 cursor-pointer border-2 rounded-lg transition-all duration-200"
+                   :class="status === 'partial' ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20' : 'border-gray-300 dark:border-gray-600 hover:border-yellow-300'"
+                   @click="status = 'partial'">
+              <input type="radio" 
+                     name="status" 
+                     value="partial" 
+                     x-model="status"
+                     class="h-4 w-4 text-yellow-600 focus:ring-yellow-500">
+              <div class="mr-3">
+                <div class="flex items-center">
+                  <svg class="w-5 h-5 text-yellow-600 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                  </svg>
+                  <span class="font-medium text-gray-900 dark:text-white">کارکرد ناقص</span>
+                </div>
+                <span class="text-xs text-gray-500 dark:text-gray-400">توقف موقت</span>
+              </div>
+            </label>
+
+            <label class="relative flex items-center p-4 cursor-pointer border-2 rounded-lg transition-all duration-200"
+                   :class="status === 'inactive' ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : 'border-gray-300 dark:border-gray-600 hover:border-red-300'"
+                   @click="status = 'inactive'">
+              <input type="radio" 
+                     name="status" 
+                     value="inactive" 
+                     x-model="status"
+                     class="h-4 w-4 text-red-600 focus:ring-red-500">
+              <div class="mr-3">
+                <div class="flex items-center">
+                  <svg class="w-5 h-5 text-red-600 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z" clip-rule="evenodd"/>
+                  </svg>
+                  <span class="font-medium text-gray-900 dark:text-white">غیر فعال</span>
+                </div>
+                <span class="text-xs text-gray-500 dark:text-gray-400">عدم حضور</span>
+              </div>
+            </label>
+          </div>
+
+          <!-- Partial Work Details (Conditional) -->
+          <div x-show="status === 'partial'" 
+               x-transition:enter="transition ease-out duration-300"
+               x-transition:enter-start="opacity-0 transform scale-95"
+               x-transition:enter-end="opacity-100 transform scale-100"
+               class="bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+              <svg class="w-5 h-5 text-yellow-600 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              جزئیات کارکرد ناقص
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label for="id_stop_start_time" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  ساعت شروع توقف
+                </label>
+                <input type="time" 
+                       name="stop_start_time" 
+                       id="id_stop_start_time"
+                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-500 dark:bg-gray-700 dark:text-white">
+                <p class="text-red-600 text-sm mt-1" id="error-stop_start_time"></p>
+              </div>
+              <div>
+                <label for="id_stop_end_time" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  ساعت پایان توقف
+                </label>
+                <input type="time" 
+                       name="stop_end_time" 
+                       id="id_stop_end_time"
+                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-500 dark:bg-gray-700 dark:text-white">
+                <p class="text-red-600 text-sm mt-1" id="error-stop_end_time"></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Inactive Details (Conditional) -->
+          <div x-show="status === 'inactive'" 
+               x-transition:enter="transition ease-out duration-300"
+               x-transition:enter-start="opacity-0 transform scale-95"
+               x-transition:enter-end="opacity-100 transform scale-100"
+               class="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+              <svg class="w-5 h-5 text-red-600 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+              دلیل عدم فعالیت
+            </h4>
+            <div>
+              <label for="id_description_inactive" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 required-field">
+                توضیحات
+              </label>
+              <textarea x-bind:name="status === 'inactive' ? 'description' : ''"
+                        x-bind:disabled="status !== 'inactive'"
+                        id="id_description_inactive"
+                        rows="3"
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
+                        placeholder="لطفاً دلیل غیرفعال بودن خودرو را شرح دهید..."></textarea>
+              <p class="text-red-600 text-sm mt-1" id="error-description-inactive"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Additional Notes (Optional) -->
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-6" x-show="status !== 'inactive'">
+        <label for="id_description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <svg class="w-5 h-5 inline-block field-icon ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+          </svg>
+          توضیحات اضافی (اختیاری)
+        </label>
+        <textarea x-bind:name="status !== 'inactive' ? 'description' : ''"
+                  x-bind:disabled="status === 'inactive'"
+                  id="id_description"
+                  rows="4"
+                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
+                  placeholder="توضیحات یا یادداشت‌های اضافی در مورد این گزارش..."></textarea>
+        <p class="text-red-600 text-sm mt-1" id="error-description"></p>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+        <a href="{% url 'contractor_management:all_reports' %}" 
+           class="inline-flex items-center px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200">
+          <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+          بازگشت
+        </a>
+        
+        <button type="submit" 
+                :disabled="loading"
+                class="inline-flex items-center px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+          <svg x-show="!loading" class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+          <svg x-show="loading" class="animate-spin w-5 h-5 ml-2" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span x-text="loading ? 'در حال ارسال...' : 'ثبت گزارش'"></span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- jQuery (required for Select2) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<!-- Persian Date -->
+<script src="https://cdn.jsdelivr.net/npm/persian-date@latest/dist/persian-date.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/persian-datepicker@latest/dist/js/persian-datepicker.min.js"></script>
+
+<script>
+  function reportForm() {
+    return {
+      status: 'full',
+      loading: false,
+      message: '',
+      messageType: 'success',
+      
+      async submitForm(event) {
+        this.loading = true;
+        this.message = '';
+        
+        // Clear previous errors and error styles
+        document.querySelectorAll('[id^="error-"]').forEach(el => el.innerText = '');
+        ['id_report_date','id_stop_start_time','id_stop_end_time','id_description','id_description_inactive'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.classList.remove('border-red-500');
+        });
+        if (window.jQuery) {
+          const $vehicle = $('#id_vehicle');
+          $vehicle.removeClass('border-red-500');
+          $vehicle.next('.select2').find('.select2-selection').removeClass('border-red-500');
+        }
+        
+        const form = event.target;
+        const formData = new FormData(form);
+        
+        try {
+          const response = await fetch(form.action || window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok && data.success) {
+            this.messageType = 'success';
+            this.message = data.message || 'گزارش با موفقیت ثبت شد!';
+            
+            // Reset form after 1.5 seconds
+            setTimeout(() => {
+              if (data.redirect) {
+                window.location.href = data.redirect;
+              } else {
+                form.reset();
+                this.status = 'full';
+                $('#id_vehicle').val(null).trigger('change');
+              }
+            }, 1500);
+          } else {
+            this.messageType = 'error';
+            this.message = data.message || 'لطفا خطاهای زیر را اصلاح کنید';
+            if (data && data.errors) {
+              Object.entries(data.errors).forEach(([field, msgs]) => {
+                const msg = Array.isArray(msgs) ? msgs[0] : msgs;
+                if (field === 'vehicle') {
+                  const errEl = document.getElementById('error-vehicle');
+                  if (errEl) errEl.innerText = msg;
+                  if (window.jQuery) {
+                    $('#id_vehicle').next('.select2').find('.select2-selection').addClass('border-red-500');
+                  }
+                } else if (field === 'description') {
+                  const isInactive = this.status === 'inactive';
+                  const inputId = isInactive ? 'id_description_inactive' : 'id_description';
+                  const errorId = isInactive ? 'error-description-inactive' : 'error-description';
+                  const inputEl = document.getElementById(inputId);
+                  if (inputEl) inputEl.classList.add('border-red-500');
+                  const errEl = document.getElementById(errorId);
+                  if (errEl) errEl.innerText = msg;
+                } else {
+                  const inputId = 'id_' + field;
+                  const errorId = 'error-' + field;
+                  const inputEl = document.getElementById(inputId);
+                  if (inputEl) inputEl.classList.add('border-red-500');
+                  const errEl = document.getElementById(errorId);
+                  if (errEl) errEl.innerText = msg;
+                }
+              });
+            }
+          }
+        } catch (error) {
+          this.messageType = 'error';
+          this.message = 'خطا در ارتباط با سرور: ' + error.message;
+        } finally {
+          this.loading = false;
+          
+          // Hide message after 5 seconds
+          setTimeout(() => {
+            this.message = '';
+          }, 5000);
+        }
+      }
+    };
+  }
+
+  $(document).ready(function() {
+    // Initialize Select2 for vehicle dropdown
+    $('#id_vehicle').select2({
+      theme: 'bootstrap-5',
+      placeholder: 'خودرو را انتخاب کنید...',
+      allowClear: true,
+      dir: 'rtl',
+      width: '100%',
+      language: {
+        noResults: function() {
+          return 'خودرویی یافت نشد';
+        },
+        searching: function() {
+          return 'در حال جستجو...';
+        }
+      },
+      ajax: {
+        url: '{% url "contractor_management:get_all_vehicles_ajax" %}',
+        dataType: 'json',
+        delay: 250,
+        processResults: function(data) {
+          return {
+            results: data
+          };
+        },
+        cache: true
+      }
+    });
+
+    // Initialize Persian Datepicker
+    $('#id_report_date').persianDatepicker({
+      format: 'YYYY/MM/DD',
+      initialValue: true,
+      initialValueType: 'persian',
+      autoClose: true,
+      calendar: {
+        persian: {
+          locale: 'fa'
+        }
+      },
+      navigator: {
+        enabled: true,
+        scroll: {
+          enabled: true
+        }
+      },
+      toolbox: {
+        enabled: true,
+        calendarSwitch: {
+          enabled: false
+        }
+      },
+      timePicker: {
+        enabled: false
+      },
+      dayPicker: {
+        enabled: true
+      },
+      monthPicker: {
+        enabled: true
+      },
+      yearPicker: {
+        enabled: true
+      }
+    });
+  });
+</script>
+{% endblock %}

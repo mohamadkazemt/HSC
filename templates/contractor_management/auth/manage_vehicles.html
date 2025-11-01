@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}مدیریت خودروها{% endblock %}
+
+{% block content %}
+<div x-data="{ openModal: false }" class="space-y-6">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
+    <div class="px-6 py-5 flex items-center justify-between border-b border-gray-100 dark:border-gray-700">
+      <div>
+        <h1 class="text-2xl font-bold">خودروهای شرکت</h1>
+        <p class="text-sm text-gray-500">{{ contractor.company_name }}</p>
+      </div>
+      <button @click="openModal = true" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+        افزودن خودروی جدید
+      </button>
+    </div>
+
+    <div class="px-6 pb-6">
+      <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+        {% if vehicles %}
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-50 dark:bg-gray-700/60">
+            <tr>
+              <th class="px-4 py-3 text-right font-semibold text-gray-700">پلاک</th>
+              <th class="px-4 py-3 text-right font-semibold text-gray-700">نوع</th>
+              <th class="px-4 py-3 text-right font-semibold text-gray-700">دسته‌بندی</th>
+              <th class="px-4 py-3 text-right font-semibold text-gray-700">راننده</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+            {% for v in vehicles %}
+            <tr class="even:bg-gray-50/60 dark:even:bg-gray-800/60">
+              <td class="px-4 py-3 font-mono">{{ v.license_plate }}</td>
+              <td class="px-4 py-3">{{ v.vehicle_type }}</td>
+              <td class="px-4 py-3">{{ v.get_vehicle_category_display }}</td>
+              <td class="px-4 py-3">{{ v.driver_name }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <!-- Empty state -->
+        <div class="py-14 text-center">
+          <div class="mx-auto w-16 h-16 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+            <i class="fa-solid fa-truck"></i>
+          </div>
+          <h3 class="mt-4 text-lg font-semibold">خودرویی ثبت نشده است</h3>
+          <p class="mt-1 text-sm text-gray-500">از این بخش می‌توانید خودروهای شرکت را اضافه کنید.</p>
+          <button @click="openModal = true" class="mt-5 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow">
+            <i class="fa-solid fa-plus"></i>
+            افزودن اولین خودرو
+          </button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Modal -->
+  <div x-show="openModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div @click.away="openModal = false" class="w-full max-w-2xl bg-white dark:bg-gray-800 rounded-xl shadow-xl">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <h2 class="text-lg font-bold">افزودن خودروی جدید</h2>
+        <button @click="openModal = false" class="text-gray-500 hover:text-gray-700">&times;</button>
+      </div>
+      <form method="post" class="p-6">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm mb-1">پلاک</label>
+            {{ form.license_plate }}
+          </div>
+          <div>
+            <label class="block text-sm mb-1">نوع خودرو</label>
+            {{ form.vehicle_type }}
+          </div>
+          <div>
+            <label class="block text-sm mb-1">دسته‌بندی</label>
+            {{ form.vehicle_category }}
+          </div>
+          <div>
+            <label class="block text-sm mb-1">کد کارگاهی</label>
+            {{ form.vehicle_code }}
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm mb-1">نام راننده</label>
+            {{ form.driver_name }}
+          </div>
+        </div>
+        <div class="mt-6 flex items-center justify-end gap-2">
+          <button type="button" @click="openModal = false" class="px-4 py-2 rounded border">انصراف</button>
+          <button type="submit" class="px-5 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">ذخیره</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

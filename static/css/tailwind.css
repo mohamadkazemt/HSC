@@ -1,0 +1,22 @@
+/* Placeholder compiled Tailwind CSS.
+   Replace this file with your real compiled output (tailwind -o static/css/tailwind.css).
+   Temporary fallback includes minimal utilities for brand colors to avoid visual regression in production if Tailwind is not yet compiled.
+*/
+:root{
+  --brand-500:#6366f1; /* indigo-500 */
+  --brand-600:#4f46e5; /* indigo-600 */
+  --brand-700:#4338ca; /* indigo-700 */
+  --brand-100:#e0e7ff; /* indigo-100 */
+}
+.bg-brand-600{background-color:var(--brand-600)}
+.bg-brand-100{background-color:var(--brand-100)}
+.text-brand-700{color:var(--brand-700)}
+.ring-2{box-shadow:0 0 0 2px rgba(0,0,0,0.0)}
+.ring-brand-500{box-shadow:0 0 0 2px var(--brand-500)}
+.bg-emerald-600{background-color:#059669}
+.bg-emerald-600:hover{background-color:#047857}
+.bg-brand-600:hover{background-color:#4338ca}
+.bg-gradient-to-l{background-image:linear-gradient(to left, var(--tw-gradient-stops, var(--brand-600), var(--brand-500)))}
+.from-brand-600{--tw-gradient-from: var(--brand-600)}
+.to-brand-500{--tw-gradient-to: var(--brand-500)}
+.text-white{color:#fff}

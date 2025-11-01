@@ -24,6 +24,8 @@ class Contractor(models.Model):
     hse_plan_file = models.FileField(upload_to='hse_plans/', null=True, blank=True, verbose_name="طرح ایمنی، بهداشت و محیط زیست")
     social_insurance = models.BooleanField(default=False, verbose_name="بیمه تامین اجتماعی")
     number_of_social_insurance = models.CharField(max_length=255, verbose_name="شماره بیمه تامین اجتماعی")
+    # Link to contractor manager user account
+    user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='contractor_profile', verbose_name="کاربر مدیر پیمانکار")
 
     def __str__(self):
         return self.company_name
@@ -35,6 +37,8 @@ class Contractor(models.Model):
 
 class Employee(models.Model):
     contractor = models.ForeignKey(Contractor, on_delete=models.CASCADE, related_name="employees", verbose_name="پیمانکار")
+    # Link to employee user account
+    user = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='employee_profile', verbose_name="کاربر پرسنل")
     first_name = models.CharField(max_length=255, verbose_name="نام")
     last_name = models.CharField(max_length=255, verbose_name="نام خانوادگی")
     national_id = models.CharField(max_length=10, unique=True, verbose_name="کد ملی")

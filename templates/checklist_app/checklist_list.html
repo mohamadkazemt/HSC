@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load checklist_filters %}
+{% block title %}آرشیو چک‌لیست‌ها{% endblock %}
+
+{% block styles %}
+<style>
+  /* Select2 Tailwind-like sizing */
+  .select2-container{ width:100% !important; }
+  .select2-container .select2-selection--single{
+    height: 40px; /* match py-2 inputs */
+    min-height: 40px;
+    border: 1px solid #d1d5db; /* gray-300 */
+    border-radius: 0.375rem; /* rounded-md */
+    padding: 0 0.75rem; /* px-3 */
+    background-color: #fff;
+    display: flex; align-items: center;
+  }
+  .dark .select2-container .select2-selection--single{ background-color:#111827; border-color:#374151; color:#e5e7eb; }
+  .select2-container .select2-selection__rendered{ line-height: 38px; padding: 0; }
+  .select2-container .select2-selection__placeholder{ color:#6b7280; }
+  .select2-container .select2-selection__arrow{ height: 38px; right: auto; left: 8px; }
+  /* Dropdown menu */
+  .select2-container .select2-dropdown{ border-color:#d1d5db; }
+  .select2-results__option{ padding: 8px 12px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-xl font-bold">آرشیو چک‌لیست‌ها</h1>
+    <a id="exportExcelTop" href="{% url 'checklist_app:export_general_checklists_excel' %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
+       class="inline-flex items-center gap-2 px-4 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700 shadow">
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M7.5 12 12 16.5m0 0L16.5 12M12 16.5V3"/></svg>
+      خروجی اکسل
+    </a>
+  </div>
+  <!-- Filters Card -->
+  <div class="rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 shadow-md">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+      <h2 class="flex items-center gap-2 text-base font-semibold">
+        <svg class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h18M5.25 9.75h13.5m-9 5.25h4.5M9 19.5h6"/>
+        </svg>
+        فیلتر و جستجو
+      </h2>
+      <div></div>
+    </div>
+    <div class="px-4 py-4">
+  <div class="flex items-center justify-between">
+    <h1 class="text-xl font-bold">آرشیو چک‌لیست‌ها</h1>
+  </div>
+
+  <form method="get" class="grid grid-cols-1 md:grid-cols-7 gap-3">
+    <select name="checklist_type" class="rounded-md border border-gray-300 px-3 py-2">
+      <option value="">همه انواع</option>
+      {% for k,v in checklist_types %}
+      <option value="{{ k }}" {% if current_filters.checklist_type == k %}selected{% endif %}>{{ v }}</option>
+      {% endfor %}
+    </select>
+    <div class="relative">
+      <svg class="h-5 w-5 text-gray-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25M3 9.75h18"/></svg>
+      <input name="date_from" id="date_from" value="{{ current_filters.date_from }}" placeholder="از تاریخ (جلالی)" class="w-full rounded-md border border-gray-300 pr-3 pl-10 py-2">
+    </div>
+    <div class="relative">
+      <svg class="h-5 w-5 text-gray-400 absolute left-3 top-2.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25M3 9.75h18"/></svg>
+      <input name="date_to" id="date_to" value="{{ current_filters.date_to }}" placeholder="تا تاریخ (جلالی)" class="w-full rounded-md border border-gray-300 pr-3 pl-10 py-2">
+    </div>
+    <select name="shift" class="rounded-md border border-gray-300 px-3 py-2">
+      <option value="">همه شیفت‌ها</option>
+      {% for code, label in available_shifts %}
+      <option value="{{ code }}" {% if current_filters.shift and current_filters.shift in code %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="shift_group" class="rounded-md border border-gray-300 px-3 py-2">
+      <option value="">همه گروه‌ها</option>
+      {% for g in available_groups %}
+      <option value="{{ g }}" {% if current_filters.shift_group == g %}selected{% endif %}>{{ g }}</option>
+      {% endfor %}
+    </select>
+    <select id="user_q" name="user_q" class="rounded-md border border-gray-300 px-3 py-2">
+      <option value=""></option>
+      {% for s in available_submitters %}
+      <option value="{{ s }}" {% if current_filters.user_q == s %}selected{% endif %}>{{ s }}</option>
+      {% endfor %}
+    </select>
+    <div class="md:col-span-7 flex items-center gap-2">
+      <button class="inline-flex items-center gap-2 rounded-md bg-indigo-600 text-white px-4 py-2 hover:bg-indigo-700 shadow">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+        فیلتر
+      </button>
+      <a href="?" class="inline-flex items-center gap-2 rounded-md border px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/40">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+        پاک‌سازی
+      </a>
+    </div>
+  </form>
+    </div>
+  </div>
+
+  <div class="overflow-x-auto bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-100 dark:border-gray-700">
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+        <tr>
+          <th class="p-3 text-right">#</th>
+          <th class="p-3 text-right">ثبت‌کننده</th>
+          <th class="p-3 text-right">تاریخ (جلالی)</th>
+          <th class="p-3 text-right">نوع</th>
+          <th class="p-3 text-right">مورد</th>
+          <th class="p-3 text-right">شیفت</th>
+          <th class="p-3 text-right">گروه</th>
+          <th class="p-3 text-center">اقدامات</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+        {% for c in page_obj %}
+        <tr>
+          <td class="p-3">{{ c.id }}</td>
+          <td class="p-3">
+            {% with up=c.user.userprofile %}
+              <div class="text-sm font-medium">{{ c.user.get_full_name|default:c.user.username }}</div>
+              {% if up and up.personnel_code %}
+              <div class="text-xs text-gray-500">کد: {{ up.personnel_code }}</div>
+              {% endif %}
+            {% endwith %}
+          </td>
+          <td class="p-3">{{ c.date|to_jalali }}</td>
+          <td class="p-3">
+            {% if c.checklist_type == 'machine' %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs">ماشین</span>
+            {% elif c.checklist_type == 'location' %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-xs">مکان</span>
+            {% else %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-xs">ماشین‌آلات پیمانکار</span>
+            {% endif %}
+          </td>
+          <td class="p-3">
+            {% if c.checklist_type == 'machine' %}{{ c.machine.workshop_code }}{% elif c.checklist_type == 'location' %}{{ c.location_section.section }}{% else %}{{ c.contractor_vehicle.plate_number }}{% endif %}
+          </td>
+          <td class="p-3">{{ c.get_shift_display }}</td>
+          <td class="p-3">{{ c.shift_group }}</td>
+          <td class="p-3 text-center">
+            <a href="{% url 'checklist_app:general_checklist_detail' c.id %}" class="inline-flex items-center justify-center h-9 w-9 rounded-md bg-indigo-600/90 text-white hover:bg-indigo-700 shadow" title="جزئیات">
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/></svg>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="p-6 text-center text-gray-500">موردی یافت نشد.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flex items-center justify-between">
+    <div class="text-sm text-gray-500">صفحه {{ page_obj.number }} از {{ page_obj.paginator.num_pages }}</div>
+    <div class="flex items-center gap-2">
+      {% if page_obj.has_previous %}
+      <a class="px-3 py-1 rounded border" href="?{% if query %}{{ query }}&{% endif %}page={{ page_obj.previous_page_number }}">قبلی</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a class="px-3 py-1 rounded border" href="?{% if query %}{{ query }}&{% endif %}page={{ page_obj.next_page_number }}">بعدی</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.css"/>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.js"></script>
+<script>
+  $(function(){
+    $('#date_from').pDatepicker({ format: 'YYYY/MM/DD', autoClose:true, calendarType:'persian' });
+    $('#date_to').pDatepicker({ format: 'YYYY/MM/DD', autoClose:true, calendarType:'persian' });
+    $('select[name=checklist_type], select[name=shift], select[name=shift_group]').select2({ width:'100%', dir:'rtl', allowClear:true, placeholder:'انتخاب کنید' });
+    $('#user_q').select2({ width:'100%', dir:'rtl', allowClear:true, placeholder:'ثبت‌کننده...' });
+
+    // لینک Export همیشه از request.GET ساخته می‌شود؛ نیازی به دستکاری JS نیست.
+  });
+</script>
+{% endblock %}

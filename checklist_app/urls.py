@@ -53,6 +53,12 @@ URLS_WITH_LABELS = [
         "label": "چک لیست_خروجی اکسل"
     },
     {
+        "path": "export-pdf/<int:pk>/",
+        "view": views.export_checklist_pdf_view,
+        "name": "export_checklist_pdf",
+        "label": "چک لیست_خروجی پی‌دی‌اف"
+    },
+    {
         "path": "questions/",
         "view": views.general_question_list_view,
         "name": "general_question_list",

@@ -1,4 +1,5 @@
 from django import template
+import jdatetime
 
 register = template.Library()
 
@@ -19,6 +20,17 @@ def to_jalali(date):
     if date:
         jdate = jdatetime.date.fromgregorian(date=date)
         return jdate.strftime("%Y/%m/%d")
+    return ''
+
+@register.filter
+def datetime_to_jalali(datetime_obj):
+    """Converts a Gregorian datetime to Jalali datetime string."""
+    if datetime_obj:
+        try:
+            jdatetime_obj = jdatetime.datetime.fromgregorian(datetime=datetime_obj)
+            return jdatetime_obj.strftime("%Y/%m/%d %H:%M")
+        except:
+            return str(datetime_obj)
     return ''
 
 @register.filter

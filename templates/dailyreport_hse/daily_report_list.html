@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}لیست گزارش‌های روزانه HSE{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-5">
+  <!-- Header / actions -->
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow ring-1 ring-gray-200 dark:ring-gray-700 overflow-hidden">
+    <div class="px-4 sm:px-6 py-4 bg-gradient-to-l from-indigo-600 to-indigo-500 text-white flex items-center gap-3">
+      <!-- list icon -->
+      <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6.75h17.25M3 12h17.25M3 17.25h17.25"/></svg>
+      <h3 class="text-base sm:text-lg font-semibold">لیست گزارش‌های روزانه</h3>
+      <div class="ms-auto flex items-center gap-2">
+        <a href="{% url 'dailyreport_hse:daily_report_form' %}" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm rounded-md bg-emerald-600 hover:bg-emerald-700 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-indigo-600 focus:ring-white">
+          <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"/></svg>
+          گزارش جدید
+        </a>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <form method="get" class="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-4 gap-3 border-b border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <label class="block">
+        <span class="block text-sm text-gray-600 dark:text-gray-300 mb-1">شیفت</span>
+        <div class="relative">
+<select name="shift" class="w-full h-11 text-sm rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 pr-3 pl-10 appearance-none focus:ring-indigo-500 focus:border-indigo-500">
+            <option value="">همه</option>
+            {% for s in shift_choices %}
+              <option value="{{ s }}" {% if shift_filter == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+          <div class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <i class="fa-solid fa-filter"></i>
+          </div>
+        </div>
+      </label>
+      <label class="block">
+        <span class="block text-sm text-gray-600 dark:text-gray-300 mb-1">گروه</span>
+        <div class="relative">
+<select name="group" class="w-full h-11 text-sm rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 pr-3 pl-10 appearance-none focus:ring-indigo-500 focus:border-indigo-500">
+            <option value="">همه</option>
+            {% for g in group_choices %}
+              <option value="{{ g }}" {% if group_filter == g %}selected{% endif %}>{{ g }}</option>
+            {% endfor %}
+          </select>
+          <div class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <i class="fa-solid fa-layer-group"></i>
+          </div>
+        </div>
+      </label>
+      <label class="md:col-span-2 block">
+        <span class="block text-sm text-gray-600 dark:text-gray-300 mb-1">جستجو</span>
+        <div class="relative">
+<input type="text" name="search" value="{{ search_query }}" class="w-full h-11 text-sm rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 pr-3 pl-10 focus:ring-indigo-500 focus:border-indigo-500" placeholder="کاربر، کد پرسنلی، توضیحات ...">
+<div class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <i class="fa-solid fa-magnifying-glass"></i>
+          </div>
+        </div>
+      </label>
+      <div class="md:col-span-4 flex flex-wrap items-center gap-3 pt-1">
+        <button class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <i class="fa-solid fa-check"></i>
+          اعمال فیلتر
+        </button>
+        <a href="{% url 'dailyreport_hse:daily_report_list' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
+          <i class="fa-solid fa-xmark"></i>
+          حذف فیلتر
+        </a>
+      </div>
+    </form>
+
+    <!-- Table -->
+    <div class="p-4 sm:p-6">
+      {% if daily_reports and daily_reports|length %}
+      <div class="overflow-auto rounded-xl ring-1 ring-gray-200 dark:ring-gray-700">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-50/80 dark:bg-gray-800 sticky top-0 z-10">
+            <tr class="text-gray-600 dark:text-gray-300">
+              <th class="p-3 text-right font-medium">تاریخ</th>
+              <th class="p-3 text-right font-medium">کاربر</th>
+              <th class="p-3 text-right font-medium">شیفت</th>
+              <th class="p-3 text-right font-medium">گروه</th>
+              <th class="p-3 text-right font-medium">آتشباری</th>
+              <th class="p-3 text-right font-medium">حفاری</th>
+              <th class="p-3 text-right font-medium">بارگیری</th>
+              <th class="p-3 text-right font-medium">تخلیه</th>
+              <th class="p-3 text-right font-medium">توقفات</th>
+              <th class="p-3 text-right font-medium">بازرسی‌ها</th>
+              <th class="p-3 text-right font-medium">عملیات</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+            {% for r in daily_reports %}
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/60">
+              <td class="p-3 whitespace-nowrap text-gray-900 dark:text-gray-100">{{ r.created_at|date:"Y/m/d H:i" }}</td>
+              <td class="p-3">{{ r.user.get_full_name|default:r.user.username }}</td>
+              <td class="p-3">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200">
+                  <i class="fa-regular fa-clock"></i>
+                  {{ r.shift }}
+                </span>
+              </td>
+              <td class="p-3">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200">
+                  <i class="fa-solid fa-users"></i>
+                  {{ r.work_group }}
+                </span>
+              </td>
+              <td class="p-3">
+                {% if r.blasting_details.count %}
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">{{ r.blasting_details.count }}</span>
+                {% else %}
+                  <span class="px-2.5 py-0.5 rounded-full text-xs bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">0</span>
+                {% endif %}
+              </td>
+              <td class="p-3">
+                {% if r.drilling_details.count %}
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">{{ r.drilling_details.count }}</span>
+                {% else %}
+                  <span class="px-2.5 py-0.5 rounded-full text-xs bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">0</span>
+                {% endif %}
+              </td>
+              <td class="p-3">
+                {% if r.loading_details.count %}
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">{{ r.loading_details.count }}</span>
+                {% else %}
+                  <span class="px-2.5 py-0.5 rounded-full text-xs bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">0</span>
+                {% endif %}
+              </td>
+              <td class="p-3">
+                {% if r.dump_details.count %}
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">{{ r.dump_details.count }}</span>
+                {% else %}
+                  <span class="px-2.5 py-0.5 rounded-full text-xs bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">0</span>
+                {% endif %}
+              </td>
+              <td class="p-3">
+                {% if r.stoppage_details.count %}
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200">{{ r.stoppage_details.count }}</span>
+                {% else %}
+                  <span class="px-2.5 py-0.5 rounded-full text-xs bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">0</span>
+                {% endif %}
+              </td>
+              <td class="p-3">
+                {% if r.inspection_details.count %}
+                  <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200">{{ r.inspection_details.count }}</span>
+                {% else %}
+                  <span class="px-2.5 py-0.5 rounded-full text-xs bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">0</span>
+                {% endif %}
+              </td>
+              <td class="p-3 whitespace-nowrap">
+                <div class="flex items-center gap-2">
+                  <a class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-indigo-700 bg-indigo-50 hover:bg-indigo-100 dark:text-indigo-200 dark:bg-indigo-900/30" href="{% url 'dailyreport_hse:daily_report_detail' r.id %}" title="جزئیات">
+                    <i class="fa-regular fa-eye"></i>
+                    <span class="hidden sm:inline">جزئیات</span>
+                  </a>
+                  <a class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:text-emerald-200 dark:bg-emerald-900/30" href="{% url 'dailyreport_hse:daily_report_pdf' r.id %}" title="دانلود PDF">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    <span class="hidden sm:inline">PDF</span>
+                  </a>
+                  <form action="{% url 'dailyreport_hse:daily_report_delete' r.id %}" method="post" onsubmit="return confirm('حذف این گزارش؟');" class="inline">
+                    {% csrf_token %}
+                    <button class="inline-flex items-center gap-1 px-2 py-1 rounded-md text-rose-700 bg-rose-50 hover:bg-rose-100 dark:text-rose-200 dark:bg-rose-900/30" type="submit" title="حذف">
+                      <i class="fa-regular fa-trash-can"></i>
+                      <span class="hidden sm:inline">حذف</span>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="mt-4 flex items-center justify-center gap-2">
+        {% if daily_reports.has_previous %}
+          <a class="px-3 py-1 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800" href="?page={{ daily_reports.previous_page_number }}&shift={{ shift_filter }}&group={{ group_filter }}&search={{ search_query }}">قبلی</a>
+        {% endif %}
+        <span class="px-3 py-1 text-sm text-gray-600 dark:text-gray-300">صفحه {{ daily_reports.number }} از {{ daily_reports.paginator.num_pages }}</span>
+        {% if daily_reports.has_next %}
+          <a class="px-3 py-1 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800" href="?page={{ daily_reports.next_page_number }}&shift={{ shift_filter }}&group={{ group_filter }}&search={{ search_query }}">بعدی</a>
+        {% endif %}
+      </div>
+      {% else %}
+        <div class="flex flex-col items-center gap-3 py-10 text-center text-gray-500 dark:text-gray-400">
+          <i class="fa-regular fa-circle-xmark text-3xl"></i>
+          <p>هیچ گزارشی یافت نشد.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

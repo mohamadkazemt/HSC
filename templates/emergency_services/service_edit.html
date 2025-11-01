@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}ویرایش خدمت درمانی{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto rounded-lg shadow-lg bg-white dark:bg-gray-800">
+  <div class="p-4 rounded-t-lg bg-gradient-to-l from-emerald-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+    <i class="fa-solid fa-stethoscope text-emerald-600"></i>
+    <h3 class="font-semibold">ویرایش خدمت درمانی</h3>
+  </div>
+  <form method="post" class="p-4 space-y-4">
+    {% csrf_token %}
+    <div>
+      <label class="block text-sm mb-1">نام</label>
+      {{ form.name }}
+    </div>
+    <div>
+      <label class="block text-sm mb-1">توضیحات</label>
+      {{ form.description }}
+    </div>
+    <div class="flex items-center justify-end gap-2">
+      <a href="{% url 'emergency_services:service_list' %}" class="px-4 py-2 rounded-md bg-gray-100 text-gray-700">انصراف</a>
+      <button type="submit" class="px-4 py-2 rounded-md bg-emerald-600 text-white">ذخیره</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

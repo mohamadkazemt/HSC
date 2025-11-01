@@ -1,0 +1,301 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if form.instance.pk %}ویرایش پیمانکار{% else %}افزودن پیمانکار{% endif %}{% endblock %}
+
+{% block styles %}
+<!-- Persian Date Picker -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@latest/dist/css/persian-datepicker.min.css">
+<style>
+  .required-field::after {
+    content: " *";
+    color: #ef4444;
+    font-weight: bold;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto" x-data="contractorForm()" x-init="init()">
+  <!-- Page Header -->
+  <div class="mb-6">
+    <div class="flex items-center mb-2">
+      <i class="fas fa-building text-3xl text-blue-600 ml-3"></i>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+        {% if form.instance.pk %}ویرایش پیمانکار{% else %}افزودن پیمانکار جدید{% endif %}
+      </h1>
+    </div>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mr-11">اطلاعات پیمانکار را وارد کنید</p>
+  </div>
+
+  <!-- Main Form Card -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+    <!-- Card Header with Gradient -->
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4">
+      <div class="flex items-center">
+        <i class="fas fa-edit text-white text-xl ml-3"></i>
+        <h2 class="text-xl font-bold text-white">فرم اطلاعات پیمانکار</h2>
+      </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div x-show="message" x-transition class="m-6 rounded-lg p-4" :class="messageType === 'success' ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700' : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700'">
+      <div class="flex items-center">
+        <i class="fas ml-2" :class="messageType === 'success' ? 'fa-check-circle text-green-600' : 'fa-exclamation-circle text-red-600'"></i>
+        <p class="text-sm font-medium" :class="messageType === 'success' ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'" x-text="message"></p>
+      </div>
+    </div>
+
+    <!-- Form Body -->
+    <form method="post" @submit.prevent="submitForm" class="p-6 space-y-6">
+      {% csrf_token %}
+      
+      <!-- Primary Information Section -->
+      <div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center pb-2 border-b border-gray-200 dark:border-gray-700">
+          <i class="fas fa-info-circle text-blue-600 ml-2"></i>
+          اطلاعات اولیه
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Company Name -->
+          <div>
+            <label for="id_company_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 required-field">
+              <i class="fas fa-building text-blue-600 ml-1"></i>
+              نام شرکت
+            </label>
+            {{ form.company_name }}
+            <p class="text-red-500 text-xs mt-1" id="error_company_name"></p>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">نام رسمی شرکت پیمانکار</p>
+          </div>
+
+          <!-- Manager Name -->
+          <div>
+            <label for="id_manager_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 required-field">
+              <i class="fas fa-user-tie text-blue-600 ml-1"></i>
+              نام مدیرعامل
+            </label>
+            {{ form.manager_name }}
+            <p class="text-red-500 text-xs mt-1" id="error_manager_name"></p>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">نام و نام خانوادگی مدیرعامل</p>
+          </div>
+
+          <!-- Manager Phone -->
+          <div>
+            <label for="id_manager_phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 required-field">
+              <i class="fas fa-phone text-blue-600 ml-1"></i>
+              شماره تماس
+            </label>
+            {{ form.manager_phone }}
+            <p class="text-red-500 text-xs mt-1" id="error_manager_phone"></p>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">شماره تماس مدیرعامل</p>
+          </div>
+
+          <!-- Activity Field -->
+          <div>
+            <label for="id_activity_field" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 required-field">
+              <i class="fas fa-briefcase text-blue-600 ml-1"></i>
+              حوزه فعالیت
+            </label>
+            {{ form.activity_field }}
+            <p class="text-red-500 text-xs mt-1" id="error_activity_field"></p>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">حوزه کاری پیمانکار</p>
+          </div>
+          <!-- شماره بیمه تامین اجتماعی -->
+          <div>
+            <label for="id_number_of_social_insurance" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 required-field">
+              <i class="fas fa-id-card text-blue-600 ml-1"></i>
+              شماره بیمه تامین اجتماعی
+            </label>
+            {{ form.number_of_social_insurance }}
+            <p class="text-red-500 text-xs mt-1" id="error_number_of_social_insurance"></p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Insurance and Certificates Section -->
+      <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center pb-2 border-b border-gray-200 dark:border-gray-700">
+          <i class="fas fa-shield-alt text-green-600 ml-2"></i>
+          بیمه‌ها و گواهینامه‌ها
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Liability Insurance Expiry -->
+          <div>
+            <label for="id_liability_insurance_expiry" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <i class="fas fa-calendar-alt text-green-600 ml-1"></i>
+              تاریخ انقضای بیمه مسئولیت
+            </label>
+            {{ form.liability_insurance_expiry }}
+            <p class="text-red-500 text-xs mt-1" id="error_liability_insurance_expiry"></p>
+          </div>
+
+          <!-- Fire Insurance Expiry -->
+          <div>
+            <label for="id_fire_insurance_expiry" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <i class="fas fa-fire-extinguisher text-red-600 ml-1"></i>
+              تاریخ انقضای بیمه آتش‌سوزی
+            </label>
+            {{ form.fire_insurance_expiry }}
+            <p class="text-red-500 text-xs mt-1" id="error_fire_insurance_expiry"></p>
+          </div>
+
+          <!-- Contractor Certificate Expiry -->
+          <div>
+            <label for="id_contractor_certificate_expiry" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <i class="fas fa-certificate text-purple-600 ml-1"></i>
+              تاریخ انقضای پروانه پیمانکاری
+            </label>
+            {{ form.contractor_certificate_expiry }}
+            <p class="text-red-500 text-xs mt-1" id="error_contractor_certificate_expiry"></p>
+          </div>
+
+          <!-- Safety Certificate Expiry -->
+          <div>
+            <label for="id_safety_certificate_expiry" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <i class="fas fa-hard-hat text-orange-600 ml-1"></i>
+              تاریخ انقضای گواهی ایمنی
+            </label>
+            {{ form.safety_certificate_expiry }}
+            <p class="text-red-500 text-xs mt-1" id="error_safety_certificate_expiry"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+        <a href="{% url 'contractor_management:data_management' %}" 
+           class="inline-flex items-center px-5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200">
+          <i class="fas fa-arrow-right ml-2"></i>
+          بازگشت
+        </a>
+        
+        <button type="submit" 
+                :disabled="loading"
+                class="inline-flex items-center px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+          <i class="fas ml-2" :class="loading ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+          <span x-text="loading ? 'در حال ذخیره...' : 'ذخیره اطلاعات'"></span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- jQuery (required for Persian Datepicker) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Persian Date -->
+<script src="https://cdn.jsdelivr.net/npm/persian-date@latest/dist/persian-date.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/persian-datepicker@latest/dist/js/persian-datepicker.min.js"></script>
+<script>
+  function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+          const cookies = document.cookie.split(';');
+          for (let i = 0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+              }
+          }
+      }
+      return cookieValue;
+  }
+
+  function contractorForm() {
+    return {
+      loading: false,
+      message: '',
+      messageType: 'success',
+
+      init() {
+        // Initialize Persian Date Pickers on the date fields
+        const dateFields = [
+          '#id_liability_insurance_expiry',
+          '#id_fire_insurance_expiry',
+          '#id_contractor_certificate_expiry',
+          '#id_safety_certificate_expiry'
+        ];
+        dateFields.forEach((selector) => {
+          if (document.querySelector(selector)) {
+            const $input = $(selector);
+            const currentValue = $input.val();
+            
+            $input.persianDatepicker({
+              format: 'YYYY/MM/DD',
+              initialValue: true,
+              autoClose: true,
+              calendar: { persian: { locale: 'fa' } },
+              observer: true,
+              altField: selector,
+              altFormat: 'YYYY/MM/DD'
+            });
+            
+            // Set the value after initialization if it exists
+            if (currentValue) {
+              $input.pDatepicker('setDate', [parseInt(currentValue.split('/')[0]), parseInt(currentValue.split('/')[1]), parseInt(currentValue.split('/')[2])]);
+            }
+          }
+        });
+      },
+      
+      async submitForm(event) {
+        this.loading = true;
+        this.message = '';
+        
+        // Clear all previous error messages
+        const errorElements = document.querySelectorAll('[id^="error_"]');
+        errorElements.forEach(el => el.textContent = '');
+
+        const form = event.target;
+        const formData = new FormData(form);
+        const csrftoken = getCookie('csrftoken');
+
+        try {
+          const response = await fetch(form.action || window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest',
+              'X-CSRFToken': csrftoken
+            }
+          });
+          
+          const data = await response.json();
+          
+          if (response.ok && data.success) {
+            this.messageType = 'success';
+            this.message = data.message || 'اطلاعات پیمانکار با موفقیت ذخیره شد!';
+            setTimeout(() => {
+              window.location.href = data.redirect || '{% url "contractor_management:data_management" %}';
+            }, 1200);
+          } else {
+            this.messageType = 'error';
+            this.message = data.message || 'لطفا خطاهای زیر را اصلاح کنید.';
+
+            if (data.errors) {
+              for (const fieldName in data.errors) {
+                const errorEl = document.getElementById(`error_${fieldName}`);
+                if (errorEl) {
+                  errorEl.textContent = data.errors[fieldName][0];
+                }
+              }
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        } catch (error) {
+          this.messageType = 'error';
+          this.message = 'خطا در ارتباط با سرور: ' + error.message;
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } finally {
+          this.loading = false;
+        }
+      }
+    };
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8"/>
+  <style>
+    @page { size: A4; margin: 18mm 14mm; }
+    body { font-family: DejaVu Sans, Vazirmatn, sans-serif; color: #111827; }
+    .header { display:flex; align-items:center; gap:12px; border-bottom:2px solid #1f2937; padding-bottom:8px; margin-bottom:14px; }
+    .logo { height:48px; }
+    .title { font-size:18px; font-weight:700; }
+    .muted { color:#6b7280; font-size:12px; }
+    .grid { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:8px; margin-bottom:12px; }
+    .card { border:1px solid #e5e7eb; padding:8px; border-radius:6px; }
+    .label { font-size:11px; color:#6b7280; margin-bottom:2px; }
+    .value { font-size:13px; }
+    h3 { font-size:14px; margin:14px 0 6px; }
+    table { width:100%; border-collapse: collapse; font-size:12px; }
+    th, td { border:1px solid #e5e7eb; padding:6px 8px; text-align:right; vertical-align:top; }
+    thead th { background:#f9fafb; }
+    .section { page-break-inside: avoid; margin-top:10px; }
+    .footer { position: fixed; bottom: 8mm; left: 14mm; right: 14mm; font-size:10px; color:#6b7280; display:flex; justify-content:space-between; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    {% if site_settings and site_settings.company_logo %}
+      <img class="logo" src="{{ site_settings.company_logo.url }}" alt="لوگو"/>
+    {% endif %}
+    <div>
+      <div class="title">{{ site_settings.site_name|default:'گزارش روزانه HSE' }}</div>
+      <div class="muted">گزارش روزانه HSE - شماره {{ report.id }}</div>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="grid">
+    <div class="card"><div class="label">تاریخ</div><div class="value">{{ report.created_at|date:"Y/m/d H:i" }}</div></div>
+    <div class="card"><div class="label">کاربر</div><div class="value">{{ report.user.get_full_name|default:report.user.username }}</div></div>
+    <div class="card"><div class="label">شیفت</div><div class="value">{{ report.shift }}</div></div>
+    <div class="card"><div class="label">گروه</div><div class="value">{{ report.work_group }}</div></div>
+  </div>
+  {% if report.supervisor_comments %}
+    <div class="card"><div class="label">توضیحات سرشیفت</div><div class="value">{{ report.supervisor_comments }}</div></div>
+  {% endif %}
+
+  <!-- Sections -->
+  <div class="section">
+    <h3>آتشباری</h3>
+    {% if blasting_details %}
+    <table>
+      <thead><tr><th>انفجار</th><th>بلوک</th><th>توضیحات</th></tr></thead>
+      <tbody>
+        {% for i in blasting_details %}
+          <tr><td>{% if i.explosion_occurred %}بله{% else %}خیر{% endif %}</td><td>{{ i.block.block_name|default:'-' }}</td><td>{{ i.description|default:'-' }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<div class="muted">موردی ثبت نشده است.</div>{% endif %}
+  </div>
+
+  <div class="section">
+    <h3>حفاری</h3>
+    {% if drilling_details %}
+    <table>
+      <thead><tr><th>بلوک</th><th>دستگاه</th><th>وضعیت</th><th>توضیحات</th></tr></thead>
+      <tbody>
+        {% for i in drilling_details %}
+          <tr><td>{{ i.block.block_name|default:'-' }}</td><td>{{ i.machine.workshop_code|default:'-' }}{% if i.machine.machine_type %} - {{ i.machine.machine_type.name }}{% endif %}</td><td>{% if i.status == 'safe' %}ایمن{% elif i.status == 'unsafe' %}ناایمن{% else %}-{% endif %}</td><td>{{ i.description|default:'-' }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<div class="muted">موردی ثبت نشده است.</div>{% endif %}
+  </div>
+
+  <div class="section">
+    <h3>بارگیری</h3>
+    {% if loading_details %}
+    <table>
+      <thead><tr><th>بلوک</th><th>دستگاه</th><th>وضعیت</th><th>توضیحات</th></tr></thead>
+      <tbody>
+        {% for i in loading_details %}
+          <tr><td>{{ i.block.block_name|default:'-' }}</td><td>{{ i.machine.workshop_code|default:'-' }}{% if i.machine.machine_type %} - {{ i.machine.machine_type.name }}{% endif %}</td><td>{% if i.status == 'safe' %}ایمن{% elif i.status == 'unsafe' %}ناایمن{% else %}-{% endif %}</td><td>{{ i.description|default:'-' }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<div class="muted">موردی ثبت نشده است.</div>{% endif %}
+  </div>
+
+  <div class="section">
+    <h3>تخلیه</h3>
+    {% if dump_details %}
+    <table>
+      <thead><tr><th>دامپ</th><th>وضعیت</th><th>توضیحات</th></tr></thead>
+      <tbody>
+        {% for i in dump_details %}
+          <tr><td>{{ i.dump.dump_name|default:'-' }}</td><td>{% if i.status == 'safe' %}ایمن{% elif i.status == 'unsafe' %}ناایمن{% else %}-{% endif %}</td><td>{{ i.description|default:'-' }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<div class="muted">موردی ثبت نشده است.</div>{% endif %}
+  </div>
+
+  <div class="section">
+    <h3>توقفات</h3>
+    {% if stoppage_details %}
+    <table>
+      <thead><tr><th>علت</th><th>شروع</th><th>پایان</th><th>توضیحات</th></tr></thead>
+      <tbody>
+        {% for i in stoppage_details %}
+          <tr><td>{{ i.reason|default:'-' }}</td><td>{{ i.start_time|default:'-' }}</td><td>{{ i.end_time|default:'-' }}</td><td>{{ i.description|default:'-' }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<div class="muted">موردی ثبت نشده است.</div>{% endif %}
+  </div>
+
+  <div class="section">
+    <h3>بازرسی‌ها</h3>
+    {% if inspection_details %}
+    <table>
+      <thead><tr><th>انجام شد</th><th>عنوان</th><th>وضعیت</th><th>توضیحات</th></tr></thead>
+      <tbody>
+        {% for i in inspection_details %}
+          <tr><td>{% if i.inspection_done %}بله{% else %}خیر{% endif %}</td><td>{{ i.inspection|default:'-' }}</td><td>{% if i.status == 'safe' %}ایمن{% elif i.status == 'unsafe' %}ناایمن{% else %}-{% endif %}</td><td>{{ i.description|default:'-' }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}<div class="muted">موردی ثبت نشده است.</div>{% endif %}
+  </div>
+
+  <div class="footer">
+    <div>Generated at {{ report.created_at|date:"Y/m/d H:i" }}</div>
+    {% if user_signature %}<div>امضای کاربر: <img src="{{ user_signature }}" style="height:22px; vertical-align:middle;"/></div>{% endif %}
+  </div>
+</body>
+</html>

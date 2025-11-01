@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}مدیریت پرسنل{% endblock %}
+
+{% block content %}
+<div x-data="{ openModal: {{ open_modal|yesno:'true,false' }} }" class="space-y-6">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700">
+    <div class="px-6 py-5 flex items-center justify-between border-b border-gray-100 dark:border-gray-700">
+      <div>
+        <h1 class="text-2xl font-bold">پرسنل شرکت</h1>
+        <p class="text-sm text-gray-500">{{ contractor.company_name }}</p>
+      </div>
+      <button @click="openModal = true" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+        افزودن پرسنل جدید
+      </button>
+    </div>
+
+    {% if messages %}
+      <div class="px-6 pt-4">
+        {% for message in messages %}
+          <div class="mb-3 p-3 rounded-lg border {% if message.tags == 'error' %}border-red-300 bg-red-50{% else %}border-green-300 bg-green-50{% endif %}">
+            <span class="text-sm">{{ message }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="px-6 pb-6">
+      <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+        {% if employees %}
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-50 dark:bg-gray-700/60">
+            <tr>
+              <th class="px-4 py-3 text-right font-semibold text-gray-700">نام</th>
+              <th class="px-4 py-3 text-right font-semibold text-gray-700">نام خانوادگی</th>
+              <th class="px-4 py-3 text-right font-semibold text-gray-700">کد ملی</th>
+              <th class="px-4 py-3 text-right font-semibold text-gray-700">سمت</th>
+              <th class="px-4 py-3 text-right font-semibold text-gray-700">اقدامات</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+            {% for e in employees %}
+            <tr class="even:bg-gray-50/60 dark:even:bg-gray-800/60">
+              <td class="px-4 py-3">{{ e.first_name }}</td>
+              <td class="px-4 py-3">{{ e.last_name }}</td>
+              <td class="px-4 py-3 font-mono">{{ e.national_id }}</td>
+              <td class="px-4 py-3">{{ e.position }}</td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <a href="{% url 'contractor_management:contractor_employee_edit' e.id %}" title="ویرایش" class="inline-flex items-center justify-center w-9 h-9 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100">
+                    <i class="fa-solid fa-pen"></i>
+                  </a>
+                  <a href="{% url 'contractor_management:contractor_employee_delete' e.id %}" title="حذف" class="inline-flex items-center justify-center w-9 h-9 rounded-md bg-red-50 text-red-700 hover:bg-red-100">
+                    <i class="fa-solid fa-trash"></i>
+                  </a>
+                  <form method="post" action="{% url 'contractor_management:contractor_employee_reset_password' e.id %}" class="inline" title="بازنشانی رمز">
+                    {% csrf_token %}
+                    <button type="submit" class="inline-flex items-center justify-center w-9 h-9 rounded-md bg-amber-50 text-amber-700 hover:bg-amber-100">
+                      <i class="fa-solid fa-key"></i>
+                    </button>
+                  </form>
+                  <a href="{% url 'contractor_management:contractor_employee_credentials' e.id %}" title="نامه کاربری" class="inline-flex items-center justify-center w-9 h-9 rounded-md bg-teal-50 text-teal-700 hover:bg-teal-100">
+                    <i class="fa-solid fa-id-card"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <!-- Empty state -->
+        <div class="py-14 text-center">
+          <div class="mx-auto w-16 h-16 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <i class="fa-solid fa-users"></i>
+          </div>
+          <h3 class="mt-4 text-lg font-semibold">هیچ پرسنلی اضافه نشده است</h3>
+          <p class="mt-1 text-sm text-gray-500">با افزودن پرسنل می‌توانید برای آنها حساب کاربری بسازید.</p>
+          <button @click="openModal = true" class="mt-5 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow">
+            <i class="fa-solid fa-user-plus"></i>
+            افزودن اولین پرسنل
+          </button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div x-show="openModal" x-cloak @click.self="openModal = false" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-2xl bg-white dark:bg-gray-800 rounded-xl shadow-xl">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+        <h2 class="text-lg font-bold">افزودن پرسنل جدید</h2>
+        <button @click="openModal = false" class="text-gray-500 hover:text-gray-700">&times;</button>
+      </div>
+      <form method="post" class="p-6" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="mb-4 p-3 rounded-lg border border-red-300 bg-red-50 text-red-800 text-sm">
+            {{ form.non_field_errors|striptags }}
+          </div>
+        {% endif %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm mb-1">نام</label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}
+              <p class="text-xs text-red-600 mt-1">{{ form.first_name.errors|striptags }}</p>
+            {% endif %}
+          </div>
+          <div>
+            <label class="block text-sm mb-1">نام خانوادگی</label>
+            {{ form.last_name }}
+            {% if form.last_name.errors %}
+              <p class="text-xs text-red-600 mt-1">{{ form.last_name.errors|striptags }}</p>
+            {% endif %}
+          </div>
+          <div>
+            <label class="block text-sm mb-1">کد ملی (نام کاربری)</label>
+            {{ form.national_id }}
+            {% if form.national_id.errors %}
+              <p class="text-xs text-red-600 mt-1">{{ form.national_id.errors|striptags }}</p>
+            {% endif %}
+          </div>
+          <div>
+            <label class="block text-sm mb-1">تاریخ تولد</label>
+            {{ form.birth_date }}
+            {% if form.birth_date.errors %}
+              <p class="text-xs text-red-600 mt-1">{{ form.birth_date.errors|striptags }}</p>
+            {% endif %}
+          </div>
+          <div>
+            <label class="block text-sm mb-1">سمت</label>
+            {{ form.position }}
+            {% if form.position.errors %}
+              <p class="text-xs text-red-600 mt-1">{{ form.position.errors|striptags }}</p>
+            {% endif %}
+          </div>
+          <div>
+            <label class="block text-sm mb-1">شماره تماس</label>
+            {{ form.phone_number }}
+            {% if form.phone_number.errors %}
+              <p class="text-xs text-red-600 mt-1">{{ form.phone_number.errors|striptags }}</p>
+            {% endif %}
+          </div>
+          <div>
+            <label class="block text-sm mb-1">مدرک تحصیلی</label>
+            {{ form.education }}
+            {% if form.education.errors %}
+              <p class="text-xs text-red-600 mt-1">{{ form.education.errors|striptags }}</p>
+            {% endif %}
+          </div>
+          <div>
+            <label class="block text-sm mb-1">شماره بیمه تامین اجتماعی</label>
+            {{ form.number_of_insurance }}
+            {% if form.number_of_insurance.errors %}
+              <p class="text-xs text-red-600 mt-1">{{ form.number_of_insurance.errors|striptags }}</p>
+            {% endif %}
+          </div>
+        </div>
+        <div class="mt-6 flex items-center justify-end gap-2">
+          <button type="button" @click="openModal = false" class="px-4 py-2 rounded border">انصراف</button>
+          <button type="submit" class="px-5 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">ذخیره</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@latest/dist/css/persian-datepicker.min.css">
+{% endblock %}
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/persian-date@latest/dist/persian-date.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/persian-datepicker@latest/dist/js/persian-datepicker.min.js"></script>
+<script>
+  $(function(){
+    var $bd = $('#id_birth_date');
+    if($bd.length){
+      $bd.persianDatepicker({
+        format: 'YYYY/MM/DD',
+        initialValue: false,
+        autoClose: true,
+        calendar: { persian: { locale: 'fa' } },
+        navigator: { enabled: true, scroll: { enabled: true } },
+        toolbox: { enabled: true, calendarSwitch: { enabled: false } },
+        timePicker: { enabled: false }
+      });
+    }
+  });
+</script>
+{% endblock %}

@@ -107,6 +107,7 @@ TEMPLATES = [
                 'shift_manager.context_processors.shift_context_processor',
                 'shift_manager.context_processors.shift_data_processor',
                 'permissions.context_processors.permission_context',
+                'core.context_processors.site_settings',
             ],
             'builtins': [
                 # Django jalali template tags removed

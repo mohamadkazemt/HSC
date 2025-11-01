@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}ویرایش پرسنل{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+  <h1 class="text-xl font-bold mb-6">ویرایش پرسنل - {{ contractor.company_name }}</h1>
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm mb-1">نام</label>
+        {{ form.first_name }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">نام خانوادگی</label>
+        {{ form.last_name }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">کد ملی</label>
+        {{ form.national_id }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">سمت</label>
+        {{ form.position }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">شماره تماس</label>
+        {{ form.phone_number }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">مدرک تحصیلی</label>
+        {{ form.education }}
+      </div>
+    </div>
+    <div class="flex items-center justify-end gap-2">
+      <a href="{% url 'contractor_management:manage_employees' %}" class="px-4 py-2 rounded border">انصراف</a>
+      <button type="submit" class="px-5 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">ذخیره</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

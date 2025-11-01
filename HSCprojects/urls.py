@@ -46,6 +46,7 @@ urlpatterns = [
     path('checklist_app/', include('checklist_app.urls')),
     path('emergency/', include('emergency_services.urls', namespace='emergency_services')),
     path('fire_extinguisher_management/', include('fire_extinguisher_management.urls', namespace='fire_extinguisher_management')),
+    path('baseinfo/', include('BaseInfo.urls', namespace='baseinfo')),
     path('core/', include('core.urls', namespace='core')),
 ]
 

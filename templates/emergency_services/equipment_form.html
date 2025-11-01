@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}ثبت/ویرایش تجهیز{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto rounded-lg shadow-lg bg-white dark:bg-gray-800">
+  <div class="p-4 rounded-t-lg bg-gradient-to-l from-rose-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+    <i class="fa-solid fa-screwdriver-wrench text-rose-600"></i>
+    <h3 class="font-semibold">ثبت/ویرایش تجهیز</h3>
+  </div>
+  <form method="post" class="p-4 space-y-4">
+    {% csrf_token %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm mb-1">نام تجهیز</label>
+        {{ form.name }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">شماره سریال</label>
+        {{ form.serial_number }}
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm mb-1">توضیحات</label>
+        {{ form.description }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">تاریخ آخرین کالیبراسیون</label>
+        {{ form.last_calibration_date }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">تاریخ کالیبراسیون بعدی</label>
+        {{ form.next_calibration_date }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">روزهای هشدار قبل از کالیبراسیون</label>
+        {{ form.calibration_alert_days }}
+      </div>
+      <div class="flex items-center gap-2 mt-6">
+        {{ form.is_active }}
+        <label class="text-sm">فعال</label>
+      </div>
+    </div>
+    <div class="flex items-center justify-end gap-2">
+      <a href="{% url 'emergency_services:equipment_list' %}" class="px-4 py-2 rounded-md bg-gray-100 text-gray-700">انصراف</a>
+      <button type="submit" class="px-4 py-2 rounded-md bg-rose-600 text-white">ذخیره</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  $(function(){
+    $('.jalali-date').each(function(){
+      const $el = $(this);
+      try { $el.prop('type','text'); } catch(e) {}
+      $el.persianDatepicker({ format: 'YYYY/MM/DD', autoClose: true });
+    });
+  });
+</script>
+{% endblock %}

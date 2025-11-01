@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load jalali_utils %}
+{% block title %}داشبورد اورژانس{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+  <!-- Total Visits -->
+  <div class="rounded-lg shadow-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white p-5">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm opacity-80">کل مراجعات</p>
+        <p class="text-3xl font-bold mt-1">{{ total_visits }}</p>
+      </div>
+      <div class="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
+        <i class="fa-solid fa-notes-medical text-white text-xl"></i>
+      </div>
+    </div>
+  </div>
+  <!-- Today Visits -->
+  <div class="rounded-lg shadow-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-5">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm opacity-80">مراجعات امروز</p>
+        <p class="text-3xl font-bold mt-1">{{ today_visits }}</p>
+      </div>
+      <div class="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
+        <i class="fa-solid fa-user-doctor text-white text-xl"></i>
+      </div>
+    </div>
+  </div>
+  <!-- Low stock medicines -->
+  <div class="rounded-lg shadow-lg bg-gradient-to-br from-amber-500 to-yellow-600 text-white p-5">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm opacity-80">داروهای در آستانه بحرانی</p>
+        <p class="text-3xl font-bold mt-1">{{ low_stock_medicines }}</p>
+      </div>
+      <div class="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
+        <i class="fa-solid fa-pills text-white text-xl"></i>
+      </div>
+    </div>
+  </div>
+  <!-- Equipment calibration -->
+  <div class="rounded-lg shadow-lg bg-gradient-to-br from-rose-500 to-red-600 text-white p-5">
+    <div class="flex items-center justify-between">
+      <div>
+        <p class="text-sm opacity-80">تجهیزات نیازمند کالیبراسیون</p>
+        <p class="text-3xl font-bold mt-1">{{ equip_calibration_overdue|add:equip_calibration_due }}</p>
+      </div>
+      <div class="h-12 w-12 rounded-full bg-white/20 flex items-center justify-center">
+        <i class="fa-solid fa-screwdriver-wrench text-white text-xl"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-6">
+  <!-- Weekly chart -->
+  <div class="xl:col-span-2 rounded-lg shadow-lg bg-white dark:bg-gray-800">
+    <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between rounded-t-lg bg-gradient-to-l from-blue-50 to-white dark:from-gray-800 dark:to-gray-800">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-chart-line text-blue-600"></i>
+        <h3 class="font-semibold text-gray-800 dark:text-gray-100">روند مراجعات ۷ روز اخیر</h3>
+      </div>
+    </div>
+    <div class="p-4">
+      <canvas id="weeklyVisitsChart" height="120"></canvas>
+    </div>
+  </div>
+
+  <!-- Alerts -->
+  <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800">
+    <div class="p-4 border-b border-gray-100 dark:border-gray-700 rounded-t-lg bg-gradient-to-l from-rose-50 to-white dark:from-gray-800 dark:to-gray-800 flex items-center gap-2">
+      <i class="fa-solid fa-triangle-exclamation text-red-600"></i>
+      <h3 class="font-semibold text-gray-800 dark:text-gray-100">هشدارهای فوری</h3>
+    </div>
+    <div class="p-4 space-y-4">
+      <div>
+        <p class="text-sm font-medium text-red-600 mb-2">داروهای منقضی</p>
+        <ul class="space-y-2">
+          {% for m in expired_medicines_list %}
+            <li class="flex items-center justify-between bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded-md px-3 py-2">
+              <span class="truncate">{{ m.name }} — انقضا: {{ m.expiry_date|to_jalali:'%Y/%m/%d' }}</span>
+              <a href="{% url 'emergency_services:edit_medicine' m.id %}" class="text-xs underline">مدیریت</a>
+            </li>
+          {% empty %}
+            <li class="text-xs text-gray-500">موردی یافت نشد</li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div>
+        <p class="text-sm font-medium text-amber-600 mb-2">داروهای در آستانه بحرانی</p>
+        <ul class="space-y-2">
+          {% for m in critical_medicines %}
+            <li class="flex items-center justify-between bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 rounded-md px-3 py-2">
+              <span class="truncate">{{ m.name }} — موجودی: {{ m.quantity }}</span>
+              <a href="{% url 'emergency_services:edit_medicine' m.id %}" class="text-xs underline">مدیریت</a>
+            </li>
+          {% empty %}
+            <li class="text-xs text-gray-500">موردی یافت نشد</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Top usage -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+  <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800">
+    <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2 rounded-t-lg bg-gradient-to-l from-emerald-50 to-white dark:from-gray-800 dark:to-gray-800">
+      <i class="fa-solid fa-stethoscope text-emerald-600"></i>
+      <h3 class="font-semibold text-gray-800 dark:text-gray-100">۵ خدمت درمانی پرمصرف</h3>
+    </div>
+    <ul class="p-4 divide-y divide-gray-100 dark:divide-gray-700">
+      {% for s in popular_services %}
+        <li class="py-2 flex items-center justify-between">
+          <span class="truncate">{{ s.name }}</span>
+          <span class="text-xs inline-flex items-center gap-1 px-2 py-1 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+            <i class="fa-solid fa-arrow-trend-up"></i>
+            {{ s.usage_count|default:0 }}
+          </span>
+        </li>
+      {% empty %}
+        <li class="py-2 text-xs text-gray-500">داده‌ای نیست</li>
+      {% endfor %}
+    </ul>
+  </div>
+  <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800">
+    <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2 rounded-t-lg bg-gradient-to-l from-indigo-50 to-white dark:from-gray-800 dark:to-gray-800">
+      <i class="fa-solid fa-capsules text-indigo-600"></i>
+      <h3 class="font-semibold text-gray-800 dark:text-gray-100">۵ داروی پرتجویز</h3>
+    </div>
+    <ul class="p-4 divide-y divide-gray-100 dark:divide-gray-700">
+      {% for m in popular_medicines %}
+        <li class="py-2 flex items-center justify-between">
+          <span class="truncate">{{ m.name }}</span>
+          <span class="text-xs inline-flex items-center gap-1 px-2 py-1 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+            <i class="fa-solid fa-arrow-trend-up"></i>
+            {{ m.usage_count|default:0 }}
+          </span>
+        </li>
+      {% empty %}
+        <li class="py-2 text-xs text-gray-500">داده‌ای نیست</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  const weeklyData = JSON.parse('{{ weekly_visits|safe|escapejs }}'.replaceAll('&quot;','"'));
+  const labels = weeklyData.map(i => new Intl.DateTimeFormat('fa-IR-u-ca-persian').format(new Date(i.date)));
+  const counts = weeklyData.map(i => i.count);
+  const ctx = document.getElementById('weeklyVisitsChart');
+  if (ctx && window.Chart) {
+    new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: [{ label: 'تعداد مراجعات', data: counts, fill: false, borderColor: '#3b82f6', tension: 0.35, pointRadius: 3 }] },
+      options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } }, maintainAspectRatio: false }
+    });
+  }
+</script>
+{% endblock %}

@@ -23,19 +23,22 @@ import json
 from permissions.utils import permission_required
 import jdatetime
 from datetime import datetime, time
+from urllib.parse import urlencode
 import openpyxl
-from openpyxl.styles import Font, Alignment, PatternFill
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.drawing.image import Image as XLImage
 from io import BytesIO
 from difflib import SequenceMatcher
+from collections import OrderedDict
 
 User = get_user_model()
 
 # Create your views here.
-@permission_required("general_checklist_list")
 @login_required
+@permission_required("general_checklist_list")
 def general_checklist_list_view(request):
-    checklists = Checklist.objects.all().order_by('-date')
+    base_qs = Checklist.objects.all().order_by('-date')
     
     # دریافت پارامترهای فیلتر
     checklist_type = request.GET.get('checklist_type', '')
@@ -43,63 +46,116 @@ def general_checklist_list_view(request):
     date_to = request.GET.get('date_to', '')
     shift = request.GET.get('shift', '')
     shift_group = request.GET.get('shift_group', '')
+    user_q = request.GET.get('user_q', '')
 
-    # اعمال فیلترها
+    # اعمال فیلترهای نوع و تاریخ برای محاسبه گزینه‌های موجود
+    qs_for_facets = base_qs
     if checklist_type:
-        checklists = checklists.filter(checklist_type=checklist_type)
+        qs_for_facets = qs_for_facets.filter(checklist_type=checklist_type)
 
-    # تبدیل تاریخ شمسی به میلادی و اعمال فیلتر
     if date_from:
         try:
-            # تبدیل تاریخ شمسی به میلادی
             jalali_date = date_from.split('/')
             gregorian_date = jdatetime.date(int(jalali_date[0]), int(jalali_date[1]), int(jalali_date[2])).togregorian()
-            checklists = checklists.filter(date__date__gte=gregorian_date)
+            qs_for_facets = qs_for_facets.filter(date__date__gte=gregorian_date)
         except (ValueError, IndexError):
             pass
 
     if date_to:
         try:
-            # تبدیل تاریخ شمسی به میلادی
             jalali_date = date_to.split('/')
             gregorian_date = jdatetime.date(int(jalali_date[0]), int(jalali_date[1]), int(jalali_date[2])).togregorian()
-            # اضافه کردن ساعت 23:59:59 به تاریخ پایان
             end_datetime = datetime.combine(gregorian_date, time(23, 59, 59))
-            checklists = checklists.filter(date__lte=end_datetime)
+            qs_for_facets = qs_for_facets.filter(date__lte=end_datetime)
         except (ValueError, IndexError):
             pass
 
+    # محاسبه گزینه‌های موجود برای شیفت و گروه
+    shift_display_map = dict(Checklist.CHECKLIST_SHIFT_CHOICES)
+    # گروه‌بندی شیفت‌ها بر اساس برچسب فارسی برای حذف تکرار لیبل‌ها
+    codes = list(filter(None, qs_for_facets.values_list('shift', flat=True)))
+    label_to_codes = {}
+    for c in codes:
+        label = shift_display_map.get(c, c)
+        label_to_codes.setdefault(label, set()).add(c)
+    available_shifts = []
+    for label, code_set in sorted(label_to_codes.items(), key=lambda x: x[0]):
+        value = ",".join(sorted(code_set))  # مثل day,day2
+        available_shifts.append((value, label))
+    available_groups = sorted(filter(None, set(qs_for_facets.values_list('shift_group', flat=True))))
+
+    # پیشنهاد ثبت‌کنندگان برای جستجو (حذف موارد تکراری)
+    submitter_rows = qs_for_facets.values(
+        'user__first_name', 'user__last_name', 'user__username', 'user__userprofile__personnel_code'
+    ).distinct()
+    labels_set = set()
+    for r in submitter_rows:
+        name = f"{(r.get('user__first_name') or '').strip()} {(r.get('user__last_name') or '').strip()}".strip()
+        code = (r.get('user__userprofile__personnel_code') or '').strip()
+        username = (r.get('user__username') or '').strip()
+        label = name if name else username
+        if code:
+            label = f"{label} ({code})"
+        if label:
+            labels_set.add(label)
+    available_submitters = sorted(labels_set)
+
+    # حالا فیلترهای شیفت و گروه را اعمال می‌کنیم
+    checklists = qs_for_facets
     if shift:
-        checklists = checklists.filter(shift=shift)
+        if ',' in shift:
+            checklists = checklists.filter(shift__in=shift.split(','))
+        else:
+            checklists = checklists.filter(shift=shift)
 
     if shift_group:
         checklists = checklists.filter(shift_group=shift_group)
+
+    if user_q:
+        checklists = checklists.filter(
+            Q(user__first_name__icontains=user_q) |
+            Q(user__last_name__icontains=user_q) |
+            Q(user__username__icontains=user_q) |
+            Q(user__userprofile__personnel_code__icontains=user_q)
+        )
 
     # صفحه‌بندی
     paginator = Paginator(checklists, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    # ایجاد دیکشنری از معادل‌های فارسی شیفت کاری
-    shift_display = dict(Checklist.CHECKLIST_SHIFT_CHOICES)
-    checklist_types = dict(Checklist.CHECKLIST_TYPE_CHOICES)
-    
+    # ساخت querystring برای حفظ فیلترها در صفحه‌بندی/لینک‌ها
+    filters_params = {
+        'checklist_type': checklist_type,
+        'date_from': date_from,
+        'date_to': date_to,
+        'shift': shift,
+        'shift_group': shift_group,
+        'user_q': user_q,
+    }
+    filters_params = {k: v for k, v in filters_params.items() if v}
+    query = urlencode(filters_params)
+
     context = {
         'page_obj': page_obj,
-        'shift_display': shift_display,
         'checklist_types': Checklist.CHECKLIST_TYPE_CHOICES,
+        'available_shifts': available_shifts,
+        'available_groups': available_groups,
+        'available_submitters': available_submitters,
         'current_filters': {
             'checklist_type': checklist_type,
             'date_from': date_from,
             'date_to': date_to,
             'shift': shift,
             'shift_group': shift_group,
-        }
+            'user_q': user_q,
+        },
+        'query': query,
     }
     return render(request, 'checklist_app/checklist_list.html', context)
 
-@permission_required("general_checklist_form")
 @login_required
+@permission_required("general_checklist_form")
 def general_checklist_form_view(request):
     machines = MiningMachine.objects.all()
     location_sections = LocationSection.objects.all()
@@ -113,8 +169,8 @@ def general_checklist_form_view(request):
     }
     return render(request, 'checklist_app/checklist_form.html', context)
 
-@permission_required("general_checklist_detail")
 @login_required
+@permission_required("general_checklist_detail")
 def general_checklist_detail_view(request, pk):
     checklist = get_object_or_404(Checklist, pk=pk)
     answers = Answer.objects.filter(checklist=checklist)
@@ -125,9 +181,9 @@ def general_checklist_detail_view(request, pk):
     }
     return render(request, 'checklist_app/checklist_detail.html', context)
 
-@permission_required("get_general_questions")
 @csrf_exempt
 @login_required
+@permission_required("get_general_questions")
 @require_http_methods(["POST"])
 def get_general_questions(request):
     data = json.loads(request.body)
@@ -157,8 +213,8 @@ def get_general_questions(request):
     
     return JsonResponse({'questions': questions_data})
 
-@permission_required("submit_general_checklist")
 @login_required
+@permission_required("submit_general_checklist")
 @require_http_methods(["POST"])
 def submit_general_checklist(request):
     data = json.loads(request.body)
@@ -211,8 +267,8 @@ def submit_general_checklist(request):
     
     return JsonResponse({'status': 'success', 'checklist_id': checklist.id})
 
-@permission_required("create_anomaly_from_failure")
 @login_required
+@permission_required("create_anomaly_from_failure")
 @require_http_methods(["POST"])
 def create_anomaly_from_failure_view(request):
     data = json.loads(request.body)
@@ -334,8 +390,8 @@ def create_anomaly_from_failure_view(request):
         'message': 'خطا در ایجاد آنومالی‌ها'
     })
 
-@permission_required("export_checklists_excel")
 @login_required
+@permission_required("export_checklists_excel")
 def export_general_checklists_excel(request):
     # دریافت پارامترهای فیلتر
     checklist_type = request.GET.get('checklist_type', '')
@@ -343,6 +399,7 @@ def export_general_checklists_excel(request):
     date_to = request.GET.get('date_to', '')
     shift = request.GET.get('shift', '')
     shift_group = request.GET.get('shift_group', '')
+    user_q = request.GET.get('user_q', '')
 
     # کوئری اولیه
     checklists = Checklist.objects.all().order_by('-date')
@@ -369,10 +426,21 @@ def export_general_checklists_excel(request):
             pass
 
     if shift:
-        checklists = checklists.filter(shift=shift)
+        if ',' in shift:
+            checklists = checklists.filter(shift__in=shift.split(','))
+        else:
+            checklists = checklists.filter(shift=shift)
 
     if shift_group:
         checklists = checklists.filter(shift_group=shift_group)
+
+    if user_q:
+        checklists = checklists.filter(
+            Q(user__first_name__icontains=user_q) |
+            Q(user__last_name__icontains=user_q) |
+            Q(user__username__icontains=user_q) |
+            Q(user__userprofile__personnel_code__icontains=user_q)
+        )
 
     # ایجاد فایل اکسل
     wb = openpyxl.Workbook()
@@ -381,11 +449,12 @@ def export_general_checklists_excel(request):
 
     # تنظیم استایل‌های سلول‌ها
     header_font = Font(name='B Nazanin', size=12, bold=True)
-    header_fill = PatternFill(start_color='CCE5FF', end_color='CCE5FF', fill_type='solid')
+    header_fill = PatternFill(start_color='ECECFF', end_color='ECECFF', fill_type='solid')
     header_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
-    
+    title_font = Font(name='B Nazanin', size=14, bold=True)
     cell_font = Font(name='B Nazanin', size=11)
     cell_alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    thin = Side(border_style="thin", color="BBBBBB")
 
     # ستون‌های فایل اکسل
     headers = [
@@ -394,19 +463,45 @@ def export_general_checklists_excel(request):
     ]
 
     # تنظیم عرض ستون‌ها
-    column_widths = [8, 15, 15, 20, 15, 15, 20, 40, 20, 30]
+    column_widths = [8, 18, 16, 22, 14, 16, 22, 40, 22, 32]
     for i, width in enumerate(column_widths, 1):
         ws.column_dimensions[get_column_letter(i)].width = width
 
-    # نوشتن هدرها
+    # هدر بالای گزارش (نام شرکت و لوگو)
+    from core.models import SiteSettings
+    settings = None
+    try:
+        settings = SiteSettings.objects.first()
+    except Exception:
+        settings = None
+
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(headers))
+    ws['A1'] = f"گزارش چک‌لیست‌ها - {settings.site_name if settings else ''}"
+    ws['A1'].font = title_font
+    ws['A1'].alignment = Alignment(horizontal='center', vertical='center')
+
+    # درج لوگو (در صورت موجود بودن)
+    if settings and settings.company_logo:
+        try:
+            img = XLImage(settings.company_logo.path)
+            img.height = 48
+            img.width = 120
+            img.anchor = 'A1'
+            ws.add_image(img)
+        except Exception:
+            pass
+
+    # ردیف هدر جدول
+    header_row = 3
     for col, header in enumerate(headers, 1):
-        cell = ws.cell(row=1, column=col, value=header)
+        cell = ws.cell(row=header_row, column=col, value=header)
         cell.font = header_font
         cell.fill = header_fill
         cell.alignment = header_alignment
+        cell.border = Border(top=thin, bottom=thin, left=thin, right=thin)
 
     # نوشتن داده‌ها
-    row = 2
+    row = header_row + 1
     for checklist in checklists:
         answers = Answer.objects.filter(checklist=checklist)
         
@@ -414,8 +509,15 @@ def export_general_checklists_excel(request):
         jalali_date = jdatetime.datetime.fromgregorian(datetime=checklist.date)
         formatted_date = jalali_date.strftime('%Y/%m/%d %H:%M')
 
-        # دریافت نام مکان/ماشین
-        location = checklist.machine.workshop_code if checklist.checklist_type == 'machine' else checklist.location_section.section
+        # دریافت نام مورد مرتبط
+        if checklist.checklist_type == 'machine' and checklist.machine:
+            location = checklist.machine.workshop_code
+        elif checklist.checklist_type == 'location' and checklist.location_section:
+            location = checklist.location_section.section
+        elif checklist.checklist_type == 'contractor_vehicle' and checklist.contractor_vehicle:
+            location = checklist.contractor_vehicle.license_plate
+        else:
+            location = '-'
 
         # دریافت معادل فارسی شیفت
         shift_display = dict(Checklist.CHECKLIST_SHIFT_CHOICES).get(checklist.shift, checklist.shift)
@@ -431,8 +533,8 @@ def export_general_checklists_excel(request):
                 checklist.shift_group,
                 f"{checklist.user.first_name} {checklist.user.last_name}",
                 answer.question.text,
-                answer.selected_option if answer.selected_option else answer.answer_text,
-                answer.description or ''
+                (answer.selected_option or answer.answer_text or ''),
+                (answer.description or '')
             ]
 
             for col, value in enumerate(data, 1):
@@ -460,8 +562,20 @@ def export_general_checklists_excel(request):
 
     return response
 
-@permission_required("get_followup_users")
 @login_required
+@permission_required("general_checklist_detail")
+def export_checklist_pdf_view(request, pk):
+    checklist = get_object_or_404(Checklist, pk=pk)
+    answers = Answer.objects.filter(checklist=checklist)
+    context = {
+        'checklist': checklist,
+        'answers': answers,
+    }
+    # قالب چاپی HTML (کاربر می‌تواند به PDF چاپ کند)
+    return render(request, 'checklist_app/checklist_pdf.html', context)
+
+@login_required
+@permission_required("get_followup_users")
 def get_followup_users(request):
     try:
         # فیلتر کردن کاربران بر اساس گروه مسئول پیگیری
@@ -481,8 +595,8 @@ def get_followup_users(request):
         print(f"Error in get_followup_users: {str(e)}")  # اضافه کردن لاگ خطا
         return JsonResponse({'error': str(e)}, status=500)
 
-@permission_required("general_question_form")
 @login_required
+@permission_required("general_question_form")
 def general_question_form_view(request):
     if request.method == 'POST':
         # دریافت داده‌های فرم
@@ -527,8 +641,8 @@ def general_question_form_view(request):
     
     return render(request, 'checklist_app/question_form.html', context)
 
-@permission_required("general_question_list")
 @login_required
+@permission_required("general_question_list")
 def general_question_list_view(request):
     questions = Question.objects.all()
     
@@ -581,8 +695,8 @@ def general_question_list_view(request):
     }
     return render(request, 'checklist_app/question_list.html', context)
 
-@permission_required("general_question_edit")
 @login_required
+@permission_required("general_question_edit")
 def general_question_edit_view(request, pk):
     question = get_object_or_404(Question, pk=pk)
     
@@ -631,8 +745,8 @@ def general_question_edit_view(request, pk):
     
     return render(request, 'checklist_app/question_form.html', context)
 
-@permission_required("general_question_delete")
 @login_required
+@permission_required("general_question_delete")
 @require_http_methods(["POST"])
 def general_question_delete_view(request):
     data = json.loads(request.body)

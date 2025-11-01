@@ -44,6 +44,7 @@ from django.http import JsonResponse
 from django.contrib.auth.mixins import UserPassesTestMixin
 from dashboard.utils import log_user_activity
 from django.urls import reverse
+from core.models import SiteSettings
 
 
 logger = logging.getLogger(__name__)
@@ -232,11 +233,32 @@ class DailyReportFormView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['mining_blocks'] = MiningBlock.objects.all()
+        context['mining_blocks'] = MiningBlock.objects.filter(is_active=True).order_by('block_name')
 
-        # فیلتر کردن MiningMachine ها بر اساس اسم گروه کاری
-        drilling_machines = MiningMachine.objects.filter(machine_type__machine_workgroup__name="حفاری")
-        loading_machines = MiningMachine.objects.filter(machine_type__machine_workgroup__name="بارکننده")
+        # شیفت و گروه کاری جاری برای نمایش در مرحله اول
+        current_shift, current_group = get_current_shift_and_group(self.request.user)
+        context['current_shift'] = current_shift
+        context['current_group'] = current_group
+
+        # فیلتر کردن MiningMachine ها بر اساس اسم گروه کاری (با در نظر گرفتن هر دو مسیر تنظیم گروه کاری)
+        drilling_machines = (
+            MiningMachine.objects.filter(is_active=True)
+            .filter(
+                Q(machine_type__machine_workgroup__name="حفاری") |
+                Q(machine_workgroup__name="حفاری")
+            )
+            .select_related('machine_type', 'machine_workgroup')
+            .order_by('workshop_code')
+        )
+        loading_machines = (
+            MiningMachine.objects.filter(is_active=True)
+            .filter(
+                Q(machine_type__machine_workgroup__name="بارکننده") |
+                Q(machine_workgroup__name="بارکننده")
+            )
+            .select_related('machine_type', 'machine_workgroup')
+            .order_by('workshop_code')
+        )
 
         # لاگ کوئری ها
         logger.info(f"Drilling Machines Query: {drilling_machines.query}")
@@ -248,7 +270,7 @@ class DailyReportFormView(LoginRequiredMixin, TemplateView):
 
         context['drilling_machines'] = drilling_machines
         context['loading_machines'] = loading_machines
-        context['dumps'] = Dump.objects.all()
+        context['dumps'] = Dump.objects.filter(is_active=True).order_by('dump_name')
         context['title'] = "ثبت گزارش‌های روزانه"
         return context
 
@@ -331,7 +353,9 @@ class DailyReportListView(LoginRequiredMixin, ListView):
         context["group_filter"] = self.group_filter
         context["search_query"] = self.search_query
         context['title'] = "لیست گزارش‌های روزانه"
-
+        # choices for filters
+        context['shift_choices'] = [v for v, _ in DailyReport.SHIFT_CHOICES]
+        context['group_choices'] = [v for v, _ in DailyReport.GROUP_CHOICES]
 
         return context
 
@@ -402,6 +426,7 @@ def daily_report_pdf_view(request, pk):
         })
 
     # داده‌های ارسال‌شده به قالب
+    site_settings = SiteSettings.objects.first()
     context = {
         'report': daily_report,
         'blasting_details': daily_report.blasting_details.all(),
@@ -413,6 +438,7 @@ def daily_report_pdf_view(request, pk):
         'inspection_details': daily_report.inspection_details.all(),
         'title': 'گزارش روزانه',
         'user_signature': user_signature,  # اضافه کردن امضا به کانتکست
+        'site_settings': site_settings,
     }
 
     # رندر قالب به HTML

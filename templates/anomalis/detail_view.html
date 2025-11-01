@@ -1,0 +1,61 @@
+{% load static %}
+{% load jalali %}
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <title>{{ title|default:"گزارش آنومالی" }}</title>
+  <style>
+    body { font-family: DejaVu Sans, Vazirmatn, sans-serif; color: #111827; }
+    .container { width: 100%; padding: 24px; }
+    .header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 16px; }
+    .title { font-size: 20px; font-weight: 700; }
+    .meta { font-size: 12px; color:#374151; }
+    .section { border:1px solid #e5e7eb; border-radius:8px; padding:12px 16px; margin-bottom:12px; }
+    .row { display:flex; gap:16px; margin-bottom:8px; }
+    .col { flex:1; font-size:12px; }
+    .label { color:#6b7280; }
+    .value { font-weight:600; }
+    .image { width:100%; max-height:340px; object-fit:cover; border-radius:8px; border:1px solid #e5e7eb; }
+    .desc { line-height:1.8; font-size:13px; margin-top:8px; white-space:pre-wrap; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title">گزارش آنومالی #{{ anomaly.id }}</div>
+      <div class="meta">تاریخ ثبت: {{ anomaly.created_at|to_jalali:"%Y/%m/%d %H:%M" }}</div>
+    </div>
+
+    {% if anomaly.image %}
+    <div class="section">
+      <img class="image" src="{{ anomaly.image.url }}" alt="anomaly">
+    </div>
+    {% endif %}
+
+    <div class="section">
+      <div class="row">
+        <div class="col"><span class="label">سایت: </span><span class="value">{{ anomaly.location.name }}</span></div>
+        <div class="col"><span class="label">محل: </span><span class="value">{{ anomaly.section.section }}</span></div>
+      </div>
+      <div class="row">
+        <div class="col"><span class="label">نوع آنومالی: </span><span class="value">{{ anomaly.anomalytype.type }}</span></div>
+        <div class="col"><span class="label">شرح آنومالی: </span><span class="value">{{ anomaly.anomalydescription.description }}</span></div>
+      </div>
+      <div class="row">
+        <div class="col"><span class="label">نوع HSE: </span><span class="value">{{ anomaly.hse_type }}</span></div>
+        <div class="col"><span class="label">اقدام اصلاحی: </span><span class="value">{{ anomaly.correctiveaction.description }}</span></div>
+      </div>
+      <div class="row">
+        <div class="col"><span class="label">اولویت: </span><span class="value">{{ anomaly.priority.priority }}</span></div>
+        <div class="col"><span class="label">وضعیت: </span><span class="value">{% if anomaly.action %}ایمن{% else %}نا ایمن{% endif %}</span></div>
+      </div>
+      <div class="row">
+        <div class="col"><span class="label">ایجاد کننده: </span><span class="value">{{ anomaly.created_by.user.first_name }} {{ anomaly.created_by.user.last_name }}</span></div>
+        <div class="col"><span class="label">مسئول پیگیری: </span><span class="value">{{ anomaly.followup.user.first_name }} {{ anomaly.followup.user.last_name }}</span></div>
+      </div>
+      <div class="desc">{{ anomaly.description }}</div>
+    </div>
+  </div>
+</body>
+</html>

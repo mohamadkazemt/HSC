@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}ثبت/ویرایش بیمارستان{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto rounded-lg shadow-lg bg-white dark:bg-gray-800">
+  <div class="p-4 rounded-t-lg bg-gradient-to-l from-rose-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+    <i class="fa-solid fa-hospital text-rose-600"></i>
+    <h3 class="font-semibold">ثبت/ویرایش بیمارستان</h3>
+  </div>
+  <form method="post" class="p-4 space-y-4">
+    {% csrf_token %}
+    <div class="space-y-3">
+      <div>
+        <label class="block text-sm mb-1">نام</label>
+        {{ form.name }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">آدرس</label>
+        {{ form.address }}
+      </div>
+      <div>
+        <label class="block text-sm mb-1">تلفن</label>
+        {{ form.phone }}
+      </div>
+      <div class="flex items-center gap-2">
+        {{ form.is_active }}
+        <label class="text-sm">فعال</label>
+      </div>
+    </div>
+    <div class="flex items-center justify-end gap-2">
+      <a href="{% url 'emergency_services:hospital_list' %}" class="px-4 py-2 rounded-md bg-gray-100 text-gray-700">انصراف</a>
+      <button type="submit" class="px-4 py-2 rounded-md bg-rose-600 text-white">ذخیره</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

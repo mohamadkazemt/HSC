@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}ثبت مراجعه جدید{% endblock %}
+
+{% block content %}
+<form method="post" x-data="visitForm()" x-init="init()" class="space-y-6">
+  {% csrf_token %}
+
+  <!-- Card 1: Patient Information -->
+  <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800">
+    <div class="p-4 rounded-t-lg bg-gradient-to-l from-indigo-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+      <i class="fa-solid fa-user text-indigo-600"></i>
+      <h3 class="font-semibold">اطلاعات مراجعه‌کننده</h3>
+    </div>
+    <div class="p-4 space-y-4">
+      <!-- Personnel type radios -->
+      <div>
+        <label class="block text-sm font-medium mb-2">نوع پرسنل</label>
+        <div class="flex items-center gap-6">
+          <label class="inline-flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="personnel_type" value="company" x-model="personnelType" class="text-indigo-600 focus:ring-indigo-500">
+            <span>پرسنل شرکت</span>
+          </label>
+          <label class="inline-flex items-center gap-2 cursor-pointer">
+            <input type="radio" name="personnel_type" value="contractor" x-model="personnelType" class="text-indigo-600 focus:ring-indigo-500">
+            <span>پرسنل پیمانکار</span>
+          </label>
+        </div>
+        {% if form.errors.personnel_type %}
+          <p class="text-sm text-red-600 mt-1">{{ form.errors.personnel_type }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Conditional selects -->
+      <div x-show="personnelType === 'company'" x-cloak>
+        <label for="id_company_personnel" class="block text-sm font-medium mb-1">انتخاب پرسنل شرکت</label>
+        {{ form.company_personnel }}
+        {% if form.errors.company_personnel %}
+          <p class="text-sm text-red-600 mt-1">{{ form.errors.company_personnel }}</p>
+        {% endif %}
+      </div>
+      <div x-show="personnelType === 'contractor'" x-cloak>
+        <label for="id_contractor_personnel" class="block text-sm font-medium mb-1">انتخاب پرسنل پیمانکار</label>
+        {{ form.contractor_personnel }}
+        {% if form.errors.contractor_personnel %}
+          <p class="text-sm text-red-600 mt-1">{{ form.errors.contractor_personnel }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 2: Visit Details -->
+  <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800">
+    <div class="p-4 rounded-t-lg bg-gradient-to-l from-blue-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+      <i class="fa-solid fa-file-medical text-blue-600"></i>
+      <h3 class="font-semibold">جزئیات مراجعه</h3>
+    </div>
+    <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium mb-1" for="id_visit_reason">علت مراجعه</label>
+        {{ form.visit_reason }}
+        {% if form.errors.visit_reason %}
+          <p class="text-sm text-red-600 mt-1">{{ form.errors.visit_reason }}</p>
+        {% endif %}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1" for="id_visit_time">زمان مراجعه</label>
+        {{ form.visit_time }}
+        <p class="text-xs text-gray-500 mt-1">تاریخ و ساعت را به شمسی انتخاب کنید.</p>
+        {% if form.errors.visit_time %}
+          <p class="text-sm text-red-600 mt-1">{{ form.errors.visit_time }}</p>
+        {% endif %}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1" for="id_doctor_recommendation">توصیه پزشک</label>
+        {{ form.doctor_recommendation }}
+        {% if form.errors.doctor_recommendation %}
+          <p class="text-sm text-red-600 mt-1">{{ form.errors.doctor_recommendation }}</p>
+        {% endif %}
+      </div>
+      <div class="md:col-span-2">
+        <label class="block text-sm font-medium mb-2">خدمات درمانی</label>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+          {% for checkbox in form.services %}
+            <label class="inline-flex items-center gap-2 bg-gray-50 dark:bg-gray-700 rounded-md px-3 py-2">
+              {{ checkbox.tag }}
+              <span class="truncate">{{ checkbox.choice_label }}</span>
+            </label>
+          {% endfor %}
+        </div>
+        {% if form.errors.services %}
+          <p class="text-sm text-red-600 mt-1">{{ form.errors.services }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 3: Medicine Management -->
+  <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800" x-data="medicineFormset()" x-init="init()">
+    <div class="p-4 rounded-t-lg bg-gradient-to-l from-amber-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-capsules text-amber-600"></i>
+        <h3 class="font-semibold">مدیریت دارو</h3>
+      </div>
+      <button type="button" @click="addRow()" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-amber-600 text-white hover:bg-amber-700">
+        <i class="fa-solid fa-plus"></i>
+        افزودن دارو
+      </button>
+    </div>
+    <div class="p-4 space-y-3">
+      {{ medicine_formset.management_form }}
+      <div id="medicine-rows" class="space-y-3">
+        {% for f in medicine_formset %}
+          <div class="grid grid-cols-1 md:grid-cols-7 gap-3 items-end bg-gray-50 dark:bg-gray-700 rounded-md p-3" data-index="{{ forloop.counter0 }}">
+            <div class="md:col-span-5">
+              <label class="block text-sm font-medium mb-1">دارو</label>
+              {{ f.medicine }}
+              {% if f.errors.medicine %}<p class="text-xs text-red-600 mt-1">{{ f.errors.medicine }}</p>{% endif %}
+            </div>
+            <div>
+              <label class="block text-sm font-medium mb-1">تعداد</label>
+              {{ f.quantity }}
+              {% if f.errors.quantity %}<p class="text-xs text-red-600 mt-1">{{ f.errors.quantity }}</p>{% endif %}
+            </div>
+            <div class="flex md:justify-end">
+              <button type="button" @click="removeRow($event)" class="px-3 py-2 text-sm rounded-md bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300">
+                حذف
+              </button>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      <!-- empty form template -->
+      <template id="medicine-empty-template">
+        <div class="grid grid-cols-1 md:grid-cols-7 gap-3 items-end bg-gray-50 dark:bg-gray-700 rounded-md p-3" data-index="__index__">
+          <div class="md:col-span-5">
+            <label class="block text-sm font-medium mb-1">دارو</label>
+            {{ medicine_formset.empty_form.medicine|safe }}
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">تعداد</label>
+            {{ medicine_formset.empty_form.quantity|safe }}
+          </div>
+          <div class="flex md:justify-end">
+            <button type="button" @click="removeRow($event)" class="px-3 py-2 text-sm rounded-md bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300">
+              حذف
+            </button>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- Card 4: Hospital Referral (optional) -->
+  <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800" x-data="{ referred: false }">
+    <div class="p-4 rounded-t-lg bg-gradient-to-l from-rose-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-hospital text-rose-600"></i>
+        <h3 class="font-semibold">ارجاع به بیمارستان</h3>
+      </div>
+      <label class="inline-flex items-center cursor-pointer">
+        <input type="checkbox" x-model="referred" class="sr-only peer">
+        <div class="w-10 h-6 bg-gray-200 rounded-full peer peer-checked:bg-rose-600 relative transition">
+          <div class="absolute top-0.5 right-0.5 w-5 h-5 bg-white rounded-full transition peer-checked:translate-x-[-1rem]"></div>
+        </div>
+        <span class="mr-2 text-sm">ارجاع می‌شود</span>
+      </label>
+    </div>
+    <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4" x-show="referred" x-cloak>
+      <div class="md:col-span-1">
+        <label class="block text-sm font-medium mb-1">بیمارستان</label>
+        {{ form.hospital }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">زمان پذیرش</label>
+        {{ form.hospital_admission_time }}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">زمان ترخیص</label>
+        {{ form.hospital_discharge_time }}
+      </div>
+      <div class="md:col-span-3">
+        <label class="block text-sm font-medium mb-1">تشخیص بیمارستان</label>
+        {{ form.hospital_diagnosis }}
+      </div>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-end gap-3">
+    <a href="{% url 'emergency_services:visit_list' %}" class="px-4 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200">انصراف</a>
+    <button type="submit" class="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">ثبت مراجعه</button>
+  </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<!-- Select2 + Jalali DateTime (libs are loaded globally in base.html) -->
+<script>
+  function visitForm() {
+    return {
+      personnelType: '{{ initial_personnel_type|default:"company" }}',
+      init() {
+        // Initialize Select2
+        const selectOpts = { width: '100%', dir: 'rtl' };
+        $('#id_company_personnel').addClass('select2').select2(selectOpts);
+        $('#id_contractor_personnel').addClass('select2').select2(selectOpts);
+        $('#id_hospital').addClass('select2').select2(selectOpts);
+
+        // Convert datetime-local to text and apply Jalali picker
+        $('.jalali-datetime').each(function(){
+          const $el = $(this);
+          try { $el.prop('type','text'); } catch(e) {}
+          $el.persianDatepicker({
+            format: 'YYYY/MM/DD HH:mm:ss',
+            timePicker: { enabled: true, second: true },
+            autoClose: true
+          });
+        });
+      }
+    }
+  }
+
+  function medicineFormset() {
+    return {
+      container: null,
+      totalInput: null,
+      init() {
+        this.container = document.getElementById('medicine-rows');
+        this.totalInput = document.querySelector('input[name="{{ medicine_formset.management_form.TOTAL_FORMS.html_name }}"]');
+        // Enhance existing selects
+        this.refreshSelect2();
+      },
+      refreshSelect2() {
+        const opts = { width: '100%', dir: 'rtl' };
+        $(this.container).find('select').each(function(){
+          const $s = $(this);
+          if ($s.data('select2')) { $s.select2('destroy'); }
+          $s.addClass('select2').select2(opts);
+        });
+      },
+      addRow() {
+        const tmpl = document.getElementById('medicine-empty-template').innerHTML;
+        const index = parseInt(this.totalInput.value, 10);
+        const html = tmpl.replaceAll('__prefix__', index).replaceAll('__index__', index);
+        const frag = document.createElement('div');
+        frag.innerHTML = html.trim();
+        const node = frag.firstElementChild;
+        this.container.appendChild(node);
+        this.totalInput.value = index + 1;
+        this.renumber();
+        this.refreshSelect2();
+      },
+      removeRow(ev) {
+        const row = ev.target.closest('[data-index]');
+        if (!row) return;
+        row.remove();
+        this.renumber();
+        this.refreshSelect2();
+      },
+      renumber() {
+        // Re-index all rows and update TOTAL_FORMS
+        const rows = this.container.querySelectorAll('[data-index]');
+        let i = 0;
+        rows.forEach(r => {
+          const old = r.getAttribute('data-index');
+          if (String(old) === String(i)) { i++; return; }
+          r.setAttribute('data-index', i);
+          r.querySelectorAll('input, select, textarea, label').forEach(el => {
+            ['name','id','for'].forEach(attr => {
+              if (el.hasAttribute(attr)) {
+                el.setAttribute(attr, el.getAttribute(attr).replace(/medicines-(\d+)-/g, `medicines-${i}-`));
+              }
+            });
+          });
+          i++;
+        });
+        this.totalInput.value = rows.length;
+      }
+    }
+  }
+</script>
+{% endblock %}

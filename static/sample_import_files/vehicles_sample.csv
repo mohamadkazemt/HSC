@@ -1,0 +1,4 @@
+vehicle_type,workshop_code,license_plate,model,manufacture_year,status,description,has_horn,has_hose,has_monitor,has_extinguisher,has_equipment,has_foam,has_water,has_tire,has_brake,has_lighting
+fire_truck,FT-001,12ج345-34,ولوو FH12,2020,active,خودرو آتش‌نشانی اصلی,True,True,True,True,True,True,True,True,True,True
+ambulance,AMB-001,56د789-11,بنز Sprinter,2021,active,آمبولانس اورژانس,True,False,False,True,False,False,False,True,True,True
+rescue,RES-001,78ه123-22,تویوتا Land Cruiser,2019,maintenance,خودرو امداد,True,False,False,True,False,False,False,True,True,True

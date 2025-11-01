@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% block title %}{% if question %}ویرایش سوال{% else %}افزودن سوال{% endif %}{% endblock %}
+
+{% block content %}
+{% block styles %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+  .select2-container{ width:100% !important; }
+  .select2-container .select2-selection--single,.select2-container .select2-selection--multiple{ min-height:40px; border:1px solid #d1d5db; border-radius:0.375rem; }
+  .select2-container .select2-selection__rendered{ line-height:38px; }
+</style>
+{% endblock %}
+<div x-data="questionForm({{ question.id|default:'null' }})" x-init="init()" class="space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-xl font-bold">{% if question %}ویرایش سوال{% else %}افزودن سوال{% endif %}</h1>
+    <a href="{% url 'checklist_app:general_question_list' %}" class="text-sm text-gray-600 hover:text-gray-900">بازگشت به لیست</a>
+  </div>
+
+  <form x-ref="form" method="post" @submit.prevent="handleSubmit" action="{% if question %}{% url 'checklist_app:general_question_edit' question.id %}{% else %}{% url 'checklist_app:general_question_form' %}{% endif %}" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    {% csrf_token %}
+    <!-- Main -->
+    <div class="lg:col-span-8 space-y-6">
+      <div class="rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 shadow-md p-4 space-y-4">
+        <div class="flex items-center gap-2 mb-2">
+          <svg class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M3 12h18M3 18h18"/></svg>
+          <h2 class="text-base font-semibold">اطلاعات پایه سوال</h2>
+        </div>
+        <label class="block">
+          <span class="block text-sm font-medium mb-1">متن سوال</span>
+          <textarea name="text" rows="3" class="w-full rounded border border-gray-300 p-2" required>{% if question %}{{ question.text }}{% endif %}</textarea>
+        </label>
+        <div>
+          <span class="block text-sm font-medium mb-2">محدوده‌های سوال</span>
+          <div class="flex flex-wrap gap-4">
+            <label class="inline-flex items-center gap-2">
+              <input type="checkbox" name="question_scopes" value="machine" x-model="scopes"> ماشین
+            </label>
+            <label class="inline-flex items-center gap-2">
+              <input type="checkbox" name="question_scopes" value="location" x-model="scopes"> مکان
+            </label>
+            <label class="inline-flex items-center gap-2">
+              <input type="checkbox" name="question_scopes" value="contractor_vehicle" x-model="scopes"> ماشین‌آلات پیمانکار
+            </label>
+          </div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+          <label class="block">
+            <span class="block text-sm font-medium mb-1">نوع سوال</span>
+            <select name="question_type" x-model="qtype" class="w-full rounded border border-gray-300 p-2" required>
+              <option value="text">متنی</option>
+              <option value="option">گزینه‌ای</option>
+            </select>
+          </label>
+          <label class="block">
+            <span class="block text-sm font-medium mb-1">اجباری</span>
+            <input type="checkbox" name="is_required" {% if question and question.is_required %}checked{% elif not question %}checked{% endif %} class="h-5 w-5 align-middle">
+          </label>
+        </div>
+        <div x-show="qtype==='option'" class="grid md:grid-cols-2 gap-4">
+          <label class="block">
+            <span class="block text-sm font-medium mb-1">گزینه‌ها (با کاما جدا کنید)</span>
+            <textarea name="options" rows="2" class="w-full rounded border border-gray-300 p-2">{% if question %}{{ question.options }}{% endif %}</textarea>
+          </label>
+          <label class="block">
+            <span class="block text-sm font-medium mb-1">گزینه‌های غیرقابل قبول</span>
+            <textarea name="unacceptable_options" rows="2" class="w-full rounded border border-gray-300 p-2">{% if question %}{{ question.unacceptable_options }}{% endif %}</textarea>
+          </label>
+        </div>
+        <div x-show="scopes.includes('machine')" class="grid">
+          <label class="block">
+            <span class="block text-sm font-medium mb-1">انواع ماشین</span>
+            <select name="machine_types" multiple class="w-full">
+              {% for mt in machine_types %}
+              <option value="{{ mt.id }}" {% if question and mt in question.machine_types.all %}selected{% endif %}>{{ mt.name }}</option>
+              {% endfor %}
+            </select>
+          </label>
+        </div>
+        <div x-show="scopes.includes('location')" class="grid">
+          <label class="block">
+            <span class="block text-sm font-medium mb-1">بخش‌های مکانی</span>
+            <select name="location_sections" multiple class="w-full">
+              {% for ls in location_sections %}
+              <option value="{{ ls.id }}" {% if question and ls in question.location_sections.all %}selected{% endif %}>{{ ls.location.name }} - {{ ls.section }}</option>
+              {% endfor %}
+            </select>
+          </label>
+        </div>
+        <div x-show="scopes.includes('contractor_vehicle')" class="grid">
+          <label class="block">
+            <span class="block text-sm font-medium mb-1">دسته‌بندی‌های خودرو پیمانکار</span>
+            <select name="vehicle_categories" multiple class="w-full">
+              <option value="mining" {% if question and 'mining' in question.vehicle_categories %}selected{% endif %}>ماشین‌آلات معدنی</option>
+              <option value="light" {% if question and 'light' in question.vehicle_categories %}selected{% endif %}>خودروهای سبک</option>
+              <option value="transportation" {% if question and 'transportation' in question.vehicle_categories %}selected{% endif %}>حمل و نقل</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2">
+        <a href="{% url 'checklist_app:general_question_list' %}" class="px-4 py-2 rounded border">انصراف</a>
+        <button type="submit" class="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700">ذخیره</button>
+      </div>
+    </div>
+
+    <!-- Anomaly Settings -->
+    <div class="lg:col-span-4">
+      <div class="rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 shadow-md p-4 space-y-4">
+        <h3 class="font-semibold flex items-center gap-2">
+          <svg class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3h.008v.008H12V15.75Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z" /></svg>
+          تنظیمات آنومالی
+        </h3>
+        <label class="block">
+          <span class="block text-sm font-medium mb-1">نوع آنومالی پیش‌فرض</span>
+          <select name="anomaly_type" class="w-full rounded border border-gray-300 p-2">
+            {% for at in anomaly_types %}
+            <option value="{{ at.id }}" {% if question and question.anomaly_type_id == at.id %}selected{% endif %}>{{ at.type }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="block">
+          <span class="block text-sm font-medium mb-1">حوزه HSE</span>
+          <select name="hse_type" class="w-full rounded border border-gray-300 p-2">
+            <option value="H" {% if question and question.hse_type == 'H' %}selected{% endif %}>Health</option>
+            <option value="S" {% if question and question.hse_type == 'S' %}selected{% endif %}>Safety</option>
+            <option value="E" {% if question and question.hse_type == 'E' %}selected{% endif %}>Environment</option>
+          </select>
+        </label>
+        <label class="block">
+          <span class="block text-sm font-medium mb-1">اولویت پیش‌فرض</span>
+          <select name="default_priority_on_fail" class="w-full rounded border border-gray-300 p-2">
+            {% for p in priorities %}
+            <option value="{{ p.id }}" {% if question and question.default_priority_on_fail_id == p.id %}selected{% endif %}>{{ p.priority }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="block">
+          <span class="block text-sm font-medium mb-1">شرح آنومالی پیش‌فرض</span>
+          <select name="default_anomaly_description" class="w-full rounded border border-gray-300 p-2">
+            <option value="">—</option>
+            {% for d in anomaly_descriptions %}
+            <option value="{{ d.id }}" {% if question and question.default_anomaly_description_id == d.id %}selected{% endif %}>{{ d.description|truncatechars:60 }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="block">
+          <span class="block text-sm font-medium mb-1">اقدام اصلاحی پیش‌فرض</span>
+          <textarea name="default_corrective_action" rows="3" class="w-full rounded border border-gray-300 p-2">{% if question %}{{ question.default_corrective_action }}{% endif %}</textarea>
+        </label>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+  function getCSRF(){ return (document.cookie.match(/csrftoken=([^;]+)/)||[])[1]; }
+  function questionForm(qid){
+    return {
+      qid: qid,
+      scopes: {% if question %}{{ question.question_scopes|safe }}{% else %}[]{% endif %},
+      qtype: '{% if question %}{{ question.question_type }}{% else %}text{% endif %}',
+      init(){
+        $('select[multiple], select[name=hse_type], select[name=anomaly_type], select[name=default_priority_on_fail], select[name=default_anomaly_description]').select2({ width:'100%', dir:'rtl' });
+      },
+      async handleSubmit(){
+        if(this.qid){
+          // For edit, submit normally to follow redirect
+          this.$refs.form.submit();
+          return;
+        }
+        const form = new FormData(this.$refs.form);
+        const res = await fetch(this.$refs.form.action, { method:'POST', headers:{'X-CSRFToken':getCSRF()}, body: form });
+        const data = await res.json().catch(()=>({success:false}));
+        if(data && data.success){
+          window.location = "{% url 'checklist_app:general_question_list' %}?saved=1";
+        }else{
+          alert('خطا در ذخیره‌سازی');
+        }
+      }
+    }
+  }
+</script>
+{% endblock %}

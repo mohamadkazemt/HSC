@@ -5,12 +5,15 @@ from accounts.models import Part, Section, Position,UnitGroup
 from .utils import get_all_views_with_labels, check_permission
 from django.core.serializers.json import DjangoJSONEncoder
 import json
+import logging
 from django.db.models import Q
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib import messages
 from django.contrib.auth.models import User
 from dashboard.utils import log_user_activity
 from django.urls import reverse
+
+logger = logging.getLogger(__name__)
 
 def is_staff_user(user):
     return user.is_staff
@@ -162,6 +165,67 @@ def manage_access(request):
         "users": json.dumps(list(users), cls=DjangoJSONEncoder),
         "views_with_labels": views_with_labels,
     })
+
+
+@user_passes_test(is_staff_user)
+def get_available_views(request):
+    """
+    ویوی AJAX برای دریافت صفحاتی که موجودیت انتخاب شده هنوز به آن‌ها دسترسی ندارد.
+    """
+    try:
+        entity_type = request.GET.get('entity_type')
+        entity_id = request.GET.get('entity_id')
+        
+        logger.info(f"get_available_views called: type={entity_type}, id={entity_id}")
+        
+        if not entity_type or not entity_id:
+            return JsonResponse({'views': []}, safe=False)
+        
+        # دریافت تمام ویوها
+        all_views = get_all_views_with_labels()
+        logger.info(f"Total views in system: {len(all_views)}")
+        
+        # دریافت ویوهایی که از قبل دسترسی دارند
+        existing_view_names = set()
+        
+        if entity_type == 'part':
+            existing_view_names = set(
+                PartPermission.objects.filter(part_id=entity_id).values_list('view_name', flat=True)
+            )
+        elif entity_type == 'section':
+            existing_view_names = set(
+                SectionPermission.objects.filter(section_id=entity_id).values_list('view_name', flat=True)
+            )
+        elif entity_type == 'unit_group':
+            existing_view_names = set(
+                UnitGroupPermission.objects.filter(unit_group_id=entity_id).values_list('view_name', flat=True)
+            )
+        elif entity_type == 'position':
+            existing_view_names = set(
+                PositionPermission.objects.filter(position_id=entity_id).values_list('view_name', flat=True)
+            )
+        elif entity_type == 'user':
+            existing_view_names = set(
+                UserPermission.objects.filter(user_id=entity_id).values_list('view_name', flat=True)
+            )
+        
+        logger.info(f"Existing permissions count: {len(existing_view_names)}")
+        
+        # فیلتر کردن ویوها - فقط آن‌هایی که دسترسی ندارند
+        # و حذف فیلدهای غیرقابل سریالیزه شدن مثل view function
+        available_views = [
+            {'name': view['name'], 'label': view['label']}
+            for view in all_views 
+            if view['name'] not in existing_view_names
+        ]
+        
+        logger.info(f"Available views count: {len(available_views)}")
+        
+        return JsonResponse({'views': available_views}, safe=False)
+        
+    except Exception as e:
+        logger.error(f"Error in get_available_views: {str(e)}", exc_info=True)
+        return JsonResponse({'error': str(e), 'views': []}, status=500)
 
 
 @user_passes_test(is_staff_user)

@@ -260,10 +260,13 @@ def create_visit(request):
     
     services = MedicalService.objects.all()
     
+    initial_personnel_type = request.POST.get('personnel_type') or (getattr(form, 'initial', {}).get('personnel_type')) or 'company'
+
     context = {
         'form': form,
         'medicine_formset': medicine_formset,
         'services': services,
+        'initial_personnel_type': initial_personnel_type,
     }
     
     return render(request, 'emergency_services/visit_form.html', context)
@@ -289,7 +292,44 @@ def edit_visit(request, pk):
     visit = get_object_or_404(MedicalVisit, pk=pk)
     
     if request.method == 'POST':
-        form = MedicalVisitForm(request.POST, instance=visit)
+        data = request.POST.copy()
+        try:
+            if data.get('visit_time'):
+                vt = persian_to_english_numbers(data['visit_time'].strip())
+                vt = re.sub(r'[^0-9/ :]', '', vt)
+                d, t = vt.split(' ')
+                y, m, day = map(int, d.split('/'))
+                hh, mm, ss = t.split(':')
+                ss = ss.split('.')[0]
+                if y < 100: y += 1400
+                g = jdatetime.datetime(y, int(m), int(day), int(hh), int(mm), int(ss)).togregorian()
+                data['visit_time'] = g.strftime('%Y-%m-%d %H:%M:%S')
+            if data.get('hospital_admission_time'):
+                at = persian_to_english_numbers(data['hospital_admission_time'].strip())
+                at = re.sub(r'[^0-9/ :]', '', at)
+                d, t = at.split(' ')
+                y, m, day = map(int, d.split('/'))
+                hh, mm, ss = t.split(':')
+                ss = ss.split('.')[0]
+                if y < 100: y += 1400
+                g = jdatetime.datetime(y, int(m), int(day), int(hh), int(mm), int(ss)).togregorian()
+                data['hospital_admission_time'] = g.strftime('%Y-%m-%d %H:%M:%S')
+            if data.get('hospital_discharge_time'):
+                dt = persian_to_english_numbers(data['hospital_discharge_time'].strip())
+                dt = re.sub(r'[^0-9/ :]', '', dt)
+                d, t = dt.split(' ')
+                y, m, day = map(int, d.split('/'))
+                hh, mm, ss = t.split(':')
+                ss = ss.split('.')[0]
+                if y < 100: y += 1400
+                g = jdatetime.datetime(y, int(m), int(day), int(hh), int(mm), int(ss)).togregorian()
+                data['hospital_discharge_time'] = g.strftime('%Y-%m-%d %H:%M:%S')
+        except Exception:
+            messages.error(request, 'فرمت تاریخ/زمان نامعتبر است. (نمونه 1404/02/07 18:49:51)')
+            form = MedicalVisitForm(instance=visit)
+            return render(request, 'emergency_services/visit_edit.html', {'form': form, 'visit': visit, 'medicine_usages': visit.medicine_usages.all()})
+        
+        form = MedicalVisitForm(data, instance=visit)
         
         if form.is_valid():
             form.save()
@@ -654,6 +694,11 @@ def dashboard(request):
     low_stock_medicines = Medicine.objects.filter(quantity__lte=F('critical_threshold')).count()
     expired_medicines = Medicine.objects.filter(expiry_date__lt=timezone.now().date()).count()
     critical_medicines = Medicine.objects.filter(quantity__lte=F('critical_threshold')).order_by('quantity')[:5]
+    expired_medicines_list = Medicine.objects.filter(expiry_date__lt=timezone.now().date()).order_by('expiry_date')[:5]
+    
+    # تجهیزات - وضعیت کالیبراسیون
+    equip_calibration_due = EmergencyEquipment.objects.filter(next_calibration_date__lte=timezone.now().date() + timedelta(days=30)).count()
+    equip_calibration_overdue = EmergencyEquipment.objects.filter(next_calibration_date__lt=timezone.now().date()).count()
     
     # خدمات پرمصرف
     popular_services = MedicalService.objects.annotate(
@@ -689,6 +734,9 @@ def dashboard(request):
         'popular_services': popular_services,
         'popular_medicines': popular_medicines,
         'weekly_visits': weekly_visits,
+        'expired_medicines_list': expired_medicines_list,
+        'equip_calibration_due': equip_calibration_due,
+        'equip_calibration_overdue': equip_calibration_overdue,
     }
     
     return render(request, 'emergency_services/dashboard.html', context)

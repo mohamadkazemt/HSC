@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ورود پیمانکاران - {{ site_settings.site_name }}</title>
+    {% if site_settings and site_settings.site_favicon %}
+    <link rel="icon" href="{{ site_settings.site_favicon.url }}">
+    {% endif %}
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      window.tailwind = window.tailwind || {};
+      window.tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            container: { center: true, padding: '1rem' }
+          }
+        }
+      };
+    </script>
+    
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-shadow {
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body class="min-h-screen gradient-bg flex items-center justify-center p-4">
+    <!-- Background Pattern -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute -top-40 -right-40 w-80 h-80 bg-white opacity-10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-white opacity-10 rounded-full blur-3xl"></div>
+    </div>
+
+    <!-- Login Card -->
+    <div class="relative w-full max-w-md">
+        <!-- Company Logo -->
+        {% if site_settings and site_settings.site_logo %}
+        <div class="text-center mb-8">
+            <img src="{{ site_settings.site_logo.url }}" 
+                 alt="{{ site_settings.site_name }}" 
+                 class="h-20 mx-auto mb-4 drop-shadow-lg">
+        </div>
+        {% endif %}
+
+        <!-- Login Form Card -->
+        <div class="bg-white rounded-2xl card-shadow overflow-hidden">
+            <!-- Card Header -->
+            <div class="gradient-bg px-8 py-6">
+                <div class="text-center">
+                    <svg class="w-16 h-16 mx-auto text-white mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    <h1 class="text-2xl font-bold text-white">پورتال پیمانکاران</h1>
+                    <p class="text-sm text-white/80 mt-2">لطفاً برای ورود اطلاعات خود را وارد کنید</p>
+                </div>
+            </div>
+
+            <!-- Card Body -->
+            <div class="px-8 py-8">
+                <!-- Messages -->
+                {% if messages %}
+                    <div class="mb-6 space-y-3">
+                        {% for message in messages %}
+                            <div class="rounded-lg p-4 {% if message.tags == 'error' %}bg-red-50 border border-red-200{% else %}bg-blue-50 border border-blue-200{% endif %}">
+                                <div class="flex items-center">
+                                    {% if message.tags == 'error' %}
+                                        <svg class="h-5 w-5 text-red-400 ml-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                                        </svg>
+                                    {% endif %}
+                                    <p class="text-sm font-medium {% if message.tags == 'error' %}text-red-800{% else %}text-blue-800{% endif %}">
+                                        {{ message }}
+                                    </p>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <!-- Login Form -->
+                <form method="post" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    <!-- Username Field -->
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
+                            <svg class="w-5 h-5 inline-block text-indigo-600 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                            نام کاربری
+                        </label>
+                        <input type="text" 
+                               name="username" 
+                               id="username"
+                               required
+                               autofocus
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                               placeholder="نام کاربری خود را وارد کنید">
+                    </div>
+
+                    <!-- Password Field -->
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                            <svg class="w-5 h-5 inline-block text-indigo-600 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                            رمز عبور
+                        </label>
+                        <input type="password" 
+                               name="password" 
+                               id="password"
+                               required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                               placeholder="رمز عبور خود را وارد کنید">
+                    </div>
+
+                    <!-- Remember Me -->
+                    <div class="flex items-center justify-between">
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" 
+                                   name="remember_me" 
+                                   class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                            <span class="mr-2 text-sm text-gray-700">مرا به خاطر بسپار</span>
+                        </label>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" 
+                            class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3 px-4 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center">
+                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                        </svg>
+                        ورود به سیستم
+                    </button>
+
+                    <!-- Forgot Password -->
+                    <div class="mt-4 text-center">
+                        <a href="{% url 'accounts:send_reset_code' %}" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                            فراموشی رمز عبور
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Card Footer -->
+            <div class="px-8 py-4 bg-gray-50 border-t border-gray-200 text-center">
+                <p class="text-sm text-gray-600">
+                    در صورت بروز مشکل با پشتیبانی تماس بگیرید
+                </p>
+            </div>
+        </div>
+
+        <!-- Copyright -->
+        <div class="text-center mt-6">
+            <p class="text-sm text-white/80">
+                {% if site_settings and site_settings.site_name %}
+                    © {{ site_settings.site_name }} - تمامی حقوق محفوظ است
+                {% else %}
+                    تمامی حقوق محفوظ است
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</body>
+</html>
