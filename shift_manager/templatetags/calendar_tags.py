@@ -45,3 +45,13 @@ def persian_weekday(day):
         'Friday': 'جمعه'
     }
     return weekdays.get(day, day)
+
+@register.filter
+def jalali_date_format(jdate, format_str='%Y-%m-%d'):
+    """Formats a jdatetime date object using strftime."""
+    if jdate:
+        try:
+            return jdate.strftime(format_str)
+        except:
+            return str(jdate)
+    return ''

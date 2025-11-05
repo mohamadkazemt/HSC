@@ -1,0 +1,523 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load calendar_tags %}
+
+{% block title %}تقویم شیفت‌ها{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Shift Color Definitions */
+  .shift-day-1 { background-color: #FEF3C7; color: #92400E; } /* روزکار اول - Light Yellow */
+  .shift-day-2 { background-color: #FDE68A; color: #78350F; } /* روزکار دوم - Yellow */
+  .shift-evening-1 { background-color: #FED7AA; color: #7C2D12; } /* عصرکار اول - Orange */
+  .shift-evening-2 { background-color: #FDBA74; color: #6B1F0E; } /* عصرکار دوم - Dark Orange */
+  .shift-night-1 { background-color: #BFDBFE; color: #1E3A8A; } /* شب کار اول - Light Blue */
+  .shift-night-2 { background-color: #93C5FD; color: #1E40AF; } /* شب کار دوم - Blue */
+  .shift-off-1 { background-color: #E5E7EB; color: #374151; } /* OFF اول - Gray */
+  .shift-off-2 { background-color: #D1D5DB; color: #1F2937; } /* OFF دوم - Dark Gray */
+  
+  .calendar-day {
+    min-height: 120px;
+    transition: all 0.2s ease;
+  }
+  
+  .calendar-day:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  .calendar-day.current-day {
+    border: 3px solid #3B82F6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  .shift-badge {
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    display: inline-block;
+    margin: 2px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+    <div class="flex items-center justify-between flex-wrap gap-4">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+          <i class="fa-solid fa-calendar-alt text-indigo-600 dark:text-indigo-400"></i>
+          تقویم شیفت‌ها
+        </h1>
+        <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">مشاهده برنامه شیفت ماهانه برای تمام گروه‌ها</p>
+      </div>
+      
+      <div class="flex items-center gap-3">
+        <a 
+          href="{% url 'shift_manager:export_shift_calendar_excel' %}?year={{ year }}&month={{ month }}"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm">
+          <i class="fa-solid fa-file-excel"></i>
+          <span>خروجی Excel</span>
+        </a>
+        
+      {% if user.is_superuser %}
+      <button 
+        @click="$dispatch('open-settings-modal')"
+        class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm">
+        <i class="fa-solid fa-cog"></i>
+        <span>تنظیمات اولیه شیفت</span>
+      </button>
+      {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Calendar Header Controls -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+    <div class="flex items-center justify-between flex-wrap gap-4">
+      <!-- Month/Year Display -->
+      <div class="flex items-center gap-4">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+          {% for m_num, m_name in months.items %}
+            {% if m_num == month %}{{ m_name }}{% endif %}
+          {% endfor %} {{ year }}
+        </h2>
+      </div>
+
+      <!-- Navigation Controls -->
+      <div class="flex items-center gap-3 flex-wrap">
+        <!-- Previous Month -->
+        <a href="?year={{ year }}&month={% if month == 1 %}12{% else %}{{ month|add:'-1' }}{% endif %}{% if month == 1 %}&year={{ year|add:'-1' }}{% endif %}" 
+           class="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+          <i class="fa-solid fa-chevron-right"></i>
+          <span>ماه قبل</span>
+        </a>
+
+        <!-- Go to Today -->
+        <a href="?year={{ today_jalali.year }}&month={{ today_jalali.month }}" 
+           class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors">
+          <i class="fa-solid fa-calendar-day"></i>
+          <span>امروز</span>
+        </a>
+
+        <!-- Next Month -->
+        <a href="?year={{ year }}&month={% if month == 12 %}1{% else %}{{ month|add:'1' }}{% endif %}{% if month == 12 %}&year={{ year|add:'1' }}{% endif %}" 
+           class="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+          <span>ماه بعد</span>
+          <i class="fa-solid fa-chevron-left"></i>
+        </a>
+
+        <!-- Year/Month Dropdowns -->
+        <div class="flex items-center gap-2">
+          <select id="year-select" class="select2-field w-24" onchange="navigateCalendar()">
+            {% for y in "1400,1401,1402,1403,1404,1405,1406,1407,1408,1409,1410,1411,1412,1413,1414,1415"|split:"," %}
+              <option value="{{ y }}" {% if y|add:0 == year %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+          </select>
+          <select id="month-select" class="select2-field w-32" onchange="navigateCalendar()">
+            {% for m_num, m_name in months.items %}
+              <option value="{{ m_num }}" {% if m_num == month %}selected{% endif %}>{{ m_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Color Legend -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+      <i class="fa-solid fa-palette text-indigo-600"></i>
+      راهنمای رنگ‌ها
+    </h3>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <div class="w-8 h-8 rounded shift-day-1 flex items-center justify-center font-bold">1</div>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">روزکار اول</span>
+      </div>
+      <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <div class="w-8 h-8 rounded shift-day-2 flex items-center justify-center font-bold">2</div>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">روزکار دوم</span>
+      </div>
+      <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <div class="w-8 h-8 rounded shift-evening-1 flex items-center justify-center font-bold">1</div>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">عصرکار اول</span>
+      </div>
+      <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <div class="w-8 h-8 rounded shift-evening-2 flex items-center justify-center font-bold">2</div>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">عصرکار دوم</span>
+      </div>
+      <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <div class="w-8 h-8 rounded shift-night-1 flex items-center justify-center font-bold">1</div>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">شب کار اول</span>
+      </div>
+      <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <div class="w-8 h-8 rounded shift-night-2 flex items-center justify-center font-bold">2</div>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">شب کار دوم</span>
+      </div>
+      <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <div class="w-8 h-8 rounded shift-off-1 flex items-center justify-center font-bold">OFF</div>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">OFF اول</span>
+      </div>
+      <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <div class="w-8 h-8 rounded shift-off-2 flex items-center justify-center font-bold">OFF</div>
+        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">OFF دوم</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calendar Grid -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse">
+        <!-- Weekday Headers -->
+        <thead>
+          <tr>
+            <th class="border border-gray-300 dark:border-gray-600 p-3 text-center font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700">شنبه</th>
+            <th class="border border-gray-300 dark:border-gray-600 p-3 text-center font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700">یکشنبه</th>
+            <th class="border border-gray-300 dark:border-gray-600 p-3 text-center font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700">دوشنبه</th>
+            <th class="border border-gray-300 dark:border-gray-600 p-3 text-center font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700">سه‌شنبه</th>
+            <th class="border border-gray-300 dark:border-gray-600 p-3 text-center font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700">چهارشنبه</th>
+            <th class="border border-gray-300 dark:border-gray-600 p-3 text-center font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700">پنج‌شنبه</th>
+            <th class="border border-gray-300 dark:border-gray-600 p-3 text-center font-semibold text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700">جمعه</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for week in calendar %}
+          <tr>
+            {% for j_date in week %}
+              {% if j_date %}
+                {% with formatted_date=j_date|jalali_date_format:"%Y-%m-%d" %}
+                {% with shifts=shift_data|get_item:formatted_date %}
+                <td class="border border-gray-300 dark:border-gray-600 p-2 calendar-day {% if j_date.year == today_jalali.year and j_date.month == today_jalali.month and j_date.day == today_jalali.day %}current-day{% endif %}">
+                  <div class="flex flex-col h-full">
+                    <!-- Day Number -->
+                    <div class="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                      {{ j_date.day }}
+                    </div>
+                    
+                    <!-- Group Shifts -->
+                    <div class="flex-1 space-y-1">
+                      {% if shifts.A %}
+                      <div class="shift-badge {% if 'روزکار اول' in shifts.A %}shift-day-1{% elif 'روزکار دوم' in shifts.A %}shift-day-2{% elif 'عصرکار اول' in shifts.A %}shift-evening-1{% elif 'عصرکار دوم' in shifts.A %}shift-evening-2{% elif 'شب کار اول' in shifts.A %}shift-night-1{% elif 'شب کار دوم' in shifts.A %}shift-night-2{% elif 'OFF اول' in shifts.A %}shift-off-1{% elif 'OFF دوم' in shifts.A %}shift-off-2{% endif %}"
+                           title="گروه A: {{ shifts.A }}">
+                        <span class="font-bold">A:</span> {{ shifts.A|truncatechars:8 }}
+                      </div>
+                      {% endif %}
+                      {% if shifts.B %}
+                      <div class="shift-badge {% if 'روزکار اول' in shifts.B %}shift-day-1{% elif 'روزکار دوم' in shifts.B %}shift-day-2{% elif 'عصرکار اول' in shifts.B %}shift-evening-1{% elif 'عصرکار دوم' in shifts.B %}shift-evening-2{% elif 'شب کار اول' in shifts.B %}shift-night-1{% elif 'شب کار دوم' in shifts.B %}shift-night-2{% elif 'OFF اول' in shifts.B %}shift-off-1{% elif 'OFF دوم' in shifts.B %}shift-off-2{% endif %}"
+                           title="گروه B: {{ shifts.B }}">
+                        <span class="font-bold">B:</span> {{ shifts.B|truncatechars:8 }}
+                      </div>
+                      {% endif %}
+                      {% if shifts.C %}
+                      <div class="shift-badge {% if 'روزکار اول' in shifts.C %}shift-day-1{% elif 'روزکار دوم' in shifts.C %}shift-day-2{% elif 'عصرکار اول' in shifts.C %}shift-evening-1{% elif 'عصرکار دوم' in shifts.C %}shift-evening-2{% elif 'شب کار اول' in shifts.C %}shift-night-1{% elif 'شب کار دوم' in shifts.C %}shift-night-2{% elif 'OFF اول' in shifts.C %}shift-off-1{% elif 'OFF دوم' in shifts.C %}shift-off-2{% endif %}"
+                           title="گروه C: {{ shifts.C }}">
+                        <span class="font-bold">C:</span> {{ shifts.C|truncatechars:8 }}
+                      </div>
+                      {% endif %}
+                      {% if shifts.D %}
+                      <div class="shift-badge {% if 'روزکار اول' in shifts.D %}shift-day-1{% elif 'روزکار دوم' in shifts.D %}shift-day-2{% elif 'عصرکار اول' in shifts.D %}shift-evening-1{% elif 'عصرکار دوم' in shifts.D %}shift-evening-2{% elif 'شب کار اول' in shifts.D %}shift-night-1{% elif 'شب کار دوم' in shifts.D %}shift-night-2{% elif 'OFF اول' in shifts.D %}shift-off-1{% elif 'OFF دوم' in shifts.D %}shift-off-2{% endif %}"
+                           title="گروه D: {{ shifts.D }}">
+                        <span class="font-bold">D:</span> {{ shifts.D|truncatechars:8 }}
+                      </div>
+                      {% endif %}
+                    </div>
+                  </div>
+                </td>
+                {% endwith %}
+                {% endwith %}
+              {% else %}
+                <td class="border border-gray-300 dark:border-gray-600 p-2 bg-gray-50 dark:bg-gray-900"></td>
+              {% endif %}
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Initial Shift Settings Modal -->
+{% if user.is_superuser %}
+<div 
+  x-data="shiftSettingsModal()" 
+  x-show="open" 
+  x-cloak
+  @open-settings-modal.window="openModal()"
+  class="fixed inset-0 z-50 overflow-y-auto"
+  style="display: none;">
+  <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+    <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" @click="closeModal()"></div>
+    
+    <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-right overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+      <!-- Modal Header -->
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-l from-indigo-600 to-indigo-500">
+        <h3 class="text-xl font-semibold text-white flex items-center gap-2">
+          <i class="fa-solid fa-cog"></i>
+          تنظیمات اولیه شیفت
+        </h3>
+      </div>
+      
+      <!-- Modal Body -->
+      <form id="initial-shift-form" @submit.prevent="submitForm" class="px-6 py-4 space-y-4">
+        {% csrf_token %}
+        
+        <!-- Start Date -->
+        <div>
+          <label for="id_start_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            تاریخ شروع *
+          </label>
+          <input 
+            type="text" 
+            id="id_start_date" 
+            name="start_date" 
+            required
+            class="jalali-date form-control form-control-solid w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
+            placeholder="تاریخ شروع را انتخاب کنید">
+        </div>
+
+        <!-- Group Shifts -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="id_group_A_shift" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              گروه A *
+            </label>
+            <select 
+              id="id_group_A_shift" 
+              name="group_A_shift" 
+              required
+              class="select2-field w-full">
+              <option value="">انتخاب کنید...</option>
+              {% for value, label in SHIFT_CHOICES %}
+              <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label for="id_group_B_shift" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              گروه B *
+            </label>
+            <select 
+              id="id_group_B_shift" 
+              name="group_B_shift" 
+              required
+              class="select2-field w-full">
+              <option value="">انتخاب کنید...</option>
+              {% for value, label in SHIFT_CHOICES %}
+              <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label for="id_group_C_shift" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              گروه C *
+            </label>
+            <select 
+              id="id_group_C_shift" 
+              name="group_C_shift" 
+              required
+              class="select2-field w-full">
+              <option value="">انتخاب کنید...</option>
+              {% for value, label in SHIFT_CHOICES %}
+              <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label for="id_group_D_shift" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              گروه D *
+            </label>
+            <select 
+              id="id_group_D_shift" 
+              name="group_D_shift" 
+              required
+              class="select2-field w-full">
+              <option value="">انتخاب کنید...</option>
+              {% for value, label in SHIFT_CHOICES %}
+              <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <!-- Error Messages -->
+        <div id="form-errors" class="hidden text-red-600 dark:text-red-400 text-sm"></div>
+
+        <!-- Modal Footer -->
+        <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <button 
+            type="button"
+            @click="closeModal()"
+            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white dark:bg-gray-600 dark:text-white border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 transition-colors">
+            انصراف
+          </button>
+          <button 
+            type="submit"
+            :disabled="loading"
+            class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <span x-show="!loading">ذخیره و بازسازی تقویم</span>
+            <span x-show="loading">در حال ذخیره...</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Get CSRF token
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+// Navigate calendar with dropdowns
+function navigateCalendar() {
+  const year = document.getElementById('year-select').value;
+  const month = document.getElementById('month-select').value;
+  window.location.href = `?year=${year}&month=${month}`;
+}
+
+// Initialize Select2 and Jalali Date Picker
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize Select2 for dropdowns
+  if ($.fn.select2) {
+    $('.select2-field').select2({
+      dir: 'rtl',
+      language: 'fa',
+      width: '100%',
+      placeholder: 'انتخاب کنید...'
+    });
+  }
+
+  // Initialize Jalali Date Picker
+  if ($.fn.persianDatepicker) {
+    $('.jalali-date').each(function() {
+      const $el = $(this);
+      if (!$el.data('hasJalali')) {
+        $el.persianDatepicker({
+          format: 'YYYY/MM/DD',
+          autoClose: true,
+          calendar: { persian: { locale: 'fa' } }
+        });
+        $el.data('hasJalali', true);
+      }
+    });
+  }
+});
+
+// Shift Settings Modal
+function shiftSettingsModal() {
+  return {
+    open: false,
+    loading: false,
+    openModal() {
+      this.open = true;
+      // Reinitialize Select2 and Jalali picker when modal opens
+      setTimeout(() => {
+        if ($.fn.select2) {
+          $('#id_group_A_shift, #id_group_B_shift, #id_group_C_shift, #id_group_D_shift').select2({
+            dir: 'rtl',
+            language: 'fa',
+            width: '100%',
+            placeholder: 'انتخاب کنید...'
+          });
+        }
+        if ($.fn.persianDatepicker) {
+          $('#id_start_date').persianDatepicker({
+            format: 'YYYY/MM/DD',
+            autoClose: true,
+            calendar: { persian: { locale: 'fa' } }
+          });
+        }
+      }, 100);
+    },
+    async submitForm() {
+      this.loading = true;
+      const errorDiv = document.getElementById('form-errors');
+      errorDiv.classList.add('hidden');
+      errorDiv.textContent = '';
+
+      const form = document.getElementById('initial-shift-form');
+      const formData = new FormData(form);
+
+      try {
+        const response = await fetch('{% url "shift_manager:initial_shift_setup_ajax" %}', {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+          }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Show success message
+          alert(data.message || 'تنظیمات با موفقیت ذخیره شد.');
+          
+          // Close modal
+          this.closeModal();
+          
+          // Reload calendar page
+          window.location.reload();
+        } else {
+          // Show errors
+          let errorText = '';
+          if (data.errors) {
+            for (const field in data.errors) {
+              errorText += `${field}: ${data.errors[field].join(', ')}\n`;
+            }
+          } else {
+            errorText = data.message || 'خطا در ذخیره تنظیمات';
+          }
+          errorDiv.textContent = errorText;
+          errorDiv.classList.remove('hidden');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        errorDiv.textContent = 'خطا در ارتباط با سرور';
+        errorDiv.classList.remove('hidden');
+      } finally {
+        this.loading = false;
+      }
+    },
+    closeModal() {
+      this.open = false;
+      // Reset form
+      document.getElementById('initial-shift-form').reset();
+      // Destroy Select2 instances
+      if ($.fn.select2) {
+        $('#id_group_A_shift, #id_group_B_shift, #id_group_C_shift, #id_group_D_shift').select2('destroy');
+      }
+    }
+  };
+}
+</script>
+{% endblock %}
+

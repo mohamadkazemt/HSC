@@ -172,6 +172,12 @@
             </svg>
             اتصال به ربات روبیکا
           </a>
+          {% if not user.contractor_profile and not user.employee_profile %}
+          <a href="{% url 'shift_manager:shift_calendar' %}" class="flex items-center gap-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700">
+            <i class="fa-solid fa-calendar-alt h-5 w-5 text-gray-400"></i>
+            مدیریت شیفت
+          </a>
+          {% endif %}
           {% if user.is_superuser %}
           <a href="{% url 'core:site_settings' %}" class="flex items-center gap-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700">
             <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">

@@ -19,45 +19,185 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+*.whl
+pip-log.txt
+pip-delete-this-directory.txt
 
 # Django
 *.log
+*.log.*
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+*.db
 media/
 staticfiles/
+collectstatic/
 
-# Environment
+# Environment variables
 .env
+.env.local
+.env.*.local
 .venv
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+myenv/
 
-# IDE
-.idea/
+# IDE - VSCode
 .vscode/
+*.code-workspace
+
+# IDE - PyCharm
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# IDE - Vim
 *.swp
 *.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
 *~
-/.idea/
-/media/
+
+# IDE - Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# OS - macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# OS - Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# OS - Linux
+*~
+.directory
+.Trash-*
+
+# Logs directory
+logs/
+*.log
+*.log.*
+application.log
+errors.log
+security.log
+performance.log
 permissions_debug.log
 error.log
 debug.log
-*.log
-*.log.*
-*.log.*.*
-*.log.*.*.*
-*.log.*.*.*.*
-*.log.*.*.*.*.*
-/myenv/
-manage.py
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+*.pid
+
+# Coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# Sphinx documentation
+docs/_build/
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.tmp
+*.temp
+
+# Compressed files (keep only source)
+*.zip
+*.tar
+*.tar.gz
+*.rar
+
+# Node modules (if using npm)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local development
+local_settings.py
+local_config.py
+.secrets/
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Project specific
+# Note: manage.py should be tracked in git (removed from ignore list)
