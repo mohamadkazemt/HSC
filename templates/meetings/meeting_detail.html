@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load jalali_utils %}
+{% load permission_tags %}
+
+{% block title %}جزئیات جلسه: {{ meeting.title }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+  <!-- Header -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+    <div class="flex items-center justify-between flex-wrap gap-4">
+      <div class="flex items-center gap-4">
+        <div class="bg-indigo-100 dark:bg-indigo-900/30 rounded-lg p-3">
+          <svg class="h-8 w-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800 dark:text-white">{{ meeting.title }}</h1>
+          <p class="text-gray-600 dark:text-gray-400 mt-1">جزئیات جلسه</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="{% url 'meetings:meeting_list' %}" class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+          <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          بازگشت به لیست
+        </a>
+        {% if request.user|check_permission:'meeting_edit' %}
+        <a href="{% url 'meetings:meeting_edit' meeting.pk %}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <svg class="w-5 h-5 inline-block ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+          ویرایش
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Content -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Meeting Info Card -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+          <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          اطلاعات جلسه
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">عنوان جلسه</label>
+            <p class="text-sm text-gray-900 dark:text-white font-medium">{{ meeting.title }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">تاریخ</label>
+            <p class="text-sm text-gray-900 dark:text-white">{{ meeting.date|to_jalali:'%Y/%m/%d' }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">زمان شروع</label>
+            <p class="text-sm text-gray-900 dark:text-white">{{ meeting.start_time }}</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">زمان پایان</label>
+            <p class="text-sm text-gray-900 dark:text-white">{{ meeting.end_time }}</p>
+          </div>
+          {% if meeting.location %}
+          <div>
+            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">مکان</label>
+            <p class="text-sm text-gray-900 dark:text-white">{{ meeting.location }}</p>
+          </div>
+          {% endif %}
+          <div>
+            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">وضعیت</label>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium 
+              {% if meeting.status == 'scheduled' %}bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400
+              {% elif meeting.status == 'cancelled' %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400
+              {% else %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400{% endif %}">
+              {{ meeting.get_status_display }}
+            </span>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">ایجادکننده</label>
+            <p class="text-sm text-gray-900 dark:text-white">{{ meeting.creator.get_full_name|default:meeting.creator.username }}</p>
+          </div>
+          {% if meeting.notify_transport_coordinator %}
+          <div class="md:col-span-2">
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+              <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              اطلاع‌رسانی به هماهنگ‌کننده حمل و نقل فعال است
+            </span>
+          </div>
+          {% endif %}
+          {% if meeting.description %}
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">توضیحات</label>
+            <p class="text-sm text-gray-900 dark:text-white whitespace-pre-line">{{ meeting.description }}</p>
+          </div>
+          {% endif %}
+          {% if meeting.status == 'cancelled' and meeting.cancellation_reason %}
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">دلیل لغو</label>
+            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+              <p class="text-sm text-red-800 dark:text-red-200">{{ meeting.cancellation_reason }}</p>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Participants Card -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+          <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          شرکت‌کنندگان ({{ meeting.participants.count }})
+        </h2>
+        <div class="space-y-2">
+          {% for participant in meeting.participants.all %}
+          <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center">
+                <span class="text-indigo-600 dark:text-indigo-400 font-semibold">
+                  {{ participant.get_full_name|first|default:participant.username|first }}
+                </span>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-900 dark:text-white">
+                  {{ participant.get_full_name|default:participant.username }}
+                </p>
+                {% if participant.userprofile.personnel_code %}
+                <p class="text-xs text-gray-500 dark:text-gray-400">کد پرسنلی: {{ participant.userprofile.personnel_code }}</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">شرکت‌کننده‌ای ثبت نشده است</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Manual Numbers Card -->
+      {% if meeting.manual_numbers %}
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+          <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+          </svg>
+          شماره‌های دستی
+        </h2>
+        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+          <p class="text-sm text-gray-900 dark:text-white whitespace-pre-line font-mono">{{ meeting.manual_numbers }}</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-6">
+      <!-- Actions Card -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">عملیات</h2>
+        <div class="space-y-3">
+          {% if request.user|check_permission:'meeting_edit' %}
+          <a href="{% url 'meetings:meeting_edit' meeting.pk %}" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            ویرایش جلسه
+          </a>
+          {% endif %}
+          
+          {% if meeting.status != 'cancelled' and request.user|check_permission:'meeting_cancel' %}
+          <a href="{% url 'meetings:meeting_cancel' meeting.pk %}" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            لغو جلسه
+          </a>
+          {% endif %}
+          
+          {% if request.user|check_permission:'meeting_delete' %}
+          <a href="{% url 'meetings:meeting_delete' meeting.pk %}" class="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            حذف جلسه
+          </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Meeting Info -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">اطلاعات تکمیلی</h2>
+        <div class="space-y-3 text-sm">
+          <div>
+            <label class="block text-gray-600 dark:text-gray-400 mb-1">تاریخ ایجاد</label>
+            <p class="text-gray-900 dark:text-white">{{ meeting.created_at|to_jalali:'%Y/%m/%d %H:%M' }}</p>
+          </div>
+          {% if meeting.updated_at != meeting.created_at %}
+          <div>
+            <label class="block text-gray-600 dark:text-gray-400 mb-1">آخرین بروزرسانی</label>
+            <p class="text-gray-900 dark:text-white">{{ meeting.updated_at|to_jalali:'%Y/%m/%d %H:%M' }}</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

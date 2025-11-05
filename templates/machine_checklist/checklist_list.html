@@ -1,0 +1,419 @@
+{% extends 'base.html' %}
+{% load static jalali_filters %}
+
+{% block title %}آرشیو چک‌لیست‌های ماشین‌آلات{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css" />
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8" x-data="{ filtersOpen: true }">
+  <!-- Header -->
+  <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+    <div class="flex items-center justify-between flex-wrap gap-4">
+      <div class="flex items-center gap-4">
+        <div class="bg-blue-100 rounded-lg p-3">
+          <i class="fas fa-clipboard-list text-3xl text-blue-600"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800">آرشیو چک‌لیست‌های ماشین‌آلات</h1>
+          <p class="text-gray-600 mt-1">
+            <span>مشاهده و مدیریت تمام چک‌لیست‌های ثبت شده</span>
+            {% if total_count %}
+            <span class="text-blue-600 font-semibold">({{ total_count }} مورد)</span>
+            {% endif %}
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button @click="filtersOpen = !filtersOpen" 
+                class="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 font-semibold flex items-center gap-2 transition-all">
+          <i :class="filtersOpen ? 'fas fa-chevron-up' : 'fas fa-chevron-down'"></i>
+          <span x-text="filtersOpen ? 'بستن فیلترها' : 'نمایش فیلترها'"></span>
+        </button>
+        <!-- Export Buttons -->
+        <div class="relative" x-data="{ showExportMenu: false }">
+          <button @click="showExportMenu = !showExportMenu" 
+                  class="bg-green-600 hover:bg-green-700 text-white rounded-lg px-4 py-2 font-semibold flex items-center gap-2 transition-all">
+            <i class="fas fa-file-excel"></i>
+            <span>خروجی اکسل</span>
+            <i class="fas fa-chevron-down text-sm"></i>
+          </button>
+          <div x-show="showExportMenu" 
+               @click.away="showExportMenu = false"
+               x-transition
+               class="absolute left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden">
+            <a href="{% url 'machine_checklist:export_checklists_excel' %}?export_all=1" 
+               class="block px-4 py-3 text-sm text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors">
+              <i class="fas fa-database text-green-600 mr-2"></i>
+              <span>خروجی کل داده‌ها</span>
+            </a>
+            <a href="#" 
+               id="export_filtered_link"
+               onclick="exportFilteredData(event); return false;"
+               class="block px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors border-t border-gray-200">
+              <i class="fas fa-filter text-blue-600 mr-2"></i>
+              <span>خروجی داده‌های فیلتر شده</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters Card -->
+  <div class="bg-white rounded-lg shadow-lg mb-6 overflow-hidden" x-show="filtersOpen" x-transition>
+    <div class="p-6">
+      <form method="get" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Search -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            <i class="fas fa-search text-blue-600 mr-2"></i>
+            جستجو
+          </label>
+          <input type="text" 
+                 name="q" 
+                 value="{{ query }}" 
+                 placeholder="جستجو در کاربر، کد پرسنلی، ماشین..." 
+                 class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 p-3">
+        </div>
+
+        <!-- Date Range -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            <i class="fas fa-calendar-alt text-blue-600 mr-2"></i>
+            از تاریخ
+          </label>
+          <input type="text" 
+                 id="start_date_display" 
+                 value="{% if from_date %}{{ from_date }}{% endif %}" 
+                 placeholder="انتخاب تاریخ" 
+                 class="persian-datepicker w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 p-3">
+          <input type="hidden" name="start_date" id="start_date" value="">
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            <i class="fas fa-calendar-alt text-blue-600 mr-2"></i>
+            تا تاریخ
+          </label>
+          <input type="text" 
+                 id="end_date_display" 
+                 value="{% if to_date %}{{ to_date }}{% endif %}" 
+                 placeholder="انتخاب تاریخ" 
+                 class="persian-datepicker w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 p-3">
+          <input type="hidden" name="end_date" id="end_date" value="">
+        </div>
+
+        <!-- Group Filter -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            <i class="fas fa-users text-blue-600 mr-2"></i>
+            گروه کاری
+          </label>
+          <select name="group_filter" id="group_filter" class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 p-3">
+            <option value="">-- همه گروه‌ها --</option>
+            {% for group_code, group_name in groups %}
+              <option value="{{ group_code }}" {% if group_filter == group_code %}selected{% endif %}>{{ group_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Shift Filter -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            <i class="fas fa-clock text-blue-600 mr-2"></i>
+            شیفت
+          </label>
+          <select name="shift_filter" id="shift_filter" class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 p-3">
+            <option value="">-- همه شیفت‌ها --</option>
+            {% for shift in shifts %}
+              {% if shift %}
+                <option value="{{ shift }}" {% if shift_filter == shift %}selected{% endif %}>{{ shift }}</option>
+              {% endif %}
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Machine Type Filter -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            <i class="fas fa-cog text-blue-600 mr-2"></i>
+            نوع ماشین
+          </label>
+          <select name="machine_type_filter" id="machine_type_filter" class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 p-3">
+            <option value="">-- همه انواع --</option>
+            {% for machine_type in machine_types %}
+              <option value="{{ machine_type.id }}" {% if machine_type_filter == machine_type.id|stringformat:"s" %}selected{% endif %}>{{ machine_type.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3 items-end">
+          <button type="submit" 
+                  class="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-6 py-3 font-semibold flex items-center gap-2 transition-all flex-1">
+            <i class="fas fa-filter"></i>
+            <span>اعمال فیلتر</span>
+          </button>
+          <a href="{% url 'machine_checklist:checklist_list' %}" 
+             class="bg-gray-500 hover:bg-gray-600 text-white rounded-lg px-6 py-3 font-semibold flex items-center gap-2 transition-all">
+            <i class="fas fa-redo"></i>
+            <span>پاک کردن</span>
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Results Table -->
+  <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gradient-to-r from-blue-600 to-indigo-600">
+          <tr>
+            <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">کاربر</th>
+            <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">کد پرسنلی</th>
+            <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">ماشین</th>
+            <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">نوع ماشین</th>
+            <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">تاریخ</th>
+            <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">شیفت</th>
+            <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">گروه</th>
+            <th class="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">عملیات</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {% for checklist in checklists %}
+          <tr class="hover:bg-blue-50 transition-colors duration-150">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <i class="fas fa-user text-blue-600"></i>
+                </div>
+                <div class="mr-4">
+                  <div class="text-sm font-semibold text-gray-900">
+                    {% if checklist.user %}
+                      {{ checklist.user.get_full_name|default:checklist.user.username }}
+                    {% else %}
+                      <span class="text-gray-400">نامشخص</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="text-sm text-gray-700">
+                {% if checklist.user.userprofile.personnel_code %}
+                  {{ checklist.user.userprofile.personnel_code }}
+                {% else %}
+                  <span class="text-gray-400">-</span>
+                {% endif %}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-semibold text-gray-900">{{ checklist.machine.workshop_code }}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800">
+                {{ checklist.machine.machine_type.name|default:"نامشخص" }}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+              {% load jalali_filters %}
+              {{ checklist.date|to_jalali }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-amber-100 text-amber-800">
+                {{ checklist.shift|default:"-" }}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                {{ checklist.shift_group|default:"-" }}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <div class="flex items-center gap-2">
+                <a href="{% url 'machine_checklist:checklist_detail' checklist.id %}" 
+                   class="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 font-semibold flex items-center gap-2 transition-all"
+                   title="مشاهده جزئیات">
+                  <i class="fas fa-eye"></i>
+                  <span>جزئیات</span>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="px-6 py-12 text-center">
+              <div class="flex flex-col items-center justify-center">
+                <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+                <p class="text-gray-500 text-lg font-semibold">چک‌لیستی یافت نشد</p>
+                <p class="text-gray-400 text-sm mt-2">لطفاً فیلترهای جستجو را تغییر دهید</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if checklists.has_other_pages %}
+    <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+      <div class="flex items-center justify-between">
+        <div class="text-sm text-gray-700">
+          نمایش 
+          <span class="font-semibold">{{ checklists.start_index }}</span>
+          تا 
+          <span class="font-semibold">{{ checklists.end_index }}</span>
+          از 
+          <span class="font-semibold">{{ checklists.paginator.count }}</span>
+          نتیجه
+        </div>
+        <div class="flex items-center gap-2">
+          {% if checklists.has_previous %}
+            <a href="?page={{ checklists.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if from_date %}&start_date={{ from_date }}{% endif %}{% if to_date %}&end_date={{ to_date }}{% endif %}{% if group_filter %}&group_filter={{ group_filter }}{% endif %}{% if shift_filter %}&shift_filter={{ shift_filter }}{% endif %}{% if machine_type_filter %}&machine_type_filter={{ machine_type_filter }}{% endif %}" 
+               class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg px-4 py-2 font-semibold transition-all">
+              قبلی
+            </a>
+          {% endif %}
+          
+          <span class="bg-blue-600 text-white rounded-lg px-4 py-2 font-semibold">
+            صفحه {{ checklists.number }} از {{ checklists.paginator.num_pages }}
+          </span>
+          
+          {% if checklists.has_next %}
+            <a href="?page={{ checklists.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if from_date %}&start_date={{ from_date }}{% endif %}{% if to_date %}&end_date={{ to_date }}{% endif %}{% if group_filter %}&group_filter={{ group_filter }}{% endif %}{% if shift_filter %}&shift_filter={{ shift_filter }}{% endif %}{% if machine_type_filter %}&machine_type_filter={{ machine_type_filter }}{% endif %}" 
+               class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg px-4 py-2 font-semibold transition-all">
+              بعدی
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+// Function to export filtered data
+function exportFilteredData(event) {
+  event.preventDefault();
+  
+  // Get filter values from form
+  const query = $('input[name="q"]').val() || '';
+  const startDate = $('#start_date').val() || '';
+  const endDate = $('#end_date').val() || '';
+  const groupFilter = $('#group_filter').val() || '';
+  const shiftFilter = $('#shift_filter').val() || '';
+  const machineTypeFilter = $('#machine_type_filter').val() || '';
+  
+  // Build URL with filter parameters
+  const baseUrl = "{% url 'machine_checklist:export_checklists_excel' %}";
+  const params = new URLSearchParams();
+  
+  if (query) params.append('q', query);
+  if (startDate) params.append('start_date', startDate);
+  if (endDate) params.append('end_date', endDate);
+  if (groupFilter) params.append('group_filter', groupFilter);
+  if (shiftFilter) params.append('shift_filter', shiftFilter);
+  if (machineTypeFilter) params.append('machine_type_filter', machineTypeFilter);
+  
+  const url = baseUrl + '?' + params.toString();
+  window.location.href = url;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize Select2
+  if ($.fn.select2) {
+    $('#group_filter, #shift_filter, #machine_type_filter').select2({
+      dir: 'rtl',
+      language: 'fa',
+      width: '100%',
+      placeholder: 'انتخاب کنید...',
+      allowClear: true
+    });
+  }
+
+  // Initialize Persian Datepicker with altField for automatic conversion
+  if ($.fn.persianDatepicker) {
+    // Start Date
+    $('#start_date_display').persianDatepicker({
+      format: 'YYYY/MM/DD',
+      autoClose: true,
+      initialValue: false,
+      persianDigit: false,
+      observer: true,
+      altField: '#start_date',
+      altFormat: 'YYYY-MM-DD',
+      calendar: {
+        persian: {
+          locale: 'fa'
+        }
+      },
+      toolbox: {
+        calendarSwitch: {
+          enabled: false
+        }
+      },
+      altFieldFormatter: function(unix) {
+        // Convert unix timestamp to Gregorian date string
+        const date = new Date(unix);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+    });
+    
+    // End Date
+    $('#end_date_display').persianDatepicker({
+      format: 'YYYY/MM/DD',
+      autoClose: true,
+      initialValue: false,
+      persianDigit: false,
+      observer: true,
+      altField: '#end_date',
+      altFormat: 'YYYY-MM-DD',
+      calendar: {
+        persian: {
+          locale: 'fa'
+        }
+      },
+      toolbox: {
+        calendarSwitch: {
+          enabled: false
+        }
+      },
+      altFieldFormatter: function(unix) {
+        // Convert unix timestamp to Gregorian date string
+        const date = new Date(unix);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+    });
+    
+    // Set initial values if they exist (from_date and to_date are already in Persian format from server)
+    {% if from_date %}
+    $('#start_date_display').val('{{ from_date }}');
+    {% if from_date_gregorian %}
+    $('#start_date').val('{{ from_date_gregorian }}');
+    {% endif %}
+    {% endif %}
+    
+    {% if to_date %}
+    $('#end_date_display').val('{{ to_date }}');
+    {% if to_date_gregorian %}
+    $('#end_date').val('{{ to_date_gregorian }}');
+    {% endif %}
+    {% endif %}
+  }
+});
+</script>
+{% endblock %}
+

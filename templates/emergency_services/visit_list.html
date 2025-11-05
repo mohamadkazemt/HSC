@@ -1,4 +1,5 @@
-{% extends 'base.html' %}
+{% extends 'emergency_services/emergency_base.html' %}
+{% load jalali_utils %}
 {% block title %}لیست مراجعات{% endblock %}
 {% block content %}
 <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800">
@@ -9,8 +10,113 @@
     </div>
     <a href="{% url 'emergency_services:create_visit' %}" class="px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 text-sm">ثبت مراجعه جدید</a>
   </div>
+
+  <!-- Filters -->
+  <div class="p-4 border-b border-gray-100 dark:border-gray-700">
+    <form id="visitFilters" method="get" class="grid grid-cols-1 md:grid-cols-5 gap-3">
+      <div>
+        <label class="block text-sm mb-1">از تاریخ</label>
+        <input id="j_date_from" type="text" class="form-input jalali-date w-full" placeholder="YYYY/MM/DD">
+        <input type="hidden" name="date_from" id="date_from" value="{{ filters.date_from|default:'' }}">
+      </div>
+      <div>
+        <label class="block text-sm mb-1">تا تاریخ</label>
+        <input id="j_date_to" type="text" class="form-input jalali-date w-full" placeholder="YYYY/MM/DD">
+        <input type="hidden" name="date_to" id="date_to" value="{{ filters.date_to|default:'' }}">
+      </div>
+      <div>
+        <label class="block text-sm mb-1">نوع پرسنل</label>
+        <select name="personnel_type" class="select2 w-full">
+          <option value="">همه</option>
+          <option value="company" {% if filters.personnel_type == 'company' %}selected{% endif %}>پرسنل شرکت</option>
+          <option value="contractor" {% if filters.personnel_type == 'contractor' %}selected{% endif %}>پرسنل پیمانکار</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm mb-1">خدمت درمانی</label>
+        <select name="service_type" class="select2 w-full">
+          <option value="">همه</option>
+          {% for s in services %}
+            <option value="{{ s.id }}" {% if filters.service_type|stringformat:'s' == s.id|stringformat:'s' %}selected{% endif %}>{{ s.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="flex items-end justify-end gap-2">
+        <a href="?" class="px-3 py-1.5 rounded-md bg-gray-100 text-gray-700">حذف فیلتر</a>
+        <button type="submit" class="px-3 py-1.5 rounded-md bg-indigo-600 text-white">جستجو</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Table -->
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-700/50">
+        <tr class="text-right">
+          <th class="px-4 py-2">تاریخ مراجعه</th>
+          <th class="px-4 py-2">مراجع</th>
+          <th class="px-4 py-2">نوع</th>
+          <th class="px-4 py-2">خدمات</th>
+          <th class="px-4 py-2">بیمارستان</th>
+          <th class="px-4 py-2">عملیات</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+        {% for v in visits %}
+          <tr>
+            <td class="px-4 py-2">{{ v.visit_time|to_jalali:'%Y/%m/%d %H:%M' }}</td>
+            <td class="px-4 py-2">{% if v.personnel_type == 'company' %}{{ v.company_personnel }}{% else %}{{ v.contractor_personnel }}{% endif %}</td>
+            <td class="px-4 py-2">{{ v.get_personnel_type_display }}</td>
+            <td class="px-4 py-2">{{ v.services.all|join:', ' }}</td>
+            <td class="px-4 py-2">{% if v.hospital %}<span class="px-2 py-1 rounded text-xs bg-rose-100 text-rose-700">ارجاع</span>{% else %}-{% endif %}</td>
+            <td class="px-4 py-2">
+              <a href="{% url 'emergency_services:visit_detail' v.id %}" class="text-indigo-600 hover:underline">جزئیات</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="px-4 py-6 text-center text-gray-500">رکوردی یافت نشد</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
   <div class="p-4">
-    <p class="text-sm text-gray-500">فیلترها و جدول پیشرفته می‌تواند بعداً تکمیل شود.</p>
+    {% if visits.has_other_pages %}
+      <div class="flex items-center justify-center gap-1">
+        {% if visits.has_previous %}
+          <a class="px-3 py-1 rounded bg-gray-100" href="?page={{ visits.previous_page_number }}">قبلی</a>
+        {% endif %}
+        <span class="px-3 py-1">صفحه {{ visits.number }} از {{ visits.paginator.num_pages }}</span>
+        {% if visits.has_next %}
+          <a class="px-3 py-1 rounded bg-gray-100" href="?page={{ visits.next_page_number }}">بعدی</a>
+        {% endif %}
+      </div>
+    {% endif %}
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // تبدیل تاریخ جلالی به پارامترهای میلادی قبل از ارسال
+  (function(){
+    const form = document.getElementById('visitFilters');
+    if (!form) return;
+    form.addEventListener('submit', function(e){
+      try {
+        const jf = document.getElementById('j_date_from').value;
+        const jt = document.getElementById('j_date_to').value;
+        if (jf) {
+          const g1 = new persianDate(jf).toCalendar('gregorian').format('YYYY-MM-DD');
+          document.getElementById('date_from').value = g1;
+        }
+        if (jt) {
+          const g2 = new persianDate(jt).toCalendar('gregorian').format('YYYY-MM-DD');
+          document.getElementById('date_to').value = g2;
+        }
+      } catch(err) { console.warn(err); }
+    });
+  })();
+</script>
 {% endblock %}

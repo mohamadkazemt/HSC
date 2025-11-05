@@ -2,6 +2,8 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 from django.forms.fields import DateField
+from django.contrib.auth.models import User, Group
+from django.contrib.auth.forms import PasswordChangeForm
 # from jalali_date.fields import JalaliDateField, JalaliDateTimeField
 # from jalali_date.widgets import AdminJalaliDateWidget, AdminSplitJalaliDateTime
 from django.forms import RadioSelect, CheckboxSelectMultiple
@@ -29,8 +31,9 @@ class MedicineSelectForm(forms.Form):
     )
     quantity = forms.IntegerField(
         min_value=1,
+        required=False,
         label=_("تعداد"),
-        widget=forms.NumberInput(attrs={'class': 'form-control'})
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'placeholder': '1'})
     )
 
     def __init__(self, *args, **kwargs):
@@ -48,7 +51,11 @@ class MedicineSelectForm(forms.Form):
         medicine = cleaned_data.get('medicine')
         quantity = cleaned_data.get('quantity')
 
-        if medicine and quantity:
+        if medicine:
+            # اگر تعداد وارد نشده باشد، 1 درنظر بگیریم
+            if not quantity:
+                quantity = 1
+                self.cleaned_data['quantity'] = quantity
             # بررسی موجودی کافی
             if medicine.quantity < quantity:
                 raise ValidationError(
@@ -56,7 +63,6 @@ class MedicineSelectForm(forms.Form):
                     code='invalid',
                     params={'current': medicine.quantity},
                 )
-            
             # بررسی تاریخ انقضا
             if medicine.is_expired():
                 raise ValidationError(_("این دارو منقضی شده است و قابل استفاده نیست."))
@@ -129,6 +135,118 @@ class MedicalVisitForm(forms.ModelForm):
             self.add_error('contractor_personnel', _("برای پرسنل پیمانکار باید یک نفر را انتخاب کنید."))
         
         return cleaned_data
+
+
+class EmergencyPersonnelForm(forms.ModelForm):
+    """فرم مدیریت پرسنل اورژانس"""
+    ROLE_CHOICES = [
+        ('EmergencyManager', _('مدیر اورژانس')),
+        ('EmergencyDoctor', _('پزشک اورژانس')),
+        ('EmergencyNurse', _('پرستار اورژانس')),
+    ]
+    
+    first_name = forms.CharField(
+        label=_('نام'),
+        max_length=150,
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    last_name = forms.CharField(
+        label=_('نام خانوادگی'),
+        max_length=150,
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    role = forms.ChoiceField(
+        label=_('نقش'),
+        choices=ROLE_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    password = forms.CharField(
+        label=_('رمز عبور'),
+        required=False,
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        help_text=_('در صورت ویرایش، برای تغییر رمز عبور مقدار جدید را وارد کنید.')
+    )
+    password_confirm = forms.CharField(
+        label=_('تکرار رمز عبور'),
+        required=False,
+        widget=forms.PasswordInput(attrs={'class': 'form-control'})
+    )
+    is_active = forms.BooleanField(
+        label=_('فعال'),
+        required=False,
+        initial=True,
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    
+    class Meta:
+        model = User
+        fields = ['username', 'first_name', 'last_name', 'is_active']
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            # در صورت ویرایش، گروه فعلی را تعیین کن
+            user_groups = self.instance.groups.filter(name__in=['EmergencyManager', 'EmergencyDoctor', 'EmergencyNurse'])
+            if user_groups.exists():
+                self.fields['role'].initial = user_groups.first().name
+            self.fields['password'].required = False
+        else:
+            self.fields['password'].required = True
+            self.fields['password_confirm'].required = True
+    
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if self.instance.pk:
+            # در حالت ویرایش، چک کن که username تکراری نباشد (به جز خود کاربر)
+            if User.objects.filter(username=username).exclude(pk=self.instance.pk).exists():
+                raise ValidationError(_('این نام کاربری قبلاً استفاده شده است.'))
+        else:
+            # در حالت ایجاد، چک کن که username تکراری نباشد
+            if User.objects.filter(username=username).exists():
+                raise ValidationError(_('این نام کاربری قبلاً استفاده شده است.'))
+        return username
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        password = cleaned_data.get('password')
+        password_confirm = cleaned_data.get('password_confirm')
+        
+        # اگر رمز عبور وارد شده، باید تکرار آن هم وارد شده باشد
+        if password or password_confirm:
+            if password != password_confirm:
+                self.add_error('password_confirm', _('رمز عبور و تکرار آن مطابقت ندارند.'))
+        
+        # در حالت ایجاد، رمز عبور الزامی است
+        if not self.instance.pk and not password:
+            self.add_error('password', _('رمز عبور الزامی است.'))
+        
+        return cleaned_data
+    
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.first_name = self.cleaned_data['first_name']
+        user.last_name = self.cleaned_data['last_name']
+        
+        # تنظیم رمز عبور
+        password = self.cleaned_data.get('password')
+        if password:
+            user.set_password(password)
+        
+        if commit:
+            user.save()
+            
+            # حذف گروه‌های قبلی اورژانس
+            user.groups.filter(name__in=['EmergencyManager', 'EmergencyDoctor', 'EmergencyNurse']).delete()
+            
+            # افزودن به گروه جدید
+            role = self.cleaned_data['role']
+            group, created = Group.objects.get_or_create(name=role)
+            user.groups.add(group)
+        
+        return user
 
 
 class MedicineCategoryForm(forms.ModelForm):

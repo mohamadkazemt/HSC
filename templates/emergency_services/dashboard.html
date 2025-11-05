@@ -1,9 +1,31 @@
-{% extends 'base.html' %}
+{% extends 'emergency_services/emergency_base.html' %}
 {% load static %}
 {% load jalali_utils %}
 {% block title %}داشبورد اورژانس{% endblock %}
 
 {% block content %}
+<!-- Welcome Banner -->
+<div class="bg-gradient-to-l from-rose-500 to-red-600 rounded-lg shadow-lg p-6 mb-6 text-white">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold">سلام {{ request.user.get_full_name|default:request.user.username }}</h1>
+      <p class="text-rose-100 mt-1">
+        {% if user_role %}
+          شما به عنوان <span class="font-semibold">{{ request.user.emergency_personnel.get_role_display }}</span> وارد پورتال اورژانس شده‌اید
+        {% else %}
+          خوش آمدید به پورتال اورژانس
+        {% endif %}
+      </p>
+    </div>
+    <div class="hidden sm:block">
+      <svg class="h-16 w-16 text-white/30" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- Stats Cards -->
 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
   <!-- Total Visits -->
   <div class="rounded-lg shadow-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white p-5">
@@ -55,6 +77,56 @@
   </div>
 </div>
 
+<!-- Personal Stats for Medical Staff -->
+{% if user_role in 'DOCTOR,NURSE,PARAMEDIC' %}
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mt-6">
+  <div class="flex items-center justify-between mb-4">
+    <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+      <svg class="h-6 w-6 text-rose-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"/>
+      </svg>
+      آمار شخصی شما
+    </h2>
+    <span class="px-3 py-1 text-sm font-medium bg-rose-100 text-rose-700 rounded-full dark:bg-rose-900/30 dark:text-rose-300">
+      {{ my_visits_count }} مراجعه ثبت شده
+    </span>
+  </div>
+  
+  {% if my_recent_visits %}
+    <div class="space-y-3">
+      <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">آخرین مراجعات ثبت شده توسط شما:</h3>
+      <ul class="space-y-2">
+        {% for visit in my_recent_visits %}
+        <li>
+          <a href="{% url 'emergency_services:visit_detail' visit.pk %}" 
+             class="block p-3 rounded-md bg-gray-50 dark:bg-gray-700/50 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors">
+            <div class="flex items-center justify-between">
+              <div class="flex-1">
+                <p class="text-sm font-medium text-gray-900 dark:text-white">
+                  {% if visit.personnel_type == 'company' %}
+                    {{ visit.company_personnel }}
+                  {% else %}
+                    {{ visit.contractor_personnel }}
+                  {% endif %}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ visit.visit_reason|truncatewords:8 }}</p>
+              </div>
+              <div class="text-left">
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ visit.visit_time|to_jalali:'%Y/%m/%d' }}</p>
+                <p class="text-xs text-rose-600 dark:text-rose-400">{{ visit.visit_time|date:'H:i' }}</p>
+              </div>
+            </div>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% else %}
+    <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">هنوز مراجعه‌ای ثبت نکرده‌اید</p>
+  {% endif %}
+</div>
+{% endif %}
+
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-6">
   <!-- Weekly chart -->
   <div class="xl:col-span-2 rounded-lg shadow-lg bg-white dark:bg-gray-800">
@@ -71,18 +143,23 @@
 
   <!-- Alerts -->
   <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800">
-    <div class="p-4 border-b border-gray-100 dark:border-gray-700 rounded-t-lg bg-gradient-to-l from-rose-50 to-white dark:from-gray-800 dark:to-gray-800 flex items-center gap-2">
-      <i class="fa-solid fa-triangle-exclamation text-red-600"></i>
-      <h3 class="font-semibold text-gray-800 dark:text-gray-100">هشدارهای فوری</h3>
+    <div class="p-4 border-b border-red-200 dark:border-red-800 rounded-t-lg bg-gradient-to-l from-red-600 to-rose-600 text-white flex items-center gap-2">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <h3 class="font-semibold">هشدارهای فوری</h3>
     </div>
     <div class="p-4 space-y-4">
       <div>
-        <p class="text-sm font-medium text-red-600 mb-2">داروهای منقضی</p>
+        <p class="text-sm font-medium text-red-700 dark:text-red-300 mb-2">داروهای منقضی</p>
         <ul class="space-y-2">
           {% for m in expired_medicines_list %}
-            <li class="flex items-center justify-between bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded-md px-3 py-2">
-              <span class="truncate">{{ m.name }} — انقضا: {{ m.expiry_date|to_jalali:'%Y/%m/%d' }}</span>
-              <a href="{% url 'emergency_services:edit_medicine' m.id %}" class="text-xs underline">مدیریت</a>
+            <li>
+              <a href="{% url 'emergency_services:edit_medicine' m.id %}" class="flex items-center justify-between bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded-md px-3 py-2 hover:bg-red-100 dark:hover:bg-red-900/30 transition">
+                <span class="truncate inline-flex items-center gap-2">
+                  <i class="fa-solid fa-circle-exclamation"></i>
+                  {{ m.name }} — انقضا: {{ m.expiry_date|to_jalali:'%Y/%m/%d' }}
+                </span>
+                <i class="fa-solid fa-chevron-left text-xs opacity-70"></i>
+              </a>
             </li>
           {% empty %}
             <li class="text-xs text-gray-500">موردی یافت نشد</li>
@@ -90,12 +167,17 @@
         </ul>
       </div>
       <div>
-        <p class="text-sm font-medium text-amber-600 mb-2">داروهای در آستانه بحرانی</p>
+        <p class="text-sm font-medium text-amber-700 dark:text-amber-300 mb-2">داروهای در آستانه بحرانی</p>
         <ul class="space-y-2">
           {% for m in critical_medicines %}
-            <li class="flex items-center justify-between bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 rounded-md px-3 py-2">
-              <span class="truncate">{{ m.name }} — موجودی: {{ m.quantity }}</span>
-              <a href="{% url 'emergency_services:edit_medicine' m.id %}" class="text-xs underline">مدیریت</a>
+            <li>
+              <a href="{% url 'emergency_services:edit_medicine' m.id %}" class="flex items-center justify-between bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 rounded-md px-3 py-2 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition">
+                <span class="truncate inline-flex items-center gap-2">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  {{ m.name }} — موجودی: {{ m.quantity }}
+                </span>
+                <i class="fa-solid fa-chevron-left text-xs opacity-70"></i>
+              </a>
             </li>
           {% empty %}
             <li class="text-xs text-gray-500">موردی یافت نشد</li>

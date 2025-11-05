@@ -113,9 +113,43 @@ class MeetingForm(forms.ModelForm):
         } 
 
     def clean_date(self):
-        """اعتبارسنجی تاریخ - Persian date validation removed"""
+        """اعتبارسنجی و تبدیل تاریخ شمسی به میلادی"""
         date = self.cleaned_data.get('date')
-        # Simple date validation - Persian date processing removed
+        
+        if not date:
+            return date
+        
+        # اگر تاریخ به صورت رشته است، ممکن است شمسی باشد
+        if isinstance(date, str):
+            # بررسی فرمت تاریخ شمسی (YYYY/MM/DD)
+            import re
+            import jdatetime
+            from datetime import date as date_type
+            
+            # تبدیل اعداد فارسی به انگلیسی
+            date_str = convert_persian_to_english(date)
+            
+            # بررسی فرمت YYYY/MM/DD یا YYYY-MM-DD
+            if re.match(r'^\d{4}[/-]\d{1,2}[/-]\d{1,2}$', date_str):
+                try:
+                    # جدا کردن قسمت‌های تاریخ
+                    parts = date_str.replace('/', '-').split('-')
+                    if len(parts) == 3:
+                        year, month, day = map(int, parts)
+                        # اگر سال بین 1300 تا 1500 باشد، احتمالاً شمسی است
+                        if 1300 <= year <= 1500:
+                            j_date = jdatetime.date(year, month, day)
+                            gregorian_date = j_date.togregorian()
+                            logger.info(f"Converted Persian date {date_str} to Gregorian {gregorian_date}")
+                            return gregorian_date
+                        # در غیر این صورت، میلادی فرض می‌شود
+                        else:
+                            return date_type(year, month, day)
+                except (ValueError, TypeError) as e:
+                    logger.error(f"Error converting date {date_str}: {e}")
+                    raise forms.ValidationError(_('فرمت تاریخ نامعتبر است. لطفاً تاریخ را به فرمت YYYY/MM/DD وارد کنید.'))
+        
+        # اگر تاریخ از نوع date است، مستقیماً برگردان
         return date
 
     def clean(self):

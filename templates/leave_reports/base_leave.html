@@ -1,0 +1,520 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load jalali_utils %}
+
+{% block extra_css %}
+<style>
+    /* RTL و استایل‌های اصلی */
+    * {
+        direction: rtl;
+        text-align: right;
+    }
+    
+    /* کارت‌های مدرن */
+    .leave-card {
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+    
+    .leave-card:hover {
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        transform: translateY(-2px);
+    }
+    
+    .card-header-gradient {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .card-header-gradient h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    /* دکمه‌های مدرن */
+    .btn-modern {
+        border-radius: 0.5rem;
+        font-weight: 600;
+        padding: 0.75rem 1.5rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+        border: none;
+    }
+    
+    .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-primary-modern {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .btn-success-modern {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+    }
+    
+    .btn-danger-modern {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+    }
+    
+    .btn-warning-modern {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+    }
+    
+    /* بج‌های وضعیت */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 9999px;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+    
+    .status-pending-replacement {
+        background-color: #fef3c7;
+        color: #92400e;
+    }
+    
+    .status-pending-approval {
+        background-color: #dbeafe;
+        color: #1e40af;
+    }
+    
+    .status-approved {
+        background-color: #d1fae5;
+        color: #065f46;
+    }
+    
+    .status-rejected {
+        background-color: #fee2e2;
+        color: #991b1b;
+    }
+    
+    /* تایم لاین وضعیت */
+    .status-timeline {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 2rem 0;
+        position: relative;
+    }
+    
+    .status-timeline::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        right: 0;
+        width: 100%;
+        height: 2px;
+        background: #e5e7eb;
+        transform: translateY(-50%);
+        z-index: 0;
+    }
+    
+    .status-step {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+        background: white;
+        padding: 0 1rem;
+    }
+    
+    .status-step-icon {
+        width: 3rem;
+        height: 3rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        border: 3px solid;
+    }
+    
+    .status-step.active .status-step-icon {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-color: #667eea;
+        color: white;
+    }
+    
+    .status-step.completed .status-step-icon {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        border-color: #10b981;
+        color: white;
+    }
+    
+    .status-step.rejected .status-step-icon {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        border-color: #ef4444;
+        color: white;
+    }
+    
+    .status-step.pending .status-step-icon {
+        background: white;
+        border-color: #e5e7eb;
+        color: #9ca3af;
+    }
+    
+    /* فرم‌های مدرن */
+    .form-group-modern {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group-modern label {
+        display: block;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .form-control-modern {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .form-control-modern:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    /* تب‌های مدرن */
+    .modern-tabs {
+        display: flex;
+        gap: 0.5rem;
+        border-bottom: 2px solid #e5e7eb;
+        margin-bottom: 2rem;
+    }
+    
+    .modern-tab {
+        padding: 1rem 2rem;
+        border: none;
+        background: none;
+        color: #6b7280;
+        font-weight: 600;
+        cursor: pointer;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+    
+    .modern-tab:hover {
+        color: #667eea;
+    }
+    
+    .modern-tab.active {
+        color: #667eea;
+    }
+    
+    .modern-tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        right: 0;
+        width: 100%;
+        height: 2px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    /* جدول‌های مدرن */
+    .modern-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 0.5rem;
+    }
+    
+    .modern-table thead th {
+        background: #f9fafb;
+        color: #374151;
+        font-weight: 700;
+        padding: 1rem;
+        text-align: right;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .modern-table tbody tr {
+        background: white;
+        transition: all 0.3s ease;
+    }
+    
+    .modern-table tbody tr:hover {
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .modern-table tbody td {
+        padding: 1rem;
+        border-top: 1px solid #f3f4f6;
+        border-bottom: 1px solid #f3f4f6;
+    }
+    
+    .modern-table tbody td:first-child {
+        border-right: 1px solid #f3f4f6;
+        border-top-right-radius: 0.5rem;
+        border-bottom-right-radius: 0.5rem;
+    }
+    
+    .modern-table tbody td:last-child {
+        border-left: 1px solid #f3f4f6;
+        border-top-left-radius: 0.5rem;
+        border-bottom-left-radius: 0.5rem;
+    }
+    
+    /* آیکون‌ها */
+    .icon-circle {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+    
+    .icon-circle-primary {
+        background: rgba(102, 126, 234, 0.1);
+        color: #667eea;
+    }
+    
+    .icon-circle-success {
+        background: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+    }
+    
+    .icon-circle-danger {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+    }
+    
+    .icon-circle-warning {
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+    }
+    
+    /* مودال‌های مدرن */
+    .modal-content {
+        border-radius: 1rem;
+        border: none;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    .modal-header {
+        border-bottom: 2px solid #f3f4f6;
+        padding: 1.5rem;
+    }
+    
+    .modal-body {
+        padding: 2rem;
+    }
+    
+    .modal-footer {
+        border-top: 2px solid #f3f4f6;
+        padding: 1.5rem;
+    }
+    
+    /* Alerts مدرن */
+    .alert-modern {
+        border-radius: 0.75rem;
+        padding: 1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        border: none;
+        margin-bottom: 1.5rem;
+    }
+    
+    .alert-modern i {
+        font-size: 1.5rem;
+    }
+    
+    .alert-success-modern {
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%);
+        color: #065f46;
+    }
+    
+    .alert-danger-modern {
+        background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+        color: #991b1b;
+    }
+    
+    .alert-warning-modern {
+        background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%);
+        color: #92400e;
+    }
+    
+    .alert-info-modern {
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.1) 100%);
+        color: #1e40af;
+    }
+    
+    /* صفحه‌بندی مدرن */
+    .pagination-modern {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+    
+    .pagination-modern .page-link {
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        border: 2px solid #e5e7eb;
+        color: #374151;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .pagination-modern .page-link:hover {
+        border-color: #667eea;
+        color: #667eea;
+        background: rgba(102, 126, 234, 0.1);
+    }
+    
+    .pagination-modern .page-item.active .page-link {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-color: #667eea;
+        color: white;
+    }
+    
+    /* انیمیشن‌ها */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .animate-fade-in-up {
+        animation: fadeInUp 0.5s ease-out;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .status-timeline {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .status-timeline::before {
+            width: 2px;
+            height: 100%;
+            right: 50%;
+            top: 0;
+        }
+        
+        .modern-tabs {
+            flex-direction: column;
+        }
+        
+        .modern-tab {
+            text-align: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    {% block leave_content %}
+    {% endblock %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // توابع کمکی برای AJAX
+    function showLoading(button) {
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال پردازش...';
+    }
+    
+    function hideLoading(button, originalText) {
+        button.disabled = false;
+        button.innerHTML = originalText;
+    }
+    
+    function showNotification(message, type = 'success') {
+        const alertClass = `alert-${type}-modern`;
+        const iconClass = type === 'success' ? 'fa-check-circle' : 
+                         type === 'danger' ? 'fa-times-circle' : 
+                         type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
+        
+        const alertHtml = `
+            <div class="alert-modern ${alertClass} animate-fade-in-up">
+                <i class="fas ${iconClass}"></i>
+                <span>${message}</span>
+            </div>
+        `;
+        
+        const container = document.querySelector('.container-fluid');
+        container.insertAdjacentHTML('afterbegin', alertHtml);
+        
+        setTimeout(() => {
+            const alert = container.querySelector('.alert-modern');
+            if (alert) {
+                alert.style.transition = 'opacity 0.3s ease';
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 300);
+            }
+        }, 5000);
+    }
+    
+    // CSRF Token برای AJAX
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    const csrftoken = getCookie('csrftoken');
+    
+    // تنظیمات پیش‌فرض AJAX
+    $.ajaxSetup({
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    });
+</script>
+{% endblock %}

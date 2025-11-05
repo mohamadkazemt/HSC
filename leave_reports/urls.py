@@ -4,68 +4,99 @@ from . import views
 app_name = 'leave_reports'
 
 URLS_WITH_LABELS = [
+    # درخواست مرخصی جدید
     {
-        "path": "shift_report/",
-        "view": views.create_shift_report,
-        "name": "shift_report",
-        "label": "مرخصی_ایجاد گزارش شیفت",
+        "path": "request/",
+        "view": views.request_leave,
+        "name": "request_leave",
+        "label": "مرخصی_درخواست جدید",
+    },
+    
+    # کارتابل من
+    {
+        "path": "inbox/",
+        "view": views.my_inbox,
+        "name": "my_inbox",
+        "label": "مرخصی_کارتابل",
+    },
+    
+    # آرشیو مرخصی‌ها
+    {
+        "path": "archive/",
+        "view": views.leave_archive,
+        "name": "leave_archive",
+        "label": "مرخصی_آرشیو",
+    },
+    
+    # جزئیات درخواست
+    {
+        "path": "detail/<int:leave_id>/",
+        "view": views.leave_detail,
+        "name": "leave_detail",
+        "label": "مرخصی_جزئیات",
+    },
+    
+    # تأیید/رد توسط جایگزین
+    {
+        "path": "approve-replacement/<int:leave_id>/",
+        "view": views.approve_as_replacement,
+        "name": "approve_as_replacement",
+        "label": "مرخصی_تأیید جایگزین",
     },
     {
-        "path": "shift_report_list/",
-        "view": views.shift_report_list,
-        "name": "shift_report_list",
-        "label": "مرخصی_لیست گزارش‌های شیفت",
+        "path": "reject-replacement/<int:leave_id>/",
+        "view": views.reject_as_replacement,
+        "name": "reject_as_replacement",
+        "label": "مرخصی_رد جایگزین",
+    },
+    
+    # تأیید/رد توسط مدیر
+    {
+        "path": "approve-manager/<int:leave_id>/",
+        "view": views.approve_as_manager,
+        "name": "approve_as_manager",
+        "label": "مرخصی_تأیید مدیر",
     },
     {
-        "path": "shift_report/<int:report_id>/",
-        "view": views.shift_report_detail,
-        "name": "shift_report_detail",
-        "label": "مرخصی_جزئیات گزارش شیفت",
+        "path": "reject-manager/<int:leave_id>/",
+        "view": views.reject_as_manager,
+        "name": "reject_as_manager",
+        "label": "مرخصی_رد مدیر",
+    },
+    
+    # مدیریت تأیید کنندگان
+    {
+        "path": "manage-approvers/",
+        "view": views.manage_approvers,
+        "name": "manage_approvers",
+        "label": "مرخصی_مدیریت تأیید کنندگان",
     },
     {
-        "path": "shift_report/<int:pk>/pdf/",
-        "view": views.shift_report_pdf_view,
-        "name": "shift_report_pdf",
-        "label": "مرخصی_دانلود PDF گزارش شیفت",
+        "path": "delete-approver/<int:hierarchy_id>/",
+        "view": views.delete_approver,
+        "name": "delete_approver",
+        "label": "مرخصی_حذف تأیید کننده",
+    },
+    
+    # API endpoints
+    {
+        "path": "api/users-for-replacement/",
+        "view": views.api_get_users_for_replacement,
+        "name": "api_users_for_replacement",
+        "label": "مرخصی_API لیست جایگزین‌ها",
     },
     {
-        "path": "get_personnels/",
-        "view": views.get_personnels,
-        "name": "get_personnels",
-        "label": "مرخصی_دریافت لیست پرسنل",
+        "path": "api/user-profiles/",
+        "view": views.api_get_user_profiles,
+        "name": "api_user_profiles",
+        "label": "مرخصی_API لیست پروفایل کاربران",
     },
     {
-        "path": "delete_leave/<int:leave_id>/",
-        "view": views.delete_leave,
-        "name": "delete_leave",
-        "label": "مرخصی_حذف مرخصی",
-    },
-    {
-        "path": "add_leave/",
-        "view": views.add_leave,
-        "name": "add_leave",
-        "label": "مرخصی_افزودن مرخصی",
-    },
-    {
-        "path": "export-excel/",
-        "view": views.export_shift_reports_excel,
-        "name": "export_shift_reports_excel",
-        "label": "مرخصی_خروجی اکسل گزارش‌های شیفت",
-    },
-    {
-        "path": "toggle-status/<int:report_id>/",
-        "view": views.toggle_status,
-        "name": "toggle_status",
-        "label": "مرخصی_تغییر وضعیت مرخصی",
-    },
-    {
-        "path": "toggle-registration/<int:report_id>/",
-        "view": views.toggle_registration,
-        "name": "toggle_registration",
-        "label": "مرخصی_تغییر وضعیت ثبت مرخصی",
+        "path": "api/parts-by-section/",
+        "view": views.api_get_parts_by_section,
+        "name": "api_parts_by_section",
+        "label": "مرخصی_API قسمت‌ها بر اساس بخش",
     },
 ]
 
-urlpatterns = [
-    path(url["path"], url["view"], name=url["name"]) for url in URLS_WITH_LABELS
-]
+urlpatterns = [path(item["path"], item["view"], name=item["name"]) for item in URLS_WITH_LABELS]

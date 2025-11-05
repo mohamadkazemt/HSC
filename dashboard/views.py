@@ -36,6 +36,33 @@ def dashboard(request):
     # دریافت اعلان‌های خوانده نشده
     unread_notifications_count = request.user.notifications.filter(is_read=False).count()
     
+    # ============= کارتابل مرخصی‌ها =============
+    from leave_reports.models import ShiftReport, ApprovalHierarchy
+    from django.db.models import Q
+    
+    # درخواست‌های منتظر تأیید جایگزین
+    pending_replacement_approvals = ShiftReport.objects.filter(
+        replacement_person=request.user,
+        status='pending_replacement'
+    ).select_related('user', 'user__userprofile').order_by('-created_at')[:5]
+    
+    # درخواست‌های منتظر تأیید مدیر
+    pending_manager_approvals = []
+    if hasattr(request.user, 'userprofile'):
+        managed_sections = ApprovalHierarchy.objects.filter(
+            approver=request.user.userprofile
+        ).values_list('section_id', flat=True)
+        
+        managed_parts = ApprovalHierarchy.objects.filter(
+            approver=request.user.userprofile
+        ).values_list('part_id', flat=True)
+        
+        pending_manager_approvals = ShiftReport.objects.filter(
+            Q(user__userprofile__section_id__in=managed_sections) |
+            Q(user__userprofile__part_id__in=managed_parts),
+            status='pending_approval'
+        ).select_related('user', 'user__userprofile').order_by('-created_at')[:5]
+    
     # دریافت ۵ اعلان اخیر برای نمایش در داشبورد
     recent_notifications = request.user.notifications.all().order_by('-created_at')[:5]
     
@@ -184,6 +211,9 @@ def dashboard(request):
         'title': 'داشبورد',
         'license_warning': license_warning,
         'driver_license': driver_license,
+        # کارتابل مرخصی‌ها
+        'pending_replacement_approvals': pending_replacement_approvals,
+        'pending_manager_approvals': pending_manager_approvals,
     }
 
     return render(request, 'dashboard/dashboard.html', context)

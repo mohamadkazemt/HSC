@@ -1,0 +1,30 @@
+{% load static %}
+{% load field_labels %}
+
+<div class="border rounded-lg p-4 bg-white shadow">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {% for field_name, value in status_fields.items %}
+    <div class="flex flex-col">
+      <label class="text-sm font-bold text-gray-700 mb-1">{{ field_name|get_field_label }}</label>
+      <div class="flex items-center space-x-4 space-x-reverse">
+        <div class="flex-1">
+          <select name="{{ field_name }}" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+            <option value="suitable" {% if value == 'suitable' %}selected{% endif %}>مناسب</option>
+            <option value="unsuitable" {% if value == 'unsuitable' %}selected{% endif %}>نامناسب</option>
+          </select>
+        </div>
+        {% if value == 'unsuitable' %}
+        <div class="flex-1">
+          <textarea 
+            name="{{ field_name }}_description" 
+            class="w-full rounded-md border-gray-300 shadow-sm focus:border-red-300 focus:ring focus:ring-red-200 focus:ring-opacity-50" 
+            placeholder="توضیحات مشکل..."
+            rows="2"
+          >{{ descriptions|get_item:field_name }}</textarea>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>

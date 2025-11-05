@@ -1,0 +1,290 @@
+{% extends 'leave_reports/base_leave.html' %}
+{% load static %}
+{% load jalali_utils %}
+
+{% block leave_content %}
+<div class="animate-fade-in-up">
+    <div class="leave-card">
+        <div class="card-header-gradient">
+            <h2>
+                <i class="fas fa-folder-open"></i>
+                آرشیو مرخصی‌ها
+            </h2>
+        </div>
+        
+        <div class="p-4">
+            <!-- فرم جستجو -->
+            <div class="leave-card p-4 mb-4" style="background: #f9fafb;">
+                <h4 class="mb-3" style="color: #667eea;">
+                    <i class="fas fa-search"></i>
+                    جستجو و فیلتر
+                </h4>
+                
+                <form method="get" id="searchForm">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group-modern">
+                                <label>جستجو</label>
+                                {{ form.search }}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group-modern">
+                                <label>وضعیت</label>
+                                {{ form.status }}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group-modern">
+                                <label>نوع مرخصی</label>
+                                {{ form.leave_type }}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group-modern">
+                                <label>&nbsp;</label>
+                                <button type="submit" class="btn btn-modern btn-primary-modern btn-block">
+                                    <i class="fas fa-search"></i>
+                                    جستجو
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group-modern">
+                                <label>از تاریخ</label>
+                                {{ form.date_from }}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group-modern">
+                                <label>تا تاریخ</label>
+                                {{ form.date_to }}
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group-modern">
+                                <label>&nbsp;</label>
+                                <button type="button" class="btn btn-modern btn-secondary btn-block" onclick="clearFilters()">
+                                    <i class="fas fa-times"></i>
+                                    پاک کردن فیلترها
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-group-modern">
+                                <label>&nbsp;</label>
+                                <button type="button" class="btn btn-modern btn-success-modern btn-block" onclick="exportToExcel()">
+                                    <i class="fas fa-file-excel"></i>
+                                    خروجی Excel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- نتایج -->
+            {% if leaves %}
+                <div class="table-responsive">
+                    <table class="modern-table">
+                        <thead>
+                            <tr>
+                                <th>ردیف</th>
+                                <th>درخواست دهنده</th>
+                                <th>نوع مرخصی</th>
+                                <th>تاریخ</th>
+                                <th>شیفت</th>
+                                <th>وضعیت</th>
+                                <th>جایگزین</th>
+                                <th>تاریخ ثبت</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for leave in leaves %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <div class="icon-circle icon-circle-primary">
+                                            {{ leave.user.first_name|first|default:"ک" }}
+                                        </div>
+                                        <div>
+                                            <strong>{{ leave.user.get_full_name }}</strong>
+                                            {% if leave.user.userprofile.personnel_code %}
+                                            <br>
+                                            <small class="text-muted">{{ leave.user.userprofile.personnel_code }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span style="font-weight: 600;">{{ leave.get_leave_type_display }}</span>
+                                </td>
+                                <td>
+                                    <i class="fas fa-calendar text-primary"></i>
+                                    {{ leave.shift_date|to_jalali }}
+                                </td>
+                                <td>{{ leave.get_shift_type_display }}</td>
+                                <td>
+                                    <span class="status-badge status-{{ leave.status }}">
+                                        <i class="fas {{ leave.get_status_icon }}"></i>
+                                        {{ leave.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if leave.replacement_person %}
+                                        {{ leave.replacement_person.get_full_name }}
+                                        {% if leave.replacement_approved %}
+                                            <i class="fas fa-check-circle text-success" title="تأیید شده"></i>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ leave.created_at|to_jalali }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <a href="{% url 'leave_reports:leave_detail' leave.id %}" 
+                                       class="btn btn-sm btn-modern" 
+                                       style="background: rgba(102, 126, 234, 0.1); color: #667eea;">
+                                        <i class="fas fa-eye"></i>
+                                        جزئیات
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                {% if leaves.has_other_pages %}
+                <nav class="pagination-modern">
+                    <ul class="pagination">
+                        {% if leaves.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ leaves.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">صفحه {{ leaves.number }} از {{ leaves.paginator.num_pages }}</span>
+                        </li>
+                        
+                        {% if leaves.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ leaves.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ leaves.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+                <!-- آمار -->
+                <div class="row mt-4">
+                    <div class="col-md-3">
+                        <div class="leave-card p-3 text-center">
+                            <div class="icon-circle icon-circle-primary mx-auto mb-2">
+                                <i class="fas fa-list"></i>
+                            </div>
+                            <h3 style="color: #667eea; margin: 0;">{{ leaves.paginator.count }}</h3>
+                            <small class="text-muted">کل درخواست‌ها</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="leave-card p-3 text-center">
+                            <div class="icon-circle icon-circle-warning mx-auto mb-2">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <h3 style="color: #f59e0b; margin: 0;">
+                                {{ leaves.object_list|length }}
+                            </h3>
+                            <small class="text-muted">در این صفحه</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="leave-card p-3 text-center">
+                            <div class="icon-circle icon-circle-success mx-auto mb-2">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <h3 style="color: #10b981; margin: 0;">-</h3>
+                            <small class="text-muted">تأیید شده</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="leave-card p-3 text-center">
+                            <div class="icon-circle icon-circle-danger mx-auto mb-2">
+                                <i class="fas fa-times"></i>
+                            </div>
+                            <h3 style="color: #ef4444; margin: 0;">-</h3>
+                            <small class="text-muted">رد شده</small>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-search"></i>
+                    <h4>نتیجه‌ای یافت نشد</h4>
+                    <p>با فیلترهای انتخابی درخواستی پیدا نشد. لطفاً فیلترها را تغییر دهید.</p>
+                    <button class="btn btn-modern btn-primary-modern mt-3" onclick="clearFilters()">
+                        <i class="fas fa-times"></i>
+                        پاک کردن فیلترها
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'js/persian-datepicker.min.js' %}"></script>
+<script>
+$(document).ready(function() {
+    // Initialize Persian DatePickers
+    $('.persian-datepicker').persianDatepicker({
+        format: 'YYYY/MM/DD',
+        calendar: {
+            persian: {
+                locale: 'fa'
+            }
+        }
+    });
+});
+
+function clearFilters() {
+    window.location.href = '{% url "leave_reports:leave_archive" %}';
+}
+
+function exportToExcel() {
+    // Get current filters
+    const params = new URLSearchParams(window.location.search);
+    params.set('export', 'excel');
+    
+    // TODO: Implement export functionality
+    showNotification('قابلیت خروجی Excel به زودی فعال خواهد شد', 'info');
+}
+</script>
+{% endblock %}

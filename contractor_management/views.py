@@ -1652,6 +1652,11 @@ def contractor_login(request):
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
+            # جلوگیری از ورود پرسنل اورژانس
+            if user.groups.filter(name__in=['EmergencyManager', 'EmergencyDoctor', 'EmergencyNurse']).exists():
+                messages.error(request, 'لطفاً از پورتال اورژانس وارد شوید.')
+                return render(request, 'contractor_management/auth/contractor_login.html')
+            
             # بررسی اینکه کاربر پیمانکار یا کارمند است
             if hasattr(user, 'employee_profile') or hasattr(user, 'contractor_profile'):
                 auth_login(request, user)

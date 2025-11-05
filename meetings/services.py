@@ -77,9 +77,16 @@ class MeetingService:
 
                 # ثبت تسک ارسال پیامک ایجاد برای اجرا *بعد* از کامیت
                 def task_send_creation_sms():
-                    from .tasks import send_meeting_created_sms_async
-                    send_meeting_created_sms_async.delay(meeting.pk)
-                    logger.info(f"Creation SMS task triggered via on_commit for meeting {meeting.pk}")
+                    try:
+                        from .tasks import send_meeting_created_sms_async
+                        from kombu.exceptions import OperationalError
+                        from redis.exceptions import ConnectionError as RedisConnectionError
+                        send_meeting_created_sms_async.delay(meeting.pk)
+                        logger.info(f"Creation SMS task triggered via on_commit for meeting {meeting.pk}")
+                    except (OperationalError, RedisConnectionError) as e:
+                        logger.warning(f"Redis/Celery not available for sending creation SMS for meeting {meeting.pk}: {e}. Meeting created successfully but SMS will not be sent.")
+                    except Exception as e:
+                        logger.error(f"Unexpected error scheduling creation SMS task for meeting {meeting.pk}: {e}", exc_info=True)
                 transaction.on_commit(task_send_creation_sms)
 
                 # ثبت تسک‌های یادآوری برای اجرا *بعد* از کامیت
@@ -105,21 +112,32 @@ class MeetingService:
                     reminder_time_day_of = timezone.make_aware(timezone.datetime.combine(day_of_meeting, time(7, 0)))
 
                     def task_schedule_reminders():
-                        from .tasks import send_sms_reminder
-                        # فقط اگر جلسه لغو نشده باشد، یادآوری برنامه‌ریزی می‌شود
-                        if meeting.status != 'cancelled':
-                            send_sms_reminder.apply_async(args=[meeting.pk], eta=reminder_time_before)
-                            logger.info(f"Scheduled day_before reminder via on_commit for meeting {meeting.pk} at {reminder_time_before}")
-                            send_sms_reminder.apply_async(args=[meeting.pk], eta=reminder_time_day_of)
-                            logger.info(f"Scheduled day_of_meeting reminder via on_commit for meeting {meeting.pk} at {reminder_time_day_of}")
-                        else:
-                            logger.info(f"Meeting {meeting.pk} is cancelled, skipping reminder scheduling")
+                        try:
+                            from .tasks import send_sms_reminder
+                            from kombu.exceptions import OperationalError
+                            from redis.exceptions import ConnectionError as RedisConnectionError
+                            # فقط اگر جلسه لغو نشده باشد، یادآوری برنامه‌ریزی می‌شود
+                            if meeting.status != 'cancelled':
+                                send_sms_reminder.apply_async(args=[meeting.pk], eta=reminder_time_before)
+                                logger.info(f"Scheduled day_before reminder via on_commit for meeting {meeting.pk} at {reminder_time_before}")
+                                send_sms_reminder.apply_async(args=[meeting.pk], eta=reminder_time_day_of)
+                                logger.info(f"Scheduled day_of_meeting reminder via on_commit for meeting {meeting.pk} at {reminder_time_day_of}")
+                            else:
+                                logger.info(f"Meeting {meeting.pk} is cancelled, skipping reminder scheduling")
+                        except (OperationalError, RedisConnectionError) as e:
+                            logger.warning(f"Redis/Celery not available for scheduling reminders for meeting {meeting.pk}: {e}. Meeting created successfully but reminders will not be scheduled.")
+                        except Exception as e:
+                            logger.error(f"Unexpected error scheduling reminder tasks for meeting {meeting.pk}: {e}", exc_info=True)
                     transaction.on_commit(task_schedule_reminders)
                     logger.info(f"Reminder tasks registered via on_commit for meeting {meeting.pk}")
 
                 except Exception as celery_err:
-                    logger.error(f"!!! Error preparing reminder schedule data for meeting {meeting.pk}: {celery_err}", exc_info=True)
-                    raise # Rollback transaction
+                    # فقط خطاهای مربوط به آماده‌سازی داده‌ها (نه اتصال Redis) باعث rollback می‌شوند
+                    if 'Connection refused' in str(celery_err) or '6379' in str(celery_err):
+                        logger.warning(f"Redis/Celery connection error during reminder scheduling for meeting {meeting.pk}: {celery_err}. Meeting will be created but reminders won't be scheduled.")
+                    else:
+                        logger.error(f"!!! Error preparing reminder schedule data for meeting {meeting.pk}: {celery_err}", exc_info=True)
+                        raise # Rollback transaction only for non-connection errors
 
                 # ایجاد نوتیفیکیشن دیتابیس *داخل* تراکنش
                 MeetingService.send_notifications_to_all_users(meeting)

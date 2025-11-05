@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load jalali_tags %}
+
+{% block title %}لیست گزارش‌های حوادث HSE{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+  <!-- Page Header -->
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-3">
+      <svg class="h-8 w-8 text-orange-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+      </svg>
+      آرشیو حوادث ثبت‌شده
+    </h1>
+    <p class="text-gray-600 dark:text-gray-400 mt-2">مشاهده و مدیریت تمامی گزارش‌های حوادث HSE</p>
+  </div>
+
+  <!-- Filter Card (Accordion) -->
+  <div x-data="{ filterOpen: true }" class="mb-6">
+    <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800">
+      <button @click="filterOpen = !filterOpen" class="w-full flex items-center justify-between px-6 py-4 bg-gradient-to-r from-orange-100 to-orange-50 dark:from-orange-900 dark:to-orange-800 rounded-t-lg hover:from-orange-200 hover:to-orange-100 dark:hover:from-orange-800 dark:hover:to-orange-700 transition">
+        <span class="flex items-center gap-3 text-orange-700 dark:text-orange-200 font-bold text-lg">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+          </svg>
+          فیلترها و جستجو
+        </span>
+        <svg :class="filterOpen ? 'rotate-180' : ''" class="h-6 w-6 text-orange-700 dark:text-orange-200 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </button>
+      <div x-show="filterOpen" x-collapse class="border-t border-orange-200 dark:border-orange-700">
+        <form method="get" action="{% url 'hse_incidents:list_reports' %}" class="px-6 py-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Search Field -->
+          <div class="lg:col-span-2">
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              <svg class="inline h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+              جستجو
+            </label>
+            <input type="text" name="search" value="{{ search_query }}" 
+                   class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-orange-500 focus:ring-orange-500 shadow-sm" 
+                   placeholder="جستجو در محل، توضیحات، گزارش‌دهنده...">
+          </div>
+          
+          <!-- From Date -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              <svg class="inline h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+              </svg>
+              از تاریخ
+            </label>
+            <input type="text" name="from_date" value="{{ from_date }}" 
+                   class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-orange-500 focus:ring-orange-500 shadow-sm jalali-datepicker" 
+                   placeholder="1403/01/01">
+          </div>
+          
+          <!-- To Date -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              <svg class="inline h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+              </svg>
+              تا تاریخ
+            </label>
+            <input type="text" name="to_date" value="{{ to_date }}" 
+                   class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-orange-500 focus:ring-orange-500 shadow-sm jalali-datepicker" 
+                   placeholder="1403/12/29">
+          </div>
+          
+          <!-- Action Buttons -->
+          <div class="lg:col-span-4 flex gap-3">
+            <button type="submit" class="flex-1 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-lg px-6 py-3 font-bold hover:from-orange-700 hover:to-orange-600 transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+              </svg>
+              اعمال فیلتر
+            </button>
+            <a href="{% url 'hse_incidents:list_reports' %}" class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg px-6 py-3 font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition flex items-center justify-center gap-2">
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+              </svg>
+              پاک کردن فیلتر
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reports Table Card -->
+  <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800 overflow-hidden">
+    <div class="px-6 py-4 border-b bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900 dark:to-red-900 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <svg class="h-6 w-6 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
+        </svg>
+        <span class="font-bold text-orange-700 dark:text-orange-200 text-lg">گزارش‌های ثبت شده</span>
+        <span class="bg-orange-200 dark:bg-orange-700 text-orange-800 dark:text-orange-100 px-3 py-1 rounded-full text-sm font-bold">{{ reports.paginator.count }} مورد</span>
+      </div>
+      <a href="{% url 'hse_incidents:incident_report' %}" class="bg-green-600 text-white rounded-lg px-4 py-2 font-bold hover:bg-green-700 transition shadow hover:shadow-lg flex items-center gap-2">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        ثبت حادثه جدید
+      </a>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-gray-50 dark:bg-gray-900">
+          <tr>
+            <th class="px-6 py-3 text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">شماره</th>
+            <th class="px-6 py-3 text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">تاریخ و ساعت</th>
+            <th class="px-6 py-3 text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">محل حادثه</th>
+            <th class="px-6 py-3 text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">گزارش‌دهنده</th>
+            <th class="px-6 py-3 text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">وضعیت</th>
+            <th class="px-6 py-3 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">عملیات</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          {% for report in reports %}
+          <tr class="hover:bg-orange-50 dark:hover:bg-gray-700 transition duration-150">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-mono font-bold text-gray-900 dark:text-gray-100">
+              #{{ report.id }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-200">
+              <div class="flex flex-col">
+                <span class="font-semibold">{{ report.incident_date|to_jalali:'%Y/%m/%d' }}</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{ report.incident_time }}</span>
+              </div>
+            </td>
+            <td class="px-6 py-4 text-sm text-gray-800 dark:text-gray-200">
+              <div class="flex flex-col">
+                <span class="font-semibold">{{ report.location.name|default:"نامشخص" }}</span>
+                {% if report.section %}
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{ report.section.section }}</span>
+                {% endif %}
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-800 dark:text-gray-200">
+              {% if report.report_author %}
+                {{ report.report_author.user.get_full_name }}
+              {% else %}
+                نامشخص
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm">
+              {% if report.is_completed %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 shadow">
+                  <svg class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  تکمیل شده
+                </span>
+              {% else %}
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 shadow">
+                  <svg class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  در انتظار تکمیل
+                </span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-center">
+              <div class="flex justify-center gap-2">
+                <!-- View Details -->
+                <a href="{% url 'hse_incidents:report_details' report.id %}" 
+                   class="inline-flex items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 p-2 hover:bg-blue-200 dark:hover:bg-blue-800 transition shadow hover:shadow-md" 
+                   title="مشاهده جزئیات">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </a>
+                
+                <!-- Download PDF -->
+                <a href="{% url 'hse_incidents:report_details_pdf' report.id %}" 
+                   class="inline-flex items-center justify-center rounded-lg bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 p-2 hover:bg-red-200 dark:hover:bg-red-800 transition shadow hover:shadow-md" 
+                   title="دانلود PDF">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                  </svg>
+                </a>
+                
+                <!-- Complete Report (if not completed) -->
+                {% if not report.is_completed %}
+                <a href="{% url 'hse_incidents:report_details' report.id %}#complete-form" 
+                   class="inline-flex items-center justify-center rounded-lg bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 p-2 hover:bg-green-200 dark:hover:bg-green-800 transition shadow hover:shadow-md" 
+                   title="تکمیل گزارش">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                  </svg>
+                </a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="px-6 py-12 text-center">
+              <div class="flex flex-col items-center justify-center gap-4">
+                <svg class="h-16 w-16 text-gray-400 dark:text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                <p class="text-gray-500 dark:text-gray-400 text-lg font-semibold">هیچ گزارش حادثه‌ای یافت نشد.</p>
+                <a href="{% url 'hse_incidents:incident_report' %}" class="mt-2 bg-orange-600 text-white rounded-lg px-6 py-3 font-bold hover:bg-orange-700 transition shadow-lg hover:shadow-xl flex items-center gap-2">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  ثبت اولین حادثه
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if reports.has_other_pages %}
+    <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+      <nav class="flex justify-center items-center gap-2">
+        {% if reports.has_previous %}
+          <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if from_date %}&from_date={{ from_date }}{% endif %}{% if to_date %}&to_date={{ to_date }}{% endif %}" 
+             class="px-3 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-700 transition shadow">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5" />
+            </svg>
+          </a>
+          <a href="?page={{ reports.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if from_date %}&from_date={{ from_date }}{% endif %}{% if to_date %}&to_date={{ to_date }}{% endif %}" 
+             class="px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-700 transition shadow">قبلی</a>
+        {% else %}
+          <span class="px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-400 dark:text-gray-600 cursor-not-allowed">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5" />
+            </svg>
+          </span>
+          <span class="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-400 dark:text-gray-600 cursor-not-allowed">قبلی</span>
+        {% endif %}
+        
+        <div class="flex gap-1">
+          {% for num in reports.paginator.page_range %}
+            {% if reports.number == num %}
+              <span class="px-4 py-2 rounded-lg bg-orange-600 text-white font-bold shadow-lg">{{ num }}</span>
+            {% elif num > reports.number|add:'-3' and num < reports.number|add:'3' %}
+              <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if from_date %}&from_date={{ from_date }}{% endif %}{% if to_date %}&to_date={{ to_date }}{% endif %}" 
+                 class="px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-700 transition shadow">{{ num }}</a>
+            {% endif %}
+          {% endfor %}
+        </div>
+        
+        {% if reports.has_next %}
+          <a href="?page={{ reports.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if from_date %}&from_date={{ from_date }}{% endif %}{% if to_date %}&to_date={{ to_date }}{% endif %}" 
+             class="px-4 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-700 transition shadow">بعدی</a>
+          <a href="?page={{ reports.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if from_date %}&from_date={{ from_date }}{% endif %}{% if to_date %}&to_date={{ to_date }}{% endif %}" 
+             class="px-3 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-orange-50 dark:hover:bg-gray-700 transition shadow">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 4.5l7.5 7.5-7.5 7.5m-6-15l7.5 7.5-7.5 7.5" />
+            </svg>
+          </a>
+        {% else %}
+          <span class="px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-400 dark:text-gray-600 cursor-not-allowed">بعدی</span>
+          <span class="px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-400 dark:text-gray-600 cursor-not-allowed">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 4.5l7.5 7.5-7.5 7.5m-6-15l7.5 7.5-7.5 7.5" />
+            </svg>
+          </span>
+        {% endif %}
+      </nav>
+      <p class="text-center text-sm text-gray-600 dark:text-gray-400 mt-3">
+        صفحه {{ reports.number }} از {{ reports.paginator.num_pages }} (مجموع {{ reports.paginator.count }} مورد)
+      </p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Scripts -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize Persian Date Pickers
+  if (window.jQuery && $.fn.persianDatepicker) {
+    $('.jalali-datepicker').each(function() {
+      $(this).persianDatepicker({
+        format: 'YYYY/MM/DD',
+        autoClose: true,
+        initialValue: false,
+        observer: true,
+        persianDigit: false,  // استفاده از اعداد انگلیسی
+        timePicker: {
+          enabled: false
+        }
+      });
+    });
+    console.log('Datepickers initialized in report list');
+  } else {
+    console.error('Persian Datepicker not loaded');
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,318 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}مدیریت انواع جراحات{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8" x-data="injuryTypesManager()">
+  <!-- Page Header -->
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-3">
+      <svg class="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+      </svg>
+      مدیریت انواع جراحات
+    </h1>
+    <p class="text-gray-600 dark:text-gray-400 mt-2">افزودن، ویرایش و حذف انواع جراحات قابل ثبت در گزارش‌های حوادث</p>
+  </div>
+
+  <!-- Search and Add Section -->
+  <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Search -->
+    <div>
+      <form method="get" class="relative">
+        <input type="text" name="search" value="{{ search_query }}" 
+               class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-red-500 focus:ring-red-500 shadow-sm pr-10" 
+               placeholder="جستجو در انواع جراحات...">
+        <button type="submit" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-600">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          </svg>
+        </button>
+      </form>
+    </div>
+
+    <!-- Add Button -->
+    <div class="flex justify-end">
+      <button @click="openCreateModal()" 
+              class="bg-gradient-to-r from-green-600 to-green-500 text-white rounded-lg px-6 py-3 font-bold hover:from-green-700 hover:to-green-600 transition shadow-lg hover:shadow-xl flex items-center gap-2">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        افزودن جراحت جدید
+      </button>
+    </div>
+  </div>
+
+  <!-- Injury Types Table -->
+  <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800 overflow-hidden">
+    <div class="px-6 py-4 border-b bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900 dark:to-orange-900">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <svg class="h-6 w-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
+          </svg>
+          <span class="font-bold text-red-700 dark:text-red-200 text-lg">لیست انواع جراحات</span>
+          <span class="bg-red-200 dark:bg-red-700 text-red-800 dark:text-red-100 px-3 py-1 rounded-full text-sm font-bold">{{ injury_types.paginator.count }} مورد</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-gray-50 dark:bg-gray-900">
+          <tr>
+            <th class="px-6 py-3 text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">ردیف</th>
+            <th class="px-6 py-3 text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">نام جراحت</th>
+            <th class="px-6 py-3 text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">تعداد استفاده</th>
+            <th class="px-6 py-3 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">عملیات</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          {% for injury in injury_types %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+              {{ forloop.counter|add:injury_types.start_index|add:"-1" }}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center gap-2">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">
+                  {{ injury.name }}
+                </span>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+              <span class="inline-flex items-center gap-1">
+                <svg class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                </svg>
+                {{ injury.incidents.count }} گزارش
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+              <div class="flex items-center justify-center gap-2">
+                <button @click="openEditModal({{ injury.id }}, '{{ injury.name|escapejs }}')" 
+                        class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 transition">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                  </svg>
+                </button>
+                <button @click="confirmDelete({{ injury.id }}, '{{ injury.name|escapejs }}', {{ injury.incidents.count }})" 
+                        class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 transition">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                  </svg>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+              {% if search_query %}
+                نتیجه‌ای یافت نشد. لطفاً عبارت دیگری جستجو کنید.
+              {% else %}
+                هنوز نوع جراحتی ثبت نشده است.
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if injury_types.has_other_pages %}
+    <div class="bg-gray-50 dark:bg-gray-900 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <div class="text-sm text-gray-700 dark:text-gray-300">
+          نمایش {{ injury_types.start_index }} تا {{ injury_types.end_index }} از {{ injury_types.paginator.count }} مورد
+        </div>
+        <div class="flex gap-2">
+          {% if injury_types.has_previous %}
+          <a href="?page={{ injury_types.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" 
+             class="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+            قبلی
+          </a>
+          {% endif %}
+          <span class="px-3 py-2 bg-red-600 text-white rounded-md text-sm font-medium">
+            {{ injury_types.number }}
+          </span>
+          {% if injury_types.has_next %}
+          <a href="?page={{ injury_types.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" 
+             class="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+            بعدی
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Create/Edit Modal -->
+  <div x-show="showModal" 
+       x-cloak
+       class="fixed inset-0 z-50 overflow-y-auto"
+       @keydown.escape.window="closeModal()">
+    <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+      <!-- Background overlay -->
+      <div x-show="showModal"
+           x-transition:enter="ease-out duration-300"
+           x-transition:enter-start="opacity-0"
+           x-transition:enter-end="opacity-100"
+           x-transition:leave="ease-in duration-200"
+           x-transition:leave-start="opacity-100"
+           x-transition:leave-end="opacity-0"
+           class="fixed inset-0 transition-opacity bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-75"
+           @click="closeModal()"></div>
+
+      <!-- Modal panel -->
+      <div x-show="showModal"
+           x-transition:enter="ease-out duration-300"
+           x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+           x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+           x-transition:leave="ease-in duration-200"
+           x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+           x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+           class="inline-block w-full max-w-lg p-6 my-8 overflow-hidden text-right align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-2xl">
+        
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100" x-text="editMode ? 'ویرایش جراحت' : 'افزودن جراحت جدید'"></h3>
+          <button @click="closeModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form @submit.prevent="submitForm()">
+          <div class="mb-4">
+            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+              نام جراحت <span class="text-red-600">*</span>
+            </label>
+            <input type="text" 
+                   x-model="formData.name" 
+                   required
+                   class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-red-500 focus:ring-red-500 shadow-sm"
+                   placeholder="مثال: شکستگی، سوختگی، بریدگی">
+          </div>
+
+          <div class="flex gap-3">
+            <button type="submit" 
+                    :disabled="isSubmitting"
+                    class="flex-1 bg-gradient-to-r from-red-600 to-red-500 text-white rounded-lg px-6 py-3 font-bold hover:from-red-700 hover:to-red-600 transition shadow-lg hover:shadow-xl disabled:opacity-50"
+                    :class="{ 'opacity-50 cursor-not-allowed': isSubmitting }">
+              <span x-show="!isSubmitting" x-text="editMode ? 'ذخیره تغییرات' : 'افزودن'"></span>
+              <span x-show="isSubmitting">در حال ارسال...</span>
+            </button>
+            <button type="button" 
+                    @click="closeModal()"
+                    class="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+              انصراف
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function injuryTypesManager() {
+  return {
+    showModal: false,
+    editMode: false,
+    isSubmitting: false,
+    formData: {
+      id: null,
+      name: ''
+    },
+
+    openCreateModal() {
+      this.editMode = false;
+      this.formData = { id: null, name: '' };
+      this.showModal = true;
+    },
+
+    openEditModal(id, name) {
+      this.editMode = true;
+      this.formData = { id: id, name: name };
+      this.showModal = true;
+    },
+
+    closeModal() {
+      this.showModal = false;
+      this.formData = { id: null, name: '' };
+    },
+
+    submitForm() {
+      if (!this.formData.name.trim()) {
+        alert('لطفاً نام جراحت را وارد کنید');
+        return;
+      }
+
+      this.isSubmitting = true;
+      const url = this.editMode 
+        ? `{% url 'hse_incidents:injury_type_update' 0 %}`.replace('0', this.formData.id)
+        : '{% url "hse_incidents:injury_type_create" %}';
+
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ name: this.formData.name })
+      })
+      .then(response => response.json())
+      .then(data => {
+        this.isSubmitting = false;
+        if (data.status === 'success') {
+          alert(data.message);
+          window.location.reload();
+        } else {
+          alert(data.message || 'خطا در انجام عملیات');
+        }
+      })
+      .catch(error => {
+        this.isSubmitting = false;
+        console.error('Error:', error);
+        alert('خطا در ارتباط با سرور');
+      });
+    },
+
+    confirmDelete(id, name, usageCount) {
+      if (usageCount > 0) {
+        alert(`این نوع جراحت در ${usageCount} گزارش استفاده شده و قابل حذف نیست`);
+        return;
+      }
+
+      if (!confirm(`آیا از حذف "${name}" اطمینان دارید؟`)) {
+        return;
+      }
+
+      fetch(`{% url 'hse_incidents:injury_type_delete' 0 %}`.replace('0', id), {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{ csrf_token }}'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          alert(data.message);
+          window.location.reload();
+        } else {
+          alert(data.message || 'خطا در حذف');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('خطا در ارتباط با سرور');
+      });
+    }
+  };
+}
+</script>
+{% endblock %}

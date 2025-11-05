@@ -1,959 +1,945 @@
-# app/views.py
+"""
+Views برای سیستم مدیریت درخواست‌های مرخصی و تأیید
+"""
+import json
 import datetime
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse, JsonResponse
-from accounts.models import UserProfile
-from django.contrib.auth.models import User
-from .forms import ShiftReportForm
-from .models import ShiftReport
-from django.contrib.auth.decorators import login_required, permission_required
-from django.forms import formset_factory
-from collections import defaultdict
-from django.utils.timezone import localdate
 import jdatetime
-from django.template.loader import render_to_string
-from weasyprint import HTML
-import tempfile
-from django.template.loader import get_template
-from django.conf import settings
-from jdatetime import date as jdate
-import logging
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.core.exceptions import ValidationError
-import datetime
-from django.db.models import Count, Q, Subquery, OuterRef, Min
-from dashboard.utils import log_user_activity
-from django.urls import reverse
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse, HttpResponse
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from shift_manager.utils import get_shift_for_date  # Import the function
-import openpyxl
+from django.db.models import Q, Count
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.utils import timezone
-from .utils import get_shift_for_date_and_time  # Import the new function
-from django.db import transaction, models
+from django.urls import reverse
+from django.contrib.auth.models import User
+from django.db import transaction
+
+from .models import ShiftReport, ApprovalHierarchy
+from .forms import LeaveRequestForm, RejectLeaveForm, ApprovalHierarchyForm, LeaveSearchForm
+from accounts.models import UserProfile
+from dashboard.utils import log_user_activity
+from permissions.utils import check_permission
 
 
-logger = logging.getLogger(__name__)
-
+# ============= درخواست مرخصی جدید =============
 
 @login_required
-def create_shift_report(request):
-    current_user = request.user.userprofile
-    personnel_list = UserProfile.objects.select_related('user').filter(
-        section=current_user.section,
-
-    )
-
-    # ثبت فعالیت مشاهده فرم ثبت مرخصی
-    if request.method == 'GET':
+def request_leave(request):
+    """صفحه درخواست مرخصی جدید"""
+    
+    # بررسی دسترسی
+    if not check_permission(request.user, 'request_leave'):
+        messages.error(request, 'شما دسترسی به این بخش را ندارید.')
+        return redirect('dashboard:dashboard')
+    
+    if request.method == 'POST':
+        form = LeaveRequestForm(request.POST, request.FILES, user=request.user)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    leave_request = form.save(commit=False)
+                    leave_request.user = request.user
+                    
+                    # برای غیبت، استعلاجی و ساعتی نیازی به تأیید جایگزین نیست
+                    if leave_request.leave_type in ['absence', 'sick_leave', 'hourly']:
+                        leave_request.status = 'pending_approval'
+                        leave_request.replacement_approved = True
+                        leave_request.replacement_approved_at = timezone.now()
+                    else:
+                        leave_request.status = 'pending_replacement'
+                    
+                    # تنظیم گروه کاری و سایر فیلدها
+                    if hasattr(request.user, 'userprofile'):
+                        leave_request.work_group = request.user.userprofile.group or 'نامشخص'
+                        leave_request.crate_by = request.user.userprofile
+                    
+                    leave_request.save()
+                    
+                    # ثبت فعالیت
+                    log_user_activity(
+                        user=request.user,
+                        activity_type='create',
+                        description=f'ثبت درخواست مرخصی {leave_request.get_leave_type_display()} برای تاریخ {leave_request.shift_date}',
+                        related_model='ShiftReport',
+                        related_object_id=leave_request.id,
+                        url=reverse('leave_reports:my_inbox'),
+                        request=request
+                    )
+                    
+                    # ارسال اعلان به جایگزین (TODO: پیاده‌سازی سیستم اعلان)
+                    # send_notification_to_replacement(leave_request)
+                    
+                    messages.success(request, 'درخواست مرخصی شما با موفقیت ثبت شد و برای جایگزین ارسال شد.')
+                    
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return JsonResponse({
+                            'status': 'success',
+                            'message': 'درخواست با موفقیت ثبت شد',
+                            'redirect_url': reverse('leave_reports:my_inbox')
+                        })
+                    
+                    return redirect('leave_reports:my_inbox')
+                    
+            except Exception as e:
+                messages.error(request, f'خطا در ثبت درخواست: {str(e)}')
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': str(e)
+                    }, status=400)
+        else:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'خطا در اعتبارسنجی فرم',
+                    'errors': form.errors
+                }, status=400)
+    else:
+        form = LeaveRequestForm(user=request.user)
+        
+        # ثبت فعالیت مشاهده فرم
         log_user_activity(
             user=request.user,
             activity_type='view',
-            description='مشاهده فرم ثبت مرخصی',
+            description='مشاهده فرم درخواست مرخصی',
             related_model='ShiftReport',
             related_object_id=None,
-            url=reverse('leave_reports:shift_report'),
+            url=reverse('leave_reports:request_leave'),
             request=request
         )
-
-    if request.method == 'POST':
-        logger.info("POST request received for create_shift_report")
-        try:
-            total_leaves = int(request.POST.get('total_leaves', 0))
-            logger.info(f"Total leaves from request: {total_leaves}")
-            if total_leaves == 0:
-                messages.warning(request, 'هیچ موردی برای ثبت وجود ندارد')
-                logger.warning("No leaves to process")
-                return JsonResponse({'success': False, 'error': 'هیچ موردی برای ثبت وجود ندارد'})
-            else:
-                reports_to_create = []  # لیست برای ذخیره فرم ها
-                form_valid = True  # پرچم
-                errors = []  # لیست خطاها
-                
-                for i in range(total_leaves):
-                    try:
-                        user_id = request.POST.get(f'user_{i}')
-                        shift_date_str = request.POST.get(f'shift_date_{i}')  # تاریخ شمسی
-                        shift_type = request.POST.get(f'shift_type_{i}')
-                        
-                        # تبدیل تاریخ شمسی به میلادی
-                        try:
-                            year, month, day = map(int, shift_date_str.split('-'))
-                            jalali_date = jdatetime.date(year, month, day)
-                            shift_date = jalali_date.togregorian()
-                            logger.info(f"Date conversion successful: Jalali {shift_date_str} -> Gregorian {shift_date}")
-                        except ValueError as e:
-                            errors.append(f'تاریخ نامعتبر در مورد {i + 1}: {str(e)}')
-                            form_valid = False
-                            continue
-
-                        # اعتبارسنجی تکراری نبودن گزارش
-                        existing_report = ShiftReport.objects.filter(
-                            user_id=user_id,
-                            shift_date=shift_date
-                        ).first()
-
-                        if existing_report:
-                            errors.append(f'برای کاربر {User.objects.get(id=user_id).get_full_name()} در تاریخ {shift_date_str} قبلاً گزارش ثبت شده است')
-                            form_valid = False
-                            continue
-
-                        report_data = {
-                            'user': user_id,
-                            'leave_type': request.POST.get(f'leave_type_{i}'),
-                            'status': 'reported',
-                            'description': request.POST.get(f'description_{i}'),
-                            'shift_date': shift_date,
-                            'shift_type': shift_type,
-                        }
-
-                        if report_data['leave_type'] == 'hourly':
-                            start_time = request.POST.get(f'start_time_{i}')
-                            end_time = request.POST.get(f'end_time_{i}')
-                            
-                            # اعتبارسنجی زمان شروع و پایان
-                            if not start_time or not end_time:
-                                errors.append(f'برای مرخصی ساعتی در مورد {i + 1} باید ساعت شروع و پایان وارد شود')
-                                form_valid = False
-                                continue
-                                
-                            report_data.update({
-                                'start_time': start_time,
-                                'end_time': end_time
-                            })
-                        elif report_data['leave_type'] in ['absence', 'sick_leave']:
-                            description = request.POST.get(f'description_{i}')
-                            if not description:
-                                errors.append(f'برای {report_data["leave_type"]} در مورد {i + 1} باید توضیحات وارد شود')
-                                form_valid = False
-                                continue
-
-                        logger.info(f"Processing leave {i + 1} with data: {report_data}")
-
-                        form = ShiftReportForm(report_data)
-                        if form.is_valid():
-                            report = form.save(commit=False)
-                            report.crate_by = request.user.userprofile
-                            report.work_group = request.user.userprofile.group
-                            reports_to_create.append(report)
-                        else:
-                            for field, error_list in form.errors.items():
-                                field_name = {
-                                    'user': 'کاربر',
-                                    'leave_type': 'نوع مرخصی',
-                                    'start_time': 'زمان شروع',
-                                    'end_time': 'زمان پایان',
-                                    'description': 'توضیحات',
-                                    'shift_date': 'تاریخ شیفت',
-                                    'shift_type': 'شیفت کاری',
-                                    'status': 'وضعیت'
-                                }.get(field, field)
-                                
-                                for error in error_list:
-                                    errors.append(f"خطا در فیلد {field_name} در مورد {i + 1}: {error}")
-                            form_valid = False
-                            logger.warning(f"Form not valid for leave {i + 1}: {form.errors}")
-                    except Exception as e:
-                        errors.append(f"خطا در پردازش مورد {i + 1}: {str(e)}")
-                        logger.error(f"Error processing leave {i + 1}: {e}", exc_info=True)
-                        form_valid = False
-
-                if form_valid:
-                    try:
-                        with transaction.atomic():
-                            ShiftReport.objects.bulk_create(reports_to_create)
-                            logger.info(f"{len(reports_to_create)} leaves saved successfully")
-                            
-                            log_user_activity(
-                                user=request.user,
-                                activity_type='create',
-                                description=f'ثبت {len(reports_to_create)} مورد مرخصی',
-                                related_model='ShiftReport',
-                                related_object_id=None,
-                                url=reverse('leave_reports:shift_report_list'),
-                                request=request
-                            )
-                            
-                            return JsonResponse({
-                                'success': True,
-                                'message': f'{len(reports_to_create)} مورد با موفقیت ثبت شد'
-                            })
-                    except Exception as e:
-                        logger.error(f"Error during bulk create: {e}", exc_info=True)
-                        return JsonResponse({
-                            'success': False,
-                            'error': f'خطا در ذخیره دسته‌ای: {str(e)}'
-                        })
-                else:
-                    logger.warning(f"Errors found, not saving.")
-                    return JsonResponse({
-                        'success': False,
-                        'errors': errors
-                    })
-
-        except Exception as e:
-            logger.error(f"System error: {e}", exc_info=True)
-            return JsonResponse({
-                'success': False,
-                'error': f'خطای سیستمی: {str(e)}'
-            })
-
-    form = ShiftReportForm()
-    context = {
+    
+    return render(request, 'leave_reports/request_leave.html', {
         'form': form,
-        'personnels': personnel_list,
-        'title': 'ثبت مرخصی',
-    }
-    return render(request, 'leave_reports/shift_report.html', context)
+        'page_title': 'درخواست مرخصی جدید',
+    })
 
+
+# ============= کارتابل من =============
 
 @login_required
-def shift_report_list(request):
-    # ثبت فعالیت مشاهده لیست مرخصی‌ها
+def my_inbox(request):
+    """صفحه کارتابل من - نمایش درخواست‌های خودم و درخواست‌های منتظر تأیید من"""
+    
+    # بررسی دسترسی
+    if not check_permission(request.user, 'my_inbox'):
+        messages.error(request, 'شما دسترسی به این بخش را ندارید.')
+        return redirect('dashboard:dashboard')
+    
+    # تب فعال
+    active_tab = request.GET.get('tab', 'my_requests')
+    
+    # درخواست‌های من
+    my_requests = ShiftReport.objects.filter(user=request.user).select_related(
+        'replacement_person', 'final_approver', 'rejected_by', 'crate_by'
+    ).order_by('-created_at')
+    
+    # درخواست‌های منتظر تأیید من
+    pending_for_me = ShiftReport.objects.none()
+    
+    # 1. درخواست‌هایی که من جایگزین آن‌ها هستم
+    pending_as_replacement = ShiftReport.objects.filter(
+        replacement_person=request.user,
+        status='pending_replacement',
+        replacement_approved=False
+    ).select_related('user', 'crate_by')
+    
+    # 2. درخواست‌هایی که باید به عنوان مدیر تأیید کنم
+    pending_as_manager = ShiftReport.objects.none()
+    if hasattr(request.user, 'userprofile'):
+        user_profile = request.user.userprofile
+        
+        # پیدا کردن بخش‌ها/قسمت‌هایی که من تأیید کننده آن‌ها هستم
+        hierarchies = ApprovalHierarchy.objects.filter(approver=user_profile)
+        
+        q_objects = Q()
+        for hierarchy in hierarchies:
+            if hierarchy.part:
+                q_objects |= Q(user__userprofile__part=hierarchy.part)
+            elif hierarchy.section:
+                q_objects |= Q(user__userprofile__section=hierarchy.section)
+        
+        if q_objects:
+            pending_as_manager = ShiftReport.objects.filter(
+                q_objects,
+                status='pending_approval',
+                replacement_approved=True
+            ).select_related('user', 'replacement_person', 'crate_by')
+    
+    # ترکیب درخواست‌های منتظر
+    pending_for_me = (pending_as_replacement | pending_as_manager).distinct().order_by('-created_at')
+    
+    # محاسبه آمارها
+    my_requests_count = my_requests.count()
+    pending_replacement_count = pending_as_replacement.count()
+    pending_manager_count = pending_as_manager.count()
+    approved_count = my_requests.filter(status='approved').count()
+    
+    # Pagination برای درخواست‌های من
+    my_page = request.GET.get('my_page', 1)
+    my_paginator = Paginator(my_requests, 10)
+    try:
+        my_requests_page = my_paginator.page(my_page)
+    except PageNotAnInteger:
+        my_requests_page = my_paginator.page(1)
+    except EmptyPage:
+        my_requests_page = my_paginator.page(my_paginator.num_pages)
+    
+    # Pagination برای درخواست‌های منتظر
+    pending_page = request.GET.get('pending_page', 1)
+    pending_paginator = Paginator(pending_for_me, 10)
+    try:
+        pending_page_obj = pending_paginator.page(pending_page)
+    except PageNotAnInteger:
+        pending_page_obj = pending_paginator.page(1)
+    except EmptyPage:
+        pending_page_obj = pending_paginator.page(pending_paginator.num_pages)
+    
+    # ثبت فعالیت
     log_user_activity(
         user=request.user,
         activity_type='view',
-        description='مشاهده لیست مرخصی‌ها',
+        description='مشاهده کارتابل مرخصی',
         related_model='ShiftReport',
         related_object_id=None,
-        url=reverse('leave_reports:shift_report_list'),
+        url=reverse('leave_reports:my_inbox'),
         request=request
     )
     
-    # Get filter parameters from request
-    year = request.GET.get('year')
-    month = request.GET.get('month')
-    day = request.GET.get('day')
-    work_group = request.GET.get('work_group')
-    today_filter = request.GET.get('today')
-    search_query = request.GET.get('search', '').strip()
-    excel_status = request.GET.get('excel_status')
-    
-    # Get all reports without user restrictions
-    reports = ShiftReport.objects.select_related('user', 'user__userprofile', 'crate_by', 'crate_by__user').all()
-
-    # Apply filters
-    if work_group:
-        reports = reports.filter(work_group=work_group)
-
-    if excel_status:
-        reports = reports.filter(exported_to_excel=(excel_status == 'true'))
-
-    if today_filter == 'true':
-        reports = reports.filter(shift_date=datetime.date.today())
-
-    if year and month and day:
-        try:
-            gregorian_date = jdatetime.date(year=int(year), month=int(month), day=int(day)).togregorian()
-            reports = reports.filter(shift_date=gregorian_date)
-        except ValueError as e:
-            logger.error(f"Error converting Jalali to Gregorian: {e}")
-            messages.error(request, 'خطا در تبدیل تاریخ')
-    elif year and month:
-        try:
-            gregorian_start = jdatetime.date(year=int(year), month=int(month), day=1).togregorian()
-            if int(month) < 12:
-                gregorian_end = jdatetime.date(year=int(year), month=int(month) + 1, day=1).togregorian()
-            else:
-                gregorian_end = jdatetime.date(year=int(year) + 1, month=1, day=1).togregorian()
-            reports = reports.filter(shift_date__gte=gregorian_start, shift_date__lt=gregorian_end)
-        except ValueError as e:
-            logger.error(f"Error converting Jalali to Gregorian: {e}")
-            messages.error(request, 'خطا در تبدیل تاریخ')
-    elif year:
-        try:
-            gregorian_start = jdatetime.date(year=int(year), month=1, day=1).togregorian()
-            gregorian_end = jdatetime.date(year=int(year) + 1, month=1, day=1).togregorian()
-            reports = reports.filter(shift_date__gte=gregorian_start, shift_date__lt=gregorian_end)
-        except ValueError as e:
-            logger.error(f"Error converting Jalali to Gregorian: {e}")
-            messages.error(request, 'خطا در تبدیل تاریخ')
-
-    # تغییر نحوه گروه‌بندی برای نمایش بر اساس پرسنل
-    report_list = []
-    for report in reports:
-        # تبدیل تاریخ میلادی به شمسی
-        shift_date_jalali = jdatetime.date.fromgregorian(date=report.shift_date).strftime('%Y/%m/%d')
-        created_at_jalali = jdatetime.datetime.fromgregorian(datetime=report.created_at).strftime('%Y/%m/%d %H:%M')
-        
-        report_data = {
-            'user_id': report.user.id,
-            'user_name': f"{report.user.first_name} {report.user.last_name}",
-            'personnel_code': report.user.userprofile.personnel_code if hasattr(report.user, 'userprofile') else '',
-            'shift_date': shift_date_jalali,
-            'leave_type': report.leave_type,
-            'leave_type_display': report.get_leave_type_display(),
-            'shift': report.get_shift_type_display(),
-            'description': report.description or '',
-            'start_time': report.start_time.strftime('%H:%M') if report.start_time else '-',
-            'end_time': report.end_time.strftime('%H:%M') if report.end_time else '-',
-            'crate_by': f"{report.crate_by.user.first_name} {report.crate_by.user.last_name}",
-            'created_at': created_at_jalali,
-            'status': report.status,
-            'exported_to_excel': report.exported_to_excel,
-            'registration': report.registration,
-            'leave_ids': [report.id]
-        }
-        report_list.append(report_data)
-        
-    # اعمال جستجو روی تمام فیلدها
-    if search_query:
-        filtered_list = []
-        search_query = search_query.lower()
-        for item in report_list:
-            if any(search_query in str(value).lower() for value in item.values()):
-                filtered_list.append(item)
-        report_list = filtered_list
-
-    # مرتب‌سازی بر اساس تاریخ مرخصی و نام کاربر
-    report_list.sort(key=lambda x: (x['shift_date'], x['user_name']))
-
-    # Implement pagination
-    page = request.GET.get('page', 1)
-    paginator = Paginator(report_list, 10)  # Show 10 reports per page
-    try:
-        reports_page = paginator.page(page)
-    except PageNotAnInteger:
-        reports_page = paginator.page(1)
-    except EmptyPage:
-        reports_page = paginator.page(paginator.num_pages)
-
-    # Extract years, months, and days
-    all_years = set()
-    all_months = set()
-    all_days = set()
-    
-    for r in report_list:
-        if 'shift_date' in r and r['shift_date']:
-            try:
-                date_parts = r['shift_date'].split('/')
-                if len(date_parts) == 3:
-                    all_years.add(int(date_parts[0]))
-                    all_months.add(int(date_parts[1]))
-                    all_days.add(int(date_parts[2]))
-            except (ValueError, IndexError) as e:
-                logger.error(f"Error parsing date: {e}")
-                continue
-
-    # تبدیل به لیست و مرتب‌سازی
-    all_years = sorted(list(all_years), reverse=True)
-    all_months = sorted(list(all_months))
-    all_days = sorted(list(all_days))
-
-    # Extract work groups
-    all_work_groups = sorted(list({r.work_group for r in ShiftReport.objects.all() if r.work_group}))
-
-    # تمیز کردن پارامترهای None
-    year = year if year not in ['None', None] else ''
-    month = month if month not in ['None', None] else ''
-    day = day if day not in ['None', None] else ''
-    work_group = work_group if work_group not in ['None', None] else ''
-    today_filter = today_filter if today_filter not in ['None', None] else ''
-
-    return render(request, 'leave_reports/shift_report_list.html', {
-        'reports': reports_page,
-        'years': all_years,
-        'months': all_months,
-        'days': all_days,
-        'selected_year': year,
-        'selected_month': month,
-        'selected_day': day,
-        'page_obj': reports_page,
-        'work_groups': all_work_groups,
-        'selected_work_group': work_group,
-        'today_filter': today_filter,
-        'title': 'لیست مرخصی ها',
+    return render(request, 'leave_reports/my_inbox.html', {
+        'my_requests': my_requests_page,
+        'pending_approvals': pending_page_obj,
+        'my_requests_count': my_requests_count,
+        'pending_replacement_count': pending_replacement_count,
+        'pending_manager_count': pending_manager_count,
+        'approved_count': approved_count,
+        'active_tab': active_tab,
+        'page_title': 'کارتابل مرخصی',
     })
 
 
+# ============= تأیید/رد توسط جایگزین =============
+
 @login_required
-def delete_leave(request, leave_id):
-    # دریافت شیء مرخصی
-    leave = get_object_or_404(ShiftReport, id=leave_id)
-    today = datetime.date.today()
+def approve_as_replacement(request, leave_id):
+    """تأیید درخواست توسط جایگزین"""
     
-    # استفاده از ماژول shift_manager برای تشخیص شیفت کاری فعلی کاربر
-    try:
-        from shift_manager.utils import get_current_shift_and_group
-        current_shift, current_group = get_current_shift_and_group(request.user)
-        logger.info(f"Current shift and group for user {request.user.username}: shift={current_shift}, group={current_group}")
-    except ImportError as e:
-        logger.error(f"Error importing shift_manager.utils: {e}", exc_info=True)
-        current_group = request.user.userprofile.group if hasattr(request.user, 'userprofile') and hasattr(request.user.userprofile, 'group') else None
-    except Exception as e:
-        logger.error(f"Error getting current shift and group: {e}", exc_info=True)
-        current_group = request.user.userprofile.group if hasattr(request.user, 'userprofile') and hasattr(request.user.userprofile, 'group') else None
-
-    # بررسی گروه کاری (فقط مرخصی‌های گروه کاری فعلی کاربر قابل حذف هستند)
-    if leave.work_group != current_group:
-        messages.error(request, 'شما فقط می‌توانید مرخصی‌های گروه کاری فعلی خود را حذف کنید.')
-        return JsonResponse({'success': False, 'error': 'شما فقط می‌توانید مرخصی‌های گروه کاری فعلی خود را حذف کنید.'})
-
-    if request.method == 'POST':
-        try:
-            # ذخیره اطلاعات مورد نیاز قبل از حذف
-            shift_date = leave.shift_date
-            work_group = leave.work_group
-            
-            # ثبت فعالیت حذف مرخصی
-            log_user_activity(
-                user=request.user,
-                activity_type='delete',
-                description=f'حذف مرخصی با شناسه {leave_id}',
-                related_model='ShiftReport',
-                related_object_id=leave_id,
-                url=request.META.get('HTTP_REFERER', '/'),
-                request=request
-            )
-            
-            # حذف مرخصی
-            leave.delete()
-            
-            messages.success(request, 'مرخصی با موفقیت حذف شد.')
-            return JsonResponse({'success': True})
-        except Exception as e:
-            logger.error(f"Error deleting leave: {e}", exc_info=True)
-            messages.error(request, f'خطا در حذف مرخصی: {str(e)}')
-            return JsonResponse({'success': False, 'error': f'خطا در حذف مرخصی: {str(e)}'})
-    else:
-        messages.error(request, 'درخواست نامعتبر است.')
-        return JsonResponse({'success': False, 'error': 'درخواست نامعتبر است.'})
-
-@login_required
-def add_leave(request):
-    if request.method == 'POST':
-        # ثبت داده‌های دریافتی برای دیباگ
-        logger.info(f"Received POST data: {request.POST}")
-        
-        # استفاده از ماژول shift_manager برای تشخیص شیفت کاری فعلی کاربر
-        try:
-            from shift_manager.utils import get_current_shift_and_group
-            current_shift, current_group = get_current_shift_and_group(request.user)
-            logger.info(f"Current shift and group for user {request.user.username}: shift={current_shift}, group={current_group}")
-        except ImportError as e:
-            logger.error(f"Error importing shift_manager.utils: {e}", exc_info=True)
-            current_group = request.user.userprofile.group if hasattr(request.user, 'userprofile') and hasattr(request.user.userprofile, 'group') else None
-        except Exception as e:
-            logger.error(f"Error getting current shift and group: {e}", exc_info=True)
-            current_group = request.user.userprofile.group if hasattr(request.user, 'userprofile') and hasattr(request.user.userprofile, 'group') else None
-        
-        # دریافت شناسه گزارش
-        report_id = request.POST.get('report_id')
-        if not report_id:
-            logger.error("Missing report_id in request")
-            return JsonResponse({'success': False, 'error': 'شناسه گزارش یافت نشد.'})
-        
-        # دریافت گزارش اصلی
-        try:
-            report = ShiftReport.objects.get(id=report_id)
-        except ShiftReport.DoesNotExist:
-            logger.error(f"Report with ID {report_id} not found")
-            return JsonResponse({'success': False, 'error': 'گزارش مورد نظر یافت نشد.'})
-        
-        # دریافت نوع مرخصی
-        leave_type = request.POST.get('leave_type')
-        if not leave_type:
-            logger.error("Missing leave_type in request")
-            return JsonResponse({'success': False, 'error': 'نوع مرخصی یافت نشد.'})
-        
-        # بررسی توضیحات برای غیبت
-        if leave_type == 'absence':
-            description = request.POST.get('description', '').strip()
-            if not description:
-                logger.warning("Missing description for absence")
-                return JsonResponse({'success': False, 'error': 'برای ثبت غیبت، وارد کردن توضیحات الزامی است.'})
-        
-        # بررسی توضیحات برای مرخصی استعلاجی
-        if leave_type == 'sick_leave':
-            description = request.POST.get('description', '').strip()
-            if not description:
-                logger.warning("Missing description for sick leave")
-                return JsonResponse({'success': False, 'error': 'برای ثبت مرخصی استعلاجی، وارد کردن توضیحات الزامی است.'})
-        
-        # بررسی زمان شروع و پایان برای مرخصی ساعتی
-        if leave_type == 'hourly':
-            start_time = request.POST.get('start_time')
-            end_time = request.POST.get('end_time')
-            if not start_time or not end_time:
-                logger.warning(f"Missing start_time or end_time for hourly leave. start_time: {start_time}, end_time: {end_time}")
-                return JsonResponse({'success': False, 'error': 'برای ثبت مرخصی ساعتی، وارد کردن زمان شروع و پایان الزامی است.'})
-        
-        # ایجاد فرم با داده‌های دریافتی
-        post_data = request.POST.copy()
-        post_data['shift_date'] = report.shift_date
-        post_data['status'] = 'reported'
-        form = ShiftReportForm(post_data)
-        
-        if form.is_valid():
-            try:
-                # ایجاد شیء مرخصی جدید بدون ذخیره
-                leave = form.save(commit=False)
-                
-                # تنظیم فیلدهای اضافی
-                leave.shift_date = report.shift_date
-                leave.work_group = current_group  # استفاده از گروه کاری فعلی کاربر
-                leave.crate_by = request.user.userprofile
-                
-                # اطمینان از ذخیره توضیحات
-                if leave_type in ['absence', 'sick_leave']:
-                    leave.description = post_data.get('description', '').strip()
-                
-                # ذخیره مرخصی
-                leave.save()
-                
-                # ثبت فعالیت افزودن مرخصی
-                log_user_activity(
-                    user=request.user,
-                    activity_type='create',
-                    description=f'افزودن مرخصی جدید به گزارش {report_id}',
-                    related_model='ShiftReport',
-                    related_object_id=leave.id,
-                    url=request.META.get('HTTP_REFERER', '/'),
-                    request=request
-                )
-                
-                logger.info(f"Leave successfully added: {leave.id}")
-                return JsonResponse({'success': True})
-            except Exception as e:
-                logger.error(f"Error saving leave: {e}", exc_info=True)
-                return JsonResponse({'success': False, 'error': f'خطا در ذخیره مرخصی: {str(e)}'})
-        else:
-            # ثبت خطاهای اعتبارسنجی فرم
-            logger.warning(f"Form validation errors: {form.errors}")
-            errors = []
-            for field, error_list in form.errors.items():
-                for error in error_list:
-                    errors.append(f"{field}: {error}")
-            
-            return JsonResponse({'success': False, 'errors': errors, 'error': 'خطا در اعتبارسنجی فرم.'})
-    else:
-        return JsonResponse({'success': False, 'error': 'درخواست نامعتبر است.'})
-
-@login_required
-def shift_report_detail(request, report_id):
-    # دریافت گزارش اصلی
-    report = get_object_or_404(ShiftReport, id=report_id)
-    today_date = datetime.date.today()
-
-    # استفاده از ماژول shift_manager برای تشخیص شیفت کاری فعلی کاربر
-    try:
-        from shift_manager.utils import get_current_shift_and_group
-        current_shift, current_group = get_current_shift_and_group(request.user)
-        logger.info(f"Current shift and group for user {request.user.username}: shift={current_shift}, group={current_group}")
-    except ImportError as e:
-        logger.error(f"Error importing shift_manager.utils: {e}", exc_info=True)
-        current_shift = None
-        current_group = request.user.userprofile.group if hasattr(request.user, 'userprofile') and hasattr(request.user.userprofile, 'group') else None
-    except Exception as e:
-        logger.error(f"Error getting current shift and group: {e}", exc_info=True)
-        current_shift = None
-        current_group = request.user.userprofile.group if hasattr(request.user, 'userprofile') and hasattr(request.user.userprofile, 'group') else None
-
-    # ثبت فعالیت مشاهده جزئیات مرخصی
-    log_user_activity(
-        user=request.user,
-        activity_type='view',
-        description=f'مشاهده جزئیات مرخصی شماره {report_id}',
-        related_model='ShiftReport',
-        related_object_id=report_id,
-        url=reverse('leave_reports:shift_report_detail', args=[report_id]),
-        request=request
-    )
-
-    # تبدیل تاریخ شیفت به شمسی
-    shift_date_jalali = jdatetime.date.fromgregorian(date=report.shift_date).strftime('%Y/%m/%d')
-
-    # دریافت مرخصی‌ها، غیبت‌ها، مرخصی‌های ساعتی و مرخصی استعلاجی مرتبط
-    leaves = ShiftReport.objects.filter(
-        shift_date=report.shift_date,
-        work_group=report.work_group,
-        leave_type='regular'
-    ).select_related('user__userprofile')
-
-    absences = ShiftReport.objects.filter(
-        shift_date=report.shift_date,
-        work_group=report.work_group,
-        leave_type='absence'
-    ).select_related('user__userprofile')
-
-    hourly_leaves = ShiftReport.objects.filter(
-        shift_date=report.shift_date,
-        work_group=report.work_group,
-        leave_type='hourly'
-    ).select_related('user__userprofile')
-
-    sick_leaves = ShiftReport.objects.filter(
-        shift_date=report.shift_date,
-        work_group=report.work_group,
-        leave_type='sick_leave'
-    ).select_related('user__userprofile')
+    import logging
+    logger = logging.getLogger(__name__)
     
-    # دریافت لیست پرسنل برای انتخاب
-    personnel_list = UserProfile.objects.select_related('user').filter(
-        section=request.user.userprofile.section,
-    )
-
-    form = ShiftReportForm()
-
-    # اگر current_group تعیین نشده، از گروه کاربر استفاده کنیم
-    if current_group is None and hasattr(request.user, 'userprofile') and hasattr(request.user.userprofile, 'group'):
-        current_group = request.user.userprofile.group
-        logger.info(f"Using user's profile group as current_group: {current_group}")
-
-    # بررسی آیا کاربر می‌تواند مرخصی اضافه کند
-    # کاربر فقط می‌تواند در روز جاری و برای گروه کاری فعلی خود مرخصی ثبت کند
-    can_add_leave = (
-        report.shift_date == today_date and 
-        report.work_group == current_group
-    )
-
-    # Get the shift for the report
-    context = {
-        'report': report,
-        'shift_date_jalali': shift_date_jalali,
-        'leaves': leaves,
-        'absences': absences,
-        'hourly_leaves': hourly_leaves,
-        'sick_leaves': sick_leaves,
-        'title': f'جزئیات مرخصی {shift_date_jalali}',
-        'form': form,
-        'personnel_list': personnel_list,
-        'today_date': today_date,
-        'can_add_leave': can_add_leave,
-        'current_shift': current_shift,
-        'current_group': current_group,
-        'report_shift': report.get_shift_type_display(), # Use shift_type display instead of shift_info
-    }
-    return render(request, 'leave_reports/shift_report_detail.html', context)
-
-
-@login_required
-def shift_report_pdf_view(request, pk):
-    # دریافت گزارش شیفت
-    shift_report = get_object_or_404(ShiftReport, pk=pk)
-
-    # دریافت مرخصی‌ها، غیبت‌ها و مرخصی‌های ساعتی مرتبط
-    leaves = ShiftReport.objects.filter(
-        work_group=shift_report.work_group,
-        leave_type='regular',
-        shift_date=shift_report.shift_date
-    )
-    absences = ShiftReport.objects.filter(
-        work_group=shift_report.work_group,
-        leave_type='absence',
-        shift_date=shift_report.shift_date
-    )
-    hourly_leaves = ShiftReport.objects.filter(
-        work_group=shift_report.work_group,
-        leave_type='hourly',
-        shift_date=shift_report.shift_date
-    )
-    sick_leaves = ShiftReport.objects.filter(
-        work_group=shift_report.work_group,
-        leave_type='sick_leave',
-        shift_date=shift_report.shift_date
-    )
-
-    # تبدیل تاریخ شیفت به شمسی
+    logger.info(f"🔵 approve_as_replacement called - leave_id: {leave_id}, user: {request.user}")
+    
+    leave_request = get_object_or_404(ShiftReport, id=leave_id)
+    logger.info(f"  Leave request found: {leave_request}, status: {leave_request.status}")
+    logger.info(f"  Replacement person: {leave_request.replacement_person}, current user: {request.user}")
+    
+    # بررسی دسترسی
+    if leave_request.replacement_person != request.user:
+        logger.warning(f"❌ Access denied - replacement_person mismatch")
+        return JsonResponse({
+            'status': 'error',
+            'message': 'شما مجاز به انجام این عملیات نیستید'
+        }, status=403)
+    
+    if leave_request.status != 'pending_replacement':
+        logger.warning(f"❌ Invalid status - current: {leave_request.status}, expected: pending_replacement")
+        return JsonResponse({
+            'status': 'error',
+            'message': 'این درخواست قابل تأیید نیست'
+        }, status=400)
+    
     try:
-        shift_date_jalali = jdate.fromgregorian(date=shift_report.shift_date).strftime('%Y/%m/%d')
-    except Exception as e:
-        print(f"Error converting shift_date: {e}")
-        shift_date_jalali = "تاریخ نامعتبر"
-
-    # ایجاد URL کامل برای دسترسی به فایل‌های استاتیک و مدیا
-    static_url = request.build_absolute_uri(settings.STATIC_URL)
-    media_url = request.build_absolute_uri(settings.MEDIA_URL)
-
-    # Get shift information
-    shift_info = get_shift_for_date(shift_report.shift_date)
-    shift = shift_info.get(shift_report.work_group)
-
-
-    # رندر کردن HTML
-    template = get_template('leave_reports/shift_report_pdf.html')
-    html_content = template.render({
-        'shift_report': shift_report,
-        'leaves': leaves,
-        'absences': absences,
-        'hourly_leaves': hourly_leaves,
-        'sick_leaves': sick_leaves,  # مرخصی استعلاجی
-        'shift_date_jalali': shift_date_jalali,
-        'today': jdate.today().strftime('%Y/%m/%d'),
-        'static_url': static_url,
-        'media_url': media_url,
-        'shift': shift_report.get_shift_type_display(), # Use shift_type display instead of shift_info
-    }, request)
-
-    # تنظیم پاسخ به صورت PDF
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'inline; filename="shift_report_{pk}.pdf"'
-
-    # تولید PDF
-    HTML(string=html_content, base_url=request.build_absolute_uri('/')).write_pdf(response)
-
-    return response
-
-@login_required
-def shift_report_edit(request, report_id):
-    report = get_object_or_404(ShiftReport, id=report_id)
-    today = datetime.date.today()
-
-    # بررسی گروه کاری (فقط گزارش‌های گروه کاری خود کاربر قابل ویرایش هستند)
-    if report.work_group != request.user.userprofile.group:
-        messages.error(request, 'شما فقط می‌توانید گزارش‌های گروه کاری خود را ویرایش کنید.')
-        return redirect('leave_reports:shift_report_detail', report_id=report.id)
-
-    if request.method == 'POST':
-        form = ShiftReportForm(request.POST, instance=report)
-        if form.is_valid():
-            try:
-                form.save()
-                
-                # ثبت فعالیت ویرایش مرخصی
-                log_user_activity(
-                    user=request.user,
-                    activity_type='update',
-                    description=f'ویرایش مرخصی با شناسه {report_id}',
-                    related_model='ShiftReport',
-                    related_object_id=report_id,
-                    url=reverse('leave_reports:shift_report_detail', args=[report_id]),
-                    request=request
-                )
-                
-                messages.success(request, 'گزارش با موفقیت به‌روزرسانی شد.')
-                return redirect('leave_reports:shift_report_detail', report_id=report.id)
-            except Exception as e:
-                logger.error(f"Error updating report: {e}", exc_info=True)
-                messages.error(request, f'خطا در به‌روزرسانی گزارش: {str(e)}')
-        else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f'خطا در فیلد {field}: {error}')
-    else:
-        form = ShiftReportForm(instance=report)
-
-    return render(request, 'leave_reports/shift_report_edit.html', {
-        'form': form, 
-        'report': report,
-        'title': 'ویرایش مرخصی'
-    })
-
-def get_personnels(request):
-    personnels = UserProfile.objects.all()
-    data = []
-    for personnel in personnels:
-        data.append({
-            'user_id': personnel.user.id,
-            'full_name': personnel.user.get_full_name(),
-            'personnel_code': personnel.personnel_code
-        })
-    return JsonResponse(data, safe=False)
-
-@login_required
-def export_shift_reports_excel(request):
-    try:
-        # دریافت همه گزارش‌ها
-        reports = ShiftReport.objects.all().select_related('user', 'user__userprofile', 'crate_by', 'crate_by__user')
-
-        # دریافت پارامترهای فیلتر
-        year = request.GET.get('year', '')
-        month = request.GET.get('month', '')
-        day = request.GET.get('day', '')
-        work_group = request.GET.get('work_group', '')
-        today_filter = request.GET.get('today', '')
-        search_query = request.GET.get('search', '').strip()
-        excel_status = request.GET.get('excel_status', '')
-
-        logger.info(f"Export filters - Year: {year}, Month: {month}, Day: {day}, Work Group: {work_group}, Today: {today_filter}, Excel Status: {excel_status}")
-
-        # اعمال فیلترها
-        if work_group:
-            reports = reports.filter(work_group=work_group)
-
-        if excel_status:
-            reports = reports.filter(exported_to_excel=(excel_status == 'true'))
-
-        if today_filter == 'true':
-            reports = reports.filter(shift_date=datetime.date.today())
-
-        if year and month and day:
-            try:
-                gregorian_date = jdatetime.date(year=int(year), month=int(month), day=int(day)).togregorian()
-                reports = reports.filter(shift_date=gregorian_date)
-                logger.info(f"Filtering by full date: {gregorian_date}")
-            except ValueError as e:
-                logger.error(f"Error converting Jalali to Gregorian: {e}")
-        elif year and month:
-            try:
-                gregorian_start = jdatetime.date(year=int(year), month=int(month), day=1).togregorian()
-                if int(month) < 12:
-                    gregorian_end = jdatetime.date(year=int(year), month=int(month) + 1, day=1).togregorian()
-                else:
-                    gregorian_end = jdatetime.date(year=int(year) + 1, month=1, day=1).togregorian()
-                reports = reports.filter(shift_date__gte=gregorian_start, shift_date__lt=gregorian_end)
-                logger.info(f"Filtering by year and month: {gregorian_start} to {gregorian_end}")
-            except ValueError as e:
-                logger.error(f"Error converting Jalali to Gregorian: {e}")
-        elif year:
-            try:
-                gregorian_start = jdatetime.date(year=int(year), month=1, day=1).togregorian()
-                gregorian_end = jdatetime.date(year=int(year) + 1, month=1, day=1).togregorian()
-                reports = reports.filter(shift_date__gte=gregorian_start, shift_date__lt=gregorian_end)
-                logger.info(f"Filtering by year: {gregorian_start} to {gregorian_end}")
-            except ValueError as e:
-                logger.error(f"Error converting Jalali to Gregorian: {e}")
-
-        # اعمال جستجو
-        if search_query:
-            reports = reports.filter(
-                models.Q(user__first_name__icontains=search_query) |
-                models.Q(user__last_name__icontains=search_query) |
-                models.Q(user__userprofile__personnel_code__icontains=search_query) |
-                models.Q(description__icontains=search_query) |
-                models.Q(shift_type__icontains=search_query) |
-                models.Q(leave_type__icontains=search_query)
-            )
-
-        # مرتب‌سازی بر اساس تاریخ مرخصی و نام کاربر
-        reports = reports.order_by('shift_date', 'user__first_name', 'user__last_name')
-
-        # ایجاد فایل اکسل
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = "گزارش مرخصی‌ها"
-        ws.right_to_left = True  # فعال کردن راست به چپ
-
-        # اضافه کردن سرفصل‌ها
-        headers = [
-            'نام و نام خانوادگی',
-            'کد پرسنلی',
-            'تاریخ مرخصی',
-            'نوع مرخصی',
-            'شیفت کاری',
-            'توضیحات',
-            'زمان شروع',
-            'زمان پایان',
-            'ثبت کننده',
-            'تاریخ ثبت',
-            'وضعیت ثبت'
-        ]
-        ws.append(headers)
-
-        # اضافه کردن داده‌ها
-        for report in reports:
-            # تبدیل تاریخ میلادی به شمسی
-            shift_date_jalali = jdatetime.date.fromgregorian(date=report.shift_date).strftime('%Y/%m/%d')
-            created_at_jalali = jdatetime.datetime.fromgregorian(datetime=report.created_at).strftime('%Y/%m/%d %H:%M')
+        logger.info(f"✅ Proceeding with approval...")
+        with transaction.atomic():
+            leave_request.replacement_approved = True
+            leave_request.replacement_approved_at = timezone.now()
+            leave_request.status = 'pending_approval'
+            leave_request.save()
+            logger.info(f"✅ Leave request updated successfully")
             
-            row = [
-                f"{report.user.first_name} {report.user.last_name}",
-                report.user.userprofile.personnel_code if hasattr(report.user, 'userprofile') else '',
-                shift_date_jalali,
-                report.get_leave_type_display(),
-                report.get_shift_type_display(),
-                report.description or '',
-                report.start_time.strftime('%H:%M') if report.start_time else '',
-                report.end_time.strftime('%H:%M') if report.end_time else '',
-                f"{report.crate_by.user.first_name} {report.crate_by.user.last_name}" if report.crate_by else '',
-                created_at_jalali,
-                'ثبت شده' if report.registration else 'ثبت نشده'
-            ]
-            ws.append(row)
-
-        # تنظیم عرض ستون‌ها
-        for column in ws.columns:
-            max_length = 0
-            column = list(column)
-            for cell in column:
-                try:
-                    if len(str(cell.value)) > max_length:
-                        max_length = len(str(cell.value))
-                except:
-                    pass
-            adjusted_width = (max_length + 2)
-            ws.column_dimensions[column[0].column_letter].width = adjusted_width
-
-        # علامت‌گذاری گزارش‌ها به عنوان خروجی گرفته شده
-        reports.update(exported_to_excel=True)
-
-        # تنظیم پاسخ HTTP برای دانلود فایل
-        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename="shift_reports.xlsx"'
-        wb.save(response)
-        
-        logger.info(f"Successfully exported {reports.count()} reports to Excel")
-        return response
-
-    except Exception as e:
-        logger.error(f"Error in export_shift_reports_excel: {str(e)}", exc_info=True)
-        return HttpResponse(f"خطا در ایجاد فایل اکسل: {str(e)}")
-
-@login_required
-def toggle_status(request, report_id):
-    if request.method == 'POST':
-        try:
-            # بررسی دسترسی کاربر
-            if not hasattr(request.user, 'userprofile') or not request.user.userprofile.is_hr_user:
-                return JsonResponse({
-                    'success': False,
-                    'error': 'شما دسترسی لازم برای این عملیات را ندارید'
-                })
-
-            # دریافت گزارش
-            report = get_object_or_404(ShiftReport, id=report_id)
-            
-            # تغییر وضعیت
-            report.status = not report.status
-            report.save()
-
             # ثبت فعالیت
-            status_text = 'ثبت شده' if report.status else 'ثبت نشده'
             log_user_activity(
                 user=request.user,
                 activity_type='update',
-                description=f'تغییر وضعیت مرخصی {report_id} به {status_text}',
+                description=f'تأیید جایگزینی برای درخواست مرخصی {leave_request.user.get_full_name()}',
                 related_model='ShiftReport',
-                related_object_id=report_id,
-                url=request.META.get('HTTP_REFERER', '/'),
+                related_object_id=leave_request.id,
+                url=None,
                 request=request
             )
-
+            
+            # ارسال اعلان به مدیر (TODO: پیاده‌سازی سیستم اعلان)
+            # send_notification_to_manager(leave_request)
+            
+            logger.info(f"✅ Approval completed successfully")
             return JsonResponse({
-                'success': True,
-                'new_status': report.status
+                'status': 'success',
+                'message': 'تأیید جایگزینی با موفقیت انجام شد. درخواست برای تأیید نهایی ارسال شد.'
             })
+            
+    except Exception as e:
+        logger.error(f"❌ Error in approval: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'status': 'error',
+            'message': f'خطا در تأیید: {str(e)}'
+        }, status=500)
 
-        except Exception as e:
-            logger.error(f"Error toggling report status: {e}", exc_info=True)
-            return JsonResponse({
-                'success': False,
-                'error': str(e)
-            })
-
-    return JsonResponse({
-        'success': False,
-        'error': 'درخواست نامعتبر'
-    })
 
 @login_required
-@permission_required('auth.کارشناس اداری', raise_exception=True)
-def toggle_registration(request, report_id):
+def reject_as_replacement(request, leave_id):
+    """رد درخواست توسط جایگزین"""
+    
+    leave_request = get_object_or_404(ShiftReport, id=leave_id)
+    
+    # بررسی دسترسی
+    if leave_request.replacement_person != request.user:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'شما مجاز به انجام این عملیات نیستید'
+        }, status=403)
+    
+    if leave_request.status != 'pending_replacement':
+        return JsonResponse({
+            'status': 'error',
+            'message': 'این درخواست قابل رد نیست'
+        }, status=400)
+    
+    if request.method == 'POST':
+        form = RejectLeaveForm(request.POST)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    leave_request.status = 'rejected'
+                    leave_request.rejection_reason = form.cleaned_data['rejection_reason']
+                    leave_request.rejected_by = request.user
+                    leave_request.rejected_at = timezone.now()
+                    leave_request.save()
+                    
+                    # ثبت فعالیت
+                    log_user_activity(
+                        user=request.user,
+                        activity_type='update',
+                        description=f'رد جایگزینی برای درخواست مرخصی {leave_request.user.get_full_name()}',
+                        related_model='ShiftReport',
+                        related_object_id=leave_request.id,
+                        url=None,
+                        request=request
+                    )
+                    
+                    # ارسال اعلان به درخواست دهنده (TODO)
+                    # send_notification_to_requester(leave_request)
+                    
+                    return JsonResponse({
+                        'status': 'success',
+                        'message': 'درخواست با موفقیت رد شد'
+                    })
+                    
+            except Exception as e:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'خطا در رد درخواست: {str(e)}'
+                }, status=500)
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'خطا در اعتبارسنجی فرم',
+                'errors': form.errors
+            }, status=400)
+    
+    return JsonResponse({
+        'status': 'error',
+        'message': 'متد درخواست نامعتبر است'
+    }, status=405)
+
+
+# ============= تأیید/رد توسط مدیر =============
+
+@login_required
+def approve_as_manager(request, leave_id):
+    """تأیید نهایی درخواست توسط مدیر"""
+    
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"🟢 approve_as_manager called - leave_id: {leave_id}, user: {request.user}")
+    
+    leave_request = get_object_or_404(ShiftReport, id=leave_id)
+    logger.info(f"  Leave request found: {leave_request}, status: {leave_request.status}")
+    
+    can_approve = leave_request.can_be_approved_by(request.user)
+    logger.info(f"  can_be_approved_by result: {can_approve}")
+    
+    # بررسی دسترسی
+    if not can_approve:
+        logger.warning(f"❌ Access denied - user cannot approve this request")
+        return JsonResponse({
+            'status': 'error',
+            'message': 'شما مجاز به انجام این عملیات نیستید'
+        }, status=403)
+    
+    if leave_request.status != 'pending_approval':
+        logger.warning(f"❌ Invalid status - current: {leave_request.status}, expected: pending_approval")
+        return JsonResponse({
+            'status': 'error',
+            'message': 'این درخواست قابل تأیید نیست'
+        }, status=400)
+    
     try:
-        report = ShiftReport.objects.get(id=report_id)
-        report.registration = not report.registration
-        report.save()
+        logger.info(f"✅ Proceeding with manager approval...")
+        with transaction.atomic():
+            leave_request.status = 'approved'
+            leave_request.final_approver = request.user.userprofile
+            leave_request.final_approved_at = timezone.now()
+            leave_request.registration = True
+            leave_request.save()
+            logger.info(f"✅ Leave request approved successfully")
+            
+            # ثبت فعالیت
+            log_user_activity(
+                user=request.user,
+                activity_type='update',
+                description=f'تأیید نهایی درخواست مرخصی {leave_request.user.get_full_name()}',
+                related_model='ShiftReport',
+                related_object_id=leave_request.id,
+                url=None,
+                request=request
+            )
+            
+            # ارسال اعلان به درخواست دهنده (TODO)
+            # send_notification_to_requester(leave_request)
+            
+            logger.info(f"✅ Manager approval completed successfully")
+            return JsonResponse({
+                'status': 'success',
+                'message': 'درخواست با موفقیت تأیید شد'
+            })
+            
+    except Exception as e:
+        logger.error(f"❌ Error in manager approval: {str(e)}", exc_info=True)
         return JsonResponse({
-            'success': True,
-            'message': 'وضعیت ثبت گزارش با موفقیت تغییر کرد',
-            'registration': report.registration
-        })
-    except ShiftReport.DoesNotExist:
-        return JsonResponse({
-            'success': False,
-            'message': 'گزارش مورد نظر یافت نشد'
-        }, status=404)
+            'status': 'error',
+            'message': f'خطا در تأیید: {str(e)}'
+        }, status=500)
     except Exception as e:
         return JsonResponse({
-            'success': False,
-            'message': str(e)
+            'status': 'error',
+            'message': f'خطا در تأیید: {str(e)}'
         }, status=500)
+
+
+@login_required
+def reject_as_manager(request, leave_id):
+    """رد نهایی درخواست توسط مدیر"""
+    
+    leave_request = get_object_or_404(ShiftReport, id=leave_id)
+    
+    # بررسی دسترسی
+    if not leave_request.can_be_approved_by(request.user):
+        return JsonResponse({
+            'status': 'error',
+            'message': 'شما مجاز به انجام این عملیات نیستید'
+        }, status=403)
+    
+    if leave_request.status != 'pending_approval':
+        return JsonResponse({
+            'status': 'error',
+            'message': 'این درخواست قابل رد نیست'
+        }, status=400)
+    
+    if request.method == 'POST':
+        form = RejectLeaveForm(request.POST)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    leave_request.status = 'rejected'
+                    leave_request.rejection_reason = form.cleaned_data['rejection_reason']
+                    leave_request.rejected_by = request.user
+                    leave_request.rejected_at = timezone.now()
+                    leave_request.save()
+                    
+                    # ثبت فعالیت
+                    log_user_activity(
+                        user=request.user,
+                        activity_type='update',
+                        description=f'رد نهایی درخواست مرخصی {leave_request.user.get_full_name()}',
+                        related_model='ShiftReport',
+                        related_object_id=leave_request.id,
+                        url=None,
+                        request=request
+                    )
+                    
+                    # ارسال اعلان به درخواست دهنده (TODO)
+                    # send_notification_to_requester(leave_request)
+                    
+                    return JsonResponse({
+                        'status': 'success',
+                        'message': 'درخواست با موفقیت رد شد'
+                    })
+                    
+            except Exception as e:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'خطا در رد درخواست: {str(e)}'
+                }, status=500)
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'خطا در اعتبارسنجی فرم',
+                'errors': form.errors
+            }, status=400)
+    
+    return JsonResponse({
+        'status': 'error',
+        'message': 'متد درخواست نامعتبر است'
+    }, status=405)
+
+
+# ============= آرشیو مرخصی‌ها =============
+
+@login_required
+def leave_archive(request):
+    """صفحه آرشیو و جستجوی مرخصی‌ها"""
+    
+    # بررسی دسترسی
+    if not check_permission(request.user, 'leave_archive'):
+        messages.error(request, 'شما دسترسی به این بخش را ندارید.')
+        return redirect('dashboard:dashboard')
+    
+    form = LeaveSearchForm(request.GET)
+    leaves = ShiftReport.objects.all().select_related(
+        'user', 'replacement_person', 'final_approver', 'rejected_by', 'crate_by'
+    )
+    
+    # فیلتر بر اساس جستجو
+    if form.is_valid():
+        user_search = form.cleaned_data.get('user_search')
+        if user_search:
+            leaves = leaves.filter(
+                Q(user__first_name__icontains=user_search) |
+                Q(user__last_name__icontains=user_search) |
+                Q(user__username__icontains=user_search)
+            )
+        
+        status = form.cleaned_data.get('status')
+        if status:
+            leaves = leaves.filter(status=status)
+        
+        leave_type = form.cleaned_data.get('leave_type')
+        if leave_type:
+            leaves = leaves.filter(leave_type=leave_type)
+        
+        shift_type = form.cleaned_data.get('shift_type')
+        if shift_type:
+            leaves = leaves.filter(shift_type=shift_type)
+        
+        work_group = form.cleaned_data.get('work_group')
+        if work_group:
+            leaves = leaves.filter(work_group__icontains=work_group)
+        
+        date_from = form.cleaned_data.get('date_from')
+        if date_from:
+            try:
+                # تبدیل تاریخ شمسی به میلادی
+                if '/' in date_from:
+                    year, month, day = map(int, date_from.split('/'))
+                elif '-' in date_from:
+                    year, month, day = map(int, date_from.split('-'))
+                jalali_date = jdatetime.date(year, month, day)
+                gregorian_date = jalali_date.togregorian()
+                leaves = leaves.filter(shift_date__gte=gregorian_date)
+            except:
+                pass
+        
+        date_to = form.cleaned_data.get('date_to')
+        if date_to:
+            try:
+                # تبدیل تاریخ شمسی به میلادی
+                if '/' in date_to:
+                    year, month, day = map(int, date_to.split('/'))
+                elif '-' in date_to:
+                    year, month, day = map(int, date_to.split('-'))
+                jalali_date = jdatetime.date(year, month, day)
+                gregorian_date = jalali_date.togregorian()
+                leaves = leaves.filter(shift_date__lte=gregorian_date)
+            except:
+                pass
+    
+    leaves = leaves.order_by('-created_at')
+    
+    # محاسبه آمار
+    from django.utils import timezone
+    total_count = leaves.count()
+    pending_count = leaves.filter(
+        Q(status='pending_replacement') | Q(status='pending_approval')
+    ).count()
+    approved_count = leaves.filter(status='approved').count()
+    rejected_count = leaves.filter(status='rejected').count()
+    today_count = leaves.filter(shift_date=timezone.now().date()).count()
+    
+    # Pagination
+    page = request.GET.get('page', 1)
+    paginator = Paginator(leaves, 20)
+    try:
+        leaves_page = paginator.page(page)
+    except PageNotAnInteger:
+        leaves_page = paginator.page(1)
+    except EmptyPage:
+        leaves_page = paginator.page(paginator.num_pages)
+    
+    # ثبت فعالیت
+    log_user_activity(
+        user=request.user,
+        activity_type='view',
+        description='مشاهده آرشیو مرخصی‌ها',
+        related_model='ShiftReport',
+        related_object_id=None,
+        url=reverse('leave_reports:leave_archive'),
+        request=request
+    )
+    
+    return render(request, 'leave_reports/leave_archive.html', {
+        'form': form,
+        'page_obj': leaves_page,
+        'total_count': total_count,
+        'pending_count': pending_count,
+        'approved_count': approved_count,
+        'rejected_count': rejected_count,
+        'today_count': today_count,
+        'page_title': 'آرشیو مرخصی‌ها',
+    })
+
+
+# ============= جزئیات درخواست =============
+
+@login_required
+def leave_detail(request, leave_id):
+    """صفحه جزئیات یک درخواست مرخصی"""
+    
+    leave_request = get_object_or_404(
+        ShiftReport.objects.select_related(
+            'user', 'replacement_person', 'final_approver', 'rejected_by', 'crate_by'
+        ),
+        id=leave_id
+    )
+    
+    # بررسی دسترسی - فقط درخواست دهنده، جایگزین، مدیران و کسانی که دسترسی آرشیو دارند
+    has_access = (
+        leave_request.user == request.user or
+        leave_request.replacement_person == request.user or
+        leave_request.can_be_approved_by(request.user) or
+        check_permission(request.user, 'leave_archive')
+    )
+    
+    if not has_access:
+        messages.error(request, 'شما دسترسی به مشاهده این درخواست را ندارید.')
+        return redirect('leave_reports:my_inbox')
+    
+    # ثبت فعالیت
+    log_user_activity(
+        user=request.user,
+        activity_type='view',
+        description=f'مشاهده جزئیات درخواست مرخصی {leave_request.user.get_full_name()}',
+        related_model='ShiftReport',
+        related_object_id=leave_request.id,
+        url=request.get_full_path(),
+        request=request
+    )
+    
+    # بررسی اینکه آیا کاربر می‌تواند این درخواست را تأیید کند
+    can_approve = leave_request.can_be_approved_by(request.user)
+    
+    return render(request, 'leave_reports/leave_detail.html', {
+        'leave': leave_request,
+        'page_title': 'جزئیات درخواست مرخصی',
+        'can_approve': can_approve,
+    })
+
+
+# ============= مدیریت تأیید کنندگان (فقط سوپریوزر) =============
+
+@login_required
+def manage_approvers(request):
+    """صفحه مدیریت سلسله مراتب تأیید"""
+    
+    # فقط سوپریوزر
+    if not request.user.is_superuser:
+        messages.error(request, 'فقط مدیر سیستم به این بخش دسترسی دارد.')
+        return redirect('dashboard:dashboard')
+    
+    hierarchies = ApprovalHierarchy.objects.all().select_related(
+        'section', 'part', 'approver', 'approver__user', 'approver__position'
+    ).order_by('section__name', 'part__name')
+    
+    if request.method == 'POST':
+        form = ApprovalHierarchyForm(request.POST)
+        if form.is_valid():
+            try:
+                hierarchy = form.save()
+                
+                # ثبت فعالیت
+                log_user_activity(
+                    user=request.user,
+                    activity_type='create',
+                    description=f'تعریف تأیید کننده جدید: {hierarchy}',
+                    related_model='ApprovalHierarchy',
+                    related_object_id=hierarchy.id,
+                    url=None,
+                    request=request
+                )
+                
+                messages.success(request, 'تأیید کننده با موفقیت ثبت شد.')
+                
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'status': 'success',
+                        'message': 'تأیید کننده با موفقیت ثبت شد',
+                        'hierarchy': {
+                            'id': hierarchy.id,
+                            'location': str(hierarchy),
+                            'approver': str(hierarchy.approver)
+                        }
+                    })
+                
+                return redirect('leave_reports:manage_approvers')
+                
+            except Exception as e:
+                messages.error(request, f'خطا در ثبت: {str(e)}')
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': str(e)
+                    }, status=400)
+        else:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'خطا در اعتبارسنجی فرم',
+                    'errors': form.errors
+                }, status=400)
+    else:
+        form = ApprovalHierarchyForm()
+    
+    # ثبت فعالیت
+    log_user_activity(
+        user=request.user,
+        activity_type='view',
+        description='مشاهده صفحه مدیریت تأیید کنندگان',
+        related_model='ApprovalHierarchy',
+        related_object_id=None,
+        url=reverse('leave_reports:manage_approvers'),
+        request=request
+    )
+    
+    # Get sections for dropdown
+    from accounts.models import Section
+    sections = Section.objects.all().order_by('name')
+    
+    return render(request, 'leave_reports/manage_approvers.html', {
+        'form': form,
+        'hierarchies': hierarchies,
+        'sections': sections,
+        'page_title': 'مدیریت تأیید کنندگان',
+    })
+
+
+@login_required
+def delete_approver(request, hierarchy_id):
+    """حذف یک تأیید کننده"""
+    
+    # فقط سوپریوزر
+    if not request.user.is_superuser:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'شما دسترسی به این عملیات را ندارید'
+        }, status=403)
+    
+    hierarchy = get_object_or_404(ApprovalHierarchy, id=hierarchy_id)
+    
+    if request.method == 'POST':
+        try:
+            hierarchy_str = str(hierarchy)
+            hierarchy.delete()
+            
+            # ثبت فعالیت
+            log_user_activity(
+                user=request.user,
+                activity_type='delete',
+                description=f'حذف تأیید کننده: {hierarchy_str}',
+                related_model='ApprovalHierarchy',
+                related_object_id=hierarchy_id,
+                url=None,
+                request=request
+            )
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'تأیید کننده با موفقیت حذف شد'
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'خطا در حذف: {str(e)}'
+            }, status=500)
+    
+    return JsonResponse({
+        'status': 'error',
+        'message': 'متد درخواست نامعتبر است'
+    }, status=405)
+
+
+# ============= API برای Select2 =============
+
+@login_required
+def api_get_users_for_replacement(request):
+    """API برای دریافت لیست کاربران جهت انتخاب به عنوان جایگزین"""
+    
+    search = request.GET.get('q', '')
+    
+    users = User.objects.filter(is_active=True).exclude(id=request.user.id)
+    
+    # فیلتر براساس بخش کاربر فعلی
+    if hasattr(request.user, 'userprofile') and request.user.userprofile.section:
+        users = users.filter(userprofile__section=request.user.userprofile.section)
+    
+    # جستجو
+    if search:
+        users = users.filter(
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search) |
+            Q(userprofile__personnel_code__icontains=search)
+        )
+    
+    users = users.select_related('userprofile')[:20]
+    
+    results = []
+    for user in users:
+        profile = getattr(user, 'userprofile', None)
+        text = user.get_full_name() or user.username
+        if profile and profile.personnel_code:
+            text += f" ({profile.personnel_code})"
+        
+        results.append({
+            'id': user.id,
+            'text': text
+        })
+    
+    return JsonResponse({
+        'results': results,
+        'pagination': {'more': False}
+    })
+
+
+@login_required
+def api_get_parts_by_section(request):
+    """API برای دریافت قسمت‌ها بر اساس بخش"""
+    
+    from accounts.models import Part
+    
+    section_id = request.GET.get('section_id')
+    
+    if not section_id:
+        return JsonResponse({'results': [], 'pagination': {'more': False}})
+    
+    parts = Part.objects.filter(section_id=section_id)
+    
+    results = [{'id': '', 'text': '--- انتخاب کنید ---'}]
+    results.extend([{'id': part.id, 'text': part.name} for part in parts])
+    
+    return JsonResponse({
+        'results': results,
+        'pagination': {'more': False}
+    })
+
+
+@login_required
+def api_get_user_profiles(request):
+    """API برای جستجوی UserProfile ها برای تأیید کنندگان"""
+    from accounts.models import UserProfile
+    
+    search_term = request.GET.get('q', '')
+    page = int(request.GET.get('page', 1))
+    page_size = 20
+    
+    # فیلتر UserProfile های فعال
+    profiles = UserProfile.objects.filter(user__is_active=True).select_related('user', 'position', 'section', 'part')
+    
+    # جستجو
+    if search_term:
+        profiles = profiles.filter(
+            Q(user__first_name__icontains=search_term) | 
+            Q(user__last_name__icontains=search_term) |
+            Q(user__username__icontains=search_term) |
+            Q(personnel_code__icontains=search_term)
+        )
+    
+    # Pagination
+    start = (page - 1) * page_size
+    end = start + page_size
+    total_count = profiles.count()
+    profiles_page = profiles[start:end]
+    
+    results = []
+    for profile in profiles_page:
+        full_name = profile.user.get_full_name() or profile.user.username
+        
+        # ساختن متن نمایشی
+        parts_text = []
+        if profile.position:
+            parts_text.append(profile.position.name)
+        if profile.section:
+            parts_text.append(profile.section.name)
+        if profile.personnel_code:
+            parts_text.append(f"کد: {profile.personnel_code}")
+        
+        text = f"{full_name}"
+        if parts_text:
+            text += f" ({', '.join(parts_text)})"
+        
+        results.append({'id': profile.id, 'text': text})
+    
+    return JsonResponse({
+        'results': results,
+        'pagination': {'more': end < total_count}
+    })
+
+
+@login_required
+def api_get_users_for_replacement(request):
+    """API برای جستجوی کاربران برای انتخاب جایگزین"""
+    
+    search_term = request.GET.get('q', '')
+    page = int(request.GET.get('page', 1))
+    page_size = 20
+    
+    # فیلتر کاربران همان بخش کاربر
+    users = User.objects.filter(is_active=True).exclude(id=request.user.id)
+    
+    if hasattr(request.user, 'userprofile') and request.user.userprofile.section:
+        users = users.filter(userprofile__section=request.user.userprofile.section)
+    
+    # جستجو
+    if search_term:
+        users = users.filter(
+            Q(first_name__icontains=search_term) | 
+            Q(last_name__icontains=search_term) |
+            Q(username__icontains=search_term)
+        )
+    
+    # Pagination
+    start = (page - 1) * page_size
+    end = start + page_size
+    total_count = users.count()
+    users_page = users.select_related('userprofile')[start:end]
+    
+    results = []
+    for user in users_page:
+        full_name = user.get_full_name() or user.username
+        position = user.userprofile.position.name if hasattr(user, 'userprofile') and user.userprofile.position else ''
+        text = f"{full_name} ({position})" if position else full_name
+        results.append({'id': user.id, 'text': text})
+    
+    return JsonResponse({
+        'results': results,
+        'pagination': {'more': end < total_count}
+    })

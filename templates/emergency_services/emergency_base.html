@@ -1,0 +1,103 @@
+{% load static %}
+<!doctype html>
+<html lang="fa" dir="rtl" class="h-full" x-data="layout()" x-init="initTheme()">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}پورتال اورژانس{% endblock %}{% if site_settings and site_settings.site_name %} - {{ site_settings.site_name }}{% endif %}</title>
+    {% if site_settings and site_settings.seo_description %}
+    <meta name="description" content="{{ site_settings.seo_description|striptags|truncatechars:160 }}">
+    {% endif %}
+    {% if site_settings and site_settings.site_favicon %}
+    <link rel="icon" href="{{ site_settings.site_favicon.url }}">
+    {% endif %}
+
+    <!-- Tailwind CSS -->
+    {% if debug %}
+      <script src="https://cdn.tailwindcss.com"></script>
+      <script>
+        window.tailwind = window.tailwind || {};
+        window.tailwind.config = {
+          darkMode: 'class',
+          theme: {
+            extend: {
+              container: { center: true, padding: '1rem' }
+            }
+          }
+        };
+      </script>
+    {% else %}
+      <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
+    {% endif %}
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+
+    <!-- Global vendor styles -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css" />
+
+    {% block styles %}{% endblock %}
+    
+    <style>
+      [x-cloak] { display: none !important; }
+    </style>
+
+    <!-- Core vendor scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  </head>
+  <body class="h-full font-sans antialiased bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+    <!-- Emergency Portal Sidebar -->
+    {% include 'emergency_services/partials/emergency_sidebar.html' %}
+
+    <!-- Main Content Wrapper -->
+    <div class="flex flex-col flex-1 min-h-screen lg:mr-72">
+      <!-- Emergency Portal Header -->
+      {% include 'emergency_services/partials/emergency_header.html' %}
+
+      <!-- Main Content Area -->
+      <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900">
+        <div class="container mx-auto px-4 py-6 sm:px-6 lg:px-8">
+          {% block content %}{% endblock %}
+        </div>
+      </main>
+
+      <!-- Footer -->
+      {% include 'partials/footer.html' %}
+    </div>
+
+    <!-- Alpine Plugins -->
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Global Jalali picker initializer -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function(){
+        if (window.jQuery && $.fn.persianDatepicker) {
+          $('.jalali-date').each(function(){
+            const $el = $(this); try { $el.prop('type','text'); } catch(e) {}
+            if (!$el.data('hasJalali')) {
+              $el.persianDatepicker({ format:'YYYY/MM/DD', autoClose:true });
+              $el.data('hasJalali', true);
+            }
+          });
+          $('.jalali-datetime').each(function(){
+            const $el = $(this); try { $el.prop('type','text'); } catch(e) {}
+            if (!$el.data('hasJalali')) {
+              $el.persianDatepicker({ format:'YYYY/MM/DD HH:mm:ss', timePicker:{ enabled:true, second:true }, autoClose:true });
+              $el.data('hasJalali', true);
+            }
+          });
+        }
+      });
+    </script>
+
+    <!-- App JS -->
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

@@ -1,0 +1,443 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load jalali_utils %}
+
+{% block title %}آرشیو مرخصی‌ها{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto" x-data="archiveManager()">
+    <!-- Page Header -->
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <i class="fas fa-archive text-indigo-600 dark:text-indigo-400"></i>
+            آرشیو مرخصی‌ها
+        </h1>
+        <p class="mt-2 text-gray-600 dark:text-gray-400">
+            جستجو و مشاهده تمام درخواست‌های مرخصی
+        </p>
+    </div>
+
+    <!-- Stats Summary -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4">
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">کل درخواست‌ها</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ total_count|default:0 }}</p>
+        </div>
+        <div class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl shadow p-4 text-white">
+            <p class="text-sm text-amber-100 mb-1">در انتظار</p>
+            <p class="text-2xl font-bold">{{ pending_count|default:0 }}</p>
+        </div>
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow p-4 text-white">
+            <p class="text-sm text-green-100 mb-1">تأیید شده</p>
+            <p class="text-2xl font-bold">{{ approved_count|default:0 }}</p>
+        </div>
+        <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow p-4 text-white">
+            <p class="text-sm text-red-100 mb-1">رد شده</p>
+            <p class="text-2xl font-bold">{{ rejected_count|default:0 }}</p>
+        </div>
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow p-4 text-white">
+            <p class="text-sm text-blue-100 mb-1">امروز</p>
+            <p class="text-2xl font-bold">{{ today_count|default:0 }}</p>
+        </div>
+    </div>
+
+    <!-- Search Filter Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg mb-6 overflow-hidden">
+        <!-- Accordion Header -->
+        <button 
+            @click="filterExpanded = !filterExpanded"
+            class="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200"
+        >
+            <div class="flex items-center gap-3">
+                <i class="fas fa-filter text-indigo-600 dark:text-indigo-400 text-xl"></i>
+                <h2 class="text-lg font-bold text-gray-900 dark:text-white">فیلترهای جستجو</h2>
+            </div>
+            <i 
+                class="fas fa-chevron-down text-gray-400 transition-transform duration-300"
+                :class="{ 'rotate-180': filterExpanded }"
+            ></i>
+        </button>
+
+        <!-- Accordion Content -->
+        <div 
+            x-show="filterExpanded"
+            x-collapse
+            class="border-t border-gray-200 dark:border-gray-700"
+        >
+            <form method="get" action="{% url 'leave_reports:leave_archive' %}" class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- User Search -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <i class="fas fa-user text-gray-400"></i>
+                            کاربر
+                        </label>
+                        <input 
+                            type="text" 
+                            name="user_search"
+                            value="{{ form.user_search.value|default:'' }}"
+                            placeholder="نام یا نام خانوادگی"
+                            class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                        >
+                    </div>
+
+                    <!-- Leave Type -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <i class="fas fa-list text-gray-400"></i>
+                            نوع مرخصی
+                        </label>
+                        {{ form.leave_type }}
+                    </div>
+
+                    <!-- Status -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <i class="fas fa-info-circle text-gray-400"></i>
+                            وضعیت
+                        </label>
+                        {{ form.status }}
+                    </div>
+
+                    <!-- Date From -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <i class="fas fa-calendar text-gray-400"></i>
+                            از تاریخ
+                        </label>
+                        {{ form.date_from }}
+                    </div>
+
+                    <!-- Date To -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <i class="fas fa-calendar text-gray-400"></i>
+                            تا تاریخ
+                        </label>
+                        {{ form.date_to }}
+                    </div>
+
+                    <!-- Shift Type -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <i class="fas fa-clock text-gray-400"></i>
+                            نوع شیفت
+                        </label>
+                        {{ form.shift_type }}
+                    </div>
+
+                    <!-- Work Group -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <i class="fas fa-users text-gray-400"></i>
+                            گروه کاری
+                        </label>
+                        <input 
+                            type="text" 
+                            name="work_group"
+                            value="{{ form.work_group.value|default:'' }}"
+                            placeholder="نام گروه کاری"
+                            class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                        >
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-3 mt-6">
+                    <button 
+                        type="submit"
+                        class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2"
+                    >
+                        <i class="fas fa-search"></i>
+                        جستجو
+                    </button>
+                    <a 
+                        href="{% url 'leave_reports:leave_archive' %}"
+                        class="px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 font-medium rounded-xl transition-colors duration-200 flex items-center gap-2"
+                    >
+                        <i class="fas fa-redo"></i>
+                        پاک کردن فیلترها
+                    </a>
+                    <button 
+                        type="button"
+                        @click="exportToExcel"
+                        class="mr-auto px-6 py-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 font-medium rounded-xl transition-colors duration-200 flex items-center gap-2"
+                    >
+                        <i class="fas fa-file-excel"></i>
+                        خروجی اکسل
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+        <!-- Table Header -->
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <i class="fas fa-table text-indigo-600 dark:text-indigo-400"></i>
+                نتایج جستجو
+                <span class="text-sm font-normal text-gray-500 dark:text-gray-400">
+                    ({{ page_obj.paginator.count }} درخواست)
+                </span>
+            </h2>
+            
+            <!-- View Toggle -->
+            <div class="flex gap-2">
+                <button 
+                    @click="viewMode = 'table'"
+                    :class="viewMode === 'table' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'"
+                    class="px-3 py-2 rounded-lg transition-colors duration-200"
+                >
+                    <i class="fas fa-table"></i>
+                </button>
+                <button 
+                    @click="viewMode = 'cards'"
+                    :class="viewMode === 'cards' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'"
+                    class="px-3 py-2 rounded-lg transition-colors duration-200"
+                >
+                    <i class="fas fa-th-large"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Table View -->
+        <div x-show="viewMode === 'table'" class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 dark:bg-gray-900/50">
+                    <tr>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ردیف</th>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">کاربر</th>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">نوع مرخصی</th>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">تاریخ</th>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">شیفت</th>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">وضعیت</th>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">عملیات</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for request in page_obj %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                            {{ forloop.counter|add:page_obj.start_index|add:"-1" }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow">
+                                    {{ request.user.first_name|first }}{{ request.user.last_name|first }}
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                        {{ request.user.get_full_name }}
+                                    </div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        {{ request.work_group|default:"نامشخص" }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
+                                {% if request.leave_type == 'regular' %}bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200
+                                {% elif request.leave_type == 'sick_leave' %}bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200
+                                {% elif request.leave_type == 'hourly' %}bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200
+                                {% else %}bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200{% endif %}
+                            ">
+                                {{ request.get_leave_type_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                            {{ request.shift_date|to_jalali }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                            {{ request.get_shift_type_display }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if request.status == 'pending_replacement' %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200">
+                                <i class="fas fa-clock text-xs ml-1"></i>
+                                در انتظار جانشین
+                            </span>
+                            {% elif request.status == 'pending_approval' %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                                <i class="fas fa-hourglass-half text-xs ml-1"></i>
+                                در انتظار تأیید
+                            </span>
+                            {% elif request.status == 'approved' %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                                <i class="fas fa-check-circle text-xs ml-1"></i>
+                                تأیید شده
+                            </span>
+                            {% elif request.status == 'rejected' %}
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200">
+                                <i class="fas fa-times-circle text-xs ml-1"></i>
+                                رد شده
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <a 
+                                href="{% url 'leave_reports:leave_detail' request.id %}"
+                                class="inline-flex items-center gap-2 px-3 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 rounded-lg transition-colors duration-200 font-medium"
+                            >
+                                <i class="fas fa-eye"></i>
+                                جزئیات
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center gap-3">
+                                <i class="fas fa-inbox text-6xl text-gray-300 dark:text-gray-600"></i>
+                                <p class="text-gray-500 dark:text-gray-400">هیچ درخواستی یافت نشد</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Card View -->
+        <div x-show="viewMode === 'cards'" class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for request in page_obj %}
+                <div class="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-6 hover:shadow-lg transition-shadow duration-300">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg">
+                                {{ request.user.first_name|first }}{{ request.user.last_name|first }}
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-gray-900 dark:text-white">
+                                    {{ request.user.get_full_name }}
+                                </h3>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    {{ request.work_group|default:"نامشخص" }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 mb-4">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-600 dark:text-gray-400">نوع:</span>
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                {% if request.leave_type == 'regular' %}bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200
+                                {% elif request.leave_type == 'sick_leave' %}bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200
+                                {% elif request.leave_type == 'hourly' %}bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200
+                                {% else %}bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200{% endif %}
+                            ">
+                                {{ request.get_leave_type_display }}
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-600 dark:text-gray-400">تاریخ:</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ request.shift_date|to_jalali }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-600 dark:text-gray-400">وضعیت:</span>
+                            {% if request.status == 'approved' %}
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                                <i class="fas fa-check-circle text-xs ml-1"></i>
+                                تأیید شده
+                            </span>
+                            {% elif request.status == 'rejected' %}
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200">
+                                <i class="fas fa-times-circle text-xs ml-1"></i>
+                                رد شده
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200">
+                                <i class="fas fa-clock text-xs ml-1"></i>
+                                در انتظار
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <a 
+                        href="{% url 'leave_reports:leave_detail' request.id %}"
+                        class="w-full px-4 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 rounded-lg transition-colors duration-200 text-sm font-medium text-center block"
+                    >
+                        <i class="fas fa-eye"></i>
+                        مشاهده جزئیات
+                    </a>
+                </div>
+                {% empty %}
+                <div class="col-span-full text-center py-12">
+                    <i class="fas fa-inbox text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+                    <p class="text-gray-500 dark:text-gray-400">هیچ درخواستی یافت نشد</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-600 dark:text-gray-400">
+                    نمایش {{ page_obj.start_index }} تا {{ page_obj.end_index }} از {{ page_obj.paginator.count }} نتیجه
+                </div>
+                
+                <nav class="flex items-center gap-2">
+                    {% if page_obj.has_previous %}
+                    <a 
+                        href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                        class="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200"
+                    >
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <span class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <a 
+                        href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                        class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200"
+                    >
+                        {{ num }}
+                    </a>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <a 
+                        href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                        class="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200"
+                    >
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function archiveManager() {
+    return {
+        filterExpanded: {% if request.GET %}true{% else %}false{% endif %},
+        viewMode: 'table',
+
+        exportToExcel() {
+            // Get current query string
+            const params = new URLSearchParams(window.location.search);
+            params.set('export', 'excel');
+            
+            // Create temporary link and trigger download
+            window.location.href = '{% url "leave_reports:leave_archive" %}?' + params.toString();
+        }
+    };
+}
+</script>
+{% endblock %}

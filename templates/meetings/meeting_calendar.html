@@ -1,0 +1,571 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}تقویم جلسات{% endblock %}
+
+{% block extra_css %}
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css' rel='stylesheet' />
+<link href='https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.15/locales/fa.js' rel='preload' as='script' />
+<style>
+  .fc {
+    direction: rtl;
+  }
+  .fc-header-toolbar {
+    flex-direction: row-reverse;
+  }
+  .fc-toolbar-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  .fc-button-group {
+    flex-direction: row-reverse;
+  }
+  .fc-event {
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 2px 4px;
+  }
+  .fc-event:hover {
+    opacity: 0.8;
+  }
+  .fc-daygrid-day-number {
+    padding: 4px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">تقویم جلسات</h1>
+      <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">مشاهده و مدیریت جلسات در تقویم</p>
+    </div>
+    <button 
+      @click="$dispatch('open-meeting-modal', {mode: 'create'})"
+      class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      <span>ایجاد جلسه جدید</span>
+    </button>
+  </div>
+
+  <!-- Calendar -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div id="calendar"></div>
+  </div>
+</div>
+
+<!-- Meeting Detail Modal -->
+<div 
+  x-data="meetingDetailModal()" 
+  x-show="open" 
+  x-cloak
+  @open-meeting-detail.window="openDetail($event.detail)"
+  class="fixed inset-0 z-50 overflow-y-auto"
+  style="display: none;">
+  <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+    <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" @click="open = false"></div>
+    
+    <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-right overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white" x-text="meeting?.title || 'جزئیات جلسه'"></h3>
+      </div>
+      
+      <div class="px-6 py-4 space-y-4">
+        <template x-if="meeting">
+          <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">تاریخ</label>
+                <p class="mt-1 text-sm text-gray-900 dark:text-white" x-text="meeting.date"></p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">زمان</label>
+                <p class="mt-1 text-sm text-gray-900 dark:text-white" x-text="`${meeting.start_time} - ${meeting.end_time}`"></p>
+              </div>
+            </div>
+            
+            <div x-show="meeting.location">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">مکان</label>
+              <p class="mt-1 text-sm text-gray-900 dark:text-white" x-text="meeting.location"></p>
+            </div>
+            
+            <div x-show="meeting.description">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">توضیحات</label>
+              <p class="mt-1 text-sm text-gray-900 dark:text-white whitespace-pre-line" x-text="meeting.description"></p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">شرکت‌کنندگان</label>
+              <div class="mt-2 flex flex-wrap gap-2">
+                <template x-for="participant in meeting.participants" :key="participant.id">
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+                    <span x-text="participant.name"></span>
+                  </span>
+                </template>
+              </div>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">وضعیت</label>
+              <span 
+                class="mt-1 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium"
+                :class="{
+                  'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200': meeting.status === 'scheduled',
+                  'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200': meeting.status === 'cancelled',
+                  'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200': meeting.status === 'completed'
+                }"
+                x-text="meeting.status_display">
+              </span>
+            </div>
+          </div>
+        </template>
+      </div>
+      
+      <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 flex justify-end gap-3">
+        <button 
+          @click="open = false"
+          class="px-4 py-2 text-sm font-medium text-gray-700 bg-white dark:bg-gray-600 dark:text-white border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 transition-colors">
+          بستن
+        </button>
+        <template x-if="meeting">
+          <a 
+            :href="`/meetings/${meeting.id}/edit/`"
+            class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors">
+            ویرایش
+          </a>
+        </template>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Meeting Form Modal -->
+<div 
+  x-data="meetingFormModal()" 
+  x-show="open" 
+  x-cloak
+  @open-meeting-modal.window="openForm($event.detail)"
+  class="fixed inset-0 z-50 overflow-y-auto"
+  style="display: none;">
+  <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+    <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" @click="close()"></div>
+    
+    <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-right overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white" x-text="mode === 'create' ? 'ایجاد جلسه جدید' : 'ویرایش جلسه'"></h3>
+      </div>
+      
+      <form @submit.prevent="submitForm" class="px-6 py-4 space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="id_title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">عنوان جلسه *</label>
+            <input 
+              type="text" 
+              id="id_title" 
+              name="title" 
+              required
+              x-model="formData.title"
+              class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+          </div>
+          
+          <div>
+            <label for="id_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">تاریخ *</label>
+            <input 
+              type="text" 
+              id="id_date" 
+              name="date" 
+              required
+              x-model="formData.date"
+              class="jalali-date mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+            <input type="hidden" id="id_date_gregorian" name="date_gregorian">
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label for="id_start_time" class="block text-sm font-medium text-gray-700 dark:text-gray-300">ساعت شروع *</label>
+            <input 
+              type="time" 
+              id="id_start_time" 
+              name="start_time" 
+              required
+              x-model="formData.start_time"
+              class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+          </div>
+          
+          <div>
+            <label for="id_end_time" class="block text-sm font-medium text-gray-700 dark:text-gray-300">ساعت پایان *</label>
+            <input 
+              type="time" 
+              id="id_end_time" 
+              name="end_time" 
+              required
+              x-model="formData.end_time"
+              class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+          </div>
+        </div>
+        
+        <div>
+          <label for="id_location" class="block text-sm font-medium text-gray-700 dark:text-gray-300">مکان</label>
+          <input 
+            type="text" 
+            id="id_location" 
+            name="location"
+            x-model="formData.location"
+            class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+        </div>
+        
+        <div>
+          <label for="id_description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">توضیحات</label>
+          <textarea 
+            id="id_description" 
+            name="description" 
+            rows="3"
+            x-model="formData.description"
+            class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"></textarea>
+        </div>
+        
+        <div>
+          <label for="id_participants" class="block text-sm font-medium text-gray-700 dark:text-gray-300">شرکت‌کنندگان *</label>
+          <select 
+            id="id_participants" 
+            name="participants" 
+            multiple
+            required
+            x-model="formData.participants"
+            class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+            {% for user in users %}
+            <option value="{{ user.id }}">{{ user.get_full_name|default:user.username }} {% if user.userprofile.personnel_code %}- {{ user.userprofile.personnel_code }}{% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div>
+          <label for="id_manual_numbers" class="block text-sm font-medium text-gray-700 dark:text-gray-300">شماره‌های دستی</label>
+          <textarea 
+            id="id_manual_numbers" 
+            name="manual_numbers" 
+            rows="2"
+            x-model="formData.manual_numbers"
+            placeholder="هر شماره را در یک خط وارد کنید"
+            class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"></textarea>
+        </div>
+        
+        <div class="flex items-center">
+          <input 
+            type="checkbox" 
+            id="id_notify_transport_coordinator" 
+            name="notify_transport_coordinator"
+            x-model="formData.notify_transport_coordinator"
+            class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+          <label for="id_notify_transport_coordinator" class="mr-2 block text-sm text-gray-700 dark:text-gray-300">
+            اعلام به هماهنگ‌کننده حمل و نقل
+          </label>
+        </div>
+        
+        <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <button 
+            type="button"
+            @click="close()"
+            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white dark:bg-gray-600 dark:text-white border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 transition-colors">
+            انصراف
+          </button>
+          <button 
+            type="submit"
+            :disabled="loading"
+            class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <span x-show="!loading" x-text="mode === 'create' ? 'ایجاد' : 'ذخیره'"></span>
+            <span x-show="loading">در حال ذخیره...</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+<script src='https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.15/locales/fa.js'></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const calendarEl = document.getElementById('calendar');
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+    locale: 'fa',
+    direction: 'rtl',
+    initialView: 'dayGridMonth',
+    headerToolbar: {
+      right: 'prev,next today',
+      center: 'title',
+      left: 'dayGridMonth,timeGridWeek,timeGridDay'
+    },
+    events: '{% url "meetings:meeting_events_json" %}',
+    eventClick: function(info) {
+      fetch(`/meetings/api/${info.event.id}/detail/`)
+        .then(response => response.json())
+        .then(data => {
+          window.dispatchEvent(new CustomEvent('open-meeting-detail', { detail: data }));
+        })
+        .catch(error => console.error('Error:', error));
+    },
+    dateClick: function(info) {
+      // تبدیل تاریخ میلادی به شمسی برای نمایش
+      const date = new Date(info.dateStr);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      
+      window.dispatchEvent(new CustomEvent('open-meeting-modal', { 
+        detail: { 
+          mode: 'create',
+          date: `${year}-${month}-${day}`
+        } 
+      }));
+    },
+    eventMouseEnter: function(info) {
+      // نمایش tooltip
+      const event = info.event;
+      const tooltip = document.createElement('div');
+      tooltip.className = 'fixed z-50 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg pointer-events-none';
+      tooltip.innerHTML = `
+        <div class="font-semibold">${event.title}</div>
+        <div class="text-xs mt-1">${event.extendedProps.location || 'مکان مشخص نشده'}</div>
+      `;
+      document.body.appendChild(tooltip);
+      
+      info.el.setAttribute('data-tooltip', 'true');
+      info.el.addEventListener('mouseleave', function() {
+        tooltip.remove();
+      }, { once: true });
+    }
+  });
+  
+  calendar.render();
+  
+  // ذخیره calendar instance برای به‌روزرسانی
+  window.meetingCalendar = calendar;
+});
+
+function meetingDetailModal() {
+  return {
+    open: false,
+    meeting: null,
+    openDetail(detail) {
+      this.meeting = detail;
+      this.open = true;
+    }
+  };
+}
+
+function meetingFormModal() {
+  return {
+    open: false,
+    mode: 'create',
+    loading: false,
+    meetingId: null,
+    formData: {
+      title: '',
+      date: '',
+      start_time: '',
+      end_time: '',
+      location: '',
+      description: '',
+      participants: [],
+      manual_numbers: '',
+      notify_transport_coordinator: false
+    },
+    openForm(detail) {
+      this.mode = detail.mode || 'create';
+      this.meetingId = detail.meetingId || null;
+      
+      if (detail.mode === 'edit' && detail.meetingId) {
+        // بارگذاری اطلاعات جلسه
+        fetch(`/meetings/api/${detail.meetingId}/detail/`)
+          .then(response => response.json())
+          .then(data => {
+            this.formData = {
+              title: data.title,
+              date: data.date,
+              start_time: data.start_time,
+              end_time: data.end_time,
+              location: data.location,
+              description: data.description,
+              participants: data.participants.map(p => p.id),
+              manual_numbers: data.manual_numbers,
+              notify_transport_coordinator: data.notify_transport_coordinator
+            };
+            this.open = true;
+            
+            // Initialize Persian datepicker
+            setTimeout(() => {
+              if ($.fn.persianDatepicker) {
+                $('#id_date').persianDatepicker({
+                  format: 'YYYY/MM/DD',
+                  altField: '#id_date_gregorian',
+                  altFormat: 'YYYY-MM-DD',
+                  initialValue: false,
+                  autoClose: true,
+                  calendar: { persian: { locale: 'fa' } },
+                  altFieldFormatter: function(unix) {
+                    const date = new Date(unix);
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                  }
+                });
+              }
+              
+              if ($.fn.select2) {
+                $('#id_participants').select2({
+                  dir: 'rtl',
+                  language: 'fa',
+                  width: '100%',
+                  placeholder: 'انتخاب کنید...'
+                });
+              }
+            }, 100);
+          });
+      } else {
+        // Reset form
+        this.formData = {
+          title: '',
+          date: detail.date || '',
+          start_time: '',
+          end_time: '',
+          location: '',
+          description: '',
+          participants: [],
+          manual_numbers: '',
+          notify_transport_coordinator: false
+        };
+        this.open = true;
+        
+        // Initialize Persian datepicker
+        setTimeout(() => {
+          if ($.fn.persianDatepicker) {
+            $('#id_date').persianDatepicker({
+              format: 'YYYY/MM/DD',
+              altField: '#id_date_gregorian',
+              altFormat: 'YYYY-MM-DD',
+              initialValue: false,
+              autoClose: true,
+              calendar: { persian: { locale: 'fa' } },
+              altFieldFormatter: function(unix) {
+                const date = new Date(unix);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+              }
+            });
+          }
+          
+          if ($.fn.select2) {
+            $('#id_participants').select2({
+              dir: 'rtl',
+              language: 'fa',
+              width: '100%',
+              placeholder: 'انتخاب کنید...'
+            });
+          }
+        }, 100);
+      }
+    },
+    async submitForm() {
+      this.loading = true;
+      
+      // دریافت تاریخ میلادی از altField
+      const gregorianDate = $('#id_date_gregorian').val() || $('#id_date').val();
+      
+      const formData = new FormData();
+      formData.append('title', this.formData.title);
+      formData.append('date', gregorianDate);
+      formData.append('start_time', this.formData.start_time);
+      formData.append('end_time', this.formData.end_time);
+      formData.append('location', this.formData.location || '');
+      formData.append('description', this.formData.description || '');
+      formData.append('manual_numbers', this.formData.manual_numbers || '');
+      formData.append('notify_transport_coordinator', this.formData.notify_transport_coordinator);
+      
+      // اضافه کردن شرکت‌کنندگان
+      const participants = $('#id_participants').val() || this.formData.participants;
+      if (Array.isArray(participants)) {
+        participants.forEach(id => formData.append('participants', id));
+      } else if (participants) {
+        formData.append('participants', participants);
+      }
+      
+      const url = this.mode === 'create' 
+        ? '{% url "meetings:meeting_create_ajax" %}'
+        : `/meetings/api/${this.meetingId}/update/`;
+      
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+          }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          // نمایش پیام موفقیت
+          alert(data.message);
+          
+          // به‌روزرسانی تقویم
+          if (window.meetingCalendar) {
+            window.meetingCalendar.refetchEvents();
+          }
+          
+          this.close();
+        } else {
+          // نمایش خطاها
+          if (data.errors) {
+            let errorMsg = 'خطا در ارسال فرم:\n';
+            for (const field in data.errors) {
+              errorMsg += `${field}: ${data.errors[field].join(', ')}\n`;
+            }
+            alert(errorMsg);
+          } else {
+            alert(data.error || 'خطا در ارسال فرم');
+          }
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('خطا در ارتباط با سرور');
+      } finally {
+        this.loading = false;
+      }
+    },
+    close() {
+      this.open = false;
+      this.meetingId = null;
+      this.mode = 'create';
+    }
+  };
+}
+
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+</script>
+{% endblock %}
+

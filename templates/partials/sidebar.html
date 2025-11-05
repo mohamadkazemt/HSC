@@ -1,4 +1,5 @@
 <!-- Mobile backdrop overlay -->
+{% load permission_tags %}
 <div x-show="sidebarOpen" 
      x-cloak
      @click="closeSidebar()" 
@@ -166,7 +167,7 @@
                 <a href="{% url 'contractor_management:data_management' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
                   <span class="flex items-center gap-2">
                     <svg class="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 002 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                     </svg>
                     <span>مدیریت اطلاعات پایه</span>
                   </span>
@@ -176,6 +177,107 @@
           </div>
         </li>
 
+        {% endif %}
+
+        <!-- HR / Admin Unit (واحد اداری) -->
+        {% if not request.user.contractor_profile and not request.user.employee_profile %}
+        <li>
+          <div x-data="{ openHR: false }" class="space-y-1">
+            <button @click="openHR = !openHR" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-semibold text-gray-700 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+              <span class="flex items-center gap-x-3">
+                <!-- Users/Admin icon -->
+                <svg class="h-6 w-6 shrink-0 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"/>
+                </svg>
+                <span>واحد اداری</span>
+              </span>
+              <svg class="h-5 w-5 text-gray-400" :class="openHR ? 'rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
+              </svg>
+            </button>
+            <ul x-show="openHR" x-collapse class="pl-9 space-y-2">
+              <!-- Personnel Management -->
+              {% if request.user|check_permission:'personnel_management' %}
+              <li>
+                <a href="#" class="block rounded-md p-2 text-sm text-gray-600 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                  <span class="flex items-center gap-2">
+                    <svg class="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/>
+                    </svg>
+                    <span>مدیریت پرسنل</span>
+                  </span>
+                </a>
+              </li>
+              {% endif %}
+              
+              <!-- Leave Management (nested) -->
+              <li>
+                <div x-data="{ openLeave: false }" class="space-y-1">
+                  <button @click="openLeave = !openLeave" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-medium text-gray-600 hover:text-purple-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                    <span class="flex items-center gap-x-2">
+                      <svg class="h-5 w-5 shrink-0 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12V12.75Z"/>
+                      </svg>
+                      <span>مدیریت مرخصی</span>
+                    </span>
+                    <svg class="h-5 w-5 text-gray-400" :class="openLeave ? 'rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                  <ul x-show="openLeave" x-collapse class="pr-6 space-y-1">
+                    <li>
+                      <a href="{% url 'leave_reports:my_inbox' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-purple-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                        <span class="flex items-center gap-2">
+                          <svg class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 13.5h3.86a2.25 2.25 0 0 1 2.012 1.244l.256.512a2.25 2.25 0 0 0 2.013 1.244h3.218a2.25 2.25 0 0 0 2.013-1.244l.256-.512a2.25 2.25 0 0 1 2.013-1.244h3.859m-19.5.338V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18v-4.162c0-.224-.034-.447-.1-.661L19.24 5.338a2.25 2.25 0 0 0-2.15-1.588H6.911a2.25 2.25 0 0 0-2.15 1.588L2.35 13.177a2.25 2.25 0 0 0-.1.661Z"/>
+                          </svg>
+                          <span>کارتابل من</span>
+                        </span>
+                      </a>
+                    </li>
+                    {% if request.user|check_permission:'request_leave' %}
+                    <li>
+                      <a href="{% url 'leave_reports:request_leave' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-purple-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                        <span class="flex items-center gap-2">
+                          <svg class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                          </svg>
+                          <span>درخواست مرخصی</span>
+                        </span>
+                      </a>
+                    </li>
+                    {% endif %}
+                    {% if request.user|check_permission:'leave_archive' %}
+                    <li>
+                      <a href="{% url 'leave_reports:leave_archive' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-purple-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                        <span class="flex items-center gap-2">
+                          <svg class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"/>
+                          </svg>
+                          <span>آرشیو مرخصی‌ها</span>
+                        </span>
+                      </a>
+                    </li>
+                    {% endif %}
+                    {% if request.user.is_superuser %}
+                    <li>
+                      <a href="{% url 'leave_reports:manage_approvers' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-purple-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                        <span class="flex items-center gap-2">
+                          <svg class="h-5 w-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+                          </svg>
+                          <span>مدیریت تأییدکنندگان</span>
+                        </span>
+                      </a>
+                    </li>
+                    {% endif %}
+                  </ul>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </li>
         {% endif %}
 
         <!-- Safety Unit (HSEC) -->
@@ -196,6 +298,82 @@
               </svg>
             </button>
             <ul x-show="open" x-collapse class="pl-9 space-y-2">
+              <!-- Fire Safety Management (nested) -->
+              <li>
+                <div x-data="{ openFireSafety: false }" class="space-y-1">
+                  <button @click="openFireSafety = !openFireSafety" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                    <span class="flex items-center gap-x-2">
+                      <i class="fa fa-fire-extinguisher h-5 w-5 shrink-0 text-red-600"></i>
+                      <span>مدیریت ایمنی آتش‌نشانی</span>
+                    </span>
+                    <svg class="h-5 w-5 text-gray-400" :class="openFireSafety ? 'rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                  <ul x-show="openFireSafety" x-collapse class="pr-6 space-y-1">
+                    <li>
+                      <a href="{% url 'fire_extinguisher_management:dashboard' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-red-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                        <span class="flex items-center gap-2">
+                          <i class="fa fa-tachometer-alt text-green-600"></i>
+                          <span>داشبورد ایمنی</span>
+                        </span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="{% url 'fire_extinguisher_management:extinguisher_list' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-red-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                        <span class="flex items-center gap-2">
+                          <i class="fa fa-list text-blue-600"></i>
+                          <span>لیست کپسول‌ها</span>
+                        </span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="{% url 'fire_extinguisher_management:extinguisher_create' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-red-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                        <span class="flex items-center gap-2">
+                          <i class="fa fa-plus-circle text-yellow-600"></i>
+                          <span>ثبت کپسول جدید</span>
+                        </span>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </li>
+              <!-- Fire Reports (nested) -->
+              <li>
+                <div x-data="{ openFireReports: false }" class="space-y-1">
+                  <button @click="openFireReports = !openFireReports" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-medium text-gray-600 hover:text-orange-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                    <span class="flex items-center gap-x-2">
+                      <i class="fas fa-fire h-5 w-5 shrink-0 text-orange-600"></i>
+                      <span>گزارشات آتش‌نشانی</span>
+                    </span>
+                    <svg class="h-5 w-5 text-gray-400" :class="openFireReports ? 'rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                  <ul x-show="openFireReports" x-collapse class="pr-6 space-y-1">
+                    {% if request.user|check_permission:'report_create' %}
+                    <li>
+                      <a href="{% url 'fire_reports:report_create' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-orange-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                        <span class="flex items-center gap-2">
+                          <i class="fas fa-plus-circle text-green-600"></i>
+                          <span>ثبت گزارش جدید</span>
+                        </span>
+                      </a>
+                    </li>
+                    {% endif %}
+                    {% if request.user|check_permission:'report_list' %}
+                    <li>
+                      <a href="{% url 'fire_reports:report_list' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-orange-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                        <span class="flex items-center gap-2">
+                          <i class="fas fa-list text-blue-600"></i>
+                          <span>لیست گزارشات</span>
+                        </span>
+                      </a>
+                    </li>
+                    {% endif %}
+                  </ul>
+                </div>
+              </li>
               <!-- Anomaly Management (nested) -->
               <li>
                 <div x-data="{ openSubA: false }" class="space-y-1">
@@ -227,7 +405,7 @@
                       <a href="{% url 'anomalis:anomaly_reports' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
                         <span class="flex items-center gap-2">
                           <svg class="h-5 w-5 text-sky-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125Z" />
                           </svg>
                           <span>گزارش‌ها و تحلیل</span>
                         </span>
@@ -319,53 +497,237 @@
                   </ul>
                 </div>
               </li>
-            </ul>
-          </div>
-        </li>
-        <!-- Emergency Services menu start -->
-        <li>
-          <div x-data="{ openEmergency: true }" class="space-y-1">
-            <button @click="openEmergency = !openEmergency" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-semibold text-gray-700 hover:text-rose-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
-              <span class="flex items-center gap-x-3">
-                <svg class="h-6 w-6 shrink-0 text-rose-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-                <span>خدمات اورژانس</span>
-              </span>
-              <svg class="h-5 w-5 text-gray-400" :class="openEmergency ? 'rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
-              </svg>
-            </button>
-            <ul x-show="openEmergency" x-collapse class="pl-9 space-y-2">
+              <!-- HSE Incidents Reporting -->
               <li>
-                <a href="{% url 'emergency_services:dashboard' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-rose-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">داشبورد اورژانس</a>
-              </li>
-              <li>
-                <a href="{% url 'emergency_services:create_visit' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-rose-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">ثبت مراجعه جدید</a>
-              </li>
-              <li>
-                <a href="{% url 'emergency_services:visit_list' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-rose-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">لیست مراجعات</a>
-              </li>
-              <li>
-                <a href="{% url 'emergency_services:medicine_list' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-rose-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">انبار دارو</a>
-              </li>
-              <li>
-                <a href="{% url 'emergency_services:equipment_list' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-rose-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">تجهیزات</a>
-              </li>
-              <li>
-                <div x-data="{ openEMSSettings: false }" class="space-y-1">
-                  <button @click="openEMSSettings = !openEMSSettings" class="w-full flex items-center justify-between rounded-md p-2 text-sm font-medium text-gray-600 hover:text-rose-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
-                    <span>تنظیمات</span>
-                    <svg class="h-5 w-5 text-gray-400" :class="openEMSSettings ? 'rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor">
+                <div x-data="{ openIncidents: false }" class="space-y-1">
+                  <button @click="openIncidents = !openIncidents" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                    <span class="flex items-center gap-x-2">
+                      <svg class="h-5 w-5 shrink-0 text-orange-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                      </svg>
+                      <span>گزارش حوادث HSE</span>
+                    </span>
+                    <svg class="h-5 w-5 text-gray-400" :class="openIncidents ? 'rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor">
                       <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
                     </svg>
                   </button>
-                  <ul x-show="openEMSSettings" x-collapse class="pr-5 space-y-1">
-                    <li><a href="{% url 'emergency_services:category_list' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-rose-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">دسته‌بندی داروها</a></li>
-                    <li><a href="{% url 'emergency_services:service_list' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-rose-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">خدمات درمانی</a></li>
-                    <li><a href="{% url 'emergency_services:hospital_list' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-rose-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">بیمارستان‌ها</a></li>
+                  <ul x-show="openIncidents" x-collapse class="pr-6 space-y-1">
+                    <li>
+                      <a href="{% url 'hse_incidents:incident_report' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-red-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                        <span class="flex items-center gap-2">
+                          <svg class="h-5 w-5 text-orange-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                          </svg>
+                          <span>ثبت حادثه جدید</span>
+                        </span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="{% url 'hse_incidents:list_reports' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                        <span class="flex items-center gap-2">
+                          <svg class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 7.5h12M6 12h12M6 16.5h12" />
+                          </svg>
+                          <span>آرشیو حوادث</span>
+                        </span>
+                      </a>
+                    </li>
+                    {% if request.user|check_permission:'injury_types_list' %}
+                    <li>
+                      <a href="{% url 'hse_incidents:injury_types_list' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-red-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                        <span class="flex items-center gap-2">
+                          <svg class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
+                          </svg>
+                          <span>مدیریت جراحات</span>
+                        </span>
+                      </a>
+                    </li>
+                    {% endif %}
                   </ul>
                 </div>
+              </li>
+              <!-- Emergency Services (nested) -->
+              <li>
+                <div x-data="{ openEmergency: false }" class="space-y-1">
+                  <button @click="openEmergency = !openEmergency" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-medium text-gray-600 hover:text-rose-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                    <span class="flex items-center gap-x-2">
+                      <svg class="h-5 w-5 shrink-0 text-rose-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                      </svg>
+                      <span>خدمات اورژانس</span>
+                    </span>
+                    <svg class="h-5 w-5 text-gray-400" :class="openEmergency ? 'rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                  <ul x-show="openEmergency" x-collapse class="pr-6 space-y-1">
+                    <li>
+                      <a href="{% url 'emergency_services:dashboard' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-rose-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                        <span class="flex items-center gap-2">
+                          <svg class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
+                          </svg>
+                          <span>داشبورد اورژانس</span>
+                        </span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="{% url 'emergency_services:data_management' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-rose-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                        <span class="flex items-center gap-2">
+                          <svg class="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125"/>
+                          </svg>
+                          <span>مدیریت داده‌ها</span>
+                        </span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="{% url 'emergency_services:create_visit' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-rose-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                        <span class="flex items-center gap-2">
+                          <svg class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+                          </svg>
+                          <span>ثبت مراجعه جدید</span>
+                        </span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="{% url 'emergency_services:visit_list' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-rose-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                        <span class="flex items-center gap-2">
+                          <svg class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z"/>
+                          </svg>
+                          <span>آرشیو مراجعات</span>
+                        </span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="{% url 'emergency_services:medicine_list' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-rose-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                        <span class="flex items-center gap-2">
+                          <svg class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"/>
+                          </svg>
+                          <span>موجودی داروها</span>
+                        </span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="{% url 'emergency_services:equipment_list' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-rose-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                        <span class="flex items-center gap-2">
+                          <svg class="h-5 w-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/>
+                          </svg>
+                          <span>تجهیزات</span>
+                        </span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="{% url 'emergency_services:hospital_list' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-rose-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                        <span class="flex items-center gap-2">
+                          <svg class="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/>
+                          </svg>
+                          <span>بیمارستان‌ها</span>
+                        </span>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </li>
+        {% endif %}
+
+        <!-- Workshop Unit (واحد تعمیرگاه) -->
+        {% if not request.user.contractor_profile and not request.user.employee_profile %}
+        <li>
+          <div x-data="{ openWorkshop: {% if 'machine-checklist' in request.path %}true{% else %}false{% endif %} }" class="space-y-1">
+            <button @click="openWorkshop = !openWorkshop" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-semibold text-gray-700 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+              <span class="flex items-center gap-x-3">
+                <!-- Wrench/Tool icon -->
+                <svg class="h-6 w-6 shrink-0 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655-5.653a2.548 2.548 0 00-3.586-3.586l-1.757 1.757a2.548 2.548 0 00-3.586 3.586l5.653 4.655m8.827-2.82l-2.496 3.03c-.317.384-.74.626-1.208.766M11.42 15.17l-4.655-5.653a2.548 2.548 0 00-3.586-3.586l-1.757 1.757a2.548 2.548 0 00-3.586 3.586l5.653 4.655" />
+                </svg>
+                <span>واحد تعمیرگاه</span>
+              </span>
+              <svg class="h-5 w-5 text-gray-400" :class="openWorkshop ? 'rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
+              </svg>
+            </button>
+            <ul x-show="openWorkshop" x-collapse class="pl-9 space-y-2">
+              <!-- Machine Checklist Management -->
+              {% if request.user|check_permission:'checklist_form' %}
+              <li>
+                <a href="{% url 'machine_checklist:checklist_form' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                  <span class="flex items-center gap-2">
+                    <i class="fas fa-plus-circle text-green-600"></i>
+                    <span>ثبت چک‌لیست جدید</span>
+                  </span>
+                </a>
+              </li>
+              {% endif %}
+              {% if request.user|check_permission:'checklist_list' %}
+              <li>
+                <a href="{% url 'machine_checklist:checklist_list' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                  <span class="flex items-center gap-2">
+                    <i class="fas fa-list text-indigo-600"></i>
+                    <span>آرشیو چک‌لیست‌ها</span>
+                  </span>
+                </a>
+              </li>
+              {% endif %}
+            </ul>
+          </div>
+        </li>
+        {% endif %}
+
+        <!-- Meetings Management -->
+        {% if not request.user.contractor_profile and not request.user.employee_profile %}
+        <li>
+          <div x-data="{ openMeetings: false }" class="space-y-1">
+            <button @click="openMeetings = !openMeetings" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-semibold text-gray-700 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+              <span class="flex items-center gap-x-3">
+                <svg class="h-6 w-6 shrink-0 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                </svg>
+                <span>مدیریت جلسات</span>
+              </span>
+              <svg class="h-5 w-5 text-gray-400" :class="openMeetings ? 'rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
+              </svg>
+            </button>
+            <ul x-show="openMeetings" x-collapse class="pl-9 space-y-2">
+              <li>
+                <a href="{% url 'meetings:meeting_calendar' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                  <span class="flex items-center gap-2">
+                    <svg class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                    </svg>
+                    <span>تقویم جلسات</span>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="{% url 'meetings:meeting_list' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                  <span class="flex items-center gap-2">
+                    <svg class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 17.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                    </svg>
+                    <span>لیست جلسات</span>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="{% url 'meetings:meeting_create' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                  <span class="flex items-center gap-2">
+                    <svg class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    <span>ایجاد جلسه جدید</span>
+                  </span>
+                </a>
               </li>
             </ul>
           </div>

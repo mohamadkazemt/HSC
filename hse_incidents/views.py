@@ -237,6 +237,10 @@ def list_reports(request):
     search_query = request.GET.get('search', '')
     from_date_str = request.GET.get('from_date', '')
     to_date_str = request.GET.get('to_date', '')
+    
+    # نگه‌داری مقادیر اصلی برای نمایش در فرم
+    from_date_display = from_date_str
+    to_date_display = to_date_str
 
     reports = IncidentReport.objects.all()
 
@@ -263,19 +267,31 @@ def list_reports(request):
 
     if from_date_str:
         try:
-            from_date_parts = list(map(int, from_date_str.split('-')))
+            # تبدیل اعداد فارسی به انگلیسی
+            persian_to_english = str.maketrans('۰۱۲۳۴۵۶۷۸۹', '0123456789')
+            from_date_normalized = from_date_str.translate(persian_to_english)
+            
+            # پشتیبانی از هر دو فرمت / و -
+            separator = '/' if '/' in from_date_normalized else '-'
+            from_date_parts = list(map(int, from_date_normalized.split(separator)))
             from_date_gregorian = jdatetime.date(from_date_parts[0], from_date_parts[1],
                                                  from_date_parts[2]).togregorian()
             reports = reports.filter(incident_date__gte=from_date_gregorian)
-        except ValueError:
+        except (ValueError, IndexError):
             pass
 
     if to_date_str:
         try:
-            to_date_parts = list(map(int, to_date_str.split('-')))
+            # تبدیل اعداد فارسی به انگلیسی
+            persian_to_english = str.maketrans('۰۱۲۳۴۵۶۷۸۹', '0123456789')
+            to_date_normalized = to_date_str.translate(persian_to_english)
+            
+            # پشتیبانی از هر دو فرمت / و -
+            separator = '/' if '/' in to_date_normalized else '-'
+            to_date_parts = list(map(int, to_date_normalized.split(separator)))
             to_date_gregorian = jdatetime.date(to_date_parts[0], to_date_parts[1], to_date_parts[2]).togregorian()
             reports = reports.filter(incident_date__lte=to_date_gregorian)
-        except ValueError:
+        except (ValueError, IndexError):
             pass
 
     reports = reports.order_by('-incident_date')
@@ -290,8 +306,8 @@ def list_reports(request):
         reports = paginator.page(paginator.num_pages)
 
     return render(request, 'hse_incidents/report_list.html',
-                  {'reports': reports, 'search_query': search_query, 'from_date': from_date_str,
-                   'to_date': to_date_str})
+                  {'reports': reports, 'search_query': search_query, 'from_date': from_date_display,
+                   'to_date': to_date_display})
 
 
 # hse_incidents/views.py
@@ -531,6 +547,9 @@ def submit_hse_completion_ajax(request, report_id):
 @permission_required("report_details_pdf")
 @login_required
 def report_details_pdf(request, report_id):
+    from core.models import SiteSettings
+    from django.utils import timezone
+    
     report = get_object_or_404(IncidentReport, id=report_id)
     try:
         hse_completion = HseCompletionReport.objects.get(incident_report=report)
@@ -541,13 +560,23 @@ def report_details_pdf(request, report_id):
     if report.report_author and report.report_author.signature:
         user_signature_path = os.path.join(settings.MEDIA_ROOT, str(report.report_author.signature))
 
+    # دریافت تنظیمات سایت
+    try:
+        site_settings = SiteSettings.objects.first()
+    except:
+        site_settings = None
+
     title = f"گزارش حادثه شماره {report.id}"
 
     context = {
         'report': report,
         'title': title,
         'user_signature': user_signature_path,
-        'hse_completion': hse_completion,  # ارسال hse_completion به تمپلیت
+        'hse_completion': hse_completion,
+        'site_settings': site_settings,
+        'now': timezone.now(),
+        'STATIC_ROOT': settings.STATIC_ROOT,
+        'MEDIA_ROOT': settings.MEDIA_ROOT,
     }
     html = render_to_string('hse_incidents/daily_report_pdf.html', context)
     # font_config = FontConfiguration()
@@ -557,3 +586,185 @@ def report_details_pdf(request, report_id):
     response = HttpResponse(pdf_file, content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="incident_report_{report.id}.pdf"'
     return response
+
+# ============= مدیریت انواع جراحات =============
+
+@login_required
+@permission_required('injury_types_list')
+def injury_types_list(request):
+    """لیست انواع جراحات"""
+    from django.urls import reverse
+    from dashboard.utils import log_user_activity
+    
+    log_user_activity(
+        user=request.user,
+        activity_type='view',
+        description='مشاهده لیست انواع جراحت',
+        related_model='InjuryType',
+        related_object_id=None,
+        url=reverse('hse_incidents:injury_types_list'),
+        request=request
+    )
+    
+    search_query = request.GET.get('search', '')
+    injury_types = InjuryType.objects.all()
+    
+    if search_query:
+        injury_types = injury_types.filter(name__icontains=search_query)
+        log_user_activity(
+            user=request.user,
+            activity_type='view',
+            description=f'جستجو در انواع جراحت با عبارت "{search_query}"',
+            related_model='InjuryType',
+            related_object_id=None,
+            url=request.get_full_path(),
+            request=request
+        )
+    
+    injury_types = injury_types.order_by('name')
+    
+    # Pagination
+    page = request.GET.get('page', 1)
+    paginator = Paginator(injury_types, 15)
+    try:
+        injury_types = paginator.page(page)
+    except PageNotAnInteger:
+        injury_types = paginator.page(1)
+    except EmptyPage:
+        injury_types = paginator.page(paginator.num_pages)
+    
+    return render(request, 'hse_incidents/injury_types_list.html', {
+        'injury_types': injury_types,
+        'search_query': search_query,
+    })
+
+
+@login_required
+@permission_required('injury_type_create')
+def injury_type_create_ajax(request):
+    """ایجاد نوع جراحت جدید (AJAX)"""
+    from dashboard.utils import log_user_activity
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            name = data.get('name', '').strip()
+            
+            if not name:
+                return JsonResponse({'status': 'error', 'message': 'نام جراحت الزامی است'}, status=400)
+            
+            # بررسی تکراری بودن
+            if InjuryType.objects.filter(name=name).exists():
+                return JsonResponse({'status': 'error', 'message': 'این نوع جراحت قبلاً ثبت شده است'}, status=400)
+            
+            injury_type = InjuryType.objects.create(name=name)
+            
+            log_user_activity(
+                user=request.user,
+                activity_type='create',
+                description=f'ایجاد نوع جراحت جدید: {name}',
+                related_model='InjuryType',
+                related_object_id=injury_type.id,
+                url=None,
+                request=request
+            )
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'نوع جراحت با موفقیت ایجاد شد',
+                'injury_type': {
+                    'id': injury_type.id,
+                    'name': injury_type.name
+                }
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@login_required
+@permission_required('injury_type_update')
+def injury_type_update_ajax(request, pk):
+    """ویرایش نوع جراحت (AJAX)"""
+    from dashboard.utils import log_user_activity
+    
+    if request.method == 'POST':
+        try:
+            injury_type = get_object_or_404(InjuryType, pk=pk)
+            data = json.loads(request.body)
+            name = data.get('name', '').strip()
+            
+            if not name:
+                return JsonResponse({'status': 'error', 'message': 'نام جراحت الزامی است'}, status=400)
+            
+            # بررسی تکراری بودن (به جز خود این رکورد)
+            if InjuryType.objects.filter(name=name).exclude(pk=pk).exists():
+                return JsonResponse({'status': 'error', 'message': 'این نام قبلاً استفاده شده است'}, status=400)
+            
+            old_name = injury_type.name
+            injury_type.name = name
+            injury_type.save()
+            
+            log_user_activity(
+                user=request.user,
+                activity_type='update',
+                description=f'ویرایش نوع جراحت: "{old_name}" به "{name}"',
+                related_model='InjuryType',
+                related_object_id=injury_type.id,
+                url=None,
+                request=request
+            )
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'نوع جراحت با موفقیت ویرایش شد',
+                'injury_type': {
+                    'id': injury_type.id,
+                    'name': injury_type.name
+                }
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@login_required
+@permission_required('injury_type_delete')
+def injury_type_delete_ajax(request, pk):
+    """حذف نوع جراحت (AJAX)"""
+    from dashboard.utils import log_user_activity
+    
+    if request.method == 'POST':
+        try:
+            injury_type = get_object_or_404(InjuryType, pk=pk)
+            
+            # بررسی استفاده در گزارشات
+            if injury_type.incidents.exists():
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'این نوع جراحت در {injury_type.incidents.count()} گزارش استفاده شده و قابل حذف نیست'
+                }, status=400)
+            
+            name = injury_type.name
+            injury_type.delete()
+            
+            log_user_activity(
+                user=request.user,
+                activity_type='delete',
+                description=f'حذف نوع جراحت: {name}',
+                related_model='InjuryType',
+                related_object_id=pk,
+                url=None,
+                request=request
+            )
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'نوع جراحت با موفقیت حذف شد'
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)

@@ -1,0 +1,563 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load jalali_tags %}
+
+{% block title %}جزئیات گزارش حادثه #{{ report.id }}{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+  .info-card {
+    transition: all 0.3s ease;
+  }
+  .info-card:hover {
+    transform: translateY(-2px);
+  }
+  .file-upload-area {
+    border: 2px dashed #d1d5db;
+    transition: all 0.3s;
+  }
+  .file-upload-area:hover {
+    border-color: #ea580c;
+    background-color: #fff7ed;
+  }
+  .file-upload-area.dragover {
+    border-color: #ea580c;
+    background-color: #fed7aa;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+  <!-- Page Header -->
+  <div class="mb-6 flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-3">
+        <svg class="h-8 w-8 text-orange-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+        </svg>
+        جزئیات گزارش حادثه #{{ report.id }}
+      </h1>
+      <p class="text-gray-600 dark:text-gray-400 mt-2">
+        تاریخ ثبت: {{ report.incident_date|to_jalali:'%Y/%m/%d' }} - ساعت {{ report.incident_time }}
+      </p>
+    </div>
+    <div class="flex gap-3">
+      <a href="{% url 'hse_incidents:list_reports' %}" class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg px-4 py-2 font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition flex items-center gap-2">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+        </svg>
+        بازگشت به لیست
+      </a>
+      <a href="{% url 'hse_incidents:report_details_pdf' report.id %}" class="bg-red-600 text-white rounded-lg px-4 py-2 font-bold hover:bg-red-700 transition flex items-center gap-2">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+        </svg>
+        دانلود PDF
+      </a>
+    </div>
+  </div>
+
+  <!-- Status Badge -->
+  <div class="mb-6">
+    {% if report.is_completed %}
+      <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 shadow-lg">
+        <svg class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        گزارش تکمیل شده
+      </span>
+    {% else %}
+      <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 shadow-lg">
+        <svg class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        در انتظار تکمیل توسط مدیر HSE
+      </span>
+    {% endif %}
+  </div>
+
+  <!-- Part 1: Initial Report Information -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    
+    <!-- Card 1: General Information -->
+    <div class="info-card bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+      <div class="bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900 dark:to-red-900 px-6 py-4 border-b">
+        <h2 class="text-lg font-bold text-orange-700 dark:text-orange-200 flex items-center gap-2">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+          </svg>
+          اطلاعات کلی حادثه
+        </h2>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="flex justify-between items-start border-b pb-3">
+          <span class="text-sm font-semibold text-gray-600 dark:text-gray-400">تاریخ حادثه:</span>
+          <span class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ report.incident_date|to_jalali:'%Y/%m/%d' }}</span>
+        </div>
+        <div class="flex justify-between items-start border-b pb-3">
+          <span class="text-sm font-semibold text-gray-600 dark:text-gray-400">ساعت حادثه:</span>
+          <span class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ report.incident_time }}</span>
+        </div>
+        <div class="flex justify-between items-start border-b pb-3">
+          <span class="text-sm font-semibold text-gray-600 dark:text-gray-400">محل حادثه:</span>
+          <span class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ report.location.name|default:"نامشخص" }}</span>
+        </div>
+        {% if report.section %}
+        <div class="flex justify-between items-start border-b pb-3">
+          <span class="text-sm font-semibold text-gray-600 dark:text-gray-400">بخش:</span>
+          <span class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ report.section.section }}</span>
+        </div>
+        {% endif %}
+        <div class="flex justify-between items-start">
+          <span class="text-sm font-semibold text-gray-600 dark:text-gray-400">گزارش‌دهنده:</span>
+          <span class="text-sm font-bold text-gray-900 dark:text-gray-100">
+            {% if report.report_author %}
+              {{ report.report_author.user.get_full_name }}
+            {% else %}
+              نامشخص
+            {% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: Involved Persons -->
+    <div class="info-card bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+      <div class="bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900 dark:to-indigo-900 px-6 py-4 border-b">
+        <h2 class="text-lg font-bold text-blue-700 dark:text-blue-200 flex items-center gap-2">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+          </svg>
+          افراد درگیر
+        </h2>
+      </div>
+      <div class="p-6">
+        {% if report.involved_person.exists %}
+          <ul class="space-y-2">
+            {% for person in report.involved_person.all %}
+            <li class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <svg class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span class="font-semibold">{{ person.user.get_full_name }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-sm text-gray-500 dark:text-gray-400">هیچ فردی ثبت نشده است</p>
+        {% endif %}
+        
+        {% if report.related_contractor %}
+        <div class="mt-4 pt-4 border-t">
+          <p class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">پیمانکار مرتبط:</p>
+          <p class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ report.related_contractor.company_name }}</p>
+          
+          {% if report.related_contractor_employees.exists %}
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 mb-1">پرسنل پیمانکار:</p>
+          <ul class="space-y-1">
+            {% for employee in report.related_contractor_employees.all %}
+            <li class="text-xs text-gray-700 dark:text-gray-300">• {{ employee.first_name }} {{ employee.last_name }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Injury Details and Emergency Response -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    
+    <!-- Card 3: Injury Information -->
+    <div class="info-card bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+      <div class="bg-gradient-to-r from-red-100 to-pink-100 dark:from-red-900 dark:to-pink-900 px-6 py-4 border-b">
+        <h2 class="text-lg font-bold text-red-700 dark:text-red-200 flex items-center gap-2">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+          اطلاعات آسیب
+        </h2>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <p class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-2">انواع جراحت:</p>
+          {% if report.injury_type.exists %}
+          <div class="flex flex-wrap gap-2">
+            {% for injury in report.injury_type.all %}
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200">
+              {{ injury.name }}
+            </span>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-sm text-gray-500 dark:text-gray-400">ثبت نشده</p>
+          {% endif %}
+        </div>
+        
+        <div class="border-t pt-3">
+          <p class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">عضو آسیب‌دیده:</p>
+          <p class="text-sm text-gray-900 dark:text-gray-100">{{ report.affected_body_part }}</p>
+        </div>
+        
+        <div class="border-t pt-3">
+          <p class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">تجهیزات مرتبط:</p>
+          <p class="text-sm text-gray-900 dark:text-gray-100">{{ report.involved_equipment }}</p>
+        </div>
+        
+        <div class="border-t pt-3">
+          <p class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">شرح آسیب:</p>
+          <p class="text-sm text-gray-900 dark:text-gray-100">{{ report.damage_description }}</p>
+        </div>
+        
+        <div class="border-t pt-3">
+          <p class="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-1">نوع ارتباط:</p>
+          <p class="text-sm text-gray-900 dark:text-gray-100">{{ report.related_entity }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 4: Emergency Response -->
+    <div class="info-card bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+      <div class="bg-gradient-to-r from-green-100 to-teal-100 dark:from-green-900 dark:to-teal-900 px-6 py-4 border-b">
+        <h2 class="text-lg font-bold text-green-700 dark:text-green-200 flex items-center gap-2">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+          واکنش اضطراری
+        </h2>
+      </div>
+      <div class="p-6 space-y-3">
+        <!-- Fire Truck -->
+        <div class="flex items-center justify-between p-3 rounded-lg {{ report.fire_truck_needed|yesno:'bg-red-50 dark:bg-red-900,bg-gray-50 dark:bg-gray-700' }}">
+          <div class="flex items-center gap-2">
+            <svg class="h-5 w-5 {{ report.fire_truck_needed|yesno:'text-red-600,text-gray-400' }}" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+            </svg>
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">آتش‌نشانی</span>
+          </div>
+          <div class="text-left">
+            {% if report.fire_truck_needed %}
+              <span class="text-xs font-bold text-red-600">اعزام شد</span>
+              {% if report.fire_truck_arrival_time %}
+              <p class="text-xs text-gray-600 dark:text-gray-400">زمان رسیدن: {{ report.fire_truck_arrival_time }}</p>
+              {% endif %}
+            {% else %}
+              <span class="text-xs text-gray-500">اعزام نشد</span>
+            {% endif %}
+          </div>
+        </div>
+        
+        <!-- Ambulance -->
+        <div class="flex items-center justify-between p-3 rounded-lg {{ report.ambulance_needed|yesno:'bg-blue-50 dark:bg-blue-900,bg-gray-50 dark:bg-gray-700' }}">
+          <div class="flex items-center gap-2">
+            <svg class="h-5 w-5 {{ report.ambulance_needed|yesno:'text-blue-600,text-gray-400' }}" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+            </svg>
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">آمبولانس</span>
+          </div>
+          <div class="text-left">
+            {% if report.ambulance_needed %}
+              <span class="text-xs font-bold text-blue-600">اعزام شد</span>
+              {% if report.ambulance_arrival_time %}
+              <p class="text-xs text-gray-600 dark:text-gray-400">زمان رسیدن: {{ report.ambulance_arrival_time }}</p>
+              {% endif %}
+            {% else %}
+              <span class="text-xs text-gray-500">اعزام نشد</span>
+            {% endif %}
+          </div>
+        </div>
+        
+        <!-- Hospitalization -->
+        <div class="flex items-center justify-between p-3 rounded-lg {{ report.hospitalized|yesno:'bg-green-50 dark:bg-green-900,bg-gray-50 dark:bg-gray-700' }}">
+          <div class="flex items-center gap-2">
+            <svg class="h-5 w-5 {{ report.hospitalized|yesno:'text-green-600,text-gray-400' }}" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
+            </svg>
+            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">بستری</span>
+          </div>
+          <div class="text-left">
+            {% if report.hospitalized %}
+              <span class="text-xs font-bold text-green-600">بستری شد</span>
+              {% if report.hospitalized_time %}
+              <p class="text-xs text-gray-600 dark:text-gray-400">زمان اعزام: {{ report.hospitalized_time }}</p>
+              {% endif %}
+              {% if report.transportation_type %}
+              <p class="text-xs text-gray-600 dark:text-gray-400">وسیله: {{ report.transportation_type }}</p>
+              {% endif %}
+            {% else %}
+              <span class="text-xs text-gray-500">بستری نشد</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3: Full Description -->
+  <div class="mb-6">
+    <div class="info-card bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+      <div class="bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900 dark:to-indigo-900 px-6 py-4 border-b">
+        <h2 class="text-lg font-bold text-purple-700 dark:text-purple-200 flex items-center gap-2">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+          </svg>
+          شرح کامل حادثه و علل اولیه
+        </h2>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <p class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">شرح کامل حادثه:</p>
+          <p class="text-sm text-gray-900 dark:text-gray-100 leading-relaxed bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+            {{ report.full_description }}
+          </p>
+        </div>
+        
+        <div class="border-t pt-4">
+          <p class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">علل اولیه:</p>
+          <p class="text-sm text-gray-900 dark:text-gray-100 leading-relaxed bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+            {{ report.initial_cause }}
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Part 2: HSE Completion Form -->
+  {% if not report.is_completed %}
+  <div id="complete-form" class="mb-6">
+    <div class="bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-lg shadow-xl p-6 mb-6">
+      <h2 class="text-2xl font-bold flex items-center gap-3 mb-2">
+        <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+        </svg>
+        تکمیل گزارش توسط مدیر HSE
+      </h2>
+      <p class="text-orange-100">این گزارش هنوز توسط واحد HSE تکمیل نشده است. لطفاً فرم زیر را تکمیل کنید.</p>
+    </div>
+
+    <!-- Completion Form with Accordion -->
+    <div x-data="completionForm()" class="bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden">
+      <form @submit.prevent="submitCompletion" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <!-- Accordion Section 1: Patient Condition -->
+        <div class="border-b border-gray-200 dark:border-gray-700">
+          <button type="button" @click="toggleSection('patient')" class="w-full flex items-center justify-between px-6 py-4 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+            <span class="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+              <svg class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+              </svg>
+              وضعیت بیمار و زمان‌بندی
+            </span>
+            <svg :class="sections.patient ? 'rotate-180' : ''" class="h-5 w-5 text-gray-600 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+          <div x-show="sections.patient" x-collapse class="px-6 py-4 space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">ساعت اعلام حادثه</label>
+                <input type="time" name="incident_report_time" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-orange-500 focus:ring-orange-500">
+              </div>
+              <div>
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">ساعت پذیرش در بیمارستان</label>
+                <input type="time" name="hospital_admission_time" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-orange-500 focus:ring-orange-500">
+              </div>
+            </div>
+            
+            <div class="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg">
+              <h4 class="font-bold text-blue-800 dark:text-blue-200 mb-3">علائم حیاتی بیمار</h4>
+              <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">دمای بدن (°C)</label>
+                  <input type="text" name="patient_condition_temperature" placeholder="37" class="w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">تعداد تنفس</label>
+                  <input type="text" name="patient_condition_respiration" placeholder="18" class="w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">نبض</label>
+                  <input type="text" name="patient_condition_pulse" placeholder="80" class="w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">فشار خون</label>
+                  <input type="text" name="patient_condition_blood_pressure" placeholder="120/80" class="w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">وضعیت هوشیاری</label>
+                  <input type="text" name="patient_condition_sop" placeholder="هوشیار" class="w-full rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 text-sm">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Accordion Section 2: Cause Analysis -->
+        <div class="border-b border-gray-200 dark:border-gray-700">
+          <button type="button" @click="toggleSection('causes')" class="w-full flex items-center justify-between px-6 py-4 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+            <span class="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+              <svg class="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+              </svg>
+              تحلیل علل حادثه
+            </span>
+            <svg :class="sections.causes ? 'rotate-180' : ''" class="h-5 w-5 text-gray-600 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+          <div x-show="sections.causes" x-collapse class="px-6 py-4 space-y-4">
+            <div>
+              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">علل مستقیم بروز حادثه</label>
+              <textarea name="direct_causes" rows="3" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-purple-500 focus:ring-purple-500" placeholder="علل مستقیمی که منجر به حادثه شدند..."></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">علل غیر مستقیم بروز حادثه</label>
+              <textarea name="indirect_causes" rows="3" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-purple-500 focus:ring-purple-500" placeholder="عوامل زمینه‌ساز و غیرمستقیم..."></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">علل ریشه‌ای بروز حادثه</label>
+              <textarea name="root_causes" rows="3" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-purple-500 focus:ring-purple-500" placeholder="تحلیل ریشه‌ای و علل اصلی (Root Cause Analysis)..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Accordion Section 3: Official Notifications -->
+        <div class="border-b border-gray-200 dark:border-gray-700">
+          <button type="button" @click="toggleSection('notifications')" class="w-full flex items-center justify-between px-6 py-4 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+            <span class="font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+              <svg class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+              </svg>
+              اطلاعیه‌ها و هماهنگی‌های رسمی
+            </span>
+            <svg :class="sections.notifications ? 'rotate-180' : ''" class="h-5 w-5 text-gray-600 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+          <div x-show="sections.notifications" x-collapse class="px-6 py-4 space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Social Security -->
+              <div class="border rounded-lg p-4">
+                <label class="flex items-center gap-2 cursor-pointer mb-3">
+                  <input type="checkbox" name="social_security_notification" class="rounded text-green-600 focus:ring-green-500">
+                  <span class="font-semibold text-gray-700 dark:text-gray-300">اعلام به تامین اجتماعی</span>
+                </label>
+                <div>
+                  <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">پیوست فایل</label>
+                  <input type="file" name="social_security_file" class="w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+                </div>
+              </div>
+              
+              <!-- Insurance -->
+              <div class="border rounded-lg p-4">
+                <label class="flex items-center gap-2 cursor-pointer mb-3">
+                  <input type="checkbox" name="insurance_notification" class="rounded text-green-600 focus:ring-green-500">
+                  <span class="font-semibold text-gray-700 dark:text-gray-300">اعلام به شرکت بیمه</span>
+                </label>
+                <div>
+                  <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">پیوست فایل</label>
+                  <input type="file" name="insurance_file" class="w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+                </div>
+              </div>
+              
+              <!-- Police -->
+              <div class="border rounded-lg p-4">
+                <label class="flex items-center gap-2 cursor-pointer mb-3">
+                  <input type="checkbox" name="police_notification" class="rounded text-green-600 focus:ring-green-500">
+                  <span class="font-semibold text-gray-700 dark:text-gray-300">اعلام به نیروی انتظامی</span>
+                </label>
+                <div>
+                  <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">پیوست فایل</label>
+                  <input type="file" name="police_file" class="w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+                </div>
+              </div>
+              
+              <!-- Traffic Police -->
+              <div class="border rounded-lg p-4">
+                <label class="flex items-center gap-2 cursor-pointer mb-3">
+                  <input type="checkbox" name="traffic_police_notification" class="rounded text-green-600 focus:ring-green-500">
+                  <span class="font-semibold text-gray-700 dark:text-gray-300">اعلام به راهنمایی و رانندگی</span>
+                </label>
+                <div>
+                  <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">پیوست فایل</label>
+                  <input type="file" name="traffic_police_file" class="w-full text-sm text-gray-700 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100">
+                </div>
+              </div>
+            </div>
+            
+            <div class="pt-3 border-t">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="labor_office_notification" class="rounded text-green-600 focus:ring-green-500">
+                <span class="font-semibold text-gray-700 dark:text-gray-300">اعلام به اداره کار</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Final Sections and Submit Button -->
+        <div class="px-6 py-6 bg-gray-50 dark:bg-gray-900">
+          <button type="submit" :disabled="isSubmitting" class="w-full bg-gradient-to-r from-green-600 to-green-500 text-white rounded-lg px-8 py-4 font-bold hover:from-green-700 hover:to-green-600 transition shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3">
+            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span x-text="isSubmitting ? 'در حال ثبت اطلاعات...' : 'ثبت نهایی و تکمیل گزارش'"></span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+function completionForm() {
+  return {
+    sections: {
+      patient: true,
+      causes: false,
+      notifications: false
+    },
+    isSubmitting: false,
+    
+    toggleSection(section) {
+      this.sections[section] = !this.sections[section];
+    },
+    
+    submitCompletion() {
+      this.isSubmitting = true;
+      const form = event.target;
+      const formData = new FormData(form);
+      
+      fetch('{% url "hse_incidents:submit_completion" report.id %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          alert('گزارش با موفقیت تکمیل شد.');
+          window.location.reload();
+        } else {
+          alert('خطا: ' + (data.message || 'خطای نامشخص'));
+          this.isSubmitting = false;
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('خطا در ارتباط با سرور');
+        this.isSubmitting = false;
+      });
+    }
+  };
+}
+</script>
+{% endblock %}

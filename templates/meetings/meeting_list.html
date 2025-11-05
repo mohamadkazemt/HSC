@@ -1,0 +1,365 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load jalali_utils %}
+
+{% block title %}لیست جلسات{% endblock %}
+
+{% block extra_css %}
+<style>
+  .meeting-card {
+    transition: all 0.3s ease;
+  }
+  .meeting-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="meetingList()" class="space-y-6">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">لیست جلسات</h1>
+      <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">مدیریت و مشاهده جلسات</p>
+    </div>
+    <div class="flex gap-3">
+      <a href="{% url 'meetings:meeting_calendar' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+        </svg>
+        <span>تقویم جلسات</span>
+      </a>
+      <a href="{% url 'meetings:meeting_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        <span>ایجاد جلسه جدید</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">تعداد کل جلسات</p>
+          <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ total_meetings }}</p>
+        </div>
+        <div class="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+          <svg class="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">تعداد شرکت‌کنندگان</p>
+          <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ total_participants }}</p>
+        </div>
+        <div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+          <svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">میانگین شرکت‌کنندگان</p>
+          <p class="mt-2 text-3xl font-bold text-gray-900 dark:text-white">{{ avg_participants }}</p>
+        </div>
+        <div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+          <svg class="w-8 h-8 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+    <div x-data="{ filtersOpen: false }" class="p-4">
+      <button 
+        @click="filtersOpen = !filtersOpen"
+        class="flex items-center justify-between w-full text-right">
+        <span class="text-lg font-semibold text-gray-900 dark:text-white">فیلترها</span>
+        <svg class="w-5 h-5 text-gray-500 transition-transform" :class="filtersOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      
+      <div x-show="filtersOpen" x-collapse class="mt-4 space-y-4">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <label for="q" class="block text-sm font-medium text-gray-700 dark:text-gray-300">جستجو</label>
+            <input 
+              type="text" 
+              id="q" 
+              name="q" 
+              value="{{ request.GET.q }}"
+              placeholder="عنوان، توضیحات، مکان..."
+              class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+          </div>
+          
+          <div>
+            <label for="start_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">تاریخ شروع</label>
+            <input 
+              type="text" 
+              id="start_date" 
+              name="start_date" 
+              value="{{ request.GET.start_date }}"
+              placeholder="1403/01/01"
+              class="jalali-date mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+          </div>
+          
+          <div>
+            <label for="end_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">تاریخ پایان</label>
+            <input 
+              type="text" 
+              id="end_date" 
+              name="end_date" 
+              value="{{ request.GET.end_date }}"
+              placeholder="1403/12/29"
+              class="jalali-date mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+          </div>
+          
+          <div>
+            <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">وضعیت</label>
+            <select 
+              id="status" 
+              name="status"
+              class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white">
+              <option value="">همه</option>
+              <option value="scheduled" {% if request.GET.status == 'scheduled' %}selected{% endif %}>برنامه‌ریزی شده</option>
+              <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>لغو شده</option>
+              <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>برگزار شده</option>
+            </select>
+          </div>
+          
+          <div class="md:col-span-2 lg:col-span-4 flex gap-3">
+            <button 
+              type="submit"
+              class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+              اعمال فیلتر
+            </button>
+            <a 
+              href="{% url 'meetings:meeting_list' %}"
+              class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">
+              پاک کردن
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Meetings List -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    {% for meeting in meetings %}
+    <div class="meeting-card bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <!-- Card Header -->
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{{ meeting.title }}</h3>
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
+            {% if meeting.status == 'scheduled' %}bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300
+            {% elif meeting.status == 'cancelled' %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300
+            {% elif meeting.status == 'completed' %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300
+            {% endif %}">
+            {{ meeting.get_status_display }}
+          </span>
+        </div>
+      </div>
+      
+      <!-- Card Body -->
+      <div class="p-6 space-y-4">
+        <!-- Date and Time -->
+        <div class="flex items-center gap-4 text-sm">
+          <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span>{{ meeting.date|to_jalali:'%Y/%m/%d' }}</span>
+          </div>
+          <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{{ meeting.start_time|time:'H:i' }} - {{ meeting.end_time|time:'H:i' }}</span>
+          </div>
+        </div>
+        
+        <!-- Location -->
+        {% if meeting.location %}
+        <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span>{{ meeting.location }}</span>
+        </div>
+        {% endif %}
+        
+        <!-- Participants -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">شرکت‌کنندگان</label>
+          <div class="flex flex-wrap gap-2">
+            {% for participant in meeting.participants.all|slice:":5" %}
+            <div class="flex items-center gap-2 px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 rounded-full">
+              <div class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-semibold">
+                {{ participant.get_full_name|slice:":1"|default:participant.username|slice:":1" }}
+              </div>
+              <span class="text-xs font-medium text-indigo-900 dark:text-indigo-200">
+                {{ participant.get_full_name|default:participant.username }}
+              </span>
+            </div>
+            {% endfor %}
+            {% if meeting.participants.count > 5 %}
+            <div class="flex items-center px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">
+              <span class="text-xs font-medium text-gray-700 dark:text-gray-300">
+                +{{ meeting.participants.count|add:"-5" }} نفر دیگر
+              </span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        
+        <!-- Description -->
+        {% if meeting.description %}
+        <div class="text-sm text-gray-600 dark:text-gray-400">
+          <p class="line-clamp-2">{{ meeting.description|truncatewords:20 }}</p>
+        </div>
+        {% endif %}
+      </div>
+      
+      <!-- Card Footer -->
+      <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-3">
+        <a 
+          href="{% url 'meetings:meeting_detail' meeting.pk %}"
+          class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+          <span>مشاهده جزئیات</span>
+        </a>
+        {% if user|check_permission:'meeting_edit' %}
+        <a 
+          href="{% url 'meetings:meeting_edit' meeting.pk %}"
+          class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+          <span>ویرایش</span>
+        </a>
+        {% endif %}
+        {% if meeting.status == 'scheduled' and user|check_permission:'meeting_cancel' %}
+        <a 
+          href="{% url 'meetings:meeting_cancel' meeting.pk %}"
+          class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          <span>لغو</span>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-span-2 text-center py-12">
+      <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+      <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">جلسه‌ای یافت نشد</h3>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">با استفاده از دکمه "ایجاد جلسه جدید" می‌توانید جلسه اضافه کنید.</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Pagination -->
+  {% if is_paginated %}
+  <div class="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 sm:px-6 rounded-lg">
+    <div class="flex flex-1 justify-between sm:hidden">
+      {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}" class="relative inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600">قبلی</a>
+      {% endif %}
+      {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}" class="relative mr-3 inline-flex items-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600">بعدی</a>
+      {% endif %}
+    </div>
+    <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+      <div>
+        <p class="text-sm text-gray-700 dark:text-gray-300">
+          نمایش
+          <span class="font-medium">{{ page_obj.start_index }}</span>
+          تا
+          <span class="font-medium">{{ page_obj.end_index }}</span>
+          از
+          <span class="font-medium">{{ paginator.count }}</span>
+          نتیجه
+        </p>
+      </div>
+      <div>
+        <nav class="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+          {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}" class="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 focus:z-20 focus:outline-offset-0">
+            <span class="sr-only">قبلی</span>
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+            </svg>
+          </a>
+          {% endif %}
+          
+          {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <span aria-current="page" class="relative z-10 inline-flex items-center bg-indigo-600 px-4 py-2 text-sm font-semibold text-white focus:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <a href="?page={{ num }}" class="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-300 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 focus:z-20 focus:outline-offset-0">{{ num }}</a>
+            {% endif %}
+          {% endfor %}
+          
+          {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}" class="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 focus:z-20 focus:outline-offset-0">
+            <span class="sr-only">بعدی</span>
+            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+            </svg>
+          </a>
+          {% endif %}
+        </nav>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function meetingList() {
+  return {
+    init() {
+      // Initialize Persian datepickers
+      if ($.fn.persianDatepicker) {
+        $('#start_date, #end_date').persianDatepicker({
+          format: 'YYYY/MM/DD',
+          autoClose: true,
+          initialValue: false,
+          calendar: { persian: { locale: 'fa' } }
+        });
+      }
+    }
+  };
+}
+</script>
+{% endblock %}
+

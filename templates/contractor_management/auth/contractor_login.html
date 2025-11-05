@@ -31,6 +31,8 @@
     </style>
 </head>
 <body class="min-h-screen gradient-bg flex items-center justify-center p-4">
+    <!-- دکمه‌های جابجایی بین صفحات لاگین -->
+    <!-- ...existing code... -->
     <!-- Background Pattern -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
         <div class="absolute -top-40 -right-40 w-80 h-80 bg-white opacity-10 rounded-full blur-3xl"></div>
@@ -153,6 +155,34 @@
                 <p class="text-sm text-gray-600">
                     در صورت بروز مشکل با پشتیبانی تماس بگیرید
                 </p>
+            </div>
+
+            <!-- Emergency & Main Login Links (styled like main login) -->
+            <div class="mt-6">
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-4 bg-gray-50 text-gray-600">یا</span>
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <a href="{% url 'accounts:login' %}" class="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        </svg>
+                        <span>ورود به سیستم اصلی</span>
+                    </a>
+                </div>
+                <div class="mt-4">
+                    <a href="{% url 'emergency_services:emergency_login' %}" class="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
+                        </svg>
+                        <span>ورود پرسنل اورژانس</span>
+                    </a>
+                </div>
             </div>
         </div>
 

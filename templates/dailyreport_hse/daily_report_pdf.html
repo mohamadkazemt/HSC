@@ -35,7 +35,7 @@
 
   <!-- Summary -->
   <div class="grid">
-    <div class="card"><div class="label">تاریخ</div><div class="value">{{ report.created_at|date:"Y/m/d H:i" }}</div></div>
+  <div class="card"><div class="label">تاریخ</div><div class="value">{{ report.created_at|to_jalali:"%Y/%m/%d %H:%M" }}</div></div>
     <div class="card"><div class="label">کاربر</div><div class="value">{{ report.user.get_full_name|default:report.user.username }}</div></div>
     <div class="card"><div class="label">شیفت</div><div class="value">{{ report.shift }}</div></div>
     <div class="card"><div class="label">گروه</div><div class="value">{{ report.work_group }}</div></div>
@@ -130,7 +130,7 @@
   </div>
 
   <div class="footer">
-    <div>Generated at {{ report.created_at|date:"Y/m/d H:i" }}</div>
+  <div>Generated at {{ report.created_at|to_jalali:"%Y/%m/%d %H:%M" }}</div>
     {% if user_signature %}<div>امضای کاربر: <img src="{{ user_signature }}" style="height:22px; vertical-align:middle;"/></div>{% endif %}
   </div>
 </body>

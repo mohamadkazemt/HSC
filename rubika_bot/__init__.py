@@ -1,0 +1,1 @@
+default_app_config = 'rubika_bot.apps.RubikaBotConfig'

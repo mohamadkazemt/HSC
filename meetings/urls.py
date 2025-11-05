@@ -64,6 +64,30 @@ URLS_WITH_LABELS = [
         "name": "meeting_calendar",
         "label": "جلسات_تقویم جلسات"
     },
+    {
+        "path": "api/events/",
+        "view": views.meeting_events_json,
+        "name": "meeting_events_json",
+        "label": "جلسات_API جلسات"
+    },
+    {
+        "path": "api/create/",
+        "view": views.meeting_create_ajax,
+        "name": "meeting_create_ajax",
+        "label": "جلسات_ایجاد AJAX"
+    },
+    {
+        "path": "api/<int:pk>/update/",
+        "view": views.meeting_update_ajax,
+        "name": "meeting_update_ajax",
+        "label": "جلسات_ویرایش AJAX"
+    },
+    {
+        "path": "api/<int:pk>/detail/",
+        "view": views.meeting_detail_ajax,
+        "name": "meeting_detail_ajax",
+        "label": "جلسات_جزئیات AJAX"
+    },
 
 
 ]

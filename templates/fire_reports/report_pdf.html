@@ -1,0 +1,94 @@
+{% load static %}
+{% load fire_filters %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <title>{{ title }}</title>
+  <style>
+    body { font-family: DejaVu Sans, Tahoma, 'Helvetica Neue', Arial; direction: rtl; }
+    .header { text-align: center; margin-bottom: 20px; }
+    .card { border: 1px solid #ddd; padding: 12px; margin-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #ccc; padding: 8px; }
+    .sign { height: 60px; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    {% if site_settings and site_settings.company_logo %}
+      <img src="{{ site_settings.company_logo.url }}" alt="logo" style="height:60px;">
+    {% endif %}
+    {% if site_settings and site_settings.company_name %}
+      <h2 style="margin:0;">{{ site_settings.company_name }}</h2>
+    {% endif %}
+    <h1>{{ title }}</h1>
+  </div>
+
+
+  <div class="card">
+    <h3>جزئیات شیفت</h3>
+    <table>
+      <tr><th>شیفت</th><td>{{ report.get_shift_display }}</td></tr>
+      <tr><th>تاریخ گزارش</th><td>{{ report.report_date|date:'Y/m/d H:i' }}</td></tr>
+      <tr><th>اپراتور شیفت</th><td>{{ report.shift_operator.get_full_name }}</td></tr>
+      <tr><th>آتش‌نشان</th><td>{{ report.firefighter.get_full_name }}</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>خلاصه رخدادها</h3>
+    <table>
+      <tr><th>اعزام‌ها</th><td>{{ report.incident_dispatch_count }}</td></tr>
+      <tr><th>حوادث پرسنلی</th><td>{{ report.personal_incident_count }}</td></tr>
+      <tr><th>حوادث تجهیزات</th><td>{{ report.equipment_incident_count }}</td></tr>
+      <tr><th>حوادث آتش‌سوزی</th><td>{{ report.fire_incident_count }}</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>وضعیت خودروها</h3>
+    {% for v in report.vehicle_reports.all %}
+      <div style="margin-bottom:8px;">
+        <strong>{{ v.get_vehicle }}</strong>
+        <table style="margin-top:6px;">
+          <tr><th>آیتم</th><th>وضعیت</th><th>توضیحات</th></tr>
+          {% for field in 'horn hose monitor extinguisher equipment foam water tire brake lighting'|split:' ' %}
+            {% with attr_status=field|add:'_status' attr_desc=field|add:'_description' %}
+              {% with status=v|get_attr:attr_status desc=v|get_attr:attr_desc %}
+              <tr>
+                <td>{{ v|get_display:attr_status }}</td>
+                <td>{{ v|get_display:attr_status }}</td>
+                <td>{{ desc }}</td>
+              </tr>
+              {% endwith %}
+            {% endwith %}
+          {% endfor %}
+        </table>
+      </div>
+    {% endfor %}
+  </div>
+
+
+  <div class="card" style="margin-top:20px;">
+    <table>
+      <tr>
+        <td style="width:50%; text-align:center;">
+          <div>امضای آتش‌نشان</div>
+          {% if firefighter_signature_no_bg %}
+            <img src="data:image/png;base64,{{ firefighter_signature_no_bg|b64encode }}" alt="sig" class="sign">
+          {% endif %}
+        </td>
+        <td style="width:50%; text-align:center;">
+          <div>امضای اپراتور شیفت</div>
+          {% if shift_operator_signature_no_bg %}
+            <img src="data:image/png;base64,{{ shift_operator_signature_no_bg|b64encode }}" alt="sig" class="sign">
+          {% endif %}
+        </td>
+      </tr>
+    </table>
+  </div>
+
+</body>
+</html>

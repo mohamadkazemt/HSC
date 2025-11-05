@@ -1,0 +1,511 @@
+{% extends 'leave_reports/base_leave.html' %}
+{% load static %}
+{% load jalali_utils %}
+
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .tab-content {
+        margin-top: 2rem;
+    }
+    
+    .request-row {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+    }
+    
+    .request-row:hover {
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .request-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .request-info {
+        flex: 1;
+    }
+    
+    .request-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .user-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 1.25rem;
+        margin-left: 1rem;
+    }
+    
+    .request-meta {
+        display: flex;
+        gap: 1.5rem;
+        margin-top: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .request-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+    
+    .request-meta-item i {
+        color: #667eea;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #9ca3af;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        color: #e5e7eb;
+    }
+    
+    .empty-state h4 {
+        color: #6b7280;
+        margin-bottom: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block leave_content %}
+<div class="animate-fade-in-up">
+    <div class="leave-card">
+        <div class="card-header-gradient">
+            <h2>
+                <i class="fas fa-inbox"></i>
+                کارتابل مرخصی
+            </h2>
+        </div>
+        
+        <div class="p-4">
+            <!-- Tabs -->
+            <div class="modern-tabs">
+                <button class="modern-tab {% if active_tab == 'my_requests' %}active{% endif %}" 
+                        onclick="switchTab('my_requests')">
+                    <i class="fas fa-list"></i>
+                    درخواست‌های من
+                    <span class="badge badge-primary mr-2">{{ my_requests.paginator.count }}</span>
+                </button>
+                <button class="modern-tab {% if active_tab == 'pending' %}active{% endif %}" 
+                        onclick="switchTab('pending')">
+                    <i class="fas fa-clock"></i>
+                    منتظر تأیید من
+                    <span class="badge badge-warning mr-2">{{ pending_for_me.paginator.count }}</span>
+                </button>
+            </div>
+            
+            <!-- Tab 1: درخواست‌های من -->
+            <div class="tab-content" id="my_requests_tab" style="{% if active_tab != 'my_requests' %}display: none;{% endif %}">
+                {% if my_requests %}
+                    {% for request in my_requests %}
+                    <div class="request-row animate-fade-in-up">
+                        <div class="request-header">
+                            <div style="display: flex; align-items: center;">
+                                <div class="user-avatar">
+                                    {{ request.user.first_name|first|default:"ک" }}
+                                </div>
+                                <div class="request-info">
+                                    <h4 style="margin: 0; color: #374151; font-weight: 700;">
+                                        {{ request.get_leave_type_display }}
+                                    </h4>
+                                    <p style="margin: 0.25rem 0 0 0; color: #6b7280; font-size: 0.875rem;">
+                                        تاریخ: {{ request.shift_date|to_jalali }} - شیفت: {{ request.get_shift_type_display }}
+                                    </p>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="status-badge status-{{ request.status }}">
+                                    <i class="fas {{ request.get_status_icon }}"></i>
+                                    {{ request.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Timeline وضعیت -->
+                        <div class="status-timeline" style="margin: 1.5rem 0;">
+                            <div class="status-step {% if request.status == 'pending_replacement' %}active{% elif request.replacement_approved %}completed{% else %}pending{% endif %}">
+                                <div class="status-step-icon">
+                                    <i class="fas fa-user-check"></i>
+                                </div>
+                                <span style="font-size: 0.75rem; color: #6b7280;">تأیید جایگزین</span>
+                            </div>
+                            
+                            <div class="status-step {% if request.status == 'pending_approval' %}active{% elif request.status == 'approved' %}completed{% elif request.status == 'rejected' %}rejected{% else %}pending{% endif %}">
+                                <div class="status-step-icon">
+                                    <i class="fas fa-user-tie"></i>
+                                </div>
+                                <span style="font-size: 0.75rem; color: #6b7280;">تأیید مدیر</span>
+                            </div>
+                            
+                            <div class="status-step {% if request.status == 'approved' %}completed{% elif request.status == 'rejected' %}rejected{% else %}pending{% endif %}">
+                                <div class="status-step-icon">
+                                    <i class="fas {% if request.status == 'approved' %}fa-check-circle{% elif request.status == 'rejected' %}fa-times-circle{% else %}fa-flag-checkered{% endif %}"></i>
+                                </div>
+                                <span style="font-size: 0.75rem; color: #6b7280;">
+                                    {% if request.status == 'approved' %}
+                                        تأیید شده
+                                    {% elif request.status == 'rejected' %}
+                                        رد شده
+                                    {% else %}
+                                        نهایی
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- اطلاعات اضافی -->
+                        <div class="request-meta">
+                            <div class="request-meta-item">
+                                <i class="fas fa-user"></i>
+                                <span>جایگزین: <strong>{{ request.replacement_person.get_full_name|default:"انتخاب نشده" }}</strong></span>
+                            </div>
+                            {% if request.replacement_approved_at %}
+                            <div class="request-meta-item">
+                                <i class="fas fa-calendar-check"></i>
+                                <span>تأیید جایگزین: {{ request.replacement_approved_at|to_jalali }}</span>
+                            </div>
+                            {% endif %}
+                            {% if request.final_approved_at %}
+                            <div class="request-meta-item">
+                                <i class="fas fa-check-double"></i>
+                                <span>تأیید نهایی: {{ request.final_approved_at|to_jalali }}</span>
+                            </div>
+                            {% endif %}
+                            <div class="request-meta-item">
+                                <i class="fas fa-clock"></i>
+                                <span>تاریخ ثبت: {{ request.created_at|to_jalali }}</span>
+                            </div>
+                        </div>
+                        
+                        {% if request.status == 'rejected' and request.rejection_reason %}
+                        <div class="alert-danger-modern mt-3">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <div>
+                                <strong>دلیل رد:</strong>
+                                <p style="margin: 0.5rem 0 0 0;">{{ request.rejection_reason }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- دکمه جزئیات -->
+                        <div class="text-center mt-3">
+                            <a href="{% url 'leave_reports:leave_detail' request.id %}" 
+                               class="btn btn-modern btn-sm" 
+                               style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); color: #667eea;">
+                                <i class="fas fa-eye"></i>
+                                مشاهده جزئیات
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <!-- Pagination -->
+                    {% if my_requests.has_other_pages %}
+                    <nav class="pagination-modern">
+                        <ul class="pagination">
+                            {% if my_requests.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?tab=my_requests&my_page=1">
+                                    <i class="fas fa-angle-double-right"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?tab=my_requests&my_page={{ my_requests.previous_page_number }}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            <li class="page-item active">
+                                <span class="page-link">{{ my_requests.number }} از {{ my_requests.paginator.num_pages }}</span>
+                            </li>
+                            
+                            {% if my_requests.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?tab=my_requests&my_page={{ my_requests.next_page_number }}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?tab=my_requests&my_page={{ my_requests.paginator.num_pages }}">
+                                    <i class="fas fa-angle-double-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <h4>هیچ درخواستی ثبت نکرده‌اید</h4>
+                        <p>برای ثبت درخواست مرخصی جدید، از منوی بالا استفاده کنید.</p>
+                        <a href="{% url 'leave_reports:request_leave' %}" class="btn btn-modern btn-primary-modern mt-3">
+                            <i class="fas fa-plus"></i>
+                            درخواست مرخصی جدید
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Tab 2: منتظر تأیید من -->
+            <div class="tab-content" id="pending_tab" style="{% if active_tab != 'pending' %}display: none;{% endif %}">
+                {% if pending_for_me %}
+                    {% for request in pending_for_me %}
+                    <div class="request-row animate-fade-in-up">
+                        <div class="request-header">
+                            <div style="display: flex; align-items: center;">
+                                <div class="user-avatar">
+                                    {{ request.user.first_name|first|default:"ک" }}
+                                </div>
+                                <div class="request-info">
+                                    <h4 style="margin: 0; color: #374151; font-weight: 700;">
+                                        {{ request.user.get_full_name }}
+                                    </h4>
+                                    <p style="margin: 0.25rem 0 0 0; color: #6b7280;">
+                                        {{ request.get_leave_type_display }} - {{ request.shift_date|to_jalali }}
+                                    </p>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="status-badge status-warning">
+                                    <i class="fas fa-clock"></i>
+                                    منتظر تأیید شما
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="request-meta">
+                            <div class="request-meta-item">
+                                <i class="fas fa-calendar"></i>
+                                <span>شیفت: {{ request.get_shift_type_display }}</span>
+                            </div>
+                            <div class="request-meta-item">
+                                <i class="fas fa-clock"></i>
+                                <span>ثبت شده: {{ request.created_at|to_jalali }}</span>
+                            </div>
+                            {% if request.leave_type == 'hourly' %}
+                            <div class="request-meta-item">
+                                <i class="fas fa-hourglass-half"></i>
+                                <span>{{ request.start_time }} تا {{ request.end_time }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if request.description %}
+                        <div class="alert-info-modern mt-3">
+                            <i class="fas fa-info-circle"></i>
+                            <div>
+                                <strong>توضیحات:</strong>
+                                <p style="margin: 0.5rem 0 0 0;">{{ request.description }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- دکمه‌های تأیید/رد -->
+                        <div class="request-actions mt-3" style="justify-content: center;">
+                            <button class="btn btn-modern btn-success-modern" 
+                                    onclick="approveRequest({{ request.id }}, '{% if request.status == 'pending_replacement' %}replacement{% else %}manager{% endif %}')">
+                                <i class="fas fa-check"></i>
+                                تأیید
+                            </button>
+                            <button class="btn btn-modern btn-danger-modern" 
+                                    onclick="showRejectModal({{ request.id }}, '{% if request.status == 'pending_replacement' %}replacement{% else %}manager{% endif %}')">
+                                <i class="fas fa-times"></i>
+                                رد
+                            </button>
+                            <a href="{% url 'leave_reports:leave_detail' request.id %}" 
+                               class="btn btn-modern" 
+                               style="background: white; border: 2px solid #e5e7eb; color: #374151;">
+                                <i class="fas fa-eye"></i>
+                                جزئیات
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <!-- Pagination -->
+                    {% if pending_for_me.has_other_pages %}
+                    <nav class="pagination-modern">
+                        <ul class="pagination">
+                            {% if pending_for_me.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?tab=pending&pending_page={{ pending_for_me.previous_page_number }}">
+                                    <i class="fas fa-angle-right"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            <li class="page-item active">
+                                <span class="page-link">{{ pending_for_me.number }} از {{ pending_for_me.paginator.num_pages }}</span>
+                            </li>
+                            
+                            {% if pending_for_me.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?tab=pending&pending_page={{ pending_for_me.next_page_number }}">
+                                    <i class="fas fa-angle-left"></i>
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-check-circle"></i>
+                        <h4>هیچ درخواستی منتظر تأیید شما نیست</h4>
+                        <p>در حال حاضر درخواستی برای بررسی وجود ندارد.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal رد درخواست -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-times-circle text-danger"></i>
+                    رد درخواست
+                </h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="rejectForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="form-group-modern">
+                        <label>دلیل رد درخواست</label>
+                        <textarea name="rejection_reason" 
+                                  class="form-control-modern" 
+                                  rows="4" 
+                                  placeholder="لطفاً دلیل رد درخواست را به طور کامل توضیح دهید..." 
+                                  required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-modern btn-secondary" data-dismiss="modal">
+                        انصراف
+                    </button>
+                    <button type="submit" class="btn btn-modern btn-danger-modern" id="rejectSubmitBtn">
+                        <i class="fas fa-times"></i>
+                        تأیید رد درخواست
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+let currentRejectId = null;
+let currentRejectType = null;
+
+function switchTab(tab) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.style.display = 'none';
+    });
+    document.querySelectorAll('.modern-tab').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab
+    document.getElementById(tab + '_tab').style.display = 'block';
+    document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
+    
+    // Update URL
+    const url = new URL(window.location);
+    url.searchParams.set('tab', tab);
+    window.history.pushState({}, '', url);
+}
+
+function approveRequest(leaveId, type) {
+    if (!confirm('آیا از تأیید این درخواست اطمینان دارید؟')) {
+        return;
+    }
+    
+    const url = type === 'replacement' 
+        ? '{% url "leave_reports:approve_as_replacement" 0 %}'.replace('0', leaveId)
+        : '{% url "leave_reports:approve_as_manager" 0 %}'.replace('0', leaveId);
+    
+    $.ajax({
+        url: url,
+        method: 'POST',
+        success: function(response) {
+            showNotification(response.message, 'success');
+            setTimeout(() => location.reload(), 1500);
+        },
+        error: function(xhr) {
+            const response = xhr.responseJSON;
+            showNotification(response.message || 'خطا در تأیید درخواست', 'danger');
+        }
+    });
+}
+
+function showRejectModal(leaveId, type) {
+    currentRejectId = leaveId;
+    currentRejectType = type;
+    $('#rejectModal').modal('show');
+}
+
+$('#rejectForm').submit(function(e) {
+    e.preventDefault();
+    
+    const url = currentRejectType === 'replacement'
+        ? '{% url "leave_reports:reject_as_replacement" 0 %}'.replace('0', currentRejectId)
+        : '{% url "leave_reports:reject_as_manager" 0 %}'.replace('0', currentRejectId);
+    
+    const submitBtn = $('#rejectSubmitBtn');
+    const originalText = submitBtn.html();
+    showLoading(submitBtn[0]);
+    
+    $.ajax({
+        url: url,
+        method: 'POST',
+        data: $(this).serialize(),
+        success: function(response) {
+            $('#rejectModal').modal('hide');
+            showNotification(response.message, 'success');
+            setTimeout(() => location.reload(), 1500);
+        },
+        error: function(xhr) {
+            hideLoading(submitBtn[0], originalText);
+            const response = xhr.responseJSON;
+            showNotification(response.message || 'خطا در رد درخواست', 'danger');
+        }
+    });
+});
+</script>
+{% endblock %}

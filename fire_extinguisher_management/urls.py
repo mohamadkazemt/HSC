@@ -10,6 +10,7 @@ urlpatterns = [
     # Fire Extinguisher Management
     path('extinguishers/', views.extinguisher_list, name='extinguisher_list'),
     path('extinguishers/create/', views.extinguisher_create, name='extinguisher_create'),
+    path('extinguishers/create/ajax/', views.extinguisher_create_ajax, name='extinguisher_create_ajax'),
     path('extinguishers/<int:pk>/', views.extinguisher_detail, name='extinguisher_detail'),
     path('extinguishers/<int:pk>/edit/', views.extinguisher_edit, name='extinguisher_edit'),
     path('extinguishers/replace/', views.extinguisher_replace, name='extinguisher_replace'),

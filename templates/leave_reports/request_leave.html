@@ -1,0 +1,631 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}درخواست مرخصی جدید{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto" x-data="leaveRequestWizard()">
+    <!-- Page Header -->
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <i class="fas fa-calendar-plus text-indigo-600 dark:text-indigo-400"></i>
+            درخواست مرخصی جدید
+        </h1>
+        <p class="mt-2 text-gray-600 dark:text-gray-400">
+            فرم درخواست مرخصی را با دقت تکمیل کنید
+        </p>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="mb-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+        <div class="flex items-center justify-between mb-4">
+            <template x-for="step in steps" :key="step.number">
+                <div class="flex flex-col items-center flex-1">
+                    <div class="flex items-center w-full">
+                        <!-- Step Circle -->
+                        <div 
+                            class="flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all duration-300"
+                            :class="{
+                                'bg-indigo-600 border-indigo-600 text-white': currentStep >= step.number,
+                                'bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500': currentStep < step.number
+                            }"
+                        >
+                            <i :class="step.icon" class="text-lg"></i>
+                        </div>
+                        
+                        <!-- Line -->
+                        <div 
+                            x-show="step.number < steps.length" 
+                            class="flex-1 h-1 mx-2 transition-all duration-300"
+                            :class="{
+                                'bg-indigo-600': currentStep > step.number,
+                                'bg-gray-200 dark:bg-gray-700': currentStep <= step.number
+                            }"
+                        ></div>
+                    </div>
+                    
+                    <!-- Step Label -->
+                    <span 
+                        class="mt-2 text-sm font-medium transition-colors duration-300"
+                        :class="{
+                            'text-indigo-600 dark:text-indigo-400': currentStep >= step.number,
+                            'text-gray-500 dark:text-gray-400': currentStep < step.number
+                        }"
+                        x-text="step.title"
+                    ></span>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <form id="leaveRequestForm" @submit.prevent="submitForm" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <!-- Hidden field for leave_type -->
+        <input type="hidden" name="leave_type" id="id_leave_type" x-model="formData.leave_type">
+
+        <!-- Step 1: Leave Type Selection -->
+        <div x-show="currentStep === 1" x-transition class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                <i class="fas fa-list text-indigo-600"></i>
+                انتخاب نوع مرخصی
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Regular Leave -->
+                <div 
+                    @click="selectLeaveType('regular')"
+                    class="relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-xl"
+                    :class="{
+                        'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20': formData.leave_type === 'regular',
+                        'border-gray-200 dark:border-gray-700 hover:border-indigo-300': formData.leave_type !== 'regular'
+                    }"
+                >
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4">
+                            <i class="fas fa-umbrella-beach text-3xl text-green-600 dark:text-green-400"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">مرخصی استحقاقی</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">برای استراحت و مرخصی های برنامه‌ریزی شده</p>
+                    </div>
+                    <div x-show="formData.leave_type === 'regular'" class="absolute top-4 left-4">
+                        <i class="fas fa-check-circle text-2xl text-indigo-600"></i>
+                    </div>
+                </div>
+
+                <!-- Sick Leave -->
+                <div 
+                    @click="selectLeaveType('sick_leave')"
+                    class="relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-xl"
+                    :class="{
+                        'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20': formData.leave_type === 'sick_leave',
+                        'border-gray-200 dark:border-gray-700 hover:border-indigo-300': formData.leave_type !== 'sick_leave'
+                    }"
+                >
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
+                            <i class="fas fa-notes-medical text-3xl text-red-600 dark:text-red-400"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">مرخصی استعلاجی</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">به دلیل بیماری با مدرک پزشکی</p>
+                    </div>
+                    <div x-show="formData.leave_type === 'sick_leave'" class="absolute top-4 left-4">
+                        <i class="fas fa-check-circle text-2xl text-indigo-600"></i>
+                    </div>
+                </div>
+
+                <!-- Hourly Leave -->
+                <div 
+                    @click="selectLeaveType('hourly')"
+                    class="relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-xl"
+                    :class="{
+                        'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20': formData.leave_type === 'hourly',
+                        'border-gray-200 dark:border-gray-700 hover:border-indigo-300': formData.leave_type !== 'hourly'
+                    }"
+                >
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-4">
+                            <i class="fas fa-clock text-3xl text-blue-600 dark:text-blue-400"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">مرخصی ساعتی</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">برای چند ساعت خاص از روز</p>
+                    </div>
+                    <div x-show="formData.leave_type === 'hourly'" class="absolute top-4 left-4">
+                        <i class="fas fa-check-circle text-2xl text-indigo-600"></i>
+                    </div>
+                </div>
+
+                <!-- Absence -->
+                <div 
+                    @click="selectLeaveType('absence')"
+                    class="relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-xl"
+                    :class="{
+                        'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20': formData.leave_type === 'absence',
+                        'border-gray-200 dark:border-gray-700 hover:border-indigo-300': formData.leave_type !== 'absence'
+                    }"
+                >
+                    <div class="flex flex-col items-center text-center">
+                        <div class="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-4">
+                            <i class="fas fa-calendar-xmark text-3xl text-amber-600 dark:text-amber-400"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">غیبت</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">ثبت غیبت و عدم حضور</p>
+                    </div>
+                    <div x-show="formData.leave_type === 'absence'" class="absolute top-4 left-4">
+                        <i class="fas fa-check-circle text-2xl text-indigo-600"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Date and Details -->
+        <div x-show="currentStep === 2" x-transition class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                <i class="fas fa-calendar-alt text-indigo-600"></i>
+                جزئیات و تاریخ مرخصی
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Date -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        تاریخ مرخصی <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.shift_date }}
+                </div>
+
+                <!-- Shift Type -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        نوع شیفت <span class="text-red-500">*</span>
+                    </label>
+                    {{ form.shift_type }}
+                </div>
+
+                <!-- Hourly Leave Times (conditional) -->
+                <template x-if="formData.leave_type === 'hourly'">
+                    <div class="md:col-span-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    ساعت شروع <span class="text-red-500">*</span>
+                                </label>
+                                {{ form.start_time }}
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    ساعت پایان <span class="text-red-500">*</span>
+                                </label>
+                                {{ form.end_time }}
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    مجموع ساعات
+                                </label>
+                                {{ form.leave_hours }}
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Medical Document (for sick leave) -->
+                <template x-if="formData.leave_type === 'sick_leave'">
+                    <div class="md:col-span-2 bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <i class="fas fa-file-medical"></i>
+                            مدارک پزشکی <span class="text-red-500">*</span>
+                        </label>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                            فرمت‌های مجاز: PDF, JPG, PNG - حداکثر 5 مگابایت
+                        </p>
+                        {{ form.medical_document }}
+                    </div>
+                </template>
+
+                <!-- Description -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        توضیحات
+                    </label>
+                    {{ form.description }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Replacement (only for regular leave) -->
+        <div x-show="currentStep === 3 && formData.leave_type === 'regular'" x-transition class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                <i class="fas fa-user-check text-indigo-600"></i>
+                انتخاب جانشین
+            </h2>
+            
+            <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-6">
+                <div class="flex items-start gap-3">
+                    <i class="fas fa-info-circle text-amber-600 dark:text-amber-400 text-xl mt-1"></i>
+                    <div class="text-sm text-amber-800 dark:text-amber-200">
+                        <p class="font-medium mb-1">انتخاب جانشین الزامی است</p>
+                        <p>لطفاً فردی از همکاران خود را به عنوان جانشین انتخاب کنید. جانشین باید درخواست شما را تأیید کند.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    جانشین پیشنهادی <span class="text-red-500">*</span>
+                </label>
+                <select 
+                    name="replacement_person" 
+                    id="id_replacement_person"
+                    class="select2-ajax w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    x-model="formData.replacement_person"
+                >
+                    <option value="">--- انتخاب کنید ---</option>
+                </select>
+                <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                    جستجو با نام، نام خانوادگی یا نام کاربری
+                </p>
+            </div>
+        </div>
+
+        <!-- Step 4: Summary and Submit -->
+        <div x-show="currentStep === 4" x-transition class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                <i class="fas fa-clipboard-check text-indigo-600"></i>
+                بررسی نهایی و ثبت درخواست
+            </h2>
+            
+            <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-6 space-y-4">
+                <!-- Leave Type -->
+                <div class="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
+                    <span class="text-gray-600 dark:text-gray-400">نوع مرخصی:</span>
+                    <span class="font-medium text-gray-900 dark:text-white" x-text="getLeaveTypeLabel()"></span>
+                </div>
+                
+                <!-- Date -->
+                <div class="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
+                    <span class="text-gray-600 dark:text-gray-400">تاریخ:</span>
+                    <span class="font-medium text-gray-900 dark:text-white" x-text="formData.shift_date"></span>
+                </div>
+                
+                <!-- Shift Type -->
+                <div class="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
+                    <span class="text-gray-600 dark:text-gray-400">نوع شیفت:</span>
+                    <span class="font-medium text-gray-900 dark:text-white" x-text="getShiftTypeLabel()"></span>
+                </div>
+                
+                <!-- Hourly Details (if applicable) -->
+                <template x-if="formData.leave_type === 'hourly'">
+                    <div class="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
+                        <span class="text-gray-600 dark:text-gray-400">ساعات:</span>
+                        <span class="font-medium text-gray-900 dark:text-white" x-text="`${formData.start_time} تا ${formData.end_time}`"></span>
+                    </div>
+                </template>
+                
+                <!-- Replacement (if applicable) -->
+                <template x-if="formData.leave_type === 'regular' && formData.replacement_person">
+                    <div class="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
+                        <span class="text-gray-600 dark:text-gray-400">جانشین:</span>
+                        <span class="font-medium text-gray-900 dark:text-white" x-text="getReplacementName()"></span>
+                    </div>
+                </template>
+                
+                <!-- Description -->
+                <template x-if="formData.description">
+                    <div class="pb-3 border-b border-gray-200 dark:border-gray-700">
+                        <span class="text-gray-600 dark:text-gray-400 block mb-2">توضیحات:</span>
+                        <p class="text-sm text-gray-900 dark:text-white" x-text="formData.description"></p>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="mt-8">
+                <button 
+                    type="submit"
+                    class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2"
+                    :disabled="isSubmitting"
+                >
+                    <template x-if="!isSubmitting">
+                        <span><i class="fas fa-paper-plane"></i> ثبت درخواست</span>
+                    </template>
+                    <template x-if="isSubmitting">
+                        <span><i class="fas fa-spinner fa-spin"></i> در حال ارسال...</span>
+                    </template>
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="mt-6 flex justify-between gap-4">
+            <button 
+                type="button"
+                @click="previousStep"
+                x-show="currentStep > 1"
+                class="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-300 flex items-center gap-2"
+            >
+                <i class="fas fa-arrow-right"></i>
+                مرحله قبل
+            </button>
+            
+            <button 
+                type="button"
+                @click="nextStep"
+                x-show="currentStep < 4"
+                class="mr-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-300 flex items-center gap-2"
+            >
+                مرحله بعد
+                <i class="fas fa-arrow-left"></i>
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function leaveRequestWizard() {
+    return {
+        currentStep: 1,
+        isSubmitting: false,
+        formData: {
+            leave_type: '',
+            shift_date: '',
+            shift_type: '',
+            start_time: '',
+            end_time: '',
+            leave_hours: '',
+            description: '',
+            replacement_person: '',
+            medical_document: null
+        },
+        steps: [
+            { number: 1, title: 'نوع مرخصی', icon: 'fas fa-list' },
+            { number: 2, title: 'جزئیات', icon: 'fas fa-calendar-alt' },
+            { number: 3, title: 'انتخاب جانشین', icon: 'fas fa-user-check' },
+            { number: 4, title: 'بررسی نهایی', icon: 'fas fa-clipboard-check' }
+        ],
+        
+        init() {
+            this.initSelect2();
+            this.initJalaliDatePicker();
+        },
+        
+        initSelect2() {
+            setTimeout(() => {
+                $('#id_replacement_person').select2({
+                    ajax: {
+                        url: '{% url "leave_reports:api_users_for_replacement" %}',
+                        dataType: 'json',
+                        delay: 250,
+                        data: function (params) {
+                            return { q: params.term, page: params.page };
+                        },
+                        processResults: function (data) {
+                            return {
+                                results: data.results,
+                                pagination: { more: data.pagination.more }
+                            };
+                        }
+                    },
+                    minimumInputLength: 0,
+                    placeholder: '--- انتخاب کنید ---',
+                    language: {
+                        inputTooShort: function() { return 'حداقل 1 کاراکتر وارد کنید'; },
+                        searching: function() { return 'در حال جستجو...'; },
+                        noResults: function() { return 'نتیجه‌ای یافت نشد'; }
+                    }
+                });
+                
+                $('#id_replacement_person').on('change', (e) => {
+                    this.formData.replacement_person = e.target.value;
+                });
+            }, 100);
+        },
+        
+        initJalaliDatePicker() {
+            setTimeout(() => {
+                if (window.jQuery && $.fn.persianDatepicker) {
+                    $('#id_shift_date').persianDatepicker({
+                        format: 'YYYY/MM/DD',
+                        autoClose: true,
+                        onSelect: (unix) => {
+                            this.formData.shift_date = $('#id_shift_date').val();
+                        }
+                    });
+                }
+                
+                // Sync other form fields
+                $('select[name="shift_type"]').on('change', (e) => {
+                    this.formData.shift_type = e.target.value;
+                });
+                
+                $('input[name="start_time"]').on('change', (e) => {
+                    this.formData.start_time = e.target.value;
+                });
+                
+                $('input[name="end_time"]').on('change', (e) => {
+                    this.formData.end_time = e.target.value;
+                });
+                
+                $('textarea[name="description"]').on('input', (e) => {
+                    this.formData.description = e.target.value;
+                });
+            }, 100);
+        },
+        
+        selectLeaveType(type) {
+            this.formData.leave_type = type;
+            $('input[name="leave_type"]').val(type);
+        },
+        
+        nextStep() {
+            if (this.validateCurrentStep()) {
+                // Skip step 3 for non-regular leaves
+                if (this.currentStep === 2 && this.formData.leave_type !== 'regular') {
+                    this.currentStep = 4;
+                } else {
+                    this.currentStep++;
+                }
+            }
+        },
+        
+        previousStep() {
+            // Skip step 3 when going back for non-regular leaves
+            if (this.currentStep === 4 && this.formData.leave_type !== 'regular') {
+                this.currentStep = 2;
+            } else {
+                this.currentStep--;
+            }
+        },
+        
+        validateCurrentStep() {
+            if (this.currentStep === 1) {
+                if (!this.formData.leave_type) {
+                    this.showToast('لطفاً نوع مرخصی را انتخاب کنید', 'error');
+                    return false;
+                }
+            } else if (this.currentStep === 2) {
+                if (!$('#id_shift_date').val()) {
+                    this.showToast('لطفاً تاریخ مرخصی را انتخاب کنید', 'error');
+                    return false;
+                }
+                if (!$('select[name="shift_type"]').val()) {
+                    this.showToast('لطفاً نوع شیفت را انتخاب کنید', 'error');
+                    return false;
+                }
+                if (this.formData.leave_type === 'hourly') {
+                    if (!$('input[name="start_time"]').val() || !$('input[name="end_time"]').val()) {
+                        this.showToast('لطفاً ساعت شروع و پایان را وارد کنید', 'error');
+                        return false;
+                    }
+                }
+                if (this.formData.leave_type === 'sick_leave') {
+                    if (!$('input[name="medical_document"]')[0]?.files[0]) {
+                        this.showToast('لطفاً مدارک پزشکی را ضمیمه کنید', 'error');
+                        return false;
+                    }
+                }
+            } else if (this.currentStep === 3) {
+                if (this.formData.leave_type === 'regular' && !this.formData.replacement_person) {
+                    this.showToast('لطفاً جانشین را انتخاب کنید', 'error');
+                    return false;
+                }
+            }
+            return true;
+        },
+        
+        submitForm() {
+            if (!this.validateCurrentStep()) return;
+            
+            this.isSubmitting = true;
+            const formElement = document.getElementById('leaveRequestForm');
+            const formData = new FormData(formElement);
+            
+            // Add hidden leave_type input if not exists
+            if (!formData.has('leave_type')) {
+                formData.append('leave_type', this.formData.leave_type);
+            }
+            
+            fetch('{% url "leave_reports:request_leave" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    this.showToast(data.message || 'درخواست با موفقیت ثبت شد', 'success');
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url || '{% url "leave_reports:my_inbox" %}';
+                    }, 1500);
+                } else {
+                    this.showToast(data.message || 'خطا در ثبت درخواست', 'error');
+                    this.isSubmitting = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                this.showToast('خطا در ارسال درخواست', 'error');
+                this.isSubmitting = false;
+            });
+        },
+        
+        getLeaveTypeLabel() {
+            const types = {
+                'regular': 'مرخصی استحقاقی',
+                'sick_leave': 'مرخصی استعلاجی',
+                'hourly': 'مرخصی ساعتی',
+                'absence': 'غیبت'
+            };
+            return types[this.formData.leave_type] || '';
+        },
+        
+        getShiftTypeLabel() {
+            const shifts = {
+                'day': 'روز',
+                'night': 'شب',
+                'evening': 'عصر'
+            };
+            return shifts[$('select[name="shift_type"]').val()] || '';
+        },
+        
+        getReplacementName() {
+            return $('#id_replacement_person option:selected').text();
+        },
+        
+        showToast(message, type = 'info') {
+            // Create toast using Django messages system style from base.html
+            const toastContainer = document.querySelector('.fixed.top-4.left-4') || (() => {
+                const container = document.createElement('div');
+                container.className = 'fixed top-4 left-4 z-50 space-y-3 w-[22rem] sm:w-[26rem]';
+                document.body.appendChild(container);
+                return container;
+            })();
+            
+            const colorClasses = {
+                'success': 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/30 dark:text-green-100 dark:border-green-700',
+                'error': 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-100 dark:border-red-700',
+                'warning': 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-900/30 dark:text-amber-100 dark:border-amber-700',
+                'info': 'bg-indigo-50 border-indigo-200 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-100 dark:border-indigo-700'
+            };
+            
+            const iconClasses = {
+                'success': 'fa-circle-check text-green-500 dark:text-green-400',
+                'error': 'fa-circle-xmark text-red-500 dark:text-red-400',
+                'warning': 'fa-triangle-exclamation text-amber-500 dark:text-amber-400',
+                'info': 'fa-circle-info text-indigo-500 dark:text-indigo-400'
+            };
+            
+            const toastDiv = document.createElement('div');
+            toastDiv.setAttribute('x-data', '{ show: true, progress: 100, duration: 5000, t: null, start() { const s = Date.now(); this.t = setInterval(() => { const e = Date.now() - s; this.progress = Math.max(0, 100 - (e/this.duration)*100); if (e >= this.duration) { this.close(); } }, 50); }, close() { this.show = false; if (this.t) clearInterval(this.t); this.t = null; setTimeout(() => this.$el.remove(), 300); } }');
+            toastDiv.setAttribute('x-init', 'start()');
+            toastDiv.setAttribute('x-show', 'show');
+            toastDiv.setAttribute('x-transition.opacity.duration.250ms', '');
+            toastDiv.className = `relative overflow-hidden rounded-xl border shadow-xl backdrop-blur px-4 py-3 pr-12 ${colorClasses[type] || colorClasses.info}`;
+            
+            toastDiv.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <div class="mt-0.5">
+                        <i class="fa-solid ${iconClasses[type] || iconClasses.info} text-xl"></i>
+                    </div>
+                    <div class="text-sm leading-6">${message}</div>
+                </div>
+                <button type="button" class="absolute top-2 left-2 text-current/60 hover:text-current" @click="close()">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <div class="absolute inset-x-0 bottom-0 h-1/2">
+                    <div class="h-1 bg-black/10 dark:bg-white/10">
+                        <div class="h-1 bg-current/60" :style="\`width:\${progress}%; transition: width 50ms linear;\`"></div>
+                    </div>
+                </div>
+            `;
+            
+            toastContainer.appendChild(toastDiv);
+        }
+    };
+}
+</script>
+{% endblock %}

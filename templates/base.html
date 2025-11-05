@@ -39,6 +39,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css" />
 
     {% block styles %}{% endblock %}
+    {% block extra_css %}{% endblock %}
     
     <style>
       [x-cloak] { display: none !important; }
@@ -58,6 +59,105 @@
     <div class="flex flex-col flex-1 min-h-screen lg:mr-72">
       <!-- Header -->
       {% include 'partials/header.html' %}
+
+      <!-- Global Toast Messages -->
+      {% if messages %}
+      <div class="fixed top-4 left-4 z-50 space-y-3 w-[22rem] sm:w-[26rem]" x-cloak aria-live="assertive" aria-atomic="true">
+        {% for message in messages %}
+        <div
+          x-data="{ show: true, progress: 100, duration: 6000, t: null,
+                     start() { const s = Date.now(); this.t = setInterval(() => {
+                       const e = Date.now() - s; this.progress = Math.max(0, 100 - (e/this.duration)*100);
+                       if (e >= this.duration) { this.close(); }
+                     }, 50); },
+                     pause() { if (this.t) clearInterval(this.t); this.t = null; },
+                     resume() { if (!this.t && this.progress > 0) this.start(); },
+                     close() { this.show = false; if (this.t) clearInterval(this.t); this.t = null; } }"
+          x-init="start()"
+          x-show="show"
+          x-transition.opacity.duration.250ms
+          class="relative overflow-hidden rounded-xl border shadow-xl backdrop-blur px-4 py-3 pr-12
+            {% if 'success' in message.tags %} bg-green-50 border-green-200 text-green-800 dark:bg-green-900/30 dark:text-green-100 dark:border-green-700
+            {% elif 'warning' in message.tags %} bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-900/30 dark:text-amber-100 dark:border-amber-700
+            {% elif 'error' in message.tags or 'danger' in message.tags %} bg-red-50 border-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-100 dark:border-red-700
+            {% else %} bg-indigo-50 border-indigo-200 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-100 dark:border-indigo-700
+            {% endif %}"
+          @mouseenter="pause()" @mouseleave="resume()"
+          role="alert"
+        >
+          <div class="flex items-start gap-3">
+            <div class="mt-0.5">
+              {% if 'success' in message.tags %}
+                <i class="fa-solid fa-circle-check text-green-500 dark:text-green-400 text-xl"></i>
+              {% elif 'warning' in message.tags %}
+                <i class="fa-solid fa-triangle-exclamation text-amber-500 dark:text-amber-400 text-xl"></i>
+              {% elif 'error' in message.tags or 'danger' in message.tags %}
+                <i class="fa-solid fa-circle-xmark text-red-500 dark:text-red-400 text-xl"></i>
+              {% else %}
+                <i class="fa-solid fa-circle-info text-indigo-500 dark:text-indigo-400 text-xl"></i>
+              {% endif %}
+            </div>
+            <div class="text-sm leading-6">{{ message|safe }}</div>
+          </div>
+
+          <!-- Close button -->
+          <button type="button" class="absolute top-2 left-2 text-current/60 hover:text-current" @click="close()" aria-label="بستن">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+
+          <!-- Progress bar -->
+          <div class="absolute inset-x-0 bottom-0 h-1/2"> 
+            <div class="h-1 bg-black/10 dark:bg-white/10">
+              <div class="h-1 bg-current/60" :style="`width:${progress}%; transition: width 50ms linear;`"></div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+
+        {% if form and form.errors %}
+        <div
+          x-data="{ show: true, progress: 100, duration: 8000, t: null,
+                     start() { const s = Date.now(); this.t = setInterval(() => {
+                       const e = Date.now() - s; this.progress = Math.max(0, 100 - (e/this.duration)*100);
+                       if (e >= this.duration) { this.close(); }
+                     }, 50); },
+                     pause() { if (this.t) clearInterval(this.t); this.t = null; },
+                     resume() { if (!this.t && this.progress > 0) this.start(); },
+                     close() { this.show = false; if (this.t) clearInterval(this.t); this.t = null; } }"
+          x-init="start()"
+          x-show="show"
+          x-transition.opacity.duration.250ms
+          class="relative overflow-hidden rounded-xl border shadow-xl backdrop-blur px-4 py-3 pr-12 bg-red-50 border-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-100 dark:border-red-700"
+          @mouseenter="pause()" @mouseleave="resume()" role="alert"
+        >
+          <div class="flex items-start gap-3">
+            <i class="fa-solid fa-circle-xmark text-red-500 dark:text-red-400 text-xl mt-0.5"></i>
+            <div>
+              <div class="text-sm font-semibold">لطفاً خطاهای فرم را بررسی کنید</div>
+              <ul class="mt-2 space-y-1 max-h-48 overflow-auto text-xs leading-5 list-disc pr-5">
+                {% for err in form.non_field_errors %}
+                  <li>{{ err }}</li>
+                {% endfor %}
+                {% for field in form %}
+                  {% for err in field.errors %}
+                    <li>{{ field.label }}: {{ err }}</li>
+                  {% endfor %}
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+          <button type="button" class="absolute top-2 left-2 text-current/60 hover:text-current" @click="close()" aria-label="بستن">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+          <div class="absolute inset-x-0 bottom-0 h-1/2">
+            <div class="h-1 bg-black/10 dark:bg-white/10">
+              <div class="h-1 bg-current/60" :style="`width:${progress}%; transition: width 50ms linear;`"></div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+      {% endif %}
 
       <!-- Main Content Area -->
       <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 dark:bg-gray-900">
@@ -100,5 +200,6 @@
     <!-- App JS -->
     <script src="{% static 'js/main.js' %}"></script>
     {% block scripts %}{% endblock %}
+    {% block extra_js %}{% endblock %}
   </body>
 </html>

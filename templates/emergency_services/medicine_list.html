@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'emergency_services/emergency_base.html' %}
 {% load static %}
 {% block title %}انبار دارو{% endblock %}
 
@@ -10,15 +10,20 @@
       <h3 class="font-semibold">لیست داروها</h3>
     </div>
     <div class="flex items-center gap-2">
-      <a href="{% url 'emergency_services:create_medicine' %}" class="px-3 py-1.5 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 text-sm">
-        <i class="fa-solid fa-plus ml-1"></i> افزودن دارو
+      <a href="{% url 'emergency_services:create_medicine' %}" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 text-sm">
+        <i class="fa-solid fa-plus"></i>
+        افزودن دارو
       </a>
-      <a href="{% url 'emergency_services:download_sample_excel' %}" class="px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 text-sm">نمونه اکسل</a>
+      <a href="{% url 'emergency_services:download_sample_excel' %}" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 text-sm">
+        <i class="fa-solid fa-file-arrow-down"></i>
+        نمونه اکسل
+      </a>
       <form id="importForm" action="{% url 'emergency_services:import_medicines_excel' %}" method="post" enctype="multipart/form-data" class="inline-flex items-center gap-2">
         {% csrf_token %}
-        <label class="cursor-pointer text-sm px-3 py-1.5 rounded-md bg-amber-50 text-amber-700 hover:bg-amber-100">
+        <label class="cursor-pointer inline-flex items-center gap-2 text-sm px-3 py-1.5 rounded-md bg-amber-100 text-amber-800 hover:bg-amber-200">
+          <i class="fa-solid fa-file-import"></i>
+          <span>ورود از اکسل</span>
           <input type="file" name="excel_file" accept=".xls,.xlsx" class="hidden" onchange="document.getElementById('importForm').submit()">
-          ورود از اکسل
         </label>
       </form>
     </div>
@@ -87,9 +92,11 @@
             <td class="px-4 py-2 font-medium">{{ m.name }}</td>
             <td class="px-4 py-2">{{ m.category.name|default:'-' }}</td>
             <td class="px-4 py-2">
-              <div class="flex items-center gap-2">
-                <progress max="{{ m.critical_threshold }}" value="{{ m.quantity }}" class="w-40 h-2"></progress>
-                <span class="text-xs">{{ m.quantity }} / {{ m.critical_threshold }}</span>
+              <div class="flex items-center gap-3" data-quantity="{{ m.quantity }}" data-threshold="{{ m.critical_threshold }}">
+                <div class="w-40 h-2 bg-gray-200 rounded overflow-hidden">
+                  <div class="h-2 w-0 rounded progress-bar"></div>
+                </div>
+                <span class="text-xs tabular-nums">{{ m.quantity }} / {{ m.critical_threshold }}</span>
               </div>
             </td>
             <td class="px-4 py-2">{{ m.critical_threshold }}</td>
@@ -134,6 +141,22 @@
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
-  $(function(){ $('.select2').select2({ width:'100%', dir:'rtl' }); });
+  $(function(){
+    $('.select2').select2({ width:'100%', dir:'rtl' });
+    // Progress bars coloring and width
+    document.querySelectorAll('[data-quantity][data-threshold]').forEach(c => {
+      const qty = parseFloat(c.getAttribute('data-quantity')) || 0;
+      const thr = Math.max(parseFloat(c.getAttribute('data-threshold')) || 0, 1);
+      const pct = Math.max(0, Math.min(100, Math.round((qty / thr) * 100)));
+      const bar = c.querySelector('.progress-bar');
+      if (bar) {
+        bar.style.width = pct + '%';
+        bar.classList.remove('bg-red-500','bg-amber-500','bg-emerald-500');
+        if (pct <= 25) bar.classList.add('bg-red-500');
+        else if (pct <= 60) bar.classList.add('bg-amber-500');
+        else bar.classList.add('bg-emerald-500');
+      }
+    });
+  });
 </script>
 {% endblock %}

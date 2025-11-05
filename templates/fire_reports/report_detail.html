@@ -1,0 +1,145 @@
+
+{% extends 'base.html' %}
+{% load static %}
+{% load jalali %}
+{% load display_filters %}
+{% load status_display %}
+
+{% block content %}
+<div class="container mx-auto">
+  <!-- Header Card -->
+  <div class="rounded-lg shadow-lg bg-gradient-to-l from-orange-500 to-red-600 mb-6 flex items-center px-6 py-4">
+    <i class="fa fa-fire text-3xl text-white ml-4"></i>
+    <h1 class="text-2xl font-bold text-white">جزئیات گزارش #{{ report.id }}</h1>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Shift Info Card -->
+    <div class="rounded-lg shadow-lg bg-white">
+      <div class="bg-gradient-to-l from-red-400 to-orange-200 py-2 px-4 rounded-t-lg flex items-center">
+        <i class="fa fa-user-shield text-red-700 ml-2"></i>
+        <h2 class="font-semibold text-red-700">اطلاعات شیفت</h2>
+      </div>
+      <div class="p-4 space-y-2">
+        <div><span class="font-bold">شیفت:</span> {{ report.get_shift_display }}</div>
+        <div><span class="font-bold">تاریخ گزارش:</span> {{ report.report_date|to_jalali }}</div>
+        <div><span class="font-bold">اپراتور شیفت:</span> {{ report.shift_operator.get_full_name }}</div>
+        <div><span class="font-bold">آتش‌نشان:</span> {{ report.firefighter.get_full_name }}</div>
+      </div>
+    </div>
+
+    <!-- Incident Info Card -->
+    <div class="rounded-lg shadow-lg bg-white">
+      <div class="bg-gradient-to-l from-orange-400 to-yellow-200 py-2 px-4 rounded-t-lg flex items-center">
+        <i class="fa fa-exclamation-triangle text-orange-700 ml-2"></i>
+        <h2 class="font-semibold text-orange-700">خلاصه رخدادها</h2>
+      </div>
+      <div class="p-4 space-y-2">
+        <div><span class="font-bold">اعزام‌ها:</span> {{ report.incident_dispatch_count }}</div>
+        <div><span class="font-bold">حوادث پرسنلی:</span> {{ report.personal_incident_count }}</div>
+        <div><span class="font-bold">حوادث تجهیزات:</span> {{ report.equipment_incident_count }}</div>
+        <div><span class="font-bold">حوادث آتش‌سوزی:</span> {{ report.fire_incident_count }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vehicle Statuses -->
+  <div class="mt-6">
+    <h2 class="text-lg font-semibold mb-2 flex items-center"><i class="fa fa-truck text-blue-500 ml-2"></i>وضعیت خودروها</h2>
+    <div class="space-y-4">
+      {% for v in report.vehicle_reports.all %}
+      <div class="rounded-lg shadow bg-white">
+        <div class="bg-blue-50 px-4 py-2 rounded-t-lg flex items-center justify-between">
+          <div class="font-semibold flex items-center"><i class="fa fa-car text-blue-400 ml-2"></i>{{ v.get_vehicle }}</div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 p-4">
+          {% for field in 'horn hose monitor extinguisher equipment foam water tire brake lighting'|split:' ' %}
+            {% with attr_status=field|add:'_status' attr_desc=field|add:'_description' %}
+              {% with status=v|get_attr:attr_status desc=v|get_attr:attr_desc %}
+              <div class="flex items-center justify-between p-3 border rounded-lg">
+                <div class="flex flex-col space-y-2 w-full">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      {% if field == 'horn' %}<i class="fa fa-bullhorn text-blue-400"></i>{% endif %}
+                      {% if field == 'hose' %}<i class="fa fa-water text-blue-500"></i>{% endif %}
+                      {% if field == 'monitor' %}<i class="fa fa-tv text-gray-500"></i>{% endif %}
+                      {% if field == 'extinguisher' %}<i class="fa fa-fire-extinguisher text-red-500"></i>{% endif %}
+                      {% if field == 'equipment' %}<i class="fa fa-toolbox text-gray-600"></i>{% endif %}
+                      {% if field == 'foam' %}<i class="fa fa-bath text-blue-300"></i>{% endif %}
+                      {% if field == 'water' %}<i class="fa fa-tint text-blue-600"></i>{% endif %}
+                      {% if field == 'tire' %}<i class="fa fa-circle text-gray-400"></i>{% endif %}
+                      {% if field == 'brake' %}<i class="fa fa-hand-paper text-orange-400"></i>{% endif %}
+                      {% if field == 'lighting' %}<i class="fa fa-lightbulb text-yellow-400"></i>{% endif %}
+                      <span class="font-medium text-gray-700">{{ attr_status|get_field_display }}</span>
+                    </div>
+                    <div>
+                      <span class="inline-flex items-center px-2 py-1 rounded-full text-xs {% if status == 'suitable' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                        {{ v|get_display:attr_status }}
+                      </span>
+                    </div>
+                  </div>
+                  {% if desc %}
+                  <div class="bg-gray-50 border border-gray-100 rounded-md p-3 text-sm text-gray-700">
+                    <div class="font-medium text-gray-800 mb-1">توضیحات</div>
+                    <div class="whitespace-pre-wrap">{{ desc }}</div>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+              {% endwith %}
+            {% endwith %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Approval/Rejection Section -->
+  {% if request.user|check_permission:'report_approve' and report.approval_status == 'pending' %}
+  <div class="mt-6 rounded-lg shadow-lg bg-white p-6">
+    <div class="flex items-center mb-4">
+      <i class="fa fa-check-circle text-green-500 ml-2"></i>
+      <h3 class="font-semibold text-lg">تأیید یا رد گزارش</h3>
+    </div>
+    <form method="post" action="{% url 'fire_reports:report_approve' report.id %}" id="approveForm">
+      {% csrf_token %}
+      <div class="flex gap-4">
+        <button type="submit" name="action" value="approve" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded flex items-center"><i class="fa fa-check ml-2"></i>تأیید</button>
+        <button type="button" onclick="openRejectModal()" class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded flex items-center"><i class="fa fa-times ml-2"></i>رد</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Reject Modal -->
+  <div id="rejectModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
+    <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
+      <i class="fa fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
+      <h2 class="text-xl font-bold mb-2">رد گزارش</h2>
+      <form method="post" action="{% url 'fire_reports:report_approve' report.id %}">
+        {% csrf_token %}
+        <label class="block text-sm text-gray-700 mb-2">دلیل رد</label>
+        <textarea name="rejection_reason" class="w-full border rounded p-2 mb-4" rows="4" required></textarea>
+        <div class="flex justify-center gap-4 mt-4">
+          <button type="submit" name="action" value="reject" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded">ارسال رد</button>
+          <button type="button" onclick="closeRejectModal()" class="bg-gray-200 px-6 py-2 rounded">انصراف</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="mt-6">
+    <a href="{% url 'fire_reports:report_list' %}" class="text-gray-600 hover:text-gray-900 flex items-center"><i class="fa fa-arrow-right ml-2"></i>بازگشت به لیست</a>
+  </div>
+</div>
+
+<script>
+function openRejectModal() {
+  document.getElementById('rejectModal').classList.remove('hidden');
+}
+function closeRejectModal() {
+  document.getElementById('rejectModal').classList.add('hidden');
+}
+</script>
+{% endblock %}

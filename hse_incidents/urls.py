@@ -64,6 +64,30 @@ URLS_WITH_LABELS = [
         "name": "submit_completion",
         "label": "حوادث HSE_ارسال فرم تکمیل (AJAX)",
     },
+    {
+        "path": "injury_types/",
+        "view": views.injury_types_list,
+        "name": "injury_types_list",
+        "label": "مدیریت جراحات_لیست انواع جراحت",
+    },
+    {
+        "path": "injury_types/create/",
+        "view": views.injury_type_create_ajax,
+        "name": "injury_type_create",
+        "label": "مدیریت جراحات_ایجاد جراحت جدید (AJAX)",
+    },
+    {
+        "path": "injury_types/update/<int:pk>/",
+        "view": views.injury_type_update_ajax,
+        "name": "injury_type_update",
+        "label": "مدیریت جراحات_ویرایش جراحت (AJAX)",
+    },
+    {
+        "path": "injury_types/delete/<int:pk>/",
+        "view": views.injury_type_delete_ajax,
+        "name": "injury_type_delete",
+        "label": "مدیریت جراحات_حذف جراحت (AJAX)",
+    },
 ]
 
 urlpatterns = [

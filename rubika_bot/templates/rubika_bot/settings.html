@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}تنظیمات ربات روبیکا{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 gap-6">
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+    <h2 class="text-lg font-semibold mb-4">مشخصات ربات</h2>
+    <form method="post" action="{% url 'rubika_bot:settings' %}">
+      {% csrf_token %}
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div>
+          <label class="block text-sm mb-1">توکن</label>
+          <input type="text" name="token" value="{{ settings.token|default:'' }}" class="w-full rounded border p-2" placeholder="Bot Token">
+        </div>
+        <div>
+          <label class="block text-sm mb-1">نام کاربری ربات</label>
+          <input type="text" name="bot_username" value="{{ settings.bot_username|default:'' }}" class="w-full rounded border p-2" placeholder="مثال: my_bot">
+        </div>
+        <div>
+          <label class="block text-sm mb-1">الگوی دیپلینک</label>
+          <input type="text" name="deeplink_template" value="{{ settings.deeplink_template|default:'' }}" class="w-full rounded border p-2" placeholder="https://rubika.ir/{bot_username}?start={code}">
+          <p class="text-xs text-gray-500 mt-1">از {bot_username} و {code} استفاده کنید.</p>
+        </div>
+      </div>
+      <div class="mt-3">
+        <button class="btn btn-primary px-4 py-2 bg-indigo-600 text-white rounded">ذخیره</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+    <h2 class="text-lg font-semibold mb-2">پیش‌نمایش دیپلینک</h2>
+    <div class="text-sm text-gray-700 dark:text-gray-200">
+      {% if settings.bot_username %}
+        <code class="bg-gray-100 dark:bg-gray-700 rounded px-2 py-1">{{ settings.deeplink_template|default:"https://rubika.ir/{bot_username}?start={code}"|safe }}</code>
+        <div class="mt-1 text-xs">نمونه: https://rubika.ir/{{ settings.bot_username }}?start=YOUR_CODE</div>
+      {% else %}
+        <div class="text-xs text-gray-500">ابتدا نام کاربری ربات را ذخیره کنید.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+    <h2 class="text-lg font-semibold mb-4">Webhook</h2>
+    <div class="mb-4">
+      <label class="text-sm text-gray-500">Webhook URL</label>
+      <div class="mt-1 p-2 bg-gray-100 rounded select-all">{{ webhook_url }}</div>
+    </div>
+    <div class="flex gap-2">
+      <button id="btn-register" class="px-4 py-2 bg-green-600 text-white rounded">ثبت/بروزرسانی وبهوک</button>
+      <button id="btn-info" class="px-4 py-2 bg-gray-600 text-white rounded">وضعیت وبهوک</button>
+      <a href="{% url 'rubika_bot:quick_connect' %}" class="px-4 py-2 bg-indigo-600 text-white rounded" title="تست اتصال سریع">تست اتصال سریع</a>
+    </div>
+    <pre id="webhook-result" class="mt-4 text-xs bg-gray-900 text-green-200 p-3 rounded overflow-auto"></pre>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+    <h2 class="text-lg font-semibold mb-4">کاربران ربات</h2>
+    <form method="get" class="mb-3">
+      <input type="text" name="q" value="{{ request.GET.q }}" placeholder="جستجو" class="rounded border p-2 w-full" />
+    </form>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead>
+          <tr class="text-left">
+            <th class="p-2">Chat ID</th>
+            <th class="p-2">User</th>
+            <th class="p-2">Name</th>
+            <th class="p-2">Last Seen</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr class="border-t">
+            <td class="p-2">{{ u.chat_id }}</td>
+            <td class="p-2">{{ u.user|default:"-" }}</td>
+            <td class="p-2">{{ u.first_name }} {{ u.last_name }}</td>
+            <td class="p-2">{{ u.last_seen|default:"-" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td class="p-2" colspan="4">کاربری یافت نشد.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+    <h2 class="text-lg font-semibold mb-4">ارسال پیام همگانی</h2>
+    <div class="flex gap-2">
+      <textarea id="broadcast-text" class="flex-1 border rounded p-2" rows="3" placeholder="متن پیام..."></textarea>
+      <button id="btn-broadcast" class="px-4 py-2 bg-indigo-600 text-white rounded">ارسال</button>
+    </div>
+    <div id="broadcast-result" class="text-sm mt-2"></div>
+  </div>
+</div>
+
+<script>
+  const csrftoken = (document.cookie.match(/csrftoken=([^;]+)/)||[])[1];
+  document.getElementById('btn-register').onclick = () => {
+    fetch('{% url 'rubika_bot:register_webhook' %}', {method:'POST', headers:{'X-CSRFToken': csrftoken}})
+      .then(r=>r.json()).then(d=>{
+        document.getElementById('webhook-result').textContent = JSON.stringify(d, null, 2)
+      })
+  }
+  document.getElementById('btn-info').onclick = () => {
+    fetch('{% url 'rubika_bot:webhook_info' %}')
+      .then(r=>r.json()).then(d=>{
+        document.getElementById('webhook-result').textContent = JSON.stringify(d, null, 2)
+      })
+  }
+  document.getElementById('btn-broadcast').onclick = () => {
+    const text = document.getElementById('broadcast-text').value.trim();
+    if(!text) return;
+    fetch('{% url 'rubika_bot:broadcast' %}', {method:'POST', headers:{'X-CSRFToken': csrftoken, 'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({text})})
+      .then(r=>r.json()).then(d=>{
+        document.getElementById('broadcast-result').textContent = d.ok ? 'ارسال شد.' : (d.error||'Error');
+      })
+  }
+</script>
+{% endblock %}

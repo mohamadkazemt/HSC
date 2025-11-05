@@ -72,7 +72,8 @@ INSTALLED_APPS = [
     'fire_reports.apps.FireReportsConfig',
     'checklist_app.apps.ChecklistAppConfig',
     'emergency_services.apps.EmergencyServicesConfig',
-    'fire_extinguisher_management.apps.FireExtinguisherManagementConfig',
+'fire_extinguisher_management.apps.FireExtinguisherManagementConfig',
+    'rubika_bot',
 ]
 
 MIDDLEWARE = [
@@ -110,7 +111,14 @@ TEMPLATES = [
                 'core.context_processors.site_settings',
             ],
             'builtins': [
-                # Django jalali template tags removed
+                # Make project's Jalali template filters available globally
+                'checklist_app.templatetags.checklist_filters',
+                # Add a small set of form helpers (add_class) so templates can
+                # use the `|add_class` filter without loading extra libs.
+                'core.templatetags.form_filters',
+                # Permission template filters (e.g. `|check_permission`) used
+                # directly in templates and smart-if expressions.
+                'permissions.templatetags.permission_tags',
             ],
         },
     },

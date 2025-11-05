@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}اتصال به ربات روبیکا{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+  <h2 class="text-lg font-semibold mb-3">اتصال سریع</h2>
+  <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">برای اتصال خودکار، روی دکمه زیر کلیک کنید تا ربات باز شود، سپس پیام شروع ارسال می‌شود.</p>
+  {% if bot_username %}
+    <a href="https://rubika.ir/{{ bot_username }}" class="px-4 py-2 bg-indigo-600 text-white rounded">باز کردن ربات</a>
+  {% endif %}
+  <div class="mt-4">
+    <p class="text-sm mb-2">در صورت نیاز، دستور زیر را در ربات ارسال کنید:</p>
+    <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded font-mono text-sm select-all">/connect {{ code }}</div>
+  </div>
+</div>
+{% endblock %}

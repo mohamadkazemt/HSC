@@ -1,0 +1,683 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load jalali_utils %}
+
+{% block title %}کارتابل من{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto" x-data="inboxManager()">
+    <!-- CSRF Token -->
+    {% csrf_token %}
+    
+    <!-- Page Header -->
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <i class="fas fa-inbox text-indigo-600 dark:text-indigo-400"></i>
+            کارتابل من
+        </h1>
+        <p class="mt-2 text-gray-600 dark:text-gray-400">
+            مشاهده و مدیریت درخواست‌های مرخصی
+        </p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <!-- My Requests -->
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100 text-sm font-medium mb-1">درخواست‌های من</p>
+                    <p class="text-3xl font-bold">{{ my_requests_count }}</p>
+                </div>
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-paper-plane text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending as Replacement -->
+        <div class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-amber-100 text-sm font-medium mb-1">در انتظار تأیید جانشینی</p>
+                    <p class="text-3xl font-bold">{{ pending_replacement_count }}</p>
+                </div>
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-user-clock text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pending as Manager -->
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-100 text-sm font-medium mb-1">در انتظار تأیید مدیریت</p>
+                    <p class="text-3xl font-bold">{{ pending_manager_count }}</p>
+                </div>
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-user-shield text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Approved -->
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100 text-sm font-medium mb-1">تأیید شده</p>
+                    <p class="text-3xl font-bold">{{ approved_count }}</p>
+                </div>
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-check-circle text-2xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+        <!-- Tab Headers -->
+        <div class="border-b border-gray-200 dark:border-gray-700">
+            <nav class="flex -mb-px">
+                <button 
+                    @click="activeTab = 'my_requests'"
+                    :class="{
+                        'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'my_requests',
+                        'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300': activeTab !== 'my_requests'
+                    }"
+                    class="group inline-flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-colors duration-200"
+                >
+                    <i class="fas fa-paper-plane"></i>
+                    درخواست‌های من
+                    <span 
+                        class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold rounded-full"
+                        :class="{
+                            'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400': activeTab === 'my_requests',
+                            'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400': activeTab !== 'my_requests'
+                        }"
+                    >
+                        {{ my_requests_count }}
+                    </span>
+                </button>
+
+                <button 
+                    @click="activeTab = 'pending_approval'"
+                    :class="{
+                        'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'pending_approval',
+                        'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300': activeTab !== 'pending_approval'
+                    }"
+                    class="group inline-flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-colors duration-200"
+                >
+                    <i class="fas fa-clock"></i>
+                    در انتظار تأیید من
+                    <span 
+                        class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold rounded-full"
+                        :class="{
+                            'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400': activeTab === 'pending_approval',
+                            'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400': activeTab !== 'pending_approval'
+                        }"
+                    >
+                        {{ pending_replacement_count|add:pending_manager_count }}
+                    </span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="p-6">
+            <!-- My Requests Tab -->
+            <div x-show="activeTab === 'my_requests'" x-transition>
+                <div class="space-y-4">
+                    {% for request in my_requests %}
+                    <div class="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-6 hover:shadow-lg transition-shadow duration-300" data-id="{{ request.id }}">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+                                        {{ request.get_leave_type_display }}
+                                    </h3>
+                                    {% if request.status == 'pending_replacement' %}
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200">
+                                        <i class="fas fa-clock text-xs ml-1"></i>
+                                        در انتظار تأیید جانشین
+                                    </span>
+                                    {% elif request.status == 'pending_approval' %}
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                                        <i class="fas fa-hourglass-half text-xs ml-1"></i>
+                                        در انتظار تأیید مدیر
+                                    </span>
+                                    {% elif request.status == 'approved' %}
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                                        <i class="fas fa-check-circle text-xs ml-1"></i>
+                                        تأیید شده
+                                    </span>
+                                    {% elif request.status == 'rejected' %}
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200">
+                                        <i class="fas fa-times-circle text-xs ml-1"></i>
+                                        رد شده
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                                    <span class="flex items-center gap-1">
+                                        <i class="fas fa-calendar"></i>
+                                        {{ request.shift_date|to_jalali }}
+                                    </span>
+                                    <span class="flex items-center gap-1">
+                                        <i class="fas fa-clock"></i>
+                                        شیفت {{ request.get_shift_type_display }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <a 
+                                href="{% url 'leave_reports:leave_detail' request.id %}"
+                                class="px-4 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 rounded-lg transition-colors duration-200 text-sm font-medium"
+                            >
+                                <i class="fas fa-eye"></i>
+                                مشاهده جزئیات
+                            </a>
+                        </div>
+
+                        <!-- Timeline -->
+                        <div class="relative">
+                            <div class="flex items-center">
+                                <!-- Step 1: Submitted -->
+                                <div class="flex-1">
+                                    <div class="flex items-center">
+                                        <div class="flex items-center justify-center w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 border-2 border-green-500 dark:border-green-400">
+                                            <i class="fas fa-check text-green-600 dark:text-green-400"></i>
+                                        </div>
+                                        <div class="flex-1 h-1 bg-green-500 dark:bg-green-400"></div>
+                                    </div>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">ثبت درخواست</p>
+                                </div>
+
+                                <!-- Step 2: Replacement Approval -->
+                                {% if request.leave_type == 'regular' %}
+                                <div class="flex-1">
+                                    <div class="flex items-center">
+                                        <div class="flex items-center justify-center w-10 h-10 rounded-full border-2 
+                                            {% if request.replacement_approved %}
+                                            bg-green-100 dark:bg-green-900/30 border-green-500 dark:border-green-400
+                                            {% elif request.status == 'rejected' and not request.replacement_approved %}
+                                            bg-red-100 dark:bg-red-900/30 border-red-500 dark:border-red-400
+                                            {% else %}
+                                            bg-amber-100 dark:bg-amber-900/30 border-amber-500 dark:border-amber-400
+                                            {% endif %}
+                                        ">
+                                            {% if request.replacement_approved %}
+                                            <i class="fas fa-check text-green-600 dark:text-green-400"></i>
+                                            {% elif request.status == 'rejected' and not request.replacement_approved %}
+                                            <i class="fas fa-times text-red-600 dark:text-red-400"></i>
+                                            {% else %}
+                                            <i class="fas fa-clock text-amber-600 dark:text-amber-400"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div class="flex-1 h-1 
+                                            {% if request.replacement_approved %}bg-green-500 dark:bg-green-400
+                                            {% else %}bg-gray-300 dark:bg-gray-600{% endif %}
+                                        "></div>
+                                    </div>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">تأیید جانشین</p>
+                                </div>
+                                {% endif %}
+
+                                <!-- Step 3: Manager Approval -->
+                                <div class="flex-1">
+                                    <div class="flex items-center">
+                                        <div class="flex items-center justify-center w-10 h-10 rounded-full border-2 
+                                            {% if request.status == 'approved' %}
+                                            bg-green-100 dark:bg-green-900/30 border-green-500 dark:border-green-400
+                                            {% elif request.status == 'rejected' %}
+                                            bg-red-100 dark:bg-red-900/30 border-red-500 dark:border-red-400
+                                            {% elif request.status == 'pending_approval' %}
+                                            bg-blue-100 dark:bg-blue-900/30 border-blue-500 dark:border-blue-400
+                                            {% else %}
+                                            bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600
+                                            {% endif %}
+                                        ">
+                                            {% if request.status == 'approved' %}
+                                            <i class="fas fa-check text-green-600 dark:text-green-400"></i>
+                                            {% elif request.status == 'rejected' %}
+                                            <i class="fas fa-times text-red-600 dark:text-red-400"></i>
+                                            {% elif request.status == 'pending_approval' %}
+                                            <i class="fas fa-hourglass-half text-blue-600 dark:text-blue-400"></i>
+                                            {% else %}
+                                            <i class="fas fa-clock text-gray-400"></i>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">تأیید مدیر</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        {% if request.description %}
+                        <div class="mt-4 p-3 bg-white dark:bg-gray-800 rounded-lg">
+                            <p class="text-sm text-gray-700 dark:text-gray-300">
+                                <i class="fas fa-comment-dots text-gray-400 ml-2"></i>
+                                {{ request.description }}
+                            </p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-12">
+                        <i class="fas fa-inbox text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+                        <p class="text-gray-500 dark:text-gray-400">شما هیچ درخواستی ندارید</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Pending Approval Tab -->
+            <div x-show="activeTab === 'pending_approval'" x-transition>
+                <div class="space-y-4">
+                    {% for request in pending_approvals %}
+                    <div class="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-6 hover:shadow-lg transition-shadow duration-300" data-id="{{ request.id }}">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg">
+                                        {{ request.user.first_name|first }}{{ request.user.last_name|first }}
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+                                            {{ request.user.get_full_name }}
+                                        </h3>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                                            {{ request.get_leave_type_display }} - {{ request.shift_date|to_jalali }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {% if request.status == 'pending_replacement' %}
+                                <div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200">
+                                    <i class="fas fa-user-check text-xs ml-1"></i>
+                                    نیاز به تأیید شما به عنوان جانشین
+                                </div>
+                                {% elif request.status == 'pending_approval' %}
+                                <div class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200">
+                                    <i class="fas fa-user-shield text-xs ml-1"></i>
+                                    نیاز به تأیید مدیریت
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        {% if request.description %}
+                        <div class="mb-4 p-3 bg-white dark:bg-gray-800 rounded-lg">
+                            <p class="text-sm text-gray-700 dark:text-gray-300">
+                                <i class="fas fa-comment-dots text-gray-400 ml-2"></i>
+                                {{ request.description }}
+                            </p>
+                        </div>
+                        {% endif %}
+
+                        <!-- Actions -->
+                        <div class="flex gap-3">
+                            <a 
+                                href="{% url 'leave_reports:leave_detail' request.id %}"
+                                class="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors duration-200 text-sm font-medium text-center"
+                            >
+                                <i class="fas fa-eye"></i>
+                                مشاهده جزئیات
+                            </a>
+
+                            {% if request.status == 'pending_replacement' and request.replacement_person == user %}
+                            <button 
+                                @click="approveReplacement({{ request.id }})"
+                                class="flex-1 px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg transition-all duration-200 text-sm font-medium"
+                            >
+                                <i class="fas fa-check"></i>
+                                تأیید جانشینی
+                            </button>
+                            <button 
+                                @click="showRejectModal({{ request.id }}, 'replacement')"
+                                class="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg transition-all duration-200 text-sm font-medium"
+                            >
+                                <i class="fas fa-times"></i>
+                                رد جانشینی
+                            </button>
+                            {% elif request.status == 'pending_approval' %}
+                            <button 
+                                @click="approveManager({{ request.id }})"
+                                class="flex-1 px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg transition-all duration-200 text-sm font-medium"
+                            >
+                                <i class="fas fa-check"></i>
+                                تأیید نهایی
+                            </button>
+                            <button 
+                                @click="showRejectModal({{ request.id }}, 'manager')"
+                                class="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg transition-all duration-200 text-sm font-medium"
+                            >
+                                <i class="fas fa-times"></i>
+                                رد درخواست
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-12">
+                        <i class="fas fa-check-double text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+                        <p class="text-gray-500 dark:text-gray-400">درخواستی برای تأیید وجود ندارد</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Modal -->
+    <div 
+        x-show="showRejectModalState" 
+        x-cloak
+        @keydown.escape.window="showRejectModalState = false"
+        class="fixed inset-0 z-50 overflow-y-auto"
+        style="display: none;"
+    >
+        <div 
+            x-show="showRejectModalState"
+            x-transition.opacity.duration.300ms
+            class="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            @click="showRejectModalState = false"
+        ></div>
+
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div 
+                x-show="showRejectModalState"
+                x-transition.scale.origin.top.duration.300ms
+                class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6"
+                @click.stop
+            >
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                    دلیل رد درخواست
+                </h3>
+                
+                <textarea 
+                    x-model="rejectReason"
+                    rows="4"
+                    class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="لطفاً دلیل رد درخواست را وارد کنید..."
+                ></textarea>
+
+                <div class="flex gap-3 mt-6">
+                    <button 
+                        @click="showRejectModalState = false"
+                        class="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200 font-medium"
+                    >
+                        انصراف
+                    </button>
+                    <button 
+                        @click="submitReject"
+                        :disabled="isSubmitting || !rejectReason"
+                        class="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <template x-if="!isSubmitting">
+                            <span><i class="fas fa-times"></i> رد درخواست</span>
+                        </template>
+                        <template x-if="isSubmitting">
+                            <span><i class="fas fa-spinner fa-spin"></i> در حال ارسال...</span>
+                        </template>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function inboxManager() {
+    return {
+        activeTab: 'my_requests',
+        showRejectModalState: false,
+        rejectId: null,
+        rejectType: null,
+        rejectReason: '',
+        isSubmitting: false,
+
+        // Helper function to get CSRF token
+        getCSRFToken() {
+            const token = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (!token) {
+                console.error('❌ CSRF token not found in page!');
+                return null;
+            }
+            return token.value;
+        },
+
+        approveReplacement(id) {
+            console.log('🔵 approveReplacement called with ID:', id);
+            
+            if (this.isSubmitting) {
+                console.log('⚠️ Already submitting, returning...');
+                return;
+            }
+            
+            if (!confirm('آیا از تأیید این درخواست به عنوان جانشین اطمینان دارید؟')) {
+                console.log('❌ User cancelled confirmation');
+                return;
+            }
+
+            console.log('✅ User confirmed, proceeding...');
+            this.isSubmitting = true;
+
+            const csrfToken = this.getCSRFToken();
+            if (!csrfToken) {
+                this.showToast('خطا: توکن امنیتی یافت نشد', 'error');
+                this.isSubmitting = false;
+                return;
+            }
+
+            const url = `{% url 'leave_reports:approve_as_replacement' 0 %}`.replace('0', id);
+            console.log('🌐 Sending request to:', url);
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                console.log('📡 Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('📦 Response data:', data);
+                if (data.status === 'success') {
+                    this.showToast(data.message || 'درخواست تأیید شد', 'success');
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    this.showToast(data.message || 'خطا در تأیید', 'error');
+                    this.isSubmitting = false;
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error:', error);
+                this.showToast('خطا در ارسال درخواست', 'error');
+                this.isSubmitting = false;
+            });
+        },
+
+        approveManager(id) {
+            console.log('🟢 approveManager called with ID:', id);
+            
+            if (this.isSubmitting) {
+                console.log('⚠️ Already submitting, returning...');
+                return;
+            }
+            
+            if (!confirm('آیا از تأیید نهایی این درخواست اطمینان دارید؟')) {
+                console.log('❌ User cancelled confirmation');
+                return;
+            }
+
+            console.log('✅ User confirmed, proceeding...');
+            this.isSubmitting = true;
+
+            const csrfToken = this.getCSRFToken();
+            if (!csrfToken) {
+                this.showToast('خطا: توکن امنیتی یافت نشد', 'error');
+                this.isSubmitting = false;
+                return;
+            }
+
+            const url = `{% url 'leave_reports:approve_as_manager' 0 %}`.replace('0', id);
+            console.log('🌐 Sending request to:', url);
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                console.log('📡 Response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('📦 Response data:', data);
+                if (data.status === 'success') {
+                    this.showToast(data.message || 'درخواست تأیید شد', 'success');
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    this.showToast(data.message || 'خطا در تأیید', 'error');
+                    this.isSubmitting = false;
+                }
+            })
+            .catch(error => {
+                console.error('❌ Error:', error);
+                this.showToast('خطا در ارسال درخواست', 'error');
+                this.isSubmitting = false;
+            });
+        },
+
+        showRejectModal(id, type) {
+            this.rejectId = id;
+            this.rejectType = type;
+            this.rejectReason = '';
+            this.showRejectModalState = true;
+        },
+
+        submitReject() {
+            console.log('🔴 submitReject called');
+            console.log('  rejectId:', this.rejectId);
+            console.log('  rejectType:', this.rejectType);
+            console.log('  rejectReason:', this.rejectReason);
+            
+            if (this.isSubmitting) {
+                console.log('⚠️ Already submitting, returning...');
+                return;
+            }
+            
+            if (!this.rejectReason) {
+                console.log('❌ No reject reason provided');
+                return;
+            }
+
+            console.log('✅ Proceeding with rejection...');
+            this.isSubmitting = true;
+
+            const csrfToken = this.getCSRFToken();
+            if (!csrfToken) {
+                this.showToast('خطا: توکن امنیتی یافت نشد', 'error');
+                this.isSubmitting = false;
+                return;
+            }
+
+            const url = this.rejectType === 'replacement' 
+                ? `{% url 'leave_reports:reject_as_replacement' 0 %}`.replace('0', this.rejectId)
+                : `{% url 'leave_reports:reject_as_manager' 0 %}`.replace('0', this.rejectId);
+
+            console.log('🌐 Sending reject request to:', url);
+
+            const formData = new FormData();
+            formData.append('rejection_reason', this.rejectReason); // تغییر از reason به rejection_reason
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => {
+                console.log('📡 Reject response status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('📦 Reject response data:', data);
+                if (data.status === 'success') {
+                    this.showToast(data.message || 'درخواست رد شد', 'success');
+                    this.showRejectModalState = false;
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    this.showToast(data.message || 'خطا در رد درخواست', 'error');
+                    this.isSubmitting = false;
+                }
+            })
+            .catch(error => {
+                console.error('❌ Reject Error:', error);
+                this.showToast('خطا در ارسال درخواست', 'error');
+                this.isSubmitting = false;
+            });
+        },
+
+        showToast(message, type = 'info') {
+            const toastContainer = document.querySelector('.fixed.top-4.left-4') || (() => {
+                const container = document.createElement('div');
+                container.className = 'fixed top-4 left-4 z-50 space-y-3 w-[22rem] sm:w-[26rem]';
+                document.body.appendChild(container);
+                return container;
+            })();
+            
+            const colorClasses = {
+                'success': 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/30 dark:text-green-100 dark:border-green-700',
+                'error': 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-100 dark:border-red-700'
+            };
+            
+            const iconClasses = {
+                'success': 'fa-circle-check text-green-500 dark:text-green-400',
+                'error': 'fa-circle-xmark text-red-500 dark:text-red-400'
+            };
+            
+            const toastDiv = document.createElement('div');
+            toastDiv.setAttribute('x-data', '{ show: true, progress: 100, duration: 5000, t: null, start() { const s = Date.now(); this.t = setInterval(() => { const e = Date.now() - s; this.progress = Math.max(0, 100 - (e/this.duration)*100); if (e >= this.duration) { this.close(); } }, 50); }, close() { this.show = false; if (this.t) clearInterval(this.t); this.t = null; setTimeout(() => this.$el.remove(), 300); } }');
+            toastDiv.setAttribute('x-init', 'start()');
+            toastDiv.setAttribute('x-show', 'show');
+            toastDiv.setAttribute('x-transition.opacity.duration.250ms', '');
+            toastDiv.className = `relative overflow-hidden rounded-xl border shadow-xl backdrop-blur px-4 py-3 pr-12 ${colorClasses[type]}`;
+            
+            toastDiv.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <div class="mt-0.5">
+                        <i class="fa-solid ${iconClasses[type]} text-xl"></i>
+                    </div>
+                    <div class="text-sm leading-6">${message}</div>
+                </div>
+                <button type="button" class="absolute top-2 left-2 text-current/60 hover:text-current" @click="close()">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <div class="absolute inset-x-0 bottom-0 h-1/2">
+                    <div class="h-1 bg-black/10 dark:bg-white/10">
+                        <div class="h-1 bg-current/60" :style="\`width:\${progress}%; transition: width 50ms linear;\`"></div>
+                    </div>
+                </div>
+            `;
+            
+            toastContainer.appendChild(toastDiv);
+        }
+    };
+}
+</script>
+{% endblock %}

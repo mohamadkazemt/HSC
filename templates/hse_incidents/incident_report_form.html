@@ -1,0 +1,656 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load jalali_tags %}
+
+{% block title %}ثبت گزارش حادثه جدید{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+  .step-indicator {
+    counter-reset: step;
+  }
+  .step-indicator li {
+    counter-increment: step;
+  }
+  .step-indicator li::before {
+    content: counter(step);
+  }
+  .select2-container--default .select2-selection--multiple {
+    border-radius: 0.5rem;
+    border-color: #d1d5db;
+  }
+  .select2-container--default.select2-container--focus .select2-selection--multiple {
+    border-color: #ea580c;
+    box-shadow: 0 0 0 1px #ea580c;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+  <!-- Page Header -->
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-3">
+      <svg class="h-8 w-8 text-orange-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+      </svg>
+      ثبت گزارش حادثه جدید
+    </h1>
+    <p class="text-gray-600 dark:text-gray-400 mt-2">لطفاً اطلاعات حادثه را با دقت و به صورت کامل وارد نمایید</p>
+  </div>
+
+  <!-- Multi-Step Form Wizard -->
+  <div x-data="incidentWizard()" x-init="init()" class="bg-white dark:bg-gray-800 rounded-lg shadow-xl overflow-hidden">
+    
+    <!-- Progress Bar -->
+    <div class="bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-900 dark:to-red-900 px-6 py-4">
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-sm font-semibold text-orange-700 dark:text-orange-200">مرحله <span x-text="currentStep"></span> از 4</span>
+        <span class="text-sm font-semibold text-orange-700 dark:text-orange-200" x-text="Math.round((currentStep / 4) * 100) + '%'"></span>
+      </div>
+      <div class="w-full bg-white dark:bg-gray-700 rounded-full h-3 overflow-hidden shadow-inner">
+        <div class="bg-gradient-to-r from-orange-600 to-red-600 h-3 rounded-full transition-all duration-500 ease-out shadow-lg" 
+             :style="`width: ${(currentStep / 4) * 100}%`"></div>
+      </div>
+      
+      <!-- Step Indicators -->
+      <div class="mt-4 grid grid-cols-4 gap-2">
+        <template x-for="step in 4" :key="step">
+          <div class="flex flex-col items-center">
+            <div class="flex items-center justify-center w-10 h-10 rounded-full text-sm font-bold transition-all"
+                 :class="currentStep >= step ? 'bg-orange-600 text-white shadow-lg' : 'bg-white dark:bg-gray-700 text-gray-400 dark:text-gray-500'">
+              <span x-text="step"></span>
+            </div>
+            <span class="text-xs mt-1 text-center font-medium"
+                  :class="currentStep >= step ? 'text-orange-700 dark:text-orange-200' : 'text-gray-500 dark:text-gray-400'"
+                  x-text="getStepName(step)"></span>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <form id="incident-form" @submit.prevent="submitForm" class="p-6">
+      {% csrf_token %}
+      
+      <!-- Step 1: Core Incident Details -->
+      <div x-show="currentStep === 1" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-10" x-transition:enter-end="opacity-100 transform translate-x-0">
+        <div class="space-y-6">
+          <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2 border-b pb-3">
+            <svg class="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+            </svg>
+            اطلاعات اولیه حادثه
+          </h2>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Incident Date -->
+            <div>
+              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                <svg class="inline h-4 w-4 ml-1 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                </svg>
+                تاریخ حادثه <span class="text-red-600">*</span>
+              </label>
+              <div class="relative">
+                <input type="text" id="incident_date" name="incident_date" required
+                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-orange-500 focus:ring-orange-500 shadow-sm jalali-datepicker" 
+                       placeholder="1403/08/15"
+                       autocomplete="off">
+                <button type="button" onclick="$('#incident_date').focus().click();" 
+                        class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-600">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Incident Time -->
+            <div>
+              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                <svg class="inline h-4 w-4 ml-1 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                ساعت حادثه <span class="text-red-600">*</span>
+              </label>
+              <input type="time" name="incident_time" required
+                     class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-orange-500 focus:ring-orange-500 shadow-sm">
+            </div>
+            
+            <!-- Location -->
+            <div>
+              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                <svg class="inline h-4 w-4 ml-1 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                </svg>
+                سایت حادثه <span class="text-red-600">*</span>
+              </label>
+              <select name="location" required @change="loadSections($event.target.value)"
+                      class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-orange-500 focus:ring-orange-500 shadow-sm">
+                <option value="">انتخاب کنید</option>
+                {% for location in locations %}
+                <option value="{{ location.id }}">{{ location.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            
+            <!-- Section -->
+            <div>
+              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                <svg class="inline h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+                </svg>
+                محل دقیق
+              </label>
+              <select name="section" id="section-select"
+                      class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-orange-500 focus:ring-orange-500 shadow-sm">
+                <option value="">ابتدا سایت را انتخاب کنید</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Injury and Personnel Details -->
+      <div x-show="currentStep === 2" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-10" x-transition:enter-end="opacity-100 transform translate-x-0">
+        <div class="space-y-6">
+          <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2 border-b pb-3">
+            <svg class="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+            </svg>
+            اطلاعات افراد درگیر و آسیب
+          </h2>
+          
+          <div class="grid grid-cols-1 gap-6">
+            <!-- Involved Persons -->
+            <div>
+              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                <svg class="inline h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                </svg>
+                پرسنل شرکت درگیر حادثه
+              </label>
+              <select name="involved_person" multiple class="w-full select2-ajax" data-ajax-url="{% url 'hse_incidents:get_user_profiles_ajax' %}">
+              </select>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">می‌توانید چند نفر را انتخاب کنید</p>
+            </div>
+            
+            <!-- Injury Type -->
+            <div>
+              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                <svg class="inline h-4 w-4 ml-1 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+                نوع جراحت <span class="text-red-600">*</span>
+              </label>
+              <select name="injury_type" multiple required class="w-full select2-ajax" data-ajax-url="{% url 'hse_incidents:get_injury_types_ajax' %}">
+              </select>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Affected Body Part -->
+              <div>
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                  عضو آسیب دیده <span class="text-red-600">*</span>
+                </label>
+                <input type="text" name="affected_body_part" required
+                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-orange-500 focus:ring-orange-500 shadow-sm" 
+                       placeholder="مثال: دست راست، سر، پا">
+              </div>
+              
+              <!-- Involved Equipment -->
+              <div>
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                  تجهیزات مرتبط <span class="text-red-600">*</span>
+                </label>
+                <input type="text" name="involved_equipment" required
+                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-orange-500 focus:ring-orange-500 shadow-sm" 
+                       placeholder="نام تجهیزات درگیر">
+              </div>
+            </div>
+            
+            <!-- Damage Description -->
+            <div>
+              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                شرح آسیب وارده <span class="text-red-600">*</span>
+              </label>
+              <textarea name="damage_description" rows="3" required
+                        class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-orange-500 focus:ring-orange-500 shadow-sm" 
+                        placeholder="شرح دقیق آسیب‌های وارده..."></textarea>
+            </div>
+            
+            <!-- Related Entity -->
+            <div>
+              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                نوع ارتباط <span class="text-red-600">*</span>
+              </label>
+              <input type="text" name="related_entity" required
+                     class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-orange-500 focus:ring-orange-500 shadow-sm" 
+                     placeholder="مثال: پرسنل شرکت، پیمانکار، بازدیدکننده">
+            </div>
+            
+            <!-- Contractor Involvement -->
+            <div class="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg">
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" @change="showContractorFields = !showContractorFields" class="rounded text-orange-600 focus:ring-orange-500">
+                <span class="font-bold text-gray-700 dark:text-gray-300">آیا این حادثه مرتبط با پیمانکار است؟</span>
+              </label>
+              
+              <div x-show="showContractorFields" x-collapse class="mt-4 space-y-4">
+                <!-- Contractor Select -->
+                <div>
+                  <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                    انتخاب پیمانکار
+                  </label>
+                  <select name="related_contractor" @change="loadContractorEmployees($event.target.value)" id="contractor-select"
+                          class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-white dark:text-gray-900 focus:border-orange-500 focus:ring-orange-500 shadow-sm">
+                    <option value="">انتخاب کنید</option>
+                  </select>
+                </div>
+                
+                <!-- Contractor Employees -->
+                <div>
+                  <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                    پرسنل پیمانکار
+                  </label>
+                  <select name="related_contractor_employees" multiple id="contractor-employees-select"
+                          class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-white dark:text-gray-900 focus:border-orange-500 focus:ring-orange-500 shadow-sm">
+                  </select>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ابتدا پیمانکار را انتخاب کنید</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Emergency Response -->
+      <div x-show="currentStep === 3" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-10" x-transition:enter-end="opacity-100 transform translate-x-0">
+        <div class="space-y-6">
+          <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2 border-b pb-3">
+            <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+            </svg>
+            واکنش اضطراری
+          </h2>
+          
+          <div class="space-y-6">
+            <!-- Fire Truck -->
+            <div class="bg-red-50 dark:bg-red-900 p-4 rounded-lg">
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" name="fire_truck_needed" @change="showFireTruckTime = !showFireTruckTime" class="rounded text-red-600 focus:ring-red-500">
+                <span class="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                  <svg class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 01-5.841 2.58m-.119-8.54a6 6 0 00-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 00-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 01-2.448-2.448 14.9 14.9 0 01.06-.312m-2.24 2.39a4.493 4.493 0 00-1.757 4.306 4.493 4.493 0 004.306-1.758M16.5 9a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+                  </svg>
+                  خودرو آتش‌نشانی اعزام شد
+                </span>
+              </label>
+              <div x-show="showFireTruckTime" x-collapse class="mt-3">
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">زمان رسیدن آتش‌نشانی</label>
+                <input type="time" name="fire_truck_arrival_time"
+                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-red-500 focus:ring-red-500 shadow-sm">
+              </div>
+            </div>
+            
+            <!-- Ambulance -->
+            <div class="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg">
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" name="ambulance_needed" @change="showAmbulanceTime = !showAmbulanceTime" class="rounded text-blue-600 focus:ring-blue-500">
+                <span class="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                  <svg class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                  </svg>
+                  آمبولانس اعزام شد
+                </span>
+              </label>
+              <div x-show="showAmbulanceTime" x-collapse class="mt-3">
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">زمان رسیدن آمبولانس</label>
+                <input type="time" name="ambulance_arrival_time"
+                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-blue-500 focus:ring-blue-500 shadow-sm">
+              </div>
+            </div>
+            
+            <!-- Hospitalization -->
+            <div class="bg-green-50 dark:bg-green-900 p-4 rounded-lg">
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" name="hospitalized" @change="showHospitalizedFields = !showHospitalizedFields" class="rounded text-green-600 focus:ring-green-500">
+                <span class="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                  <svg class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z" />
+                  </svg>
+                  فرد به بیمارستان اعزام شد
+                </span>
+              </label>
+              <div x-show="showHospitalizedFields" x-collapse class="mt-3 space-y-3">
+                <div>
+                  <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">زمان اعزام به بیمارستان</label>
+                  <input type="time" name="hospitalized_time"
+                         class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-green-500 focus:ring-green-500 shadow-sm">
+                </div>
+                <div>
+                  <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">نوع وسیله نقلیه</label>
+                  <input type="text" name="transportation_type"
+                         class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-green-500 focus:ring-green-500 shadow-sm" 
+                         placeholder="مثال: آمبولانس، خودروی شخصی، هلیکوپتر">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Description and Cause -->
+      <div x-show="currentStep === 4" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-10" x-transition:enter-end="opacity-100 transform translate-x-0">
+        <div class="space-y-6">
+          <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2 border-b pb-3">
+            <svg class="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+            </svg>
+            شرح کامل حادثه و علل اولیه
+          </h2>
+          
+          <div class="space-y-6">
+            <!-- Full Description -->
+            <div>
+              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                <svg class="inline h-4 w-4 ml-1 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                </svg>
+                شرح کامل حادثه <span class="text-red-600">*</span>
+              </label>
+              <textarea name="full_description" rows="6" required
+                        class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-orange-500 focus:ring-orange-500 shadow-sm" 
+                        placeholder="لطفاً حادثه را با جزئیات کامل شرح دهید: چه اتفاقی افتاد؟ چگونه رخ داد؟ چه کسانی درگیر بودند؟ شرایط محیطی چگونه بود؟"></textarea>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">حداقل 50 کاراکتر</p>
+            </div>
+            
+            <!-- Initial Cause -->
+            <div>
+              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                <svg class="inline h-4 w-4 ml-1 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+                </svg>
+                علت اولیه حادثه <span class="text-red-600">*</span>
+              </label>
+              <textarea name="initial_cause" rows="4" required
+                        class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-orange-500 focus:ring-orange-500 shadow-sm" 
+                        placeholder="بر اساس بررسی‌های اولیه، علت احتمالی وقوع این حادثه چیست؟"></textarea>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">این یک بررسی اولیه است و نیاز به تحقیق دقیق‌تر دارد</p>
+            </div>
+            
+            <!-- Info Alert -->
+            <div class="bg-amber-50 dark:bg-amber-900 border-r-4 border-amber-500 p-4 rounded-lg">
+              <div class="flex items-start gap-3">
+                <svg class="h-6 w-6 text-amber-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                </svg>
+                <div>
+                  <h3 class="font-bold text-amber-800 dark:text-amber-200">نکته مهم</h3>
+                  <p class="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                    پس از ثبت این گزارش اولیه، مدیران HSE باید گزارش را تکمیل کرده و تحلیل دقیق‌تری از علل حادثه ارائه دهند.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Buttons -->
+      <div class="flex justify-between items-center mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+        <button type="button" @click="prevStep" x-show="currentStep > 1"
+                class="flex items-center gap-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg px-6 py-3 font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition shadow hover:shadow-lg">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
+          مرحله قبل
+        </button>
+        
+        <div class="flex gap-3">
+          <button type="button" @click="nextStep" x-show="currentStep < 4"
+                  class="flex items-center gap-2 bg-gradient-to-r from-orange-600 to-orange-500 text-white rounded-lg px-6 py-3 font-bold hover:from-orange-700 hover:to-orange-600 transition shadow-lg hover:shadow-xl">
+            مرحله بعد
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+          </button>
+          
+          <button type="submit" x-show="currentStep === 4" :disabled="isSubmitting"
+                  class="flex items-center gap-2 bg-gradient-to-r from-green-600 to-green-500 text-white rounded-lg px-8 py-3 font-bold hover:from-green-700 hover:to-green-600 transition shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span x-text="isSubmitting ? 'در حال ثبت...' : 'ثبت نهایی گزارش'"></span>
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Scripts (jQuery and Select2 are already loaded in base.html) -->
+<script>
+function incidentWizard() {
+  return {
+    currentStep: 1,
+    isSubmitting: false,
+    showContractorFields: false,
+    showFireTruckTime: false,
+    showAmbulanceTime: false,
+    showHospitalizedFields: false,
+    
+    init() {
+      // استفاده از nextTick برای اطمینان از رندر شدن کامل DOM
+      this.$nextTick(() => {
+        this.initializeSelect2();
+        this.initializeDatePickers();
+        this.loadContractors();
+      });
+    },
+    
+    getStepName(step) {
+      const names = {
+        1: 'اطلاعات اولیه',
+        2: 'افراد و آسیب',
+        3: 'واکنش اضطراری',
+        4: 'شرح و علل'
+      };
+      return names[step] || '';
+    },
+    
+    nextStep() {
+      if (this.validateStep(this.currentStep)) {
+        this.currentStep++;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // مقداردهی مجدد datepicker برای المنت‌های جدید
+        this.$nextTick(() => {
+          this.initializeDatePickers();
+        });
+      }
+    },
+    
+    prevStep() {
+      this.currentStep--;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // مقداردهی مجدد datepicker برای المنت‌های قبلی
+      this.$nextTick(() => {
+        this.initializeDatePickers();
+      });
+    },
+    
+    validateStep(step) {
+      const form = document.getElementById('incident-form');
+      let isValid = true;
+      
+      // Get all required fields in current step
+      const currentStepDiv = form.querySelector(`[x-show="currentStep === ${step}"]`);
+      if (currentStepDiv) {
+        const requiredFields = currentStepDiv.querySelectorAll('[required]');
+        requiredFields.forEach(field => {
+          if (!field.value || (field.type === 'select-multiple' && field.selectedOptions.length === 0)) {
+            field.classList.add('border-red-500');
+            isValid = false;
+          } else {
+            field.classList.remove('border-red-500');
+          }
+        });
+      }
+      
+      if (!isValid) {
+        alert('لطفاً تمام فیلدهای الزامی را پر کنید.');
+      }
+      
+      return isValid;
+    },
+    
+    initializeSelect2() {
+      // Initialize Select2 for AJAX fields
+      $('.select2-ajax').each(function() {
+        const url = $(this).data('ajax-url');
+        $(this).select2({
+          ajax: {
+            url: url,
+            dataType: 'json',
+            delay: 250,
+            data: function(params) {
+              return { term: params.term };
+            },
+            processResults: function(data) {
+              return {
+                results: data.map(item => ({
+                  id: item.id,
+                  text: item.text || item.name
+                }))
+              };
+            }
+          },
+          placeholder: 'جستجو کنید...',
+          minimumInputLength: 0,
+          dir: 'rtl',
+          language: 'fa'
+        });
+      });
+    },
+    
+    initializeDatePickers() {
+      // چون jQuery و persianDatepicker از base.html لود شده‌اند، مستقیماً استفاده می‌کنیم  
+      if (window.jQuery && $.fn.persianDatepicker) {
+        $('.jalali-datepicker').each(function() {
+          // اگر قبلاً مقداردهی شده، ابتدا destroy کن
+          if ($(this).data('datepicker')) {
+            $(this).data('datepicker').destroy();
+          }
+          
+          $(this).persianDatepicker({
+            format: 'YYYY/MM/DD',
+            autoClose: true,
+            initialValue: false,
+            observer: true,
+            persianDigit: true,
+            timePicker: {
+              enabled: false
+            }
+          });
+        });
+        console.log('Datepickers initialized successfully');
+      } else {
+        console.error('jQuery or persianDatepicker plugin not available!');
+      }
+    },
+    
+    loadSections(locationId) {
+      if (!locationId) {
+        $('#section-select').html('<option value="">ابتدا سایت را انتخاب کنید</option>');
+        return;
+      }
+      
+      $.ajax({
+        url: '{% url "anomalis:get_sections" %}',
+        data: { location_id: locationId },
+        success: function(response) {
+          let options = '<option value="">انتخاب کنید</option>';
+          // توجه: پاسخ شامل آرایه‌ای در sections است
+          if (response.sections) {
+            response.sections.forEach(section => {
+              options += `<option value="${section.id}">${section.section}</option>`;
+            });
+          }
+          $('#section-select').html(options);
+        },
+        error: function() {
+          $('#section-select').html('<option value="">خطا در بارگذاری بخش‌ها</option>');
+        }
+      });
+    },
+    
+    loadContractors() {
+      $.ajax({
+        url: '{% url "hse_incidents:get_contractors_ajax" %}',
+        success: function(data) {
+          let options = '<option value="">انتخاب کنید</option>';
+          data.forEach(contractor => {
+            options += `<option value="${contractor.id}">${contractor.company_name}</option>`;
+          });
+          $('#contractor-select').html(options);
+        }
+      });
+    },
+    
+    loadContractorEmployees(contractorId) {
+      if (!contractorId) {
+        $('#contractor-employees-select').html('').select2('destroy');
+        return;
+      }
+      
+      $.ajax({
+        url: '{% url "hse_incidents:get_contractor_employees_ajax" %}',
+        data: { contractor_id: contractorId },
+        success: function(data) {
+          $('#contractor-employees-select').select2({
+            data: data.map(emp => ({ id: emp.id, text: emp.name })),
+            placeholder: 'انتخاب کنید...',
+            dir: 'rtl'
+          });
+        }
+      });
+    },
+    
+    submitForm() {
+      if (!this.validateStep(4)) return;
+      
+      this.isSubmitting = true;
+      const form = document.getElementById('incident-form');
+      const formData = new FormData(form);
+      
+      fetch('{% url "hse_incidents:incident_report" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          alert('گزارش حادثه با موفقیت ثبت شد.');
+          window.location.href = data.redirect;
+        } else {
+          alert('خطا در ثبت گزارش: ' + (data.message || 'خطای نامشخص'));
+          this.isSubmitting = false;
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('خطا در ارتباط با سرور');
+        this.isSubmitting = false;
+      });
+    }
+  };
+}
+</script>
+{% endblock %}

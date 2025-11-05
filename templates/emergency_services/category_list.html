@@ -1,18 +1,25 @@
-{% extends 'base.html' %}
+{% extends 'emergency_services/emergency_base.html' %}
 {% block title %}دسته‌بندی داروها{% endblock %}
 {% block content %}
-<div class="rounded-lg shadow-lg bg-white dark:bg-gray-800">
-  <div class="p-4 rounded-t-lg bg-gradient-to-l from-indigo-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
-    <i class="fa-solid fa-tags text-indigo-600"></i>
-    <h3 class="font-semibold">دسته‌بندی داروها</h3>
+<div class="rounded-lg shadow-lg bg-white dark:bg-gray-800" x-data="categoryModal()" x-init="init()">
+  <div class="p-4 rounded-t-lg bg-gradient-to-l from-indigo-500 to-blue-600 text-white flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <i class="fa-solid fa-tags"></i>
+      <h3 class="font-semibold">دسته‌بندی داروها</h3>
+    </div>
+    <button type="button" @click="$dispatch('category-modal', { mode: 'create' })" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20">
+      <i class="fa-solid fa-plus"></i>
+      افزودن جدید
+    </button>
   </div>
-  <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div class="md:col-span-2">
+  <div class="p-4">
+    <div class="overflow-x-auto">
       <table class="min-w-full text-sm">
         <thead class="bg-gray-50 dark:bg-gray-700/50">
           <tr class="text-right">
             <th class="px-4 py-2">نام</th>
             <th class="px-4 py-2">توضیحات</th>
+            <th class="px-4 py-2">عملیات</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
@@ -20,18 +27,35 @@
             <tr>
               <td class="px-4 py-2 font-medium">{{ c.name }}</td>
               <td class="px-4 py-2">{{ c.description|default:'-' }}</td>
+              <td class="px-4 py-2">
+                <div class="inline-flex items-center gap-2">
+                  <button type="button" @click="$dispatch('category-modal', { mode: 'edit', url: '{% url 'emergency_services:edit_category' c.id %}' })" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700" title="ویرایش">
+                    <i class="fa-solid fa-pen-to-square text-indigo-600"></i>
+                  </button>
+                </div>
+              </td>
             </tr>
           {% empty %}
-            <tr><td colspan="2" class="px-4 py-6 text-center text-gray-500">موردی نیست</td></tr>
+            <tr><td colspan="3" class="px-4 py-6 text-center text-gray-500">موردی نیست</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-    <div>
-      <div class="rounded-lg border border-gray-100 dark:border-gray-700">
-        <div class="px-4 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-t-lg text-sm font-medium">افزودن دسته‌بندی</div>
-        <form method="post" class="p-4 space-y-3">
-          {% csrf_token %}
+  </div>
+</div>
+
+<!-- Modal -->
+<div x-data="categoryModal()" x-init="init()" x-on:category-modal.window="openFromEvent($event)" x-show="isOpen" x-cloak class="fixed inset-0 z-40 flex items-center justify-center">
+  <div class="absolute inset-0 bg-black/40" @click="close()"></div>
+  <div class="relative z-50 w-full max-w-2xl bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+    <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+      <h4 class="font-semibold" x-text="title"></h4>
+      <button @click="close()" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="p-4" id="category-modal-body">
+      <form method="post" action="" x-show="mode==='create'">
+        {% csrf_token %}
+        <div class="space-y-3">
           <div>
             <label class="block text-sm mb-1">نام</label>
             {{ form.name }}
@@ -40,12 +64,71 @@
             <label class="block text-sm mb-1">توضیحات</label>
             {{ form.description }}
           </div>
-          <div class="flex justify-end">
-            <button type="submit" class="px-3 py-1.5 rounded-md bg-indigo-600 text-white">ثبت</button>
-          </div>
-        </form>
-      </div>
+        </div>
+        <div class="mt-4 flex justify-end gap-2">
+          <button type="button" @click="close()" class="px-3 py-1.5 rounded-md bg-gray-100 text-gray-700">انصراف</button>
+          <button type="submit" class="px-3 py-1.5 rounded-md bg-indigo-600 text-white">ثبت</button>
+        </div>
+      </form>
+      <div x-show="mode==='edit'" id="category-edit-container" class="min-h-[120px]"></div>
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function categoryModal(){
+    const extractForm = (html) => {
+      try {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const form = doc.querySelector('form');
+        return form ? form.outerHTML : html;
+      } catch { return html; }
+    };
+    const enhance = (root) => {
+      root.querySelectorAll('input,select,textarea').forEach(el => el.classList.add('w-full'));
+      if (window.$) {
+        $(root).find('select.select2').each(function(){
+          const $s = $(this);
+          if ($s.data('select2')) $s.select2('destroy');
+          $s.select2({ width:'100%', dir:'rtl' });
+        });
+        if ($.fn.persianDatepicker) {
+          $(root).find('.jalali-date').each(function(){
+            const $el = $(this); try{ $el.prop('type','text'); }catch(e){}
+            $el.persianDatepicker({ format:'YYYY/MM/DD', autoClose:true });
+          });
+          $(root).find('.jalali-datetime').each(function(){
+            const $el = $(this); try{ $el.prop('type','text'); }catch(e){}
+            $el.persianDatepicker({ format:'YYYY/MM/DD HH:mm:ss', timePicker:{ enabled:true, second:true }, autoClose:true });
+          });
+        }
+      }
+    };
+    return {
+      isOpen: false,
+      mode: 'create',
+      title: '',
+      init(){},
+      openModal(kind, url){
+        this.mode = kind; this.title = kind==='create' ? 'افزودن دسته‌بندی' : 'ویرایش دسته‌بندی'; this.isOpen = true;
+        if (kind === 'edit' && url){
+          const el = document.getElementById('category-edit-container');
+          el.innerHTML = '<div class="py-8 text-center text-sm text-gray-500">در حال بارگذاری...</div>';
+          fetch(url, { headers: { 'X-Requested-With':'XMLHttpRequest' }})
+            .then(r => r.text())
+            .then(html => { el.innerHTML = extractForm(html); enhance(el); })
+            .catch(() => { el.innerHTML = '<div class="text-red-600 text-sm">خطا در بارگذاری فرم</div>'; });
+        }
+        if (kind === 'create') {
+          const el = document.getElementById('category-modal-body');
+          enhance(el);
+        }
+      },
+      openFromEvent(ev){ const d = ev.detail || {}; this.openModal(d.mode || 'create', d.url || null); },
+      close(){ this.isOpen = false; }
+    }
+  }
+</script>
 {% endblock %}

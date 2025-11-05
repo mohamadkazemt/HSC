@@ -1,0 +1,664 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load jalali_utils %}
+
+{% block title %}جزئیات درخواست مرخصی{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto" x-data="leaveDetailManager()">
+    <!-- Header with Back Button -->
+    <div class="mb-6 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <a 
+                href="{% url 'leave_reports:my_inbox' %}"
+                class="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200"
+            >
+                <i class="fas fa-arrow-right text-gray-600 dark:text-gray-400"></i>
+            </a>
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                    <i class="fas fa-file-alt text-indigo-600 dark:text-indigo-400"></i>
+                    جزئیات درخواست مرخصی
+                </h1>
+                <p class="mt-1 text-gray-600 dark:text-gray-400">
+                    شماره درخواست: #{{ leave.id }}
+                </p>
+            </div>
+        </div>
+
+        <!-- Status Badge -->
+        <div>
+            {% if leave.status == 'pending_replacement' %}
+            <span class="inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 shadow-lg">
+                <i class="fas fa-clock text-lg ml-2"></i>
+                در انتظار جانشین
+            </span>
+            {% elif leave.status == 'pending_approval' %}
+            <span class="inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 shadow-lg">
+                <i class="fas fa-hourglass-half text-lg ml-2"></i>
+                در انتظار تأیید مدیر
+            </span>
+            {% elif leave.status == 'approved' %}
+            <span class="inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 shadow-lg">
+                <i class="fas fa-check-circle text-lg ml-2"></i>
+                تأیید شده
+            </span>
+            {% elif leave.status == 'rejected' %}
+            <span class="inline-flex items-center px-4 py-2 rounded-xl text-sm font-bold bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 shadow-lg">
+                <i class="fas fa-times-circle text-lg ml-2"></i>
+                رد شده
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Main Content (Left Side) -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Request Details Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+                <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-info-circle"></i>
+                        اطلاعات درخواست
+                    </h2>
+                </div>
+
+                <div class="p-6 space-y-4">
+                    <!-- User Info -->
+                    <div class="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
+                        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                            {{ leave.user.first_name|first }}{{ leave.user.last_name|first }}
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">
+                                {{ leave.user.get_full_name }}
+                            </h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                {{ leave.work_group|default:"نامشخص" }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Details Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
+                            <label class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2 mb-2">
+                                <i class="fas fa-list text-indigo-600 dark:text-indigo-400"></i>
+                                نوع مرخصی
+                            </label>
+                            <p class="text-base font-medium text-gray-900 dark:text-white">
+                                {{ leave.get_leave_type_display }}
+                            </p>
+                        </div>
+
+                        <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
+                            <label class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2 mb-2">
+                                <i class="fas fa-calendar text-indigo-600 dark:text-indigo-400"></i>
+                                تاریخ مرخصی
+                            </label>
+                            <p class="text-base font-medium text-gray-900 dark:text-white">
+                                {{ leave.shift_date|to_jalali }}
+                            </p>
+                        </div>
+
+                        <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
+                            <label class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2 mb-2">
+                                <i class="fas fa-clock text-indigo-600 dark:text-indigo-400"></i>
+                                نوع شیفت
+                            </label>
+                            <p class="text-base font-medium text-gray-900 dark:text-white">
+                                {{ leave.get_shift_type_display }}
+                            </p>
+                        </div>
+
+                        <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
+                            <label class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2 mb-2">
+                                <i class="fas fa-hourglass-half text-indigo-600 dark:text-indigo-400"></i>
+                                مدت زمان
+                            </label>
+                            <p class="text-base font-medium text-gray-900 dark:text-white">
+                                {% if leave.leave_type == 'hourly' %}
+                                    {{ leave.start_time|default:"--" }} تا {{ leave.end_time|default:"--" }}
+                                {% else %}
+                                    تمام شیفت
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    {% if leave.description %}
+                    <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
+                        <label class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2 mb-2">
+                            <i class="fas fa-comment-alt text-indigo-600 dark:text-indigo-400"></i>
+                            توضیحات
+                        </label>
+                        <p class="text-base text-gray-900 dark:text-white whitespace-pre-wrap">{{ leave.description }}</p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Medical Document -->
+                    {% if leave.leave_type == 'sick_leave' and leave.medical_document %}
+                    <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
+                        <label class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2 mb-2">
+                            <i class="fas fa-file-medical text-red-600 dark:text-red-400"></i>
+                            مدرک پزشکی
+                        </label>
+                        <a 
+                            href="{{ leave.medical_document.url }}"
+                            target="_blank"
+                            class="inline-flex items-center gap-2 px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg transition-colors duration-200 font-medium"
+                        >
+                            <i class="fas fa-download"></i>
+                            دانلود مدرک
+                        </a>
+                    </div>
+                    {% endif %}
+
+                    <!-- Rejection Reason -->
+                    {% if leave.status == 'rejected' and leave.rejection_reason %}
+                    <div class="p-4 bg-red-50 dark:bg-red-900/20 border-r-4 border-red-500 rounded-xl">
+                        <label class="text-sm text-red-700 dark:text-red-400 flex items-center gap-2 mb-2 font-bold">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            دلیل رد درخواست
+                        </label>
+                        <p class="text-base text-red-900 dark:text-red-200 whitespace-pre-wrap">{{ leave.rejection_reason }}</p>
+                        {% if leave.rejected_by %}
+                        <p class="text-sm text-red-600 dark:text-red-400 mt-2">
+                            رد شده توسط: {{ leave.rejected_by.get_full_name }}
+                        </p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Timeline Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+                <div class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-4">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i class="fas fa-route"></i>
+                        مسیر تأیید
+                    </h2>
+                </div>
+
+                <div class="p-6">
+                    <div class="relative">
+                        <!-- Timeline Line -->
+                        <div class="absolute right-5 top-0 bottom-0 w-0.5 bg-gray-300 dark:bg-gray-600"></div>
+
+                        <!-- Timeline Items -->
+                        <div class="space-y-6">
+                            <!-- Created -->
+                            <div class="relative flex items-start gap-4">
+                                <div class="relative z-10 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-lg">
+                                    <i class="fas fa-plus"></i>
+                                </div>
+                                <div class="flex-1 pt-1">
+                                    <h4 class="text-sm font-bold text-gray-900 dark:text-white">ثبت درخواست</h4>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                        توسط {{ leave.user.get_full_name }}
+                                    </p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                        {{ leave.created_at|to_jalali }}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Replacement Person -->
+                            {% if leave.leave_type == 'regular' %}
+                            <div class="relative flex items-start gap-4">
+                                {% if leave.replacement_approved %}
+                                <div class="relative z-10 w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white shadow-lg">
+                                    <i class="fas fa-check"></i>
+                                </div>
+                                {% elif leave.status == 'rejected' %}
+                                <div class="relative z-10 w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white shadow-lg">
+                                    <i class="fas fa-times"></i>
+                                </div>
+                                {% else %}
+                                <div class="relative z-10 w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white shadow-lg animate-pulse">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                {% endif %}
+                                <div class="flex-1 pt-1">
+                                    <h4 class="text-sm font-bold text-gray-900 dark:text-white">تأیید جانشین</h4>
+                                    {% if leave.replacement_person %}
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                        جانشین: {{ leave.replacement_person.get_full_name }}
+                                    </p>
+                                    {% endif %}
+                                    {% if leave.replacement_approved %}
+                                    <span class="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 mt-1">
+                                        <i class="fas fa-check-circle"></i>
+                                        تأیید شده
+                                    </span>
+                                    {% elif leave.status == 'rejected' %}
+                                    <span class="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400 mt-1">
+                                        <i class="fas fa-times-circle"></i>
+                                        رد شده
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                        <i class="fas fa-hourglass-half"></i>
+                                        در انتظار تأیید
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- Manager Approval -->
+                            <div class="relative flex items-start gap-4">
+                                {% if leave.status == 'approved' %}
+                                <div class="relative z-10 w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center text-white shadow-lg">
+                                    <i class="fas fa-check-double"></i>
+                                </div>
+                                {% elif leave.status == 'rejected' %}
+                                <div class="relative z-10 w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-white shadow-lg">
+                                    <i class="fas fa-times"></i>
+                                </div>
+                                {% elif leave.status == 'pending_approval' %}
+                                <div class="relative z-10 w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white shadow-lg animate-pulse">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                {% else %}
+                                <div class="relative z-10 w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400">
+                                    <i class="fas fa-user-tie"></i>
+                                </div>
+                                {% endif %}
+                                <div class="flex-1 pt-1">
+                                    <h4 class="text-sm font-bold text-gray-900 dark:text-white">تأیید مدیر</h4>
+                                    {% if leave.final_approver %}
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                        توسط: {{ leave.final_approver.get_full_name }}
+                                    </p>
+                                    {% endif %}
+                                    {% if leave.status == 'approved' %}
+                                    <span class="inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 mt-1">
+                                        <i class="fas fa-check-circle"></i>
+                                        تأیید شده
+                                    </span>
+                                    {% elif leave.status == 'rejected' %}
+                                    <span class="inline-flex items-center gap-1 text-xs text-red-600 dark:text-red-400 mt-1">
+                                        <i class="fas fa-times-circle"></i>
+                                        رد شده
+                                    </span>
+                                    {% elif leave.status == 'pending_approval' %}
+                                    <span class="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                        <i class="fas fa-hourglass-half"></i>
+                                        در انتظار تأیید
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        <i class="fas fa-circle"></i>
+                                        هنوز نرسیده
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Sidebar -->
+        <div class="space-y-6">
+            <!-- Action Buttons -->
+            {% if can_approve %}
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 space-y-4">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
+                    <i class="fas fa-tasks text-indigo-600 dark:text-indigo-400"></i>
+                    عملیات
+                </h3>
+
+                <!-- Approve Button -->
+                <button 
+                    @click="approveRequest"
+                    :disabled="loading"
+                    class="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2"
+                >
+                    <i class="fas" :class="loading ? 'fa-spinner fa-spin' : 'fa-check'"></i>
+                    <span x-text="loading ? 'در حال پردازش...' : 'تأیید درخواست'"></span>
+                </button>
+
+                <!-- Reject Button -->
+                <button 
+                    @click="showRejectModal = true"
+                    :disabled="loading"
+                    class="w-full px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2"
+                >
+                    <i class="fas fa-times"></i>
+                    رد درخواست
+                </button>
+            </div>
+            {% endif %}
+
+            <!-- Info Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
+                    <i class="fas fa-info-circle text-indigo-600 dark:text-indigo-400"></i>
+                    اطلاعات تکمیلی
+                </h3>
+
+                <div class="space-y-3">
+                    <div class="flex items-start justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">تاریخ ثبت:</span>
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">
+                            {{ leave.created_at|to_jalali }}
+                        </span>
+                    </div>
+
+                    <div class="flex items-start justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">ثبت شده توسط:</span>
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">
+                            {{ leave.crate_by.get_full_name|default:"سیستم" }}
+                        </span>
+                    </div>
+
+                    {% if leave.updated_at %}
+                    <div class="flex items-start justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">آخرین بروزرسانی:</span>
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">
+                            {{ leave.updated_at|to_jalali }}
+                        </span>
+                    </div>
+                    {% endif %}
+
+                    {% if leave.final_approver %}
+                    <div class="flex items-start justify-between py-2">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">تأیید کننده نهایی:</span>
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">
+                            {{ leave.final_approver.get_full_name }}
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg p-6 text-white">
+                <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                    <i class="fas fa-link"></i>
+                    لینک‌های مرتبط
+                </h3>
+                <div class="space-y-2">
+                    <a 
+                        href="{% url 'leave_reports:my_inbox' %}"
+                        class="block px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors duration-200 text-sm"
+                    >
+                        <i class="fas fa-inbox ml-2"></i>
+                        صندوق ورودی
+                    </a>
+                    <a 
+                        href="{% url 'leave_reports:leave_archive' %}"
+                        class="block px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors duration-200 text-sm"
+                    >
+                        <i class="fas fa-archive ml-2"></i>
+                        آرشیو مرخصی‌ها
+                    </a>
+                    <a 
+                        href="{% url 'leave_reports:request_leave' %}"
+                        class="block px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors duration-200 text-sm"
+                    >
+                        <i class="fas fa-plus ml-2"></i>
+                        ثبت درخواست جدید
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Modal -->
+    <div 
+        x-show="showRejectModal"
+        x-cloak
+        class="fixed inset-0 z-50 overflow-y-auto"
+        @keydown.escape.window="showRejectModal = false"
+    >
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <!-- Backdrop -->
+            <div 
+                x-show="showRejectModal"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0"
+                @click="showRejectModal = false"
+                class="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            ></div>
+
+            <!-- Modal Content -->
+            <div 
+                x-show="showRejectModal"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 transform scale-90"
+                x-transition:enter-end="opacity-100 transform scale-100"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 transform scale-100"
+                x-transition:leave-end="opacity-0 transform scale-90"
+                class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 z-10"
+            >
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <i class="fas fa-exclamation-circle text-red-600 dark:text-red-400"></i>
+                        دلیل رد درخواست
+                    </h3>
+                    <button 
+                        @click="showRejectModal = false"
+                        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                    >
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <textarea 
+                    x-model="rejectReason"
+                    rows="4"
+                    placeholder="لطفاً دلیل رد درخواست را وارد کنید..."
+                    class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-red-500 focus:border-red-500"
+                ></textarea>
+
+                <div class="flex gap-3 mt-6">
+                    <button 
+                        @click="rejectRequest"
+                        :disabled="!rejectReason.trim() || loading"
+                        class="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold rounded-xl transition-all duration-300"
+                    >
+                        <span x-text="loading ? 'در حال پردازش...' : 'تأیید رد'"></span>
+                    </button>
+                    <button 
+                        @click="showRejectModal = false"
+                        :disabled="loading"
+                        class="flex-1 px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 font-medium rounded-xl transition-colors duration-200"
+                    >
+                        انصراف
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div
+        x-show="toast.show"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 transform translate-x-full"
+        x-transition:enter-end="opacity-100 transform translate-x-0"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100 transform translate-x-0"
+        x-transition:leave-end="opacity-0 transform translate-x-full"
+        class="fixed top-4 left-4 z-50 max-w-sm"
+        x-cloak
+    >
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border-r-4 overflow-hidden"
+             :class="{
+                'border-green-500': toast.type === 'success',
+                'border-red-500': toast.type === 'error'
+             }"
+        >
+            <div class="p-4 flex items-start gap-3">
+                <i class="text-2xl mt-0.5"
+                   :class="{
+                      'fas fa-check-circle text-green-500': toast.type === 'success',
+                      'fas fa-times-circle text-red-500': toast.type === 'error'
+                   }"
+                ></i>
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-900 dark:text-white" x-text="toast.message"></p>
+                </div>
+                <button @click="toast.show = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="h-1 bg-gray-200 dark:bg-gray-700">
+                <div class="h-full transition-all duration-100 ease-linear"
+                     :class="{
+                        'bg-green-500': toast.type === 'success',
+                        'bg-red-500': toast.type === 'error'
+                     }"
+                     :style="`width: ${toast.progress}%`"
+                ></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function leaveDetailManager() {
+    return {
+        showRejectModal: false,
+        rejectReason: '',
+        loading: false,
+        toast: {
+            show: false,
+            message: '',
+            type: 'success',
+            progress: 100,
+            timer: null
+        },
+
+        showToast(message, type = 'success') {
+            if (this.toast.timer) clearInterval(this.toast.timer);
+            
+            this.toast.message = message;
+            this.toast.type = type;
+            this.toast.progress = 100;
+            this.toast.show = true;
+
+            const duration = 3000;
+            const interval = 30;
+            const decrement = (100 / duration) * interval;
+
+            this.toast.timer = setInterval(() => {
+                this.toast.progress -= decrement;
+                if (this.toast.progress <= 0) {
+                    clearInterval(this.toast.timer);
+                    this.toast.show = false;
+                }
+            }, interval);
+        },
+
+        async approveRequest() {
+            if (this.loading) return;
+
+            if (!confirm('آیا از تأیید این درخواست اطمینان دارید؟')) {
+                return;
+            }
+
+            this.loading = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+                // Determine URL based on status
+                let url;
+                {% if leave.status == 'pending_replacement' %}
+                url = '{% url "leave_reports:approve_as_replacement" leave.id %}';
+                {% elif leave.status == 'pending_approval' %}
+                url = '{% url "leave_reports:approve_as_manager" leave.id %}';
+                {% endif %}
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    this.showToast(data.message, 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    this.showToast(data.message || 'خطا در تأیید درخواست', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                this.showToast('خطا در ارتباط با سرور', 'error');
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async rejectRequest() {
+            if (this.loading || !this.rejectReason.trim()) return;
+
+            this.loading = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+                formData.append('rejection_reason', this.rejectReason);
+
+                // Determine URL based on status
+                let url;
+                {% if leave.status == 'pending_replacement' %}
+                url = '{% url "leave_reports:reject_as_replacement" leave.id %}';
+                {% elif leave.status == 'pending_approval' %}
+                url = '{% url "leave_reports:reject_as_manager" leave.id %}';
+                {% endif %}
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    this.showToast(data.message, 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    this.showToast(data.message || 'خطا در رد درخواست', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                this.showToast('خطا در ارتباط با سرور', 'error');
+            } finally {
+                this.loading = false;
+                this.showRejectModal = false;
+            }
+        }
+    };
+}
+</script>
+{% endblock %}

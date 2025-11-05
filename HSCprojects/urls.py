@@ -48,6 +48,7 @@ urlpatterns = [
     path('fire_extinguisher_management/', include('fire_extinguisher_management.urls', namespace='fire_extinguisher_management')),
     path('baseinfo/', include('BaseInfo.urls', namespace='baseinfo')),
     path('core/', include('core.urls', namespace='core')),
+    path('rubika-bot/', include(('rubika_bot.urls', 'rubika_bot'), namespace='rubika_bot')),
 ]
 
 # اضافه کردن مسیرهای media و static در حالت debug

@@ -49,6 +49,15 @@
     </a>
     {% endif %}
 
+    {% if user.is_superuser %}
+    <a href="{% url 'rubika_bot:settings' %}" title="تنظیمات ربات" class="-m-2.5 p-2.5 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 transition-colors hidden sm:block">
+      <span class="sr-only">تنظیمات ربات</span>
+      <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 2a7 7 0 00-7 7v3a4 4 0 004 4v2h6v-2a4 4 0 004-4V9a7 7 0 00-7-7zm-3 9h6" />
+      </svg>
+    </a>
+    {% endif %}
+
     <!-- Notifications: bell + dropdown -->
     <div x-data="notificationsComponent({{ unread_notifications_count|default:0 }})" class="relative hidden sm:block">
       <button type="button" @click="open = !open" @click.outside="open = false" class="-m-2.5 p-2.5 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors relative">
@@ -156,6 +165,12 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
             </svg>
             پروفایل من
+          </a>
+          <a href="{% url 'rubika_bot:quick_connect' %}" class="flex items-center gap-x-3 px-4 py-2 text-sm text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-900/20">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H16.5A3 3 0 0 1 19.5 9V15A3 3 0 0 1 16.5 18H13.5M10.5 18H7.5A3 3 0 0 1 4.5 15V9A3 3 0 0 1 7.5 6H10.5M8.25 12H15.75" />
+            </svg>
+            اتصال به ربات روبیکا
           </a>
           {% if user.is_superuser %}
           <a href="{% url 'core:site_settings' %}" class="flex items-center gap-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-700">

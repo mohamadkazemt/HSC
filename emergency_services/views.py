@@ -43,8 +43,29 @@ from .forms import (
     MedicalServiceForm,
     MedicineReturnForm,
     HospitalForm,
-    EmergencyEquipmentForm
+    EmergencyEquipmentForm,
+    EmergencyPersonnelForm
 )
+from django.contrib.auth.models import User, Group
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.forms import PasswordChangeForm
+from functools import wraps
+
+def emergency_personnel_required(view_func):
+    """دکوریتور برای محدود کردن دسترسی به پرسنل اورژانس"""
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        # چک کردن اینکه کاربر پرسنل اورژانس است
+        is_emergency_personnel = request.user.groups.filter(
+            name__in=['EmergencyManager', 'EmergencyDoctor', 'EmergencyNurse']
+        ).exists()
+        
+        if not is_emergency_personnel and not request.user.is_superuser:
+            messages.error(request, 'شما مجوز دسترسی به پورتال اورژانس ندارید.')
+            return redirect('emergency_services:emergency_login')
+        
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
 
 def persian_to_english_numbers(text):
     """تبدیل اعداد فارسی به انگلیسی"""
@@ -53,8 +74,8 @@ def persian_to_english_numbers(text):
     translation_table = str.maketrans(persian_numbers, english_numbers)
     return text.translate(translation_table)
 
-@permission_required("visit_list")
 @login_required
+@emergency_personnel_required
 def visit_list(request):
     """لیست مراجعات پزشکی"""
     visits = MedicalVisit.objects.all().order_by('-visit_time')
@@ -114,8 +135,8 @@ def visit_list(request):
     
     return render(request, 'emergency_services/visit_list.html', context)
 
-@permission_required("create_visit")
 @login_required
+@emergency_personnel_required
 def create_visit(request):
     """ایجاد مراجعه جدید"""
     MedicineSelectFormSet = formset_factory(MedicineSelectForm, extra=1)
@@ -271,8 +292,8 @@ def create_visit(request):
     
     return render(request, 'emergency_services/visit_form.html', context)
 
-@permission_required("visit_detail")
 @login_required
+@emergency_personnel_required
 def visit_detail(request, pk):
     """جزئیات مراجعه"""
     visit = get_object_or_404(MedicalVisit, pk=pk)
@@ -285,8 +306,8 @@ def visit_detail(request, pk):
     
     return render(request, 'emergency_services/visit_detail.html', context)
 
-@permission_required("edit_visit")
 @login_required
+@emergency_personnel_required
 def edit_visit(request, pk):
     """ویرایش مراجعه"""
     visit = get_object_or_404(MedicalVisit, pk=pk)
@@ -346,8 +367,8 @@ def edit_visit(request, pk):
     
     return render(request, 'emergency_services/visit_edit.html', context)
 
-@permission_required("add_medicine_to_visit")
 @login_required
+@emergency_personnel_required
 def add_medicine_to_visit(request, visit_id):
     """افزودن دارو به مراجعه"""
     visit = get_object_or_404(MedicalVisit, pk=visit_id)
@@ -378,8 +399,8 @@ def add_medicine_to_visit(request, visit_id):
     
     return render(request, 'emergency_services/add_medicine.html', context)
 
-@permission_required("remove_medicine_from_visit")
 @login_required
+@emergency_personnel_required
 def remove_medicine_from_visit(request, usage_id):
     """حذف دارو از مراجعه"""
     usage = get_object_or_404(MedicineUsage, pk=usage_id)
@@ -391,8 +412,8 @@ def remove_medicine_from_visit(request, usage_id):
     messages.success(request, f'داروی {medicine_name} با موفقیت از مراجعه حذف شد.')
     return redirect('emergency_services:visit_detail', pk=visit_id)
 
-@permission_required("medicine_list")
 @login_required
+@emergency_personnel_required
 def medicine_list(request):
     """لیست داروها"""
     medicines = Medicine.objects.all().order_by('name')
@@ -437,8 +458,8 @@ def medicine_list(request):
     
     return render(request, 'emergency_services/medicine_list.html', context)
 
-@permission_required("create_medicine")
 @login_required
+@emergency_personnel_required
 def create_medicine(request):
     """ایجاد داروی جدید"""
     if request.method == 'POST':
@@ -495,8 +516,8 @@ def create_medicine(request):
     
     return render(request, 'emergency_services/medicine_form.html', context)
 
-@permission_required("edit_medicine")
 @login_required
+@emergency_personnel_required
 def edit_medicine(request, pk):
     """ویرایش دارو"""
     medicine = get_object_or_404(Medicine, pk=pk)
@@ -557,8 +578,8 @@ def edit_medicine(request, pk):
     
     return render(request, 'emergency_services/medicine_form.html', context)
 
-@permission_required("category_list")
 @login_required
+@emergency_personnel_required
 def category_list(request):
     """لیست دسته‌بندی‌ها"""
     categories = MedicineCategory.objects.all()
@@ -580,8 +601,8 @@ def category_list(request):
     
     return render(request, 'emergency_services/category_list.html', context)
 
-@permission_required("edit_category")
 @login_required
+@emergency_personnel_required
 def edit_category(request, pk):
     """ویرایش دسته‌بندی"""
     category = get_object_or_404(MedicineCategory, pk=pk)
@@ -603,8 +624,8 @@ def edit_category(request, pk):
     
     return render(request, 'emergency_services/category_edit.html', context)
 
-@permission_required("service_list")
 @login_required
+@emergency_personnel_required
 def service_list(request):
     """لیست خدمات درمانی"""
     services = MedicalService.objects.all()
@@ -626,8 +647,8 @@ def service_list(request):
     
     return render(request, 'emergency_services/service_list.html', context)
 
-@permission_required("edit_service")
 @login_required
+@emergency_personnel_required
 def edit_service(request, pk):
     """ویرایش خدمت درمانی"""
     service = get_object_or_404(MedicalService, pk=pk)
@@ -649,8 +670,8 @@ def edit_service(request, pk):
     
     return render(request, 'emergency_services/service_edit.html', context)
 
-@permission_required("return_medicine")
 @login_required
+@emergency_personnel_required
 def return_medicine(request, usage_id):
     """برگشت دارو به انبار"""
     usage = get_object_or_404(MedicineUsage, pk=usage_id)
@@ -676,10 +697,25 @@ def return_medicine(request, usage_id):
     
     return render(request, 'emergency_services/return_medicine.html', context)
 
-@permission_required("dashboard")
 @login_required
 def dashboard(request):
     """داشبورد اورژانس معدن"""
+    # چک کردن اینکه کاربر پرسنل اورژانس است
+    is_emergency_personnel = request.user.groups.filter(
+        name__in=['EmergencyManager', 'EmergencyDoctor', 'EmergencyNurse']
+    ).exists()
+    
+    # اگر پرسنل اورژانس نیست و سوپریوزر هم نیست
+    if not is_emergency_personnel and not request.user.is_superuser:
+        messages.error(request, 'شما مجوز دسترسی به پورتال اورژانس نیستید.')
+        return redirect('dashboard:home')
+    
+    # تشخیص نقش کاربر
+    user_role = None
+    user_groups = request.user.groups.filter(name__in=['EmergencyManager', 'EmergencyDoctor', 'EmergencyNurse'])
+    if user_groups.exists():
+        user_role = user_groups.first().name
+    
     # آمار کلی مراجعات
     total_visits = MedicalVisit.objects.count()
     today_visits = MedicalVisit.objects.filter(visit_time__date=timezone.now().date()).count()
@@ -688,6 +724,13 @@ def dashboard(request):
     # آمار مراجعات پرسنل شرکت و پیمانکار
     company_visits = MedicalVisit.objects.filter(personnel_type='company').count()
     contractor_visits = MedicalVisit.objects.filter(personnel_type='contractor').count()
+    
+    # آمار خاص بر اساس نقش
+    my_visits_count = 0
+    my_recent_visits = []
+    if user_role in ['DOCTOR', 'NURSE', 'PARAMEDIC']:
+        my_visits_count = MedicalVisit.objects.filter(created_by=request.user).count()
+        my_recent_visits = MedicalVisit.objects.filter(created_by=request.user).order_by('-visit_time')[:5]
     
     # آمار داروها
     total_medicines = Medicine.objects.count()
@@ -737,12 +780,15 @@ def dashboard(request):
         'expired_medicines_list': expired_medicines_list,
         'equip_calibration_due': equip_calibration_due,
         'equip_calibration_overdue': equip_calibration_overdue,
+        'user_role': user_role,
+        'my_visits_count': my_visits_count,
+        'my_recent_visits': my_recent_visits,
     }
     
     return render(request, 'emergency_services/dashboard.html', context)
 
-@permission_required("export_visits_csv")
 @login_required
+@emergency_personnel_required
 def export_visits_csv(request):
     """خروجی CSV از مراجعات"""
     # فیلترها
@@ -805,8 +851,8 @@ def export_visits_csv(request):
     
     return response
 
-@permission_required("export_medicines_csv")
 @login_required
+@emergency_personnel_required
 def export_medicines_csv(request):
     """خروجی CSV از داروها"""
     medicines = Medicine.objects.all().order_by('name')
@@ -833,8 +879,8 @@ def export_medicines_csv(request):
     
     return response
 
-@permission_required("print_visit")
 @login_required
+@emergency_personnel_required
 def print_visit(request, pk):
     """چاپ فرم مراجعه"""
     visit = get_object_or_404(MedicalVisit, pk=pk)
@@ -847,8 +893,8 @@ def print_visit(request, pk):
     
     return render(request, 'emergency_services/print_visit.html', context)
 
-@permission_required("hospital_list")
 @login_required
+@emergency_personnel_required
 def hospital_list(request):
     """لیست بیمارستان‌ها"""
     hospitals = Hospital.objects.all().order_by('name')
@@ -859,8 +905,8 @@ def hospital_list(request):
     
     return render(request, 'emergency_services/hospital_list.html', context)
 
-@permission_required("create_hospital")
 @login_required
+@emergency_personnel_required
 def create_hospital(request):
     """ایجاد بیمارستان جدید"""
     if request.method == 'POST':
@@ -879,8 +925,8 @@ def create_hospital(request):
     
     return render(request, 'emergency_services/hospital_form.html', context)
 
-@permission_required("edit_hospital")
 @login_required
+@emergency_personnel_required
 def edit_hospital(request, pk):
     """ویرایش بیمارستان"""
     hospital = get_object_or_404(Hospital, pk=pk)
@@ -902,8 +948,8 @@ def edit_hospital(request, pk):
     
     return render(request, 'emergency_services/hospital_form.html', context)
 
-@permission_required("delete_hospital")
 @login_required
+@emergency_personnel_required
 def delete_hospital(request, pk):
     """حذف بیمارستان"""
     hospital = get_object_or_404(Hospital, pk=pk)
@@ -1024,8 +1070,8 @@ def download_sample_excel(request):
     
     return response
 
-@permission_required("equipment_list")
 @login_required
+@emergency_personnel_required
 def equipment_list(request):
     """لیست تجهیزات اورژانس"""
     equipments = EmergencyEquipment.objects.all().order_by('next_calibration_date')
@@ -1059,8 +1105,8 @@ def equipment_list(request):
     
     return render(request, 'emergency_services/equipment_list.html', context)
 
-@permission_required("create_equipment")
 @login_required
+@emergency_personnel_required
 def create_equipment(request):
     """ایجاد تجهیز جدید"""
     if request.method == 'POST':
@@ -1096,8 +1142,8 @@ def create_equipment(request):
         form = EmergencyEquipmentForm()
     return render(request, 'emergency_services/equipment_form.html', {'form': form})
 
-@permission_required("edit_equipment")
 @login_required
+@emergency_personnel_required
 def edit_equipment(request, pk):
     """ویرایش تجهیز"""
     equipment = get_object_or_404(EmergencyEquipment, pk=pk)
@@ -1128,14 +1174,612 @@ def edit_equipment(request, pk):
                 return redirect('emergency_services:equipment_list')
             except Exception as e:
                 messages.error(request, f'خطا در بروزرسانی تجهیز: {str(e)}')
-        else:
-            print(form.errors)
     else:
         form = EmergencyEquipmentForm(instance=equipment)
+    
     return render(request, 'emergency_services/equipment_form.html', {'form': form, 'equipment': equipment})
 
-@permission_required("delete_equipment")
+# ==================== Data Management Page ====================
 @login_required
+def data_management(request):
+    """صفحه مدیریت داده‌ها - فقط برای مدیر اورژانس"""
+    # چک کردن اینکه کاربر مدیر اورژانس است یا سوپریوزر
+    is_emergency_manager = request.user.groups.filter(name='EmergencyManager').exists()
+    
+    if not is_emergency_manager and not request.user.is_superuser:
+        messages.error(request, 'فقط مدیر اورژانس مجاز به دسترسی به این بخش می‌باشد.')
+        return redirect('emergency_services:dashboard')
+    
+    context = {
+        'page_title': 'مدیریت داده‌های اورژانس',
+    }
+    return render(request, 'emergency_services/data_management.html', context)
+
+# ==================== API Endpoints for AJAX Operations ====================
+
+@login_required
+def api_medicines_list(request):
+    """API لیست داروها"""
+    medicines = Medicine.objects.all().select_related('category')
+    
+    search = request.GET.get('search', '')
+    if search:
+        medicines = medicines.filter(
+            Q(name__icontains=search) | 
+            Q(category__name__icontains=search)
+        )
+    
+    data = []
+    for medicine in medicines:
+        data.append({
+            'id': medicine.id,
+            'name': medicine.name,
+            'category': medicine.category.name if medicine.category else '',
+            'quantity': medicine.quantity,
+            'critical_threshold': medicine.critical_threshold,
+            'expiry_date': medicine.expiry_date.strftime('%Y/%m/%d'),
+            'is_active': medicine.is_active,
+            'is_expired': medicine.is_expired(),
+            'is_critical': medicine.is_critical(),
+        })
+    
+    return JsonResponse({'data': data})
+
+@login_required
+def api_medicine_save(request):
+    """API ذخیره دارو (ایجاد/ویرایش)"""
+    if request.method == 'POST':
+        medicine_id = request.POST.get('id')
+        
+        if medicine_id:
+            medicine = get_object_or_404(Medicine, pk=medicine_id)
+            form = MedicineForm(request.POST, instance=medicine)
+        else:
+            form = MedicineForm(request.POST)
+        
+        # تبدیل تاریخ شمسی به میلادی
+        data = request.POST.copy()
+        expiry_date = data.get('expiry_date')
+        if expiry_date:
+            try:
+                expiry_date = persian_to_english_numbers(expiry_date.strip())
+                expiry_date = re.sub(r'[^0-9/]', '', expiry_date)
+                year, month, day = map(int, expiry_date.split('/'))
+                if year < 100:
+                    year += 1400
+                jalali_date = jdatetime.date(year, month, day)
+                gregorian_date = jalali_date.togregorian()
+                data['expiry_date'] = gregorian_date.strftime('%Y-%m-%d')
+            except Exception as e:
+                return JsonResponse({
+                    'success': False,
+                    'errors': {'expiry_date': ['فرمت تاریخ نامعتبر است']}
+                })
+        
+        form = MedicineForm(data, instance=medicine if medicine_id else None)
+        
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'errors': form.errors})
+    
+    return JsonResponse({'success': False, 'message': 'متد نامعتبر'})
+
+@login_required
+def api_medicine_delete(request, pk):
+    """API حذف دارو"""
+    if request.method == 'POST':
+        medicine = get_object_or_404(Medicine, pk=pk)
+        medicine.delete()
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False})
+
+@login_required
+def api_categories_list(request):
+    """API لیست دسته‌بندی‌ها"""
+    categories = MedicineCategory.objects.all()
+    
+    search = request.GET.get('search', '')
+    if search:
+        categories = categories.filter(name__icontains=search)
+    
+    data = []
+    for category in categories:
+        data.append({
+            'id': category.id,
+            'name': category.name,
+            'description': category.description or '',
+        })
+    
+    return JsonResponse({'data': data})
+
+@login_required
+def api_category_save(request):
+    """API ذخیره دسته‌بندی"""
+    if request.method == 'POST':
+        category_id = request.POST.get('id')
+        
+        if category_id:
+            category = get_object_or_404(MedicineCategory, pk=category_id)
+            form = MedicineCategoryForm(request.POST, instance=category)
+        else:
+            form = MedicineCategoryForm(request.POST)
+        
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'errors': form.errors})
+    
+    return JsonResponse({'success': False})
+
+@login_required
+def api_category_delete(request, pk):
+    """API حذف دسته‌بندی"""
+    if request.method == 'POST':
+        category = get_object_or_404(MedicineCategory, pk=pk)
+        category.delete()
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False})
+
+@login_required
+def api_services_list(request):
+    """API لیست خدمات درمانی"""
+    services = MedicalService.objects.all()
+    
+    search = request.GET.get('search', '')
+    if search:
+        services = services.filter(name__icontains=search)
+    
+    data = []
+    for service in services:
+        data.append({
+            'id': service.id,
+            'name': service.name,
+            'description': service.description or '',
+        })
+    
+    return JsonResponse({'data': data})
+
+@login_required
+def api_service_save(request):
+    """API ذخیره خدمت درمانی"""
+    if request.method == 'POST':
+        service_id = request.POST.get('id')
+        
+        if service_id:
+            service = get_object_or_404(MedicalService, pk=service_id)
+            form = MedicalServiceForm(request.POST, instance=service)
+        else:
+            form = MedicalServiceForm(request.POST)
+        
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'errors': form.errors})
+    
+    return JsonResponse({'success': False})
+
+@login_required
+def api_service_delete(request, pk):
+    """API حذف خدمت درمانی"""
+    if request.method == 'POST':
+        service = get_object_or_404(MedicalService, pk=pk)
+        service.delete()
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False})
+
+@login_required
+def api_equipment_list(request):
+    """API لیست تجهیزات"""
+    equipment = EmergencyEquipment.objects.all()
+    
+    search = request.GET.get('search', '')
+    if search:
+        equipment = equipment.filter(
+            Q(name__icontains=search) | 
+            Q(serial_number__icontains=search)
+        )
+    
+    data = []
+    for item in equipment:
+        data.append({
+            'id': item.id,
+            'name': item.name,
+            'serial_number': item.serial_number,
+            'last_calibration_date': item.last_calibration_date.strftime('%Y/%m/%d'),
+            'next_calibration_date': item.next_calibration_date.strftime('%Y/%m/%d'),
+            'is_active': item.is_active,
+            'is_calibration_due': item.is_calibration_due(),
+        })
+    
+    return JsonResponse({'data': data})
+
+@login_required
+def api_equipment_save(request):
+    """API ذخیره تجهیز"""
+    if request.method == 'POST':
+        equipment_id = request.POST.get('id')
+        data = request.POST.copy()
+        
+        # تبدیل تاریخ‌های شمسی به میلادی
+        for field in ['last_calibration_date', 'next_calibration_date']:
+            date_val = data.get(field)
+            if date_val:
+                try:
+                    date_val = persian_to_english_numbers(date_val.strip())
+                    date_val = re.sub(r'[^0-9/]', '', date_val)
+                    year, month, day = map(int, date_val.split('/'))
+                    if year < 100:
+                        year += 1400
+                    jalali_date = jdatetime.date(year, month, day)
+                    gregorian_date = jalali_date.togregorian()
+                    data[field] = gregorian_date.strftime('%Y-%m-%d')
+                except Exception as e:
+                    return JsonResponse({
+                        'success': False,
+                        'errors': {field: ['فرمت تاریخ نامعتبر است']}
+                    })
+        
+        if equipment_id:
+            equipment = get_object_or_404(EmergencyEquipment, pk=equipment_id)
+            form = EmergencyEquipmentForm(data, instance=equipment)
+        else:
+            form = EmergencyEquipmentForm(data)
+        
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'errors': form.errors})
+    
+    return JsonResponse({'success': False})
+
+@login_required
+def api_equipment_delete(request, pk):
+    """API حذف تجهیز"""
+    if request.method == 'POST':
+        equipment = get_object_or_404(EmergencyEquipment, pk=pk)
+        equipment.delete()
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False})
+
+@login_required
+def api_hospitals_list(request):
+    """API لیست بیمارستان‌ها"""
+    hospitals = Hospital.objects.all()
+    
+    search = request.GET.get('search', '')
+    if search:
+        hospitals = hospitals.filter(name__icontains=search)
+    
+    data = []
+    for hospital in hospitals:
+        data.append({
+            'id': hospital.id,
+            'name': hospital.name,
+            'address': hospital.address,
+            'phone': hospital.phone,
+            'is_active': hospital.is_active,
+        })
+    
+    return JsonResponse({'data': data})
+
+@login_required
+def api_hospital_save(request):
+    """API ذخیره بیمارستان"""
+    if request.method == 'POST':
+        hospital_id = request.POST.get('id')
+        
+        if hospital_id:
+            hospital = get_object_or_404(Hospital, pk=hospital_id)
+            form = HospitalForm(request.POST, instance=hospital)
+        else:
+            form = HospitalForm(request.POST)
+        
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'errors': form.errors})
+    
+    return JsonResponse({'success': False})
+
+@login_required
+def api_hospital_delete(request, pk):
+    """API حذف بیمارستان"""
+    if request.method == 'POST':
+        hospital = get_object_or_404(Hospital, pk=pk)
+        if MedicalVisit.objects.filter(hospital=hospital).exists():
+            return JsonResponse({
+                'success': False,
+                'message': 'این بیمارستان دارای مراجعات مرتبط است و نمی‌توان آن را حذف کرد.'
+            })
+        hospital.delete()
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False})
+
+@login_required
+def api_personnel_list(request):
+    """لیست پرسنل اورژانس API"""
+    # Allow superuser or users with specific permission
+    if not request.user.is_superuser:
+        from permissions.utils import check_permission
+        if not check_permission(request.user, "api_personnel_list"):
+            return JsonResponse({'error': 'شما اجازه دسترسی به این بخش را ندارید'}, status=403)
+    
+    emergency_groups = Group.objects.filter(name__in=['EmergencyManager', 'EmergencyDoctor', 'EmergencyNurse'])
+    users = User.objects.filter(groups__in=emergency_groups).distinct()
+    
+    search = request.GET.get('search', '')
+    if search:
+        users = users.filter(
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search) |
+            Q(username__icontains=search)
+        )
+    
+    data = []
+    for user in users:
+        user_groups = user.groups.filter(name__in=['EmergencyManager', 'EmergencyDoctor', 'EmergencyNurse'])
+        role = user_groups.first().name if user_groups.exists() else ''
+        
+        # تعیین رنگ بج بر اساس نقش
+        role_badge = {
+            'EmergencyManager': {'label': 'مدیر اورژانس', 'color': 'primary'},
+            'EmergencyDoctor': {'label': 'پزشک اورژانس', 'color': 'success'},
+            'EmergencyNurse': {'label': 'پرستار اورژانس', 'color': 'info'},
+        }.get(role, {'label': 'نامشخص', 'color': 'secondary'})
+        
+        data.append({
+            'id': user.id,
+            'name': f"{user.first_name} {user.last_name}".strip() or user.username,
+            'username': user.username,
+            'role': role,
+            'role_label': role_badge['label'],
+            'role_color': role_badge['color'],
+            'is_active': user.is_active,
+        })
+    
+    return JsonResponse({'data': data})
+
+@login_required
+def api_personnel_save(request):
+    """ذخیره پرسنل اورژانس API"""
+    # Allow superuser or users with specific permission
+    if not request.user.is_superuser:
+        from permissions.utils import check_permission
+        if not check_permission(request.user, "api_personnel_save"):
+            return JsonResponse({'error': 'شما اجازه دسترسی به این بخش را ندارید'}, status=403)
+    
+    if request.method == 'POST':
+        user_id = request.POST.get('id')
+        
+        if user_id:
+            user = get_object_or_404(User, pk=user_id)
+            form = EmergencyPersonnelForm(request.POST, instance=user)
+        else:
+            form = EmergencyPersonnelForm(request.POST)
+        
+        if form.is_valid():
+            form.save()
+            return JsonResponse({'success': True})
+        else:
+            return JsonResponse({'success': False, 'errors': form.errors})
+    
+    return JsonResponse({'success': False})
+
+@login_required
+def api_personnel_delete(request, pk):
+    """حذف پرسنل اورژانس API"""
+    # Allow superuser or users with specific permission
+    if not request.user.is_superuser:
+        from permissions.utils import check_permission
+        if not check_permission(request.user, "api_personnel_delete"):
+            return JsonResponse({'error': 'شما اجازه دسترسی به این بخش را ندارید'}, status=403)
+    
+    if request.method == 'POST':
+        user = get_object_or_404(User, pk=pk)
+        # حذف از گروه‌های اورژانس به جای حذف کاربر
+        user.groups.filter(name__in=['EmergencyManager', 'EmergencyDoctor', 'EmergencyNurse']).clear()
+        user.is_active = False
+        user.save()
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False})
+
+@login_required
+def api_personnel_detail(request, pk):
+    """جزئیات پرسنل اورژانس API"""
+    # Allow superuser or users with specific permission
+    if not request.user.is_superuser:
+        from permissions.utils import check_permission
+        if not check_permission(request.user, "api_personnel_detail"):
+            return JsonResponse({'error': 'شما اجازه دسترسی به این بخش را ندارید'}, status=403)
+    
+    user = get_object_or_404(User, pk=pk)
+    user_groups = user.groups.filter(name__in=['EmergencyManager', 'EmergencyDoctor', 'EmergencyNurse'])
+    role = user_groups.first().name if user_groups.exists() else ''
+    
+    data = {
+        'id': user.id,
+        'username': user.username,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'role': role,
+        'is_active': user.is_active,
+    }
+    
+    return JsonResponse(data)
+
+# ==================== Emergency Portal Login/Logout ====================
+
+def emergency_login_view(request):
+    """لاگین اختصاصی پرسنل اورژانس"""
+    if request.user.is_authenticated:
+        # Check if user is emergency personnel
+        if request.user.groups.filter(name__in=['EmergencyManager', 'EmergencyDoctor', 'EmergencyNurse']).exists():
+            return redirect('emergency_services:dashboard')
+    
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(username=username, password=password)
+        
+        if user is not None:
+            # Check if user is in emergency groups
+            if user.groups.filter(name__in=['EmergencyManager', 'EmergencyDoctor', 'EmergencyNurse']).exists():
+                login(request, user)
+                messages.success(request, f'خوش آمدید {user.get_full_name() or user.username}')
+                return redirect('emergency_services:dashboard')
+            else:
+                messages.error(request, 'شما مجاز به ورود به پورتال اورژانس نیستید.')
+        else:
+            messages.error(request, 'نام کاربری یا رمز عبور اشتباه است.')
+    
+    return render(request, 'emergency_services/emergency_login.html')
+
+def emergency_logout_view(request):
+    """خروج از پورتال اورژانس"""
+    logout(request)
+    messages.info(request, 'شما با موفقیت خارج شدید.')
+    return redirect('emergency_services:emergency_login')
+
+def emergency_password_reset_view(request):
+    """بازیابی رمز عبور پرسنل اورژانس"""
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        
+        # جستجوی کاربر با ایمیل و عضویت در گروه‌های اورژانس
+        try:
+            user = User.objects.get(email=email)
+            if user.groups.filter(name__in=['EmergencyManager', 'EmergencyDoctor', 'EmergencyNurse']).exists():
+                # ایجاد توکن بازیابی
+                from django.contrib.auth.tokens import default_token_generator
+                from django.utils.http import urlsafe_base64_encode
+                from django.utils.encoding import force_bytes
+                from django.core.mail import send_mail
+                from django.template.loader import render_to_string
+                from django.conf import settings
+                
+                token = default_token_generator.make_token(user)
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                
+                # ساخت URL بازیابی
+                reset_url = request.build_absolute_uri(
+                    f"/emergency/password-reset-confirm/{uid}/{token}/"
+                )
+                
+                # ارسال ایمیل (به صورت ساده)
+                subject = 'بازیابی رمز عبور - پورتال اورژانس'
+                message = f'''
+سلام {user.get_full_name() or user.username},
+
+درخواست بازیابی رمز عبور برای حساب کاربری شما در پورتال اورژانس دریافت شد.
+
+برای تنظیم رمز عبور جدید، لطفاً روی لینک زیر کلیک کنید:
+
+{reset_url}
+
+این لینک فقط برای ۲۴ ساعت معتبر است.
+
+اگر این درخواست را نداده‌اید، لطفاً این ایمیل را نادیده بگیرید.
+
+با تشکر،
+تیم پورتال اورژانس
+                '''
+                
+                try:
+                    send_mail(
+                        subject,
+                        message,
+                        settings.DEFAULT_FROM_EMAIL,
+                        [email],
+                        fail_silently=False,
+                    )
+                    messages.success(request, 'لینک بازیابی رمز عبور به ایمیل شما ارسال شد.')
+                    return redirect('emergency_services:emergency_password_reset_done')
+                except Exception as e:
+                    messages.error(request, f'خطا در ارسال ایمیل: {str(e)}')
+            else:
+                messages.error(request, 'شما مجاز به استفاده از پورتال اورژانس نیستید.')
+        except User.DoesNotExist:
+            # برای امنیت، پیام یکسان نمایش داده می‌شود
+            messages.info(request, 'اگر این ایمیل در سیستم موجود باشد، لینک بازیابی برای شما ارسال خواهد شد.')
+    
+    return render(request, 'emergency_services/emergency_password_reset.html')
+
+def emergency_password_reset_done_view(request):
+    """صفحه تایید ارسال ایمیل بازیابی"""
+    return render(request, 'emergency_services/emergency_password_reset_done.html')
+
+# ==================== Emergency Personnel Profile ====================
+
+@login_required
+def emergency_profile(request):
+    """پروفایل پرسنل اورژانس"""
+    user = request.user
+    
+    # Get user's emergency group
+    emergency_groups = user.groups.filter(
+        name__in=['EmergencyManager', 'EmergencyDoctor', 'EmergencyNurse']
+    )
+    
+    if not emergency_groups.exists():
+        messages.error(request, 'شما به عنوان پرسنل اورژانس ثبت نشده‌اید.')
+        return redirect('emergency_services:dashboard')
+    
+    role = emergency_groups.first()
+    
+    # Get user's recent activities
+    recent_visits = MedicalVisit.objects.filter(
+        created_by__user=user
+    ).order_by('-created_at')[:10]
+    
+    # Get statistics
+    total_visits_created = MedicalVisit.objects.filter(created_by__user=user).count()
+    today_visits_created = MedicalVisit.objects.filter(
+        created_by__user=user,
+        created_at__date=timezone.now().date()
+    ).count()
+    
+    context = {
+        'user': user,
+        'role': role,
+        'recent_visits': recent_visits,
+        'total_visits_created': total_visits_created,
+        'today_visits_created': today_visits_created,
+    }
+    
+    return render(request, 'emergency_services/emergency_profile.html', context)
+
+@login_required
+def emergency_change_password(request):
+    """تغییر رمز عبور پرسنل اورژانس"""
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            # Update session to prevent logout
+            from django.contrib.auth import update_session_auth_hash
+            update_session_auth_hash(request, user)
+            messages.success(request, 'رمز عبور شما با موفقیت تغییر کرد.')
+            return redirect('emergency_services:emergency_profile')
+        else:
+            for error in form.errors.values():
+                messages.error(request, error)
+    else:
+        form = PasswordChangeForm(request.user)
+    
+    context = {
+        'form': form,
+    }
+    
+    return render(request, 'emergency_services/emergency_change_password.html', context)
+
+@login_required
+@emergency_personnel_required
 def delete_equipment(request, pk):
     """حذف تجهیز"""
     equipment = get_object_or_404(EmergencyEquipment, pk=pk)

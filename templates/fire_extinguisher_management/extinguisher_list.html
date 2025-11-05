@@ -1,0 +1,539 @@
+{% extends 'fire_extinguisher_management/base_fire.html' %}
+{% load form_extras jalali_filters %}
+{% block fire_content %}
+<div class="container mx-auto py-8" x-data="{ openCreate: false }">
+  <!-- Top Actions -->
+  <div class="flex justify-between items-center mb-4">
+    <div></div>
+    <button @click="openCreate = true" class="bg-green-600 text-white rounded-lg px-4 py-2 font-bold flex items-center gap-2 hover:bg-green-700">
+      <i class="fa fa-plus-circle"></i>
+      ثبت کپسول جدید
+    </button>
+  </div>
+  <!-- Filters Card -->
+  <div class="rounded-lg shadow-lg bg-white mb-8 p-6">
+    <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <input type="text" name="search" placeholder="جستجو..." class="rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 p-2" value="{{ request.GET.search }}">
+      <select name="status" class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+        <option value="">-- انتخاب وضعیت --</option>
+        <option value="operational" {% if current_status == 'operational' %}selected{% endif %}>عملیاتی</option>
+        <option value="maintenance" {% if current_status == 'maintenance' %}selected{% endif %}>نیازمند سرویس</option>
+        <option value="expired" {% if current_status == 'expired' %}selected{% endif %}>منقضی شده</option>
+        <option value="reserved" {% if current_status == 'reserved' %}selected{% endif %}>رزرو شده</option>
+      </select>
+      <select name="type" class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+        <option value="">-- انتخاب نوع کپسول --</option>
+        {% for t in types %}
+        <option value="{{ t.id }}" {% if current_type == t.id|stringformat:"s" %}selected{% endif %}>{{ t.name }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="bg-blue-600 text-white rounded-lg px-4 py-2 font-bold hover:bg-blue-700 transition duration-150">فیلتر</button>
+    </form>
+  </div>
+
+  <!-- Extinguisher Table -->
+  <div class="rounded-lg shadow-lg bg-white mb-8 overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-right text-xs font-bold text-gray-500">شماره سریال</th>
+          <th class="px-6 py-3 text-right text-xs font-bold text-gray-500">نوع</th>
+          <th class="px-6 py-3 text-right text-xs font-bold text-gray-500">سازنده</th>
+          <th class="px-6 py-3 text-right text-xs font-bold text-gray-500">شماره مدل</th>
+          <th class="px-6 py-3 text-right text-xs font-bold text-gray-500">ظرفیت</th>
+          <th class="px-6 py-3 text-right text-xs font-bold text-gray-500">تاریخ خرید</th>
+          <th class="px-6 py-3 text-right text-xs font-bold text-gray-500">وضعیت</th>
+          <th class="px-6 py-3 text-right text-xs font-bold text-gray-500">موقعیت</th>
+          <th class="px-6 py-3 text-right text-xs font-bold text-gray-500">عملیات</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        {% for extinguisher in extinguishers %}
+        <tr>
+          <td class="px-6 py-4 whitespace-nowrap font-bold">{{ extinguisher.serial_tag }}</td>
+          <td class="px-6 py-4 whitespace-nowrap">{{ extinguisher.extinguisher_type.name }}</td>
+          <td class="px-6 py-4 whitespace-nowrap">{{ extinguisher.manufacturer }}</td>
+          <td class="px-6 py-4 whitespace-nowrap">{{ extinguisher.model_number }}</td>
+          <td class="px-6 py-4 whitespace-nowrap">{{ extinguisher.capacity_value }} {{ extinguisher.capacity_unit }}</td>
+          <td class="px-6 py-4 whitespace-nowrap">{% if extinguisher.purchase_date %}{{ extinguisher.purchase_date|jalali_date }}{% elif extinguisher.commission_date %}{{ extinguisher.commission_date|jalali_date }}{% else %}-{% endif %}</td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="badge bg-gray-100 text-gray-800 px-2 py-1 rounded-full">{{ extinguisher.get_status_display }}</span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            {% if extinguisher.location_type == 'section' and extinguisher.location_section %}
+              {{ extinguisher.location_section }}
+            {% elif extinguisher.location_type == 'machine' and extinguisher.location_machine %}
+              {{ extinguisher.location_machine }}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap flex gap-2">
+            <a href="{% url 'fire_extinguisher_management:extinguisher_detail' extinguisher.id %}" class="icon-btn text-blue-600" title="جزئیات">
+              <i class="fa fa-eye"></i>
+            </a>
+            <a href="{% url 'fire_extinguisher_management:extinguisher_edit' extinguisher.id %}" class="icon-btn text-yellow-600" title="ویرایش">
+              <i class="fa fa-edit"></i>
+            </a>
+            <button @click="openLogService = true; selectedExtinguisher = {{ extinguisher.id }}" class="icon-btn text-green-600" title="ثبت سرویس">
+              <i class="fa fa-wrench"></i>
+            </button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-gray-400 py-6">کپسولی یافت نشد.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="flex justify-center items-center gap-2 mb-8">
+    {% if extinguishers.has_previous %}
+      <a href="?page={{ extinguishers.previous_page_number }}" class="px-3 py-1 rounded-lg bg-gray-200 hover:bg-blue-200">قبلی</a>
+    {% endif %}
+    <span class="px-3 py-1 rounded-lg bg-blue-100 text-blue-800">صفحه {{ extinguishers.number }} از {{ extinguishers.paginator.num_pages }}</span>
+    {% if extinguishers.has_next %}
+      <a href="?page={{ extinguishers.next_page_number }}" class="px-3 py-1 rounded-lg bg-gray-200 hover:bg-blue-200">بعدی</a>
+    {% endif %}
+  </div>
+
+  <!-- Replace Extinguisher Modal -->
+  <div x-data="{ openReplace: false, selectedExtinguisher: null }">
+    <template x-if="openReplace">
+        <div class="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black bg-opacity-50 overflow-auto p-4">
+          <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg max-h-[calc(100vh-4rem)] overflow-y-auto">
+          <div class="flex items-center mb-4">
+            <i class="fa fa-exchange-alt text-blue-600 text-2xl mr-2"></i>
+            <span class="font-bold text-lg">جایگزینی کپسول</span>
+          </div>
+          <form id="replaceExtinguisherForm">
+            <!-- Form fields for replacement (use Select2 for dropdowns) -->
+            <div class="mb-4">
+              <label class="block mb-1 font-bold">کپسول فعلی</label>
+              <input type="text" class="select2 w-full rounded-lg border-gray-300" value="{{ selectedExtinguisher }}" readonly>
+            </div>
+            <div class="mb-4">
+              <label class="block mb-1 font-bold">کپسول جدید (رزرو شده)</label>
+              <select class="select2 w-full rounded-lg border-gray-300" name="new_extinguisher">
+                {% for ext in reserved_extinguishers %}
+                <option value="{{ ext.id }}">{{ ext.serial_tag }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="flex justify-end gap-2">
+              <button type="button" @click="openReplace = false" class="bg-gray-300 rounded-lg px-4 py-2">انصراف</button>
+              <button type="submit" class="bg-blue-600 text-white rounded-lg px-4 py-2 font-bold hover:bg-blue-700">جایگزین کن</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <!-- Create Extinguisher Modal -->
+  <template x-if="openCreate">
+    <div class="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black bg-opacity-50 overflow-auto p-4">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl max-h-[calc(100vh-4rem)] overflow-y-auto" x-init="$nextTick(() =&gt; { document.querySelectorAll('.persian-datepicker').forEach(el =&gt; window.initPersianDatepicker && window.initPersianDatepicker(el)); document.querySelectorAll('select').forEach(el =&gt; window.initSelect2 && window.initSelect2(el)); })">
+        <div class="flex items-center mb-4">
+          <i class="fa fa-plus-circle text-green-600 text-2xl mr-2"></i>
+          <span class="font-bold text-lg">ثبت کپسول جدید</span>
+        </div>
+        <form id="createExtinguisherForm" method="post" action="{% url 'fire_extinguisher_management:extinguisher_create_ajax' %}" class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+          <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+          <div class="mb-4 md:col-span-2">
+            <label class="block mb-1 font-bold">شماره سریال <span class="text-red-500">*</span></label>
+            <input type="text" name="serial_tag" required
+                   class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 transition-colors" 
+                   {% if form.serial_tag.value %}value="{{ form.serial_tag.value }}"{% endif %}
+                   placeholder="شماره سریال کپسول را وارد کنید">
+          </div>
+          <div class="mb-4">
+            <label class="block mb-1 font-bold">نوع کپسول <span class="text-red-500">*</span></label>
+            <select name="extinguisher_type" required class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 transition-colors">
+              <option value="">-- انتخاب نوع کپسول --</option>
+              {% for type in types %}
+              <option value="{{ type.id }}" {% if form.extinguisher_type.value == type.id %}selected{% endif %}>{{ type.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-4">
+            <label class="block mb-1 font-bold">سازنده <span class="text-red-500">*</span></label>
+            <input type="text" name="manufacturer" required
+                   class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 transition-colors" 
+                   {% if form.manufacturer.value %}value="{{ form.manufacturer.value }}"{% endif %}
+                   placeholder="نام سازنده کپسول را وارد کنید">
+          </div>
+          <div class="mb-4">
+            <label class="block mb-1 font-bold">شماره مدل <span class="text-red-500">*</span></label>
+            <input type="text" name="model_number" required
+                   class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 transition-colors" 
+                   {% if form.model_number.value %}value="{{ form.model_number.value }}"{% endif %}
+                   placeholder="شماره مدل کپسول را وارد کنید">
+          </div>
+          <div class="mb-4">
+            <label class="block mb-1 font-bold">ظرفیت <span class="text-red-500">*</span></label>
+       <input type="number" name="capacity_value" required inputmode="decimal"
+         class="w-full rounded-lg border-gray-300 bg-white px-3 py-2 appearance-none focus:border-green-500 focus:ring-green-500 transition-colors" 
+         {% if form.capacity_value.value %}value="{{ form.capacity_value.value }}"{% endif %}
+         placeholder="ظرفیت کپسول را وارد کنید"
+         min="0" step="0.1">
+          </div>
+          <div class="mb-4">
+            <label class="block mb-1 font-bold">واحد ظرفیت <span class="text-red-500">*</span></label>
+            <select name="capacity_unit" required class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 transition-colors">
+              <option value="">-- انتخاب واحد --</option>
+              {% for choice in form.fields.capacity_unit.choices %}
+              <option value="{{ choice.0 }}" {% if form.capacity_unit.value == choice.0 %}selected{% endif %}>{{ choice.1 }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-4">
+       <label class="block mb-1 font-bold">تاریخ ساخت</label>
+       <input type="text" name="manufacture_date"
+         class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 persian-datepicker text-center transition-colors"
+         placeholder="انتخاب تاریخ" readonly
+         {% if form.manufacture_date.value %}value="{{ form.manufacture_date.value }}"{% endif %}>
+     </div>
+
+     <div class="mb-4">
+       <label class="block mb-1 font-bold">تاریخ خرید</label>
+       <input type="text" name="purchase_date"
+         class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 persian-datepicker text-center transition-colors"
+         placeholder="انتخاب تاریخ" readonly
+         {% if form.purchase_date.value %}value="{{ form.purchase_date.value }}"{% endif %}>
+     </div>
+
+     <div class="mb-4">
+       <label class="block mb-1 font-bold">تاریخ بهره‌برداری</label>
+       <input type="text" name="commission_date"
+         class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 persian-datepicker text-center transition-colors"
+         placeholder="انتخاب تاریخ" readonly
+         {% if form.commission_date.value %}value="{{ form.commission_date.value }}"{% endif %}>
+          </div>
+
+          <div class="mb-4">
+            <label class="block mb-1 font-bold">عمر مفید (سال)</label>
+       <input type="number" name="expected_lifespan_years" min="0" step="1" inputmode="numeric"
+         class="w-full rounded-lg border-gray-300 bg-white px-3 py-2 appearance-none focus:border-green-500 focus:ring-green-500 transition-colors"
+         {% if form.expected_lifespan_years.value %}value="{{ form.expected_lifespan_years.value }}"{% endif %}>
+          </div>
+
+          <div class="mb-4">
+            <label class="block mb-1 font-bold">وضعیت</label>
+            <select name="status" class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 transition-colors">
+              {% for val,label in form.fields.status.choices %}
+              <option value="{{ val }}" {% if form.status.value == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-4 md:col-span-2">
+            <label class="block mb-1 font-bold">نوع مکان</label>
+            <select name="location_type" id="location_type_select" class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 transition-colors">
+              <option value="section">بخش</option>
+              <option value="machine">دستگاه</option>
+            </select>
+          </div>
+
+          <div class="mb-4" id="location_section_wrapper">
+            <label class="block mb-1 font-bold">بخش</label>
+            <select name="location_section" class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 transition-colors">
+              <option value="">-- انتخاب بخش --</option>
+              {% for s in sections %}
+              <option value="{{ s.id }}">{{ s.section }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-4 hidden" id="location_machine_wrapper">
+            <label class="block mb-1 font-bold">دستگاه</label>
+            <select name="location_machine" class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 transition-colors">
+              <option value="">-- انتخاب دستگاه --</option>
+              {% for m in machines %}
+              <option value="{{ m.id }}">{{ m }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-4">
+            <label class="block mb-1 font-bold">تاریخ آخرین سرویس</label>
+            <input type="text" name="last_serviced_date"
+                   class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 persian-datepicker text-center transition-colors"
+                   placeholder="انتخاب تاریخ" readonly
+                   {% if form.last_serviced_date.value %}value="{{ form.last_serviced_date.value }}"{% endif %}>
+          </div>
+
+          <div class="mb-4">
+            <label class="block mb-1 font-bold">تاریخ سرویس بعدی</label>
+            <input type="text" name="next_scheduled_service_date"
+                   class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 persian-datepicker text-center transition-colors"
+                   placeholder="انتخاب تاریخ" readonly
+                   {% if form.next_scheduled_service_date.value %}value="{{ form.next_scheduled_service_date.value }}"{% endif %}>
+          </div>
+
+          <div class="mb-4">
+            <label class="block mb-1 font-bold">تاریخ تست فشار</label>
+            <input type="text" name="pressure_test_due_date"
+                   class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 persian-datepicker text-center transition-colors"
+                   placeholder="انتخاب تاریخ" readonly
+                   {% if form.pressure_test_due_date.value %}value="{{ form.pressure_test_due_date.value }}"{% endif %}>
+          </div>
+
+          <div class="mb-4">
+            <label class="block mb-1 font-bold">جایگزین شده با</label>
+            <select name="replaced_by_extinguisher" class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 transition-colors">
+              <option value="">-- انتخاب کنید (در صورت وجود) --</option>
+              {% for ex in existing_extinguishers %}
+              <option value="{{ ex.id }}">{{ ex.serial_tag }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-4">
+            <label class="block mb-1 font-bold">جایگزین شده از</label>
+            <select name="replaces_extinguisher" class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 transition-colors">
+              <option value="">-- انتخاب کنید (در صورت وجود) --</option>
+              {% for ex in existing_extinguishers %}
+              <option value="{{ ex.id }}">{{ ex.serial_tag }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-4 md:col-span-2">
+            <label class="block mb-1 font-bold">توضیحات جایگزینی</label>
+            <textarea name="replacement_notes" class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500" rows="2">{% if form.replacement_notes.value %}{{ form.replacement_notes.value }}{% endif %}</textarea>
+          </div>
+          <div class="mb-4 md:col-span-2">
+            <label class="block mb-1 font-bold">توضیحات</label>
+            <textarea name="notes" class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500" rows="3">{% if form.notes.value %}{{ form.notes.value }}{% endif %}</textarea>
+          </div>
+          <div class="flex justify-end gap-2 mt-6 md:col-span-2">
+            <button type="button" @click="openCreate = false" class="bg-gray-300 rounded-lg px-4 py-2 hover:bg-gray-400">انصراف</button>
+            <button type="submit" class="bg-green-600 text-white rounded-lg px-4 py-2 font-bold hover:bg-green-700">ذخیره</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </template>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Helper: initialize Persian/Jalali datepicker on an input element
+      function initPersianDatepicker(el) {
+        if (!el) return;
+        if (el.dataset.pdatepickerInit) return; // already initialized
+        const $el = $(el);
+        const opts = {
+          format: 'YYYY/MM/DD',
+          autoClose: true,
+          initialValue: false,
+          persianDigit: false,
+          responsive: true,
+          observer: true,
+          calendar: { persian: { locale: 'fa' } },
+          toolbox: { calendarSwitch: { enabled: false } },
+          onSelect: function(unix) {
+            try {
+              const date = new Date(unix);
+              const year = date.getFullYear();
+              const month = String(date.getMonth() + 1).padStart(2, '0');
+              const day = String(date.getDate()).padStart(2, '0');
+              if (this && this.model && this.model.input) this.model.input.value = `${year}/${month}/${day}`;
+            } catch (e) { /* ignore */ }
+          }
+        };
+        try {
+          if ($.fn.persianDatepicker) {
+            $el.persianDatepicker(opts);
+            el.dataset.pdatepickerInit = '1';
+          } else if ($.fn.pDatepicker) {
+            $el.pDatepicker(opts);
+            el.dataset.pdatepickerInit = '1';
+          } else {
+            // fallback: nothing
+          }
+        } catch (e) {
+          console.warn('datepicker init failed', e);
+        }
+      }
+
+      // Helper: initialize Select2 on a select element
+      function initSelect2(el) {
+        if (!el) return;
+        if (el.dataset.select2Init) return;
+        try {
+          if ($.fn.select2) {
+            $(el).select2({ dir: 'rtl', language: 'fa', width: '100%', theme: 'classic', placeholder: 'انتخاب کنید...', allowClear: true });
+            el.dataset.select2Init = '1';
+          }
+        } catch (e) {
+          console.warn('select2 init failed', e);
+        }
+      }
+
+  // Expose for external calls (e.g., Alpine x-init)
+  window.initPersianDatepicker = initPersianDatepicker;
+  window.initSelect2 = initSelect2;
+
+  // Initialize currently present inputs/selects
+  document.querySelectorAll('.persian-datepicker').forEach(initPersianDatepicker);
+  document.querySelectorAll('select').forEach(initSelect2);
+
+      // Delegated init: if a date input or select is focused/clicked later (e.g. modal injected), initialize it
+      document.addEventListener('focusin', function(e) {
+        const t = e.target;
+        if (t.classList && t.classList.contains('persian-datepicker')) initPersianDatepicker(t);
+        if (t.tagName === 'SELECT') initSelect2(t);
+      });
+
+      // Toggle location fields (section vs machine)
+      const locType = document.getElementById('location_type_select');
+      const secWrap = document.getElementById('location_section_wrapper');
+      const machWrap = document.getElementById('location_machine_wrapper');
+      function toggleLocation() {
+        if (!locType) return;
+        if (locType.value === 'machine') {
+          secWrap.classList.add('hidden');
+          machWrap.classList.remove('hidden');
+        } else {
+          secWrap.classList.remove('hidden');
+          machWrap.classList.add('hidden');
+        }
+      }
+      if (locType) {
+        locType.addEventListener('change', toggleLocation);
+        toggleLocation();
+      }
+
+      function showFieldError(field, error) {
+        const parent = field.closest('div');
+        // حذف خطای قبلی اگر وجود داشته باشد
+        parent.querySelector('.error-message')?.remove();
+        field.classList.add('border-red-500');
+        // نمایش پیام خطا
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message text-red-500 text-sm mt-1';
+        errorDiv.textContent = error;
+        parent.appendChild(errorDiv);
+      }
+
+      function clearFieldErrors() {
+        document.querySelectorAll('.error-message').forEach(el => el.remove());
+        document.querySelectorAll('.border-red-500').forEach(el => {
+          el.classList.remove('border-red-500');
+        });
+      }
+      
+      // Delegated submit handler so dynamically-inserted form is handled
+      document.addEventListener('submit', function(e) {
+        const target = e.target;
+        if (!target || target.id !== 'createExtinguisherForm') return;
+        e.preventDefault();
+        const formEl = target;
+        clearFieldErrors();
+
+        // اعتبارسنجی اولیه فرم
+        let isValid = true;
+        const requiredFields = formEl.querySelectorAll('[required]');
+        requiredFields.forEach(field => {
+          if (!field.value || !String(field.value).trim()) {
+            showFieldError(field, 'این فیلد الزامی است');
+            isValid = false;
+          }
+        });
+        if (!isValid) return;
+
+        const formData = new FormData(formEl);
+        // Convert Persian/Jalali date strings to Gregorian ISO (YYYY-MM-DD) before sending to server
+        function toLatinDigits(s) {
+          if (!s) return s;
+          const map = { '۰':'0','۱':'1','۲':'2','۳':'3','۴':'4','۵':'5','۶':'6','۷':'7','۸':'8','۹':'9', '٫':'.' };
+          return s.replace(/[۰-۹٫]/g, function(ch){ return map[ch] || ch; });
+        }
+        function jalaliToIso(val) {
+          if (!val) return val;
+          try {
+            const v = toLatinDigits(String(val).trim());
+            if (typeof persianDate !== 'undefined') {
+              // parse as Jalali and convert to JS Date (Gregorian)
+              const pd = new persianDate(v);
+              const d = pd.toDate();
+              if (d && d.getFullYear) {
+                const yyyy = d.getFullYear();
+                const mm = String(d.getMonth()+1).padStart(2,'0');
+                const dd = String(d.getDate()).padStart(2,'0');
+                return `${yyyy}-${mm}-${dd}`;
+              }
+            } else {
+              // fallback: if input looks like YYYY/MM/DD or YYYY-MM-DD (Persian digits already converted),
+              // normalize to YYYY-MM-DD so Django can parse it.
+              const norm = v.replace(/\//g, '-');
+              // simple validation: four-digit year, one/two-digit month/day
+              if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(norm)) {
+                const parts = norm.split('-');
+                const yyyy = parts[0].padStart(4, '0');
+                const mm = String(parts[1]).padStart(2, '0');
+                const dd = String(parts[2]).padStart(2, '0');
+                return `${yyyy}-${mm}-${dd}`;
+              }
+            }
+          } catch(e) {
+            // fallback: return original
+          }
+          return val;
+        }
+        // set converted dates
+        formEl.querySelectorAll('.persian-datepicker').forEach(function(inp){
+          const name = inp.name;
+          if (!name) return;
+          const val = inp.value;
+          if (!val) return;
+          const iso = jalaliToIso(val);
+          formData.set(name, iso);
+        });
+        const submitBtn = formEl.querySelector('button[type="submit"]');
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.dataset.origHtml = submitBtn.innerHTML;
+          submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin ml-1"></i> در حال ثبت...';
+        }
+
+        fetch(formEl.action || '{% url "fire_extinguisher_management:extinguisher_create_ajax" %}', {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': formEl.querySelector('input[name="csrfmiddlewaretoken"]')?.value || '{{ csrf_token }}'
+          },
+          body: formData
+        })
+        .then(async response => {
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw data;
+          return data;
+        })
+        .then(data => {
+          if (data.success) {
+            Swal.fire({ title: 'موفق', text: 'کپسول با موفقیت ثبت شد', icon: 'success', confirmButtonText: 'تایید' })
+              .then(() => window.location.reload());
+          }
+        })
+        .catch(error => {
+          if (error && error.errors) {
+            Object.entries(error.errors).forEach(([field, errors]) => {
+              const fieldElement = formEl.querySelector(`[name="${field}"]`);
+              if (fieldElement) showFieldError(fieldElement, Array.isArray(errors) ? errors[0] : errors);
+            });
+          }
+          Swal.fire({ title: 'خطا', text: (error && error.message) || 'خطا در ثبت اطلاعات', icon: 'error', confirmButtonText: 'تایید' });
+        })
+        .finally(() => {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = submitBtn.dataset.origHtml || 'ذخیره';
+          }
+        });
+      });
+    });
+  </script>
+</div>
+{% endblock %}

@@ -1,0 +1,175 @@
+<!-- Single Vehicle Status Report Card - Highly Polished & Professional -->
+<div class="bg-slate-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl p-6 shadow-sm">
+  
+  <!-- Card Header with Loading Indicator -->
+  <div class="flex items-center justify-between mb-6">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-500 text-white font-bold text-sm">
+        <span x-text="index + 1"></span>
+      </div>
+      <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">خودرو شماره <span x-text="index + 1"></span></h3>
+      <!-- Loading Spinner -->
+      <div x-show="vehicle.loading" x-cloak class="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 text-sm">
+        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span class="text-xs">در حال بارگذاری...</span>
+      </div>
+    </div>
+    
+    <!-- Remove Button -->
+    <button type="button" 
+            @click="removeVehicle(index)"
+            x-show="vehicles.length > 1"
+            class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500"
+            :title="'حذف خودرو شماره ' + (index + 1)">
+      <i class="fas fa-trash-alt text-sm"></i>
+    </button>
+  </div>
+
+  <!-- Hidden Management Fields -->
+  <input type="hidden" :name="'vehicles-' + index + '-DELETE'" :value="vehicle.deleted ? 'on' : ''">
+
+  <!-- Vehicle Source Toggle (Segmented Control) -->
+  <div class="mb-6">
+    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+      منبع خودرو <span class="text-red-500">*</span>
+    </label>
+    <div class="segmented-control inline-flex rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 p-1 gap-1">
+      <!-- Company Option -->
+      <input type="radio" 
+             :id="'vehicles-' + index + '-vehicle_source-company'"
+             :name="'vehicles-' + index + '-vehicle_source'"
+             value="company"
+             x-model="vehicle.source"
+             class="sr-only">
+      <label :for="'vehicles-' + index + '-vehicle_source-company'"
+             class="inline-flex items-center justify-center px-6 py-2.5 rounded-md text-sm font-semibold cursor-pointer transition-all duration-200 text-gray-700 dark:text-gray-300">
+        <i class="fas fa-building ml-2"></i>
+        خودروی شرکتی
+      </label>
+
+      <!-- Contractor Option -->
+      <input type="radio" 
+             :id="'vehicles-' + index + '-vehicle_source-contractor'"
+             :name="'vehicles-' + index + '-vehicle_source'"
+             value="contractor"
+             x-model="vehicle.source"
+             class="sr-only">
+      <label :for="'vehicles-' + index + '-vehicle_source-contractor'"
+             class="inline-flex items-center justify-center px-6 py-2.5 rounded-md text-sm font-semibold cursor-pointer transition-all duration-200 text-gray-700 dark:text-gray-300">
+        <i class="fas fa-handshake ml-2"></i>
+        خودروی پیمانکار
+      </label>
+    </div>
+  </div>
+
+  <!-- Dynamic Dropdown Area (Stable Container) -->
+  <div class="mb-6">
+    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+      انتخاب خودرو <span class="text-red-500">*</span>
+    </label>
+    
+    <!-- Single stable container for both dropdowns -->
+    <div class="relative">
+      <!-- Company Vehicle Dropdown -->
+      <div x-show="vehicle.source === 'company'" x-cloak>
+        <select :name="'vehicles-' + index + '-company_vehicle'"
+                :id="'vehicles-' + index + '-company_vehicle'"
+                x-model="vehicle.company_vehicle"
+                @change="fetchEquipmentStatus(index, $event.target.value)"
+                :required="vehicle.source === 'company'"
+                :disabled="vehicle.source !== 'company'"
+                class="select2-field w-full py-2.5 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                data-placeholder="خودروی شرکت را انتخاب کنید">
+          <option value="">یک گزینه را انتخاب کنید</option>
+          {% for vehicle in company_vehicles %}
+          <option value="{{ vehicle.id }}">{{ vehicle.model }} - {{ vehicle.license_plate }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Contractor Vehicle Dropdown -->
+      <div x-show="vehicle.source === 'contractor'" x-cloak>
+        <select :name="'vehicles-' + index + '-contractor_vehicle'"
+                :id="'vehicles-' + index + '-contractor_vehicle'"
+                x-model="vehicle.contractor_vehicle"
+                :required="vehicle.source === 'contractor'"
+                :disabled="vehicle.source !== 'contractor'"
+                class="select2-field w-full py-2.5 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                data-placeholder="خودروی پیمانکار را انتخاب کنید">
+          <option value="">یک گزینه را انتخاب کنید</option>
+          {% for vehicle in contractor_vehicles %}
+          <option value="{{ vehicle.id }}">{% if vehicle.contractor %}{{ vehicle.contractor.name }} - {% endif %}{{ vehicle.license_plate }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Equipment Status Fields Grid -->
+  <div class="space-y-5">
+    <h4 class="text-base font-bold text-gray-800 dark:text-gray-200 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+      وضعیت تجهیزات و خودرو
+    </h4>
+
+    <!-- Equipment Status Rows -->
+    <template x-for="(equipment, equipIndex) in [
+      {name: 'horn', label: 'بوق و چراغ گردان', icon: 'fa-siren'},
+      {name: 'hose', label: 'شیلنگ‌ها و اتصالات', icon: 'fa-water'},
+      {name: 'monitor', label: 'مانیتور', icon: 'fa-tv'},
+      {name: 'extinguisher', label: 'خاموش‌کننده‌های دستی', icon: 'fa-fire-extinguisher'},
+      {name: 'equipment', label: 'تجهیزات آتش‌نشانی', icon: 'fa-toolbox'},
+      {name: 'foam', label: 'پودر و فوم خودرو', icon: 'fa-spray-can'},
+      {name: 'water', label: 'آب', icon: 'fa-droplet'},
+      {name: 'tire', label: 'لاستیک‌ها', icon: 'fa-circle'},
+      {name: 'brake', label: 'سیستم ترمز خودرو', icon: 'fa-stop'},
+      {name: 'lighting', label: 'سیستم روشنایی', icon: 'fa-lightbulb'}
+    ]" :key="equipIndex">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-colors"
+           :class="{ 'opacity-40': !isEquipmentEnabled(index, equipment.name) }">
+        
+        <!-- Equipment Label with Icon -->
+        <div class="flex items-center gap-3">
+          <div class="flex items-center justify-center w-9 h-9 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400">
+            <i :class="'fas ' + equipment.icon"></i>
+          </div>
+          <span class="text-sm font-semibold text-gray-700 dark:text-gray-300" x-text="equipment.label"></span>
+        </div>
+
+        <!-- Status Radio Buttons -->
+        <div class="flex items-center gap-6">
+          <label class="inline-flex items-center gap-2 cursor-pointer">
+            <input type="radio" 
+                   :name="'vehicles-' + index + '-' + equipment.name + '_status'"
+                   value="suitable"
+                   :disabled="!isEquipmentEnabled(index, equipment.name)"
+                   class="w-4 h-4 text-green-600 border-gray-300 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-800"
+                   checked>
+            <span class="text-sm text-gray-700 dark:text-gray-300">مناسب</span>
+          </label>
+          <label class="inline-flex items-center gap-2 cursor-pointer">
+            <input type="radio" 
+                   :name="'vehicles-' + index + '-' + equipment.name + '_status'"
+                   value="unsuitable"
+                   :disabled="!isEquipmentEnabled(index, equipment.name)"
+                   class="w-4 h-4 text-red-600 border-gray-300 focus:ring-red-500 dark:border-gray-600 dark:bg-gray-800">
+            <span class="text-sm text-gray-700 dark:text-gray-300">نامناسب</span>
+          </label>
+        </div>
+
+        <!-- Description Textarea -->
+        <div>
+          <textarea :name="'vehicles-' + index + '-' + equipment.name + '_description'"
+                    :id="'vehicles-' + index + '-' + equipment.name + '_description'"
+                    :disabled="!isEquipmentEnabled(index, equipment.name)"
+                    :placeholder="isEquipmentEnabled(index, equipment.name) ? 'توضیحات...' : 'برای این خودرو تعریف نشده است'"
+                    rows="2"
+                    class="w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors resize-none"
+                    :class="{ 'cursor-not-allowed bg-gray-100 dark:bg-gray-800/50': !isEquipmentEnabled(index, equipment.name) }"></textarea>
+        </div>
+      </div>
+    </template>
+  </div>
+</div>

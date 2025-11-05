@@ -1,0 +1,190 @@
+{% extends 'emergency_services/emergency_base.html' %}
+{% load static %}
+{% load jalali_utils %}
+
+{% block title %}پروفایل من{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+      <i class="fas fa-user-circle text-blue-600"></i>
+      پروفایل من
+    </h1>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- User Info Card -->
+    <div class="lg:col-span-1">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <div class="text-center">
+          <div class="w-24 h-24 mx-auto bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-3xl font-bold mb-4">
+            {{ user.first_name|first|default:user.username|first }}{{ user.last_name|first }}
+          </div>
+          <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">
+            {{ user.get_full_name|default:user.username }}
+          </h2>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">@{{ user.username }}</p>
+          
+          <!-- Role Badge -->
+          <div class="mt-4">
+            {% if role.name == 'EmergencyManager' %}
+              <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                <i class="fas fa-user-shield ml-2"></i>
+                مدیر اورژانس
+              </span>
+            {% elif role.name == 'EmergencyDoctor' %}
+              <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                <i class="fas fa-user-md ml-2"></i>
+                پزشک اورژانس
+              </span>
+            {% elif role.name == 'EmergencyNurse' %}
+              <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300">
+                <i class="fas fa-user-nurse ml-2"></i>
+                پرستار اورژانس
+              </span>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Info List -->
+        <div class="mt-6 space-y-3 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div class="flex items-center gap-3 text-sm">
+            <i class="fas fa-envelope text-gray-400 w-5"></i>
+            <span class="text-gray-700 dark:text-gray-300">{{ user.email|default:"ایمیل ثبت نشده" }}</span>
+          </div>
+          <div class="flex items-center gap-3 text-sm">
+            <i class="fas fa-calendar text-gray-400 w-5"></i>
+            <span class="text-gray-700 dark:text-gray-300">عضویت: {{ user.date_joined|to_jalali:'%Y/%m/%d' }}</span>
+          </div>
+          <div class="flex items-center gap-3 text-sm">
+            <i class="fas fa-circle {% if user.is_active %}text-green-500{% else %}text-red-500{% endif %} w-5"></i>
+            <span class="text-gray-700 dark:text-gray-300">
+              {% if user.is_active %}فعال{% else %}غیرفعال{% endif %}
+            </span>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="mt-6 space-y-2">
+          <a href="{% url 'emergency_services:emergency_change_password' %}" class="block w-full text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+            <i class="fas fa-key ml-2"></i>
+            تغییر رمز عبور
+          </a>
+          <a href="{% url 'emergency_services:emergency_logout' %}" class="block w-full text-center px-4 py-2 border border-red-600 text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+            <i class="fas fa-sign-out-alt ml-2"></i>
+            خروج از سیستم
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Statistics & Activity -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Statistics Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm opacity-90">کل مراجعات ثبت شده</p>
+              <p class="text-3xl font-bold mt-1">{{ total_visits_created }}</p>
+            </div>
+            <div class="h-12 w-12 bg-white/20 rounded-full flex items-center justify-center">
+              <i class="fas fa-notes-medical text-2xl"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-white">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm opacity-90">مراجعات امروز</p>
+              <p class="text-3xl font-bold mt-1">{{ today_visits_created }}</p>
+            </div>
+            <div class="h-12 w-12 bg-white/20 rounded-full flex items-center justify-center">
+              <i class="fas fa-calendar-day text-2xl"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
+          <i class="fas fa-history text-blue-600"></i>
+          <h3 class="font-semibold text-gray-800 dark:text-gray-100">فعالیت‌های اخیر</h3>
+        </div>
+        <div class="p-4">
+          {% if recent_visits %}
+            <div class="space-y-3">
+              {% for visit in recent_visits %}
+                <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                  <div class="flex-shrink-0 w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                    <i class="fas fa-user-injured text-blue-600 dark:text-blue-300"></i>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      ثبت مراجعه 
+                      {% if visit.personnel_type == 'company' %}
+                        {{ visit.company_personnel }}
+                      {% else %}
+                        {{ visit.contractor_personnel }}
+                      {% endif %}
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      <i class="fas fa-clock ml-1"></i>
+                      {{ visit.created_at|to_jalali:'%Y/%m/%d - %H:%M' }}
+                    </p>
+                  </div>
+                  <a href="{% url 'emergency_services:visit_detail' visit.pk %}" class="flex-shrink-0 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                    <i class="fas fa-external-link-alt"></i>
+                  </a>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+              <i class="fas fa-inbox text-4xl mb-3 opacity-50"></i>
+              <p>هنوز فعالیتی ثبت نشده است</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <h3 class="font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
+          <i class="fas fa-bolt text-yellow-500"></i>
+          دسترسی سریع
+        </h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <a href="{% url 'emergency_services:dashboard' %}" class="flex flex-col items-center gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition text-center">
+            <i class="fas fa-tachometer-alt text-2xl text-blue-600 dark:text-blue-400"></i>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">داشبورد</span>
+          </a>
+          <a href="{% url 'emergency_services:create_visit' %}" class="flex flex-col items-center gap-2 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/30 transition text-center">
+            <i class="fas fa-plus-circle text-2xl text-green-600 dark:text-green-400"></i>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">ثبت مراجعه</span>
+          </a>
+          <a href="{% url 'emergency_services:visit_list' %}" class="flex flex-col items-center gap-2 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/30 transition text-center">
+            <i class="fas fa-list text-2xl text-purple-600 dark:text-purple-400"></i>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">لیست مراجعات</span>
+          </a>
+          <a href="{% url 'emergency_services:medicine_list' %}" class="flex flex-col items-center gap-2 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition text-center">
+            <i class="fas fa-pills text-2xl text-red-600 dark:text-red-400"></i>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">موجودی دارو</span>
+          </a>
+          <a href="{% url 'emergency_services:equipment_list' %}" class="flex flex-col items-center gap-2 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition text-center">
+            <i class="fas fa-heartbeat text-2xl text-yellow-600 dark:text-yellow-400"></i>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">تجهیزات</span>
+          </a>
+          <a href="{% url 'emergency_services:hospital_list' %}" class="flex flex-col items-center gap-2 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition text-center">
+            <i class="fas fa-hospital text-2xl text-indigo-600 dark:text-indigo-400"></i>
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">بیمارستان‌ها</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

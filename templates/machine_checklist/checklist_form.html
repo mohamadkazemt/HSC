@@ -1,0 +1,537 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load jalali_filters %}
+
+{% block title %}ثبت چک‌لیست ماشین‌آلات{% endblock %}
+
+{% block extra_css %}
+<style>
+  .wizard-step {
+    display: block;
+    animation: fadeIn 0.3s ease-in;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .progress-bar {
+    transition: width 0.3s ease;
+  }
+  .question-card {
+    transition: all 0.3s ease;
+  }
+  .question-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  }
+  .option-btn {
+    transition: all 0.2s ease;
+  }
+  .option-btn:hover {
+    transform: scale(1.05);
+  }
+  .option-btn.selected {
+    transform: scale(1.05);
+  }
+  [x-cloak] { 
+    display: none !important; 
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8" x-data="checklistWizard()" x-init="console.log('Alpine initialized, step:', step)">
+  <!-- Progress Bar -->
+  <div class="mb-8">
+    <div class="bg-white rounded-lg shadow-lg p-6">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm font-semibold text-gray-700">پیشرفت</span>
+        <span class="text-sm font-semibold text-blue-600" x-text="progressPercent + '%'"></span>
+      </div>
+      <div class="w-full bg-gray-200 rounded-full h-3">
+        <div class="progress-bar bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full" 
+             :style="'width: ' + progressPercent + '%'"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 1: Machine Selection -->
+  <div class="wizard-step active" x-show="step === 1">
+    <div class="bg-white rounded-lg shadow-lg p-8">
+      <div class="text-center mb-8">
+        <i class="fas fa-clipboard-check text-6xl text-blue-600 mb-4"></i>
+        <h2 class="text-3xl font-bold text-gray-800 mb-2">انتخاب ماشین</h2>
+        <p class="text-gray-600">لطفاً گروه کاری و سپس ماشین مورد نظر خود را انتخاب کنید</p>
+      </div>
+
+      <!-- Workgroup Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6" x-show="!selectedWorkgroup">
+        {% for workgroup, machines in machines_by_group.items %}
+          {% if workgroup %}
+          <div @click="selectWorkgroup('{{ workgroup.id }}')" 
+               class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow-md p-6 cursor-pointer hover:shadow-xl transition-all duration-300 border-2 border-blue-200 hover:border-blue-400">
+            <div class="flex items-center justify-between mb-4">
+              <i class="fas fa-cogs text-4xl text-blue-600"></i>
+              <span class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold">
+                {{ machines|length }} ماشین
+              </span>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">{{ workgroup.name }}</h3>
+            {% if workgroup.description %}
+            <p class="text-sm text-gray-600">{{ workgroup.description|truncatewords:15 }}</p>
+            {% endif %}
+          </div>
+          {% endif %}
+        {% endfor %}
+        
+        {% if machines_by_group.None %}
+        <div @click="selectWorkgroup('none')" 
+             class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg shadow-md p-6 cursor-pointer hover:shadow-xl transition-all duration-300 border-2 border-gray-200 hover:border-gray-400">
+          <div class="flex items-center justify-between mb-4">
+            <i class="fas fa-question-circle text-4xl text-gray-600"></i>
+            <span class="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded-full font-semibold">
+              {{ machines_by_group.None|length }} ماشین
+            </span>
+          </div>
+          <h3 class="text-xl font-bold text-gray-800 mb-2">بدون گروه</h3>
+          <p class="text-sm text-gray-600">ماشین‌های بدون گروه کاری</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Machine Selection (after workgroup selected) -->
+      <div x-show="selectedWorkgroup" x-transition>
+        <div class="mb-4">
+          <button @click="selectedWorkgroup = null" class="text-blue-600 hover:text-blue-800 flex items-center gap-2 mb-4">
+            <i class="fas fa-arrow-right"></i>
+            <span>بازگشت به انتخاب گروه</span>
+          </button>
+        </div>
+        <div class="mb-6">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            <i class="fas fa-truck text-blue-600 mr-2"></i>
+            انتخاب ماشین
+          </label>
+          <select id="machine-select" class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 p-3">
+            <option value="">-- انتخاب کنید --</option>
+            {% for workgroup, machines in machines_by_group.items %}
+              <optgroup label="{% if workgroup %}{{ workgroup.name }}{% else %}بدون گروه{% endif %}">
+                {% for machine in machines %}
+                  <option value="{{ machine.id }}" data-workgroup="{% if workgroup %}{{ workgroup.id }}{% else %}none{% endif %}">
+                    {{ machine.workshop_code }} - {{ machine.machine_type.name|default:"بدون نوع" }}
+                  </option>
+                {% endfor %}
+              </optgroup>
+            {% endfor %}
+          </select>
+        </div>
+        <button @click="startChecklist()" 
+                :disabled="!selectedMachine"
+                :class="selectedMachine ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'"
+                class="w-full text-white rounded-lg px-6 py-4 font-bold text-lg transition-all duration-200 flex items-center justify-center gap-3">
+          <i class="fas fa-play"></i>
+          <span>شروع چک‌لیست</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Answering Questions -->
+  <template x-if="step === 2">
+    <div class="wizard-step">
+      <div class="bg-white rounded-lg shadow-lg p-8">
+      <div class="text-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">پاسخ به سوالات</h2>
+        <p class="text-gray-600">سوال <span x-text="currentQuestionIndex + 1"></span> از <span x-text="questions.length"></span></p>
+      </div>
+
+      <template x-if="currentQuestion">
+        <div class="question-card bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow-md p-6 mb-6">
+          <div class="mb-4">
+            <span class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold" 
+                  x-text="currentQuestion.question_type === 'option' ? 'گزینه‌ای' : 'متنی'"></span>
+            <span class="text-xs bg-red-100 text-red-700 px-3 py-1 rounded-full font-semibold mr-2" 
+                  x-show="currentQuestion.is_required">اجباری</span>
+          </div>
+          <h3 class="text-xl font-bold text-gray-800 mb-4" x-text="currentQuestion.text"></h3>
+
+          <!-- Option Questions -->
+          <template x-if="currentQuestion.question_type === 'option'">
+            <div class="space-y-3">
+              <template x-for="option in (currentQuestion.optionsList || [])" :key="option">
+                <button @click="selectOption(option)" 
+                        :class="answers[currentQuestion.id] === option ? 
+                               'bg-green-500 text-white border-green-600' : 
+                               'bg-white text-gray-700 border-gray-300 hover:bg-blue-50'"
+                        class="option-btn w-full rounded-lg border-2 p-4 text-right flex items-center justify-between transition-all duration-200">
+                  <span class="font-semibold" x-text="option"></span>
+                  <i :class="answers[currentQuestion.id] === option ? 
+                             'fas fa-check-circle text-white' : 
+                             'fas fa-circle text-gray-400'"></i>
+                </button>
+              </template>
+            </div>
+          </template>
+
+          <!-- Text Questions -->
+          <template x-if="currentQuestion.question_type === 'text'">
+            <div>
+              <textarea :value="answers[currentQuestion.id] || ''" 
+                        @input="answers[currentQuestion.id] = $event.target.value"
+                        class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 p-3" 
+                        rows="4" 
+                        placeholder="پاسخ خود را وارد کنید..."></textarea>
+            </div>
+          </template>
+
+          <!-- Description Field (Optional) -->
+          <div class="mt-4">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
+              <i class="fas fa-sticky-note text-gray-500 mr-2"></i>
+              توضیحات (اختیاری)
+            </label>
+            <textarea :value="descriptions[currentQuestion.id] || ''" 
+                      @input="descriptions[currentQuestion.id] = $event.target.value"
+                      class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500 p-3" 
+                      rows="2" 
+                      placeholder="در صورت نیاز توضیحات اضافی وارد کنید..."></textarea>
+          </div>
+
+          <!-- Navigation Buttons -->
+          <div class="flex justify-between mt-6">
+            <button @click="previousQuestion()" 
+                    :disabled="currentQuestionIndex === 0"
+                    :class="currentQuestionIndex === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-gray-600 hover:bg-gray-700'"
+                    class="text-white rounded-lg px-6 py-3 font-semibold transition-all duration-200 flex items-center gap-2">
+              <i class="fas fa-arrow-right"></i>
+              <span>قبلی</span>
+            </button>
+            <button @click="nextQuestion()" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-6 py-3 font-semibold transition-all duration-200 flex items-center gap-2">
+              <span x-text="currentQuestionIndex === questions.length - 1 ? 'خلاصه' : 'بعدی'"></span>
+              <i class="fas fa-arrow-left"></i>
+            </button>
+          </div>
+        </div>
+      </template>
+
+      <template x-if="!currentQuestion && loading">
+        <div class="text-center py-12">
+          <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
+          <p class="text-gray-600">در حال بارگذاری سوالات...</p>
+        </div>
+      </template>
+      
+      <template x-if="!currentQuestion && !loading && questions.length === 0">
+        <div class="text-center py-12">
+          <i class="fas fa-exclamation-triangle text-4xl text-amber-600 mb-4"></i>
+          <p class="text-gray-600">هیچ سوالی برای این ماشین تعریف نشده است.</p>
+        </div>
+      </template>
+      </div>
+    </div>
+  </template>
+
+  <!-- Step 3: Summary -->
+  <div class="wizard-step" x-show="step === 3">
+    <div class="bg-white rounded-lg shadow-lg p-8">
+      <div class="text-center mb-8">
+        <i class="fas fa-check-circle text-6xl text-green-600 mb-4"></i>
+        <h2 class="text-3xl font-bold text-gray-800 mb-2">خلاصه پاسخ‌ها</h2>
+        <p class="text-gray-600">لطفاً پاسخ‌های خود را بررسی کرده و در صورت تایید ثبت کنید</p>
+      </div>
+
+      <div class="space-y-4 mb-8 max-h-96 overflow-y-auto">
+        <template x-for="(question, index) in questions" :key="question.id">
+          <div class="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
+            <div class="flex items-start justify-between mb-2">
+              <span class="text-sm font-semibold text-gray-500">سوال <span x-text="index + 1"></span></span>
+              <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full" 
+                    x-text="question.question_type === 'option' ? 'گزینه‌ای' : 'متنی'"></span>
+            </div>
+            <h4 class="font-bold text-gray-800 mb-3" x-text="question.text"></h4>
+            <div class="bg-white rounded-lg p-3 mb-2">
+              <p class="text-gray-700" x-text="answers[question.id] || '(بدون پاسخ)'"></p>
+            </div>
+            <div x-show="descriptions[question.id]" class="bg-yellow-50 rounded-lg p-3 border-r-2 border-yellow-400">
+              <p class="text-sm text-gray-600">
+                <i class="fas fa-sticky-note text-yellow-600 mr-2"></i>
+                <span x-text="descriptions[question.id]"></span>
+              </p>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <div class="flex justify-between">
+        <button @click="step = 2; currentQuestionIndex = questions.length - 1" 
+                class="bg-gray-600 hover:bg-gray-700 text-white rounded-lg px-6 py-3 font-semibold transition-all duration-200 flex items-center gap-2">
+          <i class="fas fa-arrow-right"></i>
+          <span>بازگشت</span>
+        </button>
+        <button @click="submitChecklist()" 
+                :disabled="submitting"
+                :class="submitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'"
+                class="text-white rounded-lg px-6 py-3 font-semibold transition-all duration-200 flex items-center gap-2">
+          <i :class="submitting ? 'fas fa-spinner fa-spin' : 'fas fa-check'"></i>
+          <span x-text="submitting ? 'در حال ثبت...' : 'ثبت نهایی چک‌لیست'"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Success Message -->
+  <div x-show="success" 
+       x-transition
+       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl p-8 max-w-md mx-4">
+      <div class="text-center">
+        <i class="fas fa-check-circle text-6xl text-green-600 mb-4"></i>
+        <h3 class="text-2xl font-bold text-gray-800 mb-2">ثبت موفق!</h3>
+        <p class="text-gray-600 mb-6">چک‌لیست شما با موفقیت ثبت شد.</p>
+        <a href="{% url 'machine_checklist:checklist_list' %}" 
+           class="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-6 py-3 font-semibold inline-block transition-all duration-200">
+          مشاهده آرشیو چک‌لیست‌ها
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function checklistWizard() {
+  return {
+    step: 1,
+    selectedWorkgroup: null,
+    selectedMachine: null,
+    questions: [],
+    currentQuestionIndex: 0,
+    answers: {},
+    descriptions: {},
+    loading: false,
+    submitting: false,
+    success: false,
+    error: '',
+
+    get progressPercent() {
+      if (this.step === 1) return 33;
+      if (this.step === 2) return 33 + (this.questions.length > 0 ? (this.currentQuestionIndex + 1) / this.questions.length * 50 : 0);
+      if (this.step === 3) return 100;
+      return 0;
+    },
+
+    get currentQuestion() {
+      if (!this.questions || this.questions.length === 0) {
+        console.log('No questions available');
+        return null;
+      }
+      if (this.currentQuestionIndex < 0 || this.currentQuestionIndex >= this.questions.length) {
+        console.log('Index out of range:', this.currentQuestionIndex, 'of', this.questions.length);
+        return null;
+      }
+      const q = this.questions[this.currentQuestionIndex];
+      if (!q) {
+        console.log('Question at index is null');
+        return null;
+      }
+      // Parse options if it's an option question (should already be done in startChecklist, but double-check)
+      if (q.question_type === 'option' && q.options && !q.optionsList) {
+        q.optionsList = q.options.split(',').map(o => o.trim()).filter(o => o.length > 0);
+      }
+      return q;
+    },
+
+    selectWorkgroup(workgroupId) {
+      this.selectedWorkgroup = workgroupId;
+      // Filter machine select
+      const select = document.getElementById('machine-select');
+      if (select) {
+        const options = select.querySelectorAll('option');
+        options.forEach(opt => {
+          if (opt.value === '') {
+            opt.style.display = 'block';
+            return;
+          }
+          const optGroup = opt.getAttribute('data-workgroup');
+          if (workgroupId === 'none') {
+            opt.style.display = optGroup === 'none' ? 'block' : 'none';
+          } else {
+            opt.style.display = optGroup === workgroupId ? 'block' : 'none';
+          }
+        });
+        // Initialize Select2
+        if ($.fn.select2) {
+          $(select).select2({
+            dir: 'rtl',
+            language: 'fa',
+            width: '100%',
+            placeholder: 'انتخاب کنید...',
+            allowClear: true
+          });
+          $(select).on('change', (e) => {
+            this.selectedMachine = e.target.value;
+          });
+        }
+      }
+    },
+
+    startChecklist() {
+      if (!this.selectedMachine) return;
+      this.loading = true;
+      this.step = 2;
+      
+      fetch(`{% url 'machine_checklist:get_questions' 0 %}`.replace('0', this.selectedMachine))
+        .then(response => response.json())
+        .then(data => {
+          console.log('Received data:', data);
+          this.questions = data.questions || [];
+          console.log('Questions array:', this.questions);
+          
+          // Parse options for all option questions immediately
+          this.questions.forEach(q => {
+            if (q.question_type === 'option' && q.options && !q.optionsList) {
+              q.optionsList = q.options.split(',').map(o => o.trim()).filter(o => o.length > 0);
+            }
+          });
+          
+          this.currentQuestionIndex = 0;
+          this.loading = false;
+          
+          console.log('Current question index:', this.currentQuestionIndex);
+          console.log('Current question:', this.currentQuestion);
+          console.log('Step after loading:', this.step);
+          
+          if (this.questions.length === 0) {
+            alert('برای این ماشین سوالی تعریف نشده است.');
+            this.step = 1;
+          } else {
+            // Force Alpine reactivity update
+            this.$nextTick(() => {
+              console.log('After nextTick - Step:', this.step);
+              console.log('After nextTick - Questions:', this.questions.length);
+              console.log('After nextTick - Current question:', this.currentQuestion);
+            });
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          this.loading = false;
+          alert('خطا در دریافت سوالات. لطفاً دوباره تلاش کنید.');
+          this.step = 1;
+        });
+    },
+
+    selectOption(option) {
+      if (this.currentQuestion) {
+        this.answers[this.currentQuestion.id] = option;
+        // Auto-advance after a short delay
+        setTimeout(() => {
+          if (this.currentQuestionIndex < this.questions.length - 1) {
+            this.nextQuestion();
+          }
+        }, 500);
+      }
+    },
+
+    nextQuestion() {
+      if (this.currentQuestionIndex < this.questions.length - 1) {
+        this.currentQuestionIndex++;
+      } else {
+        // Check if all required questions are answered
+        const unansweredRequired = this.questions.filter(q => 
+          q.is_required && !this.answers[q.id]
+        );
+        if (unansweredRequired.length > 0) {
+          alert('لطفاً به تمام سوالات اجباری پاسخ دهید.');
+          return;
+        }
+        this.step = 3;
+      }
+    },
+
+    previousQuestion() {
+      if (this.currentQuestionIndex > 0) {
+        this.currentQuestionIndex--;
+      }
+    },
+
+    submitChecklist() {
+      if (this.submitting) return;
+      
+      // Validate required questions
+      const unansweredRequired = this.questions.filter(q => 
+        q.is_required && !this.answers[q.id]
+      );
+      if (unansweredRequired.length > 0) {
+        alert('لطفاً به تمام سوالات اجباری پاسخ دهید.');
+        return;
+      }
+
+      this.submitting = true;
+      
+      // Prepare form data
+      const formData = new FormData();
+      formData.append('machine', this.selectedMachine);
+      
+      this.questions.forEach(q => {
+        const answerKey = `answer_${q.id}`;
+        const descKey = `description_${q.id}`;
+        if (q.question_type === 'text') {
+          formData.append(answerKey, this.answers[q.id] || '');
+        } else {
+          formData.append(answerKey, this.answers[q.id] || '');
+        }
+        if (this.descriptions[q.id]) {
+          formData.append(descKey, this.descriptions[q.id]);
+        }
+      });
+
+      // Get CSRF token from cookie
+      function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+          const cookies = document.cookie.split(';');
+          for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+              break;
+            }
+          }
+        }
+        return cookieValue;
+      }
+      
+      const csrftoken = getCookie('csrftoken');
+      
+      fetch('{% url "machine_checklist:submit_checklist" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-CSRFToken': csrftoken
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          this.success = true;
+          setTimeout(() => {
+            window.location.href = '{% url "machine_checklist:checklist_list" %}';
+          }, 2000);
+        } else {
+          alert(data.error || 'خطا در ثبت چک‌لیست');
+          this.submitting = false;
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('خطا در ارتباط با سرور');
+        this.submitting = false;
+      });
+    }
+  }
+}
+</script>
+
+{% endblock %}
+

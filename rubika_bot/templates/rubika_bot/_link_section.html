@@ -1,0 +1,25 @@
+<div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mt-6">
+  <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">اتصال به ربات روبیکا</h2>
+  <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">برای اتصال حساب کاربری خود به ربات، در روبیکا دستور زیر را ارسال کنید:</p>
+  <div class="bg-gray-100 dark:bg-gray-700 rounded p-3 font-mono text-sm select-all">
+    /connect <span id="rb-conn-code">{{ connection_code }}</span>
+  </div>
+  <div class="mt-3 flex items-center gap-2">
+    <button type="button" id="rb-regenerate" class="px-3 py-2 bg-indigo-600 text-white rounded">تولید کد جدید</button>
+    <span class="text-xs text-gray-500">انقضا: {{ expires_at|default:'-' }}</span>
+  </div>
+</div>
+<script>
+  (function(){
+    const btn = document.getElementById('rb-regenerate');
+    if(!btn) return;
+    btn.addEventListener('click', function(){
+      fetch('{% url "rubika_bot:generate_code" %}', {method:'POST', headers:{'X-CSRFToken': (document.cookie.match(/csrftoken=([^;]+)/)||[])[1]}})
+        .then(r=>r.json()).then(d=>{
+          if(d.ok){
+            document.getElementById('rb-conn-code').textContent = d.code;
+          }
+        })
+    });
+  })();
+</script>

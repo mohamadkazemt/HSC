@@ -1,0 +1,384 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ title|default:"ثبت گزارش آتش‌نشانی" }}{% endblock %}
+
+{% block styles %}
+<style>
+  /* Custom Select2 styling to match our design system */
+  .select2-container--default .select2-selection--single {
+    @apply h-auto border-gray-300 dark:border-gray-600 rounded-lg;
+  }
+  .select2-container--default .select2-selection--single .select2-selection__rendered {
+    @apply py-2.5 px-3 text-gray-900 dark:text-gray-100;
+  }
+  .select2-container--default.select2-container--focus .select2-selection--single {
+    @apply ring-2 ring-indigo-500 border-indigo-500;
+  }
+  .select2-dropdown {
+    @apply border-gray-300 dark:border-gray-600 dark:bg-gray-800;
+  }
+  .select2-container--default .select2-results__option--highlighted[aria-selected] {
+    @apply bg-indigo-500;
+  }
+  
+  /* Smooth spinner animation */
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+
+  /* Custom focus styles for consistent UX */
+  input:focus, select:focus, textarea:focus {
+    @apply ring-2 ring-indigo-500 border-indigo-500 outline-none;
+  }
+
+  /* Segmented control styling */
+  .segmented-control input[type="radio"]:checked + label {
+    @apply bg-indigo-600 text-white shadow-sm;
+  }
+  
+  .segmented-control input[type="radio"]:not(:checked) + label:hover {
+    @apply bg-gray-100 dark:bg-gray-700;
+  }
+
+  /* Status Radio Buttons Styling */
+  .status-radio-group ul {
+    @apply flex items-center gap-6 list-none p-0 m-0;
+  }
+  
+  .status-radio-group label {
+    @apply inline-flex items-center gap-2 cursor-pointer;
+  }
+  
+  .status-radio-group input[type="radio"] {
+    @apply w-4 h-4 border-gray-300 dark:border-gray-600 dark:bg-gray-800;
+  }
+  
+  .status-radio-group input[type="radio"][value="suitable"] {
+    @apply text-green-600 focus:ring-green-500;
+  }
+  
+  .status-radio-group input[type="radio"][value="unsuitable"] {
+    @apply text-red-600 focus:ring-red-500;
+  }
+  
+  .status-radio-group span {
+    @apply text-sm text-gray-700 dark:text-gray-300;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <!-- Page Header -->
+  <div class="mb-6">
+    <div class="flex items-center gap-3 mb-2">
+      <a href="{% url 'fire_reports:report_list' %}" 
+         class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+        <i class="fas fa-arrow-right text-gray-600 dark:text-gray-400"></i>
+      </a>
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100">{{ title|default:"ثبت گزارش آتش‌نشانی" }}</h1>
+    </div>
+    <p class="text-gray-600 dark:text-gray-400 mr-13">لطفاً تمام بخش‌های فرم را با دقت تکمیل نمایید</p>
+  </div>
+
+  <!-- Main Form Card -->
+  <form method="post" 
+        x-data="vehicleFormset()"
+        class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-8 space-y-10">
+    {% csrf_token %}
+    {{ formset.management_form }}
+
+    <!-- Section 1: General Information -->
+    <section>
+      <div class="flex items-center gap-3 mb-4">
+        <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-bold text-lg">
+          ۱
+        </div>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">اطلاعات کلی</h2>
+      </div>
+      <hr class="mb-6 border-gray-200 dark:border-gray-700">
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Shift -->
+        <div>
+          <label for="{{ form.shift.id_for_label }}" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            {{ form.shift.label }} <span class="text-red-500">*</span>
+          </label>
+          {{ form.shift }}
+          {% if form.shift.errors %}
+            <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.shift.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Shift Operator -->
+        <div>
+          <label for="{{ form.shift_operator.id_for_label }}" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            {{ form.shift_operator.label }} <span class="text-red-500">*</span>
+          </label>
+          {{ form.shift_operator }}
+          {% if form.shift_operator.errors %}
+            <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.shift_operator.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Firefighter -->
+        <div>
+          <label for="{{ form.firefighter.id_for_label }}" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            {{ form.firefighter.label }} <span class="text-red-500">*</span>
+          </label>
+          {{ form.firefighter }}
+          {% if form.firefighter.errors %}
+            <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.firefighter.errors.0 }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <!-- Section 2: Incident Summary -->
+    <section>
+      <div class="flex items-center gap-3 mb-4">
+        <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-bold text-lg">
+          ۲
+        </div>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">خلاصه حوادث</h2>
+      </div>
+      <hr class="mb-6 border-gray-200 dark:border-gray-700">
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <!-- Incident Dispatch Count -->
+        <div>
+          <label for="{{ form.incident_dispatch_count.id_for_label }}" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            {{ form.incident_dispatch_count.label }}
+          </label>
+          <input type="number" 
+                 name="{{ form.incident_dispatch_count.name }}" 
+                 id="{{ form.incident_dispatch_count.id_for_label }}"
+                 value="{{ form.incident_dispatch_count.value|default:0 }}"
+                 min="0"
+                 class="w-full py-2.5 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+          {% if form.incident_dispatch_count.errors %}
+            <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.incident_dispatch_count.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Personal Incident Count -->
+        <div>
+          <label for="{{ form.personal_incident_count.id_for_label }}" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            {{ form.personal_incident_count.label }}
+          </label>
+          <input type="number" 
+                 name="{{ form.personal_incident_count.name }}" 
+                 id="{{ form.personal_incident_count.id_for_label }}"
+                 value="{{ form.personal_incident_count.value|default:0 }}"
+                 min="0"
+                 class="w-full py-2.5 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+          {% if form.personal_incident_count.errors %}
+            <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.personal_incident_count.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Equipment Incident Count -->
+        <div>
+          <label for="{{ form.equipment_incident_count.id_for_label }}" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            {{ form.equipment_incident_count.label }}
+          </label>
+          <input type="number" 
+                 name="{{ form.equipment_incident_count.name }}" 
+                 id="{{ form.equipment_incident_count.id_for_label }}"
+                 value="{{ form.equipment_incident_count.value|default:0 }}"
+                 min="0"
+                 class="w-full py-2.5 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+          {% if form.equipment_incident_count.errors %}
+            <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.equipment_incident_count.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Fire Incident Count -->
+        <div>
+          <label for="{{ form.fire_incident_count.id_for_label }}" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            {{ form.fire_incident_count.label }}
+          </label>
+          <input type="number" 
+                 name="{{ form.fire_incident_count.name }}" 
+                 id="{{ form.fire_incident_count.id_for_label }}"
+                 value="{{ form.fire_incident_count.value|default:0 }}"
+                 min="0"
+                 class="w-full py-2.5 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors">
+          {% if form.fire_incident_count.errors %}
+            <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.fire_incident_count.errors.0 }}</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Additional Notes -->
+      <div>
+        <label for="{{ form.additional_notes.id_for_label }}" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+          {{ form.additional_notes.label }}
+        </label>
+        <textarea name="{{ form.additional_notes.name }}" 
+                  id="{{ form.additional_notes.id_for_label }}"
+                  rows="4"
+                  placeholder="توضیحات تکمیلی..."
+                  class="w-full py-2.5 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors resize-none">{{ form.additional_notes.value|default:"" }}</textarea>
+        {% if form.additional_notes.errors %}
+          <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.additional_notes.errors.0 }}</p>
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- Section 3: Vehicle Status Reports (Dynamic Formset) -->
+    <section>
+      <div class="flex items-center gap-3 mb-4">
+        <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-bold text-lg">
+          ۳
+        </div>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">گزارش وضعیت خودروها</h2>
+      </div>
+      <hr class="mb-6 border-gray-200 dark:border-gray-700">
+
+      <!-- Vehicle Cards Container -->
+      <div id="vehicles-container" class="space-y-6">
+        {% for vehicle_form in formset %}
+          <div id="vehicle-form-{{ forloop.counter0 }}" class="vehicle-form-wrapper"
+               x-show="!vehicles[{{ forloop.counter0 }}] || !vehicles[{{ forloop.counter0 }}].deleted"
+               x-transition:leave="transition ease-in duration-200"
+               x-transition:leave-start="opacity-100 transform scale-100"
+               x-transition:leave-end="opacity-0 transform scale-95">
+            {% include 'fire_reports/partials/vehicle_form_card.html' with form=vehicle_form index=forloop.counter0 %}
+          </div>
+        {% endfor %}
+      </div>
+
+      <!-- Template for new forms (Django's empty_form) -->
+      <template id="vehicle-form-template">
+        <div id="vehicle-form-__prefix__" class="vehicle-form-wrapper">
+          {% include 'fire_reports/partials/vehicle_form_card.html' with form=formset.empty_form index='__prefix__' %}
+        </div>
+      </template>
+
+      <!-- Add Vehicle Button -->
+      <button type="button" 
+              @click="addVehicle()"
+              class="mt-6 inline-flex items-center gap-2 px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+        <i class="fas fa-plus"></i>
+        <span>افزودن خودروی جدید</span>
+      </button>
+    </section>
+
+    <!-- Form Actions -->
+    <div class="flex items-center justify-end gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+      <a href="{% url 'fire_reports:report_list' %}" 
+         class="px-6 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+        انصراف
+      </a>
+      <button type="submit" 
+              class="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+        <i class="fas fa-check ml-2"></i>
+        ثبت نهایی گزارش
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function vehicleFormset() {
+  return {
+    vehicles: [],
+    nextIndex: {{ formset.total_form_count }},
+
+    init() {
+      {% for form in formset %}
+      this.vehicles[{{ forloop.counter0 }}] = {
+        source: '{{ form.vehicle_source.value|default:"company" }}',
+        deleted: false,
+        loading: false
+      };
+      {% endfor %}
+      if (this.nextIndex === 0) {
+        this.addVehicle();
+      }
+      this.$nextTick(() => {
+        $('.select2-field').each(function() {
+          if ($(this).is(':visible')) {
+            $(this).select2({
+              dir: 'rtl',
+              width: '100%',
+              language: { noResults: () => 'نتیجه‌ای یافت نشد' }
+            });
+          }
+        });
+      });
+
+      // Watch for source changes, destroy/initialize Select2 accordingly
+      this.$watch('vehicles', (vehicles) => {
+        vehicles.forEach((vehicle, idx) => {
+          if (vehicle.source === 'company') {
+            $(`#vehicles-${idx}-contractor_vehicle`).select2('destroy');
+            $(`#vehicles-${idx}-contractor_vehicle`).val(null).trigger('change');
+            vehicle.contractor_vehicle = '';
+            $(`#vehicles-${idx}-company_vehicle`).select2({ dir: 'rtl', width: '100%', language: { noResults: () => 'نتیجه‌ای یافت نشد' } });
+          } else if (vehicle.source === 'contractor') {
+            $(`#vehicles-${idx}-company_vehicle`).select2('destroy');
+            $(`#vehicles-${idx}-company_vehicle`).val(null).trigger('change');
+            vehicle.company_vehicle = '';
+            $(`#vehicles-${idx}-contractor_vehicle`).select2({ dir: 'rtl', width: '100%', language: { noResults: () => 'نتیجه‌ای یافت نشد' } });
+          }
+        });
+      }, { deep: true });
+    },
+
+    addVehicle() {
+      const template = document.getElementById('vehicle-form-template').innerHTML;
+      const newFormHtml = template.replace(/__prefix__/g, this.nextIndex);
+      document.getElementById('vehicles-container').insertAdjacentHTML('beforeend', newFormHtml);
+      this.vehicles[this.nextIndex] = { source: 'company', deleted: false, loading: false };
+      const totalFormsInput = document.querySelector('input[name="vehicles-TOTAL_FORMS"]');
+      if (totalFormsInput) totalFormsInput.value = this.nextIndex + 1;
+      this.$nextTick(() => {
+        $(`#vehicle-form-${this.nextIndex} .select2-field`).each(function() {
+          if ($(this).is(':visible')) {
+            $(this).select2({
+              dir: 'rtl',
+              width: '100%',
+              language: { noResults: () => 'نتیجه‌ای یافت نشد' }
+            });
+          }
+        });
+      });
+      this.nextIndex++;
+    },
+
+    removeVehicle(index) {
+      this.vehicles[index].deleted = true;
+      const formElement = document.getElementById(`vehicle-form-${index}`);
+      if (formElement) {
+        const deleteCheckbox = formElement.querySelector(`input[name="vehicles-${index}-DELETE"]`);
+        if (deleteCheckbox) deleteCheckbox.checked = true;
+      }
+    },
+
+    async fetchEquipmentStatus(index, vehicleId) {
+      if (!vehicleId || !this.vehicles[index]) return;
+      this.vehicles[index].loading = true;
+      try {
+        const response = await fetch(`/fire-reports/api/emergency-vehicle/${vehicleId}/`);
+        // Handle response...
+            } catch (error) {
+              console.error('Error fetching equipment status:', error);
+            } finally {
+              if (this.vehicles[index]) {
+                this.vehicles[index].loading = false;
+              }
+            }
+          }
+        };
+      }
+      </script>
+      {% endblock %}
+

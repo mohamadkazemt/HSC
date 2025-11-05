@@ -51,6 +51,11 @@ def user_login(request):
             # جلوگیری از ورود پیمانکاران/پرسنل از مسیر عمومی
             if hasattr(user, 'contractor_profile') or hasattr(user, 'employee_profile'):
                 return JsonResponse({'success': False, 'message': 'لطفاً از صفحه ورود پیمانکاران وارد شوید.'}, status=400)
+            
+            # جلوگیری از ورود پرسنل اورژانس از مسیر عمومی
+            if user.groups.filter(name__in=['EmergencyManager', 'EmergencyDoctor', 'EmergencyNurse']).exists():
+                return JsonResponse({'success': False, 'message': 'لطفاً از پورتال اورژانس وارد شوید.'}, status=400)
+            
             login(request, user)
             return JsonResponse({'success': True})  # لاگین موفق
         else:
@@ -120,11 +125,25 @@ def edit_profile(request):
         profile_form = UserProfileForm(instance=user_profile)
         password_form = ChangePasswordForm(user=request.user)
 
+    # Rubika connection code context
+    try:
+        from rubika_bot.models import RubikaConnectionCode
+        code_obj = RubikaConnectionCode.objects.filter(user=request.user, used=False, expires_at__gt=now()).order_by('-created_at').first()
+        if not code_obj:
+            code_obj = RubikaConnectionCode.generate_for_user(request.user)
+        rb_code = code_obj.code
+        rb_expires = code_obj.expires_at
+    except Exception:
+        rb_code = ''
+        rb_expires = None
+
     return render(request, 'accounts/settings.html', {
         'user_form': user_form,
         'profile_form': profile_form,
         'password_form': password_form,
         'userprofile': user_profile,
+        'rubika_connection_code': rb_code,
+        'rubika_expires_at': rb_expires,
     })
 
 

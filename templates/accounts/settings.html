@@ -247,5 +247,9 @@
             </div>
         </div>
     </form>
+
+    {% if user.is_authenticated %}
+      {% include 'rubika_bot/_link_section.html' with connection_code=rubika_connection_code expires_at=rubika_expires_at %}
+    {% endif %}
 </div>
 {% endblock %}

@@ -1,30 +1,102 @@
-{% extends 'base.html' %}
+{% extends 'emergency_services/emergency_base.html' %}
 {% load static %}
 {% block title %}ثبت مراجعه جدید{% endblock %}
 
 {% block content %}
+<!-- Page Header -->
+<div class="mb-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+        <svg class="h-8 w-8 text-rose-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+        </svg>
+        ثبت مراجعة جدید
+      </h1>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">لطفاً اطلاعات مراجعه را با دقت تکمیل نمایید</p>
+    </div>
+    <a href="{% url 'emergency_services:visit_list' %}" 
+       class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 15.75L3 12m0 0l3.75-3.75M3 12h18"/>
+      </svg>
+      بازگشت به لیست
+    </a>
+  </div>
+</div>
+
 <form method="post" x-data="visitForm()" x-init="init()" class="space-y-6">
   {% csrf_token %}
 
+  {% if form.errors or form.non_field_errors or medicine_formset.non_form_errors or medicine_formset.errors %}
+  <div class="rounded-lg shadow-lg bg-red-50 border border-red-200 text-red-800 p-4">
+    <div class="flex items-center gap-2 mb-2">
+      <i class="fa-solid fa-circle-exclamation"></i>
+      <span class="font-semibold">لطفاً خطاهای زیر را برطرف کنید</span>
+    </div>
+    <ul class="list-disc pr-5 space-y-1 text-sm">
+      {# خطاهای فیلدهای فرم اصلی #}
+      {% for field in form %}
+        {% for err in field.errors %}
+          <li>{{ field.label }}: {{ err }}</li>
+        {% endfor %}
+      {% endfor %}
+      {% for err in form.non_field_errors %}
+        <li>{{ err }}</li>
+      {% endfor %}
+      {# خطاهای فرم‌ست داروها #}
+      {% for err in medicine_formset.non_field_errors %}
+        <li>{{ err }}</li>
+      {% endfor %}
+      {% for f in medicine_formset %}
+        {% if f.errors %}
+          <li>
+            ردیف دارو {{ forloop.counter }}:
+            <ul class="list-disc pr-5">
+              {% for e in f.errors.values %}
+                {% for ee in e %}<li>{{ ee }}</li>{% endfor %}
+              {% endfor %}
+            </ul>
+          </li>
+        {% endif %}
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
   <!-- Card 1: Patient Information -->
-  <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800">
-    <div class="p-4 rounded-t-lg bg-gradient-to-l from-indigo-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
-      <i class="fa-solid fa-user text-indigo-600"></i>
-      <h3 class="font-semibold">اطلاعات مراجعه‌کننده</h3>
+  <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800 border border-rose-100 dark:border-gray-700 hover:shadow-xl transition-shadow">
+    <div class="p-4 rounded-t-lg bg-gradient-to-l from-rose-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-rose-100 dark:border-gray-700">
+      <div class="flex items-center gap-3">
+        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-rose-400 to-red-500 shadow-md">
+          <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="font-bold text-gray-900 dark:text-white">اطلاعات مراجعه‌کننده</h3>
+          <p class="text-xs text-gray-600 dark:text-gray-400">مرحله ۱ از ۴</p>
+        </div>
+      </div>
     </div>
     <div class="p-4 space-y-4">
-      <!-- Personnel type radios -->
+      <!-- Personnel type selectable cards -->
       <div>
         <label class="block text-sm font-medium mb-2">نوع پرسنل</label>
-        <div class="flex items-center gap-6">
-          <label class="inline-flex items-center gap-2 cursor-pointer">
-            <input type="radio" name="personnel_type" value="company" x-model="personnelType" class="text-indigo-600 focus:ring-indigo-500">
-            <span>پرسنل شرکت</span>
-          </label>
-          <label class="inline-flex items-center gap-2 cursor-pointer">
-            <input type="radio" name="personnel_type" value="contractor" x-model="personnelType" class="text-indigo-600 focus:ring-indigo-500">
-            <span>پرسنل پیمانکار</span>
-          </label>
+        <input type="hidden" name="personnel_type" :value="personnelType">
+        <div class="grid grid-cols-2 gap-3">
+          <button type="button" @click="personnelType='company'" :class="personnelType==='company' ? 'ring-2 ring-indigo-500 border-indigo-300' : 'border-gray-200'" class="text-right rounded-lg border bg-gray-50 hover:bg-white transition p-3 flex items-center gap-3">
+            <span class="inline-flex items-center justify-center w-10 h-10 rounded-md bg-indigo-100 text-indigo-600">
+              <i class="fa-solid fa-user-tie"></i>
+            </span>
+            <span class="font-medium">پرسنل شرکت</span>
+          </button>
+          <button type="button" @click="personnelType='contractor'" :class="personnelType==='contractor' ? 'ring-2 ring-indigo-500 border-indigo-300' : 'border-gray-200'" class="text-right rounded-lg border bg-gray-50 hover:bg-white transition p-3 flex items-center gap-3">
+            <span class="inline-flex items-center justify-center w-10 h-10 rounded-md bg-amber-100 text-amber-600">
+              <i class="fa-solid fa-hard-hat"></i>
+            </span>
+            <span class="font-medium">پرسنل پیمانکار</span>
+          </button>
         </div>
         {% if form.errors.personnel_type %}
           <p class="text-sm text-red-600 mt-1">{{ form.errors.personnel_type }}</p>
@@ -50,10 +122,19 @@
   </div>
 
   <!-- Card 2: Visit Details -->
-  <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800">
-    <div class="p-4 rounded-t-lg bg-gradient-to-l from-blue-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
-      <i class="fa-solid fa-file-medical text-blue-600"></i>
-      <h3 class="font-semibold">جزئیات مراجعه</h3>
+  <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800 border border-blue-100 dark:border-gray-700 hover:shadow-xl transition-shadow">
+    <div class="p-4 rounded-t-lg bg-gradient-to-l from-blue-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-blue-100 dark:border-gray-700">
+      <div class="flex items-center gap-3">
+        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-400 to-indigo-500 shadow-md">
+          <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="font-bold text-gray-900 dark:text-white">جزئیات مراجعه</h3>
+          <p class="text-xs text-gray-600 dark:text-gray-400">مرحله ۲ از ۴</p>
+        </div>
+      </div>
     </div>
     <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="md:col-span-2">
@@ -96,22 +177,31 @@
   </div>
 
   <!-- Card 3: Medicine Management -->
-  <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800" x-data="medicineFormset()" x-init="init()">
-    <div class="p-4 rounded-t-lg bg-gradient-to-l from-amber-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <i class="fa-solid fa-capsules text-amber-600"></i>
-        <h3 class="font-semibold">مدیریت دارو</h3>
+  <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800 border border-amber-100 dark:border-gray-700 hover:shadow-xl transition-shadow" x-data="medicineFormset()" x-init="init()">
+    <div class="p-4 rounded-t-lg bg-gradient-to-l from-amber-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-amber-100 dark:border-gray-700 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 shadow-md">
+          <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23-.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <h3 class="font-bold text-gray-900 dark:text-white">مدیریت دارو</h3>
+          <p class="text-xs text-gray-600 dark:text-gray-400">مرحله ۳ از ۴</p>
+        </div>
       </div>
-      <button type="button" @click="addRow()" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-amber-600 text-white hover:bg-amber-700">
-        <i class="fa-solid fa-plus"></i>
-        افزودن دارو
+      <button type="button" @click="addRow()" class="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-gradient-to-r from-amber-500 to-orange-600 text-white hover:from-amber-600 hover:to-orange-700 shadow-md transition-all">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+        </svg>
+        <span>افزودن دارو</span>
       </button>
     </div>
     <div class="p-4 space-y-3">
       {{ medicine_formset.management_form }}
       <div id="medicine-rows" class="space-y-3">
         {% for f in medicine_formset %}
-          <div class="grid grid-cols-1 md:grid-cols-7 gap-3 items-end bg-gray-50 dark:bg-gray-700 rounded-md p-3" data-index="{{ forloop.counter0 }}">
+          <div class="grid grid-cols-1 md:grid-cols-7 gap-3 items-end border border-amber-100 bg-amber-50/30 dark:bg-gray-700 rounded-md p-3 hover:shadow-md transition" data-index="{{ forloop.counter0 }}">
             <div class="md:col-span-5">
               <label class="block text-sm font-medium mb-1">دارو</label>
               {{ f.medicine }}
@@ -123,7 +213,8 @@
               {% if f.errors.quantity %}<p class="text-xs text-red-600 mt-1">{{ f.errors.quantity }}</p>{% endif %}
             </div>
             <div class="flex md:justify-end">
-              <button type="button" @click="removeRow($event)" class="px-3 py-2 text-sm rounded-md bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300">
+              <button type="button" @click="removeRow($event)" class="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md bg-red-600 text-white hover:bg-red-700">
+                <i class="fa-solid fa-trash"></i>
                 حذف
               </button>
             </div>
@@ -132,7 +223,7 @@
       </div>
       <!-- empty form template -->
       <template id="medicine-empty-template">
-        <div class="grid grid-cols-1 md:grid-cols-7 gap-3 items-end bg-gray-50 dark:bg-gray-700 rounded-md p-3" data-index="__index__">
+        <div class="grid grid-cols-1 md:grid-cols-7 gap-3 items-end border border-amber-100 bg-amber-50/30 dark:bg-gray-700 rounded-md p-3 hover:shadow-md transition" data-index="__index__">
           <div class="md:col-span-5">
             <label class="block text-sm font-medium mb-1">دارو</label>
             {{ medicine_formset.empty_form.medicine|safe }}
@@ -142,7 +233,8 @@
             {{ medicine_formset.empty_form.quantity|safe }}
           </div>
           <div class="flex md:justify-end">
-            <button type="button" @click="removeRow($event)" class="px-3 py-2 text-sm rounded-md bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300">
+            <button type="button" @click="removeRow($event)" class="inline-flex items-center gap-2 px-3 py-2 text-sm rounded-md bg-red-600 text-white hover:bg-red-700">
+              <i class="fa-solid fa-trash"></i>
               حذف
             </button>
           </div>
@@ -152,11 +244,18 @@
   </div>
 
   <!-- Card 4: Hospital Referral (optional) -->
-  <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800" x-data="{ referred: false }">
-    <div class="p-4 rounded-t-lg bg-gradient-to-l from-rose-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <i class="fa-solid fa-hospital text-rose-600"></i>
-        <h3 class="font-semibold">ارجاع به بیمارستان</h3>
+  <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800 border border-emerald-100 dark:border-gray-700 hover:shadow-xl transition-shadow" x-data="{ referred: false }">
+    <div class="p-4 rounded-t-lg bg-gradient-to-l from-emerald-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-emerald-100 dark:border-gray-700 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 shadow-md">
+          <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <h3 class="font-bold text-gray-900 dark:text-white">ارجاع به بیمارستان</h3>
+          <p class="text-xs text-gray-600 dark:text-gray-400">مرحله ۴ از ۴ - اختیاری</p>
+        </div>
       </div>
       <label class="inline-flex items-center cursor-pointer">
         <input type="checkbox" x-model="referred" class="sr-only peer">
@@ -186,9 +285,30 @@
     </div>
   </div>
 
-  <div class="flex items-center justify-end gap-3">
-    <a href="{% url 'emergency_services:visit_list' %}" class="px-4 py-2 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200">انصراف</a>
-    <button type="submit" class="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">ثبت مراجعه</button>
+  <!-- Submit Actions -->
+  <div class="flex items-center justify-between gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+    <p class="text-sm text-gray-600 dark:text-gray-400">
+      <svg class="inline h-5 w-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+      </svg>
+      لطفاً قبل از ثبت از صحت اطلاعات وارد شده اطمینان حاصل کنید
+    </p>
+    <div class="flex items-center gap-3">
+      <a href="{% url 'emergency_services:visit_list' %}" 
+         class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-md bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        انصراف
+      </a>
+      <button type="submit" 
+              class="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-md bg-gradient-to-r from-rose-500 to-red-600 text-white hover:from-rose-600 hover:to-red-700 shadow-lg hover:shadow-xl transition-all">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        ثبت نهایی مراجعه
+      </button>
+    </div>
   </div>
 </form>
 {% endblock %}
@@ -196,26 +316,49 @@
 {% block scripts %}
 <!-- Select2 + Jalali DateTime (libs are loaded globally in base.html) -->
 <script>
+  function initSelect2WithOptionalAjax($el, baseOpts){
+    const url = $el.data('ajaxUrl') || $el.data('ajax-url') || $el.attr('data-ajax-url');
+    if (url) {
+      $el.select2(Object.assign({}, baseOpts, {
+        minimumInputLength: 1,
+        ajax: {
+          url: url,
+          delay: 250,
+          dataType: 'json',
+          data: params => ({ q: params.term, page: params.page || 1 }),
+          processResults: data => (data.results ? data : { results: data })
+        }
+      }));
+    } else {
+      $el.select2(baseOpts);
+    }
+  }
+
   function visitForm() {
     return {
       personnelType: '{{ initial_personnel_type|default:"company" }}',
       init() {
-        // Initialize Select2
+        // Initialize Select2 (with optional AJAX if data-ajax-url provided)
         const selectOpts = { width: '100%', dir: 'rtl' };
-        $('#id_company_personnel').addClass('select2').select2(selectOpts);
-        $('#id_contractor_personnel').addClass('select2').select2(selectOpts);
-        $('#id_hospital').addClass('select2').select2(selectOpts);
+        initSelect2WithOptionalAjax($('#id_company_personnel'), selectOpts);
+        initSelect2WithOptionalAjax($('#id_contractor_personnel'), selectOpts);
+        $('#id_hospital').addClass('select2');
+        initSelect2WithOptionalAjax($('#id_hospital'), selectOpts);
 
-        // Convert datetime-local to text and apply Jalali picker
-        $('.jalali-datetime').each(function(){
-          const $el = $(this);
+        // Jalali datetime for known fields and any with class
+        const applyJalali = ($el) => {
           try { $el.prop('type','text'); } catch(e) {}
           $el.persianDatepicker({
             format: 'YYYY/MM/DD HH:mm:ss',
             timePicker: { enabled: true, second: true },
             autoClose: true
           });
+        };
+        ['#id_visit_time', '#id_hospital_admission_time', '#id_hospital_discharge_time'].forEach(sel => {
+          const $el = $(sel);
+          if ($el.length) applyJalali($el);
         });
+        $('.jalali-datetime').each(function(){ applyJalali($(this)); });
       }
     }
   }
@@ -235,7 +378,7 @@
         $(this.container).find('select').each(function(){
           const $s = $(this);
           if ($s.data('select2')) { $s.select2('destroy'); }
-          $s.addClass('select2').select2(opts);
+          initSelect2WithOptionalAjax($s, opts);
         });
       },
       addRow() {

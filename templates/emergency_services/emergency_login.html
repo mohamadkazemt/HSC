@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ورود به پورتال اورژانس</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* استفاده از فونت سیستم برای سرعت بیشتر */
+        body {
+            font-family: Tahoma, Arial, sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .emergency-gradient {
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f87171 100%);
+        }
+        /* آیکون‌های ساده به جای Font Awesome */
+        .icon-user::before { content: "👤"; }
+        .icon-lock::before { content: "🔒"; }
+        .icon-key::before { content: "🔑"; }
+        .icon-login::before { content: "🚪"; }
+        .icon-info::before { content: "ℹ️"; }
+        .icon-ambulance::before { content: "🚑"; font-size: 3rem; }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+        <!-- دکمه‌های جابجایی بین صفحات لاگین -->
+        <!-- ...existing code... -->
+        <!-- Logo/Header Section -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-24 h-24 bg-white rounded-full shadow-2xl mb-4">
+                <span class="icon-ambulance">🚑</span>
+            </div>
+            <h1 class="text-4xl font-bold text-white mb-2">پورتال اورژانس</h1>
+            <p class="text-white/80 text-lg">سامانه مدیریت خدمات اورژانسی</p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="bg-white rounded-2xl shadow-2xl p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">ورود پرسنل اورژانس</h2>
+            
+            <!-- Messages -->
+            {% if messages %}
+                <div class="mb-4 space-y-2">
+                    {% for message in messages %}
+                        <div class="p-4 rounded-lg {% if message.tags == 'error' %}bg-red-50 text-red-800 border border-red-200{% elif message.tags == 'success' %}bg-green-50 text-green-800 border border-green-200{% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+                            <div class="flex items-center gap-2">
+                                {% if message.tags == 'error' %}
+                                    <span>❌</span>
+                                {% elif message.tags == 'success' %}
+                                    <span>✅</span>
+                                {% else %}
+                                    <span>ℹ️</span>
+                                {% endif %}
+                                <span>{{ message }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Login Form -->
+            <form method="POST" action="{% url 'emergency_services:emergency_login' %}" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Username -->
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
+                        <span class="ml-1">👤</span>
+                        نام کاربری
+                    </label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username" 
+                        required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition"
+                        placeholder="نام کاربری خود را وارد کنید"
+                        autofocus
+                    >
+                </div>
+
+                <!-- Password -->
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                        <span class="ml-1">🔒</span>
+                        رمز عبور
+                    </label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition"
+                        placeholder="رمز عبور خود را وارد کنید"
+                    >
+                </div>
+
+                <!-- Forgot Password Link -->
+                <div class="text-left">
+                    <a href="{% url 'emergency_services:emergency_password_reset' %}" class="text-sm text-red-600 hover:text-red-700 font-medium">
+                        <span class="ml-1">🔑</span>
+                        فراموشی رمز عبور؟
+                    </a>
+                </div>
+
+                <!-- Submit Button -->
+                <button 
+                    type="submit" 
+                    class="w-full emergency-gradient text-white font-bold py-3 px-6 rounded-lg hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2"
+                >
+                    <span>🚪</span>
+                    <span>ورود به سیستم</span>
+                </button>
+            </form>
+
+            <!-- Footer Note -->
+            <div class="mt-6 pt-6 border-t border-gray-200 text-center">
+                <p class="text-sm text-gray-600">
+                    <span class="ml-1">ℹ️</span>
+                    این صفحه فقط برای پرسنل اورژانس می‌باشد
+                </p>
+            </div>
+
+            <!-- Contractor & Main Login Links (styled like main login) -->
+            <div class="mt-6">
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-4 bg-white text-gray-600">یا</span>
+                    </div>
+                </div>
+                <div class="mt-6">
+                    <a href="{% url 'accounts:login' %}" class="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        </svg>
+                        <span>ورود به سیستم اصلی</span>
+                    </a>
+                </div>
+                <div class="mt-4">
+                    <a href="{% url 'contractor_management:contractor_login' %}" class="w-full flex items-center justify-center gap-3 bg-white border-2 border-green-600 text-green-600 font-semibold py-3 px-4 rounded-lg transition duration-200 transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl hover:bg-green-50">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        <span>ورود پیمانکاران و پرسنل</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Info -->
+        <div class="mt-6 text-center text-white/80 text-sm">
+            <p>© 2025 سامانه مدیریت HSE - تمامی حقوق محفوظ است</p>
+        </div>
+    </div>
+
+    <script>
+        // Auto-focus on first input
+        document.getElementById('username').focus();
+        
+        // Show password toggle (optional enhancement)
+        const passwordInput = document.getElementById('password');
+        passwordInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                this.form.submit();
+            }
+        });
+    </script>
+</body>
+</html>

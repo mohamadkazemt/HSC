@@ -439,10 +439,11 @@ def delete_meeting(request, pk):
             # ارسال نوتیفیکیشن به شرکت‌کنندگان
             for participant in meeting.participants.all():
                 Notification.objects.create(
-                    recipient=participant,
+                    user=participant,
                     title='حذف جلسه',
                     message=f'جلسه "{meeting.title}" حذف شده است.',
-                    notification_type='meeting'
+                    notification_type='meeting',
+                    url=f'/meetings/{meeting.pk}/'
                 )
             
             meeting.delete()
@@ -540,22 +541,179 @@ def meeting_export(request):
 @permission_required("meeting_calendar")
 @login_required
 def meeting_calendar(request):
+    from django.contrib.auth.models import User
+    users = User.objects.all().select_related('userprofile')
+    return render(request, 'meetings/meeting_calendar.html', {'users': users})
+
+@login_required
+def meeting_events_json(request):
+    """API endpoint برای دریافت لیست جلسات به صورت JSON برای FullCalendar"""
+    from django.http import JsonResponse
+    
     meetings = Meeting.objects.all().order_by('date', 'start_time')
     
-    # تبدیل جلسات به فرمت مناسب برای تقویم
+    # فیلتر دسترسی کاربر
+    if not request.user.is_superuser:
+        meetings = meetings.filter(participants=request.user)
+    
     events = []
     for meeting in meetings:
+        # تعیین رنگ بر اساس وضعیت
+        color_map = {
+            'scheduled': '#3b82f6',  # آبی
+            'cancelled': '#ef4444',   # قرمز
+            'completed': '#10b981',  # سبز
+        }
+        color = color_map.get(meeting.status, '#6b7280')
+        
         events.append({
             'id': meeting.pk,
             'title': meeting.title,
             'start': f"{meeting.date}T{meeting.start_time}",
             'end': f"{meeting.date}T{meeting.end_time}",
-            'location': meeting.location,
+            'color': color,
+            'location': meeting.location or '',
             'participants': [p.get_full_name() for p in meeting.participants.all()],
-            'description': meeting.description
+            'description': meeting.description or '',
+            'status': meeting.status,
+            'status_display': meeting.get_status_display(),
+            'url': f'/meetings/{meeting.pk}/',
         })
     
-    return render(request, 'meetings/meeting_calendar.html', {'events': events})
+    return JsonResponse(events, safe=False)
+
+@login_required
+def meeting_create_ajax(request):
+    """ویو AJAX برای ایجاد جلسه"""
+    from django.http import JsonResponse
+    
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+    
+    if not check_permission(request.user, "meeting_create"):
+        return JsonResponse({'success': False, 'error': 'دسترسی لازم برای ایجاد جلسه را ندارید'}, status=403)
+    
+    form = MeetingForm(request.POST)
+    if form.is_valid():
+        try:
+            meeting = MeetingService.create_meeting(
+                title=form.cleaned_data['title'],
+                date=form.cleaned_data['date'],
+                start_time=form.cleaned_data['start_time'],
+                end_time=form.cleaned_data['end_time'],
+                creator=request.user,
+                participants=form.cleaned_data['participants'],
+                manual_numbers=form.cleaned_data.get('manual_numbers', ''),
+                notify_transport_coordinator=form.cleaned_data.get('notify_transport_coordinator', False),
+                location=form.cleaned_data.get('location', ''),
+                description=form.cleaned_data.get('description', '')
+            )
+            return JsonResponse({
+                'success': True,
+                'message': 'جلسه با موفقیت ایجاد شد.',
+                'meeting_id': meeting.id
+            })
+        except Exception as e:
+            logger.error(f"Error creating meeting via AJAX: {str(e)}")
+            return JsonResponse({'success': False, 'error': f'خطا در ایجاد جلسه: {str(e)}'}, status=500)
+    else:
+        errors = {}
+        for field, field_errors in form.errors.items():
+            errors[field] = field_errors
+        return JsonResponse({'success': False, 'errors': errors}, status=400)
+
+@login_required
+def meeting_update_ajax(request, pk):
+    """ویو AJAX برای ویرایش جلسه"""
+    from django.http import JsonResponse
+    
+    meeting = get_object_or_404(Meeting, pk=pk)
+    
+    if not check_permission(request.user, "meeting_edit"):
+        return JsonResponse({'success': False, 'error': 'دسترسی لازم برای ویرایش جلسه را ندارید'}, status=403)
+    
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
+    
+    form = MeetingForm(request.POST, instance=meeting)
+    if form.is_valid():
+        try:
+            meeting = form.save()
+            
+            # ارسال پیامک بروزرسانی
+            for participant in meeting.participants.all():
+                if hasattr(participant, 'userprofile') and participant.userprofile.mobile:
+                    send_meeting_updated_sms(
+                        participant.userprofile.mobile,
+                        meeting.id,
+                        meeting.title,
+                        meeting.date,
+                        meeting.start_time
+                    )
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'جلسه با موفقیت بروزرسانی شد.',
+                'meeting_id': meeting.id
+            })
+        except Exception as e:
+            logger.error(f"Error updating meeting via AJAX: {str(e)}")
+            return JsonResponse({'success': False, 'error': f'خطا در بروزرسانی جلسه: {str(e)}'}, status=500)
+    else:
+        errors = {}
+        for field, field_errors in form.errors.items():
+            errors[field] = field_errors
+        return JsonResponse({'success': False, 'errors': errors}, status=400)
+
+@login_required
+def meeting_detail_ajax(request, pk):
+    """ویو AJAX برای دریافت جزئیات جلسه"""
+    from django.http import JsonResponse
+    import jdatetime
+    
+    meeting = get_object_or_404(Meeting, pk=pk)
+    
+    # تبدیل تاریخ به شمسی
+    j_date = jdatetime.date.fromgregorian(date=meeting.date)
+    
+    # تبدیل زمان
+    start_time_str = meeting.start_time.strftime('%H:%M')
+    end_time_str = meeting.end_time.strftime('%H:%M')
+    
+    # لیست شرکت‌کنندگان
+    participants = []
+    for participant in meeting.participants.all():
+        try:
+            profile = participant.userprofile
+            participants.append({
+                'id': participant.id,
+                'name': participant.get_full_name() or participant.username,
+                'personnel_code': profile.personnel_code if hasattr(profile, 'personnel_code') else ''
+            })
+        except:
+            participants.append({
+                'id': participant.id,
+                'name': participant.get_full_name() or participant.username,
+                'personnel_code': ''
+            })
+    
+    return JsonResponse({
+        'id': meeting.id,
+        'title': meeting.title,
+        'date': j_date.strftime('%Y/%m/%d'),
+        'date_gregorian': meeting.date.strftime('%Y-%m-%d'),
+        'start_time': start_time_str,
+        'end_time': end_time_str,
+        'location': meeting.location or '',
+        'description': meeting.description or '',
+        'status': meeting.status,
+        'status_display': meeting.get_status_display(),
+        'participants': participants,
+        'manual_numbers': meeting.manual_numbers or '',
+        'notify_transport_coordinator': meeting.notify_transport_coordinator,
+        'creator': meeting.creator.get_full_name() or meeting.creator.username,
+        'created_at': meeting.created_at.strftime('%Y-%m-%d %H:%M'),
+    })
 
 @login_required
 def meeting_search(request):

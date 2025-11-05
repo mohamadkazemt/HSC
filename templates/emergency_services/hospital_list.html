@@ -1,13 +1,16 @@
-{% extends 'base.html' %}
+{% extends 'emergency_services/emergency_base.html' %}
 {% block title %}بیمارستان‌ها{% endblock %}
 {% block content %}
-<div class="rounded-lg shadow-lg bg-white dark:bg-gray-800">
-  <div class="p-4 rounded-t-lg bg-gradient-to-l from-rose-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+<div class="rounded-lg shadow-lg bg-white dark:bg-gray-800" x-data="hospitalModal()" x-init="init()">
+  <div class="p-4 rounded-t-lg bg-gradient-to-l from-rose-500 to-red-600 text-white flex items-center justify-between">
     <div class="flex items-center gap-2">
-      <i class="fa-solid fa-hospital text-rose-600"></i>
-      <h3 class="font-semibold">لیست بیمارستان‌ها</h3>
+      <i class="fa-solid fa-hospital"></i>
+      <h3 class="font-semibold">بیمارستان‌ها</h3>
     </div>
-    <a href="{% url 'emergency_services:create_hospital' %}" class="px-3 py-1.5 rounded-md bg-rose-600 text-white hover:bg-rose-700 text-sm">افزودن</a>
+    <button type="button" @click="$dispatch('hospital-modal', { mode: 'create', url: '{% url 'emergency_services:create_hospital' %}' })" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-sm">
+      <i class="fa-solid fa-plus"></i>
+      افزودن
+    </button>
   </div>
   <div class="p-4">
     <table class="min-w-full text-sm">
@@ -27,8 +30,15 @@
             <td class="px-4 py-2">{{ h.address|default:'-' }}</td>
             <td class="px-4 py-2">{{ h.phone|default:'-' }}</td>
             <td class="px-4 py-2">{% if h.is_active %}<span class="px-2 py-1 rounded text-xs bg-emerald-100 text-emerald-700">فعال</span>{% else %}<span class="px-2 py-1 rounded text-xs bg-gray-100 text-gray-700">غیرفعال</span>{% endif %}</td>
-            <td class="px-4 py-2 space-x-2 space-x-reverse">
-              <a href="{% url 'emergency_services:edit_hospital' h.id %}" class="text-indigo-600 hover:underline">ویرایش</a>
+            <td class="px-4 py-2">
+              <div class="inline-flex items-center gap-2">
+                <button type="button" @click="$dispatch('hospital-modal', { mode: 'edit', url: '{% url 'emergency_services:edit_hospital' h.id %}' })" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700" title="ویرایش">
+                  <i class="fa-solid fa-pen-to-square text-indigo-600"></i>
+                </button>
+                <button type="button" class="p-2 rounded hover:bg-red-50 js-delete-hospital" data-delete-url="{% url 'emergency_services:delete_hospital' h.id %}" title="حذف">
+                  <i class="fa-solid fa-trash text-red-600"></i>
+                </button>
+              </div>
             </td>
           </tr>
         {% empty %}
@@ -38,4 +48,87 @@
     </table>
   </div>
 </div>
+
+<!-- Modal -->
+<div x-data="hospitalModal()" x-init="init()" x-on:hospital-modal.window="openFromEvent($event)" x-show="isOpen" x-cloak class="fixed inset-0 z-40 flex items-center justify-center">
+  <div class="absolute inset-0 bg-black/40" @click="close()"></div>
+  <div class="relative z-50 w-full max-w-2xl bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+    <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+      <h4 class="font-semibold" x-text="title"></h4>
+      <button @click="close()" class="p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="p-4" id="hospital-modal-body">
+      <div class="min-h-[120px] text-sm text-gray-500">در حال بارگذاری...</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function hospitalModal(){
+    const extractForm = (html) => {
+      try {
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const form = doc.querySelector('form');
+        return form ? form.outerHTML : html;
+      } catch { return html; }
+    };
+    const enhance = (root) => {
+      root.querySelectorAll('input,select,textarea').forEach(el => el.classList.add('w-full'));
+      if (window.$) {
+        // Select2
+        $(root).find('select.select2').each(function(){
+          const $s = $(this);
+          if ($s.data('select2')) $s.select2('destroy');
+          $s.select2({ width:'100%', dir:'rtl' });
+        });
+        // Jalali date/datetime
+        if ($.fn.persianDatepicker) {
+          $(root).find('.jalali-date').each(function(){
+            const $el = $(this); try{ $el.prop('type','text'); }catch(e){}
+            $el.persianDatepicker({ format:'YYYY/MM/DD', autoClose:true });
+          });
+          $(root).find('.jalali-datetime').each(function(){
+            const $el = $(this); try{ $el.prop('type','text'); }catch(e){}
+            $el.persianDatepicker({ format:'YYYY/MM/DD HH:mm:ss', timePicker:{ enabled:true, second:true }, autoClose:true });
+          });
+        }
+      }
+    };
+    return {
+      isOpen:false, title:'',
+      init(){},
+      openHospitalModal(kind, url){
+        this.title = kind==='create' ? 'افزودن بیمارستان' : 'ویرایش بیمارستان';
+        this.isOpen = true;
+        const el = document.getElementById('hospital-modal-body');
+        el.innerHTML = '<div class="py-8 text-center text-sm text-gray-500">در حال بارگذاری...</div>';
+        fetch(url, { headers: { 'X-Requested-With':'XMLHttpRequest' }})
+          .then(r => r.text())
+          .then(html => { el.innerHTML = extractForm(html); enhance(el); })
+          .catch(() => { el.innerHTML = '<div class="text-red-600 text-sm">خطا در بارگذاری فرم</div>'; });
+      },
+      openFromEvent(ev){ const d = ev.detail || {}; this.openHospitalModal(d.mode || 'create', d.url || '{% url 'emergency_services:create_hospital' %}'); },
+      close(){ this.isOpen=false; }
+    }
+  }
+  // Delete via fetch to avoid nested form issues
+  (function(){
+    function getCookie(name){
+      const m = document.cookie.match('(^|;)\\s*'+name+'\\s*=\\s*([^;]+)');
+      return m ? m.pop() : '';
+    }
+    document.addEventListener('click', function(e){
+      const btn = e.target.closest('.js-delete-hospital[data-delete-url]');
+      if (!btn) return;
+      const url = btn.getAttribute('data-delete-url');
+      if (!url) return;
+      if (!confirm('حذف شود؟')) return;
+      fetch(url, { method:'POST', headers:{ 'X-Requested-With':'XMLHttpRequest', 'X-CSRFToken': getCookie('csrftoken') } })
+        .then(r => { if (r.ok) location.reload(); else alert('خطا در حذف'); })
+        .catch(() => alert('خطا در ارتباط با سرور'));
+    });
+  })();
+</script>
 {% endblock %}

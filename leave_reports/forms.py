@@ -1,21 +1,94 @@
 from django import forms
-from .models import ShiftReport
+from .models import ShiftReport, ApprovalHierarchy
+from accounts.models import UserProfile, Section, Part
+from django.contrib.auth.models import User
 import jdatetime
 
-class ShiftReportForm(forms.ModelForm):
+
+class LeaveRequestForm(forms.ModelForm):
+    """فرم درخواست مرخصی جدید"""
     shift_date = forms.CharField(
-        widget=forms.TextInput(attrs={'class': 'form-control', 'data-jdp': 'true'}),
-        label='تاریخ'
+        widget=forms.TextInput(attrs={
+            'class': 'jalali-date w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+            'placeholder': 'تاریخ مرخصی را انتخاب کنید',
+        }),
+        label='تاریخ مرخصی'
+    )
+    
+    replacement_person = forms.ModelChoiceField(
+        queryset=User.objects.all(),
+        widget=forms.Select(attrs={
+            'class': 'select2-ajax w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white',
+            'data-placeholder': 'انتخاب جایگزین'
+        }),
+        label='جایگزین پیشنهادی',
+        required=False,
+        help_text='فقط برای مرخصی استحقاقی الزامی است'
+    )
+
+    
+    medical_document = forms.FileField(
+        widget=forms.FileInput(attrs={
+            'class': 'w-full text-sm text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 focus:outline-none',
+            'accept': '.pdf,.jpg,.jpeg,.png'
+        }),
+        label='مدارک پزشکی',
+        required=False,
+        help_text='برای مرخصی استعلاجی الزامی است (فرمت: PDF, JPG, PNG)'
     )
     
     class Meta:
         model = ShiftReport
-        fields = ['leave_type', 'user', 'shift_date', 'shift_type', 'leave_hours', 'start_time', 'end_time', 'status', 'description']
+        fields = ['leave_type', 'shift_date', 'shift_type', 'leave_hours', 
+                  'start_time', 'end_time', 'description', 'replacement_person', 'medical_document']
         widgets = {
-            'start_time': forms.TimeInput(attrs={'type': 'time'}),  # ویجت ساعت شروع
-            'end_time': forms.TimeInput(attrs={'type': 'time'}),  # ویجت ساعت پایان
-            'shift_date': forms.TextInput(attrs={'class': 'form-control', 'data-jdp': 'true'}),
+            'leave_type': forms.Select(attrs={
+                'class': 'w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+                'id': 'id_leave_type'
+            }),
+            'shift_type': forms.Select(attrs={
+                'class': 'w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+            }),
+            'leave_hours': forms.NumberInput(attrs={
+                'class': 'w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+                'placeholder': 'تعداد ساعات',
+                'min': '1'
+            }),
+            'start_time': forms.TimeInput(attrs={
+                'type': 'time',
+                'class': 'w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500'
+            }),
+            'end_time': forms.TimeInput(attrs={
+                'type': 'time',
+                'class': 'w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+                'rows': 4,
+                'placeholder': 'توضیحات خود را وارد کنید...'
+            }),
         }
+        labels = {
+            'leave_type': 'نوع مرخصی',
+            'shift_type': 'نوع شیفت',
+            'leave_hours': 'ساعات مرخصی',
+            'start_time': 'ساعت شروع',
+            'end_time': 'ساعت پایان',
+            'description': 'توضیحات',
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        # فیلتر کردن لیست جایگزین‌ها براساس بخش کاربر
+        if self.user and hasattr(self.user, 'userprofile'):
+            user_profile = self.user.userprofile
+            if user_profile.section:
+                # نمایش کاربران همان بخش (به جز خود کاربر)
+                self.fields['replacement_person'].queryset = User.objects.filter(
+                    userprofile__section=user_profile.section
+                ).exclude(id=self.user.id).select_related('userprofile')
 
     def clean_shift_date(self):
         shift_date = self.cleaned_data.get('shift_date')
@@ -23,44 +96,186 @@ class ShiftReportForm(forms.ModelForm):
             try:
                 # تبدیل تاریخ شمسی به میلادی
                 if isinstance(shift_date, str):
-                    # اگر فرمت YYYY/MM/DD باشد
                     if '/' in shift_date:
                         year, month, day = map(int, shift_date.split('/'))
-                        jalali_date = jdatetime.date(year, month, day)
-                        return jalali_date.togregorian()
-                    # اگر فرمت YYYY-MM-DD باشد
                     elif '-' in shift_date:
                         year, month, day = map(int, shift_date.split('-'))
-                        jalali_date = jdatetime.date(year, month, day)
-                        return jalali_date.togregorian()
-            except (ValueError, TypeError):
-                raise forms.ValidationError('تاریخ نامعتبر است')
+                    else:
+                        raise ValueError("فرمت تاریخ نامعتبر است")
+                    
+                    jalali_date = jdatetime.date(year, month, day)
+                    return jalali_date.togregorian()
+            except (ValueError, TypeError) as e:
+                raise forms.ValidationError(f'تاریخ نامعتبر است: {str(e)}')
         return shift_date
 
     def clean(self):
-        cleaned_data = super().clean()  # Get cleaned data from parent
-        leave_type = cleaned_data.get('leave_type')  # دریافت نوع مرخصی
-        start_time = cleaned_data.get('start_time')  # دریافت ساعت شروع
-        end_time = cleaned_data.get('end_time')  # دریافت ساعت پایان
-        description = cleaned_data.get('description')  # دریافت توضیحات
-        shift_date = cleaned_data.get('shift_date')
-        shift_type = cleaned_data.get('shift_type')
-
-        # حذف اعتبارسنجی اجباری برای تاریخ و شیفت
-        # چون این مقادیر از طریق JavaScript تنظیم می‌شوند
+        cleaned_data = super().clean()
+        leave_type = cleaned_data.get('leave_type')
+        start_time = cleaned_data.get('start_time')
+        end_time = cleaned_data.get('end_time')
+        description = cleaned_data.get('description')
+        replacement_person = cleaned_data.get('replacement_person')
+        medical_document = cleaned_data.get('medical_document')
 
         # اعتبارسنجی برای مرخصی ساعتی
-        if leave_type == 'hourly' and (not start_time or not end_time):
-            raise forms.ValidationError('برای مرخصی ساعتی باید ساعت شروع و پایان وارد شود.')
+        if leave_type == 'hourly':
+            if not start_time or not end_time:
+                raise forms.ValidationError('برای مرخصی ساعتی باید ساعت شروع و پایان وارد شود.')
+            if start_time >= end_time:
+                raise forms.ValidationError('ساعت پایان باید بعد از ساعت شروع باشد.')
 
-        # اعتبارسنجی برای سایر انواع مرخصی (غیرساعتی)
-        if leave_type != 'hourly' and (start_time or end_time):
-            raise forms.ValidationError('برای نوع مرخصی غیر ساعتی، ساعت شروع و پایان وارد نمی‌شود.')
+        # اعتبارسنجی جایگزین - فقط برای مرخصی استحقاقی
+        if leave_type == 'regular' and not replacement_person:
+            raise forms.ValidationError('برای مرخصی استحقاقی باید جایگزین انتخاب کنید.')
+        
+        # اعتبارسنجی مدارک پزشکی - فقط برای مرخصی استعلاجی
+        if leave_type == 'sick_leave' and not medical_document:
+            raise forms.ValidationError('برای مرخصی استعلاجی باید مدارک پزشکی را ضمیمه کنید.')
 
-        # اعتبارسنجی برای غیبت و استعلاجی
-        if leave_type in ['absence', 'sick_leave'] and not description:
-            raise forms.ValidationError('برای غیبت و مرخصی استعلاجی باید توضیحات وارد شود.')
+        # اعتبارسنجی جایگزین
+        if replacement_person and self.user and replacement_person == self.user:
+            raise forms.ValidationError('نمی‌توانید خودتان را به عنوان جایگزین انتخاب کنید.')
 
-        if leave_type not in ['absence', 'sick_leave'] and description:
-            raise forms.ValidationError('فقط برای غیبت و مرخصی استعلاجی توضیحات وارد میشود')
         return cleaned_data
+
+
+class RejectLeaveForm(forms.Form):
+    """فرم رد درخواست مرخصی"""
+    rejection_reason = forms.CharField(
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 4,
+            'placeholder': 'لطفاً دلیل رد درخواست را بنویسید...',
+            'required': 'required'
+        }),
+        label='دلیل رد درخواست',
+        required=True,
+        min_length=10,
+        error_messages={
+            'required': 'وارد کردن دلیل رد الزامی است',
+            'min_length': 'دلیل رد باید حداقل 10 کاراکتر باشد'
+        }
+    )
+
+
+class ApprovalHierarchyForm(forms.ModelForm):
+    """فرم مدیریت سلسله مراتب تأیید"""
+    
+    section = forms.ModelChoiceField(
+        queryset=Section.objects.all(),
+        widget=forms.Select(attrs={
+            'class': 'form-control select2',
+            'data-placeholder': 'انتخاب بخش'
+        }),
+        label='بخش',
+        required=False
+    )
+    
+    part = forms.ModelChoiceField(
+        queryset=Part.objects.all(),
+        widget=forms.Select(attrs={
+            'class': 'form-control select2',
+            'data-placeholder': 'انتخاب قسمت'
+        }),
+        label='قسمت',
+        required=False
+    )
+    
+    approver = forms.ModelChoiceField(
+        queryset=UserProfile.objects.all(),
+        widget=forms.Select(attrs={
+            'class': 'form-control select2',
+            'data-placeholder': 'انتخاب تأیید کننده'
+        }),
+        label='تأیید کننده',
+        required=True
+    )
+    
+    class Meta:
+        model = ApprovalHierarchy
+        fields = ['section', 'part', 'approver']
+
+    def clean(self):
+        cleaned_data = super().clean()
+        section = cleaned_data.get('section')
+        part = cleaned_data.get('part')
+        
+        if not section and not part:
+            raise forms.ValidationError('باید حداقل یکی از فیلدهای بخش یا قسمت را انتخاب کنید.')
+        
+        if section and part:
+            # بررسی اینکه قسمت متعلق به بخش انتخاب شده است
+            if part.section != section:
+                raise forms.ValidationError('قسمت انتخاب شده متعلق به بخش انتخاب شده نیست.')
+        
+        return cleaned_data
+
+
+class LeaveSearchForm(forms.Form):
+    """فرم جستجو در آرشیو مرخصی‌ها"""
+    
+    user_search = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+            'placeholder': 'نام یا نام خانوادگی'
+        }),
+        label='جستجو کاربر'
+    )
+    
+    status = forms.ChoiceField(
+        required=False,
+        choices=[('', 'همه وضعیت‌ها')] + list(ShiftReport.STATUS_CHOICES),
+        widget=forms.Select(attrs={
+            'class': 'w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500'
+        }),
+        label='وضعیت'
+    )
+    
+    leave_type = forms.ChoiceField(
+        required=False,
+        choices=[('', 'همه انواع')] + list(ShiftReport.LEAVE_TYPE_CHOICES),
+        widget=forms.Select(attrs={
+            'class': 'w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500'
+        }),
+        label='نوع مرخصی'
+    )
+    
+    date_from = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 jalali-date',
+            'placeholder': '1403/01/01',
+            'dir': 'ltr'
+        }),
+        label='از تاریخ'
+    )
+    
+    date_to = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 jalali-date',
+            'placeholder': '1403/12/29',
+            'dir': 'ltr'
+        }),
+        label='تا تاریخ'
+    )
+    
+    shift_type = forms.ChoiceField(
+        required=False,
+        choices=[('', 'همه شیفت‌ها')] + list(ShiftReport.SHIFT_TYPE_CHOICES),
+        widget=forms.Select(attrs={
+            'class': 'w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500'
+        }),
+        label='نوع شیفت'
+    )
+    
+    work_group = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+            'placeholder': 'نام گروه کاری'
+        }),
+        label='گروه کاری'
+    )
