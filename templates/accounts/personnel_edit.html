@@ -3,69 +3,303 @@
 
 {% block title %}ویرایش پرسنل{% endblock %}
 
+{% block styles %}
+<style>
+  .card-section {
+    transition: all 0.3s ease;
+  }
+  .card-section:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-3xl mx-auto space-y-6">
-  <div class="flex items-center justify-between">
-    <h1 class="text-xl font-bold">ویرایش اطلاعات: {{ edit_user.get_full_name|default:edit_user.username }}</h1>
-    <a href="{% url 'accounts:personnel_list' %}" class="text-sm text-gray-600 dark:text-gray-300">بازگشت به لیست</a>
+<div class="space-y-6">
+  <!-- Header Section -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-lg">
+        <i class="fa-solid fa-user-edit text-white text-xl"></i>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">ویرایش اطلاعات پرسنل</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+          <i class="fa-solid fa-user text-xs ml-1"></i>
+          {{ edit_user.get_full_name|default:edit_user.username }}
+          {% if profile.personnel_code %}
+            <span class="mx-2">|</span>
+            <i class="fa-solid fa-hashtag text-xs ml-1"></i>
+            کد پرسنلی: {{ profile.personnel_code }}
+          {% endif %}
+        </p>
+      </div>
+    </div>
+    <a href="{% url 'accounts:personnel_list' %}" 
+       class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200">
+      <i class="fa-solid fa-arrow-right"></i>
+      <span>بازگشت به لیست</span>
+    </a>
   </div>
 
   {% if messages %}
   <div class="space-y-2">
     {% for message in messages %}
-      <div class="p-3 rounded border text-sm {% if message.tags == 'success' %}bg-green-50 border-green-200 text-green-800{% elif message.tags == 'error' %}bg-red-50 border-red-200 text-red-800{% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %}">
-        {{ message }}
+      <div class="flex items-start gap-3 p-4 rounded-xl border text-sm {% if message.tags == 'success' %}bg-green-50 border-green-200 text-green-800 dark:bg-green-900/30 dark:border-green-700 dark:text-green-100{% elif message.tags == 'error' %}bg-red-50 border-red-200 text-red-800 dark:bg-red-900/30 dark:border-red-700 dark:text-red-100{% else %}bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-100{% endif %}">
+        {% if message.tags == 'success' %}
+          <i class="fa-solid fa-circle-check text-green-500 dark:text-green-400 mt-0.5"></i>
+        {% elif message.tags == 'error' %}
+          <i class="fa-solid fa-circle-xmark text-red-500 dark:text-red-400 mt-0.5"></i>
+        {% else %}
+          <i class="fa-solid fa-circle-info text-blue-500 dark:text-blue-400 mt-0.5"></i>
+        {% endif %}
+        <span>{{ message }}</span>
       </div>
     {% endfor %}
   </div>
   {% endif %}
 
-  <form method="post" class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm space-y-4">
-    {% csrf_token %}
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Form Section -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Personal Information -->
+      <div class="card-section bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center gap-2 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+            <i class="fa-solid fa-user text-blue-600 dark:text-blue-400"></i>
+          </div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">اطلاعات شخصی</h2>
+        </div>
+        
+        <form method="post" class="space-y-5">
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="profile">
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <i class="fa-solid fa-signature text-gray-400 text-xs ml-1"></i>
+                نام
+              </label>
+              {{ form.first_name }}
+              {% if form.first_name.errors %}
+                <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.first_name.errors.0 }}</p>
+              {% endif %}
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <i class="fa-solid fa-signature text-gray-400 text-xs ml-1"></i>
+                نام خانوادگی
+              </label>
+              {{ form.last_name }}
+              {% if form.last_name.errors %}
+                <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.last_name.errors.0 }}</p>
+              {% endif %}
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <i class="fa-solid fa-hashtag text-gray-400 text-xs ml-1"></i>
+                کد پرسنلی
+              </label>
+              {{ form.personnel_code }}
+              {% if form.personnel_code.errors %}
+                <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.personnel_code.errors.0 }}</p>
+              {% endif %}
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <i class="fa-solid fa-mobile-screen text-gray-400 text-xs ml-1"></i>
+                شماره موبایل
+              </label>
+              {{ form.mobile }}
+              {% if form.mobile.errors %}
+                <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.mobile.errors.0 }}</p>
+              {% endif %}
+            </div>
+          </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label class="block text-sm mb-1">نام</label>
-        {{ form.first_name }}
+          <div class="flex items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2.5 text-white hover:bg-green-700 shadow-md hover:shadow-lg transition-all duration-200 text-sm font-medium">
+              <i class="fa-solid fa-floppy-disk"></i>
+              <span>ذخیره تغییرات</span>
+            </button>
+            <a href="{% url 'accounts:personnel_list' %}" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200">
+              <i class="fa-solid fa-xmark"></i>
+              <span>انصراف</span>
+            </a>
+          </div>
+        </form>
       </div>
-      <div>
-        <label class="block text-sm mb-1">نام خانوادگی</label>
-        {{ form.last_name }}
-      </div>
-      <div>
-        <label class="block text-sm mb-1">کد پرسنلی</label>
-        {{ form.personnel_code }}
-      </div>
-      <div>
-        <label class="block text-sm mb-1">موبایل</label>
-        {{ form.mobile }}
-      </div>
-      <div>
-        <label class="block text-sm mb-1">بخش</label>
-        {{ form.section }}
-      </div>
-      <div>
-        <label class="block text-sm mb-1">قسمت</label>
-        {{ form.part }}
-      </div>
-      <div>
-        <label class="block text-sm mb-1">گروه</label>
-        {{ form.unit_group }}
-      </div>
-      <div>
-        <label class="block text-sm mb-1">سمت</label>
-        {{ form.position }}
-      </div>
-      <div>
-        <label class="block text-sm mb-1">گروه کاری</label>
-        {{ form.group }}
+
+      <!-- Organizational Information -->
+      <div class="card-section bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center gap-2 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+            <i class="fa-solid fa-building text-emerald-600 dark:text-emerald-400"></i>
+          </div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">اطلاعات سازمانی</h2>
+        </div>
+        
+        <form method="post" class="space-y-5">
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="organizational">
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <i class="fa-solid fa-building text-gray-400 text-xs ml-1"></i>
+                بخش
+              </label>
+              {{ form.section }}
+              {% if form.section.errors %}
+                <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.section.errors.0 }}</p>
+              {% endif %}
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <i class="fa-solid fa-sitemap text-gray-400 text-xs ml-1"></i>
+                قسمت
+              </label>
+              {{ form.part }}
+              {% if form.part.errors %}
+                <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.part.errors.0 }}</p>
+              {% endif %}
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <i class="fa-solid fa-layer-group text-gray-400 text-xs ml-1"></i>
+                گروه
+              </label>
+              {{ form.unit_group }}
+              {% if form.unit_group.errors %}
+                <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.unit_group.errors.0 }}</p>
+              {% endif %}
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <i class="fa-solid fa-user-tie text-gray-400 text-xs ml-1"></i>
+                سمت
+              </label>
+              {{ form.position }}
+              {% if form.position.errors %}
+                <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.position.errors.0 }}</p>
+              {% endif %}
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <i class="fa-solid fa-users text-gray-400 text-xs ml-1"></i>
+                گروه کاری
+              </label>
+              {{ form.group }}
+              {% if form.group.errors %}
+                <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.group.errors.0 }}</p>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2.5 text-white hover:bg-green-700 shadow-md hover:shadow-lg transition-all duration-200 text-sm font-medium">
+              <i class="fa-solid fa-floppy-disk"></i>
+              <span>ذخیره تغییرات</span>
+            </button>
+          </div>
+        </form>
       </div>
     </div>
 
-    <div class="flex items-center gap-2 mt-4">
-      <button class="inline-flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-white hover:bg-green-700">ذخیره تغییرات</button>
-      <a href="{% url 'accounts:personnel_list' %}" class="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm">انصراف</a>
+    <!-- Sidebar - Password Reset -->
+    <div class="lg:col-span-1">
+      <div class="card-section bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 sticky top-6">
+        <div class="flex items-center gap-2 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+            <i class="fa-solid fa-key text-amber-600 dark:text-amber-400"></i>
+          </div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">رمز عبور</h2>
+        </div>
+
+        <form method="post" id="password-reset-form" class="space-y-4">
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="password_reset">
+          
+          <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+            <div class="flex items-start gap-2">
+              <i class="fa-solid fa-triangle-exclamation text-amber-600 dark:text-amber-400 mt-0.5"></i>
+              <div class="text-xs text-amber-800 dark:text-amber-300">
+                <p class="font-medium mb-1">توجه:</p>
+                <p>با تغییر رمز عبور، کاربر باید با رمز جدید وارد سیستم شود.</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label for="new_password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <i class="fa-solid fa-lock text-gray-400 text-xs ml-1"></i>
+              رمز عبور جدید
+            </label>
+            <input type="password" 
+                   name="new_password" 
+                   id="new_password" 
+                   required
+                   minlength="8"
+                   class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200"
+                   placeholder="حداقل 8 کاراکتر">
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">حداقل 8 کاراکتر</p>
+          </div>
+
+          <div>
+            <label for="confirm_password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <i class="fa-solid fa-lock text-gray-400 text-xs ml-1"></i>
+              تأیید رمز عبور
+            </label>
+            <input type="password" 
+                   name="confirm_password" 
+                   id="confirm_password" 
+                   required
+                   minlength="8"
+                   class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200"
+                   placeholder="تکرار رمز عبور">
+          </div>
+
+          <button type="submit" 
+                  class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2.5 text-white hover:bg-amber-700 shadow-md hover:shadow-lg transition-all duration-200 text-sm font-medium">
+            <i class="fa-solid fa-key"></i>
+            <span>تغییر رمز عبور</span>
+          </button>
+        </form>
+      </div>
     </div>
-  </form>
+  </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Password confirmation validation
+  document.addEventListener('DOMContentLoaded', function() {
+    const passwordForm = document.getElementById('password-reset-form');
+    if (passwordForm) {
+      passwordForm.addEventListener('submit', function(e) {
+        const newPassword = document.getElementById('new_password').value;
+        const confirmPassword = document.getElementById('confirm_password').value;
+        
+        if (newPassword !== confirmPassword) {
+          e.preventDefault();
+          alert('رمز عبور و تأیید رمز عبور مطابقت ندارند.');
+          return false;
+        }
+        
+        if (newPassword.length < 8) {
+          e.preventDefault();
+          alert('رمز عبور باید حداقل 8 کاراکتر باشد.');
+          return false;
+        }
+        
+        if (!confirm('آیا از تغییر رمز عبور این کاربر مطمئن هستید؟')) {
+          e.preventDefault();
+          return false;
+        }
+      });
+    }
+  });
+</script>
 {% endblock %}

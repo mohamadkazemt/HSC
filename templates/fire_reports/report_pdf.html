@@ -1,94 +1,479 @@
-{% load static %}
-{% load fire_filters %}
-<!DOCTYPE html>
+{% load jalali %}
+<!doctype html>
 <html lang="fa" dir="rtl">
 <head>
-  <meta charset="utf-8" />
-  <title>{{ title }}</title>
+  <meta charset="utf-8"/>
   <style>
-    body { font-family: DejaVu Sans, Tahoma, 'Helvetica Neue', Arial; direction: rtl; }
-    .header { text-align: center; margin-bottom: 20px; }
-    .card { border: 1px solid #ddd; padding: 12px; margin-bottom: 10px; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #ccc; padding: 8px; }
-    .sign { height: 60px; }
+    @page { 
+      size: A4; 
+      margin: 20mm 15mm; 
+    }
+    body { 
+      font-family: DejaVu Sans, Vazirmatn, Arial, sans-serif; 
+      color: #111827; 
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .header { 
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between;
+      gap: 20px; 
+      border-bottom: 3px solid #dc2626; 
+      padding-bottom: 15px; 
+      margin-bottom: 20px; 
+    }
+    .logo { 
+      height: 60px; 
+      max-width: 150px;
+      object-fit: contain;
+    }
+    .header-text {
+      flex: 1;
+      text-align: center;
+    }
+    .title { 
+      font-size: 22px; 
+      font-weight: 700; 
+      color: #dc2626;
+      margin-bottom: 5px;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: #6b7280;
+      margin-top: 5px;
+    }
+    .info-grid { 
+      display: grid; 
+      grid-template-columns: repeat(2, 1fr); 
+      gap: 12px; 
+      margin-bottom: 20px; 
+    }
+    .info-card { 
+      border: 1px solid #e5e7eb; 
+      padding: 10px; 
+      border-radius: 6px; 
+      background: #f9fafb;
+    }
+    .info-label { 
+      font-size: 11px; 
+      color: #6b7280; 
+      margin-bottom: 4px; 
+      font-weight: 600;
+    }
+    .info-value { 
+      font-size: 13px; 
+      color: #111827;
+      font-weight: 500;
+    }
+    h3 { 
+      font-size: 16px; 
+      margin: 20px 0 12px; 
+      color: #dc2626;
+      font-weight: 700;
+      border-bottom: 2px solid #fee2e2;
+      padding-bottom: 5px;
+    }
+    .section { 
+      page-break-inside: avoid; 
+      margin-top: 15px; 
+      margin-bottom: 20px;
+    }
+    .checklist-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 11px;
+    }
+    .checklist-table th, 
+    .checklist-table td { 
+      border: 1px solid #e5e7eb; 
+      padding: 8px 10px; 
+      text-align: right; 
+      vertical-align: top; 
+    }
+    .checklist-table thead th { 
+      background: #fee2e2; 
+      color: #991b1b;
+      font-weight: 700;
+    }
+    .checklist-table tbody tr:nth-child(even) {
+      background: #f9fafb;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+    .status-suitable {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .status-unsuitable {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .incident-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .incident-card {
+      border: 1px solid #e5e7eb;
+      padding: 12px;
+      border-radius: 6px;
+      text-align: center;
+      background: #fff;
+    }
+    .incident-number {
+      font-size: 24px;
+      font-weight: 700;
+      color: #dc2626;
+      margin: 5px 0;
+    }
+    .incident-label {
+      font-size: 11px;
+      color: #6b7280;
+    }
+    .signatures {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 2px solid #e5e7eb;
+    }
+    .signature-box {
+      text-align: center;
+      width: 45%;
+    }
+    .signature-image {
+      max-width: 150px;
+      max-height: 80px;
+      margin-bottom: 10px;
+      object-fit: contain;
+    }
+    .signature-name {
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 5px;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 5px;
+    }
+    .footer { 
+      position: fixed; 
+      bottom: 10mm; 
+      left: 15mm; 
+      right: 15mm; 
+      font-size: 10px; 
+      color: #6b7280; 
+      text-align: center;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 5px;
+    }
+    .approval-status {
+      display: inline-block;
+      padding: 6px 15px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .status-approved {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .status-rejected {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .notes-box {
+      border: 1px solid #e5e7eb;
+      padding: 12px;
+      border-radius: 6px;
+      background: #f9fafb;
+      margin-top: 10px;
+      min-height: 60px;
+    }
   </style>
 </head>
 <body>
-
+  <!-- Header -->
   <div class="header">
     {% if site_settings and site_settings.company_logo %}
-      <img src="{{ site_settings.company_logo.url }}" alt="logo" style="height:60px;">
+      <img class="logo" src="{{ site_settings.company_logo.url }}" alt="لوگو شرکت"/>
     {% endif %}
-    {% if site_settings and site_settings.company_name %}
-      <h2 style="margin:0;">{{ site_settings.company_name }}</h2>
+    <div class="header-text">
+      <div class="title">گزارش آتش‌نشانی</div>
+      <div class="subtitle">شماره گزارش: {{ report.id }} | تاریخ: {{ report.report_date|jalali_date }}</div>
+    </div>
+    {% if site_settings and site_settings.company_logo %}
+      <div style="width: 150px;"></div>
     {% endif %}
-    <h1>{{ title }}</h1>
   </div>
 
-
-  <div class="card">
-    <h3>جزئیات شیفت</h3>
-    <table>
-      <tr><th>شیفت</th><td>{{ report.get_shift_display }}</td></tr>
-      <tr><th>تاریخ گزارش</th><td>{{ report.report_date|date:'Y/m/d H:i' }}</td></tr>
-      <tr><th>اپراتور شیفت</th><td>{{ report.shift_operator.get_full_name }}</td></tr>
-      <tr><th>آتش‌نشان</th><td>{{ report.firefighter.get_full_name }}</td></tr>
-    </table>
+  <!-- Approval Status -->
+  <div style="text-align: center; margin-bottom: 20px;">
+    {% if report.approval_status == 'pending' %}
+    <span class="approval-status status-pending">در انتظار تأیید</span>
+    {% elif report.approval_status == 'approved' %}
+    <span class="approval-status status-approved">تأیید شده</span>
+    {% if report.approved_by %}
+    <div style="font-size: 11px; color: #6b7280; margin-top: 5px;">
+      تأیید شده توسط: {{ report.approved_by.get_full_name|default:report.approved_by.username }}
+      {% if report.approval_date %} - {{ report.approval_date|jalali_date }}{% endif %}
+    </div>
+    {% endif %}
+    {% elif report.approval_status == 'rejected' %}
+    <span class="approval-status status-rejected">رد شده</span>
+    {% if report.rejection_reason %}
+    <div style="font-size: 11px; color: #991b1b; margin-top: 5px;">
+      دلیل رد: {{ report.rejection_reason }}
+    </div>
+    {% endif %}
+    {% endif %}
   </div>
 
-  <div class="card">
-    <h3>خلاصه رخدادها</h3>
-    <table>
-      <tr><th>اعزام‌ها</th><td>{{ report.incident_dispatch_count }}</td></tr>
-      <tr><th>حوادث پرسنلی</th><td>{{ report.personal_incident_count }}</td></tr>
-      <tr><th>حوادث تجهیزات</th><td>{{ report.equipment_incident_count }}</td></tr>
-      <tr><th>حوادث آتش‌سوزی</th><td>{{ report.fire_incident_count }}</td></tr>
-    </table>
-  </div>
-
-  <div class="card">
-    <h3>وضعیت خودروها</h3>
-    {% for v in report.vehicle_reports.all %}
-      <div style="margin-bottom:8px;">
-        <strong>{{ v.get_vehicle }}</strong>
-        <table style="margin-top:6px;">
-          <tr><th>آیتم</th><th>وضعیت</th><th>توضیحات</th></tr>
-          {% for field in 'horn hose monitor extinguisher equipment foam water tire brake lighting'|split:' ' %}
-            {% with attr_status=field|add:'_status' attr_desc=field|add:'_description' %}
-              {% with status=v|get_attr:attr_status desc=v|get_attr:attr_desc %}
-              <tr>
-                <td>{{ v|get_display:attr_status }}</td>
-                <td>{{ v|get_display:attr_status }}</td>
-                <td>{{ desc }}</td>
-              </tr>
-              {% endwith %}
-            {% endwith %}
-          {% endfor %}
-        </table>
+  <!-- Information Grid -->
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="info-label">شیفت کاری</div>
+      <div class="info-value">{{ report.get_shift_display }}</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">تاریخ و ساعت گزارش</div>
+      <div class="info-value">{{ report.report_date|jalali_date }} - {{ report.report_date|date:"H:i" }}</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">متصدی شیفت آتش‌نشانی</div>
+      <div class="info-value">{{ report.shift_operator.get_full_name|default:report.shift_operator.username }}</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">آتش‌نشان</div>
+      <div class="info-value">{{ report.firefighter.get_full_name|default:report.firefighter.username }}</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">نوع خودرو</div>
+      <div class="info-value">{{ report.get_vehicle_source_display }}</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">خودرو</div>
+      <div class="info-value">
+        {% if report.vehicle_source == 'company' and report.company_vehicle %}
+          {{ report.company_vehicle.get_vehicle_type_display }} - {{ report.company_vehicle.workshop_code }}{% if report.company_vehicle.license_plate %} ({{ report.company_vehicle.license_plate }}){% endif %}
+        {% elif report.vehicle_source == 'contractor' and report.contractor_vehicle %}
+          {{ report.contractor_vehicle.driver_name }} ({{ report.contractor_vehicle.license_plate }})
+        {% else %}
+          -
+        {% endif %}
       </div>
+    </div>
+  </div>
+
+  <!-- Vehicle Status Checklist -->
+  {% if vehicle_checklists %}
+    {% for vehicle_checklist in vehicle_checklists %}
+    <div class="section">
+      <h3>چک‌لیست خودرو شماره {{ forloop.counter }}
+        {% if vehicle_checklist.vehicle_source == 'company' and vehicle_checklist.company_vehicle %}
+          - {{ vehicle_checklist.company_vehicle.get_vehicle_type_display }} - {{ vehicle_checklist.company_vehicle.workshop_code }}{% if vehicle_checklist.company_vehicle.license_plate %} ({{ vehicle_checklist.company_vehicle.license_plate }}){% endif %}
+        {% elif vehicle_checklist.vehicle_source == 'contractor' and vehicle_checklist.contractor_vehicle %}
+          - {{ vehicle_checklist.contractor_vehicle.driver_name }} ({{ vehicle_checklist.contractor_vehicle.license_plate }})
+        {% endif %}
+      </h3>
+      <table class="checklist-table">
+        <thead>
+          <tr>
+            <th style="width: 30%;">تجهیز</th>
+            <th style="width: 15%;">وضعیت</th>
+            <th style="width: 55%;">توضیحات</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% with checklist=vehicle_checklist %}
+          {% include 'fire_reports/partials/vehicle_checklist_pdf_items.html' %}
+          {% endwith %}
+        </tbody>
+      </table>
+    </div>
     {% endfor %}
+  {% else %}
+    <!-- استفاده از فیلدهای قدیمی برای backward compatibility -->
+    <div class="section">
+      <h3>چک‌لیست وضعیت خودرو</h3>
+      <table class="checklist-table">
+        <thead>
+          <tr>
+            <th style="width: 30%;">تجهیز</th>
+            <th style="width: 15%;">وضعیت</th>
+            <th style="width: 55%;">توضیحات</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>بوق و چراغ گردان</td>
+            <td>
+              <span class="status-badge {% if report.horn_status == 'suitable' %}status-suitable{% else %}status-unsuitable{% endif %}">
+                {% if report.horn_status == 'suitable' %}مناسب{% else %}نامناسب{% endif %}
+              </span>
+            </td>
+            <td>{{ report.horn_description|default:'-' }}</td>
+          </tr>
+          <tr>
+            <td>شیلنگ‌ها و اتصالات</td>
+            <td>
+              <span class="status-badge {% if report.hose_status == 'suitable' %}status-suitable{% else %}status-unsuitable{% endif %}">
+                {% if report.hose_status == 'suitable' %}مناسب{% else %}نامناسب{% endif %}
+              </span>
+            </td>
+            <td>{{ report.hose_description|default:'-' }}</td>
+          </tr>
+          <tr>
+            <td>مانیتور</td>
+            <td>
+              <span class="status-badge {% if report.monitor_status == 'suitable' %}status-suitable{% else %}status-unsuitable{% endif %}">
+                {% if report.monitor_status == 'suitable' %}مناسب{% else %}نامناسب{% endif %}
+              </span>
+            </td>
+            <td>{{ report.monitor_description|default:'-' }}</td>
+          </tr>
+          <tr>
+            <td>خاموش‌کننده‌های دستی</td>
+            <td>
+              <span class="status-badge {% if report.extinguisher_status == 'suitable' %}status-suitable{% else %}status-unsuitable{% endif %}">
+                {% if report.extinguisher_status == 'suitable' %}مناسب{% else %}نامناسب{% endif %}
+              </span>
+            </td>
+            <td>{{ report.extinguisher_description|default:'-' }}</td>
+          </tr>
+          <tr>
+            <td>تجهیزات آتش‌نشانی</td>
+            <td>
+              <span class="status-badge {% if report.equipment_status == 'suitable' %}status-suitable{% else %}status-unsuitable{% endif %}">
+                {% if report.equipment_status == 'suitable' %}مناسب{% else %}نامناسب{% endif %}
+              </span>
+            </td>
+            <td>{{ report.equipment_description|default:'-' }}</td>
+          </tr>
+          <tr>
+            <td>پودر و فوم خودرو</td>
+            <td>
+              <span class="status-badge {% if report.foam_status == 'suitable' %}status-suitable{% else %}status-unsuitable{% endif %}">
+                {% if report.foam_status == 'suitable' %}مناسب{% else %}نامناسب{% endif %}
+              </span>
+            </td>
+            <td>{{ report.foam_description|default:'-' }}</td>
+          </tr>
+          <tr>
+            <td>آب</td>
+            <td>
+              <span class="status-badge {% if report.water_status == 'suitable' %}status-suitable{% else %}status-unsuitable{% endif %}">
+                {% if report.water_status == 'suitable' %}مناسب{% else %}نامناسب{% endif %}
+              </span>
+            </td>
+            <td>{{ report.water_description|default:'-' }}</td>
+          </tr>
+          <tr>
+            <td>لاستیک‌ها</td>
+            <td>
+              <span class="status-badge {% if report.tire_status == 'suitable' %}status-suitable{% else %}status-unsuitable{% endif %}">
+                {% if report.tire_status == 'suitable' %}مناسب{% else %}نامناسب{% endif %}
+              </span>
+            </td>
+            <td>{{ report.tire_description|default:'-' }}</td>
+          </tr>
+          <tr>
+            <td>سیستم ترمز خودرو</td>
+            <td>
+              <span class="status-badge {% if report.brake_status == 'suitable' %}status-suitable{% else %}status-unsuitable{% endif %}">
+                {% if report.brake_status == 'suitable' %}مناسب{% else %}نامناسب{% endif %}
+              </span>
+            </td>
+            <td>{{ report.brake_description|default:'-' }}</td>
+          </tr>
+          <tr>
+            <td>سیستم روشنایی</td>
+            <td>
+              <span class="status-badge {% if report.lighting_status == 'suitable' %}status-suitable{% else %}status-unsuitable{% endif %}">
+                {% if report.lighting_status == 'suitable' %}مناسب{% else %}نامناسب{% endif %}
+              </span>
+            </td>
+            <td>{{ report.lighting_description|default:'-' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+
+  <!-- Incident Report -->
+  <div class="section">
+    <h3>گزارش حوادث</h3>
+    <div class="incident-grid">
+      <div class="incident-card">
+        <div class="incident-number">{{ report.incident_dispatch_count }}</div>
+        <div class="incident-label">تعداد اعزام به محل حادثه</div>
+      </div>
+      <div class="incident-card">
+        <div class="incident-number">{{ report.personal_incident_count }}</div>
+        <div class="incident-label">تعداد حوادث فردی</div>
+      </div>
+      <div class="incident-card">
+        <div class="incident-number">{{ report.equipment_incident_count }}</div>
+        <div class="incident-label">تعداد حوادث تجهیزاتی</div>
+      </div>
+      <div class="incident-card">
+        <div class="incident-number">{{ report.fire_incident_count }}</div>
+        <div class="incident-label">تعداد حوادث آتش‌سوزی</div>
+      </div>
+    </div>
   </div>
 
+  <!-- Additional Notes -->
+  {% if report.additional_notes %}
+  <div class="section">
+    <h3>توضیحات تکمیلی</h3>
+    <div class="notes-box">
+      {{ report.additional_notes|linebreaks }}
+    </div>
+  </div>
+  {% endif %}
 
-  <div class="card" style="margin-top:20px;">
-    <table>
-      <tr>
-        <td style="width:50%; text-align:center;">
-          <div>امضای آتش‌نشان</div>
-          {% if firefighter_signature_no_bg %}
-            <img src="data:image/png;base64,{{ firefighter_signature_no_bg|b64encode }}" alt="sig" class="sign">
-          {% endif %}
-        </td>
-        <td style="width:50%; text-align:center;">
-          <div>امضای اپراتور شیفت</div>
-          {% if shift_operator_signature_no_bg %}
-            <img src="data:image/png;base64,{{ shift_operator_signature_no_bg|b64encode }}" alt="sig" class="sign">
-          {% endif %}
-        </td>
-      </tr>
-    </table>
+  <!-- Signatures -->
+  <div class="signatures">
+    <div class="signature-box">
+      {% if firefighter_signature_no_bg %}
+        <img src="data:image/png;base64,{{ firefighter_signature_no_bg }}" class="signature-image" alt="امضای آتش‌نشان"/>
+      {% elif report.firefighter.userprofile.signature %}
+        <img src="{{ media_url }}{{ report.firefighter.userprofile.signature.url }}" class="signature-image" alt="امضای آتش‌نشان"/>
+      {% else %}
+        <div style="height: 80px; border: 1px dashed #e5e7eb; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 10px;">امضا</div>
+      {% endif %}
+      <div class="signature-name">آتش‌نشان: {{ report.firefighter.get_full_name|default:report.firefighter.username }}</div>
+    </div>
+    {% if report.approval_status == 'approved' %}
+    <div class="signature-box">
+      {% if shift_operator_signature_no_bg %}
+        <img src="data:image/png;base64,{{ shift_operator_signature_no_bg }}" class="signature-image" alt="امضای متصدی شیفت"/>
+      {% elif report.shift_operator.userprofile.signature %}
+        <img src="{{ media_url }}{{ report.shift_operator.userprofile.signature.url }}" class="signature-image" alt="امضای متصدی شیفت"/>
+      {% else %}
+        <div style="height: 80px; border: 1px dashed #e5e7eb; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 10px;">امضا</div>
+      {% endif %}
+      <div class="signature-name">متصدی شیفت آتش‌نشانی: {{ report.shift_operator.get_full_name|default:report.shift_operator.username }}</div>
+    </div>
+    {% endif %}
   </div>
 
+  <!-- Footer -->
+  <div class="footer">
+    <div>{% if site_settings and site_settings.site_name %}{{ site_settings.site_name }}{% endif %} - گزارش آتش‌نشانی شماره {{ report.id }} - {{ report.report_date|jalali_date }}</div>
+  </div>
 </body>
 </html>
+

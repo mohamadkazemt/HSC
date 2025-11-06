@@ -56,4 +56,7 @@ urlpatterns = [
 # اضافه کردن URL های API
 urlpatterns.append(
     path('api/emergency-vehicle/<int:vehicle_id>/', views.get_vehicle_info, name='get_vehicle_info')
+)
+urlpatterns.append(
+    path('api/contractor-vehicles/', views.get_contractor_vehicles_ajax, name='get_contractor_vehicles_ajax')
 ) 

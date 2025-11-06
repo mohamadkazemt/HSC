@@ -17,6 +17,7 @@ urlpatterns = [
     path('driver-license/', views.driver_license, name='driver_license'),
     # Personnel management
     path('personnel/', views.personnel_list, name='personnel_list'),
+    path('personnel/add/', views.personnel_add, name='personnel_add'),
     path('personnel/<int:user_id>/edit/', views.personnel_edit, name='personnel_edit'),
     path('personnel/import/', views.personnel_import, name='personnel_import'),
     path('personnel/export/', views.personnel_export, name='personnel_export'),
@@ -24,4 +25,12 @@ urlpatterns = [
     path('personnel/api/parts/', views.api_parts_by_section, name='personnel_api_parts'),
     path('personnel/api/unit-groups/', views.api_unit_groups_by_part, name='personnel_api_unit_groups'),
     path('personnel/api/positions/', views.api_positions_by_unit_group, name='personnel_api_positions'),
+    # Organization management
+    path('organization/', views.organization_manage, name='organization_manage'),
+    path('organization/add/', views.organization_add, name='organization_add'),
+    path('organization/<str:entity_type>/<int:entity_id>/edit/', views.organization_edit, name='organization_edit'),
+    path('organization/<str:entity_type>/<int:entity_id>/delete/', views.organization_delete, name='organization_delete'),
+    path('organization/<str:entity_type>/merge/', views.organization_merge, name='organization_merge'),
+    # Organizational chart
+    path('organization-chart/', views.organization_chart, name='organization_chart'),
 ]

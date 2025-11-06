@@ -1,0 +1,91 @@
+<tr>
+  <td>بوق و چراغ گردان</td>
+  <td>
+    <span class="status-badge {% if checklist.horn_status == 'suitable' %}status-suitable{% else %}status-unsuitable{% endif %}">
+      {% if checklist.horn_status == 'suitable' %}مناسب{% else %}نامناسب{% endif %}
+    </span>
+  </td>
+  <td>{{ checklist.horn_description|default:'-' }}</td>
+</tr>
+<tr>
+  <td>شیلنگ‌ها و اتصالات</td>
+  <td>
+    <span class="status-badge {% if checklist.hose_status == 'suitable' %}status-suitable{% else %}status-unsuitable{% endif %}">
+      {% if checklist.hose_status == 'suitable' %}مناسب{% else %}نامناسب{% endif %}
+    </span>
+  </td>
+  <td>{{ checklist.hose_description|default:'-' }}</td>
+</tr>
+<tr>
+  <td>مانیتور</td>
+  <td>
+    <span class="status-badge {% if checklist.monitor_status == 'suitable' %}status-suitable{% else %}status-unsuitable{% endif %}">
+      {% if checklist.monitor_status == 'suitable' %}مناسب{% else %}نامناسب{% endif %}
+    </span>
+  </td>
+  <td>{{ checklist.monitor_description|default:'-' }}</td>
+</tr>
+<tr>
+  <td>خاموش‌کننده‌های دستی</td>
+  <td>
+    <span class="status-badge {% if checklist.extinguisher_status == 'suitable' %}status-suitable{% else %}status-unsuitable{% endif %}">
+      {% if checklist.extinguisher_status == 'suitable' %}مناسب{% else %}نامناسب{% endif %}
+    </span>
+  </td>
+  <td>{{ checklist.extinguisher_description|default:'-' }}</td>
+</tr>
+<tr>
+  <td>تجهیزات آتش‌نشانی</td>
+  <td>
+    <span class="status-badge {% if checklist.equipment_status == 'suitable' %}status-suitable{% else %}status-unsuitable{% endif %}">
+      {% if checklist.equipment_status == 'suitable' %}مناسب{% else %}نامناسب{% endif %}
+    </span>
+  </td>
+  <td>{{ checklist.equipment_description|default:'-' }}</td>
+</tr>
+<tr>
+  <td>پودر و فوم خودرو</td>
+  <td>
+    <span class="status-badge {% if checklist.foam_status == 'suitable' %}status-suitable{% else %}status-unsuitable{% endif %}">
+      {% if checklist.foam_status == 'suitable' %}مناسب{% else %}نامناسب{% endif %}
+    </span>
+  </td>
+  <td>{{ checklist.foam_description|default:'-' }}</td>
+</tr>
+<tr>
+  <td>آب</td>
+  <td>
+    <span class="status-badge {% if checklist.water_status == 'suitable' %}status-suitable{% else %}status-unsuitable{% endif %}">
+      {% if checklist.water_status == 'suitable' %}مناسب{% else %}نامناسب{% endif %}
+    </span>
+  </td>
+  <td>{{ checklist.water_description|default:'-' }}</td>
+</tr>
+<tr>
+  <td>لاستیک‌ها</td>
+  <td>
+    <span class="status-badge {% if checklist.tire_status == 'suitable' %}status-suitable{% else %}status-unsuitable{% endif %}">
+      {% if checklist.tire_status == 'suitable' %}مناسب{% else %}نامناسب{% endif %}
+    </span>
+  </td>
+  <td>{{ checklist.tire_description|default:'-' }}</td>
+</tr>
+<tr>
+  <td>سیستم ترمز خودرو</td>
+  <td>
+    <span class="status-badge {% if checklist.brake_status == 'suitable' %}status-suitable{% else %}status-unsuitable{% endif %}">
+      {% if checklist.brake_status == 'suitable' %}مناسب{% else %}نامناسب{% endif %}
+    </span>
+  </td>
+  <td>{{ checklist.brake_description|default:'-' }}</td>
+</tr>
+<tr>
+  <td>سیستم روشنایی</td>
+  <td>
+    <span class="status-badge {% if checklist.lighting_status == 'suitable' %}status-suitable{% else %}status-unsuitable{% endif %}">
+      {% if checklist.lighting_status == 'suitable' %}مناسب{% else %}نامناسب{% endif %}
+    </span>
+  </td>
+  <td>{{ checklist.lighting_description|default:'-' }}</td>
+</tr>
+

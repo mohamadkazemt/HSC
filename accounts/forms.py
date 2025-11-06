@@ -80,20 +80,52 @@ class ChangePasswordForm(forms.Form):
 
 
 class PersonnelEditForm(forms.ModelForm):
-    first_name = forms.CharField(label='نام', max_length=150, required=False, widget=forms.TextInput(attrs={'class': 'form-control form-control-lg form-control-solid', 'placeholder': 'نام'}))
-    last_name = forms.CharField(label='نام خانوادگی', max_length=150, required=False, widget=forms.TextInput(attrs={'class': 'form-control form-control-lg form-control-solid', 'placeholder': 'نام خانوادگی'}))
+    first_name = forms.CharField(
+        label='نام', 
+        max_length=150, 
+        required=False, 
+        widget=forms.TextInput(attrs={
+            'class': 'w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200',
+            'placeholder': 'نام'
+        })
+    )
+    last_name = forms.CharField(
+        label='نام خانوادگی', 
+        max_length=150, 
+        required=False, 
+        widget=forms.TextInput(attrs={
+            'class': 'w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200',
+            'placeholder': 'نام خانوادگی'
+        })
+    )
 
     class Meta:
         model = UserProfile
         fields = ['first_name', 'last_name', 'personnel_code', 'mobile', 'section', 'part', 'unit_group', 'position', 'group']
         widgets = {
-            'personnel_code': forms.TextInput(attrs={'class': 'form-control form-control-lg form-control-solid', 'placeholder': 'کد پرسنلی'}),
-            'mobile': forms.TextInput(attrs={'class': 'form-control form-control-lg form-control-solid', 'placeholder': 'شماره موبایل'}),
-            'section': forms.Select(attrs={'class': 'form-select'}),
-            'part': forms.Select(attrs={'class': 'form-select'}),
-            'unit_group': forms.Select(attrs={'class': 'form-select'}),
-            'position': forms.Select(attrs={'class': 'form-select'}),
-            'group': forms.Select(attrs={'class': 'form-select'}),
+            'personnel_code': forms.TextInput(attrs={
+                'class': 'w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200',
+                'placeholder': 'کد پرسنلی'
+            }),
+            'mobile': forms.TextInput(attrs={
+                'class': 'w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200',
+                'placeholder': 'شماره موبایل'
+            }),
+            'section': forms.Select(attrs={
+                'class': 'w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200'
+            }),
+            'part': forms.Select(attrs={
+                'class': 'w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200'
+            }),
+            'unit_group': forms.Select(attrs={
+                'class': 'w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200'
+            }),
+            'position': forms.Select(attrs={
+                'class': 'w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200'
+            }),
+            'group': forms.Select(attrs={
+                'class': 'w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200'
+            }),
         }
 
     def __init__(self, *args, **kwargs):

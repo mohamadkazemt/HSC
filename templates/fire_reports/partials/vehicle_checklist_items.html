@@ -1,0 +1,241 @@
+{% load jalali %}
+<div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+  <div class="flex items-center justify-between mb-3">
+    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">بوق و چراغ گردان</span>
+    {% if checklist.horn_status == 'suitable' %}
+    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+      <i class="fas fa-check-circle"></i>
+      مناسب
+    </span>
+    {% else %}
+    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+      <i class="fas fa-times-circle"></i>
+      نامناسب
+    </span>
+    {% endif %}
+  </div>
+  {% if checklist.horn_status == 'unsuitable' and checklist.horn_description %}
+  <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+    <p class="text-sm text-gray-600 dark:text-gray-400">
+      <strong>توضیحات:</strong> {{ checklist.horn_description }}
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+  <div class="flex items-center justify-between mb-3">
+    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">شیلنگ‌ها و اتصالات</span>
+    {% if checklist.hose_status == 'suitable' %}
+    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+      <i class="fas fa-check-circle"></i>
+      مناسب
+    </span>
+    {% else %}
+    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+      <i class="fas fa-times-circle"></i>
+      نامناسب
+    </span>
+    {% endif %}
+  </div>
+  {% if checklist.hose_status == 'unsuitable' and checklist.hose_description %}
+  <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+    <p class="text-sm text-gray-600 dark:text-gray-400">
+      <strong>توضیحات:</strong> {{ checklist.hose_description }}
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+  <div class="flex items-center justify-between mb-3">
+    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">مانیتور</span>
+    {% if checklist.monitor_status == 'suitable' %}
+    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+      <i class="fas fa-check-circle"></i>
+      مناسب
+    </span>
+    {% else %}
+    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+      <i class="fas fa-times-circle"></i>
+      نامناسب
+    </span>
+    {% endif %}
+  </div>
+  {% if checklist.monitor_status == 'unsuitable' and checklist.monitor_description %}
+  <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+    <p class="text-sm text-gray-600 dark:text-gray-400">
+      <strong>توضیحات:</strong> {{ checklist.monitor_description }}
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+  <div class="flex items-center justify-between mb-3">
+    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">خاموش‌کننده‌های دستی</span>
+    {% if checklist.extinguisher_status == 'suitable' %}
+    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+      <i class="fas fa-check-circle"></i>
+      مناسب
+    </span>
+    {% else %}
+    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+      <i class="fas fa-times-circle"></i>
+      نامناسب
+    </span>
+    {% endif %}
+  </div>
+  {% if checklist.extinguisher_status == 'unsuitable' and checklist.extinguisher_description %}
+  <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+    <p class="text-sm text-gray-600 dark:text-gray-400">
+      <strong>توضیحات:</strong> {{ checklist.extinguisher_description }}
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+  <div class="flex items-center justify-between mb-3">
+    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">تجهیزات آتش‌نشانی</span>
+    {% if checklist.equipment_status == 'suitable' %}
+    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+      <i class="fas fa-check-circle"></i>
+      مناسب
+    </span>
+    {% else %}
+    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+      <i class="fas fa-times-circle"></i>
+      نامناسب
+    </span>
+    {% endif %}
+  </div>
+  {% if checklist.equipment_status == 'unsuitable' and checklist.equipment_description %}
+  <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+    <p class="text-sm text-gray-600 dark:text-gray-400">
+      <strong>توضیحات:</strong> {{ checklist.equipment_description }}
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+  <div class="flex items-center justify-between mb-3">
+    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">پودر و فوم خودرو</span>
+    {% if checklist.foam_status == 'suitable' %}
+    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+      <i class="fas fa-check-circle"></i>
+      مناسب
+    </span>
+    {% else %}
+    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+      <i class="fas fa-times-circle"></i>
+      نامناسب
+    </span>
+    {% endif %}
+  </div>
+  {% if checklist.foam_status == 'unsuitable' and checklist.foam_description %}
+  <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+    <p class="text-sm text-gray-600 dark:text-gray-400">
+      <strong>توضیحات:</strong> {{ checklist.foam_description }}
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+  <div class="flex items-center justify-between mb-3">
+    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">آب</span>
+    {% if checklist.water_status == 'suitable' %}
+    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+      <i class="fas fa-check-circle"></i>
+      مناسب
+    </span>
+    {% else %}
+    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+      <i class="fas fa-times-circle"></i>
+      نامناسب
+    </span>
+    {% endif %}
+  </div>
+  {% if checklist.water_status == 'unsuitable' and checklist.water_description %}
+  <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+    <p class="text-sm text-gray-600 dark:text-gray-400">
+      <strong>توضیحات:</strong> {{ checklist.water_description }}
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+  <div class="flex items-center justify-between mb-3">
+    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">لاستیک‌ها</span>
+    {% if checklist.tire_status == 'suitable' %}
+    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+      <i class="fas fa-check-circle"></i>
+      مناسب
+    </span>
+    {% else %}
+    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+      <i class="fas fa-times-circle"></i>
+      نامناسب
+    </span>
+    {% endif %}
+  </div>
+  {% if checklist.tire_status == 'unsuitable' and checklist.tire_description %}
+  <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+    <p class="text-sm text-gray-600 dark:text-gray-400">
+      <strong>توضیحات:</strong> {{ checklist.tire_description }}
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+  <div class="flex items-center justify-between mb-3">
+    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">سیستم ترمز خودرو</span>
+    {% if checklist.brake_status == 'suitable' %}
+    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+      <i class="fas fa-check-circle"></i>
+      مناسب
+    </span>
+    {% else %}
+    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+      <i class="fas fa-times-circle"></i>
+      نامناسب
+    </span>
+    {% endif %}
+  </div>
+  {% if checklist.brake_status == 'unsuitable' and checklist.brake_description %}
+  <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+    <p class="text-sm text-gray-600 dark:text-gray-400">
+      <strong>توضیحات:</strong> {{ checklist.brake_description }}
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+  <div class="flex items-center justify-between mb-3">
+    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">سیستم روشنایی</span>
+    {% if checklist.lighting_status == 'suitable' %}
+    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+      <i class="fas fa-check-circle"></i>
+      مناسب
+    </span>
+    {% else %}
+    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+      <i class="fas fa-times-circle"></i>
+      نامناسب
+    </span>
+    {% endif %}
+  </div>
+  {% if checklist.lighting_status == 'unsuitable' and checklist.lighting_description %}
+  <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+    <p class="text-sm text-gray-600 dark:text-gray-400">
+      <strong>توضیحات:</strong> {{ checklist.lighting_description }}
+    </p>
+  </div>
+  {% endif %}
+</div>
+

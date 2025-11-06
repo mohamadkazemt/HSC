@@ -1,145 +1,733 @@
-
 {% extends 'base.html' %}
-{% load static %}
-{% load jalali %}
-{% load display_filters %}
-{% load status_display %}
+{% load static jalali %}
+
+{% block title %}جزئیات گزارش آتش‌نشانی #{{ report.id }}{% endblock %}
+
 
 {% block content %}
-<div class="container mx-auto">
-  <!-- Header Card -->
-  <div class="rounded-lg shadow-lg bg-gradient-to-l from-orange-500 to-red-600 mb-6 flex items-center px-6 py-4">
-    <i class="fa fa-fire text-3xl text-white ml-4"></i>
-    <h1 class="text-2xl font-bold text-white">جزئیات گزارش #{{ report.id }}</h1>
-  </div>
-
-  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <!-- Shift Info Card -->
-    <div class="rounded-lg shadow-lg bg-white">
-      <div class="bg-gradient-to-l from-red-400 to-orange-200 py-2 px-4 rounded-t-lg flex items-center">
-        <i class="fa fa-user-shield text-red-700 ml-2"></i>
-        <h2 class="font-semibold text-red-700">اطلاعات شیفت</h2>
-      </div>
-      <div class="p-4 space-y-2">
-        <div><span class="font-bold">شیفت:</span> {{ report.get_shift_display }}</div>
-        <div><span class="font-bold">تاریخ گزارش:</span> {{ report.report_date|to_jalali }}</div>
-        <div><span class="font-bold">اپراتور شیفت:</span> {{ report.shift_operator.get_full_name }}</div>
-        <div><span class="font-bold">آتش‌نشان:</span> {{ report.firefighter.get_full_name }}</div>
-      </div>
-    </div>
-
-    <!-- Incident Info Card -->
-    <div class="rounded-lg shadow-lg bg-white">
-      <div class="bg-gradient-to-l from-orange-400 to-yellow-200 py-2 px-4 rounded-t-lg flex items-center">
-        <i class="fa fa-exclamation-triangle text-orange-700 ml-2"></i>
-        <h2 class="font-semibold text-orange-700">خلاصه رخدادها</h2>
-      </div>
-      <div class="p-4 space-y-2">
-        <div><span class="font-bold">اعزام‌ها:</span> {{ report.incident_dispatch_count }}</div>
-        <div><span class="font-bold">حوادث پرسنلی:</span> {{ report.personal_incident_count }}</div>
-        <div><span class="font-bold">حوادث تجهیزات:</span> {{ report.equipment_incident_count }}</div>
-        <div><span class="font-bold">حوادث آتش‌سوزی:</span> {{ report.fire_incident_count }}</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Vehicle Statuses -->
-  <div class="mt-6">
-    <h2 class="text-lg font-semibold mb-2 flex items-center"><i class="fa fa-truck text-blue-500 ml-2"></i>وضعیت خودروها</h2>
-    <div class="space-y-4">
-      {% for v in report.vehicle_reports.all %}
-      <div class="rounded-lg shadow bg-white">
-        <div class="bg-blue-50 px-4 py-2 rounded-t-lg flex items-center justify-between">
-          <div class="font-semibold flex items-center"><i class="fa fa-car text-blue-400 ml-2"></i>{{ v.get_vehicle }}</div>
+<div x-data="reportDetail()" class="max-w-7xl mx-auto space-y-6 pb-6">
+  <!-- Header -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <i class="fas fa-fire text-red-600 text-3xl"></i>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">گزارش آتش‌نشانی #{{ report.id }}</h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ report.report_date|jalali_date }} - {{ report.get_shift_display }}</p>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 p-4">
-          {% for field in 'horn hose monitor extinguisher equipment foam water tire brake lighting'|split:' ' %}
-            {% with attr_status=field|add:'_status' attr_desc=field|add:'_description' %}
-              {% with status=v|get_attr:attr_status desc=v|get_attr:attr_desc %}
-              <div class="flex items-center justify-between p-3 border rounded-lg">
-                <div class="flex flex-col space-y-2 w-full">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                      {% if field == 'horn' %}<i class="fa fa-bullhorn text-blue-400"></i>{% endif %}
-                      {% if field == 'hose' %}<i class="fa fa-water text-blue-500"></i>{% endif %}
-                      {% if field == 'monitor' %}<i class="fa fa-tv text-gray-500"></i>{% endif %}
-                      {% if field == 'extinguisher' %}<i class="fa fa-fire-extinguisher text-red-500"></i>{% endif %}
-                      {% if field == 'equipment' %}<i class="fa fa-toolbox text-gray-600"></i>{% endif %}
-                      {% if field == 'foam' %}<i class="fa fa-bath text-blue-300"></i>{% endif %}
-                      {% if field == 'water' %}<i class="fa fa-tint text-blue-600"></i>{% endif %}
-                      {% if field == 'tire' %}<i class="fa fa-circle text-gray-400"></i>{% endif %}
-                      {% if field == 'brake' %}<i class="fa fa-hand-paper text-orange-400"></i>{% endif %}
-                      {% if field == 'lighting' %}<i class="fa fa-lightbulb text-yellow-400"></i>{% endif %}
-                      <span class="font-medium text-gray-700">{{ attr_status|get_field_display }}</span>
-                    </div>
-                    <div>
-                      <span class="inline-flex items-center px-2 py-1 rounded-full text-xs {% if status == 'suitable' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
-                        {{ v|get_display:attr_status }}
+      </div>
+      <div class="flex items-center gap-3">
+        {% if request.user|check_permission:'report_edit' %}
+        <a href="{% url 'fire_reports:report_edit' report.pk %}" 
+           class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg hover:bg-yellow-100 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800">
+          <i class="fas fa-edit"></i>
+          ویرایش
+        </a>
+        {% endif %}
+        {% if request.user|check_permission:'report_pdf' %}
+        <a href="{% url 'fire_reports:report_pdf' report.pk %}" 
+           target="_blank"
+           class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 shadow-md">
+          <i class="fas fa-file-pdf"></i>
+          دانلود PDF
+        </a>
+        {% endif %}
+        <a href="{% url 'fire_reports:report_list' %}" 
+           class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600">
+          <i class="fas fa-arrow-right"></i>
+          بازگشت
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status Badge -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+    <div class="flex items-center justify-between">
+      <div>
+        <span class="text-sm font-medium text-gray-500 dark:text-gray-400">وضعیت تأیید:</span>
+        {% if report.approval_status == 'pending' %}
+        <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 ml-3">
+          <i class="fas fa-clock"></i>
+          در انتظار تأیید
+        </span>
+        {% elif report.approval_status == 'approved' %}
+        <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 ml-3">
+          <i class="fas fa-check-circle"></i>
+          تأیید شده
+        </span>
+        {% if report.approved_by %}
+        <span class="text-sm text-gray-500 dark:text-gray-400 mr-4">
+          توسط: {{ report.approved_by.get_full_name|default:report.approved_by.username }}
+          {% if report.approval_date %}
+          - {{ report.approval_date|jalali_date }}
+          {% endif %}
+        </span>
+        {% endif %}
+        {% elif report.approval_status == 'rejected' %}
+        <span class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 ml-3">
+          <i class="fas fa-times-circle"></i>
+          رد شده
+        </span>
+        {% if report.rejection_reason %}
+        <span class="text-sm text-red-600 dark:text-red-400 mr-4">
+          دلیل: {{ report.rejection_reason }}
+        </span>
+        {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-6">
+    <!-- Card 1: اطلاعات کلی شیفت -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+      <div class="bg-gradient-to-l from-blue-600 to-blue-500 px-6 py-4">
+        <div class="flex items-center gap-3">
+          <i class="fas fa-calendar-alt text-white text-xl"></i>
+          <h2 class="text-xl font-bold text-white">اطلاعات کلی شیفت</h2>
+        </div>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">شیفت کاری:</span>
+            <p class="text-sm font-semibold text-gray-900 dark:text-white mt-1">{{ report.get_shift_display }}</p>
+          </div>
+          <div>
+            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">تاریخ گزارش:</span>
+            <p class="text-sm font-semibold text-gray-900 dark:text-white mt-1">{{ report.report_date|jalali_date }} {{ report.report_date|date:"H:i" }}</p>
+          </div>
+          <div>
+            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">متصدی شیفت:</span>
+            <p class="text-sm font-semibold text-gray-900 dark:text-white mt-1">{{ report.shift_operator.get_full_name|default:report.shift_operator.username }}</p>
+          </div>
+          <div>
+            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">آتش‌نشان:</span>
+            <p class="text-sm font-semibold text-gray-900 dark:text-white mt-1">{{ report.firefighter.get_full_name|default:report.firefighter.username }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 2: اطلاعات خودرو -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+      <div class="bg-gradient-to-l from-red-600 to-red-500 px-6 py-4">
+        <div class="flex items-center gap-3">
+          <i class="fas fa-truck text-white text-xl"></i>
+          <h2 class="text-xl font-bold text-white">اطلاعات خودروها</h2>
+        </div>
+      </div>
+      <div class="p-6 space-y-4">
+        {% if vehicle_checklists %}
+          <div>
+            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">تعداد خودروها:</span>
+            <p class="text-sm font-semibold text-gray-900 dark:text-white mt-1">
+              <span class="inline-flex items-center gap-1">
+                <i class="fas fa-truck text-blue-600"></i>
+                {{ vehicle_checklists|length }} خودرو
+              </span>
+            </p>
+          </div>
+          <div class="space-y-3 mt-4">
+            {% for vehicle_checklist in vehicle_checklists %}
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+              <div class="flex items-center justify-between">
+                <div>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">خودرو شماره {{ forloop.counter }}</span>
+                  <p class="text-sm font-semibold text-gray-900 dark:text-white mt-1">
+                    {% if vehicle_checklist.vehicle_source == 'company' and vehicle_checklist.company_vehicle %}
+                      <span class="inline-flex items-center gap-1">
+                        <i class="fas fa-building text-blue-600"></i>
+                        {{ vehicle_checklist.company_vehicle.get_vehicle_type_display }} - {{ vehicle_checklist.company_vehicle.workshop_code }}{% if vehicle_checklist.company_vehicle.license_plate %} ({{ vehicle_checklist.company_vehicle.license_plate }}){% endif %}
                       </span>
-                    </div>
-                  </div>
-                  {% if desc %}
-                  <div class="bg-gray-50 border border-gray-100 rounded-md p-3 text-sm text-gray-700">
-                    <div class="font-medium text-gray-800 mb-1">توضیحات</div>
-                    <div class="whitespace-pre-wrap">{{ desc }}</div>
-                  </div>
-                  {% endif %}
+                    {% elif vehicle_checklist.vehicle_source == 'contractor' and vehicle_checklist.contractor_vehicle %}
+                      <span class="inline-flex items-center gap-1">
+                        <i class="fas fa-truck text-green-600"></i>
+                        {{ vehicle_checklist.contractor_vehicle.driver_name }} ({{ vehicle_checklist.contractor_vehicle.license_plate }})
+                      </span>
+                    {% endif %}
+                  </p>
                 </div>
+                <span class="text-xs px-2 py-1 rounded-full {% if vehicle_checklist.vehicle_source == 'company' %}bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400{% else %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400{% endif %}">
+                  {{ vehicle_checklist.get_vehicle_source_display }}
+                </span>
               </div>
-              {% endwith %}
-            {% endwith %}
-          {% endfor %}
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <!-- استفاده از فیلدهای قدیمی برای backward compatibility -->
+          <div>
+            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">نوع خودرو:</span>
+            <p class="text-sm font-semibold text-gray-900 dark:text-white mt-1">
+              {{ report.get_vehicle_source_display }}
+            </p>
+          </div>
+          <div>
+            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">خودرو:</span>
+            <p class="text-sm font-semibold text-gray-900 dark:text-white mt-1">
+              {% if report.vehicle_source == 'company' and report.company_vehicle %}
+                <span class="inline-flex items-center gap-1">
+                  <i class="fas fa-building text-blue-600"></i>
+                  {{ report.company_vehicle.get_vehicle_type_display }} - {{ report.company_vehicle.workshop_code }}{% if report.company_vehicle.license_plate %} ({{ report.company_vehicle.license_plate }}){% endif %}
+                </span>
+              {% elif report.vehicle_source == 'contractor' and report.contractor_vehicle %}
+                <span class="inline-flex items-center gap-1">
+                  <i class="fas fa-truck text-green-600"></i>
+                  {{ report.contractor_vehicle.driver_name }} ({{ report.contractor_vehicle.license_plate }})
+                </span>
+              {% else %}
+                <span class="text-gray-400">-</span>
+              {% endif %}
+            </p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 3: چک‌لیست وضعیت خودرو -->
+  {% if vehicle_checklists %}
+    {% for vehicle_checklist in vehicle_checklists %}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+      <div class="bg-gradient-to-l from-purple-600 to-purple-500 px-6 py-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <i class="fas fa-clipboard-check text-white text-xl"></i>
+            <h2 class="text-xl font-bold text-white">چک‌لیست خودرو شماره {{ forloop.counter }}</h2>
+          </div>
+          <div class="text-white text-sm">
+            {% if vehicle_checklist.vehicle_source == 'company' and vehicle_checklist.company_vehicle %}
+              <span class="inline-flex items-center gap-1">
+                <i class="fas fa-building"></i>
+                {{ vehicle_checklist.company_vehicle.get_vehicle_type_display }} - {{ vehicle_checklist.company_vehicle.workshop_code }}{% if vehicle_checklist.company_vehicle.license_plate %} ({{ vehicle_checklist.company_vehicle.license_plate }}){% endif %}
+              </span>
+            {% elif vehicle_checklist.vehicle_source == 'contractor' and vehicle_checklist.contractor_vehicle %}
+              <span class="inline-flex items-center gap-1">
+                <i class="fas fa-truck"></i>
+                {{ vehicle_checklist.contractor_vehicle.driver_name }} ({{ vehicle_checklist.contractor_vehicle.license_plate }})
+              </span>
+            {% endif %}
+          </div>
         </div>
       </div>
-      {% endfor %}
-    </div>
-  </div>
-
-  <!-- Approval/Rejection Section -->
-  {% if request.user|check_permission:'report_approve' and report.approval_status == 'pending' %}
-  <div class="mt-6 rounded-lg shadow-lg bg-white p-6">
-    <div class="flex items-center mb-4">
-      <i class="fa fa-check-circle text-green-500 ml-2"></i>
-      <h3 class="font-semibold text-lg">تأیید یا رد گزارش</h3>
-    </div>
-    <form method="post" action="{% url 'fire_reports:report_approve' report.id %}" id="approveForm">
-      {% csrf_token %}
-      <div class="flex gap-4">
-        <button type="submit" name="action" value="approve" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded flex items-center"><i class="fa fa-check ml-2"></i>تأیید</button>
-        <button type="button" onclick="openRejectModal()" class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded flex items-center"><i class="fa fa-times ml-2"></i>رد</button>
+      <div class="p-6">
+        <div class="grid md:grid-cols-2 gap-4">
+          {% with checklist=vehicle_checklist %}
+          {% include 'fire_reports/partials/vehicle_checklist_items.html' %}
+          {% endwith %}
+        </div>
       </div>
-    </form>
+    </div>
+    {% endfor %}
+  {% else %}
+    <!-- استفاده از فیلدهای قدیمی برای backward compatibility -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+      <div class="bg-gradient-to-l from-purple-600 to-purple-500 px-6 py-4">
+        <div class="flex items-center gap-3">
+          <i class="fas fa-clipboard-check text-white text-xl"></i>
+          <h2 class="text-xl font-bold text-white">چک‌لیست وضعیت خودرو</h2>
+        </div>
+      </div>
+      <div class="p-6">
+        <div class="grid md:grid-cols-2 gap-4">
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">بوق و چراغ گردان</span>
+            {% if report.horn_status == 'suitable' %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+              <i class="fas fa-check-circle"></i>
+              مناسب
+            </span>
+            {% else %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+              <i class="fas fa-times-circle"></i>
+              نامناسب
+            </span>
+            {% endif %}
+          </div>
+          {% if report.horn_status == 'unsuitable' and report.horn_description %}
+          <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              <strong>توضیحات:</strong> {{ report.horn_description }}
+            </p>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">شیلنگ‌ها و اتصالات</span>
+            {% if report.hose_status == 'suitable' %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+              <i class="fas fa-check-circle"></i>
+              مناسب
+            </span>
+            {% else %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+              <i class="fas fa-times-circle"></i>
+              نامناسب
+            </span>
+            {% endif %}
+          </div>
+          {% if report.hose_status == 'unsuitable' and report.hose_description %}
+          <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              <strong>توضیحات:</strong> {{ report.hose_description }}
+            </p>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">مانیتور</span>
+            {% if report.monitor_status == 'suitable' %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+              <i class="fas fa-check-circle"></i>
+              مناسب
+            </span>
+            {% else %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+              <i class="fas fa-times-circle"></i>
+              نامناسب
+            </span>
+            {% endif %}
+          </div>
+          {% if report.monitor_status == 'unsuitable' and report.monitor_description %}
+          <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              <strong>توضیحات:</strong> {{ report.monitor_description }}
+            </p>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">خاموش‌کننده‌های دستی</span>
+            {% if report.extinguisher_status == 'suitable' %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+              <i class="fas fa-check-circle"></i>
+              مناسب
+            </span>
+            {% else %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+              <i class="fas fa-times-circle"></i>
+              نامناسب
+            </span>
+            {% endif %}
+          </div>
+          {% if report.extinguisher_status == 'unsuitable' and report.extinguisher_description %}
+          <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              <strong>توضیحات:</strong> {{ report.extinguisher_description }}
+            </p>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">تجهیزات آتش‌نشانی</span>
+            {% if report.equipment_status == 'suitable' %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+              <i class="fas fa-check-circle"></i>
+              مناسب
+            </span>
+            {% else %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+              <i class="fas fa-times-circle"></i>
+              نامناسب
+            </span>
+            {% endif %}
+          </div>
+          {% if report.equipment_status == 'unsuitable' and report.equipment_description %}
+          <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              <strong>توضیحات:</strong> {{ report.equipment_description }}
+            </p>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">پودر و فوم خودرو</span>
+            {% if report.foam_status == 'suitable' %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+              <i class="fas fa-check-circle"></i>
+              مناسب
+            </span>
+            {% else %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+              <i class="fas fa-times-circle"></i>
+              نامناسب
+            </span>
+            {% endif %}
+          </div>
+          {% if report.foam_status == 'unsuitable' and report.foam_description %}
+          <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              <strong>توضیحات:</strong> {{ report.foam_description }}
+            </p>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">آب</span>
+            {% if report.water_status == 'suitable' %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+              <i class="fas fa-check-circle"></i>
+              مناسب
+            </span>
+            {% else %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+              <i class="fas fa-times-circle"></i>
+              نامناسب
+            </span>
+            {% endif %}
+          </div>
+          {% if report.water_status == 'unsuitable' and report.water_description %}
+          <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              <strong>توضیحات:</strong> {{ report.water_description }}
+            </p>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">لاستیک‌ها</span>
+            {% if report.tire_status == 'suitable' %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+              <i class="fas fa-check-circle"></i>
+              مناسب
+            </span>
+            {% else %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+              <i class="fas fa-times-circle"></i>
+              نامناسب
+            </span>
+            {% endif %}
+          </div>
+          {% if report.tire_status == 'unsuitable' and report.tire_description %}
+          <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              <strong>توضیحات:</strong> {{ report.tire_description }}
+            </p>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">سیستم ترمز خودرو</span>
+            {% if report.brake_status == 'suitable' %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+              <i class="fas fa-check-circle"></i>
+              مناسب
+            </span>
+            {% else %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+              <i class="fas fa-times-circle"></i>
+              نامناسب
+            </span>
+            {% endif %}
+          </div>
+          {% if report.brake_status == 'unsuitable' and report.brake_description %}
+          <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              <strong>توضیحات:</strong> {{ report.brake_description }}
+            </p>
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">سیستم روشنایی</span>
+            {% if report.lighting_status == 'suitable' %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+              <i class="fas fa-check-circle"></i>
+              مناسب
+            </span>
+            {% else %}
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+              <i class="fas fa-times-circle"></i>
+              نامناسب
+            </span>
+            {% endif %}
+          </div>
+          {% if report.lighting_status == 'unsuitable' and report.lighting_description %}
+          <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              <strong>توضیحات:</strong> {{ report.lighting_description }}
+            </p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  <!-- Card 4: گزارش حوادث -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+    <div class="bg-gradient-to-l from-orange-600 to-orange-500 px-6 py-4">
+      <div class="flex items-center gap-3">
+        <i class="fas fa-exclamation-triangle text-white text-xl"></i>
+        <h2 class="text-xl font-bold text-white">گزارش حوادث</h2>
+      </div>
+    </div>
+    <div class="p-6">
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+          <span class="text-sm font-medium text-gray-500 dark:text-gray-400">تعداد اعزام به محل حادثه:</span>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">{{ report.incident_dispatch_count }}</p>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+          <span class="text-sm font-medium text-gray-500 dark:text-gray-400">تعداد حوادث فردی:</span>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">{{ report.personal_incident_count }}</p>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+          <span class="text-sm font-medium text-gray-500 dark:text-gray-400">تعداد حوادث تجهیزاتی:</span>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">{{ report.equipment_incident_count }}</p>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+          <span class="text-sm font-medium text-gray-500 dark:text-gray-400">تعداد حوادث آتش‌سوزی:</span>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-2">{{ report.fire_incident_count }}</p>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- Reject Modal -->
-  <div id="rejectModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
-    <div class="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-      <i class="fa fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
-      <h2 class="text-xl font-bold mb-2">رد گزارش</h2>
-      <form method="post" action="{% url 'fire_reports:report_approve' report.id %}">
+  <!-- Card 5: توضیحات تکمیلی -->
+  {% if report.additional_notes %}
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+    <div class="bg-gradient-to-l from-gray-600 to-gray-500 px-6 py-4">
+      <div class="flex items-center gap-3">
+        <i class="fas fa-comment-alt text-white text-xl"></i>
+        <h2 class="text-xl font-bold text-white">توضیحات تکمیلی</h2>
+      </div>
+    </div>
+    <div class="p-6">
+      <p class="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">{{ report.additional_notes }}</p>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Card 6: بخش تأیید/رد (برای مدیران) -->
+  {% if request.user|check_permission:'report_approve' and report.approval_status == 'pending' %}
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+    <div class="bg-gradient-to-l from-indigo-600 to-indigo-500 px-6 py-4">
+      <div class="flex items-center gap-3">
+        <i class="fas fa-check-circle text-white text-xl"></i>
+        <h2 class="text-xl font-bold text-white">تأیید/رد گزارش</h2>
+      </div>
+    </div>
+    <div class="p-6">
+      <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+        <i class="fas fa-info-circle text-blue-600"></i>
+        شما به عنوان کاربر دارای دسترسی تأیید گزارش می‌توانید این گزارش را تأیید یا رد کنید.
+      </p>
+      <form method="POST" action="{% url 'fire_reports:report_approve' report.pk %}" @submit.prevent="submitApproval">
         {% csrf_token %}
-        <label class="block text-sm text-gray-700 mb-2">دلیل رد</label>
-        <textarea name="rejection_reason" class="w-full border rounded p-2 mb-4" rows="4" required></textarea>
-        <div class="flex justify-center gap-4 mt-4">
-          <button type="submit" name="action" value="reject" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded">ارسال رد</button>
-          <button type="button" onclick="closeRejectModal()" class="bg-gray-200 px-6 py-2 rounded">انصراف</button>
+        <input type="hidden" name="action" value="approve">
+        <div class="flex gap-4">
+          <button type="submit" 
+                  :disabled="isSubmitting"
+                  class="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            <i :class="isSubmitting ? 'fas fa-spinner fa-spin' : 'fas fa-check-circle'"></i>
+            <span x-text="isSubmitting ? 'در حال پردازش...' : 'تأیید گزارش'"></span>
+          </button>
+          <button type="button" 
+                  @click="showRejectModal = true"
+                  class="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2">
+            <i class="fas fa-times-circle"></i>
+            رد گزارش
+          </button>
         </div>
       </form>
     </div>
   </div>
   {% endif %}
 
-  <div class="mt-6">
-    <a href="{% url 'fire_reports:report_list' %}" class="text-gray-600 hover:text-gray-900 flex items-center"><i class="fa fa-arrow-right ml-2"></i>بازگشت به لیست</a>
+  <!-- Reject Modal -->
+  <div x-show="showRejectModal" 
+       x-cloak
+       @keydown.escape.window="showRejectModal = false"
+       class="fixed inset-0 z-50 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+      <!-- Backdrop -->
+      <div @click="showRejectModal = false"
+           x-show="showRejectModal"
+           x-transition:enter="transition ease-out duration-300"
+           x-transition:enter-start="opacity-0"
+           x-transition:enter-end="opacity-100"
+           x-transition:leave="transition ease-in duration-200"
+           x-transition:leave-start="opacity-100"
+           x-transition:leave-end="opacity-0"
+           class="fixed inset-0 bg-black/50 backdrop-blur-sm"></div>
+
+      <!-- Modal Content -->
+      <div x-show="showRejectModal"
+           x-transition:enter="transition ease-out duration-300"
+           x-transition:enter-start="opacity-0 transform scale-90"
+           x-transition:enter-end="opacity-100 transform scale-100"
+           x-transition:leave="transition ease-in duration-200"
+           x-transition:leave-start="opacity-100 transform scale-100"
+           x-transition:leave-end="opacity-0 transform scale-90"
+           class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 z-10"
+           @click.stop>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <i class="fas fa-exclamation-circle text-red-600 dark:text-red-400"></i>
+            دلیل رد گزارش
+          </h3>
+          <button @click="showRejectModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+            <i class="fas fa-times text-xl"></i>
+          </button>
+        </div>
+
+        <form method="POST" action="{% url 'fire_reports:report_approve' report.pk %}" @submit.prevent="submitRejection">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="reject">
+          <textarea x-model="rejectReason"
+                    name="rejection_reason"
+                    rows="4"
+                    placeholder="لطفاً دلیل رد گزارش را وارد کنید..."
+                    required
+                    class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-red-500 focus:border-red-500"></textarea>
+
+          <div class="flex gap-3 mt-6">
+            <button type="button" 
+                    @click="showRejectModal = false"
+                    class="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600">
+              انصراف
+            </button>
+            <button type="submit" 
+                    :disabled="!rejectReason || isSubmitting"
+                    class="flex-1 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed">
+              <span x-text="isSubmitting ? 'در حال پردازش...' : 'ثبت رد'"></span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-function openRejectModal() {
-  document.getElementById('rejectModal').classList.remove('hidden');
-}
-function closeRejectModal() {
-  document.getElementById('rejectModal').classList.add('hidden');
-}
+// تعریف تابع قبل از اینکه Alpine.js DOM را scan کند
+window.reportDetail = function() {
+  return {
+    showRejectModal: false,
+    rejectReason: '',
+    isSubmitting: false,
+
+    async submitApproval(event) {
+      event.preventDefault();
+      this.isSubmitting = true;
+      const form = event.target;
+      const formData = new FormData(form);
+      const url = form.getAttribute('action') || '{% url "fire_reports:report_approve" report.pk %}';
+      
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+          }
+        });
+
+        if (response.ok) {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            if (data.success) {
+              window.location.reload();
+              return;
+            }
+          }
+          window.location.reload();
+        } else {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            alert(data.message || 'خطا در تأیید گزارش');
+          } else {
+            alert('خطا در تأیید گزارش');
+          }
+          this.isSubmitting = false;
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('خطا در ارتباط با سرور');
+        this.isSubmitting = false;
+      }
+    },
+
+    async submitRejection(event) {
+      event.preventDefault();
+      if (!this.rejectReason || !this.rejectReason.trim()) {
+        alert('لطفاً دلیل رد را وارد کنید');
+        return;
+      }
+
+      this.isSubmitting = true;
+      const form = event.target;
+      const formData = new FormData(form);
+      const url = form.getAttribute('action') || '{% url "fire_reports:report_approve" report.pk %}';
+      
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+          }
+        });
+
+        if (response.ok) {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            if (data.success) {
+              this.showRejectModal = false;
+              window.location.reload();
+              return;
+            }
+          }
+          this.showRejectModal = false;
+          window.location.reload();
+        } else {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            alert(data.message || 'خطا در رد گزارش');
+          } else {
+            alert('خطا در رد گزارش');
+          }
+          this.isSubmitting = false;
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        alert('خطا در ارتباط با سرور');
+        this.isSubmitting = false;
+      }
+    }
+  };
+};
 </script>
 {% endblock %}
+
+

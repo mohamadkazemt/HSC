@@ -9,207 +9,508 @@
   .select2-container .select2-selection--single { height: 40px; }
   .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 38px; }
   .select2-container--default .select2-selection--single .select2-selection__arrow { height: 38px; }
+  
+  /* Smooth transitions */
+  .transition-all { transition: all 0.3s ease-in-out; }
+  
+  /* Hover effects for table rows */
+  .table-row-hover:hover {
+    background-color: rgba(99, 102, 241, 0.05);
+    transform: translateX(-2px);
+  }
+  
+  /* Card hover effect */
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Filter section animation */
+  .filter-section {
+    transition: all 0.3s ease;
+  }
+  
+  /* Loading spinner */
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  .loading-spinner {
+    animation: spin 1s linear infinite;
+  }
+  
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+  
+  /* Dark mode scrollbar */
+  .dark .custom-scrollbar::-webkit-scrollbar-track {
+    background: #1f2937;
+  }
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #4b5563;
+  }
+  .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="space-y-6">
-  <div class="flex items-center justify-between">
-    <h1 class="text-xl font-bold">مدیریت پرسنل</h1>
-    <div class="flex items-center gap-2">
+  <!-- Header Section -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-lg">
+        <i class="fa-solid fa-users text-white text-xl"></i>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">مدیریت پرسنل</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">مدیریت و جستجوی اطلاعات پرسنل</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+      <a href="{% url 'accounts:personnel_add' %}"
+         class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2.5 text-white hover:bg-green-700 shadow-md hover:shadow-lg transition-all duration-200 text-sm font-medium">
+        <i class="fa-solid fa-user-plus"></i>
+        <span>افزودن کاربر جدید</span>
+      </a>
       <a href="{% url 'accounts:personnel_import' %}"
-         class="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">
-        ایمپورت اکسل
+         class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-white hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all duration-200 text-sm font-medium">
+        <i class="fa-solid fa-file-import"></i>
+        <span>ایمپورت اکسل</span>
       </a>
       <a href="{% url 'accounts:personnel_export' %}{% if query_string %}?{{ query_string }}{% endif %}"
-         class="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700">
-        خروجی اکسل
+         class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-white hover:bg-emerald-700 shadow-md hover:shadow-lg transition-all duration-200 text-sm font-medium">
+        <i class="fa-solid fa-file-export"></i>
+        <span>خروجی اکسل</span>
+      </a>
+      <a href="{% url 'accounts:organization_chart' %}"
+         class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-2.5 text-white hover:from-purple-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all duration-200 text-sm font-medium">
+        <i class="fa-solid fa-sitemap"></i>
+        <span>چارت سازمانی</span>
+      </a>
+      <a href="{% url 'accounts:organization_manage' %}"
+         class="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2.5 text-white hover:bg-purple-700 shadow-md hover:shadow-lg transition-all duration-200 text-sm font-medium">
+        <i class="fa-solid fa-cog"></i>
+        <span>مدیریت سازمان</span>
       </a>
     </div>
   </div>
 
   {% if stats %}
-  <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm space-y-4">
-    <h2 class="text-sm font-semibold">آمار کلی</h2>
+  <!-- Statistics Cards -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+    <div class="flex items-center gap-2 mb-6">
+      <i class="fa-solid fa-chart-pie text-indigo-600 dark:text-indigo-400"></i>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">آمار کلی</h2>
+    </div>
     <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
       <!-- Total -->
-      <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
-        <div class="text-xs text-gray-500 mb-2">کل پرسنل</div>
-        <div class="text-2xl font-bold">{{ stats.total }}</div>
+      <div class="stat-card rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 transition-all duration-200">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+            <i class="fa-solid fa-users text-white text-sm"></i>
+          </div>
+          <div class="text-xs font-medium text-gray-600 dark:text-gray-300">کل پرسنل</div>
+        </div>
+        <div class="text-3xl font-bold text-indigo-700 dark:text-indigo-300">{{ stats.total }}</div>
       </div>
       <!-- By Section -->
-      <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
-        <div class="text-xs text-gray-500 mb-2">به‌ازای بخش</div>
-        <div class="max-h-44 overflow-auto space-y-1">
+      <div class="stat-card rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800 transition-all duration-200">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+            <i class="fa-solid fa-building text-blue-600 dark:text-blue-400 text-sm"></i>
+          </div>
+          <div class="text-xs font-medium text-gray-600 dark:text-gray-300">به‌ازای بخش</div>
+        </div>
+        <div class="max-h-44 overflow-auto space-y-1.5 custom-scrollbar">
           {% for it in stats.sections %}
-            <a class="flex items-center justify-between text-sm hover:text-indigo-600" href="{% if qs_no_section %}?{{ qs_no_section }}&section={{ it.id }}{% else %}?section={{ it.id }}{% endif %}">
-              <span class="truncate">{{ it.name }}</span>
-              <span class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700">{{ it.count }}</span>
+            {% if it.id %}
+            <a class="flex items-center justify-between text-sm p-1.5 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-150 group" href="{% if qs_no_section %}?{{ qs_no_section }}&section={{ it.id }}{% else %}?section={{ it.id }}{% endif %}">
+              <span class="truncate flex-1">{{ it.name }}</span>
+              <span class="px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-medium group-hover:bg-blue-200 dark:group-hover:bg-blue-900/60 transition-colors">{{ it.count }}</span>
             </a>
-          {% empty %}<div class="text-xs text-gray-400">-</div>{% endfor %}
+            {% else %}
+            <div class="flex items-center justify-between text-sm p-1.5 rounded-md text-gray-500 dark:text-gray-400">
+              <span class="truncate flex-1">{{ it.name }}</span>
+              <span class="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-xs font-medium">{{ it.count }}</span>
+            </div>
+            {% endif %}
+          {% empty %}<div class="text-xs text-gray-400 text-center py-2">-</div>{% endfor %}
         </div>
       </div>
       <!-- By Part -->
-      <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
-        <div class="text-xs text-gray-500 mb-2">به‌ازای قسمت</div>
-        <div class="max-h-44 overflow-auto space-y-1">
+      <div class="stat-card rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800 transition-all duration-200">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+            <i class="fa-solid fa-sitemap text-emerald-600 dark:text-emerald-400 text-sm"></i>
+          </div>
+          <div class="text-xs font-medium text-gray-600 dark:text-gray-300">به‌ازای قسمت</div>
+        </div>
+        <div class="max-h-44 overflow-auto space-y-1.5 custom-scrollbar">
           {% for it in stats.parts %}
-            <a class="flex items-center justify-between text-sm hover:text-indigo-600" href="{% if qs_no_part %}?{{ qs_no_part }}&part={{ it.id }}{% else %}?part={{ it.id }}{% endif %}">
-              <span class="truncate">{{ it.name }}</span>
-              <span class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700">{{ it.count }}</span>
+            {% if it.id %}
+            <a class="flex items-center justify-between text-sm p-1.5 rounded-md hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all duration-150 group" href="{% if qs_no_part %}?{{ qs_no_part }}&part={{ it.id }}{% else %}?part={{ it.id }}{% endif %}">
+              <span class="truncate flex-1">{{ it.name }}</span>
+              <span class="px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-medium group-hover:bg-emerald-200 dark:group-hover:bg-emerald-900/60 transition-colors">{{ it.count }}</span>
             </a>
-          {% empty %}<div class="text-xs text-gray-400">-</div>{% endfor %}
+            {% else %}
+            <div class="flex items-center justify-between text-sm p-1.5 rounded-md text-gray-500 dark:text-gray-400">
+              <span class="truncate flex-1">{{ it.name }}</span>
+              <span class="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-xs font-medium">{{ it.count }}</span>
+            </div>
+            {% endif %}
+          {% empty %}<div class="text-xs text-gray-400 text-center py-2">-</div>{% endfor %}
         </div>
       </div>
       <!-- By Group (UnitGroup) -->
-      <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
-        <div class="text-xs text-gray-500 mb-2">به‌ازای گروه</div>
-        <div class="max-h-44 overflow-auto space-y-1">
+      <div class="stat-card rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800 transition-all duration-200">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+            <i class="fa-solid fa-layer-group text-purple-600 dark:text-purple-400 text-sm"></i>
+          </div>
+          <div class="text-xs font-medium text-gray-600 dark:text-gray-300">به‌ازای گروه</div>
+        </div>
+        <div class="max-h-44 overflow-auto space-y-1.5 custom-scrollbar">
           {% for it in stats.unit_groups %}
-            <a class="flex items-center justify-between text-sm hover:text-indigo-600" href="{% if qs_no_unit_group %}?{{ qs_no_unit_group }}&unit_group={{ it.id }}{% else %}?unit_group={{ it.id }}{% endif %}">
-              <span class="truncate">{{ it.name }}</span>
-              <span class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700">{{ it.count }}</span>
+            {% if it.id %}
+            <a class="flex items-center justify-between text-sm p-1.5 rounded-md hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 dark:hover:text-purple-400 transition-all duration-150 group" href="{% if qs_no_unit_group %}?{{ qs_no_unit_group }}&unit_group={{ it.id }}{% else %}?unit_group={{ it.id }}{% endif %}">
+              <span class="truncate flex-1">{{ it.name }}</span>
+              <span class="px-2 py-0.5 rounded-md bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 text-xs font-medium group-hover:bg-purple-200 dark:group-hover:bg-purple-900/60 transition-colors">{{ it.count }}</span>
             </a>
-          {% empty %}<div class="text-xs text-gray-400">-</div>{% endfor %}
+            {% else %}
+            <div class="flex items-center justify-between text-sm p-1.5 rounded-md text-gray-500 dark:text-gray-400">
+              <span class="truncate flex-1">{{ it.name }}</span>
+              <span class="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-xs font-medium">{{ it.count }}</span>
+            </div>
+            {% endif %}
+          {% empty %}<div class="text-xs text-gray-400 text-center py-2">-</div>{% endfor %}
         </div>
       </div>
       <!-- By Position -->
-      <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
-        <div class="text-xs text-gray-500 mb-2">به‌ازای سمت</div>
-        <div class="max-h-44 overflow-auto space-y-1">
+      <div class="stat-card rounded-xl border border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800 transition-all duration-200">
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+            <i class="fa-solid fa-user-tie text-amber-600 dark:text-amber-400 text-sm"></i>
+          </div>
+          <div class="text-xs font-medium text-gray-600 dark:text-gray-300">به‌ازای سمت</div>
+        </div>
+        <div class="max-h-44 overflow-auto space-y-1.5 custom-scrollbar">
           {% for it in stats.positions %}
-            <a class="flex items-center justify-between text-sm hover:text-indigo-600" href="{% if qs_no_position %}?{{ qs_no_position }}&position={{ it.id }}{% else %}?position={{ it.id }}{% endif %}">
-              <span class="truncate">{{ it.name }}</span>
-              <span class="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700">{{ it.count }}</span>
+            {% if it.id %}
+            <a class="flex items-center justify-between text-sm p-1.5 rounded-md hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:text-amber-600 dark:hover:text-amber-400 transition-all duration-150 group" href="{% if qs_no_position %}?{{ qs_no_position }}&position={{ it.id }}{% else %}?position={{ it.id }}{% endif %}">
+              <span class="truncate flex-1">{{ it.name }}</span>
+              <span class="px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-medium group-hover:bg-amber-200 dark:group-hover:bg-amber-900/60 transition-colors">{{ it.count }}</span>
             </a>
-          {% empty %}<div class="text-xs text-gray-400">-</div>{% endfor %}
+            {% else %}
+            <div class="flex items-center justify-between text-sm p-1.5 rounded-md text-gray-500 dark:text-gray-400">
+              <span class="truncate flex-1">{{ it.name }}</span>
+              <span class="px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700 text-xs font-medium">{{ it.count }}</span>
+            </div>
+            {% endif %}
+          {% empty %}<div class="text-xs text-gray-400 text-center py-2">-</div>{% endfor %}
         </div>
       </div>
     </div>
   </div>
   {% endif %}
 
-  <form method="get" class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm space-y-3">
-    <div class="grid grid-cols-1 md:grid-cols-7 gap-3">
-      <div class="md:col-span-2">
-        <label class="block text-xs text-gray-600 dark:text-gray-300 mb-1">جستجو (نام، نام خانوادگی، کد پرسنلی)</label>
-        <input type="text" name="q" value="{{ current_filters.q }}" placeholder="جستجو..." class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-900 dark:border-gray-700" />
-      </div>
-      <div>
-        <label for="filter_section" class="block text-xs text-gray-600 dark:text-gray-300 mb-1">بخش</label>
-        <select id="filter_section" name="section" class="select2 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm dark:bg-gray-900 dark:border-gray-700">
-          <option value="">همه بخش‌ها</option>
-          {% for s in sections %}
-            <option value="{{ s.id }}" {% if current_filters.section|add:'' == s.id|add:'' %}selected{% endif %}>{{ s.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
-        <label for="filter_part" class="block text-xs text-gray-600 dark:text-gray-300 mb-1">قسمت</label>
-        <select id="filter_part" name="part" class="select2 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm dark:bg-gray-900 dark:border-gray-700">
-          <option value="">همه قسمت‌ها</option>
-          {% for p in parts %}
-            <option value="{{ p.id }}" {% if current_filters.part|add:'' == p.id|add:'' %}selected{% endif %}>{{ p.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
-        <label for="filter_unit_group" class="block text-xs text-gray-600 dark:text-gray-300 mb-1">گروه</label>
-        <select id="filter_unit_group" name="unit_group" class="select2 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm dark:bg-gray-900 dark:border-gray-700">
-          <option value="">همه گروه‌ها</option>
-          {% for g in unit_groups %}
-            <option value="{{ g.id }}" {% if current_filters.unit_group|add:'' == g.id|add:'' %}selected{% endif %}>{{ g.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
-        <label for="filter_position" class="block text-xs text-gray-600 dark:text-gray-300 mb-1">سمت</label>
-        <select id="filter_position" name="position" class="select2 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm dark:bg-gray-900 dark:border-gray-700">
-          <option value="">همه سمت‌ها</option>
-          {% for pos in positions %}
-            <option value="{{ pos.id }}" {% if current_filters.position|add:'' == pos.id|add:'' %}selected{% endif %}>{{ pos.name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
-        <label for="per_page" class="block text-xs text-gray-600 dark:text-gray-300 mb-1">تعداد در صفحه</label>
-        <select id="per_page" name="per_page" class="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm dark:bg-gray-900 dark:border-gray-700">
-          {% for n in per_page_options %}
-            <option value="{{ n }}" {% if current_filters.per_page|add:'' == n|stringformat:"s" %}selected{% endif %}>{{ n }}</option>
-          {% endfor %}
-        </select>
-      </div>
+  <!-- Filter Section -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 filter-section">
+    <div class="flex items-center gap-2 mb-4">
+      <i class="fa-solid fa-filter text-indigo-600 dark:text-indigo-400"></i>
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white">فیلتر و جستجو</h3>
     </div>
-    <div class="flex items-center gap-2">
-      <button class="inline-flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-white hover:bg-green-700">اعمال فیلتر</button>
-      <a href="{% url 'accounts:personnel_list' %}" class="text-sm text-gray-600 dark:text-gray-300">حذف فیلتر</a>
-    </div>
-  </form>
+    <form method="get" class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <i class="fa-solid fa-magnifying-glass text-gray-400 text-xs ml-1"></i>
+            جستجو (نام، نام خانوادگی، کد پرسنلی)
+          </label>
+          <div class="relative">
+            <input type="text" name="q" value="{{ current_filters.q }}" placeholder="جستجو..." 
+                   class="w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-700 px-4 py-2.5 pr-10 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200" />
+            <i class="fa-solid fa-magnifying-glass absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+          </div>
+        </div>
+        <div>
+          <label for="filter_section" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <i class="fa-solid fa-building text-gray-400 text-xs ml-1"></i>
+            بخش
+          </label>
+          <select id="filter_section" name="section" class="select2 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-700 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
+            <option value="">همه بخش‌ها</option>
+            {% for s in sections %}
+              <option value="{{ s.id }}" {% if current_filters.section|add:'' == s.id|add:'' %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="filter_part" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <i class="fa-solid fa-sitemap text-gray-400 text-xs ml-1"></i>
+            قسمت
+          </label>
+          <select id="filter_part" name="part" class="select2 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-700 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
+            <option value="">همه قسمت‌ها</option>
+            {% for p in parts %}
+              <option value="{{ p.id }}" {% if current_filters.part|add:'' == p.id|add:'' %}selected{% endif %}>{{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="filter_unit_group" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <i class="fa-solid fa-layer-group text-gray-400 text-xs ml-1"></i>
+            گروه
+          </label>
+          <select id="filter_unit_group" name="unit_group" class="select2 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-700 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
+            <option value="">همه گروه‌ها</option>
+            {% for g in unit_groups %}
+              <option value="{{ g.id }}" {% if current_filters.unit_group|add:'' == g.id|add:'' %}selected{% endif %}>{{ g.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="filter_position" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <i class="fa-solid fa-user-tie text-gray-400 text-xs ml-1"></i>
+            سمت
+          </label>
+          <select id="filter_position" name="position" class="select2 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-700 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
+            <option value="">همه سمت‌ها</option>
+            {% for pos in positions %}
+              <option value="{{ pos.id }}" {% if current_filters.position|add:'' == pos.id|add:'' %}selected{% endif %}>{{ pos.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="per_page" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <i class="fa-solid fa-list-ol text-gray-400 text-xs ml-1"></i>
+            تعداد در صفحه
+          </label>
+          <select id="per_page" name="per_page" class="w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-700 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
+            {% for n in per_page_options %}
+              <option value="{{ n }}" {% if current_filters.per_page|add:'' == n|stringformat:"s" %}selected{% endif %}>{{ n }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 pt-2">
+        <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2.5 text-white hover:bg-green-700 shadow-md hover:shadow-lg transition-all duration-200 text-sm font-medium">
+          <i class="fa-solid fa-check"></i>
+          <span>اعمال فیلتر</span>
+        </button>
+        <a href="{% url 'accounts:personnel_list' %}" class="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200">
+          <i class="fa-solid fa-xmark"></i>
+          <span>حذف فیلتر</span>
+        </a>
+      </div>
+    </form>
+  </div>
 
 
-  <div class="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-    <div class="px-4 py-2 text-xs text-gray-600 dark:text-gray-300">
-      {% if page_obj %}
-        نمایش {{ page_obj.start_index }} تا {{ page_obj.end_index }} از {{ page_obj.paginator.count }} مورد
-      {% endif %}
+  <!-- Table Section -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 border-b border-gray-200 dark:border-gray-600">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-table text-gray-600 dark:text-gray-400"></i>
+          <span class="text-sm font-medium text-gray-700 dark:text-gray-300">لیست پرسنل</span>
+        </div>
+        {% if page_obj %}
+        <div class="text-xs text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700">
+          <i class="fa-solid fa-info-circle ml-1"></i>
+          نمایش <span class="font-semibold">{{ page_obj.start_index }}</span> تا <span class="font-semibold">{{ page_obj.end_index }}</span> از <span class="font-semibold">{{ page_obj.paginator.count }}</span> مورد
+        </div>
+        {% endif %}
+      </div>
     </div>
-    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-      <thead class="bg-gray-50 dark:bg-gray-800/50">
-        <tr>
-          <th class="px-4 py-2 text-right text-xs font-medium text-gray-500">نام کامل</th>
-          <th class="px-4 py-2 text-right text-xs font-medium text-gray-500">کد پرسنلی</th>
-          <th class="px-4 py-2 text-right text-xs font-medium text-gray-500">بخش</th>
-          <th class="px-4 py-2 text-right text-xs font-medium text-gray-500">قسمت</th>
-          <th class="px-4 py-2 text-right text-xs font-medium text-gray-500">گروه</th>
-          <th class="px-4 py-2 text-right text-xs font-medium text-gray-500">سمت</th>
-          <th class="px-4 py-2"></th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-        {% for p in personnel %}
-        <tr>
-          <td class="px-4 py-2 text-sm">{{ p.user.get_full_name|default:p.user.username }}</td>
-          <td class="px-4 py-2 text-sm">{{ p.personnel_code|default:'-' }}</td>
-          <td class="px-4 py-2 text-sm">{{ p.section.name|default:'-' }}</td>
-          <td class="px-4 py-2 text-sm">{{ p.part.name|default:'-' }}</td>
-          <td class="px-4 py-2 text-sm">{{ p.unit_group.name|default:'-' }}</td>
-          <td class="px-4 py-2 text-sm">{{ p.position.name|default:'-' }}</td>
-          <td class="px-4 py-2 text-left">
-            <a href="{% url 'accounts:personnel_edit' p.user.id %}" class="text-indigo-600 hover:text-indigo-800 text-sm">ویرایش</a>
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="7" class="px-4 py-6 text-center text-sm text-gray-500">موردی یافت نشد.</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-gray-50 dark:bg-gray-800/70">
+          <tr>
+            <th class="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-user text-gray-400"></i>
+                <span>نام کامل</span>
+              </div>
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-id-card text-gray-400"></i>
+                <span>کد پرسنلی</span>
+              </div>
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-building text-gray-400"></i>
+                <span>بخش</span>
+              </div>
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-sitemap text-gray-400"></i>
+                <span>قسمت</span>
+              </div>
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-layer-group text-gray-400"></i>
+                <span>گروه</span>
+              </div>
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-user-tie text-gray-400"></i>
+                <span>سمت</span>
+              </div>
+            </th>
+            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              <span>عملیات</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+          {% for p in personnel %}
+          <tr class="table-row-hover transition-all duration-200">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm shadow-md">
+                  {{ p.user.get_full_name|default:p.user.username|first|upper }}
+                </div>
+                <div class="text-sm font-medium text-gray-900 dark:text-white">
+                  {{ p.user.get_full_name|default:p.user.username }}
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                <i class="fa-solid fa-hashtag text-xs ml-1"></i>
+                {{ p.personnel_code|default:'-' }}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+              {% if p.section %}
+                <span class="inline-flex items-center gap-1">
+                  <i class="fa-solid fa-building text-xs text-blue-500"></i>
+                  {{ p.section.name }}
+                </span>
+              {% else %}
+                <span class="text-gray-400">-</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+              {% if p.part %}
+                <span class="inline-flex items-center gap-1">
+                  <i class="fa-solid fa-sitemap text-xs text-emerald-500"></i>
+                  {{ p.part.name }}
+                </span>
+              {% else %}
+                <span class="text-gray-400">-</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+              {% if p.unit_group %}
+                <span class="inline-flex items-center gap-1">
+                  <i class="fa-solid fa-layer-group text-xs text-purple-500"></i>
+                  {{ p.unit_group.name }}
+                </span>
+              {% else %}
+                <span class="text-gray-400">-</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+              {% if p.position %}
+                <span class="inline-flex items-center gap-1">
+                  <i class="fa-solid fa-user-tie text-xs text-amber-500"></i>
+                  {{ p.position.name }}
+                </span>
+              {% else %}
+                <span class="text-gray-400">-</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-left">
+              <a href="{% url 'accounts:personnel_edit' p.user.id %}" 
+                 class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md">
+                <i class="fa-solid fa-pen-to-square text-xs"></i>
+                <span>ویرایش</span>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="px-6 py-12 text-center">
+              <div class="flex flex-col items-center gap-3">
+                <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                  <i class="fa-solid fa-inbox text-gray-400 text-2xl"></i>
+                </div>
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">موردی یافت نشد.</div>
+                <p class="text-xs text-gray-400 dark:text-gray-500">لطفاً فیلترهای جستجو را تغییر دهید.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
     {% if is_paginated %}
-    <div class="flex items-center justify-between px-4 py-3">
-      <div class="text-sm text-gray-600 dark:text-gray-300">
-        صفحه {{ page_obj.number }} از {{ paginator.num_pages }}
-      </div>
-      <div class="flex items-center gap-1">
-        {% if page_obj.has_previous %}
-          <a class="px-3 py-1 rounded border text-sm" href="{% if query_string %}?{{ query_string }}&page={{ page_obj.previous_page_number }}{% else %}?page={{ page_obj.previous_page_number }}{% endif %}">قبلی</a>
-        {% else %}
-          <span class="px-3 py-1 rounded border text-sm opacity-50">قبلی</span>
-        {% endif %}
-
-        {% for num in paginator.page_range %}
-          {% if num == page_obj.number %}
-            <span class="px-3 py-1 rounded border bg-indigo-600 text-white text-sm">{{ num }}</span>
-          {% elif num == 1 or num == 2 or num == paginator.num_pages or num == paginator.num_pages|add:"-1" or num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
-            <a class="px-3 py-1 rounded border text-sm" href="{% if query_string %}?{{ query_string }}&page={{ num }}{% else %}?page={{ num }}{% endif %}">{{ num }}</a>
+    <div class="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+          <i class="fa-solid fa-file-lines text-gray-400"></i>
+          <span>صفحه <span class="font-semibold text-gray-900 dark:text-white">{{ page_obj.number }}</span> از <span class="font-semibold text-gray-900 dark:text-white">{{ paginator.num_pages }}</span></span>
+        </div>
+        <div class="flex items-center gap-2">
+          {% if page_obj.has_previous %}
+            <a class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md" 
+               href="{% if query_string %}?{{ query_string }}&page={{ page_obj.previous_page_number }}{% else %}?page={{ page_obj.previous_page_number }}{% endif %}">
+              <i class="fa-solid fa-chevron-right text-xs"></i>
+              <span>قبلی</span>
+            </a>
+          {% else %}
+            <span class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-600 text-sm font-medium cursor-not-allowed">
+              <i class="fa-solid fa-chevron-right text-xs"></i>
+              <span>قبلی</span>
+            </span>
           {% endif %}
-        {% endfor %}
 
-        {% if page_obj.has_next %}
-          <a class="px-3 py-1 rounded border text-sm" href="{% if query_string %}?{{ query_string }}&page={{ page_obj.next_page_number }}{% else %}?page={{ page_obj.next_page_number }}{% endif %}">بعدی</a>
-        {% else %}
-          <span class="px-3 py-1 rounded border text-sm opacity-50">بعدی</span>
-        {% endif %}
+          <div class="flex items-center gap-1">
+            {% for num in paginator.page_range %}
+              {% if num == page_obj.number %}
+                <span class="px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold shadow-md">{{ num }}</span>
+              {% elif num == 1 or num == 2 or num == paginator.num_pages or num == paginator.num_pages|add:"-1" or num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+                <a class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md" 
+                   href="{% if query_string %}?{{ query_string }}&page={{ num }}{% else %}?page={{ num }}{% endif %}">{{ num }}</a>
+              {% elif num == page_obj.number|add:"-4" or num == page_obj.number|add:"4" %}
+                <span class="px-2 text-gray-400">...</span>
+              {% endif %}
+            {% endfor %}
+          </div>
+
+          {% if page_obj.has_next %}
+            <a class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md" 
+               href="{% if query_string %}?{{ query_string }}&page={{ page_obj.next_page_number }}{% else %}?page={{ page_obj.next_page_number }}{% endif %}">
+              <span>بعدی</span>
+              <i class="fa-solid fa-chevron-left text-xs"></i>
+            </a>
+          {% else %}
+            <span class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-600 text-sm font-medium cursor-not-allowed">
+              <span>بعدی</span>
+              <i class="fa-solid fa-chevron-left text-xs"></i>
+            </span>
+          {% endif %}
+        </div>
       </div>
     </div>
     {% endif %}

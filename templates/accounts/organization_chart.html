@@ -1,0 +1,1077 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}چارت سازمانی{% endblock %}
+
+{% block styles %}
+<style>
+  .orgchart-container {
+    background: linear-gradient(to bottom, #f8f9fa, #ffffff);
+    min-height: 600px;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    overflow: auto;
+    position: relative;
+  }
+  
+  #orgchart {
+    width: 100%;
+    height: 100%;
+    min-height: 600px;
+  }
+  
+  .org-node {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+  }
+  
+  .org-node:hover {
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+    transform: scale(1.03);
+  }
+  
+  .org-node:hover .node-rect {
+    stroke-width: 3;
+  }
+  
+  .org-link {
+    fill: none;
+    stroke: #64748b;
+    stroke-width: 2.5px;
+    opacity: 0.7;
+    transition: all 0.2s ease;
+  }
+  
+  .org-link:hover {
+    stroke: #475569;
+    stroke-width: 3px;
+    opacity: 0.9;
+  }
+  
+  .org-label {
+    font-family: 'Vazir', 'Tahoma', 'Arial', sans-serif;
+    font-size: 12px;
+    text-anchor: middle;
+    pointer-events: none;
+    fill: #1f2937;
+    font-weight: 500;
+  }
+  
+  .org-label.section {
+    font-size: 15px;
+    font-weight: 700;
+    fill: #ffffff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  
+  .org-label.part {
+    font-size: 13px;
+    font-weight: 600;
+    fill: #ffffff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  
+  .org-label.unit_group {
+    font-size: 12px;
+    font-weight: 600;
+    fill: #ffffff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  }
+  
+  .org-label.position {
+    font-size: 12px;
+    font-weight: 500;
+    fill: #ffffff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  }
+  
+  .org-label.personnel {
+    font-size: 11px;
+    font-weight: 500;
+    fill: #1f2937;
+  }
+  
+  .org-count {
+    font-family: 'Vazir', 'Tahoma', 'Arial', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    fill: #1f2937;
+    text-anchor: middle;
+  }
+  
+  .node-rect {
+    rx: 10;
+    ry: 10;
+    stroke-width: 2.5;
+    transition: all 0.3s ease;
+  }
+  
+  .node-rect.section {
+    fill: url(#sectionGradient);
+    stroke: #4c1d95;
+    stroke-width: 2.5;
+  }
+  
+  .node-rect.part {
+    fill: url(#partGradient);
+    stroke: #be185d;
+    stroke-width: 2.5;
+  }
+  
+  .node-rect.unit_group {
+    fill: url(#unitGroupGradient);
+    stroke: #1e40af;
+    stroke-width: 2.5;
+  }
+  
+  .node-rect.position {
+    fill: url(#positionGradient);
+    stroke: #166534;
+    stroke-width: 2.5;
+  }
+  
+  .node-rect.personnel {
+    fill: url(#personnelGradient);
+    stroke: #c2410c;
+    stroke-width: 2;
+  }
+  
+  /* Custom scrollbar */
+  .orgchart-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .orgchart-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+  
+  .orgchart-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+  }
+  
+  .orgchart-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+  
+  .chart-controls {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  
+  .chart-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .btn-chart {
+    padding: 10px 20px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .btn-chart:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  }
+  
+  .btn-export-pdf {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+  
+  .btn-toggle-personnel {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+  }
+  
+  .btn-reset-zoom {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+  }
+  
+  @media print {
+    .chart-controls {
+      display: none;
+    }
+    .orgchart-container {
+      box-shadow: none;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg">
+        <i class="fa-solid fa-sitemap text-white text-xl"></i>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">چارت سازمانی</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">نمایش گرافیکی ساختار سازمانی</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="{% url 'accounts:personnel_list' %}" 
+         class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200">
+        <i class="fa-solid fa-arrow-right"></i>
+        <span>بازگشت</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="chart-controls">
+    <form method="get" id="chartForm" class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <i class="fa-solid fa-filter ml-1"></i>
+            فیلتر بر اساس بخش
+          </label>
+          <select name="section" id="sectionFilter" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800">
+            <option value="">همه بخش‌ها</option>
+            {% for section in sections %}
+              <option value="{{ section.id }}" {% if selected_section == section.id %}selected{% endif %}>
+                {{ section.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div class="flex items-end">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input type="checkbox" 
+                   name="show_personnel" 
+                   id="showPersonnel"
+                   value="true"
+                   {% if show_personnel %}checked{% endif %}
+                   class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+              نمایش پرسنل
+            </span>
+          </label>
+        </div>
+        
+        <div class="flex items-end">
+          <button type="submit" 
+                  class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-white hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all duration-200 text-sm font-medium">
+            <i class="fa-solid fa-filter"></i>
+            <span>اعمال فیلتر</span>
+          </button>
+        </div>
+      </div>
+    </form>
+    
+    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <div class="chart-actions">
+        <button onclick="exportToPDF()" class="btn-chart btn-export-pdf">
+          <i class="fa-solid fa-file-pdf"></i>
+          <span>خروجی PDF</span>
+        </button>
+        <button onclick="togglePersonnel()" class="btn-chart btn-toggle-personnel">
+          <i class="fa-solid fa-users"></i>
+          <span id="togglePersonnelText">{% if show_personnel %}مخفی کردن پرسنل{% else %}نمایش پرسنل{% endif %}</span>
+        </button>
+        <button onclick="resetZoom()" class="btn-chart btn-reset-zoom">
+          <i class="fa-solid fa-compress"></i>
+          <span>بازنشانی زوم</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart Container -->
+  <div class="orgchart-container" id="chart-container">
+    <svg id="orgchart" width="100%" height="100%"></svg>
+    <div id="chart-loading" class="text-center py-20">
+      <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <p class="mt-4 text-gray-600">در حال بارگذاری چارت سازمانی...</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script id="chart-data" type="application/json">{{ chart_data_json|safe }}</script>
+<script>
+  let chartData = [];
+  let svg = null;
+  let g = null;
+  let zoom = null;
+  let root = null;
+
+  document.addEventListener('DOMContentLoaded', function() {
+    try {
+      const chartDataElement = document.getElementById('chart-data');
+      if (chartDataElement && chartDataElement.textContent) {
+        chartData = JSON.parse(chartDataElement.textContent);
+      } else {
+        document.getElementById('chart-loading').innerHTML = '<p class="text-red-600">خطا: داده چارت یافت نشد.</p>';
+        return;
+      }
+    } catch (e) {
+      document.getElementById('chart-loading').innerHTML = '<p class="text-red-600">خطا در خواندن داده‌های چارت: ' + e.message + '</p>';
+      return;
+    }
+
+    if (typeof d3 === 'undefined') {
+      document.getElementById('chart-loading').innerHTML = '<p class="text-red-600">خطا: کتابخانه D3.js لود نشده است.</p>';
+      return;
+    }
+
+    console.log('Chart data loaded:', chartData);
+
+    if (chartData && chartData.length > 0) {
+      // Convert to D3.js hierarchical format
+      let rootData;
+      
+      if (chartData.length === 1) {
+        rootData = chartData[0];
+      } else {
+        rootData = {
+          id: 'root',
+          title: 'سازمان\nکل سازمان',
+          name: 'سازمان',
+          type: 'root',
+          count: 0,
+          children: chartData
+        };
+      }
+      
+      // Convert to D3 hierarchy
+      root = d3.hierarchy(rootData, d => d.children);
+      
+      // Swap x and y for vertical layout (top to bottom)
+      // d3.tree() uses x for horizontal position and y for depth
+      // We want vertical, so we'll swap them after layout
+      const treeLayout = d3.tree()
+        .nodeSize([200, 300])  // [horizontal spacing, vertical spacing]
+        .separation((a, b) => {
+          // More separation for nodes with many siblings
+          if (a.parent === b.parent) {
+            const siblings = a.parent ? a.parent.children.length : 0;
+            if (siblings > 6) return 1.3;
+            if (siblings > 4) return 1.1;
+            return 1;
+          }
+          return 1.5;
+        });
+      
+      treeLayout(root);
+      
+      // Swap x and y for vertical layout
+      root.each(d => {
+        const temp = d.x;
+        d.x = d.y;
+        d.y = temp;
+      });
+      
+      // Hide loading
+      document.getElementById('chart-loading').style.display = 'none';
+      
+      // Calculate bounds before setting up SVG
+      const rootBounds = getBounds(root);
+      
+      // Setup SVG
+      const container = document.getElementById('chart-container');
+      const containerRect = container.getBoundingClientRect();
+      const width = Math.max(container.clientWidth, rootBounds.width + 100, 1200);
+      const height = Math.max(container.clientHeight, rootBounds.height + 100, 800);
+      
+      svg = d3.select('#orgchart')
+        .attr('width', width)
+        .attr('height', height)
+        .style('background', '#ffffff');
+      
+      // Add gradients
+      const defs = svg.append('defs');
+      
+      const gradients = [
+        { id: 'sectionGradient', colors: ['#6366f1', '#8b5cf6'] },      // Indigo to Purple - قوی و رسمی
+        { id: 'partGradient', colors: ['#ec4899', '#f43f5e'] },       // Pink to Rose - پرانرژی
+        { id: 'unitGroupGradient', colors: ['#3b82f6', '#06b6d4'] },   // Blue to Cyan - حرفه‌ای
+        { id: 'positionGradient', colors: ['#10b981', '#06d6a0'] },   // Green to Emerald - مثبت
+        { id: 'personnelGradient', colors: ['#fbbf24', '#f59e0b'] }    // Amber to Orange - گرم
+      ];
+      
+      gradients.forEach(g => {
+        const gradient = defs.append('linearGradient')
+          .attr('id', g.id)
+          .attr('x1', '0%')
+          .attr('y1', '0%')
+          .attr('x2', '100%')
+          .attr('y2', '100%');
+        gradient.append('stop')
+          .attr('offset', '0%')
+          .attr('stop-color', g.colors[0]);
+        gradient.append('stop')
+          .attr('offset', '100%')
+          .attr('stop-color', g.colors[1]);
+      });
+      
+      // Setup zoom
+      zoom = d3.zoom()
+        .scaleExtent([0.3, 2])
+        .on('zoom', (event) => {
+          g.attr('transform', event.transform);
+        });
+      
+      svg.call(zoom);
+      
+      // Main group
+      g = svg.append('g');
+      
+      // Calculate initial scale and position to center the chart
+      const initialScale = Math.min(
+        (width - 100) / rootBounds.width,
+        (height - 100) / rootBounds.height,
+        1
+      );
+      
+      const initialX = (width - rootBounds.width * initialScale) / 2 - rootBounds.x * initialScale;
+      const initialY = (height - rootBounds.height * initialScale) / 2 - rootBounds.y * initialScale;
+      
+      g.attr('transform', `translate(${initialX}, ${initialY}) scale(${initialScale})`);
+      
+      // Draw links (vertical lines connecting parent to children)
+      const links = g.selectAll('.link')
+        .data(root.links())
+        .enter()
+        .append('path')
+        .attr('class', 'org-link')
+        .attr('d', d => {
+          const source = d.source;
+          const target = d.target;
+          const sourceBottom = source.y + getNodeHeight(source) / 2;
+          const targetTop = target.y - getNodeHeight(target) / 2;
+          const midY = (sourceBottom + targetTop) / 2;
+          
+          // Draw L-shaped path: down from parent, then horizontal, then down to child
+          return `M ${source.x} ${sourceBottom} 
+                  L ${source.x} ${midY}
+                  L ${target.x} ${midY}
+                  L ${target.x} ${targetTop}`;
+        })
+        .style('stroke', '#64748b')
+        .style('stroke-width', 2.5)
+        .style('fill', 'none')
+        .style('opacity', 0.7)
+        .style('stroke-linecap', 'round')
+        .style('stroke-linejoin', 'round');
+      
+      // Draw nodes
+      const nodes = g.selectAll('.node')
+        .data(root.descendants())
+        .enter()
+        .append('g')
+        .attr('class', d => `org-node ${d.data.type || 'default'}`)
+        .attr('transform', d => `translate(${d.x}, ${d.y})`);
+      
+      // Calculate dimensions for all nodes first (before creating elements)
+      const nodeDimensions = root.descendants().map(d => {
+        const text = d.data.title || d.data.name || '';
+        const type = d.data.type;
+        
+        // Calculate width
+        const lines = text.split('\n');
+        const maxLineLength = Math.max(...lines.map(line => line.length), 0);
+        let baseWidth = 150;
+        if (type === 'section') baseWidth = 180;
+        else if (type === 'part') baseWidth = 170;
+        else if (type === 'unit_group') baseWidth = 160;
+        else if (type === 'position') baseWidth = 150;
+        else if (type === 'personnel') baseWidth = 130;
+        
+        const charWidth = type === 'section' ? 9 : type === 'part' ? 8.5 : 8;
+        const requiredWidth = maxLineLength * charWidth + 40;
+        const maxWidth = type === 'section' ? 250 : type === 'part' ? 230 : 220;
+        const width = Math.min(Math.max(baseWidth, requiredWidth), maxWidth);
+        
+        // Calculate height with wrapping
+        const fontSize = type === 'section' ? 15 : type === 'part' ? 13 : type === 'unit_group' ? 12 : type === 'position' ? 12 : 11;
+        const charWidthForWrap = fontSize * 0.6;
+        const maxCharsPerLine = Math.floor((width - 30) / charWidthForWrap);
+        
+        let wrappedLineCount = 0;
+        lines.forEach(line => {
+          if (line.length <= maxCharsPerLine) {
+            wrappedLineCount++;
+          } else {
+            const words = line.split(' ');
+            let currentLine = '';
+            words.forEach(word => {
+              const testLine = currentLine ? currentLine + ' ' + word : word;
+              if (testLine.length <= maxCharsPerLine) {
+                currentLine = testLine;
+              } else {
+                if (currentLine) {
+                  wrappedLineCount++;
+                  currentLine = word.length > maxCharsPerLine ? '' : word;
+                }
+                if (word.length > maxCharsPerLine) {
+                  wrappedLineCount += Math.ceil(word.length / maxCharsPerLine);
+                  currentLine = '';
+                }
+              }
+            });
+            if (currentLine) wrappedLineCount++;
+          }
+        });
+        
+        const lineHeight = type === 'section' ? 20 : type === 'personnel' ? 16 : 18;
+        const verticalPadding = type === 'section' ? 24 : type === 'personnel' ? 16 : 20;
+        const minHeight = type === 'section' ? 60 : type === 'personnel' ? 40 : 50;
+        const height = Math.max(minHeight, wrappedLineCount * lineHeight + verticalPadding);
+        
+        return { width, height };
+      });
+      
+      // Add rectangles
+      nodes.append('rect')
+        .attr('class', d => `node-rect ${d.data.type || 'default'}`)
+        .attr('width', (d, i) => nodeDimensions[i].width)
+        .attr('height', (d, i) => nodeDimensions[i].height)
+        .attr('x', (d, i) => -nodeDimensions[i].width / 2)
+        .attr('y', (d, i) => -nodeDimensions[i].height / 2)
+        .attr('rx', 10)
+        .attr('ry', 10)
+        .style('fill', d => {
+          const type = d.data.type;
+          if (type === 'section') return 'url(#sectionGradient)';
+          if (type === 'part') return 'url(#partGradient)';
+          if (type === 'unit_group') return 'url(#unitGroupGradient)';
+          if (type === 'position') return 'url(#positionGradient)';
+          if (type === 'personnel') return 'url(#personnelGradient)';
+          return 'url(#sectionGradient)';
+        })
+        .style('stroke', d => getNodeStroke(d.data.type))
+        .style('stroke-width', d => {
+          const type = d.data.type;
+          if (type === 'section') return 2.5;
+          if (type === 'part') return 2.5;
+          if (type === 'unit_group') return 2.5;
+          if (type === 'position') return 2.5;
+          return 2;
+        });
+      
+      // Add text with automatic wrapping
+      const textGroups = nodes.append('text')
+        .attr('class', d => `org-label ${d.data.type || 'default'}`)
+        .attr('text-anchor', 'middle')
+        .style('font-family', 'Vazir, Tahoma, Arial, sans-serif')
+        .style('font-size', d => {
+          const type = d.data.type;
+          if (type === 'section') return '15px';
+          if (type === 'part') return '13px';
+          if (type === 'unit_group') return '12px';
+          if (type === 'position') return '12px';
+          if (type === 'personnel') return '11px';
+          return '12px';
+        })
+        .style('font-weight', d => {
+          const type = d.data.type;
+          if (type === 'section') return '700';
+          if (type === 'part') return '600';
+          if (type === 'unit_group') return '600';
+          if (type === 'position') return '500';
+          return '500';
+        })
+        .style('fill', d => {
+          const type = d.data.type;
+          if (type === 'personnel') return '#1f2937';
+          return '#ffffff';
+        });
+      
+      // Add text spans with wrapping
+      textGroups.each(function(d) {
+        const textElement = d3.select(this);
+        const type = d.data.type;
+        const fontSize = type === 'section' ? 15 : type === 'part' ? 13 : type === 'unit_group' ? 12 : type === 'position' ? 12 : 11;
+        const charWidth = fontSize * 0.6; // Approximate character width
+        const nodeWidth = getNodeWidth(d);
+        const maxTextWidth = nodeWidth - 30; // Padding
+        const maxCharsPerLine = Math.floor(maxTextWidth / charWidth);
+        
+        const text = d.data.title || d.data.name || '';
+        const lines = text.split('\n');
+        const wrappedLines = [];
+        
+        // Wrap each line if needed
+        lines.forEach(line => {
+          if (line.length <= maxCharsPerLine) {
+            wrappedLines.push(line);
+          } else {
+            // Split long lines
+            const words = line.split(' ');
+            let currentLine = '';
+            
+            words.forEach(word => {
+              const testLine = currentLine ? currentLine + ' ' + word : word;
+              if (testLine.length <= maxCharsPerLine) {
+                currentLine = testLine;
+              } else {
+                if (currentLine) {
+                  wrappedLines.push(currentLine);
+                  currentLine = word;
+                } else {
+                  // Word is too long, split it
+                  for (let i = 0; i < word.length; i += maxCharsPerLine) {
+                    wrappedLines.push(word.substr(i, maxCharsPerLine));
+                  }
+                  currentLine = '';
+                }
+              }
+            });
+            
+            if (currentLine) {
+              wrappedLines.push(currentLine);
+            }
+          }
+        });
+        
+        // Calculate vertical position
+        const lineHeight = type === 'section' ? 20 : type === 'personnel' ? 16 : 18;
+        const totalHeight = wrappedLines.length * lineHeight;
+        const startY = -(totalHeight / 2) + (lineHeight / 2);
+        
+        // Add tspan for each line
+        wrappedLines.forEach((line, i) => {
+          textElement.append('tspan')
+            .attr('x', 0)
+            .attr('dy', i === 0 ? startY : lineHeight)
+            .text(line);
+        });
+      });
+      
+      // Add count badge with better styling
+      const badges = nodes.filter((d, i) => {
+        return d.data.count > 0 && d.data.type !== 'personnel' && d.data.type !== 'root';
+      });
+      
+      // Badge background circle
+      badges.append('circle')
+        .attr('cx', (d, i) => nodeDimensions[i].width / 2 - 18)
+        .attr('cy', (d, i) => -nodeDimensions[i].height / 2 + 18)
+        .attr('r', 14)
+        .style('fill', '#ffffff')
+        .style('stroke', '#e5e7eb')
+        .style('stroke-width', 2)
+        .style('filter', 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))');
+      
+      // Badge text
+      badges.append('text')
+        .attr('class', 'org-count')
+        .attr('x', (d, i) => nodeDimensions[i].width / 2 - 18)
+        .attr('y', (d, i) => -nodeDimensions[i].height / 2 + 22)
+        .style('fill', '#1f2937')
+        .style('font-size', '11px')
+        .style('font-weight', '700')
+        .text(d => d.data.count);
+      
+      console.log('Chart rendered successfully');
+    } else {
+      document.getElementById('chart-loading').innerHTML = '<p class="text-gray-600">داده‌ای برای نمایش وجود ندارد.</p>';
+    }
+  });
+
+  function getNodeWidth(d) {
+    const type = d.data.type;
+    const text = d.data.title || d.data.name || '';
+    const lines = text.split('\n');
+    const maxLineLength = Math.max(...lines.map(line => line.length));
+    
+    // Base width based on type
+    let baseWidth = 150;
+    if (type === 'section') baseWidth = 180;
+    else if (type === 'part') baseWidth = 170;
+    else if (type === 'unit_group') baseWidth = 160;
+    else if (type === 'position') baseWidth = 150;
+    else if (type === 'personnel') baseWidth = 130;
+    
+    // Calculate required width based on text length (Persian characters are wider)
+    const charWidth = type === 'section' ? 9 : type === 'part' ? 8.5 : 8;
+    const requiredWidth = maxLineLength * charWidth + 40; // 40px padding
+    
+    // Return the larger of base width or required width, with max limit
+    const maxWidth = type === 'section' ? 250 : type === 'part' ? 230 : 220;
+    return Math.min(Math.max(baseWidth, requiredWidth), maxWidth);
+  }
+
+  function getNodeHeight(d) {
+    const text = d.data.title || d.data.name || '';
+    const lines = text.split('\n');
+    const type = d.data.type;
+    
+    // Calculate height based on number of lines and type
+    const lineHeight = type === 'section' ? 20 : type === 'personnel' ? 16 : 18;
+    const verticalPadding = type === 'section' ? 24 : type === 'personnel' ? 16 : 20;
+    const minHeight = type === 'section' ? 60 : type === 'personnel' ? 40 : 50;
+    
+    const calculatedHeight = lines.length * lineHeight + verticalPadding;
+    return Math.max(minHeight, calculatedHeight);
+  }
+  
+  // Helper function to wrap text based on width
+  function wrapText(text, maxWidth, charWidth) {
+    const words = text.split(' ');
+    const lines = [];
+    let currentLine = '';
+    
+    for (const word of words) {
+      const testLine = currentLine ? currentLine + ' ' + word : word;
+      const testWidth = testLine.length * charWidth;
+      
+      if (testWidth > maxWidth && currentLine) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    
+    if (currentLine) {
+      lines.push(currentLine);
+    }
+    
+    return lines.length > 0 ? lines : [text];
+  }
+
+  function getNodeColor(type) {
+    const colors = {
+      'section': '#667eea',
+      'part': '#f093fb',
+      'unit_group': '#4facfe',
+      'position': '#43e97b',
+      'personnel': '#fa709a',
+      'root': '#667eea'
+    };
+    return colors[type] || '#667eea';
+  }
+
+  function getNodeStroke(type) {
+    const strokes = {
+      'section': '#4c1d95',      // Dark purple - قوی و رسمی
+      'part': '#be185d',         // Dark pink - پرانرژی
+      'unit_group': '#1e40af',   // Dark blue - حرفه‌ای
+      'position': '#166534',     // Dark green - مثبت
+      'personnel': '#c2410c',     // Dark orange - گرم
+      'root': '#4c1d95'
+    };
+    return strokes[type] || '#4c1d95';
+  }
+
+  function getBounds(root) {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    
+    // Calculate dimensions for all nodes
+    const nodeDimensions = root.descendants().map(d => {
+      const text = d.data.title || d.data.name || '';
+      const type = d.data.type;
+      const lines = text.split('\n');
+      const maxLineLength = Math.max(...lines.map(line => line.length), 0);
+      
+      let baseWidth = 150;
+      if (type === 'section') baseWidth = 180;
+      else if (type === 'part') baseWidth = 170;
+      else if (type === 'unit_group') baseWidth = 160;
+      else if (type === 'position') baseWidth = 150;
+      else if (type === 'personnel') baseWidth = 130;
+      
+      const charWidth = type === 'section' ? 9 : type === 'part' ? 8.5 : 8;
+      const requiredWidth = maxLineLength * charWidth + 40;
+      const maxWidth = type === 'section' ? 250 : type === 'part' ? 230 : 220;
+      const width = Math.min(Math.max(baseWidth, requiredWidth), maxWidth);
+      
+      const fontSize = type === 'section' ? 15 : type === 'part' ? 13 : type === 'unit_group' ? 12 : type === 'position' ? 12 : 11;
+      const charWidthForWrap = fontSize * 0.6;
+      const maxCharsPerLine = Math.floor((width - 30) / charWidthForWrap);
+      
+      let wrappedLineCount = 0;
+      lines.forEach(line => {
+        if (line.length <= maxCharsPerLine) {
+          wrappedLineCount++;
+        } else {
+          const words = line.split(' ');
+          let currentLine = '';
+          words.forEach(word => {
+            const testLine = currentLine ? currentLine + ' ' + word : word;
+            if (testLine.length <= maxCharsPerLine) {
+              currentLine = testLine;
+            } else {
+              if (currentLine) {
+                wrappedLineCount++;
+                currentLine = word.length > maxCharsPerLine ? '' : word;
+              }
+              if (word.length > maxCharsPerLine) {
+                wrappedLineCount += Math.ceil(word.length / maxCharsPerLine);
+                currentLine = '';
+              }
+            }
+          });
+          if (currentLine) wrappedLineCount++;
+        }
+      });
+      
+      const lineHeight = type === 'section' ? 20 : type === 'personnel' ? 16 : 18;
+      const verticalPadding = type === 'section' ? 24 : type === 'personnel' ? 16 : 20;
+      const minHeight = type === 'section' ? 60 : type === 'personnel' ? 40 : 50;
+      const height = Math.max(minHeight, wrappedLineCount * lineHeight + verticalPadding);
+      
+      return { width, height };
+    });
+    
+    root.each((d, i) => {
+      const dim = nodeDimensions[i];
+      const nodeMinX = d.x - dim.width / 2;
+      const nodeMaxX = d.x + dim.width / 2;
+      const nodeMinY = d.y - dim.height / 2;
+      const nodeMaxY = d.y + dim.height / 2;
+      
+      if (nodeMinX < minX) minX = nodeMinX;
+      if (nodeMaxX > maxX) maxX = nodeMaxX;
+      if (nodeMinY < minY) minY = nodeMinY;
+      if (nodeMaxY > maxY) maxY = nodeMaxY;
+    });
+    
+    return {
+      x: minX - 50,
+      y: minY - 50,
+      width: (maxX - minX) + 100,
+      height: (maxY - minY) + 100
+    };
+  }
+
+  function togglePersonnel() {
+    const form = document.getElementById('chartForm');
+    const checkbox = document.getElementById('showPersonnel');
+    checkbox.checked = !checkbox.checked;
+    form.submit();
+  }
+
+  function resetZoom() {
+    if (svg && zoom) {
+      svg.transition()
+        .duration(750)
+        .call(zoom.transform, d3.zoomIdentity);
+    }
+  }
+
+  async function exportToPDF() {
+    const svgElement = document.getElementById('orgchart');
+    
+    if (!svgElement || !g || !root) {
+      alert('چارت سازمانی برای تبدیل به PDF آماده نیست. لطفاً صبر کنید.');
+      return;
+    }
+    
+    const loadingMsg = document.createElement('div');
+    loadingMsg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:9999;';
+    loadingMsg.innerHTML = '<div class="text-center"><div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div><p class="mt-2 text-sm">در حال تولید PDF...</p></div>';
+    document.body.appendChild(loadingMsg);
+    
+    try {
+      // Reset zoom to default
+      if (svg && zoom) {
+        svg.transition()
+          .duration(0)
+          .call(zoom.transform, d3.zoomIdentity);
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      // Use html2canvas directly on the main SVG element
+      // This is more reliable than creating a temporary SVG
+      
+      // Reset zoom and wait
+      if (svg && zoom) {
+        svg.transition()
+          .duration(0)
+          .call(zoom.transform, d3.zoomIdentity);
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      
+      // Get the actual bounds
+      const bounds = getBounds(root);
+      const padding = 20;
+      
+      // Calculate the visible area we want to capture
+      const captureWidth = bounds.width + padding * 2;
+      const captureHeight = bounds.height + padding * 2;
+      
+      // Create a wrapper div to capture only the chart area
+      const wrapper = document.createElement('div');
+      wrapper.style.position = 'absolute';
+      wrapper.style.left = '-9999px';
+      wrapper.style.top = '0';
+      wrapper.style.width = captureWidth + 'px';
+      wrapper.style.height = captureHeight + 'px';
+      wrapper.style.overflow = 'hidden';
+      wrapper.style.backgroundColor = '#ffffff';
+      
+      // Clone the SVG
+      const clonedSvg = svgElement.cloneNode(true);
+      clonedSvg.style.width = captureWidth + 'px';
+      clonedSvg.style.height = captureHeight + 'px';
+      
+      // Adjust the transform of the main group to show only the chart area
+      const clonedG = clonedSvg.querySelector('g');
+      if (clonedG) {
+        const currentTransform = g.attr('transform') || '';
+        // Remove zoom transform and adjust to show bounds
+        const adjustedX = (captureWidth - bounds.width) / 2 - bounds.x;
+        const adjustedY = (captureHeight - bounds.height) / 2 - bounds.y;
+        clonedG.setAttribute('transform', `translate(${adjustedX}, ${adjustedY})`);
+      }
+      
+      wrapper.appendChild(clonedSvg);
+      document.body.appendChild(wrapper);
+      
+      // Wait for rendering
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      try {
+        // Use html2canvas to capture the wrapper
+        const canvas = await html2canvas(wrapper, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          width: captureWidth,
+          height: captureHeight,
+          windowWidth: captureWidth,
+          windowHeight: captureHeight,
+          x: 0,
+          y: 0
+        });
+        
+        // Remove wrapper
+        document.body.removeChild(wrapper);
+        
+        // Verify canvas has content
+        if (canvas.width === 0 || canvas.height === 0) {
+          throw new Error(`Canvas dimensions are invalid: ${canvas.width}x${canvas.height}`);
+        }
+        
+        console.log('Canvas captured successfully:', canvas.width, 'x', canvas.height);
+        
+        // Get image data
+        const imgData = canvas.toDataURL('image/png', 1.0);
+        
+        if (!imgData || imgData === 'data:,') {
+          throw new Error('Failed to generate image data from canvas');
+        }
+        
+        if (imgData.length < 100) {
+          throw new Error(`Image data too short (${imgData.length} chars)`);
+        }
+        
+        console.log('Image data generated successfully, length:', imgData.length);
+      
+        // Browser canvas size limits
+        const MAX_CANVAS_SIZE = 8192;
+        const scale = 2; // Scale used in html2canvas
+        
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('landscape', 'mm', 'a4');
+        const pdfWidth = 297; // A4 landscape width in mm
+        const pdfHeight = 210; // A4 landscape height in mm
+        const pxToMm = 0.264583; // 1px = 0.264583mm at 96 DPI
+        const margin = 10;
+        const availableWidth = pdfWidth - (margin * 2);
+        const availableHeight = pdfHeight - (margin * 2);
+        
+        // Calculate dimensions in mm (account for scale)
+        const imgWidthMm = (canvas.width / scale) * pxToMm;
+        const imgHeightMm = (canvas.height / scale) * pxToMm;
+        
+        // Calculate scaling to fit page
+        const widthRatio = availableWidth / imgWidthMm;
+        const heightRatio = availableHeight / imgHeightMm;
+        const ratio = Math.min(widthRatio, heightRatio, 1);
+        
+        const finalWidth = imgWidthMm * ratio;
+        const finalHeight = imgHeightMm * ratio;
+        
+        // If content is too large, split into multiple pages
+        if (finalHeight > availableHeight) {
+          const pageHeight = availableHeight;
+          const totalPages = Math.ceil(finalHeight / pageHeight);
+          
+          console.log(`Splitting into ${totalPages} pages`);
+          
+          for (let i = 0; i < totalPages; i++) {
+            if (i > 0) {
+              pdf.addPage();
+            }
+            
+            const sourceY = (canvas.height / totalPages) * i;
+            const sourceHeight = Math.min(canvas.height / totalPages, canvas.height - sourceY);
+            
+            // Create a canvas for this page
+            const pageCanvas = document.createElement('canvas');
+            pageCanvas.width = canvas.width;
+            pageCanvas.height = sourceHeight;
+            const pageCtx = pageCanvas.getContext('2d');
+            pageCtx.fillStyle = '#ffffff';
+            pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+            pageCtx.drawImage(canvas, 0, sourceY, canvas.width, sourceHeight, 0, 0, canvas.width, sourceHeight);
+            
+            const pageImgData = pageCanvas.toDataURL('image/png', 1.0);
+            const pageHeightMm = (sourceHeight / scale) * pxToMm * ratio;
+            
+            // Center horizontally
+            const xOffset = (pdfWidth - finalWidth) / 2;
+            
+            pdf.addImage(pageImgData, 'PNG', xOffset, margin, finalWidth, pageHeightMm);
+          }
+        } else {
+          // Center on page
+          const xOffset = (pdfWidth - finalWidth) / 2;
+          const yOffset = (pdfHeight - finalHeight) / 2;
+          
+          pdf.addImage(imgData, 'PNG', xOffset, yOffset, finalWidth, finalHeight);
+        }
+        
+        pdf.save('chart-organization-' + new Date().getTime() + '.pdf');
+        document.body.removeChild(loadingMsg);
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+        // Clean up if SVG is still in DOM
+        if (tempSvg.parentNode) {
+          document.body.removeChild(tempSvg);
+        }
+        document.body.removeChild(loadingMsg);
+        alert('خطا در تولید PDF: ' + error.message);
+      }
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      document.body.removeChild(loadingMsg);
+      alert('خطا در تولید PDF: ' + error.message);
+    }
+  }
+</script>
+{% endblock %}
+

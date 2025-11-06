@@ -1,73 +1,116 @@
 from django import forms
-from django.forms import inlineformset_factory
-from .models import FireReport, VehicleStatusReport
+from .models import FireReport
+from shift_manager.models import SHIFT_CHOICES
 from django.contrib.auth import get_user_model
 from BaseInfo.models import EmergencyVehicle
 from contractor_management.models import Vehicle as ContractorVehicle
 import logging
 
 logger = logging.getLogger('fire_reports')
+
 User = get_user_model()
 
-class FireReportForm(forms.ModelForm):
-    firefighter = forms.ModelChoiceField(
-        queryset=User.objects.none(),
-        widget=forms.Select(attrs={
-            'class': 'select2-field w-full',
-            'data-placeholder': 'جستجو بر اساس نام یا کد پرسنلی'
-        }),
-        label='آتش‌نشان'
-    )
-    shift_operator = forms.ModelChoiceField(
-        queryset=User.objects.none(),
-        widget=forms.Select(attrs={
-            'class': 'select2-field w-full',
-            'data-placeholder': 'جستجو بر اساس نام یا کد پرسنلی'
-        }),
-        label='اپراتور شیفت'
-    )
-    class Meta:
-        model = FireReport
-        fields = [
-            'shift', 'shift_operator', 'firefighter',
-            'incident_dispatch_count', 'personal_incident_count',
-            'equipment_incident_count', 'fire_incident_count',
-            'additional_notes'
-        ]
-        widgets = {
-            'shift': forms.Select(attrs={'class': 'select2-field w-full', 'data-placeholder': 'شیفت را انتخاب کنید'}),
-            'incident_dispatch_count': forms.NumberInput(attrs={'class': 'form-control form-control-solid', 'min': '0', 'value': '0'}),
-            'personal_incident_count': forms.NumberInput(attrs={'class': 'form-control form-control-solid', 'min': '0', 'value': '0'}),
-            'equipment_incident_count': forms.NumberInput(attrs={'class': 'form-control form-control-solid', 'min': '0', 'value': '0'}),
-            'fire_incident_count': forms.NumberInput(attrs={'class': 'form-control form-control-solid', 'min': '0', 'value': '0'}),
-            'additional_notes': forms.Textarea(attrs={'class': 'form-control form-control-solid', 'rows': 4, 'placeholder': 'توضیحات تکمیلی...'}),
-        }
-    def __init__(self, *args, **kwargs):
-        firefighter_qs = kwargs.pop('firefighter_queryset', None)
-        operator_qs = kwargs.pop('operator_queryset', None)
-        super().__init__(*args, **kwargs)
-        if firefighter_qs is not None:
-            self.fields['firefighter'].queryset = firefighter_qs
-        if operator_qs is not None:
-            self.fields['shift_operator'].queryset = operator_qs
-        self.fields['firefighter'].label_from_instance = lambda obj: f"{obj.get_full_name()} ({obj.userprofile.personnel_code})"
-        self.fields['shift_operator'].label_from_instance = lambda obj: f"{obj.get_full_name()} ({obj.userprofile.personnel_code})"
+STATUS_CHOICES = [
+    ('suitable', 'مناسب'),
+    ('unsuitable', 'نامناسب'),
+]
 
-class VehicleStatusReportForm(forms.ModelForm):
-    VEHICLE_SOURCE_CHOICES = [
-        ('company', 'شرکتی'),
-        ('contractor', 'پیمانکار'),
-    ]
+VEHICLE_SOURCE_CHOICES = [
+    ('company', 'خودروی شرکت'),
+    ('contractor', 'خودروی پیمانکار'),
+]
+
+class FireReportForm(forms.ModelForm):
+    # این فیلدها برای backward compatibility هستند
+    # در حالت جدید، خودروها در VehicleChecklist ذخیره می‌شوند
     vehicle_source = forms.ChoiceField(
         choices=VEHICLE_SOURCE_CHOICES,
         widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
-        label='منبع خودرو'
+        initial='company',
+        label='نوع خودرو',
+        required=False  # اختیاری برای پشتیبانی از چندین خودرو
+    )
+
+    # فیلدهای وضعیت تجهیزات - اختیاری برای پشتیبانی از چندین خودرو
+    horn_status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='suitable',
+        label='وضعیت بوق و چراغ گردان',
+        required=False
+    )
+    hose_status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='suitable',
+        label='وضعیت شیلنگ‌ها و اتصالات',
+        required=False
+    )
+    monitor_status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='suitable',
+        label='وضعیت مانیتور',
+        required=False
+    )
+    extinguisher_status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='suitable',
+        label='وضعیت خاموش‌کننده‌های دستی',
+        required=False
+    )
+    equipment_status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='suitable',
+        label='وضعیت تجهیزات آتش‌نشانی',
+        required=False
+    )
+    foam_status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='suitable',
+        label='وضعیت پودر و فوم خودرو',
+        required=False
+    )
+    water_status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='suitable',
+        label='وضعیت آب',
+        required=False
+    )
+    tire_status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='suitable',
+        label='وضعیت لاستیک‌ها',
+        required=False
+    )
+    brake_status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='suitable',
+        label='وضعیت سیستم ترمز خودرو',
+        required=False
+    )
+    lighting_status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='suitable',
+        label='وضعیت سیستم روشنایی',
+        required=False
     )
 
     class Meta:
-        model = VehicleStatusReport
+        model = FireReport
         fields = [
+            # اطلاعات کلی شیفت
+            'shift', 'shift_operator', 'firefighter',
+            # اطلاعات خودرو
             'vehicle_source', 'company_vehicle', 'contractor_vehicle',
+            # وضعیت تجهیزات
             'horn_status', 'horn_description',
             'hose_status', 'hose_description',
             'monitor_status', 'monitor_description',
@@ -78,94 +121,143 @@ class VehicleStatusReportForm(forms.ModelForm):
             'tire_status', 'tire_description',
             'brake_status', 'brake_description',
             'lighting_status', 'lighting_description',
+            # گزارش حوادث
+            'incident_dispatch_count', 'personal_incident_count',
+            'equipment_incident_count', 'fire_incident_count',
+            # سایر
+            'additional_notes'
         ]
         widgets = {
-            'company_vehicle': forms.Select(attrs={
-                'class': 'select2-field w-full py-2.5 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors',
-                'data-placeholder': 'خودروی شرکت را انتخاب کنید'
-            }),
-            'contractor_vehicle': forms.Select(attrs={
-                'class': 'select2-field w-full py-2.5 px-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors',
-                'data-placeholder': 'خودروی پیمانکار را انتخاب کنید'
-            }),
-            # Status fields with RadioSelect
-            'horn_status': forms.RadioSelect(attrs={'class': 'status-radio'}),
-            'hose_status': forms.RadioSelect(attrs={'class': 'status-radio'}),
-            'monitor_status': forms.RadioSelect(attrs={'class': 'status-radio'}),
-            'extinguisher_status': forms.RadioSelect(attrs={'class': 'status-radio'}),
-            'equipment_status': forms.RadioSelect(attrs={'class': 'status-radio'}),
-            'foam_status': forms.RadioSelect(attrs={'class': 'status-radio'}),
-            'water_status': forms.RadioSelect(attrs={'class': 'status-radio'}),
-            'tire_status': forms.RadioSelect(attrs={'class': 'status-radio'}),
-            'brake_status': forms.RadioSelect(attrs={'class': 'status-radio'}),
-            'lighting_status': forms.RadioSelect(attrs={'class': 'status-radio'}),
-            # Description textareas
+            'shift': forms.Select(attrs={'class': 'form-select form-select-solid'}),
+            'shift_operator': forms.HiddenInput(),
+            'firefighter': forms.HiddenInput(),
+            'company_vehicle': forms.Select(attrs={'class': 'form-select form-select-solid'}),
+            'contractor_vehicle': forms.Select(attrs={'class': 'form-select form-select-solid'}),
             'horn_description': forms.Textarea(attrs={
-                'rows': 2,
-                'placeholder': 'توضیحات...',
-                'class': 'w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors resize-none'
+                'rows': 3,
+                'class': 'form-control form-control-solid',
+                'placeholder': 'توضیحات خود را وارد کنید...'
             }),
             'hose_description': forms.Textarea(attrs={
-                'rows': 2,
-                'placeholder': 'توضیحات...',
-                'class': 'w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors resize-none'
+                'rows': 3,
+                'class': 'form-control form-control-solid',
+                'placeholder': 'توضیحات خود را وارد کنید...'
             }),
             'monitor_description': forms.Textarea(attrs={
-                'rows': 2,
-                'placeholder': 'توضیحات...',
-                'class': 'w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors resize-none'
+                'rows': 3,
+                'class': 'form-control form-control-solid',
+                'placeholder': 'توضیحات خود را وارد کنید...'
             }),
             'extinguisher_description': forms.Textarea(attrs={
-                'rows': 2,
-                'placeholder': 'توضیحات...',
-                'class': 'w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors resize-none'
+                'rows': 3,
+                'class': 'form-control form-control-solid',
+                'placeholder': 'توضیحات خود را وارد کنید...'
             }),
             'equipment_description': forms.Textarea(attrs={
-                'rows': 2,
-                'placeholder': 'توضیحات...',
-                'class': 'w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors resize-none'
+                'rows': 3,
+                'class': 'form-control form-control-solid',
+                'placeholder': 'توضیحات خود را وارد کنید...'
             }),
             'foam_description': forms.Textarea(attrs={
-                'rows': 2,
-                'placeholder': 'توضیحات...',
-                'class': 'w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors resize-none'
+                'rows': 3,
+                'class': 'form-control form-control-solid',
+                'placeholder': 'توضیحات خود را وارد کنید...'
             }),
             'water_description': forms.Textarea(attrs={
-                'rows': 2,
-                'placeholder': 'توضیحات...',
-                'class': 'w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors resize-none'
+                'rows': 3,
+                'class': 'form-control form-control-solid',
+                'placeholder': 'توضیحات خود را وارد کنید...'
             }),
             'tire_description': forms.Textarea(attrs={
-                'rows': 2,
-                'placeholder': 'توضیحات...',
-                'class': 'w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors resize-none'
+                'rows': 3,
+                'class': 'form-control form-control-solid',
+                'placeholder': 'توضیحات خود را وارد کنید...'
             }),
             'brake_description': forms.Textarea(attrs={
-                'rows': 2,
-                'placeholder': 'توضیحات...',
-                'class': 'w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors resize-none'
+                'rows': 3,
+                'class': 'form-control form-control-solid',
+                'placeholder': 'توضیحات خود را وارد کنید...'
             }),
             'lighting_description': forms.Textarea(attrs={
-                'rows': 2,
-                'placeholder': 'توضیحات...',
-                'class': 'w-full py-2 px-3 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors resize-none'
+                'rows': 3,
+                'class': 'form-control form-control-solid',
+                'placeholder': 'توضیحات خود را وارد کنید...'
+            }),
+            'incident_dispatch_count': forms.NumberInput(attrs={
+                'class': 'form-control form-control-solid',
+                'min': '0',
+                'value': '0'
+            }),
+            'personal_incident_count': forms.NumberInput(attrs={
+                'class': 'form-control form-control-solid',
+                'min': '0',
+                'value': '0'
+            }),
+            'equipment_incident_count': forms.NumberInput(attrs={
+                'class': 'form-control form-control-solid',
+                'min': '0',
+                'value': '0'
+            }),
+            'fire_incident_count': forms.NumberInput(attrs={
+                'class': 'form-control form-control-solid',
+                'min': '0',
+                'value': '0'
+            }),
+            'additional_notes': forms.Textarea(attrs={
+                'class': 'form-control form-control-solid',
+                'rows': 4,
+                'placeholder': 'توضیحات تکمیلی خود را وارد کنید...'
             }),
         }
-    def __init__(self, *args, **kwargs):
-        company_vehicles_qs = kwargs.pop('company_vehicles_queryset', None)
-        contractor_vehicles_qs = kwargs.pop('contractor_vehicles_queryset', None)
-        super().__init__(*args, **kwargs)
-        if company_vehicles_qs is not None:
-            self.fields['company_vehicle'].queryset = company_vehicles_qs
-        if contractor_vehicles_qs is not None:
-            self.fields['contractor_vehicle'].queryset = contractor_vehicles_qs
 
-VehicleStatusFormSet = inlineformset_factory(
-    FireReport,
-    VehicleStatusReport,
-    form=VehicleStatusReportForm,
-    extra=1,
-    can_delete=True,
-    min_num=1,
-    validate_min=True,
-)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        logger.info("Initializing FireReportForm")
+        
+        # فیلتر کردن خودروهای امدادی فعال
+        self.fields['company_vehicle'].queryset = EmergencyVehicle.objects.filter(
+            status='active',
+            vehicle_type='fire_truck'
+        )
+        
+        # فیلتر کردن خودروهای پیمانکار آتش‌نشانی
+        self.fields['contractor_vehicle'].queryset = ContractorVehicle.objects.filter(
+            contractor__company_name__icontains='آتش نشانی'
+        )
+        
+        # تنظیم مقادیر اولیه برای فیلدهای مخفی
+        if 'initial' in kwargs:
+            if 'shift_operator' in kwargs['initial']:
+                self.fields['shift_operator'].initial = kwargs['initial']['shift_operator']
+            if 'firefighter' in kwargs['initial']:
+                self.fields['firefighter'].initial = kwargs['initial']['firefighter']
+        
+        # تنظیم مقادیر پیش‌فرض برای فیلدهای تعداد حوادث
+        if not self.instance.pk:  # فقط برای فرم ایجاد گزارش جدید
+            self.fields['incident_dispatch_count'].initial = 0
+            self.fields['personal_incident_count'].initial = 0
+            self.fields['equipment_incident_count'].initial = 0
+            self.fields['fire_incident_count'].initial = 0
+
+    def clean(self):
+        cleaned_data = super().clean()
+        vehicle_source = cleaned_data.get('vehicle_source')
+        company_vehicle = cleaned_data.get('company_vehicle')
+        contractor_vehicle = cleaned_data.get('contractor_vehicle')
+        
+        # فقط در صورتی که از فرم قدیمی استفاده شده باشد (vehicle_source وجود داشته باشد)
+        # این اعتبارسنجی را انجام بده
+        if vehicle_source:
+            if vehicle_source == 'company' and not company_vehicle:
+                raise forms.ValidationError({
+                    'company_vehicle': 'برای خودروی شرکت باید یک خودروی امدادی انتخاب شود.'
+                })
+            elif vehicle_source == 'contractor' and not contractor_vehicle:
+                raise forms.ValidationError({
+                    'contractor_vehicle': 'برای خودروی پیمانکار باید یک خودرو انتخاب شود.'
+                })
+            
+            if company_vehicle and contractor_vehicle:
+                raise forms.ValidationError('نمی‌توانید همزمان خودروی شرکت و پیمانکار را انتخاب کنید.')
+        
+        return cleaned_data

@@ -3,34 +3,30 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.utils import timezone
-from .models import FireReport, VehicleStatusReport
-from .forms import FireReportForm, VehicleStatusFormSet
+from .models import FireReport, VehicleChecklist
+from .forms import FireReportForm
 from shift_manager.utils import get_current_shift_and_group
 from accounts.models import UserProfile
-from django.contrib.auth import get_user_model
 from django.conf import settings
 from dashboard.models import Notification
 from dashboard.sms_utils import send_template_sms
 from permissions.utils import permission_required
 from BaseInfo.models import EmergencyVehicle
-from contractor_management.models import Vehicle as ContractorVehicle
 from django.http import JsonResponse
 import requests
 import json
 import logging
 from django.contrib.auth.models import Group
 from django.urls import reverse
-from django.db import transaction
 from django.template.loader import get_template
 from django.http import HttpResponse
 from weasyprint import HTML
 from PIL import Image, ImageChops, ImageFilter
 from io import BytesIO
 from django.core.files.base import ContentFile
+import base64
 
 logger = logging.getLogger('fire_reports')
-
-User = get_user_model()
 
 # تعریف شناسه قالب پیامک
 SMS_TEMPLATE_ID = 410890  # قالب پیامک برای همه وضعیت‌ها
@@ -83,7 +79,12 @@ def remove_background(image_path, threshold=200):
 @login_required
 def fire_report_list(request):
     logger.info("Accessing fire report list view")
-    reports = FireReport.objects.all().order_by('-report_date')
+    reports = FireReport.objects.select_related(
+        'shift_operator', 'firefighter', 'company_vehicle', 'contractor_vehicle'
+    ).prefetch_related(
+        'vehicle_checklists__company_vehicle', 
+        'vehicle_checklists__contractor_vehicle'
+    ).all().order_by('-report_date')
     logger.info(f"Found {reports.count()} reports")
     paginator = Paginator(reports, 10)
     page_number = request.GET.get('page')
@@ -102,61 +103,234 @@ def fire_report_create(request):
         current_shift, current_group = get_current_shift_and_group(request.user)
         logger.info(f"Current shift: {current_shift}, Current group: {current_group}")
         
-        # Build filtered user querysets according to UnitGroup name and Position
-        operator_qs = User.objects.filter(
-            userprofile__unit_group__name='آتش نشانی',
-            userprofile__position__name='متصدی شیفت آتش نشانی',
-            is_active=True
-        ).select_related('userprofile').order_by('userprofile__personnel_code', 'first_name', 'last_name')
-
-        firefighter_qs = User.objects.filter(
-            userprofile__unit_group__name='آتش نشانی',
-            is_active=True
-        ).select_related('userprofile').order_by('userprofile__personnel_code', 'first_name', 'last_name')
-
-        if not firefighter_qs.exists():
-            messages.error(request, 'هیچ آتش‌نشان فعالی در گروه آتش نشانی یافت نشد.')
-            return redirect('fire_reports:report_list')
-
-        if not operator_qs.exists():
-            messages.error(request, 'متصدی شیفت آتش نشانی برای گروه آتش نشانی یافت نشد.')
-            return redirect('fire_reports:report_list')
-
-        # Prepare POST data defaults (ensure required hidden fields exist)
-        post_data = request.POST.copy()
-        # If client didn't post a shift_operator or firefighter, set sensible defaults
-        post_data.setdefault('shift_operator', operator_qs.first().id)
-        post_data.setdefault('firefighter', request.user.id)
-        post_data.setdefault('shift', current_shift)
-
-        # pass filtered querysets into the form so dropdowns are populated
-        form = FireReportForm(post_data, firefighter_queryset=firefighter_qs, operator_queryset=operator_qs)
+        # یافتن متصدی شیفت آتش نشانی در گروه کاری فعلی
+        try:
+            shift_operator = UserProfile.objects.filter(
+                group=current_group,
+                position__name='متصدی شیفت آتش نشانی'
+            ).first()
+            if not shift_operator:
+                logger.error(f"No shift operator found for group: {current_group}")
+                messages.error(request, 'متصدی شیفت آتش نشانی برای گروه کاری شما یافت نشد.')
+                return redirect('fire_reports:report_create')
+            logger.info(f"Found shift operator: {shift_operator.user.username}")
+        except Exception as e:
+            logger.error(f"Error finding shift operator: {e}")
+            messages.error(request, 'خطا در یافتن متصدی شیفت آتش نشانی.')
+            return redirect('fire_reports:report_create')
         
-        # Query company and contractor vehicles so template dropdowns are populated
-        try:
-            # EmergencyVehicle uses `status` field with values like 'active'/'inactive'
-            company_vehicles = EmergencyVehicle.objects.filter(status='active').order_by('model', 'license_plate')
-        except Exception:
-            company_vehicles = EmergencyVehicle.objects.all()
-        try:
-            # Contractor Vehicle model doesn't have `is_active`; return all contractor vehicles
-            contractor_vehicles = ContractorVehicle.objects.select_related('contractor').order_by('license_plate')
-        except Exception:
-            contractor_vehicles = ContractorVehicle.objects.all()
-
-        form_kwargs = {
-            'company_vehicles_queryset': company_vehicles,
-            'contractor_vehicles_queryset': contractor_vehicles,
-        }
-        formset = VehicleStatusFormSet(post_data, prefix='vehicles', form_kwargs=form_kwargs)
-
-        if form.is_valid() and formset.is_valid():
+        # اضافه کردن مقادیر اولیه به داده‌های POST
+        post_data = request.POST.copy()
+        post_data['shift_operator'] = shift_operator.user.id
+        post_data['firefighter'] = request.user.id
+        post_data['shift'] = current_shift
+        
+        # بررسی اینکه آیا از فرم جدید (چندین خودرو) استفاده شده است
+        has_multiple_vehicles = any(key.startswith('vehicle_0_') for key in post_data.keys())
+        
+        # اگر از فرم جدید استفاده نشده، مقادیر پیش‌فرض را برای فیلدهای قدیمی تنظیم کن
+        if not has_multiple_vehicles:
+            # اگر هیچ vehicle_0_* وجود نداشته باشد، یعنی از فرم قدیمی استفاده شده
+            # در این صورت فیلدهای قدیمی را الزامی می‌کنیم
+            if 'vehicle_source' not in post_data:
+                post_data['vehicle_source'] = 'company'
+            if 'horn_status' not in post_data:
+                post_data['horn_status'] = 'suitable'
+            if 'hose_status' not in post_data:
+                post_data['hose_status'] = 'suitable'
+            if 'monitor_status' not in post_data:
+                post_data['monitor_status'] = 'suitable'
+            if 'extinguisher_status' not in post_data:
+                post_data['extinguisher_status'] = 'suitable'
+            if 'equipment_status' not in post_data:
+                post_data['equipment_status'] = 'suitable'
+            if 'foam_status' not in post_data:
+                post_data['foam_status'] = 'suitable'
+            if 'water_status' not in post_data:
+                post_data['water_status'] = 'suitable'
+            if 'tire_status' not in post_data:
+                post_data['tire_status'] = 'suitable'
+            if 'brake_status' not in post_data:
+                post_data['brake_status'] = 'suitable'
+            if 'lighting_status' not in post_data:
+                post_data['lighting_status'] = 'suitable'
+        else:
+            # اگر از فرم جدید استفاده شده، فیلدهای قدیمی را اختیاری می‌کنیم
+            # مقادیر پیش‌فرض را تنظیم می‌کنیم تا فرم اعتبارسنجی شود
+            if 'vehicle_source' not in post_data:
+                post_data['vehicle_source'] = ''
+            if 'horn_status' not in post_data:
+                post_data['horn_status'] = 'suitable'
+            if 'hose_status' not in post_data:
+                post_data['hose_status'] = 'suitable'
+            if 'monitor_status' not in post_data:
+                post_data['monitor_status'] = 'suitable'
+            if 'extinguisher_status' not in post_data:
+                post_data['extinguisher_status'] = 'suitable'
+            if 'equipment_status' not in post_data:
+                post_data['equipment_status'] = 'suitable'
+            if 'foam_status' not in post_data:
+                post_data['foam_status'] = 'suitable'
+            if 'water_status' not in post_data:
+                post_data['water_status'] = 'suitable'
+            if 'tire_status' not in post_data:
+                post_data['tire_status'] = 'suitable'
+            if 'brake_status' not in post_data:
+                post_data['brake_status'] = 'suitable'
+            if 'lighting_status' not in post_data:
+                post_data['lighting_status'] = 'suitable'
+        
+        form = FireReportForm(post_data)
+        
+        if form.is_valid():
             try:
+                from django.db import transaction
+                
                 with transaction.atomic():
-                    report = form.save()
-                    formset.instance = report
-                    formset.save()
-
+                    # اگر از فرم جدید استفاده شده، فیلدهای قدیمی را با مقادیر پیش‌فرض پر کن
+                    if has_multiple_vehicles:
+                        report = form.save(commit=False)
+                        # تنظیم مقادیر پیش‌فرض برای فیلدهای الزامی مدل
+                        if not report.vehicle_source:
+                            report.vehicle_source = 'company'
+                        if not report.horn_status:
+                            report.horn_status = 'suitable'
+                        if not report.hose_status:
+                            report.hose_status = 'suitable'
+                        if not report.monitor_status:
+                            report.monitor_status = 'suitable'
+                        if not report.extinguisher_status:
+                            report.extinguisher_status = 'suitable'
+                        if not report.equipment_status:
+                            report.equipment_status = 'suitable'
+                        if not report.foam_status:
+                            report.foam_status = 'suitable'
+                        if not report.water_status:
+                            report.water_status = 'suitable'
+                        if not report.tire_status:
+                            report.tire_status = 'suitable'
+                        if not report.brake_status:
+                            report.brake_status = 'suitable'
+                        if not report.lighting_status:
+                            report.lighting_status = 'suitable'
+                        report.save()
+                    else:
+                        report = form.save()
+                    
+                    # ذخیره چندین خودرو از فرم
+                    vehicles_data = []
+                    
+                    # دریافت داده‌های خودروها از POST
+                    # فرم چندین خودرو را به صورت vehicle_0_source, vehicle_0_company_vehicle, ... ارسال می‌کند
+                    vehicle_index = 0
+                    while True:
+                        vehicle_source_key = f'vehicle_{vehicle_index}_source'
+                        if vehicle_source_key not in post_data:
+                            break
+                        
+                        vehicle_source = post_data.get(vehicle_source_key)
+                        company_vehicle_id = post_data.get(f'vehicle_{vehicle_index}_company_vehicle')
+                        contractor_vehicle_id = post_data.get(f'vehicle_{vehicle_index}_contractor_vehicle')
+                        
+                        if not vehicle_source or (not company_vehicle_id and not contractor_vehicle_id):
+                            vehicle_index += 1
+                            continue
+                        
+                        vehicle_data = {
+                            'fire_report': report,
+                            'vehicle_source': vehicle_source,
+                            'company_vehicle_id': company_vehicle_id if vehicle_source == 'company' else None,
+                            'contractor_vehicle_id': contractor_vehicle_id if vehicle_source == 'contractor' else None,
+                            'statuses': {},
+                            'descriptions': {}
+                        }
+                        
+                        # دریافت وضعیت‌ها و توضیحات برای هر خودرو
+                        checklist_items = [
+                            'horn', 'hose', 'monitor', 'extinguisher', 'equipment',
+                            'foam', 'water', 'tire', 'brake', 'lighting'
+                        ]
+                        
+                        for item in checklist_items:
+                            status_key = f'vehicle_{vehicle_index}_{item}_status'
+                            desc_key = f'vehicle_{vehicle_index}_{item}_description'
+                            
+                            if status_key in post_data:
+                                vehicle_data['statuses'][f'{item}_status'] = post_data.get(status_key, 'suitable')
+                            if desc_key in post_data:
+                                vehicle_data['descriptions'][f'{item}_description'] = post_data.get(desc_key, '')
+                        
+                        vehicles_data.append(vehicle_data)
+                        vehicle_index += 1
+                    
+                    # اگر از فرم جدید استفاده شده ولی هیچ خودرویی ارسال نشده، خطا بده
+                    if has_multiple_vehicles and not vehicles_data:
+                        error_msg = 'لطفاً حداقل یک خودرو را انتخاب و چک‌لیست آن را تکمیل کنید.'
+                        messages.error(request, error_msg)
+                        
+                        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                            return JsonResponse({
+                                'success': False,
+                                'message': error_msg
+                            }, status=400)
+                        
+                        form = FireReportForm(post_data)
+                        return render(request, 'fire_reports/report_form.html', {
+                            'form': form,
+                            'title': 'ثبت گزارش جدید'
+                        })
+                    
+                    # اگر هیچ خودرویی از فرم جدید ارسال نشده، از فیلدهای قدیمی استفاده کن
+                    if not vehicles_data:
+                        # استفاده از فیلدهای قدیمی FireReport برای backward compatibility
+                        if report.vehicle_source and (report.company_vehicle or report.contractor_vehicle):
+                            vehicle_checklist = VehicleChecklist(
+                                fire_report=report,
+                                vehicle_source=report.vehicle_source,
+                                company_vehicle=report.company_vehicle,
+                                contractor_vehicle=report.contractor_vehicle,
+                                horn_status=report.horn_status,
+                                horn_description=report.horn_description,
+                                hose_status=report.hose_status,
+                                hose_description=report.hose_description,
+                                monitor_status=report.monitor_status,
+                                monitor_description=report.monitor_description,
+                                extinguisher_status=report.extinguisher_status,
+                                extinguisher_description=report.extinguisher_description,
+                                equipment_status=report.equipment_status,
+                                equipment_description=report.equipment_description,
+                                foam_status=report.foam_status,
+                                foam_description=report.foam_description,
+                                water_status=report.water_status,
+                                water_description=report.water_description,
+                                tire_status=report.tire_status,
+                                tire_description=report.tire_description,
+                                brake_status=report.brake_status,
+                                brake_description=report.brake_description,
+                                lighting_status=report.lighting_status,
+                                lighting_description=report.lighting_description,
+                            )
+                            vehicle_checklist.full_clean()
+                            vehicle_checklist.save()
+                    else:
+                        # ذخیره چندین خودرو
+                        for vehicle_data in vehicles_data:
+                            vehicle_checklist = VehicleChecklist(
+                                fire_report=vehicle_data['fire_report'],
+                                vehicle_source=vehicle_data['vehicle_source'],
+                                company_vehicle_id=vehicle_data['company_vehicle_id'],
+                                contractor_vehicle_id=vehicle_data['contractor_vehicle_id'],
+                            )
+                            
+                            # تنظیم وضعیت‌ها و توضیحات
+                            for status_key, status_value in vehicle_data['statuses'].items():
+                                setattr(vehicle_checklist, status_key, status_value)
+                            for desc_key, desc_value in vehicle_data['descriptions'].items():
+                                setattr(vehicle_checklist, desc_key, desc_value)
+                            
+                            vehicle_checklist.full_clean()
+                            vehicle_checklist.save()
+                    
                     # ارسال پیامک به متصدی شیفت
                     if hasattr(report.shift_operator, 'userprofile') and report.shift_operator.userprofile.mobile:
                         send_report_sms(
@@ -166,237 +340,169 @@ def fire_report_create(request):
                         )
 
                 messages.success(request, 'گزارش با موفقیت ثبت شد.')
+                
+                # Handle AJAX requests
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': True,
+                        'message': 'گزارش با موفقیت ثبت شد.',
+                        'redirect': reverse('fire_reports:report_detail', args=[report.pk]),
+                        'report_id': report.pk
+                    })
+                
                 return redirect('fire_reports:report_detail', pk=report.pk)
             except Exception as e:
                 logger.error(f"Error saving report: {e}")
-                messages.error(request, 'خطا در ذخیره گزارش.')
-                return redirect('fire_reports:report_create')
+                error_msg = f'خطا در ذخیره گزارش: {str(e)}'
+                messages.error(request, error_msg)
+                
+                # Handle AJAX requests
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': False,
+                        'message': error_msg
+                    }, status=400)
         else:
             logger.error(f"Form validation failed: {form.errors}")
-            logger.error(f"Formset validation failed: {formset.errors}")
-            messages.error(request, 'لطفاً تمام فیلدهای الزامی را پر کنید.')
-
-        # Prepare formset data for JS even in POST (so template's JSON.parse won't fail)
-        formset_data = []
-        try:
-            for f in formset.forms:
-                vehicle_data = {
-                    'id': getattr(f.instance, 'id', '') or '',
-                    'DELETE': False,
-                    'vehicle_source': getattr(f.instance, 'vehicle_source', 'company') or 'company',
-                    'company_vehicle': getattr(getattr(f.instance, 'company_vehicle', None), 'id', '') or '',
-                    'contractor_vehicle': getattr(getattr(f.instance, 'contractor_vehicle', None), 'id', '') or ''
-                }
-                formset_data.append(vehicle_data)
-        except Exception:
-            formset_data = []
+            error_msg = 'لطفاً تمام فیلدهای الزامی را پر کنید.'
+            messages.error(request, error_msg)
+            
+            # Handle AJAX requests
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                errors = {}
+                for field, error_list in form.errors.items():
+                    errors[field] = error_list[0] if error_list else ''
+                return JsonResponse({
+                    'success': False,
+                    'message': error_msg,
+                    'errors': errors
+                }, status=400)
     else:
         # دریافت شیفت کاری و گروه کاری فعلی
         current_shift, current_group = get_current_shift_and_group(request.user)
         logger.info(f"Initializing form with shift: {current_shift}, group: {current_group}")
         
-        # Build filtered user querysets for the GET form as well
-        operator_qs = User.objects.filter(
-            userprofile__unit_group__name='آتش نشانی',
-            userprofile__position__name='متصدی شیفت آتش نشانی',
-            is_active=True
-        ).select_related('userprofile').order_by('userprofile__personnel_code', 'first_name', 'last_name')
-
-        firefighter_qs = User.objects.filter(
-            userprofile__unit_group__name='آتش نشانی',
-            is_active=True
-        ).select_related('userprofile').order_by('userprofile__personnel_code', 'first_name', 'last_name')
-
-        if not firefighter_qs.exists():
-            messages.error(request, 'هیچ آتش‌نشان فعالی در گروه آتش نشانی یافت نشد.')
+        # یافتن متصدی شیفت آتش نشانی در گروه کاری فعلی
+        try:
+            shift_operator = UserProfile.objects.filter(
+                group=current_group,
+                position__name='متصدی شیفت آتش نشانی'
+            ).first()
+            if not shift_operator:
+                logger.error(f"No shift operator found for group: {current_group}")
+                messages.error(request, 'متصدی شیفت آتش نشانی برای گروه کاری شما یافت نشد.')
+                return redirect('fire_reports:report_list')
+            logger.info(f"Found shift operator: {shift_operator.user.username}")
+        except Exception as e:
+            logger.error(f"Error finding shift operator: {e}")
+            messages.error(request, 'خطا در یافتن متصدی شیفت آتش نشانی.')
             return redirect('fire_reports:report_list')
-
-        if not operator_qs.exists():
-            messages.error(request, 'متصدی شیفت آتش نشانی برای گروه آتش نشانی یافت نشد.')
-            return redirect('fire_reports:report_list')
-
-        # For a better UX, pre-select a shift operator if available
-        shift_operator = operator_qs.first()
-
+        
         form = FireReportForm(initial={
             'shift': current_shift,
-            'shift_operator': shift_operator,
+            'shift_operator': shift_operator.user,
             'firefighter': request.user,
-        }, firefighter_queryset=firefighter_qs, operator_queryset=operator_qs)
-        
-        # Query vehicles for GET so dropdowns show options
-        try:
-            company_vehicles = EmergencyVehicle.objects.filter(status='active').order_by('model', 'license_plate')
-        except Exception:
-            company_vehicles = EmergencyVehicle.objects.all()
-        try:
-            contractor_vehicles = ContractorVehicle.objects.select_related('contractor').order_by('license_plate')
-        except Exception:
-            contractor_vehicles = ContractorVehicle.objects.all()
-
-        form_kwargs = {
-            'company_vehicles_queryset': company_vehicles,
-            'contractor_vehicles_queryset': contractor_vehicles,
-        }
-        formset = VehicleStatusFormSet(prefix='vehicles', form_kwargs=form_kwargs)
-
-        # Prepare formset data for JavaScript
-        formset_data = []
-        for f in formset.forms:
-            vehicle_data = {
-                'id': getattr(f.instance, 'id', '') or '',
-                'DELETE': False,
-                'vehicle_source': getattr(f.instance, 'vehicle_source', 'company') or 'company',
-                'company_vehicle': getattr(getattr(f.instance, 'company_vehicle', None), 'id', '') or '',
-                'contractor_vehicle': getattr(getattr(f.instance, 'contractor_vehicle', None), 'id', '') or ''
-            }
-            formset_data.append(vehicle_data)
+        })
 
     return render(request, 'fire_reports/report_form.html', {
         'form': form,
-        'formset': formset,
-        'formset_data': json.dumps(formset_data),
-        'user_select_options': json.dumps({
-            'operator': [{ 'id': u.id, 'text': f"{u.get_full_name()} ({getattr(getattr(u, 'userprofile', None), 'personnel_code', '')})" } for u in operator_qs],
-            'firefighter': [{ 'id': u.id, 'text': f"{u.get_full_name()} ({getattr(getattr(u, 'userprofile', None), 'personnel_code', '')})" } for u in firefighter_qs]
-        }, ensure_ascii=False),
         'title': 'ثبت گزارش جدید',
-        'company_vehicles': company_vehicles,
-        'contractor_vehicles': contractor_vehicles,
     })
 
 @permission_required("report_detail")
 @login_required
 def fire_report_detail(request, pk):
     report = get_object_or_404(FireReport, pk=pk)
-    return render(request, 'fire_reports/report_detail.html', {'report': report})
+    # دریافت تمام چک‌لیست‌های خودرو برای این گزارش
+    vehicle_checklists = report.vehicle_checklists.all()
+    return render(request, 'fire_reports/report_detail.html', {
+        'report': report,
+        'vehicle_checklists': vehicle_checklists
+    })
 
 @permission_required("report_edit")
 @login_required
 def fire_report_edit(request, pk):
     report = get_object_or_404(FireReport, pk=pk)
-
-    # Always prepare the filtered querysets up-front so forms always get them
-    operator_qs = User.objects.filter(
-        userprofile__unit_group__name='آتش نشانی',
-        userprofile__position__name='متصدی شیفت آتش نشانی',
-        is_active=True
-    ).select_related('userprofile').order_by('userprofile__personnel_code', 'first_name', 'last_name')
-
-    firefighter_qs = User.objects.filter(
-        userprofile__unit_group__name='آتش نشانی',
-        is_active=True
-    ).select_related('userprofile').order_by('userprofile__personnel_code', 'first_name', 'last_name')
-
-    # Query company and contractor vehicles once so templates can render dropdowns
+    
+    # دریافت شیفت کاری و گروه کاری فعلی
+    current_shift, current_group = get_current_shift_and_group(request.user)
+    
+    # یافتن متصدی شیفت آتش نشانی در گروه کاری فعلی
     try:
-        company_vehicles = EmergencyVehicle.objects.filter(status='active').order_by('model', 'license_plate')
-    except Exception:
-        company_vehicles = EmergencyVehicle.objects.all()
-    try:
-        contractor_vehicles = ContractorVehicle.objects.select_related('contractor').order_by('license_plate')
-    except Exception:
-        contractor_vehicles = ContractorVehicle.objects.all()
-
-    # Basic availability checks (redirects if no users found)
-    if not firefighter_qs.exists():
-        messages.error(request, 'هیچ آتش‌نشان فعالی در گروه آتش نشانی یافت نشد.')
-        return redirect('fire_reports:report_list')
-
-    if not operator_qs.exists():
-        messages.error(request, 'متصدی شیفت آتش نشانی برای گروه آتش نشانی یافت نشد.')
+        shift_operator = UserProfile.objects.filter(
+            group=current_group,
+            position__name='متصدی شیفت آتش نشانی'
+        ).first()
+        if not shift_operator:
+            messages.error(request, 'متصدی شیفت آتش نشانی برای گروه کاری شما یافت نشد.')
+            return redirect('fire_reports:report_list')
+    except Exception as e:
+        messages.error(request, 'خطا در یافتن متصدی شیفت آتش نشانی.')
         return redirect('fire_reports:report_list')
 
     if request.method == 'POST':
-        # Copy POST data to allow modifications
+        # اضافه کردن مقادیر اولیه به داده‌های POST
         post_data = request.POST.copy()
-
-        # Ensure shift_operator/firefighter fields exist in POST so form validation
-        # doesn't fail due to missing keys; prefer existing report values.
-        try:
-            post_data.setdefault('shift_operator', getattr(report.shift_operator, 'id', ''))
-        except Exception:
-            post_data.setdefault('shift_operator', '')
-        try:
-            post_data.setdefault('firefighter', getattr(report.firefighter, 'id', ''))
-        except Exception:
-            post_data.setdefault('firefighter', '')
-
-        form = FireReportForm(post_data, instance=report, firefighter_queryset=firefighter_qs, operator_queryset=operator_qs)
+        post_data['shift_operator'] = report.shift_operator.id  # استفاده از متصدی شیفت موجود
+        post_data['firefighter'] = report.firefighter.id  # استفاده از آتش‌نشان موجود
         
-        form_kwargs = {
-            'company_vehicles_queryset': company_vehicles,
-            'contractor_vehicles_queryset': contractor_vehicles,
-        }
-        formset = VehicleStatusFormSet(post_data, request.FILES, instance=report, prefix='vehicles', form_kwargs=form_kwargs)
-
-        if form.is_valid() and formset.is_valid():
+        form = FireReportForm(post_data, instance=report)
+        
+        if form.is_valid():
             try:
-                with transaction.atomic():
-                    form.save()
-                    formset.save()
+                form.save()
                 messages.success(request, 'گزارش با موفقیت بروزرسانی شد.')
+                
+                # Handle AJAX requests
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': True,
+                        'message': 'گزارش با موفقیت بروزرسانی شد.',
+                        'redirect': reverse('fire_reports:report_detail', args=[report.pk]),
+                        'report_id': report.pk
+                    })
+                
                 return redirect('fire_reports:report_detail', pk=report.pk)
             except Exception as e:
                 logger.error(f"Error saving report: {e}")
-                messages.error(request, f'خطا در ذخیره گزارش: {str(e)}')
+                error_msg = f'خطا در ذخیره گزارش: {str(e)}'
+                messages.error(request, error_msg)
+                
+                # Handle AJAX requests
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': False,
+                        'message': error_msg
+                    }, status=400)
         else:
-            # Collect and show validation errors, but do not bail out — we need to
-            # re-render the form with the same bound form/formset so the user can fix them.
             logger.error(f"Form errors: {form.errors}")
-            logger.error(f"Formset errors: {formset.errors}")
+            error_msg = 'لطفاً خطاهای فرم را برطرف کنید.'
             if form.errors:
                 for field, errors in form.errors.items():
                     for error in errors:
-                        # Some form fields may not be in form.fields (custom handling) — guard access
-                        label = form[field].label if field in form.fields else field
-                        messages.error(request, f"{label}: {error}")
-            if formset.errors:
-                for i, form_errors in enumerate(formset.errors):
-                    if form_errors:
-                        messages.error(request, f"خطا در خودرو #{i+1}")
-                        for field, errors in form_errors.items():
-                            for error in errors:
-                                messages.error(request, f"{field}: {error}")
+                        messages.error(request, f"{form[field].label if hasattr(form[field], 'label') else field}: {error}")
+            
+            # Handle AJAX requests
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                errors = {}
+                for field, error_list in form.errors.items():
+                    errors[field] = error_list[0] if error_list else ''
+                return JsonResponse({
+                    'success': False,
+                    'message': error_msg,
+                    'errors': errors
+                }, status=400)
     else:
-        # GET: prepare unbound (initial) form and formset
         form = FireReportForm(instance=report, initial={
-            'shift_operator': getattr(report.shift_operator, 'id', ''),
-            'firefighter': getattr(report.firefighter, 'id', ''),
-        }, firefighter_queryset=firefighter_qs, operator_queryset=operator_qs)
-        
-        form_kwargs = {
-            'company_vehicles_queryset': company_vehicles,
-            'contractor_vehicles_queryset': contractor_vehicles,
-        }
-        formset = VehicleStatusFormSet(instance=report, prefix='vehicles', form_kwargs=form_kwargs)
-
-    # Build formset_data for template JS in all code paths (GET or failed POST)
-    formset_data = []
-    try:
-        for f in formset.forms:
-            vehicle_data = {
-                'id': getattr(getattr(f, 'instance', None), 'id', '') or '',
-                'DELETE': False,
-                'vehicle_source': getattr(getattr(f, 'instance', None), 'vehicle_source', 'company') or 'company',
-                'company_vehicle': getattr(getattr(getattr(f, 'instance', None), 'company_vehicle', None), 'id', '') or '',
-                'contractor_vehicle': getattr(getattr(getattr(f, 'instance', None), 'contractor_vehicle', None), 'id', '') or ''
-            }
-            formset_data.append(vehicle_data)
-    except Exception:
-        formset_data = []
-
+            'shift_operator': report.shift_operator.id,
+            'firefighter': report.firefighter.id,
+        })
+    
     return render(request, 'fire_reports/report_form.html', {
         'form': form,
-        'formset': formset,
-        'formset_data': json.dumps(formset_data),
-        'user_select_options': json.dumps({
-            'operator': [{ 'id': u.id, 'text': f"{u.get_full_name()} ({getattr(getattr(u, 'userprofile', None), 'personnel_code', '')})" } for u in operator_qs],
-            'firefighter': [{ 'id': u.id, 'text': f"{u.get_full_name()} ({getattr(getattr(u, 'userprofile', None), 'personnel_code', '')})" } for u in firefighter_qs]
-        }, ensure_ascii=False),
         'title': 'ویرایش گزارش',
-        'company_vehicles': company_vehicles,
-        'contractor_vehicles': contractor_vehicles
+        'report': report,
     })
 
 @permission_required("report_delete")
@@ -412,17 +518,14 @@ def fire_report_delete(request, pk):
 @permission_required("report_approve")
 @login_required
 def fire_report_approve(request, pk):
+    """
+    ویو تأیید/رد گزارش آتش‌نشانی
+    کاربران با permission 'report_approve' می‌توانند گزارش را تأیید یا رد کنند.
+    """
     report = get_object_or_404(FireReport, pk=pk)
     
-    # بررسی اینکه آیا کاربر متصدی شیفت آتش نشانی است
-    try:
-        user_profile = request.user.userprofile
-        if not user_profile.position or user_profile.position.name != 'متصدی شیفت آتش نشانی':
-            messages.error(request, 'شما مجاز به تأیید این گزارش نیستید.')
-            return redirect('fire_reports:report_detail', pk=report.pk)
-    except UserProfile.DoesNotExist:
-        messages.error(request, 'پروفایل کاربری یافت نشد.')
-        return redirect('fire_reports:report_detail', pk=report.pk)
+    # @permission_required("report_approve") قبلاً بررسی کرده که کاربر مجاز است
+    # نیازی به بررسی position اضافی نیست - اگر permission داشته باشد، مجاز است
 
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -472,10 +575,27 @@ def fire_report_approve(request, pk):
                 logger.error(f"Error creating notification for HSEC head: {hsec_error}")
 
             messages.success(request, 'گزارش با موفقیت تأیید شد.')
+            
+            # Handle AJAX requests
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'گزارش با موفقیت تأیید شد.',
+                    'redirect': reverse('fire_reports:report_detail', args=[report.pk])
+                })
 
         elif action == 'reject':
             if not rejection_reason:
-                messages.error(request, 'لطفاً دلیل رد را وارد کنید.')
+                error_msg = 'لطفاً دلیل رد را وارد کنید.'
+                messages.error(request, error_msg)
+                
+                # Handle AJAX requests
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': False,
+                        'message': error_msg
+                    }, status=400)
+                
                 return render(request, 'fire_reports/report_approve.html', {'report': report})
             
             report.approval_status = 'rejected'
@@ -502,6 +622,14 @@ def fire_report_approve(request, pk):
                 logger.error(f"Error creating notification: {notif_error}")
 
             messages.success(request, 'گزارش رد شد.')
+            
+            # Handle AJAX requests
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'گزارش رد شد.',
+                    'redirect': reverse('fire_reports:report_detail', args=[report.pk])
+                })
 
         return redirect('fire_reports:report_detail', pk=report.pk)
 
@@ -527,18 +655,22 @@ def fire_report_pdf(request, pk):
         if img_no_bg:
             buffer = BytesIO()
             img_no_bg.save(buffer, format='PNG')
-            firefighter_signature_no_bg = buffer.getvalue()
+            firefighter_signature_no_bg = base64.b64encode(buffer.getvalue()).decode('utf-8')
 
     if report.approval_status == 'approved' and report.shift_operator.userprofile.signature:
         img_no_bg = remove_background(report.shift_operator.userprofile.signature.path)
         if img_no_bg:
             buffer = BytesIO()
             img_no_bg.save(buffer, format='PNG')
-            shift_operator_signature_no_bg = buffer.getvalue()
+            shift_operator_signature_no_bg = base64.b64encode(buffer.getvalue()).decode('utf-8')
 
+    # دریافت تمام چک‌لیست‌های خودرو برای این گزارش
+    vehicle_checklists = report.vehicle_checklists.all()
+    
     # رندر کردن HTML
     html_content = template.render({
         'report': report,
+        'vehicle_checklists': vehicle_checklists,
         'title': 'گزارش آتش‌نشانی',
         'static_url': static_url,
         'media_url': media_url,
@@ -559,20 +691,58 @@ def fire_report_pdf(request, pk):
 def get_vehicle_info(request, vehicle_id):
     """API endpoint برای دریافت اطلاعات خودرو"""
     try:
-        vehicle = get_object_or_404(EmergencyVehicle, id=vehicle_id)
-        data = {
-            'has_horn': vehicle.has_horn,
-            'has_hose': vehicle.has_hose,
-            'has_monitor': vehicle.has_monitor,
-            'has_extinguisher': vehicle.has_extinguisher,
-            'has_equipment': vehicle.has_equipment,
-            'has_foam': vehicle.has_foam,
-            'has_water': vehicle.has_water,
-            'has_tire': vehicle.has_tire,
-            'has_brake': vehicle.has_brake,
-            'has_lighting': vehicle.has_lighting,
-        }
+        vehicle_type = request.GET.get('type', 'company')  # company or contractor
+        
+        if vehicle_type == 'company':
+            vehicle = get_object_or_404(EmergencyVehicle, id=vehicle_id)
+            data = {
+                'has_horn': vehicle.has_horn,
+                'has_hose': vehicle.has_hose,
+                'has_monitor': vehicle.has_monitor,
+                'has_extinguisher': vehicle.has_extinguisher,
+                'has_equipment': vehicle.has_equipment,
+                'has_foam': vehicle.has_foam,
+                'has_water': vehicle.has_water,
+                'has_tire': vehicle.has_tire,
+                'has_brake': vehicle.has_brake,
+                'has_lighting': vehicle.has_lighting,
+            }
+        else:  # contractor vehicle - all equipment available by default
+            from contractor_management.models import Vehicle as ContractorVehicle
+            vehicle = get_object_or_404(ContractorVehicle, id=vehicle_id)
+            # For contractor vehicles, assume all equipment is available
+            data = {
+                'has_horn': True,
+                'has_hose': True,
+                'has_monitor': True,
+                'has_extinguisher': True,
+                'has_equipment': True,
+                'has_foam': True,
+                'has_water': True,
+                'has_tire': True,
+                'has_brake': True,
+                'has_lighting': True,
+            }
         return JsonResponse(data)
     except Exception as e:
         logger.error(f"Error getting vehicle info: {e}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def get_contractor_vehicles_ajax(request):
+    """API endpoint برای دریافت لیست خودروهای پیمانکار آتش‌نشانی"""
+    try:
+        from contractor_management.models import Vehicle as ContractorVehicle
+        vehicles = ContractorVehicle.objects.filter(
+            contractor__company_name__icontains='آتش نشانی'
+        ).values('id', 'driver_name', 'license_plate', 'contractor__company_name')
+        vehicle_list = [
+            {
+                'id': v['id'],
+                'text': f"{v['driver_name']} ({v['license_plate']}) - {v['contractor__company_name']}"
+            } for v in vehicles
+        ]
+        return JsonResponse(vehicle_list, safe=False)
+    except Exception as e:
+        logger.error(f"Error getting contractor vehicles: {e}")
         return JsonResponse({'error': str(e)}, status=500)

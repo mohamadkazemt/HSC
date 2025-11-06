@@ -3,37 +3,225 @@
 
 {% block title %}ایمپورت پرسنل{% endblock %}
 
+{% block styles %}
+<style>
+  .upload-area {
+    transition: all 0.3s ease;
+  }
+  .upload-area:hover {
+    border-color: #6366f1;
+    background-color: rgba(99, 102, 241, 0.05);
+  }
+  .upload-area.dragover {
+    border-color: #6366f1;
+    background-color: rgba(99, 102, 241, 0.1);
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-3xl mx-auto space-y-6">
-  <div class="flex items-center justify-between">
-    <h1 class="text-xl font-bold">ایمپورت کاربران از اکسل</h1>
-    <a href="{% url 'accounts:personnel_list' %}" class="text-sm text-gray-600 dark:text-gray-300">بازگشت به مدیریت پرسنل</a>
+<div class="space-y-6">
+  <!-- Header Section -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-lg">
+        <i class="fa-solid fa-file-import text-white text-xl"></i>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">ایمپورت پرسنل از اکسل</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">بارگذاری و پردازش فایل اکسل حاوی اطلاعات پرسنل</p>
+      </div>
+    </div>
+    <a href="{% url 'accounts:personnel_list' %}" 
+       class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200">
+      <i class="fa-solid fa-arrow-right"></i>
+      <span>بازگشت به لیست</span>
+    </a>
   </div>
 
   {% if messages %}
   <div class="space-y-2">
     {% for message in messages %}
-      <div class="p-3 rounded border text-sm {% if message.tags == 'success' %}bg-green-50 border-green-200 text-green-800{% elif message.tags == 'error' %}bg-red-50 border-red-200 text-red-800{% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %}">
-        {{ message }}
+      <div class="flex items-start gap-3 p-4 rounded-xl border text-sm {% if message.tags == 'success' %}bg-green-50 border-green-200 text-green-800 dark:bg-green-900/30 dark:border-green-700 dark:text-green-100{% elif message.tags == 'error' %}bg-red-50 border-red-200 text-red-800 dark:bg-red-900/30 dark:border-red-700 dark:text-red-100{% else %}bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-100{% endif %}">
+        {% if message.tags == 'success' %}
+          <i class="fa-solid fa-circle-check text-green-500 dark:text-green-400 mt-0.5"></i>
+        {% elif message.tags == 'error' %}
+          <i class="fa-solid fa-circle-xmark text-red-500 dark:text-red-400 mt-0.5"></i>
+        {% else %}
+          <i class="fa-solid fa-circle-info text-blue-500 dark:text-blue-400 mt-0.5"></i>
+        {% endif %}
+        <span>{{ message }}</span>
       </div>
     {% endfor %}
   </div>
   {% endif %}
 
-  <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm space-y-4">
-    <p class="text-sm text-gray-600 dark:text-gray-300">
-      فایل نمونه شامل ستون‌های زیر است: «کد پرسنلی، نام، نام خانوادگی، بخش، قسمت، گروه، سمت، موبایل، کد ملی، گروه کاری»
-    </p>
-    <div>
-      <a href="{% url 'accounts:personnel_import' %}?download=sample" class="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">
-        دانلود فایل نمونه
-      </a>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Upload Section -->
+    <div class="lg:col-span-2 space-y-6">
+      <!-- Upload Card -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center gap-2 mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+            <i class="fa-solid fa-cloud-upload-alt text-indigo-600 dark:text-indigo-400"></i>
+          </div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">بارگذاری فایل</h2>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="space-y-5">
+          {% csrf_token %}
+          
+          <div class="upload-area border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center cursor-pointer" 
+               onclick="document.getElementById('excel_file').click()">
+            <input type="file" 
+                   name="excel_file" 
+                   id="excel_file" 
+                   accept=".xlsx,.xls" 
+                   class="hidden" 
+                   required 
+                   onchange="handleFileSelect(this)">
+            <div class="space-y-3">
+              <div class="flex justify-center">
+                <div class="w-16 h-16 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                  <i class="fa-solid fa-file-excel text-indigo-600 dark:text-indigo-400 text-2xl"></i>
+                </div>
+              </div>
+              <div>
+                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  <span class="text-indigo-600 dark:text-indigo-400">کلیک کنید</span> یا فایل را اینجا بکشید
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">فقط فایل‌های Excel (.xlsx, .xls)</p>
+              </div>
+              <div id="file-name" class="hidden text-sm text-indigo-600 dark:text-indigo-400 font-medium">
+                <i class="fa-solid fa-check-circle ml-1"></i>
+                <span id="file-name-text"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button type="submit" class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2.5 text-white hover:bg-green-700 shadow-md hover:shadow-lg transition-all duration-200 text-sm font-medium">
+              <i class="fa-solid fa-upload"></i>
+              <span>بارگذاری و پردازش</span>
+            </button>
+            <a href="{% url 'accounts:personnel_list' %}" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200">
+              <i class="fa-solid fa-xmark"></i>
+              <span>انصراف</span>
+            </a>
+          </div>
+        </form>
+      </div>
+
+      <!-- Instructions Card -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center gap-2 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+            <i class="fa-solid fa-info-circle text-blue-600 dark:text-blue-400"></i>
+          </div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">راهنمای استفاده</h2>
+        </div>
+        
+        <div class="space-y-3 text-sm text-gray-600 dark:text-gray-400">
+          <div class="flex items-start gap-2">
+            <i class="fa-solid fa-check-circle text-green-500 dark:text-green-400 mt-0.5"></i>
+            <p>فایل باید شامل ستون‌های زیر باشد: <strong class="text-gray-900 dark:text-white">کد پرسنلی، نام، نام خانوادگی، بخش، قسمت، گروه، سمت، موبایل، کد ملی، گروه کاری</strong></p>
+          </div>
+          <div class="flex items-start gap-2">
+            <i class="fa-solid fa-check-circle text-green-500 dark:text-green-400 mt-0.5"></i>
+            <p>اگر کد پرسنلی از قبل وجود داشته باشد، فقط <strong class="text-gray-900 dark:text-white">اطلاعات به‌روزرسانی</strong> می‌شود (نام، بخش، سمت و ...)</p>
+          </div>
+          <div class="flex items-start gap-2">
+            <i class="fa-solid fa-check-circle text-green-500 dark:text-green-400 mt-0.5"></i>
+            <p>اگر کد پرسنلی وجود نداشته باشد، <strong class="text-gray-900 dark:text-white">کاربر جدید ایجاد</strong> می‌شود</p>
+          </div>
+          <div class="flex items-start gap-2">
+            <i class="fa-solid fa-exclamation-triangle text-amber-500 dark:text-amber-400 mt-0.5"></i>
+            <p>کد ملی برای کاربران جدید <strong class="text-gray-900 dark:text-white">الزامی</strong> است و به عنوان نام کاربری استفاده می‌شود</p>
+          </div>
+        </div>
+      </div>
     </div>
-    <form method="post" enctype="multipart/form-data" class="space-y-3">
-      {% csrf_token %}
-      <input type="file" name="excel_file" accept=".xlsx,.xls" class="block w-full text-sm text-gray-700 dark:text-gray-200" required />
-      <button class="inline-flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-white hover:bg-green-700">بارگذاری و پردازش</button>
-    </form>
+
+    <!-- Sidebar - Sample File -->
+    <div class="lg:col-span-1">
+      <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 sticky top-6">
+        <div class="flex items-center gap-2 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+          <div class="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+            <i class="fa-solid fa-file-download text-emerald-600 dark:text-emerald-400"></i>
+          </div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-white">فایل نمونه</h2>
+        </div>
+
+        <div class="space-y-4">
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            برای دانلود فایل نمونه با فرمت صحیح، روی دکمه زیر کلیک کنید. این فایل شامل یک نمونه از ساختار صحیح فایل اکسل است.
+          </p>
+          
+          <a href="{% url 'accounts:personnel_import' %}?download=sample" 
+             class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-3 text-white hover:bg-emerald-700 shadow-md hover:shadow-lg transition-all duration-200 text-sm font-medium">
+            <i class="fa-solid fa-download"></i>
+            <span>دانلود فایل نمونه</span>
+          </a>
+
+          <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mt-4">
+            <p class="text-xs text-blue-800 dark:text-blue-300">
+              <i class="fa-solid fa-lightbulb text-xs ml-1"></i>
+              <strong>نکته:</strong> ستون‌های فایل باید دقیقاً با نام‌های ذکر شده در راهنما مطابقت داشته باشند.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
+
+{% block scripts %}
+<script>
+  function handleFileSelect(input) {
+    if (input.files && input.files[0]) {
+      const fileName = input.files[0].name;
+      const fileNameDiv = document.getElementById('file-name');
+      const fileNameText = document.getElementById('file-name-text');
+      
+      fileNameText.textContent = fileName;
+      fileNameDiv.classList.remove('hidden');
+    }
+  }
+
+  // Drag and drop functionality
+  const uploadArea = document.querySelector('.upload-area');
+  const fileInput = document.getElementById('excel_file');
+
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    uploadArea.addEventListener(eventName, preventDefaults, false);
+  });
+
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  ['dragenter', 'dragover'].forEach(eventName => {
+    uploadArea.addEventListener(eventName, () => {
+      uploadArea.classList.add('dragover');
+    }, false);
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    uploadArea.addEventListener(eventName, () => {
+      uploadArea.classList.remove('dragover');
+    }, false);
+  });
+
+  uploadArea.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    
+    if (files.length > 0) {
+      fileInput.files = files;
+      handleFileSelect(fileInput);
+    }
+  }, false);
+</script>
+{% endblock %}
 {% endblock %}

@@ -8,6 +8,14 @@ from dashboard.views import dashboard
 from .forms import LoginForm
 from .forms import PasswordResetSMSForm
 from accounts.models import UserProfile, DriverLicense, Section, Part, UnitGroup, Position
+from .organization_views import (
+    organization_manage,
+    organization_add,
+    organization_edit,
+    organization_delete,
+    organization_merge
+)
+from .chart_views import organization_chart
 from dashboard.sms_utils import send_template_sms
 from .forms import UserForm, UserProfileForm,PasswordResetConfirmForm, ChangePasswordForm, DriverLicenseForm, PersonnelEditForm
 from django.utils.timezone import now
@@ -298,42 +306,128 @@ def driver_license(request):
 def personnel_list(request):
     queryset = UserProfile.objects.select_related('user', 'section', 'part', 'unit_group', 'position').all()
 
-    # Filters
-    section_id = request.GET.get('section')
-    part_id = request.GET.get('part')
-    unit_group_id = request.GET.get('unit_group')
-    position_id = request.GET.get('position')
+    # Filters - validate and clean IDs
+    def clean_id(value):
+        """Clean and validate ID value - return None if invalid"""
+        if not value or value == '' or value == 'None' or value == 'null':
+            return None
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            return None
+    
+    section_id = clean_id(request.GET.get('section'))
+    part_id = clean_id(request.GET.get('part'))
+    unit_group_id = clean_id(request.GET.get('unit_group'))
+    position_id = clean_id(request.GET.get('position'))
     q = request.GET.get('q', '').strip()
 
-    if section_id:
-        queryset = queryset.filter(
-            Q(section_id=section_id) |
-            Q(part__section_id=section_id) |
-            Q(unit_group__part__section_id=section_id) |
-            Q(position__unit_group__part__section_id=section_id)
-        )
-    if part_id:
-        queryset = queryset.filter(
-            Q(part_id=part_id) |
-            Q(unit_group__part_id=part_id) |
-            Q(position__unit_group__part_id=part_id)
-        )
-    if unit_group_id:
-        queryset = queryset.filter(
-            Q(unit_group_id=unit_group_id) |
-            Q(position__unit_group_id=unit_group_id)
-        )
-    if position_id:
-        queryset = queryset.filter(position_id=position_id)
+    # Check if query is purely numeric (likely a personnel code)
+    # If searching by personnel code, prioritize it over hierarchical filters
+    is_personnel_code_search = q and q.isdigit() and len(q) >= 3  # At least 3 digits to be considered a code
+    
+    # Apply hierarchical filters only if NOT searching by personnel code
+    # (Personnel code search should work regardless of filters)
+    if not is_personnel_code_search:
+        if section_id:
+            queryset = queryset.filter(
+                Q(section_id=section_id) |
+                Q(part__section_id=section_id) |
+                Q(unit_group__part__section_id=section_id) |
+                Q(position__unit_group__part__section_id=section_id)
+            )
+        if part_id:
+            queryset = queryset.filter(
+                Q(part_id=part_id) |
+                Q(unit_group__part_id=part_id) |
+                Q(position__unit_group__part_id=part_id)
+            )
+        if unit_group_id:
+            queryset = queryset.filter(
+                Q(unit_group_id=unit_group_id) |
+                Q(position__unit_group_id=unit_group_id)
+            )
+        if position_id:
+            queryset = queryset.filter(position_id=position_id)
+
     if q:
-        queryset = queryset.filter(
-            Q(user__first_name__icontains=q) |
-            Q(user__last_name__icontains=q) |
-            Q(personnel_code__icontains=q)
+        # Clean search query - remove extra whitespace
+        q_clean = q.strip()
+        
+        # Build comprehensive search conditions
+        search_conditions = (
+            Q(user__first_name__icontains=q_clean) |
+            Q(user__last_name__icontains=q_clean)
         )
+        
+        # For personnel code: try multiple matching strategies
+        # 1. Exact match (case insensitive) - highest priority
+        # 2. Contains match (for partial codes or codes with whitespace)
+        # 3. Startswith match (for codes that start with the query)
+        # Also handle leading zeros and whitespace
+        personnel_code_conditions = (
+            Q(personnel_code__iexact=q_clean) |
+            Q(personnel_code__icontains=q_clean) |
+            Q(personnel_code__startswith=q_clean)
+        )
+        
+        # Also try with leading zeros removed (in case code is stored as "0111264" but searched as "111264")
+        if q_clean.isdigit():
+            # Try exact match without leading zeros
+            q_numeric = str(int(q_clean))  # Remove leading zeros
+            if q_numeric != q_clean:
+                personnel_code_conditions |= (
+                    Q(personnel_code__iexact=q_numeric) |
+                    Q(personnel_code__icontains=q_numeric) |
+                    Q(personnel_code__startswith=q_numeric)
+                )
+        
+        search_conditions |= personnel_code_conditions
+        queryset = queryset.filter(search_conditions)
 
     # Stats based on filtered queryset
     total_count = queryset.count()
+    
+    # Helper function to normalize name (remove extra spaces, trim)
+    def normalize_name(name):
+        if not name:
+            return 'نامشخص'
+        # Remove extra whitespace and normalize (strip and collapse multiple spaces)
+        normalized = ' '.join(str(name).strip().split())
+        return normalized if normalized else 'نامشخص'
+    
+    # Helper function to merge duplicate items by normalized name
+    def merge_duplicates(items, name_key, id_key):
+        """Merge items with the same normalized name, summing their counts"""
+        merged = {}
+        for r in items:
+            original_name = r.get(name_key) or 'نامشخص'
+            normalized_name = normalize_name(original_name)
+            item_id = r.get(id_key)
+            count = r.get('count', 0)
+            
+            # Skip items with None ID (they should be displayed but not clickable)
+            # Use normalized name as key
+            if normalized_name not in merged:
+                # Use the first ID we encounter (or the one with highest count)
+                merged[normalized_name] = {
+                    'name': normalized_name,  # Use normalized name for display
+                    'count': count,
+                    'id': item_id if item_id is not None else None,  # Keep None as None
+                }
+            else:
+                # Merge: sum counts, keep ID with higher count (prefer non-None IDs)
+                merged[normalized_name]['count'] += count
+                # If current has ID and merged doesn't, or current has higher count, update
+                if item_id is not None:
+                    if merged[normalized_name]['id'] is None or count > merged[normalized_name]['count'] - count:
+                        merged[normalized_name]['id'] = item_id
+        
+        # Convert to list and sort by count (None IDs last)
+        result = list(merged.values())
+        result.sort(key=lambda x: (x['id'] is None, -x['count'], x['name']))
+        return result
+    
     sections_stats = list(
         queryset.values('section_id', 'section__name').annotate(count=Count('id')).order_by('-count', 'section__name')
     )
@@ -346,19 +440,14 @@ def personnel_list(request):
     positions_stats = list(
         queryset.values('position_id', 'position__name').annotate(count=Count('id')).order_by('-count', 'position__name')
     )
-    # Normalize None labels and expose id
-    def normalize(items, key, id_key):
-        out = []
-        for r in items:
-            name = r.get(key) or 'نامشخص'
-            out.append({'name': name, 'count': r.get('count', 0), 'id': r.get(id_key)})
-        return out
+    
+    # Merge duplicates for each stat type
     stats = {
         'total': total_count,
-        'sections': normalize(sections_stats, 'section__name', 'section_id'),
-        'parts': normalize(parts_stats, 'part__name', 'part_id'),
-        'unit_groups': normalize(unit_groups_stats, 'unit_group__name', 'unit_group_id'),
-        'positions': normalize(positions_stats, 'position__name', 'position_id'),
+        'sections': merge_duplicates(sections_stats, 'section__name', 'section_id'),
+        'parts': merge_duplicates(parts_stats, 'part__name', 'part_id'),
+        'unit_groups': merge_duplicates(unit_groups_stats, 'unit_group__name', 'unit_group_id'),
+        'positions': merge_duplicates(positions_stats, 'position__name', 'position_id'),
     }
 
     # Pagination
@@ -429,21 +518,45 @@ def personnel_edit(request, user_id):
     profile, _ = UserProfile.objects.get_or_create(user=user)
 
     if request.method == 'POST':
-        form = PersonnelEditForm(request.POST, instance=profile, user_instance=user)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'اطلاعات پرسنل با موفقیت ذخیره شد.')
-            return redirect('accounts:personnel_list')
+        form_type = request.POST.get('form_type', '')
+        
+        # Handle password reset
+        if form_type == 'password_reset':
+            new_password = request.POST.get('new_password', '').strip()
+            confirm_password = request.POST.get('confirm_password', '').strip()
+            
+            if not new_password:
+                messages.error(request, 'رمز عبور جدید نمی‌تواند خالی باشد.')
+            elif len(new_password) < 8:
+                messages.error(request, 'رمز عبور باید حداقل 8 کاراکتر باشد.')
+            elif new_password != confirm_password:
+                messages.error(request, 'رمز عبور و تأیید رمز عبور مطابقت ندارند.')
+            else:
+                user.set_password(new_password)
+                user.save()
+                messages.success(request, f'رمز عبور کاربر {user.get_full_name() or user.username} با موفقیت تغییر یافت.')
+                return redirect('accounts:personnel_edit', user_id=user_id)
+        
+        # Handle profile update
+        elif form_type in ['profile', 'organizational', '']:
+            form = PersonnelEditForm(request.POST, instance=profile, user_instance=user)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'اطلاعات پرسنل با موفقیت ذخیره شد.')
+                return redirect('accounts:personnel_edit', user_id=user_id)
+            else:
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        messages.error(request, f"خطا در فیلد {field}: {error}")
         else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"خطا در فیلد {field}: {error}")
+            form = PersonnelEditForm(instance=profile, user_instance=user)
     else:
         form = PersonnelEditForm(instance=profile, user_instance=user)
 
     return render(request, 'accounts/personnel_edit.html', {
         'form': form,
         'edit_user': user,
+        'profile': profile,
     })
 
 
@@ -508,45 +621,106 @@ def personnel_import(request):
                         errors.append(f"ردیف {index + 1}: کد ملی خالی است")
                         continue
 
-                    # Get or create hierarchy
-                    section, _ = Section.objects.get_or_create(name=section_name)
-                    part, _ = Part.objects.get_or_create(name=part_name, section=section)
-                    unit_group, _ = UnitGroup.objects.get_or_create(name=unit_group_name, part=part)
-                    position, _ = Position.objects.get_or_create(name=position_name, unit_group=unit_group)
+                    # Normalize names: strip and normalize whitespace to prevent duplicates
+                    def normalize_name(name):
+                        if not name:
+                            return ''
+                        # Remove extra whitespace and normalize (strip and collapse multiple spaces)
+                        return ' '.join(str(name).strip().split())
+                    
+                    # Helper function to find existing item by normalized name
+                    def find_existing_by_normalized_name(queryset, name):
+                        normalized = normalize_name(name)
+                        for item in queryset:
+                            if normalize_name(item.name) == normalized:
+                                return item
+                        return None
+                    
+                    section_name = normalize_name(row.get('بخش', ''))
+                    part_name = normalize_name(row.get('قسمت', ''))
+                    unit_group_name = normalize_name(row.get('گروه', ''))
+                    position_name = normalize_name(row.get('سمت', ''))
+                    
+                    # Get or create hierarchy with normalized names (prevent duplicates)
+                    section = None
+                    if section_name:
+                        existing = find_existing_by_normalized_name(Section.objects.all(), section_name)
+                        if existing:
+                            section = existing
+                        else:
+                            section, _ = Section.objects.get_or_create(name=section_name)
+                    
+                    part = None
+                    if part_name:
+                        if section:
+                            existing = find_existing_by_normalized_name(Part.objects.filter(section=section), part_name)
+                            if existing:
+                                part = existing
+                            else:
+                                part, _ = Part.objects.get_or_create(name=part_name, section=section)
+                        else:
+                            existing = find_existing_by_normalized_name(Part.objects.all(), part_name)
+                            if existing:
+                                part = existing
+                            else:
+                                part, _ = Part.objects.get_or_create(name=part_name, section=section)
+                    
+                    unit_group = None
+                    if unit_group_name:
+                        if part:
+                            existing = find_existing_by_normalized_name(UnitGroup.objects.filter(part=part), unit_group_name)
+                            if existing:
+                                unit_group = existing
+                            else:
+                                unit_group, _ = UnitGroup.objects.get_or_create(name=unit_group_name, part=part)
+                    
+                    position = None
+                    if position_name:
+                        if unit_group:
+                            existing = find_existing_by_normalized_name(Position.objects.filter(unit_group=unit_group), position_name)
+                            if existing:
+                                position = existing
+                            else:
+                                position, _ = Position.objects.get_or_create(name=position_name, unit_group=unit_group)
 
-                    # Update existing by personnel_code
-                    user_profile = UserProfile.objects.filter(personnel_code=personnel_code).select_related('user').first()
-                    if user_profile:
-                        updates = []
-                        if first_name and user_profile.user.first_name != first_name:
-                            user_profile.user.first_name = first_name
-                            updates.append("نام")
-                        if last_name and user_profile.user.last_name != last_name:
-                            user_profile.user.last_name = last_name
-                            updates.append("نام خانوادگی")
-                        if mobile and user_profile.mobile != mobile:
-                            user_profile.mobile = mobile
-                            updates.append("شماره موبایل")
-                        if section and user_profile.section != section:
-                            user_profile.section = section
-                            updates.append("بخش")
-                        if part and user_profile.part != part:
-                            user_profile.part = part
-                            updates.append("قسمت")
-                        if unit_group and user_profile.unit_group != unit_group:
-                            user_profile.unit_group = unit_group
-                            updates.append("گروه")
-                        if position and user_profile.position != position:
-                            user_profile.position = position
-                            updates.append("سمت")
-                        if work_group and user_profile.group != work_group:
-                            user_profile.group = work_group
-                            updates.append("گروه کاری")
-                        if updates:
+                    # Check if personnel_code already exists - UPDATE only
+                    if personnel_code:
+                        user_profile = UserProfile.objects.filter(personnel_code=personnel_code).select_related('user').first()
+                        if user_profile:
+                            # Update existing user profile
+                            updates = []
+                            if first_name and user_profile.user.first_name != first_name:
+                                user_profile.user.first_name = first_name
+                                updates.append("نام")
+                            if last_name and user_profile.user.last_name != last_name:
+                                user_profile.user.last_name = last_name
+                                updates.append("نام خانوادگی")
+                            if mobile and user_profile.mobile != mobile:
+                                user_profile.mobile = mobile
+                                updates.append("شماره موبایل")
+                            if section and user_profile.section != section:
+                                user_profile.section = section
+                                updates.append("بخش")
+                            if part and user_profile.part != part:
+                                user_profile.part = part
+                                updates.append("قسمت")
+                            if unit_group and user_profile.unit_group != unit_group:
+                                user_profile.unit_group = unit_group
+                                updates.append("گروه")
+                            if position and user_profile.position != position:
+                                user_profile.position = position
+                                updates.append("سمت")
+                            if work_group and user_profile.group != work_group:
+                                user_profile.group = work_group
+                                updates.append("گروه کاری")
+                            
+                            # Always save (even if no visible updates, to ensure data consistency)
                             user_profile.user.save()
                             user_profile.save()
-                            errors.append(f"ردیف {index + 1}: اطلاعات به‌روزرسانی شد: {', '.join(updates)}")
-                        continue
+                            
+                            if updates:
+                                messages.success(request, f"ردیف {index + 1} ({personnel_code}): {', '.join(updates)} به‌روزرسانی شد")
+                            continue
 
                     # Create or update user by national_id
                     user, created = User.objects.update_or_create(
@@ -588,6 +762,97 @@ def personnel_import(request):
 
 @login_required
 @superuser_required
+def personnel_add(request):
+    """Add new personnel manually"""
+    from accounts.forms import PersonnelEditForm
+    from django.contrib.auth.models import User
+    import secrets
+    import string
+    
+    if request.method == 'POST':
+        # Get form data
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        personnel_code = request.POST.get('personnel_code', '').strip()
+        mobile = request.POST.get('mobile', '').strip()
+        national_id = request.POST.get('national_id', '').strip()
+        section_id = request.POST.get('section')
+        part_id = request.POST.get('part')
+        unit_group_id = request.POST.get('unit_group')
+        position_id = request.POST.get('position')
+        work_group = request.POST.get('group', '').strip().upper()
+        
+        # Validation
+        if not first_name or not last_name:
+            messages.error(request, 'نام و نام خانوادگی الزامی است.')
+        elif not national_id:
+            messages.error(request, 'کد ملی الزامی است.')
+        elif User.objects.filter(username=national_id).exists():
+            messages.error(request, f'کاربری با کد ملی {national_id} از قبل وجود دارد.')
+        elif personnel_code and UserProfile.objects.filter(personnel_code=personnel_code).exists():
+            messages.error(request, f'کاربری با کد پرسنلی {personnel_code} از قبل وجود دارد.')
+        else:
+            try:
+                # Generate random password
+                password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+                
+                # Create user
+                user = User.objects.create_user(
+                    username=national_id,
+                    first_name=first_name,
+                    last_name=last_name,
+                    email=f"{national_id}@example.com",
+                    password=password
+                )
+                
+                # Get or create hierarchy
+                section = None
+                part = None
+                unit_group = None
+                position = None
+                
+                if section_id:
+                    section = Section.objects.get(pk=section_id)
+                if part_id:
+                    part = Part.objects.get(pk=part_id)
+                if unit_group_id:
+                    unit_group = UnitGroup.objects.get(pk=unit_group_id)
+                if position_id:
+                    position = Position.objects.get(pk=position_id)
+                
+                # Create profile
+                profile = UserProfile.objects.create(
+                    user=user,
+                    personnel_code=personnel_code,
+                    mobile=mobile,
+                    section=section,
+                    part=part,
+                    unit_group=unit_group,
+                    position=position,
+                    group=work_group
+                )
+                
+                messages.success(request, f'کاربر {first_name} {last_name} با موفقیت اضافه شد. رمز عبور پیش‌فرض: {password}')
+                return redirect('accounts:personnel_edit', user_id=user.id)
+            except Exception as e:
+                messages.error(request, f'خطا در ایجاد کاربر: {str(e)}')
+    
+    # Get all options for dropdowns
+    sections = Section.objects.all()
+    parts = Part.objects.all()
+    unit_groups = UnitGroup.objects.all()
+    positions = Position.objects.all()
+    
+    return render(request, 'accounts/personnel_add.html', {
+        'sections': sections,
+        'parts': parts,
+        'unit_groups': unit_groups,
+        'positions': positions,
+    })
+
+
+@login_required
+@superuser_required
 def personnel_export(request):
     # Build filtered queryset (same logic as personnel_list)
     queryset = UserProfile.objects.select_related('user', 'section', 'part', 'unit_group', 'position').all()
@@ -597,32 +862,68 @@ def personnel_export(request):
     position_id = request.GET.get('position')
     q = request.GET.get('q', '').strip()
 
-    if section_id:
-        queryset = queryset.filter(
-            Q(section_id=section_id) |
-            Q(part__section_id=section_id) |
-            Q(unit_group__part__section_id=section_id) |
-            Q(position__unit_group__part__section_id=section_id)
-        )
-    if part_id:
-        queryset = queryset.filter(
-            Q(part_id=part_id) |
-            Q(unit_group__part_id=part_id) |
-            Q(position__unit_group__part_id=part_id)
-        )
-    if unit_group_id:
-        queryset = queryset.filter(
-            Q(unit_group_id=unit_group_id) |
-            Q(position__unit_group_id=unit_group_id)
-        )
-    if position_id:
-        queryset = queryset.filter(position_id=position_id)
+    # Check if query is purely numeric (likely a personnel code)
+    # If searching by personnel code, prioritize it over hierarchical filters
+    is_personnel_code_search = q and q.isdigit() and len(q) >= 3  # At least 3 digits to be considered a code
+    
+    # Apply hierarchical filters only if NOT searching by personnel code
+    # (Personnel code search should work regardless of filters)
+    if not is_personnel_code_search:
+        if section_id:
+            queryset = queryset.filter(
+                Q(section_id=section_id) |
+                Q(part__section_id=section_id) |
+                Q(unit_group__part__section_id=section_id) |
+                Q(position__unit_group__part__section_id=section_id)
+            )
+        if part_id:
+            queryset = queryset.filter(
+                Q(part_id=part_id) |
+                Q(unit_group__part_id=part_id) |
+                Q(position__unit_group__part_id=part_id)
+            )
+        if unit_group_id:
+            queryset = queryset.filter(
+                Q(unit_group_id=unit_group_id) |
+                Q(position__unit_group_id=unit_group_id)
+            )
+        if position_id:
+            queryset = queryset.filter(position_id=position_id)
+
     if q:
-        queryset = queryset.filter(
-            Q(user__first_name__icontains=q) |
-            Q(user__last_name__icontains=q) |
-            Q(personnel_code__icontains=q)
+        # Clean search query - remove extra whitespace
+        q_clean = q.strip()
+        
+        # Build comprehensive search conditions
+        search_conditions = (
+            Q(user__first_name__icontains=q_clean) |
+            Q(user__last_name__icontains=q_clean)
         )
+        
+        # For personnel code: try multiple matching strategies
+        # 1. Exact match (case insensitive) - highest priority
+        # 2. Contains match (for partial codes or codes with whitespace)
+        # 3. Startswith match (for codes that start with the query)
+        # Also handle leading zeros and whitespace
+        personnel_code_conditions = (
+            Q(personnel_code__iexact=q_clean) |
+            Q(personnel_code__icontains=q_clean) |
+            Q(personnel_code__startswith=q_clean)
+        )
+        
+        # Also try with leading zeros removed (in case code is stored as "0111264" but searched as "111264")
+        if q_clean.isdigit():
+            # Try exact match without leading zeros
+            q_numeric = str(int(q_clean))  # Remove leading zeros
+            if q_numeric != q_clean:
+                personnel_code_conditions |= (
+                    Q(personnel_code__iexact=q_numeric) |
+                    Q(personnel_code__icontains=q_numeric) |
+                    Q(personnel_code__startswith=q_numeric)
+                )
+        
+        search_conditions |= personnel_code_conditions
+        queryset = queryset.filter(search_conditions)
 
     wb = Workbook()
     ws = wb.active
