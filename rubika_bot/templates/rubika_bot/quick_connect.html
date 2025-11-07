@@ -3,14 +3,74 @@
 {% block title %}اتصال به ربات روبیکا{% endblock %}
 {% block content %}
 <div class="max-w-xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-  <h2 class="text-lg font-semibold mb-3">اتصال سریع</h2>
-  <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">برای اتصال خودکار، روی دکمه زیر کلیک کنید تا ربات باز شود، سپس پیام شروع ارسال می‌شود.</p>
+  <h2 class="text-lg font-semibold mb-3">اتصال سریع به ربات</h2>
+  
+  <!-- روش 1: لینک مستقیم -->
   {% if bot_username %}
-    <a href="https://rubika.ir/{{ bot_username }}" class="px-4 py-2 bg-indigo-600 text-white rounded">باز کردن ربات</a>
+  <div class="mb-6">
+    <h3 class="text-md font-semibold mb-2">روش 1️⃣: لینک مستقیم (ساده‌ترین)</h3>
+    <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">
+      روی دکمه زیر کلیک کنید تا مستقیماً به ربات متصل شوید:
+    </p>
+    <a href="https://rubika.ir/{{ bot_username }}?start={{ code }}" 
+       class="inline-block px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors">
+      🔗 اتصال مستقیم به ربات
+    </a>
+  </div>
   {% endif %}
-  <div class="mt-4">
-    <p class="text-sm mb-2">در صورت نیاز، دستور زیر را در ربات ارسال کنید:</p>
-    <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded font-mono text-sm select-all">/connect {{ code }}</div>
+  
+  <!-- روش 2: کد دستی -->
+  <div class="mb-4">
+    <h3 class="text-md font-semibold mb-2">روش 2️⃣: استفاده از کد</h3>
+    <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+      کد زیر را کپی کنید و در ربات دستور زیر را ارسال کنید:
+    </p>
+    <div class="bg-gray-100 dark:bg-gray-700 p-3 rounded font-mono text-sm select-all mb-2">
+      /connect {{ code }}
+    </div>
+    <p class="text-xs text-gray-500 mt-2">
+      ⏰ این کد تا 60 دقیقه اعتبار دارد
+    </p>
+  </div>
+  
+  <!-- دکمه تولید کد جدید -->
+  <div class="mt-4 pt-4 border-t">
+    <button id="regenerate-code" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded transition-colors">
+      🔄 تولید کد جدید
+    </button>
   </div>
 </div>
+
+<script>
+document.getElementById('regenerate-code')?.addEventListener('click', function() {
+  const btn = this;
+  btn.disabled = true;
+  btn.textContent = 'در حال تولید...';
+  
+  fetch('{% url "rubika_bot:generate_code" %}', {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': (document.cookie.match(/csrftoken=([^;]+)/)||[])[1],
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      // Reload page to show new code
+      window.location.reload();
+    } else {
+      alert('خطا: ' + (data.error || 'خطای نامشخص'));
+      btn.disabled = false;
+      btn.textContent = '🔄 تولید کد جدید';
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('خطا در تولید کد جدید');
+    btn.disabled = false;
+    btn.textContent = '🔄 تولید کد جدید';
+  });
+});
+</script>
 {% endblock %}

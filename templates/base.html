@@ -14,22 +14,20 @@
 
     <!-- Tailwind CSS (CDN in debug, compiled CSS in production) -->
     <!-- Tailwind CSS (CDN in debug, compiled CSS in production) -->
-    {% if debug %}
-      <script src="https://cdn.tailwindcss.com"></script>
-      <script>
-        window.tailwind = window.tailwind || {};
-        window.tailwind.config = {
-          darkMode: 'class',
-          theme: {
-            extend: {
-              container: { center: true, padding: '1rem' }
-            }
+    <!-- Tailwind CSS - temporarily forced to use CDN for debugging -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      window.tailwind = window.tailwind || {};
+      window.tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            container: { center: true, padding: '1rem' }
           }
-        };
-      </script>
-    {% else %}
-      <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
-    {% endif %}
+        }
+      };
+    </script>
+    <!-- End of temporary CDN block -->
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">

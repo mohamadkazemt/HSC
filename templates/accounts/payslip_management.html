@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}مدیریت فیش حقوقی{% endblock %}
+
+{% block content %}
+<div x-data="{
+    year: '',
+    month: '',
+    files: [],
+    isUploading: false,
+    progress: 0,
+    results: null,
+    dragOver: false,
+    
+    handleFiles(filesList) {
+        const pdfFiles = Array.from(filesList).filter(file => file.type === 'application/pdf');
+        this.files = [...this.files, ...pdfFiles];
+    },
+    
+    removeFile(index) {
+        this.files.splice(index, 1);
+    },
+    
+    async uploadFiles() {
+        if (!this.year || !this.month) {
+            alert('لطفاً سال و ماه را انتخاب کنید.');
+            return;
+        }
+        
+        if (this.files.length === 0) {
+            alert('لطفاً حداقل یک فایل PDF انتخاب کنید.');
+            return;
+        }
+        
+        this.isUploading = true;
+        this.progress = 0;
+        this.results = null;
+        
+        const formData = new FormData();
+        formData.append('year', this.year);
+        formData.append('month', this.month);
+        
+        this.files.forEach((file, index) => {
+            formData.append('files', file);
+        });
+        
+        try {
+            const response = await fetch('{% url "accounts:batch_payslip_upload" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.results = data;
+                this.files = [];
+                this.progress = 100;
+            } else {
+                alert(data.message || 'خطا در آپلود فایل‌ها');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('خطا در ارتباط با سرور');
+        } finally {
+            this.isUploading = false;
+        }
+    }
+}">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <i class="fas fa-file-invoice-dollar text-green-600"></i>
+            مدیریت فیش حقوقی
+        </h1>
+        <p class="text-gray-600 dark:text-gray-400 mt-2">بارگذاری دسته‌ای فیش‌های حقوقی پرسنل</p>
+    </div>
+
+    <!-- Upload Card -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+            بارگذاری دسته‌ای فیش‌های حقوقی
+        </h2>
+        
+        <div class="space-y-6">
+            <!-- Year and Month Selection -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        سال <span class="text-red-500">*</span>
+                    </label>
+                    <select x-model="year" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="">انتخاب سال</option>
+                        {% for year in years %}
+                        <option value="{{ year }}">{{ year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        ماه <span class="text-red-500">*</span>
+                    </label>
+                    <select x-model="month" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="">انتخاب ماه</option>
+                        {% for month_num, month_name in months %}
+                        <option value="{{ month_num }}">{{ month_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <!-- File Upload Area -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    فایل‌های PDF <span class="text-red-500">*</span>
+                </label>
+                <div 
+                    @dragover.prevent="dragOver = true"
+                    @dragleave.prevent="dragOver = false"
+                    @drop.prevent="dragOver = false; handleFiles($event.dataTransfer.files)"
+                    :class="dragOver ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-300 dark:border-gray-600'"
+                    class="border-2 border-dashed rounded-lg p-8 text-center transition-colors duration-200 bg-gray-50 dark:bg-gray-700/50">
+                    <input 
+                        type="file" 
+                        multiple 
+                        accept=".pdf"
+                        @change="handleFiles($event.target.files)"
+                        class="hidden"
+                        id="fileInput">
+                    <label for="fileInput" class="cursor-pointer">
+                        <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 dark:text-gray-500 mb-4"></i>
+                        <p class="text-gray-600 dark:text-gray-400 mb-2">
+                            فایل‌های PDF را اینجا بکشید و رها کنید
+                        </p>
+                        <p class="text-sm text-gray-500 dark:text-gray-500">
+                            یا کلیک کنید تا فایل انتخاب شود
+                        </p>
+                        <p class="text-xs text-gray-400 dark:text-gray-600 mt-2">
+                            نام فایل باید حاوی کد پرسنلی باشد (مثلاً: 12345.pdf یا 12345_1403_01.pdf)
+                        </p>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Selected Files List -->
+            <div x-show="files.length > 0" class="space-y-2">
+                <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">فایل‌های انتخاب شده:</h3>
+                <div class="space-y-2 max-h-48 overflow-y-auto">
+                    <template x-for="(file, index) in files" :key="index">
+                        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-file-pdf text-red-600"></i>
+                                <span class="text-sm text-gray-700 dark:text-gray-300" x-text="file.name"></span>
+                                <span class="text-xs text-gray-500 dark:text-gray-500" x-text="(file.size / 1024).toFixed(2) + ' KB'"></span>
+                            </div>
+                            <button 
+                                @click="removeFile(index)"
+                                class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div x-show="isUploading" class="space-y-2">
+                <div class="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
+                    <span>در حال آپلود...</span>
+                    <span x-text="progress + '%'"></span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div 
+                        class="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                        :style="'width: ' + progress + '%'">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Upload Button -->
+            <button 
+                @click="uploadFiles()"
+                :disabled="isUploading || !year || !month || files.length === 0"
+                :class="isUploading || !year || !month || files.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-indigo-700'"
+                class="w-full bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center gap-2">
+                <i class="fas fa-upload"></i>
+                <span x-text="isUploading ? 'در حال پردازش...' : 'شروع پردازش و بارگذاری'"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Results Card -->
+    <div x-show="results" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+            گزارش نتایج
+        </h2>
+        
+        <div class="space-y-4">
+            <!-- Success Summary -->
+            <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                <div class="flex items-center gap-2 mb-2">
+                    <i class="fas fa-check-circle text-green-600"></i>
+                    <span class="font-semibold text-green-800 dark:text-green-300">
+                        <span x-text="results?.success_count || 0"></span> از <span x-text="results?.total_count || 0"></span> فایل با موفقیت بارگذاری شد
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Success Files List -->
+            <div x-show="results?.success_files && results.success_files.length > 0" class="space-y-2">
+                <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">فایل‌های موفق:</h3>
+                <div class="space-y-1 max-h-48 overflow-y-auto">
+                    <template x-for="(file, index) in results.success_files" :key="index">
+                        <div class="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/10 rounded text-sm">
+                            <i class="fas fa-check text-green-600"></i>
+                            <span class="text-gray-700 dark:text-gray-300" x-text="file"></span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+            
+            <!-- Error Files List -->
+            <div x-show="results?.errors && results.errors.length > 0" class="space-y-2">
+                <h3 class="text-sm font-medium text-red-700 dark:text-red-300">خطاها:</h3>
+                <div class="space-y-1 max-h-48 overflow-y-auto">
+                    <template x-for="(error, index) in results.errors" :key="index">
+                        <div class="flex items-center gap-2 p-2 bg-red-50 dark:bg-red-900/20 rounded text-sm">
+                            <i class="fas fa-exclamation-circle text-red-600"></i>
+                            <span class="text-red-700 dark:text-red-300" x-text="error"></span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

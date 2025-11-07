@@ -78,7 +78,7 @@ class RubikaConnectionCode(models.Model):
         return f'{self.user_id}:{self.code} (used={self.used})'
 
     @classmethod
-    def generate_for_user(cls, user, ttl_minutes=30):
+    def generate_for_user(cls, user, ttl_minutes=60):
         code = uuid.uuid4().hex
         expires = timezone.now() + timezone.timedelta(minutes=ttl_minutes)
         return cls.objects.create(user=user, code=code, expires_at=expires)
@@ -88,3 +88,85 @@ class RubikaConnectionCode(models.Model):
         self.chat_id = chat_id or self.chat_id
         self.used_at = timezone.now()
         self.save(update_fields=['used', 'chat_id', 'used_at'])
+
+
+class WebhookLog(models.Model):
+    """ذخیره لاگ‌های webhook برای نمایش در پنل"""
+    LOG_TYPES = (
+        ('incoming', 'دریافتی'),
+        ('outgoing', 'ارسالی'),
+        ('error', 'خطا'),
+        ('info', 'اطلاعات'),
+    )
+    
+    log_type = models.CharField(max_length=20, choices=LOG_TYPES, default='info')
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    data = models.JSONField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['created_at']),
+            models.Index(fields=['log_type', 'created_at']),
+        ]
+    
+    def __str__(self):
+        return f'[{self.log_type}] {self.title} - {self.created_at}'
+    
+    @classmethod
+    def log_incoming(cls, title, message, data=None):
+        """لاگ پیام دریافتی"""
+        return cls.objects.create(
+            log_type='incoming',
+            title=title,
+            message=message,
+            data=data
+        )
+    
+    @classmethod
+    def log_outgoing(cls, title, message, data=None):
+        """لاگ پیام ارسالی"""
+        return cls.objects.create(
+            log_type='outgoing',
+            title=title,
+            message=message,
+            data=data
+        )
+    
+    @classmethod
+    def log_error(cls, title, message, data=None):
+        """لاگ خطا"""
+        return cls.objects.create(
+            log_type='error',
+            title=title,
+            message=message,
+            data=data
+        )
+    
+    @classmethod
+    def log_info(cls, title, message, data=None):
+        """لاگ اطلاعات"""
+        return cls.objects.create(
+            log_type='info',
+            title=title,
+            message=message,
+            data=data
+        )
+    
+    @classmethod
+    def log_warning(cls, title, message, data=None):
+        """لاگ هشدار"""
+        return cls.objects.create(
+            log_type='error',  # استفاده از error type برای warning
+            title=f'⚠️ {title}',
+            message=message,
+            data=data
+        )
+    
+    @classmethod
+    def cleanup_old_logs(cls, days=7):
+        """حذف لاگ‌های قدیمی‌تر از X روز"""
+        cutoff = timezone.now() - timezone.timedelta(days=days)
+        return cls.objects.filter(created_at__lt=cutoff).delete()

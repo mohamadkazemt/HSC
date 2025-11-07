@@ -59,15 +59,30 @@ class FireExtinguisherLocationForm(forms.Form):
         label="نوع مکان"
     )
     location_section = forms.ModelChoiceField(
-        queryset=ContentType.objects.get(model='locationsection').model_class().objects.all(),
+        queryset=None,  # Lazy evaluation - will be set in __init__
         required=False,
         label="بخش"
     )
     location_machine = forms.ModelChoiceField(
-        queryset=ContentType.objects.get(model='miningmachine').model_class().objects.all(),
+        queryset=None,  # Lazy evaluation - will be set in __init__
         required=False,
         label="دستگاه"
     )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set queryset in __init__ to avoid database access during import
+        try:
+            if self.fields['location_section'].queryset is None:
+                self.fields['location_section'].queryset = ContentType.objects.get(model='locationsection').model_class().objects.all()
+        except Exception:
+            self.fields['location_section'].queryset = ContentType.objects.none()
+        
+        try:
+            if self.fields['location_machine'].queryset is None:
+                self.fields['location_machine'].queryset = ContentType.objects.get(model='miningmachine').model_class().objects.all()
+        except Exception:
+            self.fields['location_machine'].queryset = ContentType.objects.none()
     notes = forms.CharField(
         widget=forms.Textarea(attrs={'rows': 3}),
         required=False,

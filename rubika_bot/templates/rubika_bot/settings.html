@@ -4,6 +4,10 @@
 {% block title %}تنظیمات ربات روبیکا{% endblock %}
 
 {% block content %}
+<!-- Force refresh: v2.1 -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <div class="grid grid-cols-1 gap-6">
   <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
     <h2 class="text-lg font-semibold mb-4">مشخصات ربات</h2>
@@ -48,16 +52,23 @@
       <label class="text-sm text-gray-500">Webhook URL</label>
       <div class="mt-1 p-2 bg-gray-100 rounded select-all">{{ webhook_url }}</div>
     </div>
-    <div class="flex gap-2">
-      <button id="btn-register" class="px-4 py-2 bg-green-600 text-white rounded">ثبت/بروزرسانی وبهوک</button>
-      <button id="btn-info" class="px-4 py-2 bg-gray-600 text-white rounded">وضعیت وبهوک</button>
-      <a href="{% url 'rubika_bot:quick_connect' %}" class="px-4 py-2 bg-indigo-600 text-white rounded" title="تست اتصال سریع">تست اتصال سریع</a>
+    <div class="flex gap-2 flex-wrap">
+      <button id="btn-register" type="button" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition-colors">
+        ثبت/بروزرسانی وبهوک
+      </button>
+      <button id="btn-info" type="button" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors">
+        وضعیت وبهوک
+      </button>
+      <a href="{% url 'rubika_bot:quick_connect' %}" class="inline-block px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded transition-colors text-center" title="تست اتصال سریع">
+        تست اتصال سریع
+      </a>
     </div>
-    <pre id="webhook-result" class="mt-4 text-xs bg-gray-900 text-green-200 p-3 rounded overflow-auto"></pre>
+    <pre id="webhook-result" class="mt-4 text-xs bg-gray-900 text-green-200 p-3 rounded overflow-auto min-h-[100px]" style="display: none;"></pre>
   </div>
 
   <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
     <h2 class="text-lg font-semibold mb-4">کاربران ربات</h2>
+    <!-- v2.0 - Updated with connection status -->
     <form method="get" class="mb-3">
       <input type="text" name="q" value="{{ request.GET.q }}" placeholder="جستجو" class="rounded border p-2 w-full" />
     </form>
@@ -66,21 +77,56 @@
         <thead>
           <tr class="text-left">
             <th class="p-2">Chat ID</th>
-            <th class="p-2">User</th>
-            <th class="p-2">Name</th>
-            <th class="p-2">Last Seen</th>
+            <th class="p-2">نام کاربر</th>
+            <th class="p-2">اکانت متصل شده</th>
+            <th class="p-2">آخرین بازدید</th>
+            <th class="p-2">عملیات</th>
           </tr>
         </thead>
         <tbody>
           {% for u in users %}
           <tr class="border-t">
-            <td class="p-2">{{ u.chat_id }}</td>
-            <td class="p-2">{{ u.user|default:"-" }}</td>
-            <td class="p-2">{{ u.first_name }} {{ u.last_name }}</td>
-            <td class="p-2">{{ u.last_seen|default:"-" }}</td>
+            <td class="p-2 font-mono text-xs">{{ u.chat_id|truncatechars:20 }}</td>
+            <td class="p-2">
+              {% if u.first_name %}
+                {{ u.first_name }} {{ u.last_name|default:"" }}
+              {% else %}
+                <span class="text-gray-400">بدون نام</span>
+              {% endif %}
+            </td>
+            <td class="p-2">
+              {% if u.user %}
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  ✓ {{ u.user.username }}
+                </span>
+              {% else %}
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                  ✗ متصل نشده
+                </span>
+              {% endif %}
+            </td>
+            <td class="p-2 text-xs text-gray-500">
+              {% if u.last_seen %}
+                {{ u.last_seen|date:"Y/m/d H:i" }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td class="p-2">
+              {% if u.user %}
+                <button 
+                  onclick="disconnectUser('{{ u.chat_id }}')" 
+                  class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors"
+                  title="قطع اتصال">
+                  قطع اتصال
+                </button>
+              {% else %}
+                <span class="text-xs text-gray-400">-</span>
+              {% endif %}
+            </td>
           </tr>
           {% empty %}
-          <tr><td class="p-2" colspan="4">کاربری یافت نشد.</td></tr>
+          <tr><td class="p-2" colspan="5">کاربری یافت نشد.</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -95,29 +141,506 @@
     </div>
     <div id="broadcast-result" class="text-sm mt-2"></div>
   </div>
+
+  <!-- Webhook Logs Section -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-semibold">لاگ‌های Webhook</h2>
+      <div class="flex gap-2 flex-wrap">
+        <button id="btn-refresh-logs" class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded transition-colors">
+          🔄 بروزرسانی
+        </button>
+        <button id="btn-copy-logs" class="px-3 py-1 bg-indigo-500 hover:bg-indigo-600 text-white text-sm rounded transition-colors" title="کپی لاگ‌ها">
+          📋 کپی
+        </button>
+        <a id="btn-export-json" href="#" class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded transition-colors text-center" title="دانلود JSON">
+          💾 JSON
+        </a>
+        <a id="btn-export-text" href="#" class="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-sm rounded transition-colors text-center" title="دانلود Text">
+          📄 Text
+        </a>
+        <button id="btn-toggle-auto-refresh" class="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded transition-colors" title="تغییر وضعیت auto-refresh">
+          ⏸️ توقف
+        </button>
+        <button id="btn-clear-logs" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors">
+          🗑️ پاک کردن
+        </button>
+      </div>
+    </div>
+    
+    <!-- Filter -->
+    <div class="mb-3 flex gap-2">
+      <select id="log-filter" class="border rounded px-3 py-1 text-sm">
+        <option value="all">همه لاگ‌ها</option>
+        <option value="incoming">دریافتی</option>
+        <option value="outgoing">ارسالی</option>
+        <option value="error">خطاها</option>
+        <option value="info">اطلاعات</option>
+      </select>
+      <span id="log-count" class="text-sm text-gray-500 self-center"></span>
+    </div>
+    
+    <!-- Logs Container -->
+    <div id="logs-container" class="space-y-2 max-h-96 overflow-y-auto border rounded p-3 bg-gray-50 dark:bg-gray-900">
+      <div class="text-center text-gray-500 text-sm py-4">
+        در حال بارگذاری لاگ‌ها...
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
   const csrftoken = (document.cookie.match(/csrftoken=([^;]+)/)||[])[1];
-  document.getElementById('btn-register').onclick = () => {
-    fetch('{% url 'rubika_bot:register_webhook' %}', {method:'POST', headers:{'X-CSRFToken': csrftoken}})
-      .then(r=>r.json()).then(d=>{
-        document.getElementById('webhook-result').textContent = JSON.stringify(d, null, 2)
-      })
+  const webhookResult = document.getElementById('webhook-result');
+  
+  // Helper function to show result
+  function showResult(data, isError = false) {
+    webhookResult.textContent = JSON.stringify(data, null, 2);
+    webhookResult.style.display = 'block';
+    webhookResult.style.color = isError ? '#fca5a5' : '#86efac';
+    // Scroll to result
+    webhookResult.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
-  document.getElementById('btn-info').onclick = () => {
-    fetch('{% url 'rubika_bot:webhook_info' %}')
-      .then(r=>r.json()).then(d=>{
-        document.getElementById('webhook-result').textContent = JSON.stringify(d, null, 2)
-      })
+  
+  // Helper function to show loading state
+  function setButtonLoading(buttonId, loading) {
+    const btn = document.getElementById(buttonId);
+    if (loading) {
+      btn.disabled = true;
+      btn.style.opacity = '0.6';
+      btn.style.cursor = 'not-allowed';
+      const originalText = btn.textContent;
+      btn.dataset.originalText = originalText;
+      btn.textContent = 'در حال بارگذاری...';
+    } else {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+      if (btn.dataset.originalText) {
+        btn.textContent = btn.dataset.originalText;
+        delete btn.dataset.originalText;
+      }
+    }
   }
-  document.getElementById('btn-broadcast').onclick = () => {
-    const text = document.getElementById('broadcast-text').value.trim();
-    if(!text) return;
-    fetch('{% url 'rubika_bot:broadcast' %}', {method:'POST', headers:{'X-CSRFToken': csrftoken, 'Content-Type': 'application/x-www-form-urlencoded'}, body: new URLSearchParams({text})})
-      .then(r=>r.json()).then(d=>{
-        document.getElementById('broadcast-result').textContent = d.ok ? 'ارسال شد.' : (d.error||'Error');
+  
+  // Disconnect user function
+  window.disconnectUser = function(chatId) {
+    console.log('Disconnect clicked for:', chatId);
+    
+    if (!confirm('آیا از قطع اتصال این کاربر اطمینان دارید؟')) {
+      return;
+    }
+    
+    try {
+      const disconnectUrl = '{% url "rubika_bot:disconnect_user" "CHAT_ID_PLACEHOLDER" %}'.replace('CHAT_ID_PLACEHOLDER', encodeURIComponent(chatId));
+      console.log('Disconnect URL:', disconnectUrl);
+      
+      fetch(disconnectUrl, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrftoken,
+          'Content-Type': 'application/json'
+        }
       })
+      .then(response => {
+        console.log('Disconnect response status:', response.status);
+        if (!response.ok) {
+          return response.text().then(text => {
+            throw new Error(`HTTP ${response.status}: ${text}`);
+          });
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('Disconnect response:', data);
+        if (data.ok) {
+          alert('✅ اتصال کاربر با موفقیت قطع شد.');
+          location.reload();
+        } else {
+          alert('❌ خطا: ' + (data.error || 'خطای نامشخص'));
+        }
+      })
+      .catch(error => {
+        console.error('Disconnect error:', error);
+        alert('❌ خطا در قطع اتصال: ' + error.message);
+      });
+    } catch (e) {
+      console.error('Exception in disconnectUser:', e);
+      alert('❌ خطا: ' + e.message);
+    }
   }
+  
+  // Register webhook button - با استفاده از addEventListener برای جلوگیری از تداخل
+  const btnRegister = document.getElementById('btn-register');
+  if (btnRegister) {
+    // حذف event listener های قبلی
+    btnRegister.replaceWith(btnRegister.cloneNode(true));
+    const newBtnRegister = document.getElementById('btn-register');
+    
+    newBtnRegister.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      console.log('Register webhook clicked');
+      setButtonLoading('btn-register', true);
+      showResult({message: 'در حال ثبت وب‌هوک...'}, false);
+      
+      fetch('{% url 'rubika_bot:register_webhook' %}', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrftoken,
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => {
+        setButtonLoading('btn-register', false);
+        if (!response.ok) {
+          return response.text().then(text => {
+            throw new Error(`HTTP ${response.status}: ${text}`);
+          });
+        }
+        return response.json();
+      })
+      .then(data => {
+        showResult(data, !data.ok);
+      })
+      .catch(error => {
+        setButtonLoading('btn-register', false);
+        showResult({
+          ok: false,
+          error: 'خطا در ارتباط با سرور',
+          details: error.message
+        }, true);
+        console.error('Webhook registration error:', error);
+      });
+    });
+  }
+  
+  // Get webhook info button - با استفاده از addEventListener برای جلوگیری از تداخل
+  const btnInfo = document.getElementById('btn-info');
+  if (btnInfo) {
+    // حذف event listener های قبلی
+    btnInfo.replaceWith(btnInfo.cloneNode(true));
+    const newBtnInfo = document.getElementById('btn-info');
+    
+    newBtnInfo.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      console.log('Get webhook info clicked');
+      setButtonLoading('btn-info', true);
+      showResult({message: 'در حال دریافت وضعیت وب‌هوک...'}, false);
+      
+      fetch('{% url 'rubika_bot:webhook_info' %}', {
+        method: 'GET',
+        headers: {
+          'X-CSRFToken': csrftoken
+        }
+      })
+      .then(response => {
+        setButtonLoading('btn-info', false);
+        if (!response.ok) {
+          return response.text().then(text => {
+            throw new Error(`HTTP ${response.status}: ${text}`);
+          });
+        }
+        return response.json();
+      })
+      .then(data => {
+        showResult(data, !data.ok);
+      })
+      .catch(error => {
+        setButtonLoading('btn-info', false);
+        showResult({
+          ok: false,
+          error: 'خطا در دریافت وضعیت',
+          details: error.message
+        }, true);
+        console.error('Webhook info error:', error);
+      });
+    });
+  }
+  
+  // Broadcast button
+  const btnBroadcast = document.getElementById('btn-broadcast');
+  if (btnBroadcast) {
+    btnBroadcast.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const text = document.getElementById('broadcast-text').value.trim();
+      if (!text) {
+        document.getElementById('broadcast-result').textContent = 'لطفا متن پیام را وارد کنید.';
+        document.getElementById('broadcast-result').style.color = '#ef4444';
+        return;
+      }
+      
+      const broadcastResult = document.getElementById('broadcast-result');
+      const btn = document.getElementById('btn-broadcast');
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'در حال ارسال...';
+      broadcastResult.textContent = 'در حال ارسال پیام...';
+      broadcastResult.style.color = '#6b7280';
+      
+      fetch('{% url 'rubika_bot:broadcast' %}', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrftoken,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({text: text})
+      })
+      .then(response => {
+        btn.disabled = false;
+        btn.textContent = originalText;
+        if (!response.ok) {
+          return response.text().then(text => {
+            throw new Error(`HTTP ${response.status}: ${text}`);
+          });
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.ok) {
+          broadcastResult.textContent = '✅ پیام با موفقیت ارسال شد.';
+          broadcastResult.style.color = '#10b981';
+          document.getElementById('broadcast-text').value = '';
+        } else {
+          broadcastResult.textContent = '❌ خطا: ' + (data.error || 'خطای نامشخص');
+          broadcastResult.style.color = '#ef4444';
+        }
+      })
+      .catch(error => {
+        btn.disabled = false;
+        btn.textContent = originalText;
+        broadcastResult.textContent = '❌ خطا در ارسال: ' + error.message;
+        broadcastResult.style.color = '#ef4444';
+        console.error('Broadcast error:', error);
+      });
+    });
+  }
+  
+  // ==================== WEBHOOK LOGS ====================
+  
+  let currentLogType = 'all';
+  let autoRefreshEnabled = true;
+  let autoRefreshInterval = null;
+  let currentLogs = [];
+  
+  // Load logs
+  function loadLogs() {
+    const logsContainer = document.getElementById('logs-container');
+    logsContainer.innerHTML = '<div class="text-center text-gray-500 text-sm py-4">در حال بارگذاری...</div>';
+    
+    fetch(`{% url 'rubika_bot:get_logs' %}?type=${currentLogType}&limit=100`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.ok && data.logs.length > 0) {
+          currentLogs = data.logs; // ذخیره لاگ‌ها برای کپی
+          displayLogs(data.logs);
+          document.getElementById('log-count').textContent = `${data.count} لاگ`;
+        } else {
+          currentLogs = [];
+          logsContainer.innerHTML = '<div class="text-center text-gray-500 text-sm py-4">لاگی وجود ندارد</div>';
+          document.getElementById('log-count').textContent = '0 لاگ';
+        }
+      })
+      .catch(error => {
+        console.error('Load logs error:', error);
+        logsContainer.innerHTML = '<div class="text-center text-red-500 text-sm py-4">خطا در بارگذاری لاگ‌ها</div>';
+      });
+  }
+  
+  // Display logs
+  function displayLogs(logs) {
+    const logsContainer = document.getElementById('logs-container');
+    logsContainer.innerHTML = '';
+    
+    logs.forEach(log => {
+      const logDiv = document.createElement('div');
+      logDiv.className = 'border rounded p-3 bg-white dark:bg-gray-800 text-sm';
+      
+      // Log type badge color
+      let badgeColor = 'bg-gray-500';
+      let badgeText = log.log_type;
+      if (log.log_type === 'incoming') {
+        badgeColor = 'bg-blue-500';
+        badgeText = 'دریافتی';
+      } else if (log.log_type === 'outgoing') {
+        badgeColor = 'bg-green-500';
+        badgeText = 'ارسالی';
+      } else if (log.log_type === 'error') {
+        badgeColor = 'bg-red-500';
+        badgeText = 'خطا';
+      } else if (log.log_type === 'info') {
+        badgeColor = 'bg-purple-500';
+        badgeText = 'اطلاعات';
+      }
+      
+      // Format time
+      const time = new Date(log.created_at).toLocaleString('fa-IR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      
+      logDiv.innerHTML = `
+        <div class="flex items-start justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="${badgeColor} text-white px-2 py-1 rounded text-xs font-medium">${badgeText}</span>
+            <span class="font-semibold">${escapeHtml(log.title)}</span>
+          </div>
+          <span class="text-xs text-gray-500">${time}</span>
+        </div>
+        <div class="text-gray-700 dark:text-gray-300 mb-2">${escapeHtml(log.message)}</div>
+        ${log.data ? `
+          <details class="mt-2">
+            <summary class="cursor-pointer text-xs text-gray-500 hover:text-gray-700">جزئیات بیشتر</summary>
+            <pre class="mt-2 text-xs bg-gray-100 dark:bg-gray-900 p-2 rounded overflow-auto max-h-40">${JSON.stringify(log.data, null, 2)}</pre>
+          </details>
+        ` : ''}
+      `;
+      
+      logsContainer.appendChild(logDiv);
+    });
+  }
+  
+  // HTML escape function
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+  
+  // Clear logs
+  document.getElementById('btn-clear-logs').onclick = () => {
+    if (!confirm('آیا از پاک کردن تمام لاگ‌ها اطمینان دارید؟')) {
+      return;
+    }
+    
+    fetch('{% url 'rubika_bot:clear_logs' %}', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': csrftoken
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.ok) {
+        alert(`✅ ${data.message}`);
+        loadLogs();
+      } else {
+        alert('❌ خطا: ' + (data.error || 'خطای نامشخص'));
+      }
+    })
+    .catch(error => {
+      console.error('Clear logs error:', error);
+      alert('❌ خطا در پاک کردن لاگ‌ها');
+    });
+  };
+  
+  // Refresh logs
+  document.getElementById('btn-refresh-logs').onclick = () => {
+    loadLogs();
+  };
+  
+  // Filter change
+  document.getElementById('log-filter').onchange = (e) => {
+    currentLogType = e.target.value;
+    loadLogs();
+  };
+  
+  // Copy logs to clipboard
+  document.getElementById('btn-copy-logs').onclick = () => {
+    if (currentLogs.length === 0) {
+      alert('لاگی برای کپی وجود ندارد');
+      return;
+    }
+    
+    const logText = currentLogs.map(log => {
+      const time = new Date(log.created_at).toLocaleString('fa-IR');
+      let text = `[${time}] ${log.log_type.toUpperCase()}\n`;
+      text += `عنوان: ${log.title}\n`;
+      text += `پیام: ${log.message}\n`;
+      if (log.data) {
+        text += `داده‌ها: ${JSON.stringify(log.data, null, 2)}\n`;
+      }
+      text += '─'.repeat(60) + '\n';
+      return text;
+    }).join('\n');
+    
+    navigator.clipboard.writeText(logText).then(() => {
+      alert(`✅ ${currentLogs.length} لاگ با موفقیت کپی شد`);
+    }).catch(err => {
+      console.error('Copy failed:', err);
+      // Fallback: select text
+      const textarea = document.createElement('textarea');
+      textarea.value = logText;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      alert(`✅ ${currentLogs.length} لاگ با موفقیت کپی شد`);
+    });
+  };
+  
+  // Export buttons
+  document.getElementById('btn-export-json').onclick = (e) => {
+    e.preventDefault();
+    const url = `{% url 'rubika_bot:export_logs' %}?type=${currentLogType}&format=json&limit=1000`;
+    window.open(url, '_blank');
+  };
+  
+  document.getElementById('btn-export-text').onclick = (e) => {
+    e.preventDefault();
+    const url = `{% url 'rubika_bot:export_logs' %}?type=${currentLogType}&format=text&limit=1000`;
+    window.open(url, '_blank');
+  };
+  
+  // Toggle auto-refresh
+  function toggleAutoRefresh() {
+    autoRefreshEnabled = !autoRefreshEnabled;
+    const btn = document.getElementById('btn-toggle-auto-refresh');
+    
+    if (autoRefreshEnabled) {
+      btn.textContent = '⏸️ توقف';
+      btn.className = 'px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded transition-colors';
+      startAutoRefresh();
+    } else {
+      btn.textContent = '▶️ شروع';
+      btn.className = 'px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded transition-colors';
+      stopAutoRefresh();
+    }
+  }
+  
+  function startAutoRefresh() {
+    if (autoRefreshInterval) {
+      clearInterval(autoRefreshInterval);
+    }
+    autoRefreshInterval = setInterval(loadLogs, 10000);
+  }
+  
+  function stopAutoRefresh() {
+    if (autoRefreshInterval) {
+      clearInterval(autoRefreshInterval);
+      autoRefreshInterval = null;
+    }
+  }
+  
+  document.getElementById('btn-toggle-auto-refresh').onclick = toggleAutoRefresh;
+  
+  // Load logs on page load
+  document.addEventListener('DOMContentLoaded', () => {
+    loadLogs();
+    // Auto-refresh every 10 seconds (قابل توقف)
+    startAutoRefresh();
+  });
+  
+  // Console log for debugging disconnect button
+  console.log('Settings page loaded. Disconnect function available:', typeof window.disconnectUser);
 </script>
 {% endblock %}

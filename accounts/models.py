@@ -8,6 +8,7 @@ from django.core.files.base import ContentFile
 from io import BytesIO
 from PIL import Image
 import os
+import uuid
 from core.validators import validate_image_file, validate_signature_image
 
 def remove_background(image_file):
@@ -214,3 +215,29 @@ class DriverLicense(models.Model):
             self.back_image,
             (not self.has_special or (self.has_special and self.special_codes))
         ])
+
+
+def payslip_upload_path(instance, filename):
+    """تولید مسیر امن برای فایل فیش حقوقی با نام تصادفی"""
+    # استفاده از UUID برای نام فایل برای امنیت بیشتر
+    ext = filename.split('.')[-1]
+    filename = f"{uuid.uuid4().hex}.{ext}"
+    return f'payslips/{instance.year}/{instance.month:02d}/{filename}'
+
+
+class Payslip(models.Model):
+    user_profile = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='payslips', verbose_name="پروفایل کاربر")
+    file = models.FileField(upload_to=payslip_upload_path, verbose_name="فایل فیش حقوقی")
+    month = models.IntegerField(verbose_name="ماه")
+    year = models.IntegerField(verbose_name="سال")
+    uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ بارگذاری")
+    uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name="بارگذاری شده توسط")
+
+    class Meta:
+        verbose_name = "فیش حقوقی"
+        verbose_name_plural = "فیش‌های حقوقی"
+        unique_together = ('user_profile', 'year', 'month')  # جلوگیری از ثبت فیش تکراری برای یک ماه
+        ordering = ['-year', '-month']
+
+    def __str__(self):
+        return f"فیش حقوقی {self.user_profile.user.get_full_name()} برای {self.year}/{self.month}"

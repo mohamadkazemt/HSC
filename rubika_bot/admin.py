@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import RubikaUser, RubikaBotSettings, RubikaConnectionCode
+from .models import RubikaUser, RubikaBotSettings, RubikaConnectionCode, WebhookLog
 
 
 @admin.register(RubikaUser)
@@ -19,3 +19,16 @@ class RubikaConnectionCodeAdmin(admin.ModelAdmin):
     list_display = ('user', 'code', 'used', 'expires_at', 'used_at')
     search_fields = ('code', 'user__username')
     list_filter = ('used',)
+
+
+@admin.register(WebhookLog)
+class WebhookLogAdmin(admin.ModelAdmin):
+    list_display = ('log_type', 'title', 'message_preview', 'created_at')
+    list_filter = ('log_type', 'created_at')
+    search_fields = ('title', 'message')
+    readonly_fields = ('created_at',)
+    date_hierarchy = 'created_at'
+    
+    def message_preview(self, obj):
+        return obj.message[:100] + '...' if len(obj.message) > 100 else obj.message
+    message_preview.short_description = 'پیام'

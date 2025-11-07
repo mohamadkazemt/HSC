@@ -1,0 +1,250 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}اتصال به ربات روبیکا{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+  <!-- وضعیت اتصال فعلی -->
+  {% if is_connected %}
+  <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-6">
+    <div class="flex items-start gap-4">
+      <div class="flex-shrink-0">
+        <svg class="h-8 w-8 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <div class="flex-1">
+        <h3 class="text-lg font-semibold text-green-900 dark:text-green-100 mb-2">
+          ✅ شما به ربات متصل هستید
+        </h3>
+        <p class="text-sm text-green-700 dark:text-green-300 mb-3">
+          حساب کاربری شما (<strong>{{ connected_user.username }}</strong>) به ربات روبیکا متصل است.
+        </p>
+        {% if chat_id %}
+        <p class="text-xs text-green-600 dark:text-green-400 font-mono">
+          Chat ID: {{ chat_id|truncatechars:30 }}
+        </p>
+        {% endif %}
+        <div class="mt-4">
+          <p class="text-sm text-green-700 dark:text-green-300 mb-2">
+            برای قطع اتصال، در ربات دستور <code class="bg-green-100 dark:bg-green-900 px-2 py-1 rounded">/disconnect</code> را ارسال کنید.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6">
+    <div class="flex items-start gap-4">
+      <div class="flex-shrink-0">
+        <svg class="h-8 w-8 text-yellow-600 dark:text-yellow-400" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+        </svg>
+      </div>
+      <div class="flex-1">
+        <h3 class="text-lg font-semibold text-yellow-900 dark:text-yellow-100 mb-2">
+          ⚠️ شما به ربات متصل نیستید
+        </h3>
+        <p class="text-sm text-yellow-700 dark:text-yellow-300">
+          برای دریافت اعلان‌ها و استفاده از امکانات ربات، لطفاً اتصال خود را برقرار کنید.
+        </p>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- روش‌های اتصال -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">🔗 اتصال به ربات روبیکا</h2>
+    
+    <!-- روش 1: لینک مستقیم -->
+    {% if direct_link %}
+    <div class="mb-8 p-6 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800">
+      <div class="flex items-start gap-4 mb-4">
+        <div class="flex-shrink-0">
+          <span class="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-white font-bold text-lg">1</span>
+        </div>
+        <div class="flex-1">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            روش 1️⃣: لینک مستقیم (ساده‌ترین روش) ⭐
+          </h3>
+          <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
+            روی دکمه زیر کلیک کنید تا مستقیماً به ربات متصل شوید. این ساده‌ترین روش است!
+          </p>
+          <a href="{{ direct_link }}" 
+             target="_blank"
+             class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-all transform hover:scale-105 shadow-lg">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H16.5A3 3 0 0 1 19.5 9V15A3 3 0 0 1 16.5 18H13.5M10.5 18H7.5A3 3 0 0 1 4.5 15V9A3 3 0 0 1 7.5 6H10.5M8.25 12H15.75" />
+            </svg>
+            🔗 اتصال مستقیم به ربات
+          </a>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-3">
+            💡 این لینک شما را مستقیماً به ربات هدایت می‌کند و اتصال به صورت خودکار برقرار می‌شود.
+          </p>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- روش 2: کد دستی -->
+    <div class="mb-8 p-6 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+      <div class="flex items-start gap-4 mb-4">
+        <div class="flex-shrink-0">
+          <span class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white font-bold text-lg">2</span>
+        </div>
+        <div class="flex-1">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            روش 2️⃣: استفاده از کد اتصال
+          </h3>
+          <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">
+            کد زیر را کپی کنید و در ربات روبیکا دستور زیر را ارسال کنید:
+          </p>
+          
+          <!-- کد اتصال -->
+          <div class="bg-gray-900 dark:bg-gray-950 rounded-lg p-4 mb-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs text-gray-400 font-medium">کد اتصال شما:</span>
+              <button onclick="copyCode()" class="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                </svg>
+                کپی
+              </button>
+            </div>
+            <code id="connection-code" class="text-green-400 font-mono text-lg select-all block">{{ code }}</code>
+          </div>
+
+          <!-- دستور -->
+          <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 mb-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs text-gray-600 dark:text-gray-400 font-medium">دستور ارسال در ربات:</span>
+              <button onclick="copyCommand()" class="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 flex items-center gap-1">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+                </svg>
+                کپی
+              </button>
+            </div>
+            <code class="text-gray-900 dark:text-gray-100 font-mono text-base select-all block">/connect {{ code }}</code>
+          </div>
+
+          <div class="flex items-center gap-4 text-sm">
+            <div class="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>انقضا: <strong id="expires-at">{{ expires_at|date:"Y/m/d H:i" }}</strong></span>
+            </div>
+            <button id="regenerate-code" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium">
+              🔄 تولید کد جدید
+            </button>
+          </div>
+
+          <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <p class="text-xs text-blue-700 dark:text-blue-300">
+              📝 <strong>نحوه استفاده:</strong> کد را کپی کنید، ربات روبیکا را باز کنید، دستور <code class="bg-blue-100 dark:bg-blue-900 px-1 py-0.5 rounded">/connect</code> را تایپ کنید و کد را بعد از آن قرار دهید.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- راهنما -->
+    <div class="p-6 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-200 dark:border-gray-700">
+      <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+        <svg class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z" />
+        </svg>
+        راهنمای استفاده
+      </h3>
+      <div class="space-y-3 text-sm text-gray-700 dark:text-gray-300">
+        <div class="flex items-start gap-3">
+          <span class="text-indigo-600 font-bold">1.</span>
+          <p>کد اتصال شما <strong>60 دقیقه</strong> اعتبار دارد. بعد از انقضا باید کد جدید دریافت کنید.</p>
+        </div>
+        <div class="flex items-start gap-3">
+          <span class="text-indigo-600 font-bold">2.</span>
+          <p>اگر قبلاً به ربات متصل شده‌اید، با کد جدید می‌توانید اتصال را تغییر دهید.</p>
+        </div>
+        <div class="flex items-start gap-3">
+          <span class="text-indigo-600 font-bold">3.</span>
+          <p>برای قطع اتصال، در ربات دستور <code class="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded">/disconnect</code> را ارسال کنید.</p>
+        </div>
+        <div class="flex items-start gap-3">
+          <span class="text-indigo-600 font-bold">4.</span>
+          <p>بعد از اتصال، تمام اعلان‌های سیستم به ربات شما ارسال می‌شود.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const csrftoken = (document.cookie.match(/csrftoken=([^;]+)/)||[])[1];
+
+function copyCode() {
+  const code = document.getElementById('connection-code').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    showToast('کد با موفقیت کپی شد! ✅', 'success');
+  });
+}
+
+function copyCommand() {
+  const code = document.getElementById('connection-code').textContent;
+  const command = `/connect ${code}`;
+  navigator.clipboard.writeText(command).then(() => {
+    showToast('دستور با موفقیت کپی شد! ✅', 'success');
+  });
+}
+
+function showToast(message, type = 'info') {
+  // Simple toast notification
+  const toast = document.createElement('div');
+  toast.className = `fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg ${
+    type === 'success' ? 'bg-green-500 text-white' : 'bg-blue-500 text-white'
+  }`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transition = 'opacity 0.3s';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// Regenerate code
+document.getElementById('regenerate-code')?.addEventListener('click', function() {
+  const btn = this;
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'در حال تولید...';
+  
+  fetch('{% url "rubika_bot:generate_code" %}', {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': csrftoken,
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      showToast('کد جدید با موفقیت تولید شد! 🔄', 'success');
+      setTimeout(() => window.location.reload(), 1000);
+    } else {
+      showToast('خطا: ' + (data.error || 'خطای نامشخص'), 'error');
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showToast('خطا در تولید کد جدید', 'error');
+    btn.disabled = false;
+    btn.textContent = originalText;
+  });
+});
+</script>
+{% endblock %}
+

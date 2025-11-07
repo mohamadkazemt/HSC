@@ -33,4 +33,8 @@ urlpatterns = [
     path('organization/<str:entity_type>/merge/', views.organization_merge, name='organization_merge'),
     # Organizational chart
     path('organization-chart/', views.organization_chart, name='organization_chart'),
+    # Payslip management
+    path('payslips/upload/', views.batch_payslip_upload, name='batch_payslip_upload'),
+    path('payslips/archive/', views.payslip_archive, name='payslip_archive'),
+    path('payslips/<int:payslip_id>/download/', views.payslip_download, name='payslip_download'),
 ]

@@ -4,10 +4,11 @@ from django.contrib.auth.models import User
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.http import JsonResponse, HttpResponse
+from django.core.exceptions import PermissionDenied
 from dashboard.views import dashboard
 from .forms import LoginForm
 from .forms import PasswordResetSMSForm
-from accounts.models import UserProfile, DriverLicense, Section, Part, UnitGroup, Position
+from accounts.models import UserProfile, DriverLicense, Section, Part, UnitGroup, Position, Payslip
 from .organization_views import (
     organization_manage,
     organization_add,
@@ -20,6 +21,7 @@ from dashboard.sms_utils import send_template_sms
 from .forms import UserForm, UserProfileForm,PasswordResetConfirmForm, ChangePasswordForm, DriverLicenseForm, PersonnelEditForm
 from django.utils.timezone import now
 from datetime import timedelta
+import jdatetime
 from django.db.models import Q, Count # اضافه کردن این خط
 import logging
 import pandas as pd
@@ -29,6 +31,7 @@ from django.core.exceptions import PermissionDenied
 from functools import wraps
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
+import os
 
 
 name = 'accounts'
@@ -81,7 +84,42 @@ def user_logout(request):
 def user_profile(request):
     if not request.user.is_authenticated:
         return redirect('login')
-    return render(request, 'accounts/overview.html')
+    user_profile = getattr(request.user, 'userprofile', None)
+    
+    # دریافت فیش‌های حقوقی کاربر (با try-except برای جلوگیری از خطا در صورت عدم وجود جدول)
+    payslips = []
+    if user_profile:
+        try:
+            payslips = list(user_profile.payslips.all().order_by('-year', '-month'))
+            logger = logging.getLogger('django')
+            logger.info(
+                f"User Profile View - User: {request.user.username}, "
+                f"Personnel Code: {user_profile.personnel_code}, "
+                f"Payslips Count: {len(payslips)}"
+            )
+            if payslips:
+                logger.info(f"Payslips found: {[f'{p.year}/{p.month:02d} (ID: {p.id})' for p in payslips]}")
+            else:
+                # بررسی اینکه آیا فیش‌هایی در دیتابیس وجود دارد
+                all_payslips_count = Payslip.objects.count()
+                user_payslips_count = Payslip.objects.filter(user_profile=user_profile).count()
+                logger.info(
+                    f"No payslips found for user. Total payslips in DB: {all_payslips_count}, "
+                    f"User payslips count: {user_payslips_count}"
+                )
+        except Exception as e:
+            # اگر جدول وجود نداشت، لیست خالی برمی‌گردانیم
+            logger = logging.getLogger('django')
+            logger.error(f"Error loading payslips for user {request.user.username}: {str(e)}", exc_info=True)
+            payslips = []
+    else:
+        logger = logging.getLogger('django')
+        logger.warning(f"User Profile View - No userprofile found for user: {request.user.username}")
+    
+    return render(request, 'accounts/overview.html', {
+        'userprofile': user_profile,
+        'payslips': payslips,  # اضافه کردن payslips به context
+    })
 
 
 
@@ -1012,3 +1050,188 @@ def api_positions_by_unit_group(request):
     ug_id = request.GET.get('unit_group')
     positions = Position.objects.filter(unit_group_id=ug_id).values('id', 'name') if ug_id else []
     return JsonResponse(list(positions), safe=False)
+
+
+@login_required
+@superuser_required
+def batch_payslip_upload(request):
+    """ویو برای آپلود دسته‌ای فیش‌های حقوقی"""
+    if request.method == 'POST':
+        year = request.POST.get('year')
+        month = request.POST.get('month')
+        files = request.FILES.getlist('files')
+        
+        if not year or not month:
+            return JsonResponse({
+                'success': False,
+                'message': 'سال و ماه باید انتخاب شوند.'
+            }, status=400)
+        
+        try:
+            year = int(year)
+            month = int(month)
+        except ValueError:
+            return JsonResponse({
+                'success': False,
+                'message': 'سال و ماه باید عدد باشند.'
+            }, status=400)
+        
+        if not files:
+            return JsonResponse({
+                'success': False,
+                'message': 'حداقل یک فایل باید انتخاب شود.'
+            }, status=400)
+        
+        success_count = 0
+        errors = []
+        success_files = []
+        
+        for file in files:
+            try:
+                # استخراج کد پرسنلی از نام فایل
+                filename = file.name
+                # حذف پسوند
+                base_name = os.path.splitext(filename)[0]
+                # استخراج کد پرسنلی (فرض می‌کنیم نام فایل همان کد پرسنلی است یا حاوی آن است)
+                # می‌توانیم الگوهای مختلف را امتحان کنیم
+                personnel_code = base_name.strip()
+                
+                # جستجوی پروفایل کاربر بر اساس کد پرسنلی
+                try:
+                    user_profile = UserProfile.objects.get(personnel_code=personnel_code)
+                except UserProfile.DoesNotExist:
+                    # اگر پیدا نشد، سعی می‌کنیم با الگوهای دیگر جستجو کنیم
+                    # مثلاً اگر نام فایل به صورت "12345_1403_01.pdf" باشد
+                    parts = base_name.split('_')
+                    if len(parts) > 0:
+                        personnel_code = parts[0].strip()
+                        try:
+                            user_profile = UserProfile.objects.get(personnel_code=personnel_code)
+                        except UserProfile.DoesNotExist:
+                            errors.append(f"فایل {filename}: کد پرسنلی '{personnel_code}' یافت نشد")
+                            continue
+                    else:
+                        errors.append(f"فایل {filename}: کد پرسنلی '{personnel_code}' یافت نشد")
+                        continue
+                
+                # بررسی وجود فیش برای این ماه و سال
+                try:
+                    existing_payslip = Payslip.objects.filter(
+                        user_profile=user_profile,
+                        year=year,
+                        month=month
+                    ).first()
+                except Exception:
+                    # اگر جدول وجود نداشت، existing_payslip را None می‌کنیم
+                    existing_payslip = None
+                
+                if existing_payslip:
+                    # اگر فیش وجود دارد، فایل را جایگزین می‌کنیم
+                    existing_payslip.file.delete()
+                    existing_payslip.file = file
+                    existing_payslip.uploaded_by = request.user
+                    existing_payslip.save()
+                    success_count += 1
+                    success_files.append(f"{filename} → {user_profile.user.get_full_name()}")
+                else:
+                    # ایجاد فیش جدید
+                    payslip = Payslip.objects.create(
+                        user_profile=user_profile,
+                        file=file,
+                        month=month,
+                        year=year,
+                        uploaded_by=request.user
+                    )
+                    success_count += 1
+                    success_files.append(f"{filename} → {user_profile.user.get_full_name()}")
+                    
+            except Exception as e:
+                errors.append(f"فایل {filename}: خطا - {str(e)}")
+        
+        return JsonResponse({
+            'success': True,
+            'success_count': success_count,
+            'total_count': len(files),
+            'success_files': success_files,
+            'errors': errors
+        })
+    
+    # GET request - نمایش فرم
+    # تبدیل سال میلادی به شمسی
+    current_gregorian = now().date()
+    current_jalali = jdatetime.date.fromgregorian(date=current_gregorian)
+    current_year = current_jalali.year
+    
+    # ایجاد لیست سال‌های شمسی
+    years = list(range(current_year - 5, current_year + 2))
+    months = [
+        (1, 'فروردین'), (2, 'اردیبهشت'), (3, 'خرداد'),
+        (4, 'تیر'), (5, 'مرداد'), (6, 'شهریور'),
+        (7, 'مهر'), (8, 'آبان'), (9, 'آذر'),
+        (10, 'دی'), (11, 'بهمن'), (12, 'اسفند')
+    ]
+    
+    return render(request, 'accounts/payslip_management.html', {
+        'years': years,
+        'months': months,
+    })
+
+
+@login_required
+def payslip_archive(request):
+    """نمایش آرشیو فیش‌های حقوقی کاربر"""
+    user_profile = getattr(request.user, 'userprofile', None)
+    if not user_profile:
+        messages.error(request, 'پروفایل کاربری یافت نشد.')
+        return redirect('accounts:profile')
+    
+    payslips = Payslip.objects.filter(user_profile=user_profile).order_by('-year', '-month')
+    
+    return render(request, 'accounts/payslip_archive.html', {
+        'payslips': payslips,
+    })
+
+
+@login_required
+def payslip_download(request, payslip_id):
+    """دانلود فیش حقوقی با بررسی امنیتی کامل"""
+    try:
+        payslip = Payslip.objects.select_related('user_profile', 'user_profile__user').get(pk=payslip_id)
+        
+        # بررسی دسترسی: فقط کاربر مربوطه یا superuser می‌تواند دانلود کند
+        if payslip.user_profile.user != request.user and not request.user.is_superuser:
+            # لاگ کردن تلاش غیرمجاز
+            logger = logging.getLogger('django.security')
+            logger.warning(
+                f"تلاش غیرمجاز برای دسترسی به فیش حقوقی: User={request.user.username}, "
+                f"Payslip ID={payslip_id}, Owner={payslip.user_profile.user.username}"
+            )
+            raise PermissionDenied("شما اجازه دسترسی به این فیش را ندارید.")
+        
+        # بررسی وجود فایل
+        if not payslip.file:
+            messages.error(request, 'فایل فیش حقوقی یافت نشد.')
+            return redirect('accounts:payslip_archive')
+        
+        # خواندن فایل و ارسال آن
+        try:
+            file_content = payslip.file.read()
+            response = HttpResponse(file_content, content_type='application/pdf')
+            # استفاده از نام فایل معنادار برای کاربر (نه نام فایل واقعی در سرور)
+            filename = f"payslip_{payslip.user_profile.personnel_code}_{payslip.year}_{payslip.month:02d}.pdf"
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            # جلوگیری از cache کردن فایل‌های حساس
+            response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+            response['Pragma'] = 'no-cache'
+            response['Expires'] = '0'
+            return response
+        except IOError as e:
+            messages.error(request, f'خطا در خواندن فایل: {str(e)}')
+            return redirect('accounts:payslip_archive')
+            
+    except Payslip.DoesNotExist:
+        messages.error(request, 'فیش حقوقی یافت نشد.')
+        return redirect('accounts:payslip_archive')
+    except PermissionDenied:
+        messages.error(request, 'شما اجازه دسترسی به این فیش را ندارید.')
+        return redirect('accounts:payslip_archive')
