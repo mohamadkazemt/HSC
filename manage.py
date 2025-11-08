@@ -3,6 +3,12 @@
 import os
 import sys
 
+# Suppress GLib warnings about incomplete UWP app registrations on Windows.
+# This warning originates from the GTK stack pulled in by WeasyPrint. Setting
+# the following env var disables UWP app registration probing in GLib and keeps
+# the console output clean without affecting functionality.
+os.environ.setdefault('LIBGLIB_DISABLE_UWP_APP_REGISTRATION', '1')
+
 
 def main():
     """Run administrative tasks."""

@@ -4,6 +4,7 @@ from django.utils.timezone import localtime
 
 register = template.Library()
 
+
 @register.filter(name='to_jalali')
 def to_jalali(value, fmt='%Y/%m/%d %H:%M'):
     """Convert a datetime to Jalali (Shamsi) string."""

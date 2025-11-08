@@ -21,7 +21,7 @@ from django.db.models import Count
 from django.db.models.functions import TruncDate, ExtractMonth, ExtractYear
 from django.http import HttpResponse, JsonResponse
 import openpyxl
-from .templatetags.jalali import to_jalali
+from .templatetags.anomalis_jalali import to_jalali
 from django.template.loader import get_template
 from weasyprint import HTML
 from django.conf import settings

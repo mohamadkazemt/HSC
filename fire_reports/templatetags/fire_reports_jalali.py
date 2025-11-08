@@ -1,5 +1,4 @@
 from django import template
-from django.utils.safestring import mark_safe
 import jdatetime
 
 try:
@@ -9,6 +8,7 @@ except ImportError:
     HAS_PERSIAN_TOOLS = False
 
 register = template.Library()
+
 
 @register.filter(name='to_jalali')
 def to_jalali(value, fmt='%Y/%m/%d %H:%M'):
@@ -21,13 +21,14 @@ def to_jalali(value, fmt='%Y/%m/%d %H:%M'):
             return value
         jdate = jdatetime.datetime.fromgregorian(datetime=gdate)
         return jdate.strftime(fmt)
-    except Exception as e:
+    except Exception:
         return value
+
 
 @register.filter(name='jalali_date')
 def jalali_date(value, fmt="%Y/%m/%d"):
     """Convert a date or datetime to Jalali (Shamsi) string with Persian numerals.
-    
+
     Usage: {{ mydate|jalali_date }}
     """
     if not value:
@@ -45,3 +46,4 @@ def jalali_date(value, fmt="%Y/%m/%d"):
         return s
     except Exception:
         return value
+

@@ -5,6 +5,7 @@ from django.utils.timezone import localtime
 
 register = template.Library()
 
+
 @register.filter(name='to_jalali')
 def to_jalali(value, fmt='%Y/%m/%d %H:%M'):
     try:
@@ -16,3 +17,4 @@ def to_jalali(value, fmt='%Y/%m/%d %H:%M'):
         return value
     except Exception:
         return value
+

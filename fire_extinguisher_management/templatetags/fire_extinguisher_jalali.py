@@ -4,6 +4,7 @@ from persiantools import digits as persian_digits
 
 register = template.Library()
 
+
 @register.filter(name='jalali_date')
 def jalali_date(value, fmt="%Y/%m/%d"):
     """Convert a date or datetime to Jalali (Shamsi) string with Persian numerals.
@@ -23,3 +24,4 @@ def jalali_date(value, fmt="%Y/%m/%d"):
         return persian_digits.en_to_fa(s)
     except Exception:
         return value
+
