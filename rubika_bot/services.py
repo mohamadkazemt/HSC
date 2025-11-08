@@ -7,7 +7,6 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
 from django.db import close_old_connections
 from django.utils import timezone
-from rubpy.bot import filters as bot_filters
 from rubpy.bot.enums import ButtonTypeEnum, UpdateTypeEnum
 from rubpy.bot.models import InlineMessage, Keypad, KeypadRow, Message, Update
 from rubpy.exceptions import APIException
@@ -498,35 +497,18 @@ class RubPyIntegrationService:
     # Internal helpers
     # ------------------------------------------------------------------ #
     def _register_handlers(self) -> None:
-        message_filter = bot_filters.update_type(
-            [UpdateTypeEnum.NewMessage.value, UpdateTypeEnum.UpdatedMessage.value]
-        )
-        inline_filter = bot_filters.update_type(["InlineMessage"])
-
-        @self.client.on_update(message_filter)
-        def _messages_handler(bot: BotClient, update: Update) -> None:
+        @self.client.on_update()
+        def _generic_handler(bot: BotClient, update: Update) -> None:
             close_old_connections()
             try:
-                self.engine.handle_update(update)
+                if isinstance(update, InlineMessage):
+                    self.engine.handle_inline(update)
+                elif isinstance(update, Update):
+                    self.engine.handle_update(update)
             except Exception as exc:  # pragma: no cover - handler failure
                 logger.exception("Error handling update: %s", exc)
                 WebhookLog.log_error(
-                    'خطا در هندل پیام',
-                    str(exc),
-                    {'update': getattr(update, '_raw_payload', {})},
-                )
-            finally:
-                close_old_connections()
-
-        @self.client.on_update(inline_filter)
-        def _inline_handler(bot: BotClient, update: InlineMessage) -> None:
-            close_old_connections()
-            try:
-                self.engine.handle_inline(update)
-            except Exception as exc:  # pragma: no cover
-                logger.exception("Error handling inline update: %s", exc)
-                WebhookLog.log_error(
-                    'خطا در هندل inline',
+                    'خطا در پردازش به‌روزرسانی',
                     str(exc),
                     {'update': getattr(update, '_raw_payload', {})},
                 )
