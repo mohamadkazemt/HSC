@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime
+from celery.schedules import crontab
 from django.conf.locale.fa import formats as fa_formats
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -48,6 +49,7 @@ INSTALLED_APPS = [
     'import_export',
     'formtools',
     'rest_framework',
+    'django_cryptography',
 
     # Celery related apps
     'django_celery_results',
@@ -281,6 +283,23 @@ CELERY_CACHE_BACKEND = 'default'
 CELERY_TIMEZONE = 'Asia/Tehran'
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
+
+RUBIKA_BOT = {
+    'MAX_USERS_PER_PAGE': 100,
+    'CONNECTION_CODE_TTL_MINUTES': 60,
+    'LOG_CLEANUP_DAYS': 7,
+    'WEBHOOK_RATE_LIMIT': '120/m',
+    'WEBHOOK_ALLOWED_IPS': [],
+    'BOT_REQUEST_TIMEOUT': 15,
+    'DEEPLINK_TEMPLATE': 'https://rubika.ir/{bot_username}?start={code}',
+}
+
+CELERY_BEAT_SCHEDULE = {
+    'rubika_bot_cleanup_webhook_logs': {
+        'task': 'rubika_bot.tasks.cleanup_webhook_logs',
+        'schedule': crontab(hour=3, minute=0),
+    },
+}
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

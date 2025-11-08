@@ -1,236 +1,378 @@
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse, HttpResponseBadRequest, HttpResponse
-from django.urls import reverse
-from django.http import HttpResponseRedirect
-from django.utils import timezone
-from django.db.models import Q
 import json
+import logging
+from typing import Any, Dict, Iterable, Optional
 
-from .models import RubikaBotSettings, RubikaUser, RubikaConnectionCode, WebhookLog
-from .services import RubikaClient
-import requests
-from typing import List, Dict, Any
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.core.paginator import Paginator
+from django.db.models import Q
+from django.http import (
+    HttpRequest,
+    HttpResponse,
+    HttpResponseBadRequest,
+    HttpResponseForbidden,
+    JsonResponse,
+)
+from django.shortcuts import redirect, render
+from django.urls import reverse
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from ratelimit.decorators import ratelimit
+
+from .constants import (
+    CONNECTION_CODE_TTL_MINUTES,
+    DEEPLINK_TEMPLATE,
+    MAX_USERS_PER_PAGE,
+    WEBHOOK_RATE_LIMIT,
+    is_ip_allowed,
+)
+from .models import RubikaBotSettings, RubikaConnectionCode, RubikaUser, WebhookLog
+from .services import RubPyIntegrationService
+from .tasks import send_rubika_message
+
+logger = logging.getLogger(__name__)
 
 
-def superuser_required(view):
-    return user_passes_test(lambda u: u.is_superuser)(view)
-
-
-def create_button(button_id: str, button_text: str) -> Dict[str, Any]:
-    """ساخت دکمه مطابق Flask bot: id, type, button_text"""
-    return {
-        "id": button_id,
-        "type": "Simple",
-        "button_text": button_text
-    }
-
-
-def create_command_buttons() -> List[List[Dict[str, Any]]]:
-    """ساخت دکمه‌های دستورات ربات - مطابق Flask bot"""
-    return [
-        [
-            create_button("start", "🔄 شروع"),
-            create_button("account", "📊 وضعیت")
-        ],
-        [
-            create_button("connect", "🔗 اتصال"),
-            create_button("disconnect", "❌ قطع اتصال")
-        ],
-        [
-            create_button("help", "📖 راهنما")
-        ]
-    ]
+def superuser_required(view_func):
+    return user_passes_test(lambda u: u.is_superuser)(view_func)
 
 
 @superuser_required
-def settings_view(request):
+def settings_view(request: HttpRequest) -> HttpResponse:
+    """Render and update Rubika bot settings."""
     settings_obj = RubikaBotSettings.get_solo()
     if request.method == 'POST':
-        token = (request.POST.get('token') or '').strip()
-        bot_username = (request.POST.get('bot_username') or '').strip()
-        deeplink_template = (request.POST.get('deeplink_template') or '').strip()
-        settings_obj.token = token or None
-        settings_obj.bot_username = bot_username or None
-        settings_obj.deeplink_template = deeplink_template or None
+        token = (request.POST.get('token') or '').strip() or None
+        bot_username = (request.POST.get('bot_username') or '').strip() or None
+        settings_obj.token = token
+        settings_obj.bot_username = bot_username
         settings_obj.save()
+        RubPyIntegrationService.reset()
         return redirect('rubika_bot:settings')
-    # Users table
-    users_qs = RubikaUser.objects.all().order_by('-updated_at')
-    q = request.GET.get('q')
-    if q:
-        users_qs = users_qs.filter(Q(chat_id__icontains=q) | Q(first_name__icontains=q) | Q(last_name__icontains=q) | Q(user__username__icontains=q))
+
+    users_qs = RubikaUser.objects.select_related('user').order_by('-updated_at')
+    search = request.GET.get('q')
+    if search:
+        users_qs = users_qs.filter(
+            Q(chat_id__icontains=search)
+            | Q(first_name__icontains=search)
+            | Q(last_name__icontains=search)
+            | Q(user__username__icontains=search)
+        )
+    paginator = Paginator(users_qs, MAX_USERS_PER_PAGE)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    deeplink_example = None
+    if settings_obj.bot_username:
+        deeplink_example = DEEPLINK_TEMPLATE.format(
+            bot_username=settings_obj.bot_username.lstrip('@'),
+            code='YOUR_CODE',
+        )
+
     context = {
         'settings': settings_obj,
-        'users': users_qs[:200],
+        'users_page': page_obj,
         'webhook_url': request.build_absolute_uri(reverse('rubika_bot:webhook')),
+        'deeplink_template': DEEPLINK_TEMPLATE,
+        'deeplink_example': deeplink_example,
+        'search_query': search or '',
     }
     return render(request, 'rubika_bot/settings.html', context)
 
 
 @superuser_required
-def action_register_webhook(request):
-    """ثبت webhook - ابتدا با روش ساده camelCase سپس جداگانه"""
-    if request.method != 'POST':
-        return JsonResponse({'ok': False, 'error': 'Invalid method'}, status=405)
-    
+@require_http_methods(["POST"])
+def action_register_webhook(request: HttpRequest) -> JsonResponse:
+    """Register the webhook endpoints using the RubPy client."""
     try:
         settings_obj = RubikaBotSettings.get_solo()
         if not settings_obj.token:
-            WebhookLog.log_error('ثبت Webhook', 'توکن تنظیم نشده است')
-            return JsonResponse({'ok': False, 'error': 'توکن ربات تنظیم نشده است'}, status=400)
-        
+            return JsonResponse(
+                {'ok': False, 'error': 'توکن ربات تنظیم نشده است'}, status=400
+            )
+
+        service = RubPyIntegrationService.get_instance()
         webhook_url = request.build_absolute_uri(reverse('rubika_bot:webhook'))
-        token = settings_obj.token
-        
-        WebhookLog.log_info('ثبت Webhook', f'شروع ثبت webhook به {webhook_url}', {'token_prefix': token[:20]})
-        
-        # لیست endpoint ها - ReceiveUpdate باید اول باشد
-        update_types = [
-            "ReceiveUpdate",         # مهم‌ترین - برای دریافت پیام‌ها
-            "ReceiveInlineMessage", 
-            "ReceiveQuery",          # برای دکمه‌های inline
-            "GetSelectionItem",
-            "SearchSelectionItems"
+        result = service.update_endpoints(webhook_url)
+        WebhookLog.log_info(
+            'ثبت وبهوک',
+            'نتیجه ثبت وبهوک',
+            {'webhook_url': webhook_url, 'result': result},
+        )
+        status = 200 if result.get('ok') else 500
+        return JsonResponse({'ok': result.get('ok'), 'details': result}, status=status)
+    except Exception as exc:  # pragma: no cover - network failures
+        logger.exception("Webhook registration failed: %s", exc)
+        WebhookLog.log_error('ثبت وبهوک', str(exc))
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=500)
+
+
+@superuser_required
+@require_http_methods(["GET"])
+def action_get_webhook_info(request: HttpRequest) -> JsonResponse:
+    """Retrieve current webhook status from Rubika."""
+    settings_obj = RubikaBotSettings.get_solo()
+    if not settings_obj.token:
+        return JsonResponse({'ok': False, 'error': 'توکن تنظیم نشده است'}, status=400)
+    try:
+        service = RubPyIntegrationService.get_instance()
+    except ValueError as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
+    result = service.fetch_webhook_info()
+    status = 200 if result.get('ok') else 500
+    if not result.get('ok'):
+        WebhookLog.log_warning('دریافت وضعیت وبهوک', 'عدم موفقیت در دریافت اطلاعات', result)
+    return JsonResponse(result, status=status)
+
+
+@superuser_required
+@require_http_methods(["POST"])
+def action_broadcast(request: HttpRequest) -> JsonResponse:
+    """Enqueue a broadcast message to all Rubika users."""
+    text = (request.POST.get('text') or '').strip()
+    if not text:
+        return JsonResponse({'ok': False, 'error': 'متن پیام خالی است'}, status=400)
+    chat_ids = list(RubikaUser.objects.values_list('chat_id', flat=True))
+    for chat_id in chat_ids:
+        send_rubika_message.delay(str(chat_id), text)
+    WebhookLog.log_info(
+        'ارسال همگانی',
+        f'پیام برای {len(chat_ids)} کاربر صف‌بندی شد',
+        {'preview': text[:120]},
+    )
+    return JsonResponse({'ok': True, 'count': len(chat_ids)})
+
+
+@superuser_required
+def get_webhook_logs(request: HttpRequest) -> JsonResponse:
+    """Return recent webhook logs optionally filtered by type."""
+    try:
+        log_type = request.GET.get('type', 'all')
+        limit = int(request.GET.get('limit', 50))
+        logs = WebhookLog.objects.all()
+        if log_type != 'all':
+            logs = logs.filter(log_type=log_type)
+        logs = logs[:limit]
+        payload = [
+            {
+                'id': log.id,
+                'log_type': log.log_type,
+                'title': log.title,
+                'message': log.message,
+                'data': log.data,
+                'created_at': log.created_at.isoformat(),
+            }
+            for log in logs
         ]
-        
-        # روش 1: جداگانه برای هر endpoint (مطابق مستندات روبیکا)
-        WebhookLog.log_info('ثبت Webhook', 'شروع ثبت endpoint ها به صورت جداگانه...')
-        
-        api_bases = [
-            "https://botapi.rubika.ir/v3",
-            "https://botapi.rubika.ir",
-            # api.rubika.ir حذف شد چون DNS resolve نمی‌شود
+        return JsonResponse({'ok': True, 'logs': payload, 'count': len(payload)})
+    except Exception as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=500)
+
+
+@superuser_required
+@require_http_methods(["POST"])
+def clear_webhook_logs(request: HttpRequest) -> JsonResponse:
+    """Delete all webhook logs."""
+    count = WebhookLog.objects.count()
+    WebhookLog.objects.all().delete()
+    return JsonResponse({'ok': True, 'deleted': count})
+
+
+@superuser_required
+def export_webhook_logs(request: HttpRequest) -> HttpResponse:
+    """Export webhook logs in JSON or text format."""
+    log_type = request.GET.get('type', 'all')
+    format_type = request.GET.get('format', 'json')
+    limit = int(request.GET.get('limit', 1000))
+    logs = WebhookLog.objects.all()
+    if log_type != 'all':
+        logs = logs.filter(log_type=log_type)
+    logs = logs.order_by('-created_at')[:limit]
+
+    if format_type == 'text':
+        lines = [
+            "=" * 80,
+            f"لاگ‌های Webhook - {log_type} - تعداد: {logs.count()}",
+            "=" * 80,
+            "",
         ]
-        
-        # امتحان با هر base URL تا موفق شود
-        final_results = {}
-        successful_base = None
-        
-        for base_url in api_bases:
-            endpoint = f"{base_url}/{token}/updateBotEndpoints"
-            temp_results = {}
-            all_success = True
-            
-            WebhookLog.log_info('ثبت Webhook', f'امتحان با {base_url}')
-            
-            for endpoint_type in update_types:
-                # دقیقاً طبق مستندات روبیکا
-                payload = {
-                    "url": webhook_url,
-                    "type": endpoint_type
-                }
-                
-                try:
-                    response = requests.post(
-                        endpoint,
-                        json=payload,  # استفاده از json مطابق Flask bot
-                        headers={"Content-Type": "application/json"},
-                        timeout=30
-                    )
-                    
-                    try:
-                        result = response.json()
-                    except:
-                        result = {"raw": response.text[:200], "status_code": response.status_code}
-                    
-                    # بررسی موفقیت
-                    is_success = result.get("status") == "ok" or response.status_code in [200, 201]
-                    
-                    temp_results[endpoint_type] = {
-                        "ok": is_success,
-                        "data": result,
-                        "status_code": response.status_code
-                    }
-                    
-                    if is_success:
-                        WebhookLog.log_info(
-                            f'✅ ثبت {endpoint_type}',
-                            f'موفق با {base_url}',
-                            {"payload": payload, "response": result}
-                        )
-                    else:
-                        all_success = False
-                        WebhookLog.log_error(
-                            f'❌ ثبت {endpoint_type}',
-                            f'ناموفق با {base_url}',
-                            {"payload": payload, "response": result}
-                        )
-                        
-                except Exception as e:
-                    all_success = False
-                    temp_results[endpoint_type] = {"ok": False, "error": str(e)}
-                    WebhookLog.log_error(
-                        f'❌ ثبت {endpoint_type}',
-                        f'خطا با {base_url}: {str(e)}',
-                        {"payload": payload}
-                    )
-            
-            # اگر همه موفق بودند، از این base استفاده می‌کنیم
-            if all_success or not final_results:
-                final_results = temp_results
-                successful_base = base_url
-            
-            # اگر همه موفق بودند، دیگر ادامه نمی‌دهیم
-            if all_success:
-                break
-        
-        # شمارش موفقیت‌ها
-        success_count = sum(1 for v in final_results.values() if v.get('ok', False))
-        failed = [k for k, v in final_results.items() if not v.get('ok', False)]
-        
-        if success_count >= len(update_types):
-            WebhookLog.log_info(
-                '✅ ثبت Webhook کامل',
-                f'تمام {len(update_types)} endpoint با موفقیت ثبت شدند',
-                {'base': successful_base, 'endpoints': list(final_results.keys())}
-            )
-            return JsonResponse({
-                'ok': True,
-                'message': f'✅ تمام {len(update_types)} endpoint با موفقیت ثبت شدند',
-                'data': {
-                    'success_count': success_count,
-                    'total': len(update_types),
-                    'base_url': successful_base,
-                    'endpoints': list(final_results.keys()),
-                    'details': final_results
-                }
-            })
-        elif success_count > 0:
-            WebhookLog.log_info(
-                '⚠️ ثبت Webhook جزئی',
-                f'{success_count} از {len(update_types)} endpoint ثبت شد',
-                {'base': successful_base, 'failed': failed}
-            )
-            return JsonResponse({
-                'ok': True,
-                'message': f'⚠️ {success_count} از {len(update_types)} endpoint ثبت شد',
-                'warning': f'این endpoint ها ثبت نشدند: {", ".join(failed)}',
-                'data': {
-                    'success_count': success_count,
-                    'total': len(update_types),
-                    'base_url': successful_base,
-                    'failed': failed,
-                    'details': final_results
-                }
-            })
-        else:
-            WebhookLog.log_error(
-                '❌ ثبت Webhook کاملاً ناموفق',
-                'هیچ endpoint ای ثبت نشد',
-                {'results': final_results}
-            )
-            return JsonResponse({
-                'ok': False,
-                'message': '❌ ثبت وب‌هوک ناموفق بود',
-                'error': 'هیچ endpoint ای ثبت نشد. لطفاً توکن و URL webhook را بررسی کنید.',
-                'details': final_results
-            }, status=500)
-        
-    except Exception as e:
-        WebhookLog.log_error('ثبت Webhook', f'خطای غیرمنتظره: {str(e)}')
-        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+        for log in logs:
+            lines.append(f"[{log.created_at:%Y-%m-%d %H:%M:%S}] {log.log_type.upper()}")
+            lines.append(f"عنوان: {log.title}")
+            lines.append(f"پیام: {log.message}")
+            if log.data:
+                lines.append(json.dumps(log.data, ensure_ascii=False, indent=2))
+            lines.append("-" * 80)
+            lines.append("")
+        response = HttpResponse(
+            '\n'.join(lines), content_type='text/plain; charset=utf-8'
+        )
+        filename = f"webhook_logs_{log_type}_{timezone.now():%Y%m%d_%H%M%S}.txt"
+    else:
+        payload = [
+            {
+                'id': log.id,
+                'log_type': log.log_type,
+                'title': log.title,
+                'message': log.message,
+                'data': log.data,
+                'created_at': log.created_at.isoformat(),
+            }
+            for log in logs
+        ]
+        response = HttpResponse(
+            json.dumps(payload, ensure_ascii=False, indent=2),
+            content_type='application/json; charset=utf-8',
+        )
+        filename = f"webhook_logs_{log_type}_{timezone.now():%Y%m%d_%H%M%S}.json"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+@superuser_required
+@require_http_methods(["POST"])
+def action_disconnect_user(request: HttpRequest, chat_id: str) -> JsonResponse:
+    """Disconnect a user from their linked Rubika account."""
+    try:
+        rubika_user = RubikaUser.objects.select_related('user').get(chat_id=chat_id)
+    except RubikaUser.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'کاربر یافت نشد'}, status=404)
+    previous = rubika_user.user.username if rubika_user.user else None
+    rubika_user.user = None
+    rubika_user.save(update_fields=['user'])
+    WebhookLog.log_info(
+        'قطع اتصال کاربر',
+        f'کاربر {chat_id} از حساب {previous} جدا شد',
+    )
+    RubPyIntegrationService.get_instance().send_text_message(
+        chat_id,
+        'اتصال حساب کاربری شما از ربات قطع شد. ❌\n\nبرای اتصال مجدد، یک کد جدید از پنل دریافت کنید.',
+    )
+    return JsonResponse({'ok': True})
+
+
+@login_required
+def connect_page(request: HttpRequest) -> HttpResponse:
+    """Render the connection page for authenticated users."""
+    settings_obj = RubikaBotSettings.get_solo()
+    rubika_user = getattr(request.user, 'rubika_profile', None)
+    is_connected = bool(rubika_user and rubika_user.user)
+    chat_id = rubika_user.chat_id if rubika_user else None
+
+    existing_code = RubikaConnectionCode.objects.filter(
+        user=request.user,
+        used=False,
+        expires_at__gt=timezone.now(),
+    ).first()
+    if not existing_code:
+        RubikaConnectionCode.objects.filter(
+            user=request.user, used=False
+        ).delete()
+        code_obj = RubikaConnectionCode.generate_for_user(
+            request.user, ttl_minutes=CONNECTION_CODE_TTL_MINUTES
+        )
+    else:
+        code_obj = existing_code
+
+    direct_link = None
+    if settings_obj.bot_username:
+        direct_link = DEEPLINK_TEMPLATE.format(
+            bot_username=settings_obj.bot_username.lstrip('@'),
+            code=code_obj.code,
+        )
+
+    context = {
+        'code': code_obj.code,
+        'expires_at': code_obj.expires_at,
+        'bot_username': settings_obj.bot_username,
+        'direct_link': direct_link,
+        'is_connected': is_connected,
+        'chat_id': chat_id,
+        'connected_user': request.user if is_connected else None,
+    }
+    return render(request, 'rubika_bot/connect.html', context)
+
+
+@login_required
+def quick_connect(request: HttpRequest) -> HttpResponse:
+    """Shortcut redirect to the connection page."""
+    return redirect('rubika_bot:connect_page')
+
+
+@login_required
+@require_http_methods(["POST"])
+def get_connection_link(request: HttpRequest) -> JsonResponse:
+    """Generate a new connection link for the logged-in user."""
+    settings_obj = RubikaBotSettings.get_solo()
+    RubikaConnectionCode.objects.filter(user=request.user, used=False).delete()
+    code = RubikaConnectionCode.generate_for_user(
+        request.user, ttl_minutes=CONNECTION_CODE_TTL_MINUTES
+    )
+    link = None
+    if settings_obj.bot_username:
+        link = DEEPLINK_TEMPLATE.format(
+            bot_username=settings_obj.bot_username.lstrip('@'),
+            code=code.code,
+        )
+    return JsonResponse(
+        {
+            'ok': True,
+            'code': code.code,
+            'link': link,
+            'expires_at': code.expires_at.isoformat(),
+            'instructions': 'روی لینک کلیک کنید یا دستور /start را به همراه کد ارسال کنید.',
+        }
+    )
+
+
+@login_required
+@require_http_methods(["POST"])
+def generate_connection_code(request: HttpRequest) -> JsonResponse:
+    """Generate a fresh connection code for the logged-in user."""
+    RubikaConnectionCode.objects.filter(user=request.user, used=False).delete()
+    code = RubikaConnectionCode.generate_for_user(
+        request.user, ttl_minutes=CONNECTION_CODE_TTL_MINUTES
+    )
+    return JsonResponse(
+        {
+            'ok': True,
+            'code': code.code,
+            'expires_at': code.expires_at.isoformat(),
+        }
+    )
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@ratelimit(key='ip', rate=WEBHOOK_RATE_LIMIT, block=True)
+def webhook_receiver(request: HttpRequest) -> JsonResponse:
+    """Receive webhook updates from Rubika and delegate to RubPy."""
+    ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
+    if not is_ip_allowed(ip):
+        WebhookLog.log_warning('وبهوک غیرمجاز', f'درخواست از IP غیرمجاز: {ip}')
+        return JsonResponse({'ok': False, 'error': 'forbidden'}, status=403)
+
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except json.JSONDecodeError:
+        WebhookLog.log_error('وبهوک نامعتبر', 'JSON معتبر نیست', {'ip': ip})
+        return JsonResponse({'ok': False, 'error': 'invalid json'}, status=400)
+
+    WebhookLog.log_incoming(
+        'دریافت وبهوک',
+        f'دریافت به‌روزرسانی از {ip}',
+        {'ip': ip, 'payload': payload},
+    )
+
+    try:
+        service = RubPyIntegrationService.get_instance()
+    except ValueError as exc:
+        logger.warning("Webhook received but token not configured: %s", exc)
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=503)
+
+    result = service.handle_webhook_payload(payload)
+    return JsonResponse(result)
 
 
 def _register_webhook_camelcase(webhook_url, token):

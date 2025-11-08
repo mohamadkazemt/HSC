@@ -1,20 +1,25 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
 from django.utils import timezone
+from django_cryptography.fields import encrypt
 import uuid
+
+from .constants import CONNECTION_CODE_TTL_MINUTES
+from .validators import validate_rubika_token
 
 
 class RubikaBotSettings(models.Model):
     """Singleton-like settings to store bot token and metadata."""
-    token = models.CharField(max_length=255, blank=True, null=True)
-    base_api_url = models.URLField(default='https://rubika.ir/bot')
-    bot_username = models.CharField(max_length=150, blank=True, null=True)
-    deeplink_template = models.CharField(
-        max_length=255,
-        blank=True,
-        null=True,
-        help_text="Use {bot_username} and {code}, e.g. https://rubika.ir/{bot_username}?start={code}"
+    token = encrypt(
+        models.CharField(
+            max_length=255,
+            blank=True,
+            null=True,
+            validators=[validate_rubika_token],
+            help_text="توکن ربات روبیکا (به صورت رمزگذاری‌شده ذخیره می‌شود).",
+        )
     )
+    bot_username = models.CharField(max_length=150, blank=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -45,6 +50,12 @@ class RubikaUser(models.Model):
     last_seen = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['first_name']),
+            models.Index(fields=['last_name']),
+        ]
 
     def __str__(self):
         return f'{self.chat_id} ({self.user.username if self.user else "unlinked"})'
@@ -78,7 +89,7 @@ class RubikaConnectionCode(models.Model):
         return f'{self.user_id}:{self.code} (used={self.used})'
 
     @classmethod
-    def generate_for_user(cls, user, ttl_minutes=60):
+    def generate_for_user(cls, user, ttl_minutes: int = CONNECTION_CODE_TTL_MINUTES):
         code = uuid.uuid4().hex
         expires = timezone.now() + timezone.timedelta(minutes=ttl_minutes)
         return cls.objects.create(user=user, code=code, expires_at=expires)
