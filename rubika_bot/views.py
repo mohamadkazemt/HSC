@@ -17,7 +17,11 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from ratelimit.decorators import ratelimit
+try:
+    # django-ratelimit <4
+    from ratelimit.decorators import ratelimit  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover - newer versions
+    from django_ratelimit.decorators import ratelimit  # type: ignore
 
 from .constants import (
     CONNECTION_CODE_TTL_MINUTES,

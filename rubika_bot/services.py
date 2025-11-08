@@ -7,6 +7,7 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
 from django.db import close_old_connections
 from django.utils import timezone
+import rubpy.filters as rubpy_filters
 from rubpy.bot.enums import ButtonTypeEnum, UpdateTypeEnum
 from rubpy.bot.models import InlineMessage, Keypad, KeypadRow, Message, Update
 from rubpy.exceptions import APIException
@@ -16,6 +17,23 @@ from .constants import BOT_REQUEST_TIMEOUT, DEEPLINK_TEMPLATE, LOG_CLEANUP_DAYS
 from .models import RubikaBotSettings, RubikaConnectionCode, RubikaUser, WebhookLog
 
 logger = logging.getLogger(__name__)
+
+# بعضی نسخه‌های RubPy ماژول filters را با یک شیء سفارشی جایگزین می‌کنند
+# که __hash__ ندارد و باعث خطا در Django autoreload می‌شود. اینجا یک
+# مقدار hash پیش‌فرض برای کلاس آن تنظیم می‌کنیم.
+try:  # pragma: no cover - محافظه‌کارانه
+    if getattr(rubpy_filters.__class__, "__hash__", None) is None:
+        rubpy_filters.__class__.__hash__ = object.__hash__
+except Exception:  # pragma: no cover - اگر در نسخه‌ای متفاوت بود
+    pass
+
+try:  # pragma: no cover - مشابه برای rubpy.handlers
+    import rubpy.handlers as rubpy_handlers  # type: ignore
+
+    if getattr(rubpy_handlers.__class__, "__hash__", None) is None:
+        rubpy_handlers.__class__.__hash__ = object.__hash__
+except Exception:
+    pass
 
 
 def _safe_str(value: Any) -> str:
@@ -360,14 +378,12 @@ class RubikaBotEngine:
         second_row = [('connect', '🔗 اتصال')]
         if connected:
             second_row.append(('disconnect', '❌ قطع اتصال'))
-        else:
-            second_row.append(('help', '📖 راهنما'))
-        third_row = [('help', '📖 راهنما')]
 
-        rows.append(first_row)
-        rows.append(second_row)
-        if not connected:
-            rows.append(third_row)
+        rows = [
+            first_row,
+            second_row,
+            [('help', '📖 راهنما')],
+        ]
 
         keypad_rows = [
             KeypadRow(
