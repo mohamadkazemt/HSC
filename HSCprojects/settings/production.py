@@ -87,6 +87,9 @@ LOGGING = {
     },
 }
 
+
+RATELIMIT_IP_META_KEY = 'HTTP_X_FORWARDED_FOR'
+
 # تنظیمات ایمیل برای تولید
 # این بخش را فقط در صورتی که ایمیل SMTP دارید کامل کنید
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
