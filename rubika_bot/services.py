@@ -341,15 +341,23 @@ class RubikaBotEngine:
             file_ext = os.path.splitext(payslip.file.name)[1] or '.pdf'
             filename = f'payslip_{year}_{month:02d}{file_ext}'
             
-            # Use the sync wrapper to send file
+            # Send file using async method
             try:
-                self.client.send_file(
-                    chat_id=chat_id,
-                    file=file_path,
-                    file_name=filename,
-                    text=f'💰 فیش حقوقی {month_name} {year}',
-                    type='File'
-                )
+                # Use _run_sync from RubPyIntegrationService to run async method in the dedicated loop
+                def send_file_sync():
+                    from rubika_bot.services import RubPyIntegrationService
+                    service = RubPyIntegrationService.get_instance()
+                    return service._run_sync(
+                        service.client.send_file(
+                            chat_id=chat_id,
+                            file=file_path,
+                            file_name=filename,
+                            text=f'💰 فیش حقوقی {month_name} {year}',
+                            type='File'
+                        )
+                    )
+                
+                await sync_to_async(send_file_sync, thread_sensitive=True)()
                 logger.info(f"Sent payslip file to {chat_id}: {year}/{month}")
             except Exception as e:
                 logger.error(f"Error sending payslip file via rubpy: {e}", exc_info=True)
