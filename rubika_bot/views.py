@@ -678,12 +678,14 @@ def connect_page(request):
     
     # بررسی وضعیت اتصال فعلی
     try:
-        rubika_user = request.user.rubika_profile
-        is_connected = rubika_user.user is not None
-        chat_id = rubika_user.chat_id if rubika_user else None
-    except:
-        is_connected = False
-        chat_id = None
+        rubika_user = request.user.rubika_profile  # type: ignore[attr-defined]
+    except RubikaUser.DoesNotExist:
+        rubika_user = None
+    except AttributeError:
+        rubika_user = None
+
+    is_connected = bool(rubika_user and rubika_user.user_id)
+    chat_id = rubika_user.chat_id if rubika_user else None
     
     # دریافت یا ایجاد کد اتصال
     existing_code = RubikaConnectionCode.objects.filter(
