@@ -3,6 +3,7 @@ from django.db import models
 from django.utils import timezone
 from django_cryptography.fields import encrypt
 import uuid
+from urllib.parse import quote
 
 from .constants import CONNECTION_CODE_TTL_MINUTES
 from .validators import validate_rubika_token
@@ -22,6 +23,21 @@ class RubikaBotSettings(models.Model):
     bot_username = models.CharField(max_length=150, blank=True, null=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    proxy_enabled = models.BooleanField(default=False)
+    proxy_scheme = models.CharField(
+        max_length=10,
+        choices=(
+            ('socks5', 'SOCKS5'),
+            ('http', 'HTTP'),
+            ('https', 'HTTPS'),
+        ),
+        default='socks5',
+    )
+    proxy_host = models.CharField(max_length=255, blank=True, null=True)
+    proxy_port = models.PositiveIntegerField(blank=True, null=True)
+    proxy_username = models.CharField(max_length=255, blank=True, null=True)
+    proxy_password = encrypt(models.CharField(max_length=255, blank=True, null=True))
+
     class Meta:
         verbose_name = 'Rubika Bot Settings'
         verbose_name_plural = 'Rubika Bot Settings'
@@ -33,6 +49,35 @@ class RubikaBotSettings(models.Model):
     def get_solo(cls):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+
+    def build_proxy_url(self) -> str:
+        if not self.proxy_enabled:
+            return ''
+        host = (self.proxy_host or '').strip()
+        port = self.proxy_port
+        if not host or not port:
+            return ''
+        auth = ''
+        username = (self.proxy_username or '').strip()
+        password = self.proxy_password or ''
+        if username:
+            auth = quote(username, safe='')
+            if password:
+                auth += f':{quote(password, safe="")}'
+            auth += '@'
+        return f'{self.proxy_scheme}://{auth}{host}:{port}'
+
+    def get_masked_proxy_url(self) -> str:
+        if not self.proxy_enabled:
+            return ''
+        host = (self.proxy_host or '').strip()
+        port = self.proxy_port
+        if not host or not port:
+            return ''
+        username = (self.proxy_username or '').strip()
+        if username:
+            return f'{self.proxy_scheme}://{username}@{host}:{port}'
+        return f'{self.proxy_scheme}://{host}:{port}'
 
 
 class RubikaUser(models.Model):

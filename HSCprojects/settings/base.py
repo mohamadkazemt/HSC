@@ -292,6 +292,7 @@ RUBIKA_BOT = {
     'WEBHOOK_ALLOWED_IPS': [],
     'BOT_REQUEST_TIMEOUT': 15,
     'DEEPLINK_TEMPLATE': 'https://rubika.ir/{bot_username}?start={code}',
+    'PROXY_URL': os.environ.get('RUBIKA_PROXY_URL', ''),
 }
 
 CELERY_BEAT_SCHEDULE = {

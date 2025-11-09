@@ -23,6 +23,57 @@
           <input type="text" name="bot_username" value="{{ settings.bot_username|default:'' }}" class="w-full rounded border p-2" placeholder="مثال: my_bot">
         </div>
       </div>
+
+      <div class="mt-6 border-t pt-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-md font-semibold">تنظیمات پراکسی</h3>
+          {% if proxy_preview %}
+            <span class="text-xs text-gray-500">فعال: {{ proxy_preview }}</span>
+          {% endif %}
+        </div>
+        <label class="inline-flex items-center gap-2 text-sm mb-4">
+          <input type="checkbox" id="proxy-enabled" name="proxy_enabled" class="rounded" {% if settings.proxy_enabled %}checked{% endif %}>
+          <span>فعال‌سازی پراکسی برای ارتباط با API روبیکا</span>
+        </label>
+        <div id="proxy-fields-wrapper" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-sm mb-1">پروتکل پراکسی</label>
+            <select id="proxy-scheme" name="proxy_scheme" class="w-full rounded border p-2" data-proxy-field>
+              {% for value,label in proxy_choices %}
+                <option value="{{ value }}" {% if settings.proxy_scheme == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm mb-1">آدرس سرور</label>
+            <input id="proxy-host" type="text" name="proxy_host" value="{{ settings.proxy_host|default:'' }}" class="w-full rounded border p-2" data-proxy-field placeholder="مثال: srv2.example.com">
+          </div>
+          <div>
+            <label class="block text-sm mb-1">پورت</label>
+            <input id="proxy-port" type="number" name="proxy_port" value="{{ settings.proxy_port|default_if_none:'' }}" class="w-full rounded border p-2" data-proxy-field placeholder="مثال: 26863">
+          </div>
+          <div>
+            <label class="block text-sm mb-1">نام کاربری (اختیاری)</label>
+            <input id="proxy-username" type="text" name="proxy_username" value="{{ settings.proxy_username|default:'' }}" class="w-full rounded border p-2" data-proxy-field placeholder="Username">
+          </div>
+          <div>
+            <label class="block text-sm mb-1">رمز عبور (در صورت تغییر)</label>
+            <input id="proxy-password" type="password" name="proxy_password" value="" class="w-full rounded border p-2" data-proxy-field placeholder="{% if proxy_password_saved %}برای تغییر مقدار جدید را وارد کنید{% else %}Password{% endif %}">
+            {% if proxy_password_saved %}
+              <label class="inline-flex items-center gap-2 text-xs mt-2">
+                <input type="checkbox" id="clear-proxy-password" name="clear_proxy_password" value="1" class="rounded" data-proxy-field>
+                <span>حذف رمز ذخیره شده</span>
+              </label>
+              <p class="text-xs text-gray-500 mt-1">رمز فعلی به صورت امن ذخیره شده است. برای نگه داشتن رمز فعلی، فیلد را خالی بگذارید.</p>
+            {% endif %}
+          </div>
+        </div>
+        <div class="mt-4 flex items-center gap-3 flex-wrap">
+          <button type="button" id="btn-test-proxy" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors">تست پراکسی</button>
+          <span id="proxy-test-result" class="text-sm text-gray-500"></span>
+        </div>
+      </div>
+
       <div class="mt-3">
         <button class="btn btn-primary px-4 py-2 bg-indigo-600 text-white rounded">ذخیره</button>
       </div>
@@ -200,6 +251,114 @@
 <script>
   const csrftoken = (document.cookie.match(/csrftoken=([^;]+)/)||[])[1];
   const webhookResult = document.getElementById('webhook-result');
+  const proxyPasswordSaved = {{ proxy_password_saved|yesno:"true,false" }};
+  const proxyEnabledInput = document.getElementById('proxy-enabled');
+  const proxyFields = Array.from(document.querySelectorAll('[data-proxy-field]'));
+  const proxyFieldsWrapper = document.getElementById('proxy-fields-wrapper');
+  const proxyTestButton = document.getElementById('btn-test-proxy');
+  const proxyTestResultEl = document.getElementById('proxy-test-result');
+  const clearProxyPasswordInput = document.getElementById('clear-proxy-password');
+  const proxyTestUrl = '{% url "rubika_bot:test_proxy" %}';
+
+  function toggleProxyFields() {
+    const enabled = proxyEnabledInput ? proxyEnabledInput.checked : false;
+    proxyFields.forEach(field => {
+      field.disabled = !enabled;
+      field.classList.toggle('bg-gray-100', !enabled);
+      field.classList.toggle('cursor-not-allowed', !enabled);
+    });
+    if (proxyFieldsWrapper) {
+      proxyFieldsWrapper.classList.toggle('opacity-50', !enabled);
+    }
+    if (!enabled && proxyTestResultEl) {
+      proxyTestResultEl.textContent = '';
+    }
+  }
+
+  if (proxyEnabledInput) {
+    proxyEnabledInput.addEventListener('change', toggleProxyFields);
+    toggleProxyFields();
+  }
+
+  if (proxyTestButton) {
+    proxyTestButton.addEventListener('click', () => {
+      if (!proxyEnabledInput || !proxyEnabledInput.checked) {
+        if (proxyTestResultEl) {
+          proxyTestResultEl.textContent = 'ابتدا گزینه‌ی فعال‌سازی پراکسی را روشن کنید.';
+          proxyTestResultEl.style.color = '#f97316';
+        }
+        return;
+      }
+
+      const payload = {
+        scheme: document.getElementById('proxy-scheme')?.value || 'socks5',
+        host: document.getElementById('proxy-host')?.value.trim() || '',
+        port: document.getElementById('proxy-port')?.value.trim() || '',
+        username: document.getElementById('proxy-username')?.value.trim() || '',
+        password: document.getElementById('proxy-password')?.value || '',
+      };
+
+      if (!payload.host || !payload.port) {
+        if (proxyTestResultEl) {
+          proxyTestResultEl.textContent = 'لطفاً آدرس و پورت پراکسی را وارد کنید.';
+          proxyTestResultEl.style.color = '#f97316';
+        }
+        return;
+      }
+
+      if (!payload.password && proxyPasswordSaved && !(clearProxyPasswordInput && clearProxyPasswordInput.checked)) {
+        payload.use_saved_password = true;
+      }
+
+      if (proxyTestResultEl) {
+        proxyTestResultEl.textContent = 'در حال تست اتصال...';
+        proxyTestResultEl.style.color = '#6b7280';
+      }
+
+      const originalText = proxyTestButton.textContent;
+      proxyTestButton.disabled = true;
+      proxyTestButton.textContent = 'در حال تست...';
+      proxyTestButton.classList.add('opacity-70');
+
+      fetch(proxyTestUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrftoken,
+        },
+        body: JSON.stringify(payload),
+      })
+        .then(response => response.json().then(data => ({ status: response.status, data })))
+        .then(({ status, data }) => {
+          proxyTestButton.disabled = false;
+          proxyTestButton.textContent = originalText;
+          proxyTestButton.classList.remove('opacity-70');
+
+          if (status >= 400 || !data.ok) {
+            if (proxyTestResultEl) {
+              proxyTestResultEl.textContent = '❌ ' + (data.error || 'خطا در تست پراکسی');
+              proxyTestResultEl.style.color = '#ef4444';
+            }
+          } else {
+            if (proxyTestResultEl) {
+              const latency = data.latency_ms !== undefined ? ` | تاخیر: ${data.latency_ms}ms` : '';
+              proxyTestResultEl.textContent = `✅ اتصال موفق (Status: ${data.status})${latency}`;
+              proxyTestResultEl.style.color = '#10b981';
+            }
+          }
+        })
+        .catch(error => {
+          proxyTestButton.disabled = false;
+          proxyTestButton.textContent = originalText;
+          proxyTestButton.classList.remove('opacity-70');
+          if (proxyTestResultEl) {
+            proxyTestResultEl.textContent = '❌ خطا: ' + error.message;
+            proxyTestResultEl.style.color = '#ef4444';
+          }
+          console.error('Proxy test error:', error);
+        });
+    });
+  }
   
   // Helper function to show result
   function showResult(data, isError = false) {

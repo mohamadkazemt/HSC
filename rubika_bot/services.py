@@ -9,12 +9,18 @@ from concurrent.futures import Future
 from typing import Any, Awaitable, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
 from asgiref.sync import sync_to_async
+from django.conf import settings
 from django.db import close_old_connections
 from django.utils import timezone
 from rubpy.bot.enums import ButtonTypeEnum
 from rubpy.bot.models import InlineMessage, Keypad, KeypadRow, Message, Update
 from rubpy.bot.bot import BotClient
 from rubpy.exceptions import APIException
+
+try:
+    from aiohttp_socks import ProxyConnector
+except ImportError:  # pragma: no cover - only when extra dependency missing
+    ProxyConnector = None  # type: ignore[assignment]
 
 from .constants import BOT_REQUEST_TIMEOUT
 from .models import RubikaBotSettings, RubikaConnectionCode, RubikaUser, WebhookLog
@@ -261,11 +267,28 @@ class RubPyIntegrationService:
         self._loop_thread.start()
         self._loop_ready.wait()
 
+        proxy_url = ''
+        if hasattr(settings_obj, 'build_proxy_url'):
+            proxy_url = settings_obj.build_proxy_url()
+        if not proxy_url and hasattr(settings, 'RUBIKA_BOT'):
+            proxy_url = settings.RUBIKA_BOT.get('PROXY_URL', '')
+        connector = None
+        if proxy_url:
+            if ProxyConnector is None:
+                logger.warning("Proxy URL defined but aiohttp_socks is not installed; continuing without proxy.")
+            else:
+                try:
+                    connector = ProxyConnector.from_url(proxy_url)
+                    logger.info("Using SOCKS proxy for Rubika client at %s", proxy_url)
+                except Exception as exc:
+                    logger.error("Failed to create proxy connector from %s: %s", proxy_url, exc, exc_info=True)
+
         try:
             self.client = BotClient(
                 token=settings_obj.token,
                 use_webhook=True,
                 timeout=BOT_REQUEST_TIMEOUT,
+                connector=connector,
             )
             self.engine = RubikaBotEngine(self.client)
             self._register_handlers()

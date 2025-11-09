@@ -1,7 +1,12 @@
 # rubika_bot/views.py
 
+import asyncio
 import json
 import logging
+import time
+from urllib.parse import quote
+
+import aiohttp
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
@@ -20,6 +25,11 @@ try:
     from django_ratelimit.decorators import ratelimit
 except ModuleNotFoundError:
     from ratelimit.decorators import ratelimit
+
+try:
+    from aiohttp_socks import ProxyConnector
+except ImportError:  # pragma: no cover
+    ProxyConnector = None  # type: ignore[assignment]
 
 from .constants import (
     DEEPLINK_TEMPLATE,
@@ -85,6 +95,30 @@ def settings_view(request: HttpRequest) -> HttpResponse:
         bot_username = (request.POST.get('bot_username') or '').strip() or None
         settings_obj.token = token
         settings_obj.bot_username = bot_username
+
+        proxy_enabled = request.POST.get('proxy_enabled') in {'on', 'true', '1'}
+        proxy_scheme = (request.POST.get('proxy_scheme') or settings_obj.proxy_scheme or 'socks5').lower()
+        proxy_host = (request.POST.get('proxy_host') or '').strip() or None
+        proxy_port_raw = (request.POST.get('proxy_port') or '').strip()
+        proxy_username = (request.POST.get('proxy_username') or '').strip() or None
+        proxy_password_input = (request.POST.get('proxy_password') or '').strip()
+        clear_proxy_password = request.POST.get('clear_proxy_password') == '1'
+
+        settings_obj.proxy_enabled = proxy_enabled
+        settings_obj.proxy_scheme = proxy_scheme if proxy_scheme in dict(settings_obj._meta.get_field('proxy_scheme').choices) else 'socks5'
+        settings_obj.proxy_host = proxy_host
+
+        try:
+            settings_obj.proxy_port = int(proxy_port_raw) if proxy_port_raw else None
+        except ValueError:
+            settings_obj.proxy_port = None
+
+        settings_obj.proxy_username = proxy_username
+        if clear_proxy_password:
+            settings_obj.proxy_password = None
+        elif proxy_password_input:
+            settings_obj.proxy_password = proxy_password_input
+
         settings_obj.save()
         RubPyIntegrationService.reset() # Reset service to use new token
         return redirect('rubika_bot:settings')
@@ -99,11 +133,24 @@ def settings_view(request: HttpRequest) -> HttpResponse:
     paginator = Paginator(users_qs, MAX_USERS_PER_PAGE)
     page_obj = paginator.get_page(request.GET.get('page'))
 
+    sample_code = 'SAMPLECODE123'
+    deeplink_example = None
+    if settings_obj.bot_username:
+        deeplink_example = DEEPLINK_TEMPLATE.format(
+            bot_username=settings_obj.bot_username.lstrip('@'),
+            code=sample_code,
+        )
+
     context = {
         'settings': settings_obj,
         'users_page': page_obj,
         'webhook_url': request.build_absolute_uri(reverse('rubika_bot:webhook')),
         'search_query': search or '',
+        'deeplink_template': DEEPLINK_TEMPLATE,
+        'deeplink_example': deeplink_example,
+        'proxy_password_saved': bool(settings_obj.proxy_password),
+        'proxy_preview': settings_obj.get_masked_proxy_url(),
+        'proxy_choices': RubikaBotSettings._meta.get_field('proxy_scheme').choices,
     }
     return render(request, 'rubika_bot/settings.html', context)
 
@@ -140,6 +187,87 @@ def action_get_webhook_info(request: HttpRequest) -> JsonResponse:
     except Exception as exc:
         logger.exception("Failed to get webhook info: %s", exc)
         return JsonResponse({'ok': False, 'error': str(exc)}, status=500)
+
+
+@superuser_required
+@require_http_methods(["POST"])
+def action_test_proxy(request: HttpRequest) -> JsonResponse:
+    """Test proxy connectivity before saving settings."""
+    if ProxyConnector is None:
+        return JsonResponse(
+            {
+                'ok': False,
+                'error': 'پشتیبانی از پراکسی SOCKS نصب نشده است. پکیج aiohttp_socks را نصب کنید.'
+            },
+            status=400,
+        )
+
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False, 'error': 'داده ارسال شده نامعتبر است.'}, status=400)
+
+    scheme = (payload.get('scheme') or 'socks5').lower()
+    host = (payload.get('host') or '').strip()
+    port_raw = payload.get('port') or payload.get('proxy_port')
+    username = (payload.get('username') or '').strip()
+    password = (payload.get('password') or '')
+    use_saved_password = bool(payload.get('use_saved_password'))
+
+    if not host or not port_raw:
+        return JsonResponse({'ok': False, 'error': 'وارد کردن آدرس و پورت پراکسی الزامی است.'}, status=400)
+
+    try:
+        port = int(port_raw)
+    except (TypeError, ValueError):
+        return JsonResponse({'ok': False, 'error': 'پورت وارد شده معتبر نیست.'}, status=400)
+
+    settings_obj = RubikaBotSettings.get_solo()
+    if use_saved_password and not password:
+        password = settings_obj.proxy_password or ''
+        if not username and settings_obj.proxy_username:
+            username = settings_obj.proxy_username
+
+    auth = ''
+    if username:
+        auth = quote(username, safe='')
+        if password:
+            auth += f':{quote(password, safe="")}'
+        auth += '@'
+    proxy_url = f'{scheme}://{auth}{host}:{port}'
+
+    display_proxy = f'{scheme}://{username + "@" if username else ""}{host}:{port}'
+
+    async def _check(url: str) -> int:
+        connector = ProxyConnector.from_url(url)
+        timeout = aiohttp.ClientTimeout(total=10)
+        async with aiohttp.ClientSession(connector=connector, timeout=timeout, trust_env=False) as session:
+            async with session.get('https://botapi.rubika.ir/', allow_redirects=False) as response:
+                await response.text()
+                return response.status
+
+    loop = asyncio.new_event_loop()
+    start = time.perf_counter()
+    try:
+        asyncio.set_event_loop(loop)
+        status_code = loop.run_until_complete(_check(proxy_url))
+    except Exception as exc:
+        logger.warning("Proxy test failed for %s: %s", display_proxy, exc)
+        return JsonResponse({'ok': False, 'error': str(exc), 'proxy': display_proxy}, status=400)
+    finally:
+        loop.run_until_complete(loop.shutdown_asyncgens())
+        loop.close()
+        asyncio.set_event_loop(None)
+    duration_ms = (time.perf_counter() - start) * 1000
+
+    return JsonResponse(
+        {
+            'ok': True,
+            'status': status_code,
+            'proxy': display_proxy,
+            'latency_ms': round(duration_ms, 2),
+        }
+    )
 
 
 @superuser_required

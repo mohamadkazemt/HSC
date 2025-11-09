@@ -7,6 +7,7 @@ urlpatterns = [
     path('settings/', views.settings_view, name='settings'),
     path('settings/register-webhook/', views.action_register_webhook, name='register_webhook'),
     path('settings/webhook-info/', views.action_get_webhook_info, name='webhook_info'),
+    path('settings/test-proxy/', views.action_test_proxy, name='test_proxy'),
     path('settings/broadcast/', views.action_broadcast, name='broadcast'),
     path('settings/disconnect/<str:chat_id>/', views.action_disconnect_user, name='disconnect_user'),
     path('settings/logs/', views.get_webhook_logs, name='get_logs'),
