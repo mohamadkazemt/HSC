@@ -256,6 +256,103 @@ def action_disconnect_user(request: HttpRequest, chat_id: str) -> JsonResponse:
     return JsonResponse({'ok': True})
 
 
+# ---------------------------------------------------------------------------
+# Service-backed overrides for legacy handlers
+# ---------------------------------------------------------------------------
+
+def _get_service() -> RubPyIntegrationService:
+    try:
+        return RubPyIntegrationService.get_instance()
+    except ValueError as exc:
+        WebhookLog.log_error('خطای webhook', f'توکن تنظیم نشده است: {exc}')
+        raise
+
+
+def handle_inline_message(payload: Dict[str, Any]) -> JsonResponse:
+    WebhookLog.log_info('پیام اینلاین', 'پردازش با RubPyIntegrationService', {'payload': payload})
+    service = _get_service()
+    service.handle_webhook_payload({'inline_message': payload})
+    return JsonResponse({'ok': True}, status=200)
+
+
+def handle_query(payload: Dict[str, Any]) -> JsonResponse:
+    query_data = payload.get('query') or {}
+    chat_id = str(query_data.get('chat_id') or '')
+    button_id = str(query_data.get('button_id') or '')
+    query_id = query_data.get('query_id')
+
+    WebhookLog.log_info('دکمه فشرده شده', f'دکمه {button_id} از چت {chat_id}', {'query': query_data})
+
+    if not chat_id or not button_id:
+        return JsonResponse({'ok': True, 'status': 'ignored'}, status=200)
+
+    user = RubikaUser.get_or_create_by_chat(chat_id)
+    user.touch_seen()
+
+    try:
+        service = _get_service()
+        service.engine._handle_button(chat_id, button_id, user)  # type: ignore[attr-defined]
+        if query_id:
+            try:
+                service.client.answer_query(query_id, '✅ انجام شد')
+            except Exception:
+                logger.debug("answer_query failed for %s", query_id, exc_info=True)
+    except Exception as exc:
+        logger.exception("Failed to handle query %s for chat %s", button_id, chat_id)
+        WebhookLog.log_error(
+            'خطای Query',
+            f'خطا در پردازش کوئری: {exc}',
+            {'payload': payload},
+        )
+    return JsonResponse({'ok': True, 'status': 'ok'}, status=200)
+
+
+def handle_selection_item(payload: Dict[str, Any]) -> JsonResponse:
+    WebhookLog.log_info('آیتم انتخاب شد', 'درخواست getSelectionItem دریافت شد', {'payload': payload})
+    return JsonResponse({'ok': True, 'status': 'ok'}, status=200)
+
+
+def handle_search_selection(payload: Dict[str, Any]) -> JsonResponse:
+    WebhookLog.log_info('جستجوی آیتم', 'درخواست searchSelectionItems دریافت شد', {'payload': payload})
+    return JsonResponse({'ok': True, 'status': 'ok'}, status=200)
+
+
+def handle_receive_update(payload: Dict[str, Any], chat_id: Any, text: str, user_data: Dict[str, Any]) -> JsonResponse:
+    service = _get_service()
+    service.handle_webhook_payload(payload)
+    return JsonResponse({'ok': True}, status=200)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@ratelimit(key='ip', rate=WEBHOOK_RATE_LIMIT, block=True)
+def webhook_receiver(request: HttpRequest) -> JsonResponse:
+    ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except json.JSONDecodeError:
+        WebhookLog.log_error('وبهوک نامعتبر', 'JSON معتبر نیست', {'ip': ip})
+        return JsonResponse({'ok': False, 'error': 'invalid json'}, status=400)
+
+    if not is_ip_allowed(ip):
+        WebhookLog.log_warning('وبهوک غیرمجاز', f'درخواست از IP غیرمجاز: {ip}')
+        return JsonResponse({'ok': False, 'error': 'forbidden'}, status=403)
+
+    WebhookLog.log_incoming(
+        'دریافت وبهوک',
+        f'دریافت به‌روزرسانی از {ip}',
+        {'ip': ip, 'payload': payload},
+    )
+
+    try:
+        service = _get_service()
+    except ValueError as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=503)
+
+    result = service.handle_webhook_payload(payload)
+    return JsonResponse(result)
+
+
 @login_required
 def connect_page(request: HttpRequest) -> HttpResponse:
     """Render the connection page for authenticated users."""
@@ -641,134 +738,6 @@ def export_webhook_logs(request):
             
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
-
-
-@superuser_required
-def action_disconnect_user(request, chat_id):
-    """قطع اتصال کاربر از ربات"""
-    if request.method != 'POST':
-        return JsonResponse({'ok': False, 'error': 'Invalid method'}, status=405)
-    try:
-        ru = RubikaUser.objects.get(chat_id=chat_id)
-        old_user = ru.user.username if ru.user else None
-        ru.user = None
-        ru.save(update_fields=['user'])
-        
-        WebhookLog.log_info('قطع اتصال', f'کاربر {chat_id} ({old_user}) از ربات قطع شد')
-        
-        # Send notification to user
-        try:
-            client = RubikaClient()
-            msg = 'اتصال حساب کاربری شما از ربات قطع شد. ❌\n\nبرای اتصال مجدد، یک کد جدید از پنل دریافت کنید.'
-            client.send_message(chat_id, msg)
-        except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.warning(f'Failed to send disconnect notification to {chat_id}: {str(e)}')
-        
-        return JsonResponse({'ok': True, 'message': f'User {old_user} disconnected from chat_id {chat_id}'})
-    except RubikaUser.DoesNotExist:
-        return JsonResponse({'ok': False, 'error': 'User not found'}, status=404)
-    except Exception as e:
-        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
-
-
-@login_required
-def connect_page(request):
-    """صفحه کامل اتصال به ربات با تمام امکانات"""
-    settings_obj = RubikaBotSettings.get_solo()
-    
-    # بررسی وضعیت اتصال فعلی
-    try:
-        rubika_user = request.user.rubika_profile  # type: ignore[attr-defined]
-    except RubikaUser.DoesNotExist:
-        rubika_user = None
-    except AttributeError:
-        rubika_user = None
-
-    is_connected = bool(rubika_user and rubika_user.user_id)
-    chat_id = rubika_user.chat_id if rubika_user else None
-    
-    # دریافت یا ایجاد کد اتصال
-    existing_code = RubikaConnectionCode.objects.filter(
-        user=request.user, 
-        used=False, 
-        expires_at__gt=timezone.now()
-    ).first()
-    
-    if not existing_code:
-        RubikaConnectionCode.objects.filter(user=request.user, used=False).delete()
-        code_obj = RubikaConnectionCode.generate_for_user(request.user)
-    else:
-        code_obj = existing_code
-    
-    # ایجاد لینک مستقیم
-    direct_link = None
-    if settings_obj.bot_username:
-        bot_username = settings_obj.bot_username.lstrip('@')
-        template = getattr(settings_obj, 'deeplink_template', None) or DEEPLINK_TEMPLATE
-        direct_link = template.format(bot_username=bot_username, code=code_obj.code)
-    
-    context = {
-        'code': code_obj.code,
-        'expires_at': code_obj.expires_at,
-        'bot_username': settings_obj.bot_username,
-        'direct_link': direct_link,
-        'is_connected': is_connected,
-        'chat_id': chat_id,
-        'connected_user': request.user if is_connected else None,
-    }
-    
-    return render(request, 'rubika_bot/connect.html', context)
-
-
-@login_required
-def quick_connect(request):
-    """اتصال سریع - ایجاد کد و لینک مستقیم (redirect به صفحه کامل)"""
-    return redirect('rubika_bot:connect_page')
-
-
-@login_required
-def get_connection_link(request):
-    """دریافت لینک مستقیم اتصال با کد"""
-    if request.method != 'POST':
-        return JsonResponse({'ok': False, 'error': 'Invalid method'}, status=405)
-    
-    try:
-        settings_obj = RubikaBotSettings.get_solo()
-        # Invalidate previous unused codes
-        RubikaConnectionCode.objects.filter(user=request.user, used=False).delete()
-        code = RubikaConnectionCode.generate_for_user(request.user)
-        
-        # Create direct link
-        link = None
-        if settings_obj.bot_username:
-            bot_username = settings_obj.bot_username.lstrip('@')
-            template = getattr(settings_obj, 'deeplink_template', None) or DEEPLINK_TEMPLATE
-            link = template.format(bot_username=bot_username, code=code.code)
-        
-        return JsonResponse({
-            'ok': True,
-            'code': code.code,
-            'link': link,
-            'expires_at': code.expires_at.isoformat(),
-            'instructions': f'روی لینک زیر کلیک کنید یا در ربات دستور /start {code.code} را ارسال کنید'
-        })
-    except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f'Error generating connection link: {str(e)}', exc_info=True)
-        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
-
-
-@login_required
-def generate_connection_code(request):
-    if request.method != 'POST':
-        return HttpResponseBadRequest('Invalid method')
-    # Invalidate previous unused codes (optional)
-    RubikaConnectionCode.objects.filter(user=request.user, used=False).delete()
-    code = RubikaConnectionCode.generate_for_user(request.user)
-    return JsonResponse({'ok': True, 'code': code.code, 'expires_at': code.expires_at.isoformat()})
 
 
 def handle_inline_message(payload):
