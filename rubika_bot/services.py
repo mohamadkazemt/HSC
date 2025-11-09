@@ -121,12 +121,17 @@ class RubikaBotEngine:
         mapping = {
             'start': self._send_welcome, 'help': self._send_help, 'connect': self._handle_connect_button,
             'disconnect': self._disconnect_user, 'account': self._send_account_status,
+            'payslip': self._handle_payslip_request,
         }
         handler = mapping.get(button_id.lower())
         if handler:
             await handler(chat_id, user)
         else:
-            logger.debug("Unknown button id %s for chat %s", button_id, chat_id)
+            # Check if it's a payslip selection button (format: payslip_YYYY_MM)
+            if button_id.startswith('payslip_'):
+                await self._send_payslip_file(chat_id, user, button_id)
+            else:
+                logger.debug("Unknown button id %s for chat %s", button_id, chat_id)
 
     async def _handle_command(self, chat_id: str, text: str, user: RubikaUser) -> None:
         parts = text.split()
@@ -189,6 +194,173 @@ class RubikaBotEngine:
             message = 'شما به هیچ حساب کاربری متصل نیستید. ⚠️'
         await self._send_text_message(chat_id, message)
 
+    async def _handle_payslip_request(self, chat_id: str, user: RubikaUser) -> None:
+        """نمایش لیست فیش‌های حقوقی موجود برای کاربر"""
+        if not user.user:
+            message = '⚠️ برای دریافت فیش حقوقی، ابتدا باید به حساب کاربری خود متصل شوید.\n\n🔗 از دکمه "اتصال" استفاده کنید.'
+            await self._send_text_message(chat_id, message)
+            return
+        
+        # Get user profile and payslips
+        @sync_to_async(thread_sensitive=True)
+        def get_payslips():
+            from accounts.models import UserProfile, Payslip
+            try:
+                profile = UserProfile.objects.get(user=user.user)
+                payslips = list(Payslip.objects.filter(user_profile=profile).order_by('-year', '-month')[:12])
+                return profile, payslips
+            except UserProfile.DoesNotExist:
+                return None, []
+        
+        profile, payslips = await get_payslips()
+        
+        if not profile:
+            message = '⚠️ پروفایل کاربری شما یافت نشد. لطفاً با پشتیبانی تماس بگیرید.'
+            await self._send_text_message(chat_id, message)
+            return
+        
+        if not payslips:
+            message = '📭 هیچ فیش حقوقی برای شما ثبت نشده است.'
+            await self._send_text_message(chat_id, message)
+            return
+        
+        # Build keyboard with available payslips
+        from rubpy.bot.models import Keypad, KeypadRow
+        
+        message_lines = [
+            '💰 فیش‌های حقوقی موجود:',
+            '',
+            '👇 یکی از ماه‌های زیر را انتخاب کنید:'
+        ]
+        
+        # Create buttons for each payslip (max 2 per row)
+        rows = []
+        current_row = []
+        
+        # Persian month names
+        persian_months = {
+            1: 'فروردین', 2: 'اردیبهشت', 3: 'خرداد', 4: 'تیر',
+            5: 'مرداد', 6: 'شهریور', 7: 'مهر', 8: 'آبان',
+            9: 'آذر', 10: 'دی', 11: 'بهمن', 12: 'اسفند'
+        }
+        
+        for payslip in payslips:
+            month_name = persian_months.get(payslip.month, str(payslip.month))
+            button_id = f'payslip_{payslip.year}_{payslip.month}'
+            button_label = f'{month_name} {payslip.year}'
+            
+            current_row.append((button_id, button_label))
+            
+            if len(current_row) == 2:
+                rows.append(current_row)
+                current_row = []
+        
+        # Add remaining button if any
+        if current_row:
+            rows.append(current_row)
+        
+        # Add back button
+        rows.append([('start', '🔙 بازگشت')])
+        
+        keypad_rows = [KeypadRow(buttons=[self._button(button_id, label) for button_id, label in row]) for row in rows]
+        keyboard = Keypad(rows=keypad_rows)
+        
+        await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
+
+    async def _send_payslip_file(self, chat_id: str, user: RubikaUser, button_id: str) -> None:
+        """ارسال فایل فیش حقوقی به کاربر"""
+        if not user.user:
+            message = '⚠️ برای دریافت فیش حقوقی، ابتدا باید به حساب کاربری خود متصل شوید.'
+            await self._send_text_message(chat_id, message)
+            return
+        
+        # Parse button_id to extract year and month (format: payslip_YYYY_MM)
+        try:
+            parts = button_id.split('_')
+            year = int(parts[1])
+            month = int(parts[2])
+        except (IndexError, ValueError):
+            message = '❌ خطا در شناسایی فیش حقوقی.'
+            await self._send_text_message(chat_id, message)
+            return
+        
+        # Get payslip from database
+        @sync_to_async(thread_sensitive=True)
+        def get_payslip():
+            from accounts.models import UserProfile, Payslip
+            try:
+                profile = UserProfile.objects.get(user=user.user)
+                payslip = Payslip.objects.get(user_profile=profile, year=year, month=month)
+                return payslip
+            except (UserProfile.DoesNotExist, Payslip.DoesNotExist):
+                return None
+        
+        payslip = await get_payslip()
+        
+        if not payslip:
+            message = '❌ فیش حقوقی مورد نظر یافت نشد.'
+            await self._send_text_message(chat_id, message)
+            return
+        
+        if not payslip.file:
+            message = '❌ فایل فیش حقوقی موجود نیست.'
+            await self._send_text_message(chat_id, message)
+            return
+        
+        # Send file to user
+        try:
+            # Get file path
+            @sync_to_async(thread_sensitive=True)
+            def get_file_path():
+                try:
+                    return payslip.file.path
+                except Exception as e:
+                    logger.error(f"Error getting payslip file path: {e}")
+                    return None
+            
+            file_path = await get_file_path()
+            
+            if not file_path:
+                message = '❌ خطا در دسترسی به فایل فیش حقوقی.'
+                await self._send_text_message(chat_id, message)
+                return
+            
+            # Persian month names for caption
+            persian_months = {
+                1: 'فروردین', 2: 'اردیبهشت', 3: 'خرداد', 4: 'تیر',
+                5: 'مرداد', 6: 'شهریور', 7: 'مهر', 8: 'آبان',
+                9: 'آذر', 10: 'دی', 11: 'بهمن', 12: 'اسفند'
+            }
+            month_name = persian_months.get(month, str(month))
+            
+            # Send confirmation message first
+            await self._send_text_message(chat_id, f'📄 در حال ارسال فیش حقوقی {month_name} {year}...')
+            
+            # Get file extension and create display filename
+            import os
+            file_ext = os.path.splitext(payslip.file.name)[1] or '.pdf'
+            filename = f'payslip_{year}_{month:02d}{file_ext}'
+            
+            # Use the sync wrapper to send file
+            try:
+                self.client.send_file(
+                    chat_id=chat_id,
+                    file=file_path,
+                    file_name=filename,
+                    text=f'💰 فیش حقوقی {month_name} {year}',
+                    type='File'
+                )
+                logger.info(f"Sent payslip file to {chat_id}: {year}/{month}")
+            except Exception as e:
+                logger.error(f"Error sending payslip file via rubpy: {e}", exc_info=True)
+                message = '❌ خطا در ارسال فایل. لطفاً از طریق پنل وب اقدام کنید.'
+                await self._send_text_message(chat_id, message)
+                
+        except Exception as exc:
+            logger.exception(f"Error in _send_payslip_file: {exc}")
+            message = '❌ خطا در ارسال فیش حقوقی. لطفاً دوباره تلاش کنید.'
+            await self._send_text_message(chat_id, message)
+
     async def _process_connection_code(self, chat_id: str, user: RubikaUser, args: Sequence[str]) -> None:
         if not args:
             await self._handle_connect_button(chat_id, user)
@@ -233,7 +405,7 @@ class RubikaBotEngine:
         first_row = [('start', '🔄 شروع'), ('account', '📊 وضعیت')]
         second_row = [('connect', '🔗 اتصال')]
         if connected:
-            second_row.append(('disconnect', '❌ قطع اتصال'))
+            second_row.extend([('payslip', '💰 فیش حقوقی'), ('disconnect', '❌ قطع اتصال')])
         rows = [first_row, second_row, [('help', '📖 راهنما')]]
         keypad_rows = [KeypadRow(buttons=[self._button(button_id, label) for button_id, label in row]) for row in rows]
         return Keypad(rows=keypad_rows)
