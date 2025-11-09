@@ -32,6 +32,8 @@ from .constants import (
 from .models import RubikaBotSettings, RubikaConnectionCode, RubikaUser, WebhookLog
 from .services import RubPyIntegrationService
 from .tasks import send_rubika_message
+from .tasks import process_webhook_task # این import را اضافه یا جایگزین کنید
+
 
 logger = logging.getLogger(__name__)
 
@@ -45,9 +47,13 @@ def superuser_required(view_func):
 @require_http_methods(["POST"])
 @ratelimit(key='ip', rate=WEBHOOK_RATE_LIMIT, block=True)
 def webhook_receiver(request: HttpRequest) -> JsonResponse:
-    """The single entry point for all incoming webhook updates from Rubika."""
+    """
+    The single entry point for all incoming webhook updates.
+    It quickly receives the payload, queues it for background processing
+    with Celery, and returns an immediate 200 OK response.
+    """
     ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
-    
+
     if not is_ip_allowed(ip):
         WebhookLog.log_warning('وبهوک غیرمجاز', f'درخواست از IP غیرمجاز: {ip}')
         return JsonResponse({'ok': False, 'error': 'forbidden'}, status=403)
@@ -58,22 +64,17 @@ def webhook_receiver(request: HttpRequest) -> JsonResponse:
         WebhookLog.log_error('وبهوک نامعتبر', 'JSON معتبر نیست', {'ip': ip})
         return JsonResponse({'ok': False, 'error': 'invalid json'}, status=400)
 
+    # Log the incoming request immediately
     WebhookLog.log_incoming(
         'دریافت وبهوک', f'دریافت به‌روزرسانی از {ip}', {'ip': ip, 'payload': payload}
     )
 
-    try:
-        service = RubPyIntegrationService.get_instance()
-        result = service.handle_webhook_payload(payload)
-        return JsonResponse(result)
-    except ValueError as exc: # Catches "Token not configured"
-        logger.error("Webhook receiver failed: %s", exc)
-        return JsonResponse({'ok': False, 'error': str(exc)}, status=503)
-    except Exception as exc:
-        logger.exception("An unexpected error occurred in webhook_receiver")
-        WebhookLog.log_error('خطای غیرمنتظره وبهوک', str(exc), {'payload': payload})
-        return JsonResponse({'ok': False, 'error': 'Internal Server Error'}, status=500)
-
+    # --- NEW ARCHITECTURE ---
+    # Queue the payload for background processing and return immediately.
+    process_webhook_task.delay(payload)
+    
+    # Return a success response instantly to the Rubika server.
+    return JsonResponse({'ok': True, 'status': 'queued'})
 
 # --- Admin Panel Views ---
 
