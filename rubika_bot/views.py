@@ -281,7 +281,8 @@ def connect_page(request: HttpRequest) -> HttpResponse:
 
     direct_link = None
     if settings_obj.bot_username:
-        direct_link = DEEPLINK_TEMPLATE.format(
+        template = getattr(settings_obj, 'deeplink_template', None) or DEEPLINK_TEMPLATE
+        direct_link = template.format(
             bot_username=settings_obj.bot_username.lstrip('@'),
             code=code_obj.code,
         )
@@ -315,7 +316,8 @@ def get_connection_link(request: HttpRequest) -> JsonResponse:
     )
     link = None
     if settings_obj.bot_username:
-        link = DEEPLINK_TEMPLATE.format(
+        template = getattr(settings_obj, 'deeplink_template', None) or DEEPLINK_TEMPLATE
+        link = template.format(
             bot_username=settings_obj.bot_username.lstrip('@'),
             code=code.code,
         )
@@ -704,7 +706,7 @@ def connect_page(request):
     direct_link = None
     if settings_obj.bot_username:
         bot_username = settings_obj.bot_username.lstrip('@')
-        template = settings_obj.deeplink_template or 'https://rubika.ir/{bot_username}?start={code}'
+        template = getattr(settings_obj, 'deeplink_template', None) or DEEPLINK_TEMPLATE
         direct_link = template.format(bot_username=bot_username, code=code_obj.code)
     
     context = {
@@ -742,7 +744,7 @@ def get_connection_link(request):
         link = None
         if settings_obj.bot_username:
             bot_username = settings_obj.bot_username.lstrip('@')
-            template = settings_obj.deeplink_template or 'https://rubika.ir/{bot_username}?start={code}'
+            template = getattr(settings_obj, 'deeplink_template', None) or DEEPLINK_TEMPLATE
             link = template.format(bot_username=bot_username, code=code.code)
         
         return JsonResponse({
