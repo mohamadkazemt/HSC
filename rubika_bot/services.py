@@ -1,33 +1,25 @@
 # rubika_bot/services.py
 
 from __future__ import annotations
+
 import asyncio
 import logging
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
-from asgiref.sync import sync_to_async
+import threading
+from concurrent.futures import Future
+from typing import Any, Awaitable, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
+from asgiref.sync import sync_to_async
 from django.db import close_old_connections
 from django.utils import timezone
 from rubpy.bot.enums import ButtonTypeEnum
 from rubpy.bot.models import InlineMessage, Keypad, KeypadRow, Message, Update
+from rubpy.bot.bot import BotClient
 from rubpy.exceptions import APIException
-from rubpy.sync import BotClient
 
 from .constants import BOT_REQUEST_TIMEOUT
 from .models import RubikaBotSettings, RubikaConnectionCode, RubikaUser, WebhookLog
 
 logger = logging.getLogger(__name__)
-
-# در محیط‌هایی که gevent فعال است، حلقه‌ی پیش‌فرض asyncio به Loop مخصوص gevent
-# تغییر می‌کند که با async_timeout سازگار نیست. برای اطمینان از این‌که RubPy
-# از حلقه‌ی استاندارد asyncio استفاده کند، سیاست حلقه را در همین‌جا به حالت
-# پیش‌فرض برمی‌گردانیم.
-try:
-    current_policy = asyncio.get_event_loop_policy()
-    if not isinstance(current_policy, asyncio.DefaultEventLoopPolicy):
-        asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
-except Exception:  # احتیاط: در صورت بروز خطا، اجازه می‌دهیم برنامه ادامه یابد
-    logger.debug("Failed to reset asyncio event loop policy", exc_info=True)
 
 # Helper functions remain the same
 def _safe_str(value: Any) -> str:
@@ -223,8 +215,7 @@ class RubikaBotEngine:
     async def _send_text_message(self, chat_id: str, text: str, inline_keyboard: Optional[Keypad] = None) -> None:
         # This method now needs to be async, but the client call is already handled by rubpy.sync
         try:
-            # The sync client wrapper handles the event loop
-            self.client.send_message(chat_id=chat_id, text=text, inline_keypad=inline_keyboard)
+            await self.client.send_message(chat_id=chat_id, text=text, inline_keypad=inline_keyboard)
             await sync_to_async(WebhookLog.log_outgoing, thread_sensitive=True)('پیام ارسالی', f'پیام به {chat_id} ارسال شد', {'text': text[:120]})
         except Exception as exc:
             logger.exception("Failed to send message to chat %s", chat_id)
@@ -259,14 +250,29 @@ class RubPyIntegrationService:
 
     def __init__(self) -> None:
         settings_obj = RubikaBotSettings.get_solo()
-        if not settings_obj.token: raise ValueError("توکن ربات روبیکا در تنظیمات یافت نشد.")
-        self.client = BotClient(token=settings_obj.token, use_webhook=True, timeout=BOT_REQUEST_TIMEOUT)
-        self.engine = RubikaBotEngine(self.client)
-        self._register_handlers()
+        if not settings_obj.token:
+            raise ValueError("توکن ربات روبیکا در تنظیمات یافت نشد.")
+
+        self._loop = asyncio.new_event_loop()
+        self._loop_ready = threading.Event()
+        self._loop_thread = threading.Thread(
+            target=self._run_loop, name="rubpy-event-loop", daemon=True
+        )
+        self._loop_thread.start()
+        self._loop_ready.wait()
+
         try:
-            self.client.start()
+            self.client = BotClient(
+                token=settings_obj.token,
+                use_webhook=True,
+                timeout=BOT_REQUEST_TIMEOUT,
+            )
+            self.engine = RubikaBotEngine(self.client)
+            self._register_handlers()
+            self._run_sync(self.client.start())
         except Exception as exc:
             logger.exception("Unable to start RubPy client: %s", exc)
+            self._shutdown_loop()
             raise
     
     # ... (متدهای get_instance, reset, handle_webhook_payload, و ... بدون تغییر باقی می‌مانند) ...
@@ -280,9 +286,10 @@ class RubPyIntegrationService:
     def reset(cls) -> None:
         if cls._instance:
             try:
-                cls._instance.client.stop()
+                cls._instance._run_sync(cls._instance.client.stop())
             except Exception:
                 logger.exception("Failed to stop RubPy client cleanly")
+            cls._instance._shutdown_loop()
         cls._instance = None
 
     def handle_webhook_payload(self, payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -293,7 +300,7 @@ class RubPyIntegrationService:
             return {'ok': True, 'processed': 0}
         for update in updates:
             try:
-                self.client.process_update(update)
+                self._run_sync(self.client.process_update(update))
             except Exception as exc:
                 logger.exception("Failed to process update: %s", exc)
                 WebhookLog.log_error('خطا در پردازش به‌روزرسانی', str(exc), {'payload': payload})
@@ -302,7 +309,7 @@ class RubPyIntegrationService:
     def send_text_message(self, chat_id: str, text: str) -> None:
         # This is now async, but we can call it from a sync context (e.g., signals)
         # by wrapping the call if needed. The engine's method is what we use internally.
-        self.client.send_message(chat_id=chat_id, text=text)
+        self._run_sync(self.client.send_message(chat_id=chat_id, text=text))
 
     def update_endpoints(self, webhook_url: str) -> Dict[str, Any]:
         # ... (این متد بدون تغییر باقی می‌ماند) ...
@@ -310,7 +317,9 @@ class RubPyIntegrationService:
         all_ok = True
         for update_type in ("ReceiveUpdate", "ReceiveInlineMessage", "ReceiveQuery"):
             try:
-                response = self.client.update_bot_endpoints(webhook_url, update_type)
+                response = self._run_sync(
+                    self.client.update_bot_endpoints(webhook_url, update_type)
+                )
                 results[update_type] = response
             except Exception as exc:
                 results[update_type] = {'status': 'ERROR', 'detail': str(exc)}
@@ -320,7 +329,7 @@ class RubPyIntegrationService:
     def fetch_webhook_info(self) -> Dict[str, Any]:
         # ... (این متد بدون تغییر باقی می‌ماند) ...
         try:
-            result = self.client._make_request("getBotEndpoint", {})
+            result = self._run_sync(self.client._make_request("getBotEndpoint", {}))
             return {'ok': True, 'data': result}
         except APIException as exc:
             return {'ok': False, 'error': exc.status, 'detail': exc.dev_message}
@@ -357,6 +366,31 @@ class RubPyIntegrationService:
         if 'query' in payload and 'update' not in payload:
             query_update = self._from_legacy_query(payload)
             if query_update: yield query_update
+
+    def _run_loop(self) -> None:
+        asyncio.set_event_loop(self._loop)
+        self._loop_ready.set()
+        self._loop.run_forever()
+
+    def _run_sync(self, awaitable: Awaitable[Any]) -> Any:
+        future: Future = asyncio.run_coroutine_threadsafe(awaitable, self._loop)
+        return future.result()
+
+    def _shutdown_loop(self) -> None:
+        if not hasattr(self, "_loop"):
+            return
+
+        if self._loop.is_running():
+            def _stop_loop() -> None:
+                for task in asyncio.all_tasks():
+                    task.cancel()
+                self._loop.stop()
+
+            self._loop.call_soon_threadsafe(_stop_loop)
+            self._loop_thread.join(timeout=5)
+
+        if not self._loop.is_closed():
+            self._loop.close()
     
     # ... (متدهای _from_legacy_message و _from_legacy_query بدون تغییر باقی می‌مانند) ...
     def _from_legacy_message(self, payload: Dict[str, Any]) -> Optional[Update]:
