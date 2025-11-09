@@ -1110,9 +1110,17 @@ def batch_payslip_upload(request):
                         except UserProfile.DoesNotExist:
                             errors.append(f"فایل {filename}: کد پرسنلی '{personnel_code}' یافت نشد")
                             continue
+                        except UserProfile.MultipleObjectsReturned:
+                            # اگر چند پروفایل با این کد پرسنلی وجود دارد، اولین مورد را انتخاب می‌کنیم
+                            user_profile = UserProfile.objects.filter(personnel_code=personnel_code).first()
+                            errors.append(f"⚠️ فایل {filename}: چند پروفایل با کد '{personnel_code}' یافت شد. اولین مورد انتخاب شد.")
                     else:
                         errors.append(f"فایل {filename}: کد پرسنلی '{personnel_code}' یافت نشد")
                         continue
+                except UserProfile.MultipleObjectsReturned:
+                    # اگر چند پروفایل با این کد پرسنلی وجود دارد، اولین مورد را انتخاب می‌کنیم
+                    user_profile = UserProfile.objects.filter(personnel_code=personnel_code).first()
+                    errors.append(f"⚠️ فایل {filename}: چند پروفایل با کد '{personnel_code}' یافت شد. اولین مورد انتخاب شد.")
                 
                 # بررسی وجود فیش برای این ماه و سال
                 try:
