@@ -265,9 +265,6 @@
           </label>
           <select id="filter_part" name="part" class="select2 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-700 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
             <option value="">همه قسمت‌ها</option>
-            {% for p in parts %}
-              <option value="{{ p.id }}" {% if current_filters.part|add:'' == p.id|add:'' %}selected{% endif %}>{{ p.name }}</option>
-            {% endfor %}
           </select>
         </div>
         <div>
@@ -277,9 +274,6 @@
           </label>
           <select id="filter_unit_group" name="unit_group" class="select2 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-700 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
             <option value="">همه گروه‌ها</option>
-            {% for g in unit_groups %}
-              <option value="{{ g.id }}" {% if current_filters.unit_group|add:'' == g.id|add:'' %}selected{% endif %}>{{ g.name }}</option>
-            {% endfor %}
           </select>
         </div>
         <div>
@@ -289,9 +283,6 @@
           </label>
           <select id="filter_position" name="position" class="select2 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-700 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
             <option value="">همه سمت‌ها</option>
-            {% for pos in positions %}
-              <option value="{{ pos.id }}" {% if current_filters.position|add:'' == pos.id|add:'' %}selected{% endif %}>{{ pos.name }}</option>
-            {% endfor %}
           </select>
         </div>
         <div>
@@ -534,10 +525,51 @@
         }
       });
     }
-    initSelect('#filter_section', 'همه بخش‌ها');
-    initSelect('#filter_part', 'همه قسمت‌ها');
-    initSelect('#filter_unit_group', 'همه گروه‌ها');
-    initSelect('#filter_position', 'همه سمت‌ها');
+
+    // Load initial data if filters are already selected (from URL)
+    const initialSection = '{{ current_filters.section|default:"" }}';
+    const initialPart = '{{ current_filters.part|default:"" }}';
+    const initialUnitGroup = '{{ current_filters.unit_group|default:"" }}';
+    const initialPosition = '{{ current_filters.position|default:"" }}';
+
+    function loadParts(sectionId, selectedPartId){
+      $.getJSON('{% url "accounts:personnel_api_parts" %}', { section: sectionId }, function(items){
+        const $part = $('#filter_part');
+        items.forEach(function(it){
+          const opt = new Option(it.name, it.id, false, it.id == selectedPartId);
+          $part.append(opt);
+        });
+        $part.trigger('change');
+        if(selectedPartId){
+          loadUnitGroups(selectedPartId, initialUnitGroup);
+        }
+      });
+    }
+
+    function loadUnitGroups(partId, selectedUnitGroupId){
+      $.getJSON('{% url "accounts:personnel_api_unit_groups" %}', { part: partId }, function(items){
+        const $ug = $('#filter_unit_group');
+        items.forEach(function(it){
+          const opt = new Option(it.name, it.id, false, it.id == selectedUnitGroupId);
+          $ug.append(opt);
+        });
+        $ug.trigger('change');
+        if(selectedUnitGroupId){
+          loadPositions(selectedUnitGroupId, initialPosition);
+        }
+      });
+    }
+
+    function loadPositions(unitGroupId, selectedPositionId){
+      $.getJSON('{% url "accounts:personnel_api_positions" %}', { unit_group: unitGroupId }, function(items){
+        const $pos = $('#filter_position');
+        items.forEach(function(it){
+          const opt = new Option(it.name, it.id, false, it.id == selectedPositionId);
+          $pos.append(opt);
+        });
+        $pos.trigger('change');
+      });
+    }
 
     function resetSelect($el, label){
       // Keep first option as "All", remove others, and reset selection without reinitializing Select2
@@ -561,13 +593,7 @@
       resetSelect($ug, 'همه گروه‌ها');
       resetSelect($pos, 'همه سمت‌ها');
       if(sectionId){
-        $.getJSON('{% url "accounts:personnel_api_parts" %}', { section: sectionId }, function(items){
-          items.forEach(function(it){
-            const opt = new Option(it.name, it.id, false, false);
-            $part.append(opt);
-          });
-          $part.trigger('change');
-        });
+        loadParts(sectionId, null);
       }
     });
 
@@ -578,13 +604,7 @@
       resetSelect($ug, 'همه گروه‌ها');
       resetSelect($pos, 'همه سمت‌ها');
       if(partId){
-        $.getJSON('{% url "accounts:personnel_api_unit_groups" %}', { part: partId }, function(items){
-          items.forEach(function(it){
-            const opt = new Option(it.name, it.id, false, false);
-            $ug.append(opt);
-          });
-          $ug.trigger('change');
-        });
+        loadUnitGroups(partId, null);
       }
     });
 
@@ -593,15 +613,20 @@
       const $pos = $('#filter_position');
       resetSelect($pos, 'همه سمت‌ها');
       if(ugId){
-        $.getJSON('{% url "accounts:personnel_api_positions" %}', { unit_group: ugId }, function(items){
-          items.forEach(function(it){
-            const opt = new Option(it.name, it.id, false, false);
-            $pos.append(opt);
-          });
-          $pos.trigger('change');
-        });
+        loadPositions(ugId, null);
       }
     });
+
+    // Initialize Select2 dropdowns
+    initSelect('#filter_section', 'همه بخش‌ها');
+    initSelect('#filter_part', 'همه قسمت‌ها');
+    initSelect('#filter_unit_group', 'همه گروه‌ها');
+    initSelect('#filter_position', 'همه سمت‌ها');
+
+    // Load cascading data if filters are pre-selected
+    if(initialSection){
+      loadParts(initialSection, initialPart);
+    }
   });
 </script>
 {% endblock %}
