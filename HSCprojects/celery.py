@@ -1,4 +1,8 @@
 import os
+
+# اجازه اجرای عملیات همگام جنگو در محیطی که حلقه asyncio فعال است (کلاینت RubPy)
+os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
+
 from celery import Celery
 
 # تنظیم متغیر محیطی برای تنظیمات جنگو
