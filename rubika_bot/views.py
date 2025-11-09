@@ -446,38 +446,6 @@ def generate_connection_code(request: HttpRequest) -> JsonResponse:
     )
 
 
-@csrf_exempt
-@require_http_methods(["POST"])
-@ratelimit(key='ip', rate=WEBHOOK_RATE_LIMIT, block=True)
-def webhook_receiver(request: HttpRequest) -> JsonResponse:
-    """Receive webhook updates from Rubika and delegate to RubPy."""
-    ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
-    if not is_ip_allowed(ip):
-        WebhookLog.log_warning('وبهوک غیرمجاز', f'درخواست از IP غیرمجاز: {ip}')
-        return JsonResponse({'ok': False, 'error': 'forbidden'}, status=403)
-
-    try:
-        payload = json.loads(request.body.decode('utf-8') or '{}')
-    except json.JSONDecodeError:
-        WebhookLog.log_error('وبهوک نامعتبر', 'JSON معتبر نیست', {'ip': ip})
-        return JsonResponse({'ok': False, 'error': 'invalid json'}, status=400)
-
-    WebhookLog.log_incoming(
-        'دریافت وبهوک',
-        f'دریافت به‌روزرسانی از {ip}',
-        {'ip': ip, 'payload': payload},
-    )
-
-    try:
-        service = RubPyIntegrationService.get_instance()
-    except ValueError as exc:
-        logger.warning("Webhook received but token not configured: %s", exc)
-        return JsonResponse({'ok': False, 'error': str(exc)}, status=503)
-
-    result = service.handle_webhook_payload(payload)
-    return JsonResponse(result)
-
-
 def _register_webhook_camelcase(webhook_url, token):
     """روش camelCase - همه endpoint ها در یک درخواست"""
     
@@ -540,7 +508,8 @@ def action_get_webhook_info(request):
         
         # استفاده از RubikaClient برای دریافت اطلاعات
         try:
-            client = RubikaClient()
+            service = _get_service()
+            client = service.client
             result = client.get_bot_endpoint()
             
             # بررسی نتیجه - اگر ok نباشد یا error داشته باشد
@@ -555,7 +524,7 @@ def action_get_webhook_info(request):
                 token = settings_obj.token
                 urls = [
                     f"https://botapi.rubika.ir/v3/{token}/getBotEndpoint",
-                    f"https://botapi.rubika.ir/{token}/getBotEndpoint",
+                    f"https://botapi.ir/{token}/getBotEndpoint",
                     # api.rubika.ir حذف شد چون DNS resolve نمی‌شود
                 ]
                 
@@ -740,151 +709,10 @@ def export_webhook_logs(request):
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
 
 
-def handle_inline_message(payload):
-    """پردازش پیام‌های اینلاین (مطابق Flask bot)"""
-    WebhookLog.log_info('پیام اینلاین', 'پیام اینلاین دریافت شد', {'payload': payload})
-    return JsonResponse({'ok': True, 'status': 'ok'}, status=200)
-
-
-def handle_query(payload):
-    """پردازش کوئری‌های اینلاین کیبورد (ReceiveQuery) - مطابق Flask bot"""
-    try:
-        query_data = payload.get('query', {})
-        chat_id = query_data.get('chat_id')
-        button_id = query_data.get('button_id')
-        query_id = query_data.get('query_id')
-        
-        WebhookLog.log_info('دکمه فشرده شده', f'دکمه {button_id} از چت {chat_id}', {'query': query_data})
-        
-        client = RubikaClient()
-        
-        # پردازش دکمه‌های مختلف - مطابق Flask bot
-        if not chat_id or not button_id:
-            if query_id:
-                try:
-                    client.answer_query(query_id, '⚠️ اطلاعات ناقص')
-                except Exception:
-                    pass  # اگر answer_query خطا داد، ادامه بده
-            return JsonResponse({'ok': True, 'status': 'ok'}, status=200)
-        
-        # دریافت candidates برای fallback
-        candidates = [str(chat_id)]
-        
-        # پردازش دکمه‌های دستورات
-        if button_id == 'start':
-            if query_id:
-                try:
-                    client.answer_query(query_id, '✅ در حال شروع...')
-                except Exception:
-                    pass
-            # ارسال پیام welcome با دکمه‌ها
-            welcome_msg = 'سلام! 👋\n\nبه ربات خوش آمدید.\n\n👇 می‌توانید از دکمه‌های زیر استفاده کنید:'
-            buttons = create_command_buttons()
-            try:
-                result = client.send_message_with_buttons(str(chat_id), welcome_msg, buttons)
-                if not result.get('ok'):
-                    client.send_message(str(chat_id), welcome_msg, alternatives=candidates)
-            except Exception:
-                client.send_message(str(chat_id), welcome_msg, alternatives=candidates)
-                
-        elif button_id == 'account':
-            if query_id:
-                try:
-                    client.answer_query(query_id, '✅ در حال دریافت وضعیت...')
-                except Exception:
-                    pass
-            # دریافت وضعیت کاربر
-            try:
-                ru = RubikaUser.objects.get(chat_id=chat_id)
-                if ru.user:
-                    msg = f'📊 وضعیت حساب شما:\n\n✅ متصل به: {ru.user.username}\n👤 نام: {ru.first_name or "بدون نام"}'
-                else:
-                    msg = '📊 وضعیت حساب شما:\n\n❌ متصل نشده\n\nبرای اتصال، یک کد از پنل دریافت کنید.'
-                client.send_message(str(chat_id), msg, alternatives=candidates)
-            except RubikaUser.DoesNotExist:
-                client.send_message(str(chat_id), '❌ اطلاعات کاربر یافت نشد.', alternatives=candidates)
-                
-        elif button_id == 'connect':
-            if query_id:
-                try:
-                    client.answer_query(query_id, '✅ برای اتصال، یک کد از پنل دریافت کنید.')
-                except Exception:
-                    pass
-            msg = '🔗 برای اتصال به حساب کاربری:\n\n'
-            msg += 'روش 1️⃣: از پنل وب لینک اتصال را دریافت کنید\n'
-            msg += 'روش 2️⃣: از پنل وب کد اتصال را دریافت کنید و دستور زیر را ارسال کنید:\n'
-            msg += '   /connect [کد]\n\n'
-            msg += '💡 برای دریافت کد، به پنل کاربری خود مراجعه کنید.'
-            client.send_message(str(chat_id), msg, alternatives=candidates)
-            
-        elif button_id == 'disconnect':
-            if query_id:
-                try:
-                    client.answer_query(query_id, '✅ در حال قطع اتصال...')
-                except Exception:
-                    pass
-            try:
-                ru = RubikaUser.objects.get(chat_id=chat_id)
-                if ru.user:
-                    old_username = ru.user.username
-                    ru.user = None
-                    ru.save(update_fields=['user'])
-                    msg = f'حساب کاربری "{old_username}" از ربات قطع شد. ❌\n\nبرای اتصال مجدد، یک کد جدید از پنل دریافت کنید.'
-                else:
-                    msg = 'شما قبلاً به هیچ حساب کاربری متصل نیستید. ⚠️'
-                client.send_message(str(chat_id), msg, alternatives=candidates)
-            except RubikaUser.DoesNotExist:
-                client.send_message(str(chat_id), '❌ اطلاعات کاربر یافت نشد.', alternatives=candidates)
-                
-        elif button_id == 'help':
-            if query_id:
-                try:
-                    client.answer_query(query_id, '✅ راهنما در حال ارسال...')
-                except Exception:
-                    pass
-            help_msg = '📖 راهنمای ربات:\n\n'
-            help_msg += '🔹 /start - شروع کار با ربات\n'
-            help_msg += '🔹 /connect [کد] - اتصال به حساب کاربری\n'
-            help_msg += '🔹 /account یا /status - مشاهده وضعیت اتصال\n'
-            help_msg += '🔹 /disconnect - قطع اتصال از حساب کاربری\n'
-            help_msg += '🔹 /help - نمایش این راهنما\n'
-            help_msg += '\n💡 برای اتصال به حساب کاربری، ابتدا از پنل وب یک کد اتصال دریافت کنید.\n\n'
-            help_msg += '👇 می‌توانید از دکمه‌های زیر استفاده کنید:'
-            buttons = create_command_buttons()
-            try:
-                result = client.send_message_with_buttons(str(chat_id), help_msg, buttons)
-                if not result.get('ok'):
-                    client.send_message(str(chat_id), help_msg, alternatives=candidates)
-            except Exception:
-                client.send_message(str(chat_id), help_msg, alternatives=candidates)
-        else:
-            if query_id:
-                client.answer_query(query_id, '⚠️ دکمه ناشناخته')
-        
-        return JsonResponse({'ok': True, 'status': 'ok'}, status=200)
-        
-    except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f'خطا در پردازش کوئری: {e}', exc_info=True)
-        WebhookLog.log_error('خطای Query', f'خطا در پردازش کوئری: {str(e)}', {'payload': payload})
-        return JsonResponse({'ok': True, 'status': 'ok'}, status=200)
-
-
-def handle_selection_item(payload):
-    """پردازش انتخاب آیتم (GetSelectionItem) - مطابق Flask bot"""
-    WebhookLog.log_info('آیتم انتخاب شد', 'آیتم انتخاب شد', {'payload': payload})
-    return JsonResponse({'ok': True, 'status': 'ok'}, status=200)
-
-
-def handle_search_selection(payload):
-    """پردازش جستجوی آیتم‌ها (SearchSelectionItems) - مطابق Flask bot"""
-    WebhookLog.log_info('جستجوی آیتم', 'جستجوی آیتم', {'payload': payload})
-    return JsonResponse({'ok': True, 'status': 'ok'}, status=200)
 
 
 @csrf_exempt
-def webhook_receiver(request):
+def _legacy_webhook_receiver(request):
     if request.method != 'POST':
         return JsonResponse({'ok': True})
     
@@ -1061,7 +889,8 @@ def webhook_receiver(request):
         ru.last_name = last_name
         ru.save(update_fields=['first_name', 'last_name'])
 
-    client = RubikaClient()
+    service = _get_service()
+    client = service.client
 
     # Build user display name
     user_display_name = ""
