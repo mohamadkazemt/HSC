@@ -43,6 +43,7 @@ def superuser_required(view_func):
     return user_passes_test(lambda u: u.is_superuser)(view_func)
 
 
+
 @csrf_exempt
 @require_http_methods(["POST"])
 @ratelimit(key='ip', rate=WEBHOOK_RATE_LIMIT, block=True)
@@ -76,6 +77,9 @@ def webhook_receiver(request: HttpRequest) -> JsonResponse:
     # Return a success response instantly to the Rubika server.
     return JsonResponse({'ok': True, 'status': 'queued'})
 
+
+
+    
 # --- Admin Panel Views ---
 
 @superuser_required
