@@ -23,6 +23,7 @@ ALLOWED_HOSTS = [
     'www.miepcoj.ir',
     'localhost', # برای تست‌های داخلی سرور
     '65.109.220.72'
+    '65.109.190.172'
 ]
 
 # تنظیمات دیتابیس PostgreSQL
