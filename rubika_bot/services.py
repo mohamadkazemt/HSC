@@ -381,8 +381,20 @@ class RubPyIntegrationService:
             update = self.client._parse_update(payload['update'])
             if update: setattr(update, "_raw_payload", payload); yield update
         if 'inline_message' in payload:
-            inline = self.client._parse_inline_message(payload['inline_message'])
-            if inline: setattr(inline, "_raw_payload", payload); yield inline
+            # Parse inline message manually since _parse_inline_message may not exist
+            try:
+                inline_data = payload['inline_message']
+                inline = InlineMessage(
+                    message_id=_safe_str(inline_data.get('message_id')),
+                    text=inline_data.get('text', ''),
+                    chat_id=_safe_str(inline_data.get('chat_id')),
+                    sender_id=_safe_str(inline_data.get('sender_id')),
+                    aux_data=inline_data.get('aux_data'),
+                )
+                setattr(inline, "_raw_payload", payload)
+                yield inline
+            except Exception as exc:
+                logger.warning("Failed to parse inline_message: %s", exc)
         if 'message' in payload and 'update' not in payload:
             legacy_update = self._from_legacy_message(payload)
             if legacy_update: yield legacy_update
