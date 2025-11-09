@@ -1,6 +1,7 @@
 # rubika_bot/services.py
 
 from __future__ import annotations
+import asyncio
 import logging
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 from asgiref.sync import sync_to_async
@@ -16,6 +17,17 @@ from .constants import BOT_REQUEST_TIMEOUT
 from .models import RubikaBotSettings, RubikaConnectionCode, RubikaUser, WebhookLog
 
 logger = logging.getLogger(__name__)
+
+# در محیط‌هایی که gevent فعال است، حلقه‌ی پیش‌فرض asyncio به Loop مخصوص gevent
+# تغییر می‌کند که با async_timeout سازگار نیست. برای اطمینان از این‌که RubPy
+# از حلقه‌ی استاندارد asyncio استفاده کند، سیاست حلقه را در همین‌جا به حالت
+# پیش‌فرض برمی‌گردانیم.
+try:
+    current_policy = asyncio.get_event_loop_policy()
+    if not isinstance(current_policy, asyncio.DefaultEventLoopPolicy):
+        asyncio.set_event_loop_policy(asyncio.DefaultEventLoopPolicy())
+except Exception:  # احتیاط: در صورت بروز خطا، اجازه می‌دهیم برنامه ادامه یابد
+    logger.debug("Failed to reset asyncio event loop policy", exc_info=True)
 
 # Helper functions remain the same
 def _safe_str(value: Any) -> str:
