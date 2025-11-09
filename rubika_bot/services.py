@@ -122,6 +122,8 @@ class RubikaBotEngine:
             'start': self._send_welcome, 'help': self._send_help, 'connect': self._handle_connect_button,
             'disconnect': self._disconnect_user, 'account': self._send_account_status,
             'payslip': self._handle_payslip_request,
+            'leave_request': self._start_leave_request,
+            'cancel_leave': self._cancel_leave_request,
         }
         handler = mapping.get(button_id.lower())
         if handler:
@@ -130,6 +132,18 @@ class RubikaBotEngine:
             # Check if it's a payslip selection button (format: payslip_YYYY_MM)
             if button_id.startswith('payslip_'):
                 await self._send_payslip_file(chat_id, user, button_id)
+            # Check if it's a leave type selection button
+            elif button_id.startswith('leavetype_'):
+                await self._handle_leave_type_selection(chat_id, user, button_id)
+            # Check if it's a shift type selection button
+            elif button_id.startswith('shifttype_'):
+                await self._handle_shift_type_selection(chat_id, user, button_id)
+            # Check if it's a replacement selection button
+            elif button_id.startswith('replacement_'):
+                await self._handle_replacement_selection(chat_id, user, button_id)
+            # Check if it's a confirmation button
+            elif button_id in ['confirm_leave', 'edit_leave']:
+                await self._handle_leave_confirmation(chat_id, user, button_id)
             else:
                 logger.debug("Unknown button id %s for chat %s", button_id, chat_id)
 
@@ -147,6 +161,23 @@ class RubikaBotEngine:
             await self._handle_plain_text(chat_id, text, user)
 
     async def _handle_plain_text(self, chat_id: str, text: str, user: RubikaUser) -> None:
+        # Check if user is in leave request flow
+        @sync_to_async(thread_sensitive=True)
+        def get_leave_state():
+            from rubika_bot.models import LeaveRequestState
+            try:
+                return LeaveRequestState.objects.get(rubika_user=user)
+            except LeaveRequestState.DoesNotExist:
+                return None
+        
+        leave_state = await get_leave_state()
+        
+        # If in leave request flow, handle accordingly
+        if leave_state and leave_state.step != 'idle':
+            await self._handle_leave_request_input(chat_id, user, text, leave_state)
+            return
+        
+        # Normal text handling
         lowered = text.strip().lower()
         display_name = self._display_name(user)
         if lowered.startswith('سلام') or lowered in {'hi', 'hello', 'درود', 'salam'}:
@@ -407,14 +438,600 @@ class RubikaBotEngine:
             logger.exception("Failed to send message to chat %s", chat_id)
             await sync_to_async(WebhookLog.log_error, thread_sensitive=True)('ارسال پیام ناموفق', str(exc), {'chat_id': chat_id})
 
+    # ============= Leave Request Handlers =============
+    
+    async def _start_leave_request(self, chat_id: str, user: RubikaUser) -> None:
+        """شروع فرایند درخواست مرخصی"""
+        if not user.user:
+            message = '⚠️ برای ثبت درخواست مرخصی، ابتدا باید به حساب کاربری خود متصل شوید.\n\n🔗 از دکمه "اتصال" استفاده کنید.'
+            await self._send_text_message(chat_id, message)
+            return
+        
+        # Create or get leave request state
+        @sync_to_async(thread_sensitive=True)
+        def init_leave_state():
+            from rubika_bot.models import LeaveRequestState
+            state, created = LeaveRequestState.objects.get_or_create(rubika_user=user)
+            state.reset()
+            state.update_step('leave_type')
+            return state
+        
+        await init_leave_state()
+        
+        # Send leave type selection
+        message_lines = [
+            '🏖️ درخواست مرخصی جدید',
+            '',
+            'لطفاً نوع مرخصی خود را انتخاب کنید:',
+        ]
+        
+        # Build leave type keyboard
+        leave_types = [
+            ('leavetype_regular', '📅 مرخصی استحقاقی'),
+            ('leavetype_absence', '❌ غیبت'),
+            ('leavetype_hourly', '⏰ مرخصی ساعتی'),
+            ('leavetype_sick_leave', '🏥 مرخصی استعلاجی'),
+        ]
+        
+        rows = [
+            [leave_types[0], leave_types[1]],
+            [leave_types[2], leave_types[3]],
+            [('cancel_leave', '❌ انصراف')]
+        ]
+        
+        keypad_rows = [KeypadRow(buttons=[self._button(bid, label) for bid, label in row]) for row in rows]
+        keyboard = Keypad(rows=keypad_rows)
+        
+        await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
+    
+    async def _cancel_leave_request(self, chat_id: str, user: RubikaUser) -> None:
+        """لغو فرایند درخواست مرخصی"""
+        @sync_to_async(thread_sensitive=True)
+        def reset_state():
+            from rubika_bot.models import LeaveRequestState
+            try:
+                state = LeaveRequestState.objects.get(rubika_user=user)
+                state.reset()
+            except LeaveRequestState.DoesNotExist:
+                pass
+        
+        await reset_state()
+        message = '❌ فرایند درخواست مرخصی لغو شد.\n\nبرای شروع مجدد، از دکمه "درخواست مرخصی" استفاده کنید.'
+        await self._send_text_message(chat_id, message)
+    
+    async def _handle_leave_type_selection(self, chat_id: str, user: RubikaUser, button_id: str) -> None:
+        """پردازش انتخاب نوع مرخصی"""
+        leave_type_map = {
+            'leavetype_regular': 'regular',
+            'leavetype_absence': 'absence',
+            'leavetype_hourly': 'hourly',
+            'leavetype_sick_leave': 'sick_leave',
+        }
+        
+        leave_type = leave_type_map.get(button_id)
+        if not leave_type:
+            return
+        
+        # Update state
+        @sync_to_async(thread_sensitive=True)
+        def update_state():
+            from rubika_bot.models import LeaveRequestState
+            state = LeaveRequestState.objects.get(rubika_user=user)
+            state.update_step('date', {'leave_type': leave_type})
+            return state
+        
+        await update_state()
+        
+        # Ask for date
+        leave_type_labels = {
+            'regular': 'مرخصی استحقاقی',
+            'absence': 'غیبت',
+            'hourly': 'مرخصی ساعتی',
+            'sick_leave': 'مرخصی استعلاجی',
+        }
+        
+        message_lines = [
+            f'✅ نوع مرخصی: {leave_type_labels[leave_type]}',
+            '',
+            '📅 لطفاً تاریخ مرخصی را به فرمت شمسی وارد کنید:',
+            '',
+            'مثال: 1403/09/15',
+            '',
+            '💡 یا از دکمه زیر برای انصراف استفاده کنید:',
+        ]
+        
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[self._button('cancel_leave', '❌ انصراف')])
+        ])
+        
+        await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
+    
+    async def _handle_shift_type_selection(self, chat_id: str, user: RubikaUser, button_id: str) -> None:
+        """پردازش انتخاب نوع شیفت"""
+        shift_type_map = {
+            'shifttype_day': 'day',
+            'shifttype_day2': 'day2',
+            'shifttype_evening': 'evening',
+            'shifttype_evening2': 'evening2',
+            'shifttype_night': 'night',
+            'shifttype_night2': 'night2',
+        }
+        
+        shift_type = shift_type_map.get(button_id)
+        if not shift_type:
+            return
+        
+        # Update state
+        @sync_to_async(thread_sensitive=True)
+        def update_and_get_state():
+            from rubika_bot.models import LeaveRequestState
+            state = LeaveRequestState.objects.get(rubika_user=user)
+            state.update_step('next', {'shift_type': shift_type})
+            return state.data.get('leave_type')
+        
+        leave_type = await update_and_get_state()
+        
+        # Determine next step based on leave type
+        if leave_type == 'regular':
+            # Need to select replacement
+            await self._ask_for_replacement(chat_id, user)
+        elif leave_type == 'hourly':
+            # Need to enter hourly times
+            await self._ask_for_hourly_times(chat_id, user)
+        else:
+            # Ask for description
+            await self._ask_for_description(chat_id, user)
+    
+    async def _handle_replacement_selection(self, chat_id: str, user: RubikaUser, button_id: str) -> None:
+        """پردازش انتخاب جایگزین"""
+        # Extract user ID from button (format: replacement_USER_ID or replacement_skip)
+        if button_id == 'replacement_skip':
+            # Continue without replacement (for testing - in production this shouldn't happen for regular leave)
+            await self._ask_for_description(chat_id, user)
+            return
+        
+        try:
+            replacement_id = int(button_id.replace('replacement_', ''))
+        except ValueError:
+            return
+        
+        # Update state
+        @sync_to_async(thread_sensitive=True)
+        def update_state():
+            from rubika_bot.models import LeaveRequestState
+            state = LeaveRequestState.objects.get(rubika_user=user)
+            state.update_step('description', {'replacement_id': replacement_id})
+        
+        await update_state()
+        await self._ask_for_description(chat_id, user)
+    
+    async def _ask_for_replacement(self, chat_id: str, user: RubikaUser) -> None:
+        """درخواست انتخاب جایگزین"""
+        # Get list of possible replacements from same section
+        @sync_to_async(thread_sensitive=True)
+        def get_replacements():
+            from django.contrib.auth.models import User
+            from accounts.models import UserProfile
+            try:
+                profile = UserProfile.objects.get(user=user.user)
+                if profile.section:
+                    users = User.objects.filter(
+                        userprofile__section=profile.section,
+                        is_active=True
+                    ).exclude(id=user.user.id).select_related('userprofile')[:10]
+                    return list(users)
+            except UserProfile.DoesNotExist:
+                pass
+            return []
+        
+        replacements = await get_replacements()
+        
+        if not replacements:
+            message = '⚠️ کاربر جایگزینی در بخش شما یافت نشد.\n\nلطفاً با مدیر خود تماس بگیرید.'
+            keyboard = Keypad(rows=[
+                KeypadRow(buttons=[self._button('cancel_leave', '❌ انصراف')])
+            ])
+            await self._send_text_message(chat_id, message, keyboard)
+            return
+        
+        # Update state to replacement step
+        @sync_to_async(thread_sensitive=True)
+        def update_state():
+            from rubika_bot.models import LeaveRequestState
+            state = LeaveRequestState.objects.get(rubika_user=user)
+            state.update_step('replacement')
+        
+        await update_state()
+        
+        message_lines = [
+            '👤 لطفاً جایگزین خود را انتخاب کنید:',
+            '',
+            'از لیست زیر یکی را انتخاب کنید:',
+        ]
+        
+        # Build replacement keyboard (max 2 per row)
+        rows = []
+        current_row = []
+        
+        for rep in replacements:
+            full_name = rep.get_full_name() or rep.username
+            button_id = f'replacement_{rep.id}'
+            button_label = full_name[:20]  # Limit length
+            
+            current_row.append((button_id, button_label))
+            
+            if len(current_row) == 2:
+                rows.append(current_row)
+                current_row = []
+        
+        if current_row:
+            rows.append(current_row)
+        
+        rows.append([('cancel_leave', '❌ انصراف')])
+        
+        keypad_rows = [KeypadRow(buttons=[self._button(bid, label) for bid, label in row]) for row in rows]
+        keyboard = Keypad(rows=keypad_rows)
+        
+        await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
+    
+    async def _ask_for_hourly_times(self, chat_id: str, user: RubikaUser) -> None:
+        """درخواست ساعات شروع و پایان برای مرخصی ساعتی"""
+        @sync_to_async(thread_sensitive=True)
+        def update_state():
+            from rubika_bot.models import LeaveRequestState
+            state = LeaveRequestState.objects.get(rubika_user=user)
+            state.update_step('hourly_times')
+        
+        await update_state()
+        
+        message_lines = [
+            '⏰ ساعات مرخصی ساعتی',
+            '',
+            'لطفاً ساعت شروع و پایان را به فرمت زیر وارد کنید:',
+            '',
+            'مثال: 08:00-12:00',
+            '',
+            '💡 یا از دکمه زیر برای انصراف استفاده کنید:',
+        ]
+        
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[self._button('cancel_leave', '❌ انصراف')])
+        ])
+        
+        await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
+    
+    async def _ask_for_description(self, chat_id: str, user: RubikaUser) -> None:
+        """درخواست توضیحات"""
+        @sync_to_async(thread_sensitive=True)
+        def update_state():
+            from rubika_bot.models import LeaveRequestState
+            state = LeaveRequestState.objects.get(rubika_user=user)
+            state.update_step('description')
+        
+        await update_state()
+        
+        message_lines = [
+            '📝 توضیحات',
+            '',
+            'لطفاً توضیحات خود را وارد کنید:',
+            '',
+            '(اختیاری - می‌توانید "رد" یا "skip" بنویسید)',
+            '',
+            '💡 یا از دکمه زیر برای انصراف استفاده کنید:',
+        ]
+        
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[self._button('cancel_leave', '❌ انصراف')])
+        ])
+        
+        await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
+    
+    async def _handle_leave_request_input(self, chat_id: str, user: RubikaUser, text: str, leave_state) -> None:
+        """پردازش ورودی متنی کاربر در فرایند درخواست مرخصی"""
+        step = leave_state.step
+        
+        if step == 'date':
+            await self._process_date_input(chat_id, user, text, leave_state)
+        elif step == 'hourly_times':
+            await self._process_hourly_times_input(chat_id, user, text, leave_state)
+        elif step == 'description':
+            await self._process_description_input(chat_id, user, text, leave_state)
+    
+    async def _process_date_input(self, chat_id: str, user: RubikaUser, text: str, leave_state) -> None:
+        """پردازش ورودی تاریخ"""
+        import jdatetime
+        
+        # Validate date format
+        try:
+            # Remove spaces and extra characters
+            date_str = text.strip().replace(' ', '').replace('/', '-')
+            
+            if '-' in date_str:
+                parts = date_str.split('-')
+            else:
+                raise ValueError("فرمت نامعتبر")
+            
+            if len(parts) != 3:
+                raise ValueError("فرمت نامعتبر")
+            
+            year, month, day = map(int, parts)
+            
+            # Create jalali date
+            jalali_date = jdatetime.date(year, month, day)
+            gregorian_date = jalali_date.togregorian()
+            
+            # Check if date is in the future or today
+            today = jdatetime.date.today()
+            if jalali_date < today:
+                message = '⚠️ تاریخ وارد شده در گذشته است. لطفاً تاریخ معتبری وارد کنید.'
+                await self._send_text_message(chat_id, message)
+                return
+            
+        except Exception as e:
+            message = '❌ فرمت تاریخ نامعتبر است. لطفاً به فرمت زیر وارد کنید:\n\n1403/09/15\n\nیا 1403-09-15'
+            await self._send_text_message(chat_id, message)
+            return
+        
+        # Update state
+        @sync_to_async(thread_sensitive=True)
+        def update_state():
+            from rubika_bot.models import LeaveRequestState
+            state = LeaveRequestState.objects.get(rubika_user=user)
+            state.update_step('shift_type', {
+                'date': gregorian_date.isoformat(),
+                'date_jalali': f'{year}/{month:02d}/{day:02d}'
+            })
+        
+        await update_state()
+        
+        # Ask for shift type
+        message_lines = [
+            f'✅ تاریخ: {year}/{month:02d}/{day:02d}',
+            '',
+            '🕐 لطفاً نوع شیفت خود را انتخاب کنید:',
+        ]
+        
+        shift_types = [
+            ('shifttype_day', 'روزکار اول'),
+            ('shifttype_day2', 'روزکار دوم'),
+            ('shifttype_evening', 'عصرکار اول'),
+            ('shifttype_evening2', 'عصرکار دوم'),
+            ('shifttype_night', 'شبکار اول'),
+            ('shifttype_night2', 'شبکار دوم'),
+        ]
+        
+        rows = [
+            [shift_types[0], shift_types[1]],
+            [shift_types[2], shift_types[3]],
+            [shift_types[4], shift_types[5]],
+            [('cancel_leave', '❌ انصراف')]
+        ]
+        
+        keypad_rows = [KeypadRow(buttons=[self._button(bid, label) for bid, label in row]) for row in rows]
+        keyboard = Keypad(rows=keypad_rows)
+        
+        await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
+    
+    async def _process_hourly_times_input(self, chat_id: str, user: RubikaUser, text: str, leave_state) -> None:
+        """پردازش ورودی ساعات مرخصی ساعتی"""
+        import re
+        from datetime import time
+        
+        # Parse time range (e.g., 08:00-12:00 or 08:00 - 12:00)
+        time_pattern = r'(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})'
+        match = re.match(time_pattern, text.strip())
+        
+        if not match:
+            message = '❌ فرمت ساعت نامعتبر است. لطفاً به فرمت زیر وارد کنید:\n\n08:00-12:00'
+            await self._send_text_message(chat_id, message)
+            return
+        
+        try:
+            start_hour, start_minute, end_hour, end_minute = map(int, match.groups())
+            
+            start_time = time(start_hour, start_minute)
+            end_time = time(end_hour, end_minute)
+            
+            if start_time >= end_time:
+                message = '⚠️ ساعت پایان باید بعد از ساعت شروع باشد.'
+                await self._send_text_message(chat_id, message)
+                return
+            
+            # Calculate hours
+            from datetime import datetime, timedelta
+            start_dt = datetime.combine(datetime.today(), start_time)
+            end_dt = datetime.combine(datetime.today(), end_time)
+            hours = int((end_dt - start_dt).total_seconds() / 3600)
+            
+        except ValueError:
+            message = '❌ ساعت وارد شده نامعتبر است.'
+            await self._send_text_message(chat_id, message)
+            return
+        
+        # Update state
+        @sync_to_async(thread_sensitive=True)
+        def update_state():
+            from rubika_bot.models import LeaveRequestState
+            state = LeaveRequestState.objects.get(rubika_user=user)
+            state.update_step('description', {
+                'start_time': start_time.isoformat(),
+                'end_time': end_time.isoformat(),
+                'leave_hours': hours
+            })
+        
+        await update_state()
+        await self._ask_for_description(chat_id, user)
+    
+    async def _process_description_input(self, chat_id: str, user: RubikaUser, text: str, leave_state) -> None:
+        """پردازش ورودی توضیحات و نمایش خلاصه"""
+        # Check if user wants to skip
+        if text.lower().strip() in ['رد', 'skip', 'pass', '-']:
+            description = ''
+        else:
+            description = text.strip()
+        
+        # Update state
+        @sync_to_async(thread_sensitive=True)
+        def update_state():
+            from rubika_bot.models import LeaveRequestState
+            state = LeaveRequestState.objects.get(rubika_user=user)
+            state.update_step('confirm', {'description': description})
+            return state.data
+        
+        data = await update_state()
+        
+        # Show summary
+        await self._show_leave_summary(chat_id, user, data)
+    
+    async def _show_leave_summary(self, chat_id: str, user: RubikaUser, data: dict) -> None:
+        """نمایش خلاصه درخواست مرخصی"""
+        leave_type_labels = {
+            'regular': 'مرخصی استحقاقی',
+            'absence': 'غیبت',
+            'hourly': 'مرخصی ساعتی',
+            'sick_leave': 'مرخصی استعلاجی',
+        }
+        
+        shift_type_labels = {
+            'day': 'روزکار اول',
+            'day2': 'روزکار دوم',
+            'evening': 'عصرکار اول',
+            'evening2': 'عصرکار دوم',
+            'night': 'شبکار اول',
+            'night2': 'شبکار دوم',
+        }
+        
+        message_lines = [
+            '📋 خلاصه درخواست مرخصی',
+            '',
+            f'📌 نوع: {leave_type_labels.get(data.get("leave_type"), "نامشخص")}',
+            f'📅 تاریخ: {data.get("date_jalali", "نامشخص")}',
+            f'🕐 شیفت: {shift_type_labels.get(data.get("shift_type"), "نامشخص")}',
+        ]
+        
+        # Add hourly details if applicable
+        if data.get('leave_type') == 'hourly':
+            message_lines.append(f'⏰ ساعات: {data.get("start_time", "")} تا {data.get("end_time", "")} ({data.get("leave_hours", 0)} ساعت)')
+        
+        # Add replacement if applicable
+        if data.get('replacement_id'):
+            @sync_to_async(thread_sensitive=True)
+            def get_replacement_name():
+                from django.contrib.auth.models import User
+                try:
+                    rep = User.objects.get(id=data['replacement_id'])
+                    return rep.get_full_name() or rep.username
+                except User.DoesNotExist:
+                    return 'نامشخص'
+            
+            rep_name = await get_replacement_name()
+            message_lines.append(f'👤 جایگزین: {rep_name}')
+        
+        # Add description if exists
+        if data.get('description'):
+            message_lines.append(f'📝 توضیحات: {data.get("description")}')
+        
+        message_lines.extend([
+            '',
+            '✅ آیا اطلاعات صحیح است؟',
+        ])
+        
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[
+                self._button('confirm_leave', '✅ تایید و ثبت'),
+                self._button('cancel_leave', '❌ انصراف')
+            ])
+        ])
+        
+        await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
+    
+    async def _handle_leave_confirmation(self, chat_id: str, user: RubikaUser, button_id: str) -> None:
+        """پردازش تایید نهایی درخواست مرخصی"""
+        if button_id == 'confirm_leave':
+            await self._save_leave_request(chat_id, user)
+        else:
+            await self._cancel_leave_request(chat_id, user)
+    
+    async def _save_leave_request(self, chat_id: str, user: RubikaUser) -> None:
+        """ذخیره درخواست مرخصی در دیتابیس"""
+        @sync_to_async(thread_sensitive=True)
+        def save_leave():
+            from rubika_bot.models import LeaveRequestState
+            from leave_reports.models import ShiftReport
+            from accounts.models import UserProfile
+            from django.contrib.auth.models import User
+            from datetime import datetime
+            
+            try:
+                state = LeaveRequestState.objects.get(rubika_user=user)
+                data = state.data
+                
+                # Get user profile
+                profile = UserProfile.objects.get(user=user.user)
+                
+                # Create leave request
+                leave_request = ShiftReport()
+                leave_request.user = user.user
+                leave_request.leave_type = data['leave_type']
+                leave_request.shift_date = datetime.fromisoformat(data['date']).date()
+                leave_request.shift_type = data['shift_type']
+                leave_request.work_group = profile.group or 'نامشخص'
+                leave_request.crate_by = profile
+                
+                # Add optional fields
+                if data.get('description'):
+                    leave_request.description = data['description']
+                
+                if data.get('replacement_id'):
+                    leave_request.replacement_person = User.objects.get(id=data['replacement_id'])
+                
+                if data.get('start_time'):
+                    leave_request.start_time = datetime.fromisoformat(data['start_time']).time()
+                if data.get('end_time'):
+                    leave_request.end_time = datetime.fromisoformat(data['end_time']).time()
+                if data.get('leave_hours'):
+                    leave_request.leave_hours = data['leave_hours']
+                
+                # Set status
+                if leave_request.leave_type in ['absence', 'sick_leave', 'hourly']:
+                    leave_request.status = 'pending_approval'
+                    leave_request.replacement_approved = True
+                else:
+                    leave_request.status = 'pending_replacement'
+                
+                leave_request.save()
+                
+                # Reset state
+                state.reset()
+                
+                return True, leave_request.id
+                
+            except Exception as e:
+                logger.exception(f"Error saving leave request: {e}")
+                return False, str(e)
+        
+        success, result = await save_leave()
+        
+        if success:
+            message = f'✅ درخواست مرخصی شما با موفقیت ثبت شد!\n\n🎫 شماره درخواست: {result}\n\n📱 می‌توانید وضعیت درخواست خود را از پنل وب سایت پیگیری کنید.'
+            keyboard = self._build_command_keyboard(connected=True)
+            await self._send_text_message(chat_id, message, keyboard)
+        else:
+            message = f'❌ خطا در ثبت درخواست:\n{result}\n\nلطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید.'
+            await self._send_text_message(chat_id, message)
+
     # --- Synchronous helper methods ---
     def _build_command_keyboard(self, connected: bool) -> Keypad:
         # ... (کد این تابع بدون تغییر باقی می‌ماند) ...
         first_row = [('start', '🔄 شروع'), ('account', '📊 وضعیت')]
         second_row = [('connect', '🔗 اتصال')]
         if connected:
-            second_row.extend([('payslip', '💰 فیش حقوقی'), ('disconnect', '❌ قطع اتصال')])
-        rows = [first_row, second_row, [('help', '📖 راهنما')]]
+            second_row.extend([('payslip', '💰 فیش حقوقی'), ('leave_request', '🏖️ درخواست مرخصی')])
+        third_row = []
+        if connected:
+            third_row.append(('disconnect', '❌ قطع اتصال'))
+        third_row.append(('help', '📖 راهنما'))
+        rows = [first_row, second_row, third_row]
         keypad_rows = [KeypadRow(buttons=[self._button(button_id, label) for button_id, label in row]) for row in rows]
         return Keypad(rows=keypad_rows)
 

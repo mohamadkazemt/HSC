@@ -226,3 +226,59 @@ class WebhookLog(models.Model):
         """حذف لاگ‌های قدیمی‌تر از X روز"""
         cutoff = timezone.now() - timezone.timedelta(days=days)
         return cls.objects.filter(created_at__lt=cutoff).delete()
+
+
+class LeaveRequestState(models.Model):
+    """ذخیره state فرایند درخواست مرخصی کاربران در ربات"""
+    rubika_user = models.OneToOneField(
+        RubikaUser,
+        on_delete=models.CASCADE,
+        related_name='leave_request_state'
+    )
+    
+    # State management
+    step = models.CharField(
+        max_length=50,
+        default='idle',
+        help_text='مرحله فعلی: idle, leave_type, date, shift_type, replacement, hourly_times, description, confirm'
+    )
+    
+    # Collected data (stored as JSON)
+    data = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='داده‌های جمع‌آوری شده شامل: leave_type, date, shift_type, replacement_id, start_time, end_time, description'
+    )
+    
+    # Timestamps
+    started_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'وضعیت درخواست مرخصی'
+        verbose_name_plural = 'وضعیت‌های درخواست مرخصی'
+        indexes = [
+            models.Index(fields=['rubika_user', 'step']),
+        ]
+    
+    def __str__(self):
+        return f'{self.rubika_user.chat_id} - {self.step}'
+    
+    def reset(self):
+        """بازنشانی state به حالت اولیه"""
+        self.step = 'idle'
+        self.data = {}
+        self.save()
+    
+    def update_step(self, step, data_update=None):
+        """به‌روزرسانی مرحله و داده‌ها"""
+        self.step = step
+        if data_update:
+            self.data.update(data_update)
+        self.save()
+    
+    @classmethod
+    def get_or_create_for_user(cls, rubika_user):
+        """دریافت یا ساخت state برای یک کاربر"""
+        obj, created = cls.objects.get_or_create(rubika_user=rubika_user)
+        return obj

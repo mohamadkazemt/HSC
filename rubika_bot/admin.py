@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import RubikaUser, RubikaBotSettings, RubikaConnectionCode, WebhookLog
+from .models import RubikaUser, RubikaBotSettings, RubikaConnectionCode, WebhookLog, LeaveRequestState
 
 
 @admin.register(RubikaUser)
@@ -32,3 +32,15 @@ class WebhookLogAdmin(admin.ModelAdmin):
     def message_preview(self, obj):
         return obj.message[:100] + '...' if len(obj.message) > 100 else obj.message
     message_preview.short_description = 'پیام'
+
+
+@admin.register(LeaveRequestState)
+class LeaveRequestStateAdmin(admin.ModelAdmin):
+    list_display = ('rubika_user', 'step', 'started_at', 'updated_at')
+    list_filter = ('step', 'started_at')
+    search_fields = ('rubika_user__chat_id', 'rubika_user__first_name', 'rubika_user__last_name')
+    readonly_fields = ('started_at', 'updated_at')
+    
+    def has_add_permission(self, request):
+        # Prevent manual addition - states are created automatically
+        return False
