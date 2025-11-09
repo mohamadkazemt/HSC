@@ -2,7 +2,6 @@
 
 import json
 import logging
-from typing import Any, Dict
 
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
@@ -10,7 +9,6 @@ from django.db.models import Q
 from django.http import (
     HttpRequest,
     HttpResponse,
-    HttpResponseBadRequest,
     JsonResponse,
 )
 from django.shortcuts import redirect, render
@@ -31,9 +29,7 @@ from .constants import (
 )
 from .models import RubikaBotSettings, RubikaConnectionCode, RubikaUser, WebhookLog
 from .services import RubPyIntegrationService
-from .tasks import send_rubika_message
-from .tasks import process_webhook_task # این import را اضافه یا جایگزین کنید
-
+from .tasks import send_rubika_message, process_webhook_task
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +37,6 @@ logger = logging.getLogger(__name__)
 def superuser_required(view_func):
     """Decorator for views that require superuser access."""
     return user_passes_test(lambda u: u.is_superuser)(view_func)
-
 
 
 @csrf_exempt
@@ -78,9 +73,8 @@ def webhook_receiver(request: HttpRequest) -> JsonResponse:
     return JsonResponse({'ok': True, 'status': 'queued'})
 
 
-
-    
-# --- Admin Panel Views ---
+# --- Admin Panel & User-facing Views ---
+# (The following views are for your website's panel and user pages)
 
 @superuser_required
 def settings_view(request: HttpRequest) -> HttpResponse:
@@ -95,7 +89,6 @@ def settings_view(request: HttpRequest) -> HttpResponse:
         RubPyIntegrationService.reset() # Reset service to use new token
         return redirect('rubika_bot:settings')
 
-    # User list with search and pagination
     users_qs = RubikaUser.objects.select_related('user').order_by('-updated_at')
     search = request.GET.get('q')
     if search:
@@ -130,7 +123,6 @@ def action_register_webhook(request: HttpRequest) -> JsonResponse:
         return JsonResponse({'ok': False, 'error': str(exc)}, status=400)
     except Exception as exc:
         logger.exception("Webhook registration failed: %s", exc)
-        WebhookLog.log_error('ثبت وبهوک', str(exc))
         return JsonResponse({'ok': False, 'error': str(exc)}, status=500)
 
 
@@ -172,15 +164,14 @@ def action_disconnect_user(request: HttpRequest, chat_id: str) -> JsonResponse:
     """Disconnect a user from their linked Rubika account via admin panel."""
     try:
         rubika_user = RubikaUser.objects.select_related('user').get(chat_id=chat_id)
+        if rubika_user.user:
+            service = RubPyIntegrationService.get_instance()
+            # We can't await here, so we call the sync wrapper
+            service.engine._disconnect_user(chat_id, rubika_user) 
+        return JsonResponse({'ok': True})
     except RubikaUser.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'کاربر یافت نشد'}, status=404)
 
-    service = RubPyIntegrationService.get_instance()
-    service.engine._disconnect_user(chat_id, rubika_user) # Re-use the engine logic
-    return JsonResponse({'ok': True})
-
-
-# --- Log Management Views ---
 
 @superuser_required
 def get_webhook_logs(request: HttpRequest) -> JsonResponse:
@@ -192,9 +183,10 @@ def get_webhook_logs(request: HttpRequest) -> JsonResponse:
     
     payload = [
         {'id': log.id, 'log_type': log.get_log_type_display(), 'title': log.title, 'message': log.message, 'data': log.data, 'created_at': log.created_at.isoformat()}
-        for log in logs_qs[:limit]
+        for log in logs_qs.order_by('-created_at')[:limit]
     ]
     return JsonResponse({'ok': True, 'logs': payload})
+
 
 @superuser_required
 @require_http_methods(["POST"])
@@ -202,14 +194,29 @@ def clear_webhook_logs(request: HttpRequest) -> JsonResponse:
     count, _ = WebhookLog.objects.all().delete()
     return JsonResponse({'ok': True, 'deleted': count})
 
+
 @superuser_required
 def export_webhook_logs(request: HttpRequest) -> HttpResponse:
-    # This view can remain as it is, as it only queries the database.
-    # ... (کد این تابع را از فایل فعلی خود کپی کنید) ...
-    pass
+    log_type = request.GET.get('type', 'all')
+    format_type = request.GET.get('format', 'json')
+    limit = int(request.GET.get('limit', 1000))
+    logs_qs = WebhookLog.objects.all()
+    if log_type != 'all':
+        logs_qs = logs_qs.filter(log_type=log_type)
+    logs = logs_qs.order_by('-created_at')[:limit]
 
+    if format_type == 'text':
+        lines = [f"[{log.created_at:%Y-%m-%d %H:%M:%S}] {log.log_type.upper()}: {log.title}\n{log.message}\n" for log in logs]
+        response = HttpResponse('\n'.join(lines), content_type='text/plain; charset=utf-8')
+        filename = f"webhook_logs_{log_type}_{timezone.now():%Y%m%d_%H%M%S}.txt"
+    else:
+        payload = [{'id': log.id, 'log_type': log.log_type, 'title': log.title, 'message': log.message, 'data': log.data, 'created_at': log.created_at.isoformat()} for log in logs]
+        response = HttpResponse(json.dumps(payload, ensure_ascii=False, indent=2), content_type='application/json; charset=utf-8')
+        filename = f"webhook_logs_{log_type}_{timezone.now():%Y%m%d_%H%M%S}.json"
+    
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
 
-# --- User-facing Connection Views ---
 
 @login_required
 def connect_page(request: HttpRequest) -> HttpResponse:
@@ -218,16 +225,12 @@ def connect_page(request: HttpRequest) -> HttpResponse:
     rubika_user = getattr(request.user, 'rubika_profile', None)
     is_connected = bool(rubika_user and rubika_user.user)
     
-    existing_code = RubikaConnectionCode.objects.filter(
-        user=request.user, used=False, expires_at__gt=timezone.now()
-    ).first()
+    existing_code = RubikaConnectionCode.objects.filter(user=request.user, used=False, expires_at__gt=timezone.now()).first()
     code_obj = existing_code or RubikaConnectionCode.generate_for_user(request.user)
     
     direct_link = None
     if settings_obj.bot_username:
-        direct_link = DEEPLINK_TEMPLATE.format(
-            bot_username=settings_obj.bot_username.lstrip('@'), code=code_obj.code
-        )
+        direct_link = DEEPLINK_TEMPLATE.format(bot_username=settings_obj.bot_username.lstrip('@'), code=code_obj.code)
 
     context = {
         'code': code_obj.code,
@@ -257,9 +260,7 @@ def get_connection_link(request: HttpRequest) -> JsonResponse:
     if settings_obj.bot_username:
         link = DEEPLINK_TEMPLATE.format(bot_username=settings_obj.bot_username.lstrip('@'), code=code.code)
     
-    return JsonResponse({
-        'ok': True, 'code': code.code, 'link': link, 'expires_at': code.expires_at.isoformat()
-    })
+    return JsonResponse({'ok': True, 'code': code.code, 'link': link, 'expires_at': code.expires_at.isoformat()})
 
 
 @login_required
