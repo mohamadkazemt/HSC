@@ -141,7 +141,10 @@ class RubikaBotEngine:
             # Check if it's a replacement selection button
             elif button_id.startswith('replacement_'):
                 await self._handle_replacement_selection(chat_id, user, button_id)
-            # Check if it's a confirmation button
+            # Check if it's a replacement confirmation button
+            elif button_id in ['confirm_replacement', 'reject_replacement']:
+                await self._handle_replacement_selection(chat_id, user, button_id)
+            # Check if it's a final confirmation button
             elif button_id in ['confirm_leave', 'edit_leave']:
                 await self._handle_leave_confirmation(chat_id, user, button_id)
             else:
@@ -583,125 +586,86 @@ class RubikaBotEngine:
             await self._ask_for_description(chat_id, user)
     
     async def _handle_replacement_selection(self, chat_id: str, user: RubikaUser, button_id: str) -> None:
-        """پردازش انتخاب جایگزین"""
-        # Extract user ID from button (format: replacement_USER_ID or replacement_skip)
-        if button_id == 'replacement_skip':
-            # Continue without replacement (for testing - in production this shouldn't happen for regular leave)
-            await self._ask_for_description(chat_id, user)
-            return
-        
-        try:
-            replacement_id = int(button_id.replace('replacement_', ''))
-        except ValueError:
-            return
-        
-        # Update state
-        @sync_to_async(thread_sensitive=True)
-        def update_state():
-            from rubika_bot.models import LeaveRequestState
-            state = LeaveRequestState.objects.get(rubika_user=user)
-            state.update_step('description', {'replacement_id': replacement_id})
-        
-        await update_state()
-        await self._ask_for_description(chat_id, user)
-    
-    async def _ask_for_replacement(self, chat_id: str, user: RubikaUser) -> None:
-        """درخواست انتخاب جایگزین"""
-        # Get list of possible replacements from same section
-        @sync_to_async(thread_sensitive=True)
-        def get_replacements():
-            from django.contrib.auth.models import User
-            from accounts.models import UserProfile
-            try:
-                profile = UserProfile.objects.get(user=user.user)
-                
-                # اول از همان بخش جستجو کن
-                if profile.section:
-                    users = User.objects.filter(
-                        userprofile__section=profile.section,
-                        is_active=True
-                    ).exclude(id=user.user.id).select_related('userprofile')[:10]
-                    
-                    if users.exists():
-                        return list(users), 'section'
-                
-                # اگر در بخش کسی نبود، از کل سازمان جستجو کن
-                users = User.objects.filter(
-                    is_active=True
-                ).exclude(id=user.user.id).select_related('userprofile').order_by('first_name', 'last_name')[:15]
-                
-                if users.exists():
-                    return list(users), 'all'
-                    
-            except UserProfile.DoesNotExist:
-                # اگر پروفایل نداشت، از کل سازمان جستجو کن
-                users = User.objects.filter(
-                    is_active=True
-                ).exclude(id=user.user.id).select_related('userprofile').order_by('first_name', 'last_name')[:15]
-                
-                if users.exists():
-                    return list(users), 'all'
+        """پردازش تایید/رد جایگزین"""
+        if button_id == 'confirm_replacement':
+            # Get pending replacement from state
+            @sync_to_async(thread_sensitive=True)
+            def confirm_replacement():
+                from rubika_bot.models import LeaveRequestState
+                state = LeaveRequestState.objects.get(rubika_user=user)
+                pending_replacement_id = state.data.get('pending_replacement_id')
+                if pending_replacement_id:
+                    state.update_step('description', {'replacement_id': pending_replacement_id})
+                    state.data.pop('pending_replacement_id', None)
+                    state.save()
+                    return True
+                return False
             
-            return [], None
-        
-        result = await get_replacements()
-        
-        if not result[0]:
-            message = '⚠️ هیچ کاربر فعالی در سیستم یافت نشد.\n\nلطفاً با مدیر سیستم تماس بگیرید.'
+            success = await confirm_replacement()
+            if success:
+                await self._ask_for_description(chat_id, user)
+            else:
+                message = '❌ خطا در تایید جایگزین. لطفاً دوباره تلاش کنید.'
+                await self._send_text_message(chat_id, message)
+                
+        elif button_id == 'reject_replacement':
+            # Ask for personnel code again
+            message = '🔄 لطفاً کد پرسنلی صحیح جایگزین خود را وارد کنید:'
             keyboard = Keypad(rows=[
                 KeypadRow(buttons=[self._button('cancel_leave', '❌ انصراف')])
             ])
             await self._send_text_message(chat_id, message, keyboard)
-            return
+    
+    async def _ask_for_replacement(self, chat_id: str, user: RubikaUser) -> None:
+        """درخواست کد پرسنلی جایگزین"""
+        # Get user position info
+        @sync_to_async(thread_sensitive=True)
+        def get_user_position():
+            from accounts.models import UserProfile
+            try:
+                profile = UserProfile.objects.select_related('position').get(user=user.user)
+                if profile.position:
+                    return profile.position.name
+                return None
+            except UserProfile.DoesNotExist:
+                return None
         
-        replacements, scope = result
+        position_name = await get_user_position()
         
         # Update state to replacement step
         @sync_to_async(thread_sensitive=True)
         def update_state():
             from rubika_bot.models import LeaveRequestState
             state = LeaveRequestState.objects.get(rubika_user=user)
-            state.update_step('replacement')
+            state.update_step('replacement_code')
         
         await update_state()
         
-        # پیام بر اساس scope
-        if scope == 'section':
-            message_lines = [
-                '👤 لطفاً جایگزین خود را انتخاب کنید:',
-                '',
-                '📋 کاربران بخش شما:',
-            ]
+        # پیام درخواست کد پرسنلی
+        message_lines = [
+            '👤 انتخاب جایگزین',
+            '',
+        ]
+        
+        if position_name:
+            message_lines.append(f'📌 سمت شما: {position_name}')
+            message_lines.append('')
+            message_lines.append('🔍 لطفاً کد پرسنلی جایگزین خود را وارد کنید:')
+            message_lines.append('')
+            message_lines.append('⚠️ توجه: جایگزین باید هم‌سمت شما باشد')
         else:
-            message_lines = [
-                '👤 لطفاً جایگزین خود را انتخاب کنید:',
-                '',
-                '⚠️ در بخش شما کاربری یافت نشد.',
-                '📋 لیست کاربران سازمان:',
-            ]
+            message_lines.append('🔍 لطفاً کد پرسنلی جایگزین خود را وارد کنید:')
         
-        # Build replacement keyboard (max 2 per row)
-        rows = []
-        current_row = []
+        message_lines.extend([
+            '',
+            'مثال: 12345',
+            '',
+            '💡 یا از دکمه زیر برای انصراف استفاده کنید:',
+        ])
         
-        for rep in replacements:
-            full_name = rep.get_full_name() or rep.username
-            button_id = f'replacement_{rep.id}'
-            button_label = full_name[:20]  # Limit length
-            
-            current_row.append((button_id, button_label))
-            
-            if len(current_row) == 2:
-                rows.append(current_row)
-                current_row = []
-        
-        if current_row:
-            rows.append(current_row)
-        
-        rows.append([('cancel_leave', '❌ انصراف')])
-        
-        keypad_rows = [KeypadRow(buttons=[self._button(bid, label) for bid, label in row]) for row in rows]
-        keyboard = Keypad(rows=keypad_rows)
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[self._button('cancel_leave', '❌ انصراف')])
+        ])
         
         await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
     
@@ -763,10 +727,160 @@ class RubikaBotEngine:
         
         if step == 'date':
             await self._process_date_input(chat_id, user, text, leave_state)
+        elif step == 'replacement_code':
+            await self._process_replacement_code_input(chat_id, user, text, leave_state)
         elif step == 'hourly_times':
             await self._process_hourly_times_input(chat_id, user, text, leave_state)
         elif step == 'description':
             await self._process_description_input(chat_id, user, text, leave_state)
+    
+    async def _process_replacement_code_input(self, chat_id: str, user: RubikaUser, text: str, leave_state) -> None:
+        """پردازش ورودی کد پرسنلی جایگزین"""
+        personnel_code = text.strip()
+        
+        # Validate and find replacement
+        @sync_to_async(thread_sensitive=True)
+        def find_replacement():
+            from django.contrib.auth.models import User
+            from accounts.models import UserProfile
+            
+            try:
+                # Get requester profile
+                requester_profile = UserProfile.objects.select_related('position').get(user=user.user)
+                
+                # Find replacement by personnel code
+                try:
+                    replacement_profile = UserProfile.objects.select_related(
+                        'user', 'position', 'section', 'part'
+                    ).get(personnel_code=personnel_code)
+                    
+                    replacement_user = replacement_profile.user
+                    
+                    # Check if user is trying to select themselves
+                    if replacement_user.id == user.user.id:
+                        return None, 'self'
+                    
+                    # Check if user is active
+                    if not replacement_user.is_active:
+                        return None, 'inactive'
+                    
+                    # Check if same position
+                    if requester_profile.position and replacement_profile.position:
+                        if requester_profile.position.id != replacement_profile.position.id:
+                            return {
+                                'user': replacement_user,
+                                'profile': replacement_profile,
+                                'requester_position': requester_profile.position.name,
+                                'replacement_position': replacement_profile.position.name,
+                            }, 'different_position'
+                    
+                    # All checks passed
+                    return {
+                        'user': replacement_user,
+                        'profile': replacement_profile,
+                        'position': replacement_profile.position.name if replacement_profile.position else 'نامشخص',
+                        'section': replacement_profile.section.name if replacement_profile.section else 'نامشخص',
+                    }, 'valid'
+                    
+                except UserProfile.DoesNotExist:
+                    return None, 'not_found'
+                    
+            except UserProfile.DoesNotExist:
+                return None, 'no_profile'
+        
+        result, status = await find_replacement()
+        
+        # Handle different statuses
+        if status == 'self':
+            message = '❌ نمی‌توانید خودتان را به عنوان جایگزین انتخاب کنید.\n\nلطفاً کد پرسنلی فرد دیگری را وارد کنید:'
+            await self._send_text_message(chat_id, message)
+            return
+            
+        elif status == 'inactive':
+            message = '❌ این کاربر غیرفعال است.\n\nلطفاً کد پرسنلی فرد دیگری را وارد کنید:'
+            await self._send_text_message(chat_id, message)
+            return
+            
+        elif status == 'not_found':
+            message = f'❌ کد پرسنلی "{personnel_code}" یافت نشد.\n\nلطفاً کد صحیح را وارد کنید:'
+            await self._send_text_message(chat_id, message)
+            return
+            
+        elif status == 'no_profile':
+            message = '❌ پروفایل شما یافت نشد. لطفاً با مدیر سیستم تماس بگیرید.'
+            await self._send_text_message(chat_id, message)
+            return
+            
+        elif status == 'different_position':
+            # Show warning but allow selection
+            replacement_user = result['user']
+            full_name = replacement_user.get_full_name() or replacement_user.username
+            
+            message_lines = [
+                '⚠️ هشدار: سمت متفاوت',
+                '',
+                f'👤 نام: {full_name}',
+                f'📌 سمت شما: {result["requester_position"]}',
+                f'📌 سمت جایگزین: {result["replacement_position"]}',
+                '',
+                '❓ آیا مطمئن هستید که این فرد را به عنوان جایگزین انتخاب می‌کنید؟',
+            ]
+            
+            # Save pending replacement
+            @sync_to_async(thread_sensitive=True)
+            def save_pending():
+                from rubika_bot.models import LeaveRequestState
+                state = LeaveRequestState.objects.get(rubika_user=user)
+                state.data['pending_replacement_id'] = replacement_user.id
+                state.save()
+            
+            await save_pending()
+            
+            keyboard = Keypad(rows=[
+                KeypadRow(buttons=[
+                    self._button('confirm_replacement', '✅ بله، تایید'),
+                    self._button('reject_replacement', '❌ خیر، اصلاح')
+                ]),
+                KeypadRow(buttons=[self._button('cancel_leave', '🔙 انصراف')])
+            ])
+            
+            await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
+            return
+            
+        elif status == 'valid':
+            # Show confirmation
+            replacement_user = result['user']
+            full_name = replacement_user.get_full_name() or replacement_user.username
+            
+            message_lines = [
+                '✅ جایگزین یافت شد',
+                '',
+                f'👤 نام: {full_name}',
+                f'📌 سمت: {result["position"]}',
+                f'🏢 بخش: {result["section"]}',
+                '',
+                '❓ آیا این فرد صحیح است؟',
+            ]
+            
+            # Save pending replacement
+            @sync_to_async(thread_sensitive=True)
+            def save_pending():
+                from rubika_bot.models import LeaveRequestState
+                state = LeaveRequestState.objects.get(rubika_user=user)
+                state.data['pending_replacement_id'] = replacement_user.id
+                state.save()
+            
+            await save_pending()
+            
+            keyboard = Keypad(rows=[
+                KeypadRow(buttons=[
+                    self._button('confirm_replacement', '✅ بله، تایید'),
+                    self._button('reject_replacement', '❌ خیر، اصلاح')
+                ]),
+                KeypadRow(buttons=[self._button('cancel_leave', '🔙 انصراف')])
+            ])
+            
+            await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
     
     async def _process_date_input(self, chat_id: str, user: RubikaUser, text: str, leave_state) -> None:
         """پردازش ورودی تاریخ"""
