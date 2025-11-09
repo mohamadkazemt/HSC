@@ -614,25 +614,47 @@ class RubikaBotEngine:
             from accounts.models import UserProfile
             try:
                 profile = UserProfile.objects.get(user=user.user)
+                
+                # اول از همان بخش جستجو کن
                 if profile.section:
                     users = User.objects.filter(
                         userprofile__section=profile.section,
                         is_active=True
                     ).exclude(id=user.user.id).select_related('userprofile')[:10]
-                    return list(users)
+                    
+                    if users.exists():
+                        return list(users), 'section'
+                
+                # اگر در بخش کسی نبود، از کل سازمان جستجو کن
+                users = User.objects.filter(
+                    is_active=True
+                ).exclude(id=user.user.id).select_related('userprofile').order_by('first_name', 'last_name')[:15]
+                
+                if users.exists():
+                    return list(users), 'all'
+                    
             except UserProfile.DoesNotExist:
-                pass
-            return []
+                # اگر پروفایل نداشت، از کل سازمان جستجو کن
+                users = User.objects.filter(
+                    is_active=True
+                ).exclude(id=user.user.id).select_related('userprofile').order_by('first_name', 'last_name')[:15]
+                
+                if users.exists():
+                    return list(users), 'all'
+            
+            return [], None
         
-        replacements = await get_replacements()
+        result = await get_replacements()
         
-        if not replacements:
-            message = '⚠️ کاربر جایگزینی در بخش شما یافت نشد.\n\nلطفاً با مدیر خود تماس بگیرید.'
+        if not result[0]:
+            message = '⚠️ هیچ کاربر فعالی در سیستم یافت نشد.\n\nلطفاً با مدیر سیستم تماس بگیرید.'
             keyboard = Keypad(rows=[
                 KeypadRow(buttons=[self._button('cancel_leave', '❌ انصراف')])
             ])
             await self._send_text_message(chat_id, message, keyboard)
             return
+        
+        replacements, scope = result
         
         # Update state to replacement step
         @sync_to_async(thread_sensitive=True)
@@ -643,11 +665,20 @@ class RubikaBotEngine:
         
         await update_state()
         
-        message_lines = [
-            '👤 لطفاً جایگزین خود را انتخاب کنید:',
-            '',
-            'از لیست زیر یکی را انتخاب کنید:',
-        ]
+        # پیام بر اساس scope
+        if scope == 'section':
+            message_lines = [
+                '👤 لطفاً جایگزین خود را انتخاب کنید:',
+                '',
+                '📋 کاربران بخش شما:',
+            ]
+        else:
+            message_lines = [
+                '👤 لطفاً جایگزین خود را انتخاب کنید:',
+                '',
+                '⚠️ در بخش شما کاربری یافت نشد.',
+                '📋 لیست کاربران سازمان:',
+            ]
         
         # Build replacement keyboard (max 2 per row)
         rows = []
