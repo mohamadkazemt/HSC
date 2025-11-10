@@ -2,7 +2,7 @@ import logging
 from typing import Iterable, Optional
 
 from django.contrib.auth.models import User
-from django.urls import reverse
+from django.urls import NoReverseMatch, reverse
 
 from dashboard.models import Notification
 
@@ -41,13 +41,24 @@ def _safe_notification(
         )
 
 
+def _profile_url(user: User) -> Optional[str]:
+    if not hasattr(user, 'userprofile'):
+        return None
+
+    try:
+        return reverse('accounts:profile')
+    except NoReverseMatch:
+        logger.warning("Profile URL reverse failed for user %s", getattr(user, 'id', None), exc_info=True)
+        return None
+
+
 def notify_profile_updated(user: User, *, actor: Optional[User] = None) -> None:
     _safe_notification(
         user=user,
         title='به‌روزرسانی اطلاعات کاربری',
         message='اطلاعات شخصی شما توسط مدیریت به‌روزرسانی شد.',
         notification_type='info',
-        url=reverse('accounts:profile_view') if hasattr(user, 'userprofile') else None,
+        url=_profile_url(user),
         actor=actor,
     )
 
@@ -58,7 +69,7 @@ def notify_organizational_updated(user: User, *, actor: Optional[User] = None) -
         title='به‌روزرسانی اطلاعات سازمانی',
         message='اطلاعات سازمانی شما در سیستم تغییر کرد. لطفاً جزئیات جدید را بررسی کنید.',
         notification_type='info',
-        url=reverse('accounts:profile_view') if hasattr(user, 'userprofile') else None,
+        url=_profile_url(user),
         actor=actor,
     )
 
