@@ -2,10 +2,10 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.db.models import Q
 from datetime import timedelta
-from fire_extinguisher_management.models import FireExtinguisher, Notification
+from fire_extinguisher_management.models import FireExtinguisher
+from fire_extinguisher_management.notifications import notify_staff, build_extinguisher_url
 from django.contrib.auth import get_user_model
 from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
 
 User = get_user_model()
 
@@ -19,8 +19,8 @@ class Command(BaseCommand):
         # Get all operational extinguishers
         extinguishers = FireExtinguisher.objects.filter(status='operational')
 
-        # Get all staff users who should receive notifications
-        users = User.objects.filter(is_staff=True)
+        User = get_user_model()
+        staff_users = User.objects.filter(is_staff=True, is_active=True)
 
         for extinguisher in extinguishers:
             messages = []
@@ -42,23 +42,22 @@ class Command(BaseCommand):
                 )
 
             if messages:
-                # Create notifications for each user
-                for user in users:
-                    for message in messages:
-                        Notification.objects.create(
-                            user=user,
-                            message=message,
-                            url=f'/fire-extinguisher-management/extinguishers/{extinguisher.pk}/'
-                        )
+                for message in messages:
+                    notify_staff(
+                        title='هشدار سرویس کپسول',
+                        message=message,
+                        notification_type='warning',
+                        url=build_extinguisher_url(extinguisher),
+                    )
 
-                        # Send SMS if configured
-                        if hasattr(settings, 'SMS_ENABLED') and settings.SMS_ENABLED:
-                            try:
-                                self.send_sms(user.phone_number, message)
-                            except Exception as e:
-                                self.stdout.write(
-                                    self.style.ERROR(f'Failed to send SMS to {user.username}: {str(e)}')
-                                )
+                    if hasattr(settings, 'SMS_ENABLED') and settings.SMS_ENABLED:
+                        # ارسال SMS به صورت سفارشی (در صورت نیاز)
+                        try:
+                            for staff_user in staff_users.exclude(phone_number__isnull=True):
+                                if staff_user.phone_number:
+                                    self.send_sms(staff_user.phone_number, message)
+                        except Exception as e:
+                            self.stdout.write(self.style.ERROR(f'Failed to send SMS: {str(e)}'))
 
         self.stdout.write(self.style.SUCCESS('Successfully checked service dates and sent notifications'))
 

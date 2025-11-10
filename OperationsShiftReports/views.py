@@ -22,6 +22,7 @@ from .permissions import operations_required
 from django.contrib.auth.decorators import login_required
 from dashboard.utils import log_user_activity
 from django.urls import reverse
+from .notifications import notify_shift_report_created
 
 def convert_to_persian_day(date):
     """تبدیل روز هفته به فارسی برای تاریخ شمسی"""
@@ -115,6 +116,7 @@ def create_shift_report(request):
                 creator=user_profile
             )
 
+            inactive_loaders = []
             # ذخیره وضعیت بارکننده‌ها
             for loader_data in loader_statuses:
                 loader_id, block_id, status, inactive_reason = loader_data.split(',')
@@ -130,6 +132,12 @@ def create_shift_report(request):
                     status=status,
                     inactive_reason=inactive_reason if status == 'inactive' else None
                 )
+
+                if status == 'inactive':
+                    inactive_loaders.append({
+                        'loader': loader.workshop_code,
+                        'block': block.block_name,
+                    })
             
             # ثبت فعالیت ایجاد گزارش شیفت
             log_user_activity(
@@ -140,6 +148,12 @@ def create_shift_report(request):
                 related_object_id=shift_report.id,
                 url=None,
                 request=request
+            )
+
+            notify_shift_report_created(
+                shift_report,
+                inactive_loaders=inactive_loaders,
+                actor=request.user if request.user.is_authenticated else None,
             )
 
             return JsonResponse({'messages': [{'tags': 'success', 'message': 'گزارش با موفقیت ثبت شد.'}]})

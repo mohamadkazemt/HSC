@@ -21,6 +21,7 @@ from openpyxl.drawing.image import Image as XLImage
 from shift_manager.utils import get_current_shift_and_group  # حذف import اضافی
 from dashboard.utils import log_user_activity  # اضافه کردن ایمپورت
 from django.urls import reverse  # برای ساخت URL
+from .notifications import notify_checklist_submission, ISSUE_OPTIONS
 
 @permission_required("checklist_form")
 def checklist_form_view(request):
@@ -134,17 +135,26 @@ def submit_checklist(request):
         except MiningMachine.DoesNotExist:
             return JsonResponse({'success': False, 'error': 'ماشین مورد نظر یافت نشد.'})
 
+        issue_answers = []
         for key, value in request.POST.items():
             if key.startswith('answer_'):
                 question_id = key.split('_')[1]
                 question = get_object_or_404(Question, id=question_id)
                 description = request.POST.get(f'description_{question_id}')
+                answer_obj = None
                 if question.question_type == 'text':
-                    Answer.objects.create(checklist=checklist, question=question, answer_text=value,
+                    answer_obj = Answer.objects.create(checklist=checklist, question=question, answer_text=value,
                                           description=description)
                 elif question.question_type == 'option':
-                    Answer.objects.create(checklist=checklist, question=question, selected_option=value,
+                    answer_obj = Answer.objects.create(checklist=checklist, question=question, selected_option=value,
                                           description=description)
+
+                if answer_obj and question.question_type == 'option':
+                    selected = (answer_obj.selected_option or '').strip()
+                    if selected in ISSUE_OPTIONS:
+                        issue_answers.append(answer_obj)
+
+        notify_checklist_submission(checklist, issues=issue_answers, actor=request.user if request.user.is_authenticated else None)
         return JsonResponse({'success': True})
     return JsonResponse({'success': False, 'error': 'متد نامعتبر.'})
 

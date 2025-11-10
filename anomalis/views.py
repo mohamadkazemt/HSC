@@ -4,7 +4,6 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.template.defaultfilters import title
 from django.urls import reverse
 from HSCprojects import settings
-from dashboard.models import Notification
 from dashboard.sms_utils import send_template_sms, logger
 from permissions.utils import permission_required
 from .forms import AnomalyForm, CommentForm
@@ -12,7 +11,6 @@ from .models import AnomalyDescription, CorrectiveAction, Comment, LocationSecti
 from django.views.decorators.csrf import csrf_exempt
 import jdatetime
 from accounts.models import UserProfile
-from django.contrib.auth.models import Group, User
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.db.models import Prefetch
@@ -33,6 +31,14 @@ from datetime import datetime
 from django.db.models import IntegerField
 from django.db.models.functions import Cast
 from .forms import AnomalyReportForm
+from .notifications import (
+    notify_anomaly_created,
+    notify_anomaly_status_changed,
+    notify_comment_created,
+    notify_anomaly_approval_request,
+    notify_request_safe_assignment,
+    notify_safe_result,
+)
 from django.shortcuts import render
 from django.db.models import Count, Q, F, CharField, Value
 from django.db.models.functions import Concat
@@ -248,40 +254,8 @@ def anomalis(request):
                 except Exception as sms_error:
                     logger.error(f"Error while sending SMS for anomaly {anomaly.id}: {sms_error}")
 
-                # ایجاد اعلان برای مسئول پیگیری
-                if anomaly.followup and anomaly.followup.user:
-                    logger.debug(f"Attempting to create notification for user: {anomaly.followup.user.username}")
-                    Notification.objects.create(
-                        user=anomaly.followup.user,
-                        message=f"آنومالی جدید با شناسه {anomaly.id} برای شما ثبت شد.",
-                        url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
-                    )
-                    logger.debug(f"Notification created successfully for user: {anomaly.followup.user.username}")
-                else:
-                    logger.warning("Followup user or user object is missing for anomaly. Skipping notification.")
-
-
-                try:
-                    hse_group = Group.objects.get(name='مدیر HSE')
-                except Group.DoesNotExist:
-                    logger.error("Group 'مدیر HSE' does not exist.")
-                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                        return JsonResponse({
-                            'status': 'error',
-                            'message': 'گروه مدیر HSE یافت نشد',
-                        })
-                    messages.error(request, 'گروه مدیر HSE یافت نشد')
-                    return redirect('anomalis:anomalis')
-
-
-                for user in hse_group.user_set.all():
-                    logger.debug(f"Attempting to create notification for HSE manager: {user.username}")
-                    Notification.objects.create(
-                        user=user,
-                        message=f"آنومالی جدید با شناسه {anomaly.id} ثبت شد.",
-                        url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
-                    )
-                    logger.debug(f"Notification created successfully for HSE manager: {user.username}")
+                # ارسال اعلان‌های سیستم
+                notify_anomaly_created(anomaly, actor=request.user)
 
 
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -525,35 +499,8 @@ def anomaly_detail_view(request, pk):
                     request=request
                 )
 
-                # ارسال اعلان به مدیر HSE و ایجاد‌کننده آنومالی برای کامنت جدید
-                if anomaly.created_by:
-                    Notification.objects.create(
-                        user=anomaly.created_by.user,
-                        message=f"یک کامنت جدید برای آنومالی {anomaly.id} ارسال شد.",
-                        url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
-                    )
-
-                # ارسال اعلان به مدیران HSE
-                try:
-                    hse_group = Group.objects.get(name='مدیر HSE')  # Corrected line
-                    for user in hse_group.user_set.all():
-                        Notification.objects.create(
-                            user=user,
-                            message=f"یک کامنت جدید برای آنومالی {anomaly.id} ارسال شد.",
-                            url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
-                        )
-                except Group.DoesNotExist:
-                   logger.error("Group 'مدیر HSE' does not exist.")
-                   messages.error(request, "گروه 'مدیر HSE' یافت نشد.")
-
-                # اگر کامنت یک پاسخ باشد، ارسال اعلان به نویسنده کامنت قبلی
-                if parent_id:
-                    parent_comment_user = parent_comment.user
-                    Notification.objects.create(
-                        user=parent_comment_user.user,
-                        message=f"پاسخی به کامنت شما در آنومالی {anomaly.id} ارسال شد.",
-                        url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
-                    )
+                # ارسال اعلان‌ها برای کامنت جدید
+                notify_comment_created(comment, actor=request.user)
 
                 messages.success(request, "نظر شما با موفقیت ثبت شد")
 
@@ -584,6 +531,10 @@ def request_safe(request, pk):
         anomaly.is_request_sent = True
         anomaly.requested_by = request.user  # ذخیره کاربر درخواست‌دهنده
         anomaly.save()
+
+        # اطلاع‌رسانی تغییر وضعیت و ارسال در صورت نیاز برای تایید
+        notify_anomaly_status_changed(anomaly, actor=request.user)
+        notify_anomaly_approval_request(anomaly, actor=request.user)
         
         # ثبت فعالیت درخواست ایمن‌سازی
         from dashboard.utils import log_user_activity
@@ -616,11 +567,7 @@ def request_safe(request, pk):
                 send_template_sms(officer.mobile, template_id, parameters)
                 
                 # ایجاد اعلان برای افسر ایمنی
-                Notification.objects.create(
-                    user=officer.user,
-                    message=f"درخواست ایمن‌سازی برای آنومالی {anomaly.id} ارسال شد.",
-                    url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
-                )
+                notify_request_safe_assignment(officer.user, anomaly, actor=request.user)
                 
                 messages.success(request, "درخواست ایمن‌سازی با موفقیت ارسال شد و به افسر ایمنی حاضر اطلاع داده شد.")
             else:
@@ -648,8 +595,12 @@ def approve_safe(request, pk):
         anomaly.approved_by = request.user  # ذخیره کاربر تأیید‌کننده
         anomaly.save()
 
+        notify_anomaly_status_changed(anomaly, actor=request.user)
+
         # ارسال پیامک به ایجادکننده و مسئول پیگیری
         recipients = [anomaly.followup]
+        if anomaly.created_by and anomaly.created_by not in recipients:
+            recipients.append(anomaly.created_by)
         template_id = 244118  # شناسه قالب تایید ایمنی
         for recipient in recipients:
             parameters = [
@@ -658,12 +609,7 @@ def approve_safe(request, pk):
             ]
             send_template_sms(recipient.mobile, template_id, parameters)
 
-            # ایجاد اعلان
-            Notification.objects.create(
-                user=recipient.user,
-                message=f"آنومالی {anomaly.id} به وضعیت ایمن تغییر یافت.",
-                url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
-            )
+        notify_safe_result(anomaly, approved=True, actor=request.user)
 
         return redirect('anomalis:anomaly_detail', pk=anomaly.pk)
 
@@ -681,6 +627,8 @@ def reject_safe(request, pk):
 
         # ارسال پیامک به ایجادکننده و مسئول پیگیری
         recipients = [anomaly.followup]
+        if anomaly.created_by and anomaly.created_by not in recipients:
+            recipients.append(anomaly.created_by)
         template_id = 320925  # شناسه قالب رد ایمنی
         for recipient in recipients:
             parameters = [
@@ -689,12 +637,7 @@ def reject_safe(request, pk):
             ]
             send_template_sms(recipient.mobile, template_id, parameters)
 
-            # ایجاد اعلان
-            Notification.objects.create(
-                user=recipient.user,
-                message=f"درخواست ایمن بودن آنومالی {anomaly.id} رد شد.",
-                url=reverse('anomalis:anomaly_detail', args=[anomaly.id])
-            )
+        notify_safe_result(anomaly, approved=False, actor=request.user)
 
         return redirect('anomalis:anomaly_detail', pk=anomaly.pk)
 

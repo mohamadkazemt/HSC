@@ -19,6 +19,11 @@ import logging
 import jdatetime
 from django.utils import timezone
 from .sms_utils import send_meeting_cancelled_sms, send_meeting_reminder_sms, send_meeting_updated_sms, send_meeting_deleted_sms, send_meeting_created_sms
+from .notifications import (
+    notify_meeting_updated,
+    notify_meeting_cancelled,
+    notify_meeting_deleted,
+)
 from permissions.utils import permission_required, check_permission
 from functools import wraps
 
@@ -237,6 +242,8 @@ class MeetingUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
                             meeting.start_time
                         )
             
+            notify_meeting_updated(meeting, actor=self.request.user)
+
             messages.success(self.request, 'جلسه با موفقیت بروزرسانی شد.')
             return redirect('meetings:meeting_list')
             
@@ -262,6 +269,8 @@ class MeetingDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         return self.request.user.has_perm('meetings.delete_meeting')
 
     def delete(self, request, *args, **kwargs):
+        meeting = self.get_object()
+        notify_meeting_deleted(meeting, actor=request.user)
         response = super().delete(request, *args, **kwargs)
         messages.success(self.request, 'جلسه با موفقیت حذف شد.')
         return response
@@ -369,6 +378,8 @@ def cancel_meeting(request, pk):
             meeting.cancelled_at = timezone.now()
             meeting.save()
             
+            notify_meeting_cancelled(meeting, reason=reason, actor=request.user)
+
             print("جلسه با موفقیت لغو شد")
             messages.success(request, 'جلسه با موفقیت لغو شد.')
             return redirect('meetings:meeting_list')
@@ -436,16 +447,8 @@ def delete_meeting(request, pk):
                             meeting.start_time
                         )
             
-            # ارسال نوتیفیکیشن به شرکت‌کنندگان
-            for participant in meeting.participants.all():
-                Notification.objects.create(
-                    user=participant,
-                    title='حذف جلسه',
-                    message=f'جلسه "{meeting.title}" حذف شده است.',
-                    notification_type='meeting',
-                    url=f'/meetings/{meeting.pk}/'
-                )
-            
+            notify_meeting_deleted(meeting, actor=request.user)
+
             meeting.delete()
             print("جلسه با موفقیت حذف شد")
             messages.success(request, 'جلسه با موفقیت حذف شد.')

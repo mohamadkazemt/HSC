@@ -32,6 +32,13 @@ from functools import wraps
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 import os
+from django.urls import reverse_lazy
+from django.http import JsonResponse
+from django.contrib.auth.mixins import UserPassesTestMixin
+from dashboard.utils import log_user_activity
+from django.urls import reverse
+from core.models import SiteSettings
+from .notifications import notify_profile_updated, notify_organizational_updated, notify_password_reset
 
 
 name = 'accounts'
@@ -572,24 +579,53 @@ def personnel_edit(request, user_id):
             else:
                 user.set_password(new_password)
                 user.save()
+                notify_password_reset(user, actor=request.user)
                 messages.success(request, f'رمز عبور کاربر {user.get_full_name() or user.username} با موفقیت تغییر یافت.')
                 return redirect('accounts:personnel_edit', user_id=user_id)
         
-        # Handle profile update
-        elif form_type in ['profile', 'organizational', '']:
-            form = PersonnelEditForm(request.POST, instance=profile, user_instance=user)
-            if form.is_valid():
-                form.save()
-                messages.success(request, 'اطلاعات پرسنل با موفقیت ذخیره شد.')
-                return redirect('accounts:personnel_edit', user_id=user_id)
-            else:
-                for field, errors in form.errors.items():
-                    for error in errors:
-                        messages.error(request, f"خطا در فیلد {field}: {error}")
-        else:
-            form = PersonnelEditForm(instance=profile, user_instance=user)
-    else:
-        form = PersonnelEditForm(instance=profile, user_instance=user)
+        # Handle profile update (personal information)
+        elif form_type == 'profile':
+            # فقط فیلدهای اطلاعات شخصی را update می‌کنیم
+            first_name = request.POST.get('first_name', '').strip()
+            last_name = request.POST.get('last_name', '').strip()
+            personnel_code = request.POST.get('personnel_code', '').strip()
+            mobile = request.POST.get('mobile', '').strip()
+            
+            user.first_name = first_name
+            user.last_name = last_name
+            user.save()
+            
+            profile.personnel_code = personnel_code
+            profile.mobile = mobile
+            profile.save()
+            
+            notify_profile_updated(user, actor=request.user)
+            messages.success(request, 'اطلاعات شخصی با موفقیت ذخیره شد.')
+            return redirect('accounts:personnel_edit', user_id=user_id)
+        
+        # Handle organizational update
+        elif form_type == 'organizational':
+            # فقط فیلدهای اطلاعات سازمانی را update می‌کنیم
+            section_id = request.POST.get('section')
+            part_id = request.POST.get('part')
+            unit_group_id = request.POST.get('unit_group')
+            position_id = request.POST.get('position')
+            group_id = request.POST.get('group')
+            
+            # Update با مقادیر None اگر خالی باشند
+            profile.section_id = section_id if section_id else None
+            profile.part_id = part_id if part_id else None
+            profile.unit_group_id = unit_group_id if unit_group_id else None
+            profile.position_id = position_id if position_id else None
+            profile.group_id = group_id if group_id else None
+            profile.save()
+            
+            notify_organizational_updated(user, actor=request.user)
+            messages.success(request, 'اطلاعات سازمانی با موفقیت ذخیره شد.')
+            return redirect('accounts:personnel_edit', user_id=user_id)
+    
+    # Load form for GET request
+    form = PersonnelEditForm(instance=profile, user_instance=user)
 
     return render(request, 'accounts/personnel_edit.html', {
         'form': form,

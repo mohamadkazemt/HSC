@@ -8,7 +8,6 @@ from .forms import FireReportForm
 from shift_manager.utils import get_current_shift_and_group
 from accounts.models import UserProfile
 from django.conf import settings
-from dashboard.models import Notification
 from dashboard.sms_utils import send_template_sms
 from permissions.utils import permission_required
 from BaseInfo.models import EmergencyVehicle
@@ -16,7 +15,6 @@ from django.http import JsonResponse
 import requests
 import json
 import logging
-from django.contrib.auth.models import Group
 from django.urls import reverse
 from django.template.loader import get_template
 from django.http import HttpResponse
@@ -25,6 +23,11 @@ from PIL import Image, ImageChops, ImageFilter
 from io import BytesIO
 from django.core.files.base import ContentFile
 import base64
+from .notifications import (
+    notify_fire_report_created,
+    notify_fire_report_approval,
+    notify_fire_report_rejection,
+)
 
 logger = logging.getLogger('fire_reports')
 
@@ -340,7 +343,9 @@ def fire_report_create(request):
                         )
 
                 messages.success(request, 'گزارش با موفقیت ثبت شد.')
-                
+
+                notify_fire_report_created(report, actor=request.user)
+
                 # Handle AJAX requests
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({
@@ -545,34 +550,7 @@ def fire_report_approve(request, pk):
                     'تأیید شده'
                 )
 
-            # ایجاد اعلان برای آتش‌نشان
-            try:
-                Notification.objects.create(
-                    user=report.firefighter,
-                    message=f"گزارش آتش‌ نشانی با شناسه {report.id} تأیید شد.",
-                    url=reverse('fire_reports:report_detail', args=[report.id])
-                )
-                logger.info(f"Notification created for firefighter {report.firefighter.username}")
-            except Exception as notif_error:
-                logger.error(f"Error creating notification: {notif_error}")
-
-            # ارسال اعلان به رئیس HSEC
-            try:
-                hsec_head = UserProfile.objects.filter(
-                    position__name='رئیس HSEC'
-                ).first()
-                if hsec_head:
-                    Notification.objects.create(
-                        user=hsec_head.user,
-                        message=f"گزارش آتش‌ نشانی با شناسه {report.id} تأیید شد.",
-                        url=reverse('fire_reports:report_detail', args=[report.id])
-                    )
-                    logger.info(f"Notification created for HSEC head {hsec_head.user.username}")
-                else:
-                    logger.error("HSEC head not found.")
-                    messages.error(request, "رئیس HSEC یافت نشد.")
-            except Exception as hsec_error:
-                logger.error(f"Error creating notification for HSEC head: {hsec_error}")
+            notify_fire_report_approval(report, actor=request.user)
 
             messages.success(request, 'گزارش با موفقیت تأیید شد.')
             
@@ -610,16 +588,7 @@ def fire_report_approve(request, pk):
                     'رد شده'
                 )
 
-            # ایجاد اعلان برای آتش‌نشان
-            try:
-                Notification.objects.create(
-                    user=report.firefighter,
-                    message=f"گزارش آتش‌ نشانی با شناسه {report.id} رد شد. دلیل: {rejection_reason}",
-                    url=reverse('fire_reports:report_detail', args=[report.id])
-                )
-                logger.info(f"Notification created for firefighter {report.firefighter.username}")
-            except Exception as notif_error:
-                logger.error(f"Error creating notification: {notif_error}")
+            notify_fire_report_rejection(report, reason=rejection_reason, actor=request.user)
 
             messages.success(request, 'گزارش رد شد.')
             

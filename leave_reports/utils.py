@@ -1,5 +1,6 @@
 import datetime
 from django.utils import timezone
+from django.urls import reverse
 from shift_manager.utils import get_shift_for_date
 
 def get_shift_for_date_and_time(date, time, work_group):
@@ -14,4 +15,160 @@ def get_shift_for_date_and_time(date, time, work_group):
     else:
         # For other shifts, use the default logic
         shift_info = get_shift_for_date(date)
-        return shift_info.get(work_group) 
+        return shift_info.get(work_group)
+
+
+# ============= توابع کمکی نوتیفیکیشن =============
+
+def send_notification_to_replacement(leave_request):
+    """
+    ارسال اعلان به جایگزین پیشنهادی برای تأیید درخواست مرخصی
+    """
+    from dashboard.models import Notification
+    
+    if leave_request.replacement_person:
+        # بررسی نوع مرخصی برای متن مناسب
+        leave_type_display = leave_request.get_leave_type_display()
+        requester_name = leave_request.user.get_full_name() or leave_request.user.username
+        
+        # ایجاد URL برای نمایش جزئیات
+        url = reverse('leave_reports:leave_detail', args=[leave_request.id])
+        
+        message = f'{requester_name} شما را به عنوان جایگزین برای {leave_type_display} در تاریخ {leave_request.shift_date} انتخاب کرده است.'
+        title = 'درخواست جایگزینی مرخصی'
+        
+        Notification.objects.create(
+            user=leave_request.replacement_person,
+            title=title,
+            message=message,
+            notification_type='warning',  # هشدار برای نیاز به اقدام
+            url=url
+        )
+
+
+def send_notification_to_manager(leave_request):
+    """
+    ارسال اعلان به مدیر تأیید کننده برای تأیید نهایی درخواست مرخصی
+    """
+    from dashboard.models import Notification
+    from .models import ApprovalHierarchy
+    
+    # پیدا کردن مدیر تأیید کننده
+    requester_profile = getattr(leave_request.user, 'userprofile', None)
+    if not requester_profile:
+        return
+    
+    # بررسی سلسله مراتب تأیید
+    hierarchy = None
+    if requester_profile.part:
+        # اول سلسله مراتب خاص Part را بررسی می‌کنیم
+        hierarchy = ApprovalHierarchy.objects.filter(part=requester_profile.part).first()
+        
+        # اگر برای Part خاص تأیید کننده‌ای نبود، سلسله مراتب کلی Section را بررسی می‌کنیم
+        if not hierarchy and requester_profile.section:
+            hierarchy = ApprovalHierarchy.objects.filter(
+                section=requester_profile.section, 
+                part__isnull=True
+            ).first()
+    elif requester_profile.section:
+        # فقط سلسله مراتب کلی Section را بررسی می‌کنیم
+        hierarchy = ApprovalHierarchy.objects.filter(
+            section=requester_profile.section, 
+            part__isnull=True
+        ).first()
+    
+    if hierarchy and hierarchy.approver and hierarchy.approver.user:
+        manager = hierarchy.approver.user
+        
+        leave_type_display = leave_request.get_leave_type_display()
+        requester_name = leave_request.user.get_full_name() or leave_request.user.username
+        
+        # ایجاد URL برای نمایش جزئیات
+        url = reverse('leave_reports:leave_detail', args=[leave_request.id])
+        
+        message = f'درخواست {leave_type_display} {requester_name} برای تاریخ {leave_request.shift_date} منتظر تأیید نهایی شماست.'
+        title = 'درخواست تأیید مرخصی'
+        
+        Notification.objects.create(
+            user=manager,
+            title=title,
+            message=message,
+            notification_type='info',  # اطلاع‌رسانی
+            url=url
+        )
+
+
+def send_notification_to_requester_approved(leave_request, approved_by_type='manager'):
+    """
+    ارسال اعلان به درخواست دهنده پس از تأیید درخواست
+    
+    Parameters:
+    - leave_request: درخواست مرخصی
+    - approved_by_type: نوع تأیید کننده ('replacement' یا 'manager')
+    """
+    from dashboard.models import Notification
+    
+    leave_type_display = leave_request.get_leave_type_display()
+    
+    # ایجاد URL برای نمایش جزئیات
+    url = reverse('leave_reports:leave_detail', args=[leave_request.id])
+    
+    if approved_by_type == 'replacement':
+        # تأیید توسط جایگزین
+        approver_name = leave_request.replacement_person.get_full_name() or leave_request.replacement_person.username
+        message = f'{approver_name} درخواست جایگزینی شما برای {leave_type_display} در تاریخ {leave_request.shift_date} را تأیید کرد. منتظر تأیید نهایی مدیر باشید.'
+        title = 'تأیید جایگزینی مرخصی'
+        notification_type = 'info'
+    else:
+        # تأیید نهایی توسط مدیر
+        approver_name = leave_request.final_approver.user.get_full_name() or leave_request.final_approver.user.username if leave_request.final_approver else 'مدیر'
+        message = f'درخواست {leave_type_display} شما برای تاریخ {leave_request.shift_date} توسط {approver_name} تأیید شد.'
+        title = 'تأیید نهایی مرخصی'
+        notification_type = 'success'
+    
+    Notification.objects.create(
+        user=leave_request.user,
+        title=title,
+        message=message,
+        notification_type=notification_type,
+        url=url
+    )
+
+
+def send_notification_to_requester_rejected(leave_request, rejected_by_type='manager'):
+    """
+    ارسال اعلان به درخواست دهنده پس از رد درخواست
+    
+    Parameters:
+    - leave_request: درخواست مرخصی
+    - rejected_by_type: نوع رد کننده ('replacement' یا 'manager')
+    """
+    from dashboard.models import Notification
+    
+    leave_type_display = leave_request.get_leave_type_display()
+    
+    # ایجاد URL برای نمایش جزئیات
+    url = reverse('leave_reports:leave_detail', args=[leave_request.id])
+    
+    if rejected_by_type == 'replacement':
+        # رد توسط جایگزین
+        rejector_name = leave_request.rejected_by.get_full_name() or leave_request.rejected_by.username if leave_request.rejected_by else 'جایگزین'
+        message = f'{rejector_name} درخواست جایگزینی شما برای {leave_type_display} در تاریخ {leave_request.shift_date} را رد کرد.'
+        if leave_request.rejection_reason:
+            message += f' دلیل: {leave_request.rejection_reason}'
+        title = 'رد جایگزینی مرخصی'
+    else:
+        # رد توسط مدیر
+        rejector_name = leave_request.rejected_by.get_full_name() or leave_request.rejected_by.username if leave_request.rejected_by else 'مدیر'
+        message = f'درخواست {leave_type_display} شما برای تاریخ {leave_request.shift_date} توسط {rejector_name} رد شد.'
+        if leave_request.rejection_reason:
+            message += f' دلیل: {leave_request.rejection_reason}'
+        title = 'رد مرخصی'
+    
+    Notification.objects.create(
+        user=leave_request.user,
+        title=title,
+        message=message,
+        notification_type='error',  # خطا/رد
+        url=url
+    ) 

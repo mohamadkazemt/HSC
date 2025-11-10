@@ -1411,8 +1411,10 @@ def manage_employees(request):
             employee.contractor = contractor
             employee.user = user
             employee.save()
++
++            notify_employee_compliance(employee, actor=request.user)
+ 
             messages.success(request, f'پرسنل جدید ایجاد شد. نام کاربری: {username} | رمز موقت: {temp_password}')
-            return redirect('contractor_management:manage_employees')
         else:
             messages.error(request, 'فرم نامعتبر است. لطفاً خطاها را بررسی کنید.')
             open_modal = True
@@ -1438,7 +1440,9 @@ def contractor_employee_edit(request, pk):
     if request.method == 'POST':
         form = ContractorEmployeeForm(request.POST, instance=employee)
         if form.is_valid():
-            form.save()
+            employee = form.save()
+
+            notify_employee_compliance(employee, actor=request.user)
             messages.success(request, 'پرسنل با موفقیت ویرایش شد')
             return redirect('contractor_management:manage_employees')
     else:
@@ -2326,6 +2330,8 @@ def manage_vehicles(request):
             v = form.save(commit=False)
             v.contractor = contractor
             v.save()
++
++            notify_vehicle_compliance(v, actor=request.user)
             messages.success(request, 'خودرو با موفقیت اضافه شد')
             return redirect('contractor_management:manage_vehicles')
         else:

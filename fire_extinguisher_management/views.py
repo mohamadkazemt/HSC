@@ -7,7 +7,8 @@ from django.db.models import Q
 from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth.decorators import login_required
-from .models import FireExtinguisherType, FireExtinguisher, ServiceRecord, Notification
+from .models import FireExtinguisherType, FireExtinguisher, ServiceRecord
+from dashboard.models import Notification
 from .forms import (
     FireExtinguisherTypeForm, FireExtinguisherForm, ServiceRecordForm,
     FireExtinguisherReplacementForm, FireExtinguisherLocationForm
@@ -314,7 +315,7 @@ def service_record_create(request, extinguisher_pk):
 
 @login_required
 def notification_list(request):
-    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+    notifications = request.user.notifications.order_by('-created_at')
     return render(request, 'fire_extinguisher_management/notification_list.html', {
         'notifications': notifications
     })

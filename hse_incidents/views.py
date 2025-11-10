@@ -28,6 +28,7 @@ from django.contrib.auth.models import Group
 from dashboard.sms_utils import send_template_sms
 from dashboard.utils import log_user_activity
 from django.urls import reverse
+from .notifications import notify_incident_report_created, notify_incident_completion
 
 logger = logging.getLogger(__name__)
 
@@ -133,6 +134,8 @@ def report_incident(request):
                 except Group.DoesNotExist:
                     logger.error("گروه 'مدیر HSE' یافت نشد")
                     messages.warning(request, "گروه 'مدیر HSE' یافت نشد، اما گزارش با موفقیت ثبت شد")
+
+                notify_incident_report_created(incident, actor=request.user)
 
                 messages.success(request, "گزارش حادثه با موفقیت ثبت شد")
                 # پاسخ مخصوص AJAX
@@ -342,6 +345,7 @@ def report_details(request, report_id):
                 hse_completion.save()
                 report.is_completed = True
                 report.save()
+                notify_incident_completion(report, actor=request.user)
                 
                 # ثبت فعالیت تکمیل گزارش حادثه
                 log_user_activity(

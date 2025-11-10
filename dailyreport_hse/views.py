@@ -45,6 +45,7 @@ from django.contrib.auth.mixins import UserPassesTestMixin
 from dashboard.utils import log_user_activity
 from django.urls import reverse
 from core.models import SiteSettings
+from .notifications import notify_daily_report_created
 
 
 logger = logging.getLogger(__name__)
@@ -118,6 +119,8 @@ class CreateDailyReportView(APIView):
                     request=request
                 )
 
+                issues = []
+
                 # ذخیره جزئیات آتشباری
                 for blasting in blasting_details:
                     block_id = blasting.get("block_id")
@@ -164,6 +167,9 @@ class CreateDailyReportView(APIView):
                             description=loading.get("description", ""),
                         )
 
+                        if loading.get("status") == 'unsafe':
+                            issues.append(f"بارگیری ناایمن در بلوک {block.block_name} توسط دستگاه {machine.workshop_code}")
+
                 # ذخیره جزئیات تخلیه
                 for dump_detail in dump_details:
                     dump_id = dump_detail.get("dump_id")
@@ -185,6 +191,10 @@ class CreateDailyReportView(APIView):
                         end_time=stoppage.get("end_time", None),
                         description=stoppage.get("description", ""),
                     )
+
+                    reason = stoppage.get("reason")
+                    if reason:
+                        issues.append(f"توقف: {reason}")
 
                 # ذخیره جزئیات پیگیری
                 index = 0 # فقط یک پیگیری در این مثال داریم
@@ -209,6 +219,16 @@ class CreateDailyReportView(APIView):
                         status=inspection.get("status", None),
                         description=inspection.get("description", ""),
                     )
+
+                    if inspection.get("status") == 'unsafe':
+                        title = inspection.get("inspection") or 'بازرسی'
+                        issues.append(f"بازرسی ناایمن: {title}")
+
+                notify_daily_report_created(
+                    daily_report,
+                    issues=issues,
+                    actor=request.user,
+                )
 
                 return Response(
                     {"message": "گزارش با موفقیت ثبت شد.", "id": daily_report.id},

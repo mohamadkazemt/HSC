@@ -67,8 +67,15 @@ def request_leave(request):
                         request=request
                     )
                     
-                    # ارسال اعلان به جایگزین (TODO: پیاده‌سازی سیستم اعلان)
-                    # send_notification_to_replacement(leave_request)
+                    # ارسال اعلان به جایگزین یا مدیر
+                    if leave_request.status == 'pending_replacement':
+                        # اگر نیاز به تأیید جایگزین داشت، به جایگزین اطلاع می‌دهیم
+                        from .utils import send_notification_to_replacement
+                        send_notification_to_replacement(leave_request)
+                    elif leave_request.status == 'pending_approval':
+                        # اگر مستقیم رفت به مدیر (مثل غیبت، استعلاجی)، به مدیر اطلاع می‌دهیم
+                        from .utils import send_notification_to_manager
+                        send_notification_to_manager(leave_request)
                     
                     messages.success(request, 'درخواست مرخصی شما با موفقیت ثبت شد و برای جایگزین ارسال شد.')
                     
@@ -268,8 +275,10 @@ def approve_as_replacement(request, leave_id):
                 request=request
             )
             
-            # ارسال اعلان به مدیر (TODO: پیاده‌سازی سیستم اعلان)
-            # send_notification_to_manager(leave_request)
+            # ارسال اعلان به مدیر و درخواست دهنده
+            from .utils import send_notification_to_manager, send_notification_to_requester_approved
+            send_notification_to_manager(leave_request)
+            send_notification_to_requester_approved(leave_request, approved_by_type='replacement')
             
             logger.info(f"✅ Approval completed successfully")
             return JsonResponse({
@@ -326,8 +335,9 @@ def reject_as_replacement(request, leave_id):
                         request=request
                     )
                     
-                    # ارسال اعلان به درخواست دهنده (TODO)
-                    # send_notification_to_requester(leave_request)
+                    # ارسال اعلان به درخواست دهنده
+                    from .utils import send_notification_to_requester_rejected
+                    send_notification_to_requester_rejected(leave_request, rejected_by_type='replacement')
                     
                     return JsonResponse({
                         'status': 'success',
@@ -405,8 +415,9 @@ def approve_as_manager(request, leave_id):
                 request=request
             )
             
-            # ارسال اعلان به درخواست دهنده (TODO)
-            # send_notification_to_requester(leave_request)
+            # ارسال اعلان به درخواست دهنده
+            from .utils import send_notification_to_requester_approved
+            send_notification_to_requester_approved(leave_request, approved_by_type='manager')
             
             logger.info(f"✅ Manager approval completed successfully")
             return JsonResponse({
@@ -468,8 +479,9 @@ def reject_as_manager(request, leave_id):
                         request=request
                     )
                     
-                    # ارسال اعلان به درخواست دهنده (TODO)
-                    # send_notification_to_requester(leave_request)
+                    # ارسال اعلان به درخواست دهنده
+                    from .utils import send_notification_to_requester_rejected
+                    send_notification_to_requester_rejected(leave_request, rejected_by_type='manager')
                     
                     return JsonResponse({
                         'status': 'success',

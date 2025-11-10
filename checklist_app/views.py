@@ -31,6 +31,8 @@ from openpyxl.drawing.image import Image as XLImage
 from io import BytesIO
 from difflib import SequenceMatcher
 from collections import OrderedDict
+from .notifications import notify_checklist_failure, notify_checklist_success
+from anomalis.notifications import notify_anomaly_created
 
 User = get_user_model()
 
@@ -259,12 +261,14 @@ def submit_general_checklist(request):
     # اگر پاسخ غیرقابل قبول وجود دارد، آنومالی ایجاد می‌شود
     if has_unacceptable_answers:
         print(f"Found {len(unacceptable_answers)} unacceptable answers")
+        notify_checklist_failure(checklist, unacceptable_answers=unacceptable_answers, actor=request.user)
         return JsonResponse({
             'status': 'failure_detected',
             'checklist_id': checklist.id,
             'unacceptable_answers': [{'id': a.id, 'text': a.question.text} for a in unacceptable_answers]
         })
     
+    notify_checklist_success(checklist, actor=request.user)
     return JsonResponse({'status': 'success', 'checklist_id': checklist.id})
 
 @login_required
@@ -373,6 +377,7 @@ def create_anomaly_from_failure_view(request):
                 priority=priority,
                 action=False  # وضعیت اولیه ناایمن
             )
+            notify_anomaly_created(anomaly, actor=request.user)
             anomalies_created.append(anomaly)
 
         except Exception as e:
