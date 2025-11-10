@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import FireExtinguisherType, FireExtinguisher, ServiceRecord, Notification
+from .models import FireExtinguisherType, FireExtinguisher, ServiceRecord
 
 @admin.register(FireExtinguisherType)
 class FireExtinguisherTypeAdmin(admin.ModelAdmin):
@@ -65,10 +65,3 @@ class ServiceRecordAdmin(admin.ModelAdmin):
             return obj.performed_by_external
         return '-'
     performed_by_display.short_description = 'انجام دهنده'
-
-@admin.register(Notification)
-class NotificationAdmin(admin.ModelAdmin):
-    list_display = ('message', 'created_at', 'is_read', 'user')
-    list_filter = ('is_read', 'created_at')
-    search_fields = ('message', 'user__username')
-    readonly_fields = ('message', 'user', 'created_at')

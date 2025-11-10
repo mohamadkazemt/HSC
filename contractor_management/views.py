@@ -1411,8 +1411,8 @@ def manage_employees(request):
             employee.contractor = contractor
             employee.user = user
             employee.save()
-+
-+            notify_employee_compliance(employee, actor=request.user)
+
+            notify_employee_compliance(employee, actor=request.user)
  
             messages.success(request, f'پرسنل جدید ایجاد شد. نام کاربری: {username} | رمز موقت: {temp_password}')
         else:
@@ -2330,8 +2330,8 @@ def manage_vehicles(request):
             v = form.save(commit=False)
             v.contractor = contractor
             v.save()
-+
-+            notify_vehicle_compliance(v, actor=request.user)
+
+            notify_vehicle_compliance(v, actor=request.user)
             messages.success(request, 'خودرو با موفقیت اضافه شد')
             return redirect('contractor_management:manage_vehicles')
         else:

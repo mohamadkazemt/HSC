@@ -29,20 +29,6 @@ def extinguisher_create_ajax(request):
     else:
         return JsonResponse({'success': False, 'message': 'درخواست نامعتبر است'}, status=400)
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.http import JsonResponse
-from django.core.paginator import Paginator
-from django.db.models import Q
-from django.utils import timezone
-from datetime import timedelta
-from .models import FireExtinguisherType, FireExtinguisher, ServiceRecord, Notification
-from .forms import (
-    FireExtinguisherTypeForm, FireExtinguisherForm, ServiceRecordForm,
-    FireExtinguisherReplacementForm, FireExtinguisherLocationForm
-)
-from django.contrib.auth.decorators import login_required
-
 @login_required
 def dashboard(request):
     # Get counts for different statuses
