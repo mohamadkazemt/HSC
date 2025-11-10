@@ -18,21 +18,27 @@ def send_rubika_message(self, chat_id: str, text: str) -> None:
     Sends a text message using the RubPy service. This task is designed to be
     called from synchronous parts of the app (e.g., signals, admin views).
     """
+    logger.info(f"📨 Task 'send_rubika_message' started for chat_id: {chat_id}")
+    logger.info(f"   Message length: {len(text)} characters")
+    
     try:
         # Get the singleton instance of the service within the task
+        logger.info("   Getting RubPyIntegrationService instance...")
         service = RubPyIntegrationService.get_instance()
+        logger.info("   ✅ Service instance obtained")
 
         # The service method handles the sync/async wrapping internally
+        logger.info(f"   Sending message to {chat_id}...")
         service.send_text_message(chat_id, text)
 
         logger.info(
-            "Task 'send_rubika_message' successfully sent message to %s.",
+            "✅ Task 'send_rubika_message' successfully sent message to %s.",
             chat_id,
         )
 
     except Exception as exc:
         logger.error(
-            "Error in 'send_rubika_message' task for %s: %s",
+            "❌ Error in 'send_rubika_message' task for %s: %s",
             chat_id,
             exc,
             exc_info=True,

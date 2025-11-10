@@ -2,6 +2,9 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from dashboard.models import Notification
 from .tasks import send_rubika_message
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @receiver(post_save, sender=Notification)
@@ -13,20 +16,29 @@ def send_notification_to_rubika(sender, instance: Notification, created, **kwarg
     نوتیفیکیشن‌های درخواست تایید مرخصی که دکمه دارند از این signal نادیده گرفته می‌شوند
     چون آن‌ها با send_leave_approval_request task ارسال می‌شوند
     """
+    logger.info(f"🔔 Signal triggered for notification {instance.id}, created={created}")
+    
     if not created:
+        logger.info(f"  ⏭️ Skipping - notification was updated, not created")
         return
     
     # نادیده گرفتن نوتیفیکیشن‌هایی که با دکمه ارسال می‌شوند
     if instance.title and ('درخواست جایگزینی' in instance.title or 'درخواست تایید' in instance.title):
+        logger.info(f"  ⏭️ Skipping - notification has approval buttons (title: {instance.title})")
         # این نوتیفیکیشن‌ها با send_leave_approval_request ارسال می‌شوند
         return
     
     user = instance.user
     profile = getattr(user, 'rubika_profile', None)
     
+    logger.info(f"  👤 User: {user.username}, Has rubika_profile: {profile is not None}")
+    
     # بررسی اینکه کاربر پروفایل روبیکا دارد و chat_id دارد
     if not profile or not profile.chat_id:
+        logger.warning(f"  ❌ User {user.username} has no rubika profile or chat_id")
         return
+    
+    logger.info(f"  ✅ User has chat_id: {profile.chat_id}")
     
     # انتخاب آیکون مناسب بر اساس نوع نوتیفیکیشن
     icons = {
@@ -56,6 +68,11 @@ def send_notification_to_rubika(sender, instance: Notification, created, **kwarg
     
     text = '\n'.join(message_lines)
     
+    logger.info(f"  📤 Sending message to rubika (chat_id: {profile.chat_id})")
+    
     # ارسال پیام به ربات (async task)
     send_rubika_message.delay(profile.chat_id, text)
+    
+    logger.info(f"  ✅ Message queued successfully")
+
 
