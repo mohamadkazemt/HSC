@@ -22,7 +22,8 @@ from .forms import UserForm, UserProfileForm,PasswordResetConfirmForm, ChangePas
 from django.utils.timezone import now
 from datetime import timedelta
 import jdatetime
-from django.db.models import Q, Count # اضافه کردن این خط
+from django.db.models import Q, Count, Value # اضافه کردن این خط
+from django.db.models.functions import Concat
 import logging
 import pandas as pd
 from io import BytesIO
@@ -365,11 +366,12 @@ def personnel_list(request):
     part_id = clean_id(request.GET.get('part'))
     unit_group_id = clean_id(request.GET.get('unit_group'))
     position_id = clean_id(request.GET.get('position'))
-    q = request.GET.get('q', '').strip()
+    q_raw = request.GET.get('q', '')
+    q_clean = ' '.join(q_raw.split())
 
     # Check if query is purely numeric (likely a personnel code)
     # If searching by personnel code, prioritize it over hierarchical filters
-    is_personnel_code_search = q and q.isdigit() and len(q) >= 3  # At least 3 digits to be considered a code
+    is_personnel_code_search = bool(q_clean) and q_clean.isdigit() and len(q_clean) >= 3  # At least 3 digits to be considered a code
     
     # Apply hierarchical filters only if NOT searching by personnel code
     # (Personnel code search should work regardless of filters)
@@ -395,39 +397,51 @@ def personnel_list(request):
         if position_id:
             queryset = queryset.filter(position_id=position_id)
 
-    if q:
-        # Clean search query - remove extra whitespace
-        q_clean = q.strip()
-        
-        # Build comprehensive search conditions
-        search_conditions = (
-            Q(user__first_name__icontains=q_clean) |
-            Q(user__last_name__icontains=q_clean)
+    if q_clean:
+        # آماده‌سازی مقادیر جستجو
+        tokens = [token for token in q_clean.split(' ') if token]
+
+        queryset = queryset.annotate(
+            full_name=Concat('user__first_name', Value(' '), 'user__last_name'),
+            reversed_full_name=Concat('user__last_name', Value(' '), 'user__first_name'),
         )
-        
+
+        name_conditions = (
+            Q(user__first_name__icontains=q_clean) |
+            Q(user__last_name__icontains=q_clean) |
+            Q(user__username__icontains=q_clean) |
+            Q(full_name__icontains=q_clean) |
+            Q(reversed_full_name__icontains=q_clean)
+        )
+
+        if tokens:
+            token_conditions = Q()
+            for token in tokens:
+                token_conditions &= (
+                    Q(user__first_name__icontains=token) |
+                    Q(user__last_name__icontains=token) |
+                    Q(full_name__icontains=token) |
+                    Q(reversed_full_name__icontains=token)
+                )
+            name_conditions |= token_conditions
+
         # For personnel code: try multiple matching strategies
-        # 1. Exact match (case insensitive) - highest priority
-        # 2. Contains match (for partial codes or codes with whitespace)
-        # 3. Startswith match (for codes that start with the query)
-        # Also handle leading zeros and whitespace
         personnel_code_conditions = (
             Q(personnel_code__iexact=q_clean) |
             Q(personnel_code__icontains=q_clean) |
             Q(personnel_code__startswith=q_clean)
         )
-        
-        # Also try with leading zeros removed (in case code is stored as "0111264" but searched as "111264")
+
         if q_clean.isdigit():
-            # Try exact match without leading zeros
-            q_numeric = str(int(q_clean))  # Remove leading zeros
+            q_numeric = str(int(q_clean))
             if q_numeric != q_clean:
                 personnel_code_conditions |= (
                     Q(personnel_code__iexact=q_numeric) |
                     Q(personnel_code__icontains=q_numeric) |
                     Q(personnel_code__startswith=q_numeric)
                 )
-        
-        search_conditions |= personnel_code_conditions
+
+        search_conditions = name_conditions | personnel_code_conditions
         queryset = queryset.filter(search_conditions)
 
     # Stats based on filtered queryset
@@ -514,14 +528,34 @@ def personnel_list(request):
     params = request.GET.copy()
     if 'page' in params:
         del params['page']
-    query_string = params.urlencode()
+
+    sanitized_params = params.copy()
+
+    def sync_param(key, cleaned_value):
+        if cleaned_value in (None, ''):
+            sanitized_params.pop(key, None)
+        else:
+            sanitized_params[key] = str(cleaned_value)
+
+    sync_param('section', section_id)
+    sync_param('part', part_id)
+    sync_param('unit_group', unit_group_id)
+    sync_param('position', position_id)
+
+    if q_clean:
+        sanitized_params['q'] = q_clean
+    else:
+        sanitized_params.pop('q', None)
+
+    sanitized_params['per_page'] = str(per_page)
+
+    query_string = sanitized_params.urlencode()
 
     # Precomputed query strings for clickable stats (clear lower levels)
     def qs_without(keys):
-        p = params.copy()
+        p = sanitized_params.copy()
         for k in keys:
-            if k in p:
-                del p[k]
+            p.pop(k, None)
         return p.urlencode()
     qs_no_section = qs_without(['section', 'part', 'unit_group', 'position'])
     qs_no_part = qs_without(['part', 'unit_group', 'position'])
@@ -543,7 +577,7 @@ def personnel_list(request):
             'part': part_id or '',
             'unit_group': unit_group_id or '',
             'position': position_id or '',
-            'q': q or '',
+            'q': q_clean or '',
             'per_page': str(per_page),
         },
         'per_page_options': [10, 25, 50, 100, 200],
@@ -934,11 +968,12 @@ def personnel_export(request):
     part_id = request.GET.get('part')
     unit_group_id = request.GET.get('unit_group')
     position_id = request.GET.get('position')
-    q = request.GET.get('q', '').strip()
+    q_raw = request.GET.get('q', '')
+    q_clean = ' '.join(q_raw.split())
 
     # Check if query is purely numeric (likely a personnel code)
     # If searching by personnel code, prioritize it over hierarchical filters
-    is_personnel_code_search = q and q.isdigit() and len(q) >= 3  # At least 3 digits to be considered a code
+    is_personnel_code_search = bool(q_clean) and q_clean.isdigit() and len(q_clean) >= 3  # At least 3 digits to be considered a code
     
     # Apply hierarchical filters only if NOT searching by personnel code
     # (Personnel code search should work regardless of filters)
@@ -964,39 +999,49 @@ def personnel_export(request):
         if position_id:
             queryset = queryset.filter(position_id=position_id)
 
-    if q:
-        # Clean search query - remove extra whitespace
-        q_clean = q.strip()
-        
-        # Build comprehensive search conditions
-        search_conditions = (
-            Q(user__first_name__icontains=q_clean) |
-            Q(user__last_name__icontains=q_clean)
+    if q_clean:
+        tokens = [token for token in q_clean.split(' ') if token]
+
+        queryset = queryset.annotate(
+            full_name=Concat('user__first_name', Value(' '), 'user__last_name'),
+            reversed_full_name=Concat('user__last_name', Value(' '), 'user__first_name'),
         )
-        
-        # For personnel code: try multiple matching strategies
-        # 1. Exact match (case insensitive) - highest priority
-        # 2. Contains match (for partial codes or codes with whitespace)
-        # 3. Startswith match (for codes that start with the query)
-        # Also handle leading zeros and whitespace
+
+        name_conditions = (
+            Q(user__first_name__icontains=q_clean) |
+            Q(user__last_name__icontains=q_clean) |
+            Q(user__username__icontains=q_clean) |
+            Q(full_name__icontains=q_clean) |
+            Q(reversed_full_name__icontains=q_clean)
+        )
+
+        if tokens:
+            token_conditions = Q()
+            for token in tokens:
+                token_conditions &= (
+                    Q(user__first_name__icontains=token) |
+                    Q(user__last_name__icontains=token) |
+                    Q(full_name__icontains=token) |
+                    Q(reversed_full_name__icontains=token)
+                )
+            name_conditions |= token_conditions
+
         personnel_code_conditions = (
             Q(personnel_code__iexact=q_clean) |
             Q(personnel_code__icontains=q_clean) |
             Q(personnel_code__startswith=q_clean)
         )
-        
-        # Also try with leading zeros removed (in case code is stored as "0111264" but searched as "111264")
+
         if q_clean.isdigit():
-            # Try exact match without leading zeros
-            q_numeric = str(int(q_clean))  # Remove leading zeros
+            q_numeric = str(int(q_clean))
             if q_numeric != q_clean:
                 personnel_code_conditions |= (
                     Q(personnel_code__iexact=q_numeric) |
                     Q(personnel_code__icontains=q_numeric) |
                     Q(personnel_code__startswith=q_numeric)
                 )
-        
-        search_conditions |= personnel_code_conditions
+
+        search_conditions = name_conditions | personnel_code_conditions
         queryset = queryset.filter(search_conditions)
 
     wb = Workbook()

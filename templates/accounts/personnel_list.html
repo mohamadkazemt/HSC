@@ -514,8 +514,8 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
   $(function(){
-    function initSelect(el, placeholder){
-      $(el).select2({
+    function initSelect($el, placeholder){
+      $el.select2({
         placeholder: placeholder,
         allowClear: true,
         width: '100%',
@@ -526,106 +526,149 @@
       });
     }
 
-    // Load initial data if filters are already selected (from URL)
-    const initialSection = '{{ current_filters.section|default:"" }}';
-    const initialPart = '{{ current_filters.part|default:"" }}';
-    const initialUnitGroup = '{{ current_filters.unit_group|default:"" }}';
-    const initialPosition = '{{ current_filters.position|default:"" }}';
+    const $section = $('#filter_section');
+    const $part = $('#filter_part');
+    const $unitGroup = $('#filter_unit_group');
+    const $position = $('#filter_position');
 
-    function loadParts(sectionId, selectedPartId){
-      $.getJSON('{% url "accounts:personnel_api_parts" %}', { section: sectionId }, function(items){
-        const $part = $('#filter_part');
-        items.forEach(function(it){
-          const opt = new Option(it.name, it.id, false, it.id == selectedPartId);
-          $part.append(opt);
-        });
-        $part.trigger('change');
-        if(selectedPartId){
-          loadUnitGroups(selectedPartId, initialUnitGroup);
+    const initialSection = '{{ current_filters.section|default_if_none:""|escapejs }}';
+    const initialPart = '{{ current_filters.part|default_if_none:""|escapejs }}';
+    const initialUnitGroup = '{{ current_filters.unit_group|default_if_none:""|escapejs }}';
+    const initialPosition = '{{ current_filters.position|default_if_none:""|escapejs }}';
+
+    function resetSelect($el, placeholder, triggerEvent = false){
+      const placeholderOption = new Option(placeholder, '', false, false);
+      $el.empty().append(placeholderOption);
+      if (triggerEvent){
+        $el.val('').trigger('change');
+      } else {
+        $el.val('');
+        if ($el.hasClass('select2-hidden-accessible')) {
+          $el.trigger('change.select2');
         }
-      });
+      }
     }
 
-    function loadUnitGroups(partId, selectedUnitGroupId){
-      $.getJSON('{% url "accounts:personnel_api_unit_groups" %}', { part: partId }, function(items){
-        const $ug = $('#filter_unit_group');
-        items.forEach(function(it){
-          const opt = new Option(it.name, it.id, false, it.id == selectedUnitGroupId);
-          $ug.append(opt);
+    function loadParts(sectionId, selectedPartId, selectedUnitGroupId, selectedPositionId){
+      resetSelect($part, 'همه قسمت‌ها');
+      if (!sectionId){
+        return;
+      }
+      $.getJSON('{% url "accounts:personnel_api_parts" %}', { section: sectionId })
+        .done(function(items){
+          items.forEach(function(it){
+            $part.append(new Option(it.name, it.id, false, false));
+          });
+          if (selectedPartId){
+            $part.data('preselected-unit-group', selectedUnitGroupId || null);
+            $part.data('preselected-position', selectedPositionId || null);
+            $part.val(String(selectedPartId)).trigger('change');
+          } else {
+            $part.val('');
+            $part.trigger('change.select2');
+          }
         });
-        $ug.trigger('change');
-        if(selectedUnitGroupId){
-          loadPositions(selectedUnitGroupId, initialPosition);
-        }
-      });
+    }
+
+    function loadUnitGroups(partId, selectedUnitGroupId, selectedPositionId){
+      resetSelect($unitGroup, 'همه گروه‌ها');
+      if (!partId){
+        return;
+      }
+      $.getJSON('{% url "accounts:personnel_api_unit_groups" %}', { part: partId })
+        .done(function(items){
+          items.forEach(function(it){
+            $unitGroup.append(new Option(it.name, it.id, false, false));
+          });
+          if (selectedUnitGroupId){
+            $unitGroup.data('preselected-position', selectedPositionId || null);
+            $unitGroup.val(String(selectedUnitGroupId)).trigger('change');
+          } else {
+            $unitGroup.val('');
+            $unitGroup.trigger('change.select2');
+          }
+        });
     }
 
     function loadPositions(unitGroupId, selectedPositionId){
-      $.getJSON('{% url "accounts:personnel_api_positions" %}', { unit_group: unitGroupId }, function(items){
-        const $pos = $('#filter_position');
-        items.forEach(function(it){
-          const opt = new Option(it.name, it.id, false, it.id == selectedPositionId);
-          $pos.append(opt);
+      resetSelect($position, 'همه سمت‌ها');
+      if (!unitGroupId){
+        return;
+      }
+      $.getJSON('{% url "accounts:personnel_api_positions" %}', { unit_group: unitGroupId })
+        .done(function(items){
+          items.forEach(function(it){
+            $position.append(new Option(it.name, it.id, false, false));
+          });
+          if (selectedPositionId){
+            $position.val(String(selectedPositionId));
+          } else {
+            $position.val('');
+          }
+          $position.trigger('change.select2');
         });
-        $pos.trigger('change');
-      });
     }
 
-    function resetSelect($el, label){
-      // Keep first option as "All", remove others, and reset selection without reinitializing Select2
-      const $first = $el.find('option').first();
-      if ($first.length) {
-        $first.text(label).val('');
-      } else {
-        $el.prepend(new Option(label, '', false, false));
-      }
-      $el.find('option').not(':first').remove();
-      $el.val('');
-      $el.trigger('change.select2');
-    }
-
-    $('#filter_section').on('change', function(){
+    $section.on('change', function(){
       const sectionId = $(this).val();
-      const $part = $('#filter_part');
-      const $ug = $('#filter_unit_group');
-      const $pos = $('#filter_position');
-      resetSelect($part, 'همه قسمت‌ها');
-      resetSelect($ug, 'همه گروه‌ها');
-      resetSelect($pos, 'همه سمت‌ها');
-      if(sectionId){
-        loadParts(sectionId, null);
+      $part.removeData('preselected-unit-group preselected-position');
+      resetSelect($part, 'همه قسمت‌ها', true);
+      resetSelect($unitGroup, 'همه گروه‌ها', true);
+      resetSelect($position, 'همه سمت‌ها', true);
+      if (sectionId){
+        loadParts(sectionId, null, null, null);
       }
     });
 
-    $('#filter_part').on('change', function(){
+    $section.on('select2:clear', function(){
+      $(this).val('').trigger('change');
+    });
+
+    $part.on('change', function(){
       const partId = $(this).val();
-      const $ug = $('#filter_unit_group');
-      const $pos = $('#filter_position');
-      resetSelect($ug, 'همه گروه‌ها');
-      resetSelect($pos, 'همه سمت‌ها');
-      if(partId){
-        loadUnitGroups(partId, null);
+      const preselectedUnitGroup = $(this).data('preselected-unit-group') || null;
+      const preselectedPosition = $(this).data('preselected-position') || null;
+      $(this).removeData('preselected-unit-group preselected-position');
+      resetSelect($unitGroup, 'همه گروه‌ها', true);
+      resetSelect($position, 'همه سمت‌ها', true);
+      if (partId){
+        loadUnitGroups(partId, preselectedUnitGroup, preselectedPosition);
       }
     });
 
-    $('#filter_unit_group').on('change', function(){
-      const ugId = $(this).val();
-      const $pos = $('#filter_position');
-      resetSelect($pos, 'همه سمت‌ها');
-      if(ugId){
-        loadPositions(ugId, null);
+    $part.on('select2:clear', function(){
+      $(this).val('').trigger('change');
+    });
+
+    $unitGroup.on('change', function(){
+      const unitGroupId = $(this).val();
+      const preselectedPosition = $(this).data('preselected-position') || null;
+      $(this).removeData('preselected-position');
+      resetSelect($position, 'همه سمت‌ها', true);
+      if (unitGroupId){
+        loadPositions(unitGroupId, preselectedPosition);
       }
     });
 
-    // Initialize Select2 dropdowns
-    initSelect('#filter_section', 'همه بخش‌ها');
-    initSelect('#filter_part', 'همه قسمت‌ها');
-    initSelect('#filter_unit_group', 'همه گروه‌ها');
-    initSelect('#filter_position', 'همه سمت‌ها');
+    $unitGroup.on('select2:clear', function(){
+      $(this).val('').trigger('change');
+    });
 
-    // Load cascading data if filters are pre-selected
-    if(initialSection){
-      loadParts(initialSection, initialPart);
+    $position.on('select2:clear', function(){
+      $(this).val('').trigger('change');
+    });
+
+    initSelect($section, 'همه بخش‌ها');
+    initSelect($part, 'همه قسمت‌ها');
+    initSelect($unitGroup, 'همه گروه‌ها');
+    initSelect($position, 'همه سمت‌ها');
+
+    if (initialSection){
+      loadParts(initialSection, initialPart || null, initialUnitGroup || null, initialPosition || null);
+    } else {
+      resetSelect($part, 'همه قسمت‌ها');
+      resetSelect($unitGroup, 'همه گروه‌ها');
+      resetSelect($position, 'همه سمت‌ها');
     }
   });
 </script>

@@ -124,6 +124,7 @@ class RubikaBotEngine:
             'payslip': self._handle_payslip_request,
             'leave_request': self._start_leave_request,
             'cancel_leave': self._cancel_leave_request,
+            'cancel_rejection': self._cancel_rejection,
         }
         handler = mapping.get(button_id.lower())
         if handler:
@@ -147,6 +148,9 @@ class RubikaBotEngine:
             # Check if it's a final confirmation button
             elif button_id in ['confirm_leave', 'edit_leave']:
                 await self._handle_leave_confirmation(chat_id, user, button_id)
+            # Check if it's a leave approval/rejection button (format: approve_leave_replacement_123 or reject_leave_manager_456)
+            elif button_id.startswith('approve_leave_') or button_id.startswith('reject_leave_'):
+                await self._handle_leave_approval_action(chat_id, user, button_id)
             else:
                 logger.debug("Unknown button id %s for chat %s", button_id, chat_id)
 
@@ -177,6 +181,11 @@ class RubikaBotEngine:
         
         # If in leave request flow, handle accordingly
         if leave_state and leave_state.step != 'idle':
+            # بررسی اینکه آیا در مرحله وارد کردن دلیل رد است
+            if leave_state.step == 'rejection_reason':
+                await self._process_rejection_reason(chat_id, user, text, leave_state)
+                return
+            
             await self._handle_leave_request_input(chat_id, user, text, leave_state)
             return
         
@@ -501,6 +510,22 @@ class RubikaBotEngine:
         await reset_state()
         message = '❌ فرایند درخواست مرخصی لغو شد.\n\nبرای شروع مجدد، از دکمه "درخواست مرخصی" استفاده کنید.'
         await self._send_text_message(chat_id, message)
+    
+    async def _cancel_rejection(self, chat_id: str, user: RubikaUser) -> None:
+        """لغو فرایند رد درخواست"""
+        @sync_to_async(thread_sensitive=True)
+        def reset_state():
+            from rubika_bot.models import LeaveRequestState
+            try:
+                state = LeaveRequestState.objects.get(rubika_user=user)
+                state.reset()
+            except LeaveRequestState.DoesNotExist:
+                pass
+        
+        await reset_state()
+        message = '❌ فرایند رد درخواست لغو شد.'
+        await self._send_text_message(chat_id, message)
+
     
     async def _handle_leave_type_selection(self, chat_id: str, user: RubikaUser, button_id: str) -> None:
         """پردازش انتخاب نوع مرخصی"""
@@ -1164,6 +1189,246 @@ class RubikaBotEngine:
         else:
             message = f'❌ خطا در ثبت درخواست:\n{result}\n\nلطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید.'
             await self._send_text_message(chat_id, message)
+
+    async def _handle_leave_approval_action(self, chat_id: str, user: RubikaUser, button_id: str) -> None:
+        """
+        پردازش کلیک روی دکمه‌های تایید یا رد درخواست مرخصی
+        فرمت button_id: approve_leave_replacement_123 یا reject_leave_manager_456
+        """
+        # بررسی اتصال کاربر
+        if not user.user:
+            await self._send_text_message(
+                chat_id, 
+                '⚠️ برای انجام این عملیات، ابتدا باید به حساب کاربری خود متصل شوید.'
+            )
+            return
+        
+        # Parse button_id
+        parts = button_id.split('_')
+        if len(parts) < 4:
+            await self._send_text_message(chat_id, '❌ فرمت دکمه نامعتبر است.')
+            return
+        
+        action = parts[0]  # approve or reject
+        # parts[1] is 'leave'
+        approval_type = parts[2]  # replacement or manager
+        leave_id = parts[3]  # درخواست ID
+        
+        # دریافت اطلاعات درخواست مرخصی
+        @sync_to_async(thread_sensitive=True)
+        def get_leave_info():
+            from leave_reports.models import ShiftReport
+            try:
+                leave = ShiftReport.objects.select_related(
+                    'user', 'replacement_person', 'final_approver'
+                ).get(id=leave_id)
+                
+                # بررسی دسترسی
+                if approval_type == 'replacement':
+                    if leave.replacement_person != user.user:
+                        return None, 'access_denied'
+                    if leave.status != 'pending_replacement':
+                        return None, 'invalid_status'
+                elif approval_type == 'manager':
+                    if not leave.can_be_approved_by(user.user):
+                        return None, 'access_denied'
+                    if leave.status != 'pending_approval':
+                        return None, 'invalid_status'
+                else:
+                    return None, 'invalid_type'
+                
+                return leave, 'ok'
+                
+            except ShiftReport.DoesNotExist:
+                return None, 'not_found'
+        
+        leave_request, status = await get_leave_info()
+        
+        # بررسی خطاها
+        if status == 'not_found':
+            await self._send_text_message(chat_id, '❌ درخواست مرخصی یافت نشد.')
+            return
+        elif status == 'access_denied':
+            await self._send_text_message(chat_id, '⚠️ شما مجاز به انجام این عملیات نیستید.')
+            return
+        elif status == 'invalid_status':
+            await self._send_text_message(chat_id, '⚠️ این درخواست قابل پردازش نیست (احتمالاً قبلاً پردازش شده است).')
+            return
+        elif status != 'ok':
+            await self._send_text_message(chat_id, '❌ خطای نامشخص در بررسی دسترسی.')
+            return
+        
+        # اگر رد باشد، درخواست دلیل رد
+        if action == 'reject':
+            await self._ask_rejection_reason(chat_id, user, leave_id, approval_type)
+            return
+        
+        # اگر تایید باشد، پردازش تایید
+        if action == 'approve':
+            await self._process_leave_approval(chat_id, user, leave_request, approval_type)
+    
+    async def _ask_rejection_reason(self, chat_id: str, user: RubikaUser, leave_id: str, approval_type: str) -> None:
+        """درخواست دلیل رد از کاربر"""
+        # ذخیره state برای پردازش پاسخ بعدی
+        @sync_to_async(thread_sensitive=True)
+        def save_rejection_state():
+            from rubika_bot.models import LeaveRequestState
+            state, _ = LeaveRequestState.objects.get_or_create(rubika_user=user)
+            state.step = 'rejection_reason'
+            state.data = {
+                'leave_id': leave_id,
+                'approval_type': approval_type
+            }
+            state.save()
+        
+        await save_rejection_state()
+        
+        message_lines = [
+            '📝 دلیل رد درخواست',
+            '',
+            'لطفاً دلیل رد این درخواست را وارد کنید:',
+            '',
+            '(این دلیل به درخواست‌دهنده نمایش داده می‌شود)',
+        ]
+        
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[self._button('cancel_rejection', '❌ انصراف')])
+        ])
+        
+        await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
+    
+    async def _process_leave_approval(self, chat_id: str, user: RubikaUser, leave_request, approval_type: str) -> None:
+        """پردازش تایید درخواست مرخصی"""
+        @sync_to_async(thread_sensitive=True)
+        def approve_leave():
+            from django.utils import timezone
+            from leave_reports.utils import (
+                send_notification_to_manager, 
+                send_notification_to_requester_approved
+            )
+            
+            try:
+                if approval_type == 'replacement':
+                    # تایید توسط جایگزین
+                    leave_request.replacement_approved = True
+                    leave_request.replacement_approved_at = timezone.now()
+                    leave_request.status = 'pending_approval'
+                    leave_request.save()
+                    
+                    # ارسال نوتیفیکیشن به مدیر و درخواست‌دهنده
+                    send_notification_to_manager(leave_request)
+                    send_notification_to_requester_approved(leave_request, approved_by_type='replacement')
+                    
+                    return True, 'تأیید جایگزینی با موفقیت انجام شد. درخواست برای تأیید نهایی مدیر ارسال شد.'
+                    
+                elif approval_type == 'manager':
+                    # تایید نهایی توسط مدیر
+                    leave_request.status = 'approved'
+                    leave_request.final_approver = user.user.userprofile
+                    leave_request.final_approved_at = timezone.now()
+                    leave_request.registration = True
+                    leave_request.save()
+                    
+                    # ارسال نوتیفیکیشن به درخواست‌دهنده
+                    send_notification_to_requester_approved(leave_request, approved_by_type='manager')
+                    
+                    return True, 'درخواست با موفقیت تأیید شد و به درخواست‌دهنده اطلاع داده شد.'
+                
+                return False, 'نوع تایید نامعتبر است.'
+                
+            except Exception as e:
+                logger.exception(f"Error approving leave: {e}")
+                return False, f'خطا در تایید: {str(e)}'
+        
+        success, message = await approve_leave()
+        
+        if success:
+            await self._send_text_message(chat_id, f'✅ {message}')
+        else:
+            await self._send_text_message(chat_id, f'❌ {message}')
+    
+    async def _process_rejection_reason(self, chat_id: str, user: RubikaUser, text: str, leave_state) -> None:
+        """پردازش دلیل رد درخواست مرخصی"""
+        rejection_reason = text.strip()
+        
+        if not rejection_reason:
+            await self._send_text_message(chat_id, '⚠️ لطفاً دلیل رد را وارد کنید یا از دکمه انصراف استفاده کنید.')
+            return
+        
+        # دریافت اطلاعات از state
+        leave_id = leave_state.data.get('leave_id')
+        approval_type = leave_state.data.get('approval_type')
+        
+        if not leave_id or not approval_type:
+            await self._send_text_message(chat_id, '❌ خطا در دریافت اطلاعات درخواست.')
+            # Reset state
+            @sync_to_async(thread_sensitive=True)
+            def reset():
+                leave_state.reset()
+            await reset()
+            return
+        
+        # پردازش رد درخواست
+        @sync_to_async(thread_sensitive=True)
+        def reject_leave():
+            from leave_reports.models import ShiftReport
+            from django.utils import timezone
+            from leave_reports.utils import send_notification_to_requester_rejected
+            
+            try:
+                leave_request = ShiftReport.objects.select_related(
+                    'user', 'replacement_person'
+                ).get(id=leave_id)
+                
+                # بررسی دسترسی
+                if approval_type == 'replacement':
+                    if leave_request.replacement_person != user.user:
+                        return False, 'access_denied'
+                    if leave_request.status != 'pending_replacement':
+                        return False, 'invalid_status'
+                elif approval_type == 'manager':
+                    if not leave_request.can_be_approved_by(user.user):
+                        return False, 'access_denied'
+                    if leave_request.status != 'pending_approval':
+                        return False, 'invalid_status'
+                else:
+                    return False, 'invalid_type'
+                
+                # رد درخواست
+                leave_request.status = 'rejected'
+                leave_request.rejection_reason = rejection_reason
+                leave_request.rejected_by = user.user
+                leave_request.rejected_at = timezone.now()
+                leave_request.save()
+                
+                # ارسال نوتیفیکیشن به درخواست‌دهنده
+                send_notification_to_requester_rejected(leave_request, rejected_by_type=approval_type)
+                
+                # Reset state
+                leave_state.reset()
+                
+                return True, 'درخواست با موفقیت رد شد و به درخواست‌دهنده اطلاع داده شد.'
+                
+            except ShiftReport.DoesNotExist:
+                return False, 'not_found'
+            except Exception as e:
+                logger.exception(f"Error rejecting leave: {e}")
+                return False, f'خطا: {str(e)}'
+        
+        success, message = await reject_leave()
+        
+        if success:
+            await self._send_text_message(chat_id, f'✅ {message}')
+        elif message == 'access_denied':
+            await self._send_text_message(chat_id, '⚠️ شما مجاز به انجام این عملیات نیستید.')
+        elif message == 'invalid_status':
+            await self._send_text_message(chat_id, '⚠️ این درخواست قابل رد نیست (احتمالاً قبلاً پردازش شده است).')
+        elif message == 'not_found':
+            await self._send_text_message(chat_id, '❌ درخواست مرخصی یافت نشد.')
+        else:
+            await self._send_text_message(chat_id, f'❌ {message}')
+
+
 
     # --- Synchronous helper methods ---
     def _build_command_keyboard(self, connected: bool) -> Keypad:

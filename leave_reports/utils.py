@@ -23,6 +23,7 @@ def get_shift_for_date_and_time(date, time, work_group):
 def send_notification_to_replacement(leave_request):
     """
     ارسال اعلان به جایگزین پیشنهادی برای تأیید درخواست مرخصی
+    همراه با دکمه‌های تایید و رد در ربات روبیکا
     """
     from dashboard.models import Notification
     
@@ -37,6 +38,9 @@ def send_notification_to_replacement(leave_request):
         message = f'{requester_name} شما را به عنوان جایگزین برای {leave_type_display} در تاریخ {leave_request.shift_date} انتخاب کرده است.'
         title = 'درخواست جایگزینی مرخصی'
         
+        # ارسال نوتیفیکیشن به داشبورد وب
+        # این نوتیفیکیشن با عنوان "درخواست جایگزینی" در signal نادیده گرفته می‌شود
+        # و فقط با send_leave_approval_request به ربات ارسال می‌شود
         Notification.objects.create(
             user=leave_request.replacement_person,
             title=title,
@@ -44,11 +48,19 @@ def send_notification_to_replacement(leave_request):
             notification_type='warning',  # هشدار برای نیاز به اقدام
             url=url
         )
+        
+        # ارسال پیام با دکمه‌های تایید/رد به ربات روبیکا
+        send_leave_approval_notification_to_rubika(
+            user=leave_request.replacement_person,
+            leave_request=leave_request,
+            approval_type='replacement'
+        )
 
 
 def send_notification_to_manager(leave_request):
     """
     ارسال اعلان به مدیر تأیید کننده برای تأیید نهایی درخواست مرخصی
+    همراه با دکمه‌های تایید و رد در ربات روبیکا
     """
     from dashboard.models import Notification
     from .models import ApprovalHierarchy
@@ -89,12 +101,20 @@ def send_notification_to_manager(leave_request):
         message = f'درخواست {leave_type_display} {requester_name} برای تاریخ {leave_request.shift_date} منتظر تأیید نهایی شماست.'
         title = 'درخواست تأیید مرخصی'
         
+        # ارسال نوتیفیکیشن به داشبورد وب
         Notification.objects.create(
             user=manager,
             title=title,
             message=message,
             notification_type='info',  # اطلاع‌رسانی
             url=url
+        )
+        
+        # ارسال پیام با دکمه‌های تایید/رد به ربات روبیکا
+        send_leave_approval_notification_to_rubika(
+            user=manager,
+            leave_request=leave_request,
+            approval_type='manager'
         )
 
 
@@ -172,3 +192,27 @@ def send_notification_to_requester_rejected(leave_request, rejected_by_type='man
         notification_type='error',  # خطا/رد
         url=url
     ) 
+
+
+def send_leave_approval_notification_to_rubika(user, leave_request, approval_type='replacement'):
+    """
+    ارسال پیام با دکمه‌های تایید و رد به ربات روبیکا
+    
+    Parameters:
+    - user: کاربری که باید پیام را دریافت کند (جایگزین یا مدیر)
+    - leave_request: درخواست مرخصی
+    - approval_type: نوع تایید ('replacement' یا 'manager')
+    """
+    from rubika_bot.tasks import send_leave_approval_request
+    
+    # بررسی اینکه کاربر پروفایل روبیکا دارد یا نه
+    rubika_profile = getattr(user, 'rubika_profile', None)
+    if not rubika_profile or not rubika_profile.chat_id:
+        return  # اگر کاربر در ربات نیست، فقط نوتیفیکیشن وب ارسال می‌شود
+    
+    # ارسال پیام به ربات (async task)
+    send_leave_approval_request.delay(
+        chat_id=rubika_profile.chat_id,
+        leave_request_id=leave_request.id,
+        approval_type=approval_type
+    )
