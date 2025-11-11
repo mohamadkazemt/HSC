@@ -1,4 +1,4 @@
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from .models import ShiftReport
 from .utils import send_notification_to_replacement, send_notification_to_manager
@@ -27,4 +27,37 @@ def leave_request_created(sender, instance, created, **kwargs):
         elif instance.status == 'pending_approval':
             # اگر مستقیم رفت به مدیر (مثل غیبت، استعلاجی)، به مدیر اطلاع می‌دهیم
             logger.info(f"📤 Sending notification to manager for approval")
+            send_notification_to_manager(instance)
+
+
+@receiver(pre_save, sender=ShiftReport)
+def track_status_change(sender, instance, **kwargs):
+    """
+    ذخیره وضعیت قبلی برای مقایسه در post_save
+    """
+    if instance.pk:  # فقط برای رکوردهای موجود
+        try:
+            instance._previous_status = ShiftReport.objects.get(pk=instance.pk).status
+        except ShiftReport.DoesNotExist:
+            instance._previous_status = None
+    else:
+        instance._previous_status = None
+
+
+@receiver(post_save, sender=ShiftReport)
+def leave_request_status_changed(sender, instance, created, **kwargs):
+    """
+    سیگنال برای ارسال اعلان به مدیر پس از تأیید جایگزین
+    """
+    if not created:  # فقط برای به‌روزرسانی‌ها
+        previous_status = getattr(instance, '_previous_status', None)
+        
+        logger.info(f"🔄 Status change detected for leave request #{instance.id}")
+        logger.info(f"   - Previous status: {previous_status}")
+        logger.info(f"   - Current status: {instance.status}")
+        
+        # اگر وضعیت از pending_replacement به pending_approval تغییر کرد
+        # یعنی جایگزین تایید کرده و حالا باید به مدیر اطلاع دهیم
+        if previous_status == 'pending_replacement' and instance.status == 'pending_approval':
+            logger.info(f"✅ Replacement approved. Sending notification to manager")
             send_notification_to_manager(instance)
