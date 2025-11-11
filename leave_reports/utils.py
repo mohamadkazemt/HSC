@@ -203,16 +203,50 @@ def send_leave_approval_notification_to_rubika(user, leave_request, approval_typ
     - leave_request: درخواست مرخصی
     - approval_type: نوع تایید ('replacement' یا 'manager')
     """
+    import logging
     from rubika_bot.tasks import send_leave_approval_request
+    
+    logger = logging.getLogger(__name__)
     
     # بررسی اینکه کاربر پروفایل روبیکا دارد یا نه
     rubika_profile = getattr(user, 'rubika_profile', None)
-    if not rubika_profile or not rubika_profile.chat_id:
+    
+    logger.info(f"🔍 Checking Rubika profile for user {user.username}")
+    logger.info(f"   - Has rubika_profile: {rubika_profile is not None}")
+    
+    if not rubika_profile:
+        logger.warning(f"⚠️ User {user.username} does not have a Rubika profile")
         return  # اگر کاربر در ربات نیست، فقط نوتیفیکیشن وب ارسال می‌شود
     
+    logger.info(f"   - Chat ID: {rubika_profile.chat_id}")
+    
+    if not rubika_profile.chat_id:
+        logger.warning(f"⚠️ User {user.username} has Rubika profile but no chat_id")
+        return
+    
     # ارسال پیام به ربات (async task)
-    send_leave_approval_request.delay(
-        chat_id=rubika_profile.chat_id,
-        leave_request_id=leave_request.id,
-        approval_type=approval_type
-    )
+    logger.info(f"📤 Sending leave approval request to Rubika bot")
+    logger.info(f"   - Chat ID: {rubika_profile.chat_id}")
+    logger.info(f"   - Leave ID: {leave_request.id}")
+    logger.info(f"   - Approval Type: {approval_type}")
+    
+    try:
+        # تلاش برای ارسال از طریق Celery
+        result = send_leave_approval_request.delay(
+            chat_id=rubika_profile.chat_id,
+            leave_request_id=leave_request.id,
+            approval_type=approval_type
+        )
+        logger.info(f"✅ Task queued successfully. Task ID: {result.id}")
+    except Exception as e:
+        # اگر Celery در دسترس نبود، به صورت مستقیم ارسال کن
+        logger.warning(f"⚠️ Celery not available, sending synchronously: {str(e)}")
+        try:
+            send_leave_approval_request(
+                chat_id=rubika_profile.chat_id,
+                leave_request_id=leave_request.id,
+                approval_type=approval_type
+            )
+            logger.info(f"✅ Message sent synchronously")
+        except Exception as sync_error:
+            logger.error(f"❌ Error sending synchronously: {str(sync_error)}", exc_info=True)
