@@ -309,11 +309,20 @@ def get_webhook_logs(request: HttpRequest) -> JsonResponse:
     if log_type != 'all':
         logs_qs = logs_qs.filter(log_type=log_type)
     
+    logs = logs_qs.order_by('-created_at')[:limit]
     payload = [
-        {'id': log.id, 'log_type': log.get_log_type_display(), 'title': log.title, 'message': log.message, 'data': log.data, 'created_at': log.created_at.isoformat()}
-        for log in logs_qs.order_by('-created_at')[:limit]
+        {
+            'id': log.id, 
+            'log_type': log.get_log_type_display(), 
+            'log_type_value': log.log_type,
+            'title': log.title, 
+            'message': log.message, 
+            'data': log.data, 
+            'created_at': log.created_at.isoformat()
+        }
+        for log in logs
     ]
-    return JsonResponse({'ok': True, 'logs': payload})
+    return JsonResponse({'ok': True, 'logs': payload, 'count': len(payload)})
 
 
 @superuser_required

@@ -1306,14 +1306,30 @@ class RubikaBotEngine:
                 send_notification_to_manager, 
                 send_notification_to_requester_approved
             )
+            from rubika_bot.models import WebhookLog
             
             try:
+                requester_name = leave_request.user.get_full_name() or leave_request.user.username
+                leave_type = leave_request.get_leave_type_display()
+                
                 if approval_type == 'replacement':
                     # تایید توسط جایگزین
                     leave_request.replacement_approved = True
                     leave_request.replacement_approved_at = timezone.now()
                     leave_request.status = 'pending_approval'
                     leave_request.save()
+                    
+                    # ثبت لاگ
+                    WebhookLog.log_outgoing(
+                        title='تایید جایگزینی مرخصی',
+                        message=f'{user.user.get_full_name()} درخواست {leave_type} {requester_name} را تایید کرد',
+                        data={
+                            'leave_id': leave_request.id,
+                            'approver': user.user.username,
+                            'approval_type': 'replacement',
+                            'chat_id': chat_id
+                        }
+                    )
                     
                     # ارسال نوتیفیکیشن به مدیر و درخواست‌دهنده
                     send_notification_to_manager(leave_request)
@@ -1328,6 +1344,18 @@ class RubikaBotEngine:
                     leave_request.final_approved_at = timezone.now()
                     leave_request.registration = True
                     leave_request.save()
+                    
+                    # ثبت لاگ
+                    WebhookLog.log_outgoing(
+                        title='تایید نهایی مرخصی',
+                        message=f'{user.user.get_full_name()} درخواست {leave_type} {requester_name} را تایید نهایی کرد',
+                        data={
+                            'leave_id': leave_request.id,
+                            'approver': user.user.username,
+                            'approval_type': 'manager',
+                            'chat_id': chat_id
+                        }
+                    )
                     
                     # ارسال نوتیفیکیشن به درخواست‌دهنده
                     send_notification_to_requester_approved(leave_request, approved_by_type='manager')
@@ -1374,6 +1402,7 @@ class RubikaBotEngine:
             from leave_reports.models import ShiftReport
             from django.utils import timezone
             from leave_reports.utils import send_notification_to_requester_rejected
+            from rubika_bot.models import WebhookLog
             
             try:
                 leave_request = ShiftReport.objects.select_related(
@@ -1394,12 +1423,28 @@ class RubikaBotEngine:
                 else:
                     return False, 'invalid_type'
                 
+                requester_name = leave_request.user.get_full_name() or leave_request.user.username
+                leave_type = leave_request.get_leave_type_display()
+                
                 # رد درخواست
                 leave_request.status = 'rejected'
                 leave_request.rejection_reason = rejection_reason
                 leave_request.rejected_by = user.user
                 leave_request.rejected_at = timezone.now()
                 leave_request.save()
+                
+                # ثبت لاگ
+                WebhookLog.log_outgoing(
+                    title=f'رد درخواست مرخصی ({approval_type})',
+                    message=f'{user.user.get_full_name()} درخواست {leave_type} {requester_name} را رد کرد. دلیل: {rejection_reason}',
+                    data={
+                        'leave_id': leave_id,
+                        'rejector': user.user.username,
+                        'rejection_type': approval_type,
+                        'rejection_reason': rejection_reason,
+                        'chat_id': chat_id
+                    }
+                )
                 
                 # ارسال نوتیفیکیشن به درخواست‌دهنده
                 send_notification_to_requester_rejected(leave_request, rejected_by_type=approval_type)

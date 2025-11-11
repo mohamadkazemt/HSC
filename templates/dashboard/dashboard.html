@@ -574,13 +574,16 @@ function confirmReject() {
         ? `/leave_reports/reject-replacement/${currentLeaveId}/`
         : `/leave_reports/reject-manager/${currentLeaveId}/`;
 
+    const formData = new FormData();
+    formData.append('rejection_reason', reason);
+
     fetch(url, {
         method: 'POST',
         headers: {
             'X-CSRFToken': csrftoken,
-            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
         },
-        body: JSON.stringify({ reason: reason })
+        body: formData
     })
     .then(response => response.json())
     .then(data => {

@@ -175,6 +175,19 @@ def send_leave_approval_request(self, chat_id: str, leave_request_id: int, appro
             service.engine._send_text_message(chat_id, message, keyboard)
         )
         
+        # ثبت لاگ ارسال
+        from rubika_bot.models import WebhookLog
+        WebhookLog.log_outgoing(
+            title=f'ارسال درخواست تایید {approval_type}',
+            message=f'پیام درخواست تایید برای مرخصی #{leave_request_id} به {chat_id} ارسال شد',
+            data={
+                'leave_id': leave_request_id,
+                'approval_type': approval_type,
+                'chat_id': chat_id,
+                'requester': requester_name
+            }
+        )
+        
         logger.info(
             f"Task 'send_leave_approval_request' successfully sent to {chat_id} for leave {leave_request_id}"
         )
