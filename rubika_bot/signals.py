@@ -23,7 +23,13 @@ def send_notification_to_rubika(sender, instance: Notification, created, **kwarg
         return
     
     # نادیده گرفتن نوتیفیکیشن‌هایی که با دکمه ارسال می‌شوند
-    if instance.title and ('درخواست جایگزینی' in instance.title or 'درخواست تایید' in instance.title):
+    # فقط این دو عنوان دقیق با دکمه ارسال می‌شوند (از leave_reports/utils.py)
+    approval_titles_with_buttons = [
+        'درخواست جایگزینی مرخصی',  # به جایگزین با دکمه تایید/رد
+        'درخواست تأیید مرخصی',      # به مدیر با دکمه تایید/رد
+    ]
+    
+    if instance.title and instance.title in approval_titles_with_buttons:
         logger.info(f"  ⏭️ Skipping - notification has approval buttons (title: {instance.title})")
         # این نوتیفیکیشن‌ها با send_leave_approval_request ارسال می‌شوند
         return

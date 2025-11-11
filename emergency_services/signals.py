@@ -47,9 +47,9 @@ def handle_medicine_notifications(sender, instance, created, **kwargs):
             for manager in managers:
                 Notification.objects.create(
                     user=manager,
-                    title="داروی منقضی شده",
-                    message=f"داروی {instance.name} منقضی شده و به صورت خودکار غیرفعال شد.",
-                    notification_type="danger",
+                    title="هشدار انقضای دارو",
+                    message=f"داروی {instance.name} منقضی شده است",
+                    notification_type="error",
                     is_read=False
                 )
     except Exception as e:
