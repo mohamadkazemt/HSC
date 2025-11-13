@@ -23,9 +23,9 @@ from .templatetags.anomalis_jalali import to_jalali
 from django.template.loader import get_template
 from weasyprint import HTML
 from django.conf import settings
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlencode
 import logging
-from shift_manager.utils import get_current_shift_and_group
+from shift_manager.utils import get_current_shift_and_group, get_active_groups_for_current_shift
 from django.utils.timezone import make_aware
 from datetime import datetime
 from django.db.models import IntegerField
@@ -58,6 +58,30 @@ from rest_framework.response import Response    # Correct import
 
 
 name = 'anomalis'
+
+
+def has_position(user, position_names):
+    """
+    بررسی می‌کند که آیا کاربر دارای یکی از سمت‌های مشخص شده است یا نه.
+    
+    Args:
+        user: کاربر Django
+        position_names: لیست نام سمت‌ها (مثلاً ['مدیر HSE', 'بازرس شیفت ایمنی'])
+    
+    Returns:
+        bool: True اگر کاربر دارای یکی از سمت‌ها باشد
+    """
+    if not user or not hasattr(user, 'userprofile'):
+        return False
+    
+    try:
+        user_profile = user.userprofile
+        if not user_profile or not user_profile.position:
+            return False
+        
+        return user_profile.position.name in position_names
+    except Exception:
+        return False
 
 
 def filter_anomalies(request, base_queryset):
@@ -304,7 +328,7 @@ def anomalis(request):
 
     # Get base anomaly queryset
     if request.user.groups.filter(name='مسئول پیگیری').exists():
-        if request.user.groups.filter(name='مدیر HSE').exists():
+        if has_position(request.user, ['مدیر HSE']):
             base_queryset = Anomaly.objects.all().order_by('-created_at')
         else:
             user_profile = UserProfile.objects.get(user=request.user)
@@ -320,12 +344,18 @@ def anomalis(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    # ساخت query string برای حفظ فیلترها در صفحه‌بندی (بدون پارامتر page)
+    query_params = request.GET.copy()
+    if 'page' in query_params:
+        del query_params['page']
+    query_string = query_params.urlencode()
+
     context = {
         'form': form,
         'pagetitle': 'افزودن آنومالی جدید',
         'title': 'افزودن آنومالی جدید',
         'page_obj': page_obj,
-        'anomalies': anomalies,
+        'query_string': query_string,
     }
     context.update(filter_context)
     
@@ -370,7 +400,7 @@ def get_corrective_action(request, description_id):
 def anomaly_list(request):
     # Get base anomaly queryset
     if request.user.groups.filter(name='مسئول پیگیری').exists():
-        if request.user.groups.filter(name='مدیر HSE').exists():
+        if has_position(request.user, ['مدیر HSE']):
             base_queryset = Anomaly.objects.all().order_by('-created_at')
         else:
             user_profile = UserProfile.objects.get(user=request.user)
@@ -386,11 +416,17 @@ def anomaly_list(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    # ساخت query string برای حفظ فیلترها در صفحه‌بندی (بدون پارامتر page)
+    query_params = request.GET.copy()
+    if 'page' in query_params:
+        del query_params['page']
+    query_string = query_params.urlencode()
+
     context = {
         'page_obj': page_obj,
-        'anomalies': anomalies,
         'pagetitle': 'لیست آنومالی‌ها',
         'title': 'لیست آنومالی‌ها',
+        'query_string': query_string,
     }
     context.update(filter_context)
 
@@ -400,7 +436,7 @@ def anomaly_list(request):
 
 
 @login_required
-@user_passes_test(lambda u: u.groups.filter(name='مدیر HSE').exists())
+@user_passes_test(lambda u: has_position(u, ['مدیر HSE']))
 def export_anomalies_to_excel(request):
     # Get base anomaly queryset
     base_queryset = Anomaly.objects.all()
@@ -466,7 +502,7 @@ def anomaly_detail_view(request, pk):
     )
 
     # چک کردن اینکه آیا کاربر مدیر HSE است
-    is_hse_manager = request.user.groups.filter(name__in=['مدیر HSE', 'افسر HSE']).exists()
+    is_hse_manager = has_position(request.user, ['مدیر HSE', 'بازرس شیفت ایمنی'])
 
     if request.method == "POST":
         form = CommentForm(request.POST, request.FILES)  # Pass request.FILES
@@ -530,11 +566,6 @@ def request_safe(request, pk):
         anomaly.action = False
         anomaly.is_request_sent = True
         anomaly.requested_by = request.user  # ذخیره کاربر درخواست‌دهنده
-        anomaly.save()
-
-        # اطلاع‌رسانی تغییر وضعیت و ارسال در صورت نیاز برای تایید
-        notify_anomaly_status_changed(anomaly, actor=request.user)
-        notify_anomaly_approval_request(anomaly, actor=request.user)
         
         # ثبت فعالیت درخواست ایمن‌سازی
         from dashboard.utils import log_user_activity
@@ -548,33 +579,104 @@ def request_safe(request, pk):
             request=request
         )
 
-        # شناسایی شیفت جاری و گروه مرتبط
-        current_shift, group = get_current_shift_and_group()
-        if not current_shift or not group:
-            messages.error(request, "شیفت یا گروه کاری مرتبط یافت نشد.")
-            return redirect('anomalis:anomaly_detail', pk=anomaly.pk)
-
-        # یافتن افسر ایمنی حاضر در گروه و شیفت فعلی
+        # شناسایی شیفت جاری و تمام گروه‌های فعال
         try:
-            officer = UserProfile.objects.filter(group=group, user__groups__name='افسر HSE').first()
-            if officer and officer.mobile:
-                # ارسال پیامک به افسر ایمنی حاضر
-                template_id = 254988  # شناسه قالب پیامک
-                parameters = [
-                    {"Name": "status", "Value": "در انتظار تایید"},
-                    {"Name": "anomaly_id", "Value": str(anomaly.id)},
-                ]
-                send_template_sms(officer.mobile, template_id, parameters)
+            current_shift, active_groups = get_active_groups_for_current_shift()
+            logger.info(f"Current shift: {current_shift}, Active groups: {active_groups}")
+            
+            if not current_shift or not active_groups:
+                logger.warning(f"Could not determine current shift or active groups")
+                anomaly.save()
+                notify_anomaly_status_changed(anomaly, actor=request.user)
+                messages.error(request, "شیفت یا گروه کاری مرتبط یافت نشد.")
+                return redirect('anomalis:anomaly_detail', pk=anomaly.pk)
+
+            # یافتن بازرس شیفت ایمنی در تمام گروه‌های فعال در شیفت فعلی
+            officer = None
+            for group in active_groups:
+                # جستجو در گروه فعلی برای بازرس شیفت ایمنی
+                potential_officers = UserProfile.objects.filter(
+                    group=group,
+                    position__name='بازرس شیفت ایمنی',
+                    user__isnull=False,
+                    mobile__isnull=False
+                ).exclude(mobile='').select_related('position', 'user')
                 
-                # ایجاد اعلان برای افسر ایمنی
+                for potential_officer in potential_officers:
+                    if potential_officer.user and potential_officer.mobile:
+                        officer = potential_officer
+                        logger.info(f"Found shift safety inspector in group {group}: {officer.user.username}")
+                        break
+                
+                if officer:
+                    break
+            
+            if officer and officer.user and officer.mobile:
+                # تنظیم بازرس شیفت ایمنی به عنوان تأیید‌کننده
+                anomaly.approved_by = officer.user
+                anomaly.save()
+                
+                # اطلاع‌رسانی تغییر وضعیت
+                notify_anomaly_status_changed(anomaly, actor=request.user)
+                
+                # ارسال پیامک به بازرس شیفت ایمنی حاضر
+                try:
+                    template_id = 254988  # شناسه قالب پیامک
+                    parameters = [
+                        {"Name": "status", "Value": "در انتظار تایید"},
+                        {"Name": "anomaly_id", "Value": str(anomaly.id)},
+                    ]
+                    send_template_sms(officer.mobile, template_id, parameters)
+                    logger.info(f"SMS sent to shift safety inspector {officer.user.username} ({officer.mobile}) for anomaly {anomaly.id}")
+                except Exception as sms_error:
+                    logger.error(f"Error sending SMS to shift safety inspector: {sms_error}", exc_info=True)
+                
+                # ایجاد اعلان برای بازرس شیفت ایمنی
                 notify_request_safe_assignment(officer.user, anomaly, actor=request.user)
                 
-                messages.success(request, "درخواست ایمن‌سازی با موفقیت ارسال شد و به افسر ایمنی حاضر اطلاع داده شد.")
+                # ارسال نتفیکیشن درخواست تأیید
+                notify_anomaly_approval_request(anomaly, actor=request.user)
+                
+                messages.success(
+                    request, 
+                    f"درخواست ایمن‌سازی با موفقیت ارسال شد و به بازرس شیفت ایمنی حاضر در شیفت {current_shift} (گروه {officer.group}) اطلاع داده شد."
+                )
             else:
-                messages.warning(request, "افسر ایمنی در شیفت فعلی یافت نشد یا شماره موبایل ندارد.")
+                # ذخیره آنومالی بدون approved_by
+                anomaly.save()
+                notify_anomaly_status_changed(anomaly, actor=request.user)
+                
+                # لاگ جزئیات برای دیباگ
+                logger.warning(
+                    f"No shift safety inspector found in active groups. "
+                    f"Current shift: {current_shift}, "
+                    f"Active groups: {active_groups}, "
+                    f"Anomaly ID: {anomaly.id}"
+                )
+                
+                # بررسی اینکه آیا بازرس شیفت ایمنی در سیستم وجود دارد
+                total_inspectors = UserProfile.objects.filter(
+                    position__name='بازرس شیفت ایمنی',
+                    user__isnull=False
+                ).count()
+                
+                if total_inspectors == 0:
+                    messages.warning(
+                        request, 
+                        "هیچ بازرس شیفت ایمنی در سیستم ثبت نشده است. لطفاً با مدیر سیستم تماس بگیرید."
+                    )
+                else:
+                    messages.warning(
+                        request, 
+                        f"بازرس شیفت ایمنی در شیفت فعلی ({current_shift}) و گروه‌های فعال ({', '.join(active_groups)}) یافت نشد یا شماره موبایل ندارد."
+                    )
+                    
         except Exception as e:
-            logger.error(f"Error in request_safe: {e}")
-            messages.error(request, "خطا در ارسال درخواست ایمن‌سازی.")
+            logger.error(f"Error in request_safe: {e}", exc_info=True)
+            # ذخیره آنومالی در صورت خطا
+            anomaly.save()
+            notify_anomaly_status_changed(anomaly, actor=request.user)
+            messages.error(request, f"خطا در ارسال درخواست ایمن‌سازی: {str(e)}")
             
         return redirect('anomalis:anomaly_detail', pk=anomaly.pk)
     else:
@@ -585,7 +687,7 @@ def request_safe(request, pk):
 
 
 @login_required
-@user_passes_test(lambda u: u.groups.filter(name__in=['مدیر HSE', 'افسر HSE']).exists())
+@user_passes_test(lambda u: has_position(u, ['مدیر HSE', 'بازرس شیفت ایمنی']))
 def approve_safe(request, pk):
     anomaly = get_object_or_404(Anomaly, pk=pk)
 
@@ -617,7 +719,7 @@ def approve_safe(request, pk):
 
 
 @login_required
-@user_passes_test(lambda u: u.groups.filter(name__in=['مدیر HSE', 'افسر HSE']).exists())
+@user_passes_test(lambda u: has_position(u, ['مدیر HSE', 'بازرس شیفت ایمنی']))
 def reject_safe(request, pk):
     anomaly = get_object_or_404(Anomaly, pk=pk)
 
@@ -1150,7 +1252,7 @@ def anomaly_reports_api(request):
 
 
 @login_required
-@user_passes_test(lambda u: u.groups.filter(name='مدیر HSE').exists())
+@user_passes_test(lambda u: has_position(u, ['مدیر HSE']))
 def export_report_to_excel(request):
     form = AnomalyReportForm(request.GET)
     start_date_str = request.GET.get('start_date')

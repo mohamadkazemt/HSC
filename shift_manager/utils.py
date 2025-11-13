@@ -109,3 +109,44 @@ def get_current_shift_and_group(user=None):
         shifts = get_shift_for_date(today)
         group = next((grp for grp, shift in shifts.items() if shift == current_shift), None)
         return current_shift, group
+
+
+def get_active_groups_for_current_shift():
+    """
+    Returns a list of all active groups (A, B, C, D) that are currently working
+    based on the current shift time.
+    
+    Returns:
+        tuple: (current_shift_name, list_of_active_groups)
+        Example: ('روزکار اول', ['A', 'B'])
+    """
+    now = timezone.now()
+    current_time = now.time()
+    today = now.date()
+
+    # Determine current shift based on time ranges
+    if datetime.time(6, 45) <= current_time < datetime.time(14, 45):
+        current_shift = 'روزکار اول'
+    elif datetime.time(14, 45) <= current_time < datetime.time(22, 45):
+        current_shift = 'عصرکار اول'
+    else:  # Covers 22:45 to 6:45
+        current_shift = 'شب کار اول'
+
+    # Get shifts for all groups today
+    shifts = get_shift_for_date(today)
+    
+    # Find all groups that match the current shift
+    # Note: We need to check both 'first' and 'second' variations
+    # Also, 'OFF' shifts should not be considered as active
+    active_groups = []
+    shift_variations = [
+        current_shift,
+        current_shift.replace('اول', 'دوم') if 'اول' in current_shift else current_shift.replace('دوم', 'اول')
+    ]
+    
+    for group, group_shift in shifts.items():
+        # Skip OFF shifts - they are not active working shifts
+        if group_shift and 'OFF' not in group_shift and group_shift in shift_variations:
+            active_groups.append(group)
+    
+    return current_shift, active_groups

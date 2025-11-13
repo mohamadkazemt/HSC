@@ -1,7 +1,7 @@
 import logging
 from typing import Iterable, Optional
 
-from django.contrib.auth.models import Group, User
+from django.contrib.auth.models import User
 from django.urls import reverse
 
 from dashboard.models import Notification
@@ -22,49 +22,58 @@ def _safe_notification(
     url: Optional[str] = None,
     actor: Optional[User] = None,
     extra_log_context: Optional[dict] = None,
+    skip_actor_check: bool = False,  # برای مواردی که می‌خواهیم حتی به actor هم نتفیکیشن بدهیم
 ) -> None:
     """
     Helper to create a notification safely without breaking the flow.
     It skips notifications for anonymous/None users and avoids notifying
-    the actor (the user who triggered the action).
+    the actor (the user who triggered the action) unless skip_actor_check=True.
     """
 
     if not user:
+        logger.debug(f"Skipping notification: user is None (title: {title})")
         return
 
-    if actor and actor == user:
+    if not skip_actor_check and actor and actor == user:
+        logger.debug(f"Skipping notification: actor ({actor.username}) is the same as user ({user.username}) (title: {title})")
         return
 
     try:
-        Notification.objects.create(
+        notification = Notification.objects.create(
             user=user,
             title=title,
             message=message,
             notification_type=notification_type,
             url=url,
         )
+        logger.info(f"Notification created successfully: ID={notification.id}, user={user.username}, title={title}")
     except Exception as exc:  # pragma: no cover - defensive logging
         context = extra_log_context or {}
         context.update({'user_id': getattr(user, 'id', None), 'title': title})
         logger.error("Failed to create notification", exc_info=True, extra={'context': context})
 
 
-def _notify_group_members(group_names: Iterable[str]) -> Iterable[User]:
-    """Yield all users in the provided group names. Errors are logged but ignored."""
+def _notify_group_members(position_names: Iterable[str]) -> Iterable[User]:
+    """Yield all users with the provided position names. Errors are logged but ignored."""
 
     seen_user_ids = set()
-    for group_name in group_names:
+    from accounts.models import UserProfile
+    
+    for position_name in position_names:
         try:
-            group = Group.objects.get(name=group_name)
-        except Group.DoesNotExist:
-            logger.warning("Group '%s' does not exist", group_name)
+            # جستجوی کاربران با سمت مشخص شده
+            user_profiles = UserProfile.objects.filter(
+                position__name=position_name,
+                user__isnull=False
+            ).select_related('user', 'position')
+            
+            for profile in user_profiles:
+                if profile.user and profile.user.id not in seen_user_ids:
+                    seen_user_ids.add(profile.user.id)
+                    yield profile.user
+        except Exception as e:
+            logger.warning("Error finding users with position '%s': %s", position_name, str(e))
             continue
-
-        for user in group.user_set.all():
-            if user.id in seen_user_ids:
-                continue
-            seen_user_ids.add(user.id)
-            yield user
 
 
 def _anomaly_url(anomaly) -> str:
@@ -79,16 +88,28 @@ def notify_anomaly_created(anomaly, *, actor: Optional[User] = None) -> None:
     location_name = getattr(anomaly.location, 'name', 'محل نامشخص')
 
     # Follow-up officer
-    followup_user = anomaly.followup.user if anomaly.followup and anomaly.followup.user else None
-    _safe_notification(
-        user=followup_user,
-        title='آنومالی جدید برای پیگیری',
-        message=f'آنومالی شماره {anomaly.id} در {location_name} برای پیگیری شما ثبت شد توسط {creator_name}.',
-        notification_type='warning',
-        url=url,
-        actor=actor,
-        extra_log_context={'anomaly_id': anomaly.id, 'target': 'followup'},
-    )
+    followup_user = None
+    if anomaly.followup:
+        try:
+            followup_user = anomaly.followup.user
+        except AttributeError:
+            logger.warning(f"Followup user not found for anomaly {anomaly.id}, followup={anomaly.followup}")
+    
+    if followup_user:
+        # برای مسئول پیگیری، حتی اگر خودش آنومالی را ایجاد کرده باشد، نتفیکیشن ارسال می‌کنیم
+        # چون باید از آنومالی که به او اختصاص داده شده مطلع شود
+        _safe_notification(
+            user=followup_user,
+            title='آنومالی جدید برای پیگیری',
+            message=f'آنومالی شماره {anomaly.id} در {location_name} برای پیگیری شما ثبت شد توسط {creator_name}.',
+            notification_type='warning',
+            url=url,
+            actor=actor,
+            skip_actor_check=True,  # حتی اگر خودش ایجاد کرده باشد، نتفیکیشن بده
+            extra_log_context={'anomaly_id': anomaly.id, 'target': 'followup'},
+        )
+    else:
+        logger.warning(f"Could not send notification to followup officer for anomaly {anomaly.id}: followup_user is None")
 
     # HSE managers
     for user in _notify_group_members(['مدیر HSE']):
@@ -107,7 +128,7 @@ def notify_anomaly_created(anomaly, *, actor: Optional[User] = None) -> None:
     if priority_value:
         normalized_priority = priority_value.strip()
         if normalized_priority in CRITICAL_PRIORITY_KEYWORDS:
-            for user in _notify_group_members(['مدیر HSE', 'افسر HSE']):
+            for user in _notify_group_members(['مدیر HSE', 'بازرس شیفت ایمنی']):
                 _safe_notification(
                     user=user,
                     title='🚨 آنومالی با اولویت بحرانی',
@@ -197,7 +218,7 @@ def notify_anomaly_approval_request(anomaly, *, actor: Optional[User] = None) ->
 
 
 def notify_request_safe_assignment(officer_user: Optional[User], anomaly, *, actor: Optional[User] = None) -> None:
-    """Notify HSE officer that a safe request is pending."""
+    """Notify shift safety inspector that a safe request is pending."""
 
     if not officer_user:
         return

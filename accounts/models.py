@@ -45,6 +45,7 @@ class UserProfile(models.Model):
     ]
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userprofile')
     personnel_code = models.CharField(max_length=10, default='', blank=True, verbose_name='کد پرسنلی')
+    national_code = models.CharField(max_length=10, blank=True, null=True, verbose_name='کد ملی')
     section = models.ForeignKey('Section', on_delete=models.SET_NULL, null=True, blank=True, verbose_name="بخش")
     part = models.ForeignKey('Part', on_delete=models.SET_NULL, null=True, blank=True, verbose_name="قسمت")
     unit_group = models.ForeignKey('UnitGroup', on_delete=models.SET_NULL, null=True, blank=True, verbose_name="گروه")

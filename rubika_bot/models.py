@@ -282,3 +282,59 @@ class LeaveRequestState(models.Model):
         """دریافت یا ساخت state برای یک کاربر"""
         obj, created = cls.objects.get_or_create(rubika_user=rubika_user)
         return obj
+
+
+class ConnectionRequestState(models.Model):
+    """ذخیره state فرایند اتصال از طریق SMS"""
+    rubika_user = models.OneToOneField(
+        RubikaUser,
+        on_delete=models.CASCADE,
+        related_name='connection_request_state'
+    )
+    
+    # State management
+    step = models.CharField(
+        max_length=50,
+        default='idle',
+        help_text='مرحله فعلی: idle, national_code, personnel_code, confirm'
+    )
+    
+    # Collected data
+    data = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='داده‌های جمع‌آوری شده شامل: national_code, personnel_code'
+    )
+    
+    # Timestamps
+    started_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'وضعیت درخواست اتصال'
+        verbose_name_plural = 'وضعیت‌های درخواست اتصال'
+        indexes = [
+            models.Index(fields=['rubika_user', 'step']),
+        ]
+    
+    def __str__(self):
+        return f'{self.rubika_user.chat_id} - {self.step}'
+    
+    def reset(self):
+        """بازنشانی state به حالت اولیه"""
+        self.step = 'idle'
+        self.data = {}
+        self.save()
+    
+    def update_step(self, step, data_update=None):
+        """به‌روزرسانی مرحله و داده‌ها"""
+        self.step = step
+        if data_update:
+            self.data.update(data_update)
+        self.save()
+    
+    @classmethod
+    def get_or_create_for_user(cls, rubika_user):
+        """دریافت یا ساخت state برای یک کاربر"""
+        obj, created = cls.objects.get_or_create(rubika_user=rubika_user)
+        return obj

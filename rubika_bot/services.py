@@ -125,6 +125,8 @@ class RubikaBotEngine:
             'leave_request': self._start_leave_request,
             'cancel_leave': self._cancel_leave_request,
             'cancel_rejection': self._cancel_rejection,
+            'sms_connect': self._start_sms_connection,
+            'cancel_sms_connect': self._cancel_sms_connection,
         }
         handler = mapping.get(button_id.lower())
         if handler:
@@ -168,6 +170,22 @@ class RubikaBotEngine:
             await self._handle_plain_text(chat_id, text, user)
 
     async def _handle_plain_text(self, chat_id: str, text: str, user: RubikaUser) -> None:
+        # Check if user is in SMS connection flow
+        @sync_to_async(thread_sensitive=True)
+        def get_connection_state():
+            from rubika_bot.models import ConnectionRequestState
+            try:
+                return ConnectionRequestState.objects.get(rubika_user=user)
+            except ConnectionRequestState.DoesNotExist:
+                return None
+        
+        connection_state = await get_connection_state()
+        
+        # If in SMS connection flow, handle accordingly
+        if connection_state and connection_state.step != 'idle':
+            await self._handle_sms_connection_input(chat_id, user, text, connection_state)
+            return
+        
         # Check if user is in leave request flow
         @sync_to_async(thread_sensitive=True)
         def get_leave_state():
@@ -1479,9 +1497,9 @@ class RubikaBotEngine:
     def _build_command_keyboard(self, connected: bool) -> Keypad:
         # ... (کد این تابع بدون تغییر باقی می‌ماند) ...
         first_row = [('start', '🔄 شروع'), ('account', '📊 وضعیت')]
-        second_row = [('connect', '🔗 اتصال')]
+        second_row = [('connect', '🔗 اتصال با کد'), ('sms_connect', '📱 اتصال با پیامک')]
         if connected:
-            second_row.extend([('payslip', '💰 فیش حقوقی'), ('leave_request', '🏖️ درخواست مرخصی')])
+            second_row = [('payslip', '💰 فیش حقوقی'), ('leave_request', '🏖️ درخواست مرخصی')]
         third_row = []
         if connected:
             third_row.append(('disconnect', '❌ قطع اتصال'))
@@ -1501,6 +1519,165 @@ class RubikaBotEngine:
         if user.first_name:
             return f'{user.first_name} {user.last_name or ""}'.strip()
         return 'کاربر گرامی'
+
+    # ============= SMS Connection Handlers =============
+    
+    async def _start_sms_connection(self, chat_id: str, user: RubikaUser) -> None:
+        """شروع فرایند اتصال از طریق SMS"""
+        if user.user:
+            message = '⚠️ شما قبلاً به حساب کاربری متصل شده‌اید.\n\nاگر می‌خواهید حساب خود را تغییر دهید، ابتدا از دکمه "قطع اتصال" استفاده کنید.'
+            await self._send_text_message(chat_id, message)
+            return
+        
+        # Create or get connection request state
+        @sync_to_async(thread_sensitive=True)
+        def init_connection_state():
+            from rubika_bot.models import ConnectionRequestState
+            state, created = ConnectionRequestState.objects.get_or_create(rubika_user=user)
+            state.reset()
+            state.update_step('national_code')
+            return state
+        
+        await init_connection_state()
+        
+        # Send instructions
+        message_lines = [
+            '📱 اتصال از طریق پیامک',
+            '',
+            'برای اتصال به حساب کاربری خود از طریق پیامک، لطفاً کد ملی خود را وارد کنید:',
+            '',
+            '⚠️ توجه: کد ملی باید 10 رقم باشد.',
+        ]
+        
+        # Build cancel button
+        rows = [[('cancel_sms_connect', '❌ انصراف')]]
+        keypad_rows = [KeypadRow(buttons=[self._button(bid, label) for bid, label in row]) for row in rows]
+        keyboard = Keypad(rows=keypad_rows)
+        
+        await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
+    
+    async def _cancel_sms_connection(self, chat_id: str, user: RubikaUser) -> None:
+        """لغو فرایند اتصال از طریق SMS"""
+        @sync_to_async(thread_sensitive=True)
+        def reset_state():
+            from rubika_bot.models import ConnectionRequestState
+            try:
+                state = ConnectionRequestState.objects.get(rubika_user=user)
+                state.reset()
+            except ConnectionRequestState.DoesNotExist:
+                pass
+        
+        await reset_state()
+        message = '❌ فرایند اتصال لغو شد.'
+        await self._send_text_message(chat_id, message)
+    
+    async def _handle_sms_connection_input(self, chat_id: str, user: RubikaUser, text: str, state) -> None:
+        """پردازش ورودی کاربر در فرایند اتصال از طریق SMS"""
+        if state.step == 'national_code':
+            await self._process_national_code(chat_id, user, text, state)
+        elif state.step == 'personnel_code':
+            await self._process_personnel_code(chat_id, user, text, state)
+    
+    async def _process_national_code(self, chat_id: str, user: RubikaUser, national_code: str, state) -> None:
+        """پردازش کد ملی"""
+        national_code = national_code.strip()
+        
+        # Validate national code (should be 10 digits)
+        if not national_code.isdigit() or len(national_code) != 10:
+            message = '❌ کد ملی نامعتبر است. لطفاً یک کد ملی 10 رقمی وارد کنید.'
+            await self._send_text_message(chat_id, message)
+            return
+        
+        # Save national code and ask for personnel code
+        @sync_to_async(thread_sensitive=True)
+        def update_state():
+            state.update_step('personnel_code', {'national_code': national_code})
+        
+        await update_state()
+        
+        message_lines = [
+            '✅ کد ملی ثبت شد.',
+            '',
+            'اکنون لطفاً کد پرسنلی خود را وارد کنید:',
+        ]
+        
+        # Build cancel button
+        rows = [[('cancel_sms_connect', '❌ انصراف')]]
+        keypad_rows = [KeypadRow(buttons=[self._button(bid, label) for bid, label in row]) for row in rows]
+        keyboard = Keypad(rows=keypad_rows)
+        
+        await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
+    
+    async def _process_personnel_code(self, chat_id: str, user: RubikaUser, personnel_code: str, state) -> None:
+        """پردازش کد پرسنلی و ارسال کد اتصال از طریق SMS"""
+        personnel_code = personnel_code.strip()
+        
+        # Validate personnel code
+        if not personnel_code:
+            message = '❌ کد پرسنلی نامعتبر است. لطفاً کد پرسنلی خود را وارد کنید.'
+            await self._send_text_message(chat_id, message)
+            return
+        
+        # Find user by national_code and personnel_code
+        @sync_to_async(thread_sensitive=True)
+        def find_and_send_code():
+            from accounts.models import UserProfile
+            from rubika_bot.models import RubikaConnectionCode
+            from rubika_bot.sms_utils import send_connection_code_sms
+            
+            try:
+                national_code = state.data.get('national_code')
+                profile = UserProfile.objects.filter(
+                    national_code=national_code,
+                    personnel_code=personnel_code
+                ).select_related('user').first()
+                
+                if not profile:
+                    return None, 'کاربری با این کد ملی و کد پرسنلی یافت نشد.'
+                
+                if not profile.mobile:
+                    return None, 'شماره موبایل برای این کاربر ثبت نشده است.'
+                
+                # Generate connection code
+                RubikaConnectionCode.objects.filter(user=profile.user, used=False).delete()
+                code = RubikaConnectionCode.generate_for_user(profile.user)
+                
+                # Send SMS
+                sms_sent = send_connection_code_sms(profile.mobile, code.code)
+                
+                if sms_sent:
+                    return code.code, None
+                else:
+                    return None, 'خطا در ارسال پیامک. لطفاً دوباره تلاش کنید.'
+                
+            except Exception as e:
+                logger.exception(f"Error in find_and_send_code: {e}")
+                return None, 'خطایی رخ داده است. لطفاً دوباره تلاش کنید.'
+        
+        code, error = await find_and_send_code()
+        
+        # Reset state
+        @sync_to_async(thread_sensitive=True)
+        def reset_state():
+            state.reset()
+        
+        await reset_state()
+        
+        if error:
+            message = f'❌ {error}'
+            await self._send_text_message(chat_id, message)
+        else:
+            message_lines = [
+                '✅ کد اتصال به شماره موبایل شما ارسال شد!',
+                '',
+                f'🔑 کد اتصال: `{code}`',
+                '',
+                'برای اتصال، از دستور زیر استفاده کنید:',
+                f'`/connect {code}`',
+                '',
+                '⏰ این کد تا 60 دقیقه معتبر است.',
+            ]
+            await self._send_text_message(chat_id, '\n'.join(message_lines))
 
 
 class RubPyIntegrationService:
