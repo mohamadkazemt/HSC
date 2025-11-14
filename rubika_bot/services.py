@@ -31,6 +31,44 @@ logger = logging.getLogger(__name__)
 def _safe_str(value: Any) -> str:
     return "" if value is None else str(value)
 
+
+def normalize_digits(text: str) -> str:
+    """
+    تبدیل اعداد فارسی (۰-۹) و عربی (٠-٩) به انگلیسی (0-9)
+    
+    Args:
+        text: متن ورودی که ممکن است شامل اعداد فارسی یا عربی باشد
+    
+    Returns:
+        متن با اعداد انگلیسی
+    
+    Examples:
+        >>> normalize_digits("۱۴۰۳/۰۹/۱۵")
+        "1403/09/15"
+        >>> normalize_digits("۰۹۱۲۳۴۵۶۷۸۹")
+        "09123456789"
+        >>> normalize_digits("٠٩١٢٣٤٥٦٧٨٩")
+        "09123456789"
+    """
+    if not text:
+        return text
+    
+    # اعداد فارسی
+    persian_digits = '۰۱۲۳۴۵۶۷۸۹'
+    # اعداد عربی
+    arabic_digits = '٠١٢٣٤٥٦٧٨٩'
+    # اعداد انگلیسی
+    english_digits = '0123456789'
+    
+    # ساخت جدول ترجمه
+    translation_table = str.maketrans(
+        persian_digits + arabic_digits,
+        english_digits + english_digits
+    )
+    
+    return text.translate(translation_table)
+
+
 def _extract_button_id(message: Optional[Message]) -> Optional[str]:
     # ... (این تابع بدون تغییر باقی می‌ماند) ...
     if not message or not message.aux_data:
@@ -883,7 +921,8 @@ class RubikaBotEngine:
     
     async def _process_replacement_code_input(self, chat_id: str, user: RubikaUser, text: str, leave_state) -> None:
         """پردازش ورودی کد پرسنلی جایگزین"""
-        personnel_code = text.strip()
+        # تبدیل اعداد فارسی و عربی به انگلیسی
+        personnel_code = normalize_digits(text.strip())
         
         # Validate and find replacement
         @sync_to_async(thread_sensitive=True)
@@ -1035,8 +1074,8 @@ class RubikaBotEngine:
         
         # Validate date format
         try:
-            # Remove spaces and extra characters
-            date_str = text.strip().replace(' ', '').replace('/', '-')
+            # تبدیل اعداد فارسی و عربی به انگلیسی و حذف فضاها
+            date_str = normalize_digits(text.strip()).replace(' ', '').replace('/', '-')
             
             if '-' in date_str:
                 parts = date_str.split('-')
@@ -1109,9 +1148,12 @@ class RubikaBotEngine:
         import re
         from datetime import time
         
+        # تبدیل اعداد فارسی و عربی به انگلیسی
+        normalized_text = normalize_digits(text.strip())
+        
         # Parse time range (e.g., 08:00-12:00 or 08:00 - 12:00)
         time_pattern = r'(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})'
-        match = re.match(time_pattern, text.strip())
+        match = re.match(time_pattern, normalized_text)
         
         if not match:
             message = '❌ فرمت ساعت نامعتبر است. لطفاً به فرمت زیر وارد کنید:\n\n08:00-12:00'
@@ -1721,7 +1763,8 @@ class RubikaBotEngine:
     
     async def _process_national_code(self, chat_id: str, user: RubikaUser, national_code: str, state) -> None:
         """پردازش کد ملی"""
-        national_code = national_code.strip()
+        # تبدیل اعداد فارسی و عربی به انگلیسی
+        national_code = normalize_digits(national_code.strip())
         
         # Validate national code (should be 10 digits)
         if not national_code.isdigit() or len(national_code) != 10:
@@ -1754,7 +1797,8 @@ class RubikaBotEngine:
     
     async def _process_personnel_code(self, chat_id: str, user: RubikaUser, personnel_code: str, state) -> None:
         """پردازش کد پرسنلی و ارسال کد اتصال از طریق SMS"""
-        personnel_code = personnel_code.strip()
+        # تبدیل اعداد فارسی و عربی به انگلیسی
+        personnel_code = normalize_digits(personnel_code.strip())
         
         # Validate personnel code
         if not personnel_code:
