@@ -1614,59 +1614,119 @@ class RubikaBotEngine:
         
         # Validate personnel code
         if not personnel_code:
-            message = '❌ کد پرسنلی نامعتبر است. لطفاً کد پرسنلی خود را وارد کنید.'
-            await self._send_text_message(chat_id, message)
+            message = '❌ کد پرسنلی نامعتبر است. لطفاً کد پرسنلی خود را وارد کنید:'
+            
+            # Build cancel button
+            rows = [[('cancel_sms_connect', '❌ انصراف')]]
+            keypad_rows = [KeypadRow(buttons=[self._button(bid, label) for bid, label in row]) for row in rows]
+            keyboard = Keypad(rows=keypad_rows)
+            
+            await self._send_text_message(chat_id, message, keyboard)
             return
         
         # Find user by national_code and personnel_code
         @sync_to_async(thread_sensitive=True)
         def find_and_send_code():
             from accounts.models import UserProfile
-            from rubika_bot.models import RubikaConnectionCode
+            from rubika_bot.models import RubikaConnectionCode, WebhookLog
             from rubika_bot.sms_utils import send_connection_code_sms
             
             try:
                 national_code = state.data.get('national_code')
+                logger.info(f"🔍 جستجوی کاربر - کد ملی: {national_code}, کد پرسنلی: {personnel_code}")
+                
+                WebhookLog.log_info(
+                    'درخواست اتصال SMS',
+                    f'جستجوی کاربر با کد ملی {national_code} و کد پرسنلی {personnel_code}',
+                    {'chat_id': chat_id, 'national_code': national_code, 'personnel_code': personnel_code}
+                )
+                
+                # Debug: بررسی تمام فیلدهای موجود در UserProfile
+                all_profiles_count = UserProfile.objects.count()
+                profiles_with_national = UserProfile.objects.exclude(national_code__isnull=True).exclude(national_code='').count()
+                logger.info(f"📊 تعداد کل پروفایل‌ها: {all_profiles_count}, دارای کد ملی: {profiles_with_national}")
+                
                 profile = UserProfile.objects.filter(
                     national_code=national_code,
                     personnel_code=personnel_code
                 ).select_related('user').first()
                 
                 if not profile:
+                    # Debug: جستجوی جداگانه
+                    by_personnel = UserProfile.objects.filter(personnel_code=personnel_code).first()
+                    by_national = UserProfile.objects.filter(national_code=national_code).first()
+                    
+                    if by_personnel:
+                        logger.warning(f"⚠️ کاربر با کد پرسنلی یافت شد اما کد ملی مطابقت ندارد: {by_personnel.national_code}")
+                    if by_national:
+                        logger.warning(f"⚠️ کاربر با کد ملی یافت شد اما کد پرسنلی مطابقت ندارد: {by_national.personnel_code}")
+                    
+                    logger.error(f"❌ کاربری با کد ملی {national_code} و کد پرسنلی {personnel_code} یافت نشد")
                     return None, 'کاربری با این کد ملی و کد پرسنلی یافت نشد.'
                 
+                logger.info(f"✅ کاربر یافت شد: {profile.user.username}, موبایل: {profile.mobile}")
+                
                 if not profile.mobile:
+                    logger.error(f"❌ شماره موبایل برای کاربر {profile.user.username} خالی است")
                     return None, 'شماره موبایل برای این کاربر ثبت نشده است.'
                 
                 # Generate connection code
                 RubikaConnectionCode.objects.filter(user=profile.user, used=False).delete()
                 code = RubikaConnectionCode.generate_for_user(profile.user)
+                logger.info(f"🔑 کد اتصال تولید شد: {code.code}")
                 
                 # Send SMS
+                logger.info(f"📤 شروع ارسال SMS به {profile.mobile}")
+                
+                WebhookLog.log_info(
+                    'ارسال کد اتصال SMS',
+                    f'ارسال کد به شماره {profile.mobile} برای کاربر {profile.user.username}',
+                    {'mobile': profile.mobile, 'username': profile.user.username, 'code': code.code[:10] + '...'}
+                )
+                
                 sms_sent = send_connection_code_sms(profile.mobile, code.code)
                 
                 if sms_sent:
+                    logger.info(f"✅ SMS با موفقیت ارسال شد به {profile.mobile}")
+                    WebhookLog.log_outgoing(
+                        'SMS ارسال شد',
+                        f'کد اتصال با موفقیت به {profile.mobile} ارسال شد',
+                        {'mobile': profile.mobile, 'username': profile.user.username}
+                    )
                     return code.code, None
                 else:
+                    logger.error(f"❌ خطا در ارسال SMS به {profile.mobile}")
+                    WebhookLog.log_error(
+                        'خطا در ارسال SMS',
+                        f'ارسال کد اتصال به {profile.mobile} ناموفق بود',
+                        {'mobile': profile.mobile, 'username': profile.user.username}
+                    )
                     return None, 'خطا در ارسال پیامک. لطفاً دوباره تلاش کنید.'
                 
             except Exception as e:
-                logger.exception(f"Error in find_and_send_code: {e}")
+                logger.exception(f"💥 Error in find_and_send_code: {e}")
                 return None, 'خطایی رخ داده است. لطفاً دوباره تلاش کنید.'
         
         code, error = await find_and_send_code()
         
-        # Reset state
-        @sync_to_async(thread_sensitive=True)
-        def reset_state():
-            state.reset()
-        
-        await reset_state()
-        
         if error:
-            message = f'❌ {error}'
-            await self._send_text_message(chat_id, message)
+            # Don't reset state - let user try again with correct personnel code
+            message = f'❌ {error}\n\nلطفاً کد پرسنلی صحیح خود را وارد کنید:'
+            
+            # Build cancel button
+            rows = [[('cancel_sms_connect', '❌ انصراف')]]
+            keypad_rows = [KeypadRow(buttons=[self._button(bid, label) for bid, label in row]) for row in rows]
+            keyboard = Keypad(rows=keypad_rows)
+            
+            await self._send_text_message(chat_id, message, keyboard)
         else:
+            # Reset state only on success
+            @sync_to_async(thread_sensitive=True)
+            def reset_state():
+                state.reset()
+            
+            await reset_state()
+            
             message_lines = [
                 '✅ کد اتصال به شماره موبایل شما ارسال شد!',
                 '',

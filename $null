@@ -1,0 +1,7 @@
+mkdir : An item with the specified name D:\MKT\HSC\accounts\management\commands already exists.
+At line:1 char:51
++ ... '*:Encoding'] = 'utf8'; mkdir -p accounts\management\commands ; echo  ...
++                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ResourceExists: (D:\MKT\HSC\accounts\management\commands:String) [New-Item], IOException
+    + FullyQualifiedErrorId : DirectoryExist,Microsoft.PowerShell.Commands.NewItemCommand
+ 
