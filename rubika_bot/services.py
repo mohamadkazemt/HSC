@@ -338,14 +338,108 @@ class RubikaBotEngine:
         await self._send_text_message(chat_id, message, keyboard)
 
     async def _send_account_status(self, chat_id: str, user: RubikaUser) -> None:
+        """نمایش وضعیت حساب کاربری با جزئیات کامل"""
         display_name = self._display_name(user)
+        
         if user.user:
-            message = f'📊 وضعیت حساب:\n\n✅ متصل به: `{user.user.username}`\n👤 نام: {display_name}'
+            # دریافت اطلاعات پروفایل کاربر
+            @sync_to_async(thread_sensitive=True)
+            def get_profile_info():
+                from accounts.models import UserProfile
+                try:
+                    profile = UserProfile.objects.select_related('position', 'section').get(user=user.user)
+                    
+                    # نام کامل
+                    full_name = user.user.get_full_name()
+                    if not full_name:
+                        full_name = user.user.username
+                    
+                    # کد پرسنلی
+                    personnel_code = profile.personnel_code or 'نامشخص'
+                    
+                    # سمت
+                    position = profile.position.name if profile.position else 'نامشخص'
+                    
+                    # بخش
+                    section = profile.section.name if profile.section else 'نامشخص'
+                    
+                    # عکس پروفایل
+                    image_path = None
+                    if profile.image:
+                        try:
+                            image_path = profile.image.path
+                        except Exception:
+                            image_path = None
+                    
+                    return {
+                        'full_name': full_name,
+                        'personnel_code': personnel_code,
+                        'position': position,
+                        'section': section,
+                        'image_path': image_path,
+                        'username': user.user.username
+                    }
+                except UserProfile.DoesNotExist:
+                    return {
+                        'full_name': user.user.get_full_name() or user.user.username,
+                        'personnel_code': 'نامشخص',
+                        'position': 'نامشخص',
+                        'section': 'نامشخص',
+                        'image_path': None,
+                        'username': user.user.username
+                    }
+            
+            profile_info = await get_profile_info()
+            
+            # ساخت پیام
+            message_lines = [
+                '👤 اطلاعات حساب کاربری',
+                '',
+                f'✅ وضعیت: متصل',
+                f'👤 نام: {profile_info["full_name"]} ({profile_info["personnel_code"]})',
+                f'💼 سمت: {profile_info["position"]}',
+                f'🏢 بخش: {profile_info["section"]}',
+                f'🆔 نام کاربری: {profile_info["username"]}',
+            ]
+            
+            message = '\n'.join(message_lines)
+            
+            # ارسال عکس پروفایل اگر موجود باشد
+            if profile_info['image_path']:
+                try:
+                    # ارسال عکس با کپشن
+                    def send_profile_image():
+                        from rubika_bot.services import RubPyIntegrationService
+                        service = RubPyIntegrationService.get_instance()
+                        return service._run_sync(
+                            service.client.send_file(
+                                chat_id=chat_id,
+                                file=profile_info['image_path'],
+                                text=message,
+                                type='Image'
+                            )
+                        )
+                    
+                    await sync_to_async(send_profile_image, thread_sensitive=True)()
+                    
+                    # ارسال دکمه‌ها به صورت جداگانه
+                    buttons = self._build_command_keyboard(connected=True)
+                    await self._send_text_message(chat_id, '👇 از منوی زیر استفاده کنید:', buttons)
+                    
+                    logger.info(f"Sent profile image to {chat_id}")
+                except Exception as e:
+                    logger.error(f"Error sending profile image: {e}", exc_info=True)
+                    # اگر ارسال عکس با خطا مواجه شد، فقط متن را ارسال کن
+                    buttons = self._build_command_keyboard(connected=True)
+                    await self._send_text_message(chat_id, message, buttons)
+            else:
+                # اگر عکس نداشت، فقط متن را با دکمه‌ها ارسال کن
+                buttons = self._build_command_keyboard(connected=True)
+                await self._send_text_message(chat_id, message, buttons)
         else:
             message = f'📊 وضعیت حساب:\n\n❌ متصل نشده\n👤 نام: {display_name}\n\n💡 برای اتصال از دکمه‌های زیر استفاده کنید:'
-        
-        buttons = self._build_command_keyboard(connected=bool(user.user))
-        await self._send_text_message(chat_id, message, buttons)
+            buttons = self._build_command_keyboard(connected=False)
+            await self._send_text_message(chat_id, message, buttons)
 
     async def _disconnect_user(self, chat_id: str, user: RubikaUser) -> None:
         if user.user:
