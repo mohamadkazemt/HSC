@@ -1641,25 +1641,34 @@ class RubikaBotEngine:
                     {'chat_id': chat_id, 'national_code': national_code, 'personnel_code': personnel_code}
                 )
                 
-                # Debug: بررسی تمام فیلدهای موجود در UserProfile
-                all_profiles_count = UserProfile.objects.count()
-                profiles_with_national = UserProfile.objects.exclude(national_code__isnull=True).exclude(national_code='').count()
-                logger.info(f"📊 تعداد کل پروفایل‌ها: {all_profiles_count}, دارای کد ملی: {profiles_with_national}")
+                # جستجوی کاربر: اول با کد پرسنلی، سپس بررسی کد ملی
+                # (برخی سیستم‌ها کد ملی را در national_code، برخی در username ذخیره می‌کنند)
                 
+                # جستجو با national_code
                 profile = UserProfile.objects.filter(
                     national_code=national_code,
                     personnel_code=personnel_code
                 ).select_related('user').first()
                 
+                # اگر با national_code پیدا نشد، با username (که ممکن است کد ملی باشد) جستجو کن
                 if not profile:
-                    # Debug: جستجوی جداگانه
-                    by_personnel = UserProfile.objects.filter(personnel_code=personnel_code).first()
-                    by_national = UserProfile.objects.filter(national_code=national_code).first()
+                    logger.info(f"🔄 جستجو با username به عنوان کد ملی...")
+                    profile = UserProfile.objects.filter(
+                        user__username=national_code,
+                        personnel_code=personnel_code
+                    ).select_related('user').first()
+                
+                if not profile:
+                    # Debug: جستجوی جداگانه برای یافتن مشکل
+                    by_personnel = UserProfile.objects.filter(personnel_code=personnel_code).select_related('user').first()
                     
                     if by_personnel:
-                        logger.warning(f"⚠️ کاربر با کد پرسنلی یافت شد اما کد ملی مطابقت ندارد: {by_personnel.national_code}")
-                    if by_national:
-                        logger.warning(f"⚠️ کاربر با کد ملی یافت شد اما کد پرسنلی مطابقت ندارد: {by_national.personnel_code}")
+                        logger.warning(
+                            f"⚠️ کاربر با کد پرسنلی {personnel_code} یافت شد:\n"
+                            f"   - Username: {by_personnel.user.username}\n"
+                            f"   - National code field: {by_personnel.national_code}\n"
+                            f"   - Input national code: {national_code}"
+                        )
                     
                     logger.error(f"❌ کاربری با کد ملی {national_code} و کد پرسنلی {personnel_code} یافت نشد")
                     return None, 'کاربری با این کد ملی و کد پرسنلی یافت نشد.'
