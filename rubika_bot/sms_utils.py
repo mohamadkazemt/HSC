@@ -14,22 +14,29 @@ def send_connection_code_sms(mobile_number, connection_code):
     
     قالب پیامک در پنل SMS.ir باید به این صورت باشد:
     ---
-    کد اتصال روبیکا: #CODE#
+    کد اتصال روبیکا:
+    #CODE1##CODE2#
     این کد تا 60 دقیقه معتبر است.
     https://miepcoj.ir/
     ---
-    پارامتر: CODE
+    پارامترها: CODE1, CODE2
     
-    توضیح: کد اتصال 32 کاراکتر است و در یک پارامتر قرار می‌گیرد.
+    توضیح: کد اتصال 32 کاراکتر است.
+    محدودیت SMS.ir: هر پارامتر حداکثر 25 کاراکتر
+    راه حل: تقسیم کد به دو قسمت (25 + 7 کاراکتر)
     """
     try:
         logger.info(f"📱 شروع ارسال کد اتصال به شماره {mobile_number}")
         logger.info(f"📝 Template ID: {RUBIKA_CONNECTION_TEMPLATE}")
         logger.info(f"🔑 Connection code length: {len(connection_code)}")
         
-        # ارسال کد کامل در یک پارامتر (محدودیت SMS.ir: 64 کاراکتر)
+        # تقسیم کد به دو قسمت به دلیل محدودیت 25 کاراکتری
+        code_part1 = connection_code[:25]  # 25 کاراکتر اول
+        code_part2 = connection_code[25:]  # 7 کاراکتر باقیمانده
+        
         parameters = [
-            {"Name": "CODE", "Value": connection_code}
+            {"Name": "CODE1", "Value": code_part1},
+            {"Name": "CODE2", "Value": code_part2}
         ]
         
         logger.info(f"📤 Sending SMS with parameters: {parameters}")
