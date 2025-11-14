@@ -276,22 +276,76 @@ class RubikaBotEngine:
         await self._send_text_message(chat_id, reply, buttons)
 
     async def _send_welcome(self, chat_id: str, user: RubikaUser) -> None:
+        """ارسال پیام خوش‌آمدگویی با اطلاعات کامل کاربر"""
         display_name = self._display_name(user)
         
         if user.user:
-            # پیام خوش‌آمدگویی برای کاربر متصل
+            # دریافت اطلاعات کامل کاربر
+            @sync_to_async(thread_sensitive=True)
+            def get_user_info():
+                from accounts.models import UserProfile
+                try:
+                    profile = UserProfile.objects.select_related('position', 'section').get(user=user.user)
+                    
+                    # نام کامل
+                    full_name = user.user.get_full_name()
+                    if not full_name:
+                        full_name = user.user.username
+                    
+                    # کد پرسنلی
+                    personnel_code = profile.personnel_code or 'نامشخص'
+                    
+                    # سمت
+                    position = profile.position.name if profile.position else None
+                    
+                    # بخش
+                    section = profile.section.name if profile.section else None
+                    
+                    return {
+                        'full_name': full_name,
+                        'personnel_code': personnel_code,
+                        'position': position,
+                        'section': section,
+                    }
+                except UserProfile.DoesNotExist:
+                    return {
+                        'full_name': user.user.get_full_name() or user.user.username,
+                        'personnel_code': None,
+                        'position': None,
+                        'section': None,
+                    }
+            
+            user_info = await get_user_info()
+            
+            # ساخت پیام خوش‌آمدگویی با اطلاعات کامل
             message_lines = [
-                f'👋 سلام {display_name} عزیز!',
+                f'👋 سلام {user_info["full_name"]} عزیز!',
+            ]
+            
+            # اضافه کردن کد پرسنلی اگر موجود باشد
+            if user_info['personnel_code']:
+                message_lines.append(f'🆔 کد پرسنلی: {user_info["personnel_code"]}')
+            
+            # اضافه کردن سمت و بخش اگر موجود باشد
+            if user_info['position'] or user_info['section']:
+                info_parts = []
+                if user_info['position']:
+                    info_parts.append(f'💼 {user_info["position"]}')
+                if user_info['section']:
+                    info_parts.append(f'🏢 {user_info["section"]}')
+                message_lines.append(' | '.join(info_parts))
+            
+            message_lines.extend([
                 '',
-                f'✅ شما به حساب **{user.user.username}** متصل هستید.',
+                '✅ شما به حساب خود متصل هستید.',
                 '',
                 '🎯 از منوی زیر می‌توانید:',
                 '   💰 فیش حقوقی دریافت کنید',
                 '   🏖️ درخواست مرخصی ثبت کنید',
-                '   👤 وضعیت حساب را مشاهده کنید',
+                '   👤 اطلاعات حساب را مشاهده کنید',
                 '',
                 '👇 دکمه مورد نظر را انتخاب کنید:'
-            ]
+            ])
         else:
             # پیام خوش‌آمدگویی برای کاربر غیر متصل
             message_lines = [
