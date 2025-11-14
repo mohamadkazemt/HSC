@@ -211,56 +211,122 @@ class RubikaBotEngine:
         # Normal text handling
         lowered = text.strip().lower()
         display_name = self._display_name(user)
-        if lowered.startswith('سلام') or lowered in {'hi', 'hello', 'درود', 'salam'}:
-            reply = f'سلام {display_name} عزیز! 👋\n\nخوش اومدی! چطور می‌تونم کمکت کنم؟ 🌟'
+        
+        # پاسخ به سلام و احوال‌پرسی
+        if lowered.startswith('سلام') or lowered in {'hi', 'hello', 'hey', 'درود', 'salam', 'سلام علیکم'}:
+            if user.user:
+                reply = f'👋 سلام {display_name} عزیز!\n\n✨ چطور می‌تونم کمکت کنم؟'
+            else:
+                reply = f'👋 سلام {display_name} عزیز!\n\n⚠️ لطفاً ابتدا به حساب کاربری خود متصل شوید.\n\n💡 از دکمه‌های زیر استفاده کنید:'
+        
+        # پاسخ به سپاسگزاری
+        elif lowered in {'ممنون', 'متشکرم', 'مرسی', 'thanks', 'thank you', 'تشکر'}:
+            reply = f'🌟 خواهش می‌کنم {display_name}!\n\nخوشحالیم که تونستیم کمکتون کنیم. 😊'
+        
+        # پاسخ به خداحافظی
+        elif lowered in {'خداحافظ', 'بای', 'bye', 'خدافظ', 'فعلا'}:
+            reply = f'👋 خداحافظ {display_name}!\n\nموفق باشید. 🌟'
+        
+        # سایر پیام‌ها
         else:
-            reply = f'سلام {display_name}! ✅\n\nپیام شما دریافت شد:\n"{text}"'
-        await self._send_text_message(chat_id, reply)
+            if user.user:
+                reply = f'💬 پیام شما دریافت شد:\n"{text}"\n\n💡 از دکمه‌های منو برای دسترسی سریع استفاده کنید.'
+            else:
+                reply = f'💬 پیام شما دریافت شد:\n"{text}"\n\n⚠️ برای استفاده از امکانات ربات، لطفاً ابتدا وصل شوید.'
+        
+        buttons = self._build_command_keyboard(connected=bool(user.user))
+        await self._send_text_message(chat_id, reply, buttons)
 
     async def _send_welcome(self, chat_id: str, user: RubikaUser) -> None:
         display_name = self._display_name(user)
-        message_lines = [f'سلام {display_name} عزیز! 👋', 'به ربات خوش آمدید.']
-        buttons = self._build_command_keyboard(connected=bool(user.user))
+        
         if user.user:
-            message_lines.append(f'✅ شما قبلاً به اکانت "{user.user.username}" متصل شده‌اید.')
+            # پیام خوش‌آمدگویی برای کاربر متصل
+            message_lines = [
+                f'👋 سلام {display_name} عزیز!',
+                '',
+                f'✅ شما به حساب **{user.user.username}** متصل هستید.',
+                '',
+                '🎯 از منوی زیر می‌توانید:',
+                '   💰 فیش حقوقی دریافت کنید',
+                '   🏖️ درخواست مرخصی ثبت کنید',
+                '   👤 وضعیت حساب را مشاهده کنید',
+                '',
+                '👇 دکمه مورد نظر را انتخاب کنید:'
+            ]
         else:
-            message_lines.extend(['\n🔗 برای اتصال به حساب کاربری:', '   `/connect [کد]`'])
-        message_lines.append('\n👇 می‌توانید از دکمه‌های زیر استفاده کنید:')
+            # پیام خوش‌آمدگویی برای کاربر غیر متصل
+            message_lines = [
+                f'👋 سلام {display_name} عزیز!',
+                '',
+                '🤖 به ربات خوش آمدید!',
+                '',
+                '⚠️ برای استفاده از امکانات ربات، ابتدا باید به حساب کاربری خود متصل شوید.',
+                '',
+                '🔗 دو روش برای اتصال:',
+                '   1️⃣ اتصال با کد (از پنل وب)',
+                '   2️⃣ اتصال با پیامک (احراز هویت)',
+                '',
+                '👇 یکی از روش‌های زیر را انتخاب کنید:'
+            ]
+        
+        buttons = self._build_command_keyboard(connected=bool(user.user))
         await self._send_text_message(chat_id, '\n'.join(message_lines), buttons)
 
     async def _send_help(self, chat_id: str, user: RubikaUser) -> None:
-        message = ('📖 راهنمای ربات:\n\n' '🔹 `/start` - شروع کار\n' '🔹 `/connect [کد]` - اتصال\n'
-                   '🔹 `/account` - وضعیت\n' '🔹 `/disconnect` - قطع اتصال\n' '🔹 `/help` - راهنما')
+        message = (
+            '📖 راهنمای ربات:\n\n'
+            '🔹 `/start` - بازگشت به منوی اصلی\n'
+            '🔹 `/connect [کد]` - اتصال با کد\n'
+            '🔹 `/account` - مشاهده وضعیت حساب\n'
+            '🔹 `/disconnect` - قطع اتصال\n'
+            '🔹 `/help` - نمایش راهنما\n\n'
+            '💡 می‌توانید از دکمه‌های زیر نیز استفاده کنید:'
+        )
         buttons = self._build_command_keyboard(connected=bool(user.user))
         await self._send_text_message(chat_id, message, buttons)
 
     async def _handle_connect_button(self, chat_id: str, user: RubikaUser) -> None:
-        message = '🔗 برای اتصال، کد را از پنل دریافت و دستور زیر را ارسال کنید:\n`/connect [کد]`'
-        await self._send_text_message(chat_id, message)
+        message = (
+            '🔗 اتصال به حساب کاربری\n\n'
+            'برای اتصال، کد را از پنل وب دریافت کنید و دستور زیر را ارسال کنید:\n'
+            '`/connect [کد]`\n\n'
+            'مثال:\n'
+            '`/connect abc123def456`'
+        )
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[self._button('start', '🏠 بازگشت به منوی اصلی')])
+        ])
+        await self._send_text_message(chat_id, message, keyboard)
 
     async def _send_account_status(self, chat_id: str, user: RubikaUser) -> None:
         display_name = self._display_name(user)
         if user.user:
             message = f'📊 وضعیت حساب:\n\n✅ متصل به: `{user.user.username}`\n👤 نام: {display_name}'
         else:
-            message = f'📊 وضعیت حساب:\n\n❌ متصل نشده\n👤 نام: {display_name}'
-        await self._send_text_message(chat_id, message)
+            message = f'📊 وضعیت حساب:\n\n❌ متصل نشده\n👤 نام: {display_name}\n\n💡 برای اتصال از دکمه‌های زیر استفاده کنید:'
+        
+        buttons = self._build_command_keyboard(connected=bool(user.user))
+        await self._send_text_message(chat_id, message, buttons)
 
     async def _disconnect_user(self, chat_id: str, user: RubikaUser) -> None:
         if user.user:
             username = user.user.username
             user.user = None
             await sync_to_async(user.save, thread_sensitive=True)(update_fields=['user'])
-            message = f'حساب کاربری "{username}" از ربات قطع شد. ❌'
+            message = f'✅ حساب کاربری "{username}" با موفقیت قطع شد.\n\n💡 برای اتصال مجدد می‌توانید از دکمه‌های زیر استفاده کنید:'
         else:
-            message = 'شما به هیچ حساب کاربری متصل نیستید. ⚠️'
-        await self._send_text_message(chat_id, message)
+            message = '⚠️ شما به هیچ حساب کاربری متصل نیستید.'
+        
+        buttons = self._build_command_keyboard(connected=False)
+        await self._send_text_message(chat_id, message, buttons)
 
     async def _handle_payslip_request(self, chat_id: str, user: RubikaUser) -> None:
         """نمایش لیست فیش‌های حقوقی موجود برای کاربر"""
         if not user.user:
-            message = '⚠️ برای دریافت فیش حقوقی، ابتدا باید به حساب کاربری خود متصل شوید.\n\n🔗 از دکمه "اتصال" استفاده کنید.'
-            await self._send_text_message(chat_id, message)
+            message = '⚠️ برای دریافت فیش حقوقی، ابتدا باید به حساب کاربری خود متصل شوید.\n\n🔗 از دکمه‌های زیر برای اتصال استفاده کنید:'
+            buttons = self._build_command_keyboard(connected=False)
+            await self._send_text_message(chat_id, message, buttons)
             return
         
         # Get user profile and payslips
@@ -277,13 +343,19 @@ class RubikaBotEngine:
         profile, payslips = await get_payslips()
         
         if not profile:
-            message = '⚠️ پروفایل کاربری شما یافت نشد. لطفاً با پشتیبانی تماس بگیرید.'
-            await self._send_text_message(chat_id, message)
+            message = '⚠️ پروفایل کاربری شما یافت نشد.\n\nلطفاً با پشتیبانی تماس بگیرید.'
+            keyboard = Keypad(rows=[
+                KeypadRow(buttons=[self._button('start', '🏠 بازگشت به منوی اصلی')])
+            ])
+            await self._send_text_message(chat_id, message, keyboard)
             return
         
         if not payslips:
             message = '📭 هیچ فیش حقوقی برای شما ثبت نشده است.'
-            await self._send_text_message(chat_id, message)
+            keyboard = Keypad(rows=[
+                KeypadRow(buttons=[self._button('start', '🏠 بازگشت به منوی اصلی')])
+            ])
+            await self._send_text_message(chat_id, message, keyboard)
             return
         
         # Build keyboard with available payslips
@@ -322,7 +394,7 @@ class RubikaBotEngine:
             rows.append(current_row)
         
         # Add back button
-        rows.append([('start', '🔙 بازگشت')])
+        rows.append([('start', '🏠 بازگشت به منوی اصلی')])
         
         keypad_rows = [KeypadRow(buttons=[self._button(button_id, label) for button_id, label in row]) for row in rows]
         keyboard = Keypad(rows=keypad_rows)
@@ -361,12 +433,18 @@ class RubikaBotEngine:
         
         if not payslip:
             message = '❌ فیش حقوقی مورد نظر یافت نشد.'
-            await self._send_text_message(chat_id, message)
+            keyboard = Keypad(rows=[
+                KeypadRow(buttons=[self._button('payslip', '🔙 بازگشت به لیست'), self._button('start', '🏠 منوی اصلی')])
+            ])
+            await self._send_text_message(chat_id, message, keyboard)
             return
         
         if not payslip.file:
             message = '❌ فایل فیش حقوقی موجود نیست.'
-            await self._send_text_message(chat_id, message)
+            keyboard = Keypad(rows=[
+                KeypadRow(buttons=[self._button('payslip', '🔙 بازگشت به لیست'), self._button('start', '🏠 منوی اصلی')])
+            ])
+            await self._send_text_message(chat_id, message, keyboard)
             return
         
         # Send file to user
@@ -384,7 +462,10 @@ class RubikaBotEngine:
             
             if not file_path:
                 message = '❌ خطا در دسترسی به فایل فیش حقوقی.'
-                await self._send_text_message(chat_id, message)
+                keyboard = Keypad(rows=[
+                    KeypadRow(buttons=[self._button('payslip', '🔙 بازگشت به لیست'), self._button('start', '🏠 منوی اصلی')])
+                ])
+                await self._send_text_message(chat_id, message, keyboard)
                 return
             
             # Persian month names for caption
@@ -421,15 +502,28 @@ class RubikaBotEngine:
                 
                 await sync_to_async(send_file_sync, thread_sensitive=True)()
                 logger.info(f"Sent payslip file to {chat_id}: {year}/{month}")
+                
+                # ارسال پیام با دکمه‌های بازگشت
+                success_message = '✅ فیش حقوقی با موفقیت ارسال شد.'
+                keyboard = Keypad(rows=[
+                    KeypadRow(buttons=[self._button('payslip', '📋 فیش‌های دیگر'), self._button('start', '🏠 منوی اصلی')])
+                ])
+                await self._send_text_message(chat_id, success_message, keyboard)
             except Exception as e:
                 logger.error(f"Error sending payslip file via rubpy: {e}", exc_info=True)
                 message = '❌ خطا در ارسال فایل. لطفاً از طریق پنل وب اقدام کنید.'
-                await self._send_text_message(chat_id, message)
+                keyboard = Keypad(rows=[
+                    KeypadRow(buttons=[self._button('payslip', '🔙 بازگشت به لیست'), self._button('start', '🏠 منوی اصلی')])
+                ])
+                await self._send_text_message(chat_id, message, keyboard)
                 
         except Exception as exc:
             logger.exception(f"Error in _send_payslip_file: {exc}")
             message = '❌ خطا در ارسال فیش حقوقی. لطفاً دوباره تلاش کنید.'
-            await self._send_text_message(chat_id, message)
+            keyboard = Keypad(rows=[
+                KeypadRow(buttons=[self._button('payslip', '🔙 بازگشت به لیست'), self._button('start', '🏠 منوی اصلی')])
+            ])
+            await self._send_text_message(chat_id, message, keyboard)
 
     async def _process_connection_code(self, chat_id: str, user: RubikaUser, args: Sequence[str]) -> None:
         if not args:
@@ -444,9 +538,11 @@ class RubikaBotEngine:
         code = await get_code()
 
         if not code:
-            # ... (منطق بررسی کد نامعتبر بدون تغییر باقی می‌ماند) ...
-            message = 'کد اتصال نامعتبر، استفاده شده یا منقضی شده است. ❌'
-            await self._send_text_message(chat_id, message)
+            message = '❌ کد اتصال نامعتبر، استفاده شده یا منقضی شده است.\n\n💡 لطفاً کد جدیدی از پنل وب دریافت کنید.'
+            keyboard = Keypad(rows=[
+                KeypadRow(buttons=[self._button('connect', '🔗 راهنمای اتصال'), self._button('start', '🏠 منوی اصلی')])
+            ])
+            await self._send_text_message(chat_id, message, keyboard)
             return
 
         previous_username = user.user.username if user.user and user.user != code.user else None
@@ -455,10 +551,12 @@ class RubikaBotEngine:
         await sync_to_async(code.mark_used, thread_sensitive=True)(chat_id=chat_id)
 
         if previous_username:
-            welcome = f'حساب شما از "{previous_username}" به "{code.user.username}" تغییر یافت! ✅'
+            welcome = f'✅ حساب شما از "{previous_username}" به "{code.user.username}" تغییر یافت!\n\n💡 می‌توانید از امکانات ربات استفاده کنید:'
         else:
-            welcome = f'حساب شما با موفقیت به "{code.user.username}" متصل شد! ✅'
-        await self._send_text_message(chat_id, welcome)
+            welcome = f'✅ حساب شما با موفقیت به "{code.user.username}" متصل شد!\n\n💡 می‌توانید از امکانات ربات استفاده کنید:'
+        
+        buttons = self._build_command_keyboard(connected=True)
+        await self._send_text_message(chat_id, welcome, buttons)
 
     async def _send_text_message(self, chat_id: str, text: str, inline_keyboard: Optional[Keypad] = None) -> None:
         # This method now needs to be async, but the client call is already handled by rubpy.sync
@@ -474,8 +572,9 @@ class RubikaBotEngine:
     async def _start_leave_request(self, chat_id: str, user: RubikaUser) -> None:
         """شروع فرایند درخواست مرخصی"""
         if not user.user:
-            message = '⚠️ برای ثبت درخواست مرخصی، ابتدا باید به حساب کاربری خود متصل شوید.\n\n🔗 از دکمه "اتصال" استفاده کنید.'
-            await self._send_text_message(chat_id, message)
+            message = '⚠️ برای ثبت درخواست مرخصی، ابتدا باید به حساب کاربری خود متصل شوید.\n\n🔗 از دکمه‌های زیر برای اتصال استفاده کنید:'
+            buttons = self._build_command_keyboard(connected=False)
+            await self._send_text_message(chat_id, message, buttons)
             return
         
         # Create or get leave request state
@@ -527,8 +626,9 @@ class RubikaBotEngine:
                 pass
         
         await reset_state()
-        message = '❌ فرایند درخواست مرخصی لغو شد.\n\nبرای شروع مجدد، از دکمه "درخواست مرخصی" استفاده کنید.'
-        await self._send_text_message(chat_id, message)
+        message = '❌ فرایند درخواست مرخصی لغو شد.'
+        buttons = self._build_command_keyboard(connected=True)
+        await self._send_text_message(chat_id, message, buttons)
     
     async def _cancel_rejection(self, chat_id: str, user: RubikaUser) -> None:
         """لغو فرایند رد درخواست"""
@@ -543,7 +643,10 @@ class RubikaBotEngine:
         
         await reset_state()
         message = '❌ فرایند رد درخواست لغو شد.'
-        await self._send_text_message(chat_id, message)
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[self._button('start', '🏠 بازگشت به منوی اصلی')])
+        ])
+        await self._send_text_message(chat_id, message, keyboard)
 
     
     async def _handle_leave_type_selection(self, chat_id: str, user: RubikaUser, button_id: str) -> None:
@@ -1216,16 +1319,23 @@ class RubikaBotEngine:
         """
         # بررسی اتصال کاربر
         if not user.user:
+            keyboard = Keypad(rows=[
+                KeypadRow(buttons=[self._button('start', '🏠 بازگشت به منوی اصلی')])
+            ])
             await self._send_text_message(
                 chat_id, 
-                '⚠️ برای انجام این عملیات، ابتدا باید به حساب کاربری خود متصل شوید.'
+                '⚠️ برای انجام این عملیات، ابتدا باید به حساب کاربری خود متصل شوید.',
+                keyboard
             )
             return
         
         # Parse button_id
         parts = button_id.split('_')
         if len(parts) < 4:
-            await self._send_text_message(chat_id, '❌ فرمت دکمه نامعتبر است.')
+            keyboard = Keypad(rows=[
+                KeypadRow(buttons=[self._button('start', '🏠 بازگشت به منوی اصلی')])
+            ])
+            await self._send_text_message(chat_id, '❌ فرمت دکمه نامعتبر است.', keyboard)
             return
         
         action = parts[0]  # approve or reject
@@ -1264,17 +1374,21 @@ class RubikaBotEngine:
         leave_request, status = await get_leave_info()
         
         # بررسی خطاها
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[self._button('start', '🏠 بازگشت به منوی اصلی')])
+        ])
+        
         if status == 'not_found':
-            await self._send_text_message(chat_id, '❌ درخواست مرخصی یافت نشد.')
+            await self._send_text_message(chat_id, '❌ درخواست مرخصی یافت نشد.', keyboard)
             return
         elif status == 'access_denied':
-            await self._send_text_message(chat_id, '⚠️ شما مجاز به انجام این عملیات نیستید.')
+            await self._send_text_message(chat_id, '⚠️ شما مجاز به انجام این عملیات نیستید.', keyboard)
             return
         elif status == 'invalid_status':
-            await self._send_text_message(chat_id, '⚠️ این درخواست قابل پردازش نیست (احتمالاً قبلاً پردازش شده است).')
+            await self._send_text_message(chat_id, '⚠️ این درخواست قابل پردازش نیست (احتمالاً قبلاً پردازش شده است).', keyboard)
             return
         elif status != 'ok':
-            await self._send_text_message(chat_id, '❌ خطای نامشخص در بررسی دسترسی.')
+            await self._send_text_message(chat_id, '❌ خطای نامشخص در بررسی دسترسی.', keyboard)
             return
         
         # اگر رد باشد، درخواست دلیل رد
@@ -1390,9 +1504,15 @@ class RubikaBotEngine:
         success, message = await approve_leave()
         
         if success:
-            await self._send_text_message(chat_id, f'✅ {message}')
+            keyboard = Keypad(rows=[
+                KeypadRow(buttons=[self._button('start', '🏠 بازگشت به منوی اصلی')])
+            ])
+            await self._send_text_message(chat_id, f'✅ {message}', keyboard)
         else:
-            await self._send_text_message(chat_id, f'❌ {message}')
+            keyboard = Keypad(rows=[
+                KeypadRow(buttons=[self._button('start', '🏠 بازگشت به منوی اصلی')])
+            ])
+            await self._send_text_message(chat_id, f'❌ {message}', keyboard)
     
     async def _process_rejection_reason(self, chat_id: str, user: RubikaUser, text: str, leave_state) -> None:
         """پردازش دلیل رد درخواست مرخصی"""
@@ -1496,15 +1616,18 @@ class RubikaBotEngine:
 
     # --- Synchronous helper methods ---
     def _build_command_keyboard(self, connected: bool) -> Keypad:
-        # ... (کد این تابع بدون تغییر باقی می‌ماند) ...
-        first_row = [('start', '🔄 شروع'), ('account', '📊 وضعیت')]
-        second_row = [('connect', '🔗 اتصال با کد'), ('sms_connect', '📱 اتصال با پیامک')]
+        """ساخت کیبورد اصلی ربات با دکمه‌های مناسب بر اساس وضعیت اتصال کاربر"""
+        first_row = [('start', '🏠 منوی اصلی'), ('account', '👤 حساب من')]
+        
         if connected:
-            second_row = [('payslip', '💰 فیش حقوقی'), ('leave_request', '🏖️ درخواست مرخصی')]
-        third_row = []
-        if connected:
-            third_row.append(('disconnect', '❌ قطع اتصال'))
-        third_row.append(('help', '📖 راهنما'))
+            # کیبورد برای کاربران متصل
+            second_row = [('payslip', '💰 فیش حقوقی'), ('leave_request', '🏖️ مرخصی')]
+            third_row = [('help', '❓ راهنما'), ('disconnect', '🔓 قطع اتصال')]
+        else:
+            # کیبورد برای کاربران غیر متصل
+            second_row = [('connect', '🔗 اتصال با کد'), ('sms_connect', '📱 اتصال با پیامک')]
+            third_row = [('help', '❓ راهنما')]
+        
         rows = [first_row, second_row, third_row]
         keypad_rows = [KeypadRow(buttons=[self._button(button_id, label) for button_id, label in row]) for row in rows]
         return Keypad(rows=keypad_rows)
@@ -1527,7 +1650,8 @@ class RubikaBotEngine:
         """شروع فرایند اتصال از طریق SMS"""
         if user.user:
             message = '⚠️ شما قبلاً به حساب کاربری متصل شده‌اید.\n\nاگر می‌خواهید حساب خود را تغییر دهید، ابتدا از دکمه "قطع اتصال" استفاده کنید.'
-            await self._send_text_message(chat_id, message)
+            buttons = self._build_command_keyboard(connected=True)
+            await self._send_text_message(chat_id, message, buttons)
             return
         
         # Create or get connection request state
@@ -1570,7 +1694,8 @@ class RubikaBotEngine:
         
         await reset_state()
         message = '❌ فرایند اتصال لغو شد.'
-        await self._send_text_message(chat_id, message)
+        buttons = self._build_command_keyboard(connected=False)
+        await self._send_text_message(chat_id, message, buttons)
     
     async def _prompt_paste_connection_code(self, chat_id: str, user: RubikaUser) -> None:
         """درخواست از کاربر برای paste کردن کد اتصال"""
@@ -1582,7 +1707,10 @@ class RubikaBotEngine:
             '',
             '⏰ توجه: کد تا 60 دقیقه معتبر است.',
         ]
-        await self._send_text_message(chat_id, '\n'.join(message_lines))
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[self._button('start', '🏠 بازگشت به منوی اصلی')])
+        ])
+        await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
     
     async def _handle_sms_connection_input(self, chat_id: str, user: RubikaUser, text: str, state) -> None:
         """پردازش ورودی کاربر در فرایند اتصال از طریق SMS"""
@@ -1598,7 +1726,10 @@ class RubikaBotEngine:
         # Validate national code (should be 10 digits)
         if not national_code.isdigit() or len(national_code) != 10:
             message = '❌ کد ملی نامعتبر است. لطفاً یک کد ملی 10 رقمی وارد کنید.'
-            await self._send_text_message(chat_id, message)
+            keyboard = Keypad(rows=[
+                KeypadRow(buttons=[self._button('cancel_sms_connect', '❌ انصراف'), self._button('start', '🏠 منوی اصلی')])
+            ])
+            await self._send_text_message(chat_id, message, keyboard)
             return
         
         # Save national code and ask for personnel code
@@ -1630,7 +1761,7 @@ class RubikaBotEngine:
             message = '❌ کد پرسنلی نامعتبر است. لطفاً کد پرسنلی خود را وارد کنید:'
             
             # Build cancel button
-            rows = [[('cancel_sms_connect', '❌ انصراف')]]
+            rows = [[('cancel_sms_connect', '❌ انصراف'), ('start', '🏠 منوی اصلی')]]
             keypad_rows = [KeypadRow(buttons=[self._button(bid, label) for bid, label in row]) for row in rows]
             keyboard = Keypad(rows=keypad_rows)
             

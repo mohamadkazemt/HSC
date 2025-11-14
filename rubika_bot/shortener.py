@@ -7,12 +7,12 @@ from django.core.cache import cache
 
 def generate_short_code(connection_code: str) -> str:
     """
-    تولید کد کوتاه 6 کاراکتری از کد اتصال 32 کاراکتری
+    تولید کد کوتاه 4 کاراکتری از کد اتصال 32 کاراکتری
     از hash استفاده می‌کنیم تا همیشه یکسان باشد
     """
-    # استفاده از 6 کاراکتر اول از MD5 hash
+    # استفاده از 4 کاراکتر اول از MD5 hash برای لینک خیلی کوتاه
     hash_obj = hashlib.md5(connection_code.encode())
-    short_code = hash_obj.hexdigest()[:6]
+    short_code = hash_obj.hexdigest()[:4]
     return short_code
 
 
@@ -37,12 +37,13 @@ def create_short_link(connection_code: str, bot_username: str) -> str:
     ایجاد لینک کوتاه برای کد اتصال
     
     Returns:
-        لینک کوتاه به فرمت: https://miepcoj.ir/c/abc123
+        لینک کوتاه به فرمت: mkt.ir/c/ab12 (13 کاراکتر)
     """
     short_code = generate_short_code(connection_code)
     save_short_link(short_code, connection_code, ttl_minutes=60)
     
-    # لینک کوتاه سایت خودمان
-    short_url = f"https://miepcoj.ir/c/{short_code}"
+    # لینک فوق‌العاده کوتاه (اگر دامنه کوتاه‌تری داری)
+    # برای الان از miepcoj.ir استفاده می‌کنیم
+    short_url = f"miepcoj.ir/c/{short_code}"
     
     return short_url
