@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اتصال به ربات روبیکا</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Vazir', 'Tahoma', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 25px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: slideUp 0.5s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .icon {
+            font-size: 80px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+        
+        .step {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            border-right: 4px solid #667eea;
+        }
+        
+        .step-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+        
+        .code-box {
+            background: #2d3436;
+            color: #00ff88;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            word-break: break-all;
+            margin: 15px 0;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .code-box:hover {
+            background: #363e40;
+            transform: scale(1.02);
+        }
+        
+        .copy-badge {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            background: #00ff88;
+            color: #2d3436;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 18px;
+            margin-top: 25px;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.6);
+        }
+        
+        .btn:active {
+            transform: translateY(-1px);
+        }
+        
+        .success-message {
+            background: #00ff88;
+            color: #2d3436;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+            margin: 15px 0;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .note {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🔐</div>
+        <h1>اتصال امن به ربات</h1>
+        
+        <div class="step">
+            <span class="step-number">۱</span>
+            <strong>کد اتصال شما:</strong>
+            <div class="code-box" id="codeBox" onclick="copyCode()">
+                <div class="copy-badge">✓ کپی شد</div>
+                /connect {{ code }}
+            </div>
+            <div class="success-message" id="successMsg">
+                ✅ کد با موفقیت کپی شد!
+            </div>
+        </div>
+        
+        <div class="step">
+            <span class="step-number">۲</span>
+            <strong>ربات را باز کنید:</strong>
+            <a href="{{ bot_link }}" class="btn" id="openBot">
+                🤖 باز کردن ربات روبیکا
+            </a>
+        </div>
+        
+        <div class="step">
+            <span class="step-number">۳</span>
+            <strong>کد را ارسال کنید:</strong>
+            <p style="margin-top: 10px; color: #666;">
+                در ربات روبیکا، کد کپی شده را paste کرده و ارسال کنید.
+            </p>
+        </div>
+        
+        <div class="note">
+            ⏰ این کد تا <strong>60 دقیقه</strong> معتبر است و فقط یک بار قابل استفاده است.
+        </div>
+    </div>
+
+    <script>
+        // کپی خودکار کد هنگام بارگذاری صفحه
+        window.addEventListener('load', function() {
+            copyCode();
+        });
+
+        function copyCode() {
+            const code = '/connect {{ code }}';
+            
+            // استفاده از Clipboard API
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(code).then(function() {
+                    showSuccess();
+                }).catch(function(err) {
+                    // fallback برای مرورگرهای قدیمی
+                    fallbackCopy(code);
+                });
+            } else {
+                // fallback برای مرورگرهای قدیمی
+                fallbackCopy(code);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showSuccess();
+            } catch (err) {
+                console.error('خطا در کپی:', err);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+
+        function showSuccess() {
+            const successMsg = document.getElementById('successMsg');
+            successMsg.style.display = 'block';
+            
+            setTimeout(function() {
+                successMsg.style.display = 'none';
+            }, 3000);
+        }
+        
+        // هنگام کلیک روی دکمه باز کردن ربات، دوباره کد را کپی کن
+        document.getElementById('openBot').addEventListener('click', function() {
+            copyCode();
+        });
+    </script>
+</body>
+</html>

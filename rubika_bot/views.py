@@ -411,8 +411,8 @@ def generate_connection_code(request: HttpRequest) -> JsonResponse:
 
 def short_link_redirect(request: HttpRequest, short_code: str) -> HttpResponse:
     """
-    Redirect از لینک کوتاه به deep link روبیکا
-    مثال: miepcoj.ir/c/abc123 -> https://rubika.ir/BotName?start=FULLCODE
+    نمایش صفحه واسط برای کپی کد و باز کردن ربات
+    مثال: miepcoj.ir/c/abc123 -> صفحه با کد قابل کپی + لینک ربات
     """
     try:
         from .shortener import get_connection_code_from_short
@@ -424,7 +424,6 @@ def short_link_redirect(request: HttpRequest, short_code: str) -> HttpResponse:
         
         if not connection_code:
             logger.warning(f"⚠️ Connection code not found for: {short_code}")
-            # اگر کد پیدا نشد یا منقضی شده
             return render(request, 'rubika_bot/link_expired.html', status=404)
         
         logger.info(f"✅ Connection code found: {connection_code[:10]}...")
@@ -435,14 +434,20 @@ def short_link_redirect(request: HttpRequest, short_code: str) -> HttpResponse:
             logger.error("❌ Bot username not configured")
             return HttpResponse('ربات پیکربندی نشده است. لطفاً ابتدا نام کاربری ربات را در تنظیمات وارد کنید.', status=500)
         
-        # ساخت deep link روبیکا
+        # ساخت لینک ربات (بدون پارامتر start چون کاربر خودش کد را paste می‌کند)
         bot_username = settings_obj.bot_username.lstrip('@')
-        rubika_link = f"https://rubika.ir/{bot_username}?start={connection_code}"
+        bot_link = f"https://rubika.ir/{bot_username}"
         
-        logger.info(f"🔄 Redirecting to: {rubika_link[:50]}...")
+        logger.info(f"📄 Showing connect page for code: {connection_code[:10]}...")
         
-        # Redirect به ربات روبیکا
-        return redirect(rubika_link)
+        # نمایش صفحه با کد قابل کپی
+        context = {
+            'code': connection_code,
+            'bot_link': bot_link,
+            'bot_username': bot_username,
+        }
+        
+        return render(request, 'rubika_bot/connect_page.html', context)
         
     except Exception as e:
         logger.exception(f"💥 Error in short_link_redirect: {e}")
