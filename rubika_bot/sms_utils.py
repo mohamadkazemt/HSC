@@ -14,26 +14,25 @@ def send_connection_code_sms(mobile_number, connection_code):
     
     قالب پیامک در پنل SMS.ir باید به این صورت باشد:
     ---
-    کد اتصال روبیکا:
-    #CODE1##CODE2#
-    معتبر تا 60 دقیقه
+    کد اتصال روبیکا: #CODE#
+    این کد تا 60 دقیقه معتبر است.
+    https://miepcoj.ir/
     ---
-    پارامترها: CODE1, CODE2
+    پارامتر: CODE
     
-    توضیح: چون کد اتصال 32 کاراکتر است و محدودیت هر پارامتر 25 کاراکتر است،
-    کد را به دو قسمت تقسیم می‌کنیم.
+    توضیح: کد اتصال 32 کاراکتر است و در یک پارامتر قرار می‌گیرد.
     """
     try:
-        logger.info(f"شروع ارسال کد اتصال به شماره {mobile_number}")
+        logger.info(f"📱 شروع ارسال کد اتصال به شماره {mobile_number}")
+        logger.info(f"📝 Template ID: {RUBIKA_CONNECTION_TEMPLATE}")
+        logger.info(f"🔑 Connection code length: {len(connection_code)}")
         
-        # تقسیم کد به دو قسمت به دلیل محدودیت 25 کاراکتری SMS.ir
-        code_part1 = connection_code[:25]  # 25 کاراکتر اول
-        code_part2 = connection_code[25:]  # باقیمانده (7 کاراکتر)
-        
+        # ارسال کد کامل در یک پارامتر (محدودیت SMS.ir: 64 کاراکتر)
         parameters = [
-            {"Name": "CODE1", "Value": code_part1},
-            {"Name": "CODE2", "Value": code_part2}
+            {"Name": "CODE", "Value": connection_code}
         ]
+        
+        logger.info(f"📤 Sending SMS with parameters: {parameters}")
         
         response = sms_ir.send_verify_code(
             number=mobile_number,
@@ -41,20 +40,24 @@ def send_connection_code_sms(mobile_number, connection_code):
             parameters=parameters
         )
         
+        logger.info(f"📨 Response status code: {response.status_code}")
+        logger.info(f"📨 Response text: {response.text}")
+        
         if response.status_code == 200:
             response_data = response.json()
-            logger.debug(f"پاسخ SMS.ir: {response_data}")
+            logger.info(f"✅ پاسخ SMS.ir: {response_data}")
             
-            if response_data.get("status") == 1 and response_data.get("message") == "موفق":
-                logger.info(f"کد اتصال به {mobile_number} با موفقیت ارسال شد.")
+            if response_data.get("status") == 1:
+                logger.info(f"✅ کد اتصال به {mobile_number} با موفقیت ارسال شد.")
                 return True
             else:
                 error_message = response_data.get("message", "خطای نامشخص")
-                logger.error(f"خطا در ارسال کد اتصال به {mobile_number}: {error_message}")
+                logger.error(f"❌ خطا در ارسال کد اتصال به {mobile_number}: {error_message}")
+                logger.error(f"❌ Full response: {response_data}")
                 return False
         else:
-            logger.error(f"خطا در ارسال کد اتصال: {response.status_code} - {response.text}")
+            logger.error(f"❌ خطا در ارسال کد اتصال: {response.status_code} - {response.text}")
             return False
     except Exception as e:
-        logger.exception(f"خطا در ارسال کد اتصال: {e}")
+        logger.exception(f"💥 خطا در ارسال کد اتصال: {e}")
         return False

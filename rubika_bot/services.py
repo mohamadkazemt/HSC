@@ -1641,7 +1641,7 @@ class RubikaBotEngine:
                     {'chat_id': chat_id, 'national_code': national_code, 'personnel_code': personnel_code}
                 )
                 
-                # جستجوی کاربر: اول با کد پرسنلی، سپس بررسی کد ملی
+;n                 # جستجوی کاربر: اول با کد پرسنلی، سپس بررسی کد ملی
                 # (برخی سیستم‌ها کد ملی را در national_code، برخی در username ذخیره می‌کنند)
                 
                 # جستجو با national_code
