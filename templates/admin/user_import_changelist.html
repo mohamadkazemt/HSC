@@ -1,0 +1,15 @@
+{% extends "admin/change_list.html" %}
+
+{% block object-tools-items %}
+    {{ block.super }}
+    <li>
+        <a href="{% url 'admin:sample_user_template' %}" class="historylink">دانلود فایل نمونه</a>
+    </li>
+    <li>
+        <form action="{% url 'admin:import_users' %}" method="post" enctype="multipart/form-data" style="display: inline;">
+            {% csrf_token %}
+            <input type="file" name="excel_file" accept=".xlsx,.xls" style="display: none;" id="excel_file_input" onchange="this.form.submit()">
+            <a href="javascript:void(0)" class="addlink" onclick="document.getElementById('excel_file_input').click();">آپلود فایل Excel</a>
+        </form>
+    </li>
+{% endblock %}
