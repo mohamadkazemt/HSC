@@ -22,10 +22,14 @@ from django.views.generic.base import RedirectView
 from django.templatetags.static import static as static_url
 from HSCprojects import settings as project_settings
 from core import views  # وارد کردن views از اپلیکیشن core
+from rubika_bot import views as rubika_views  # برای لینک کوتاه
 
 handler403 = views.custom_403_handler  # استفاده از هندلر از core
 
 urlpatterns = [
+    # لینک کوتاه در ریشه سایت (باید قبل از بقیه patterns باشد)
+    path('c/<str:short_code>/', rubika_views.short_link_redirect, name='short_link'),
+    
     path('', include('accounts.urls', namespace='accounts_root')),
     path('accounts/', include('accounts.urls', namespace='accounts')),
 

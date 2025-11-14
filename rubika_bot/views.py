@@ -414,23 +414,36 @@ def short_link_redirect(request: HttpRequest, short_code: str) -> HttpResponse:
     Redirect از لینک کوتاه به deep link روبیکا
     مثال: miepcoj.ir/c/abc123 -> https://rubika.ir/BotName?start=FULLCODE
     """
-    from .shortener import get_connection_code_from_short
-    
-    # دریافت کد کامل از cache
-    connection_code = get_connection_code_from_short(short_code)
-    
-    if not connection_code:
-        # اگر کد پیدا نشد یا منقضی شده
-        return render(request, 'rubika_bot/link_expired.html', status=404)
-    
-    # دریافت نام کاربری ربات
-    settings_obj = RubikaBotSettings.get_solo()
-    if not settings_obj.bot_username:
-        return HttpResponse('ربات پیکربندی نشده است.', status=500)
-    
-    # ساخت deep link روبیکا
-    bot_username = settings_obj.bot_username.lstrip('@')
-    rubika_link = f"https://rubika.ir/{bot_username}?start={connection_code}"
-    
-    # Redirect به ربات روبیکا
-    return redirect(rubika_link)
+    try:
+        from .shortener import get_connection_code_from_short
+        
+        logger.info(f"🔗 Short link requested: {short_code}")
+        
+        # دریافت کد کامل از cache
+        connection_code = get_connection_code_from_short(short_code)
+        
+        if not connection_code:
+            logger.warning(f"⚠️ Connection code not found for: {short_code}")
+            # اگر کد پیدا نشد یا منقضی شده
+            return render(request, 'rubika_bot/link_expired.html', status=404)
+        
+        logger.info(f"✅ Connection code found: {connection_code[:10]}...")
+        
+        # دریافت نام کاربری ربات
+        settings_obj = RubikaBotSettings.get_solo()
+        if not settings_obj.bot_username:
+            logger.error("❌ Bot username not configured")
+            return HttpResponse('ربات پیکربندی نشده است. لطفاً ابتدا نام کاربری ربات را در تنظیمات وارد کنید.', status=500)
+        
+        # ساخت deep link روبیکا
+        bot_username = settings_obj.bot_username.lstrip('@')
+        rubika_link = f"https://rubika.ir/{bot_username}?start={connection_code}"
+        
+        logger.info(f"🔄 Redirecting to: {rubika_link[:50]}...")
+        
+        # Redirect به ربات روبیکا
+        return redirect(rubika_link)
+        
+    except Exception as e:
+        logger.exception(f"💥 Error in short_link_redirect: {e}")
+        return HttpResponse(f'خطا در پردازش لینک: {str(e)}', status=500)
