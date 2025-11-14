@@ -509,6 +509,9 @@ class RubikaBotEngine:
 
     async def _handle_payslip_request(self, chat_id: str, user: RubikaUser) -> None:
         """نمایش لیست فیش‌های حقوقی موجود برای کاربر"""
+        # Import در ابتدای تابع
+        from rubpy.bot.models import Keypad, KeypadRow
+        
         if not user.user:
             message = '⚠️ برای دریافت فیش حقوقی، ابتدا باید به حساب کاربری خود متصل شوید.\n\n🔗 از دکمه‌های زیر برای اتصال استفاده کنید:'
             buttons = self._build_command_keyboard(connected=False)
@@ -545,8 +548,6 @@ class RubikaBotEngine:
             return
         
         # Build keyboard with available payslips
-        from rubpy.bot.models import Keypad, KeypadRow
-        
         message_lines = [
             '💰 فیش‌های حقوقی موجود:',
             '',
