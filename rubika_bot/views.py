@@ -407,3 +407,30 @@ def generate_connection_code(request: HttpRequest) -> JsonResponse:
     RubikaConnectionCode.objects.filter(user=request.user, used=False).delete()
     code = RubikaConnectionCode.generate_for_user(request.user)
     return JsonResponse({'ok': True, 'code': code.code, 'expires_at': code.expires_at.isoformat()})
+
+
+def short_link_redirect(request: HttpRequest, short_code: str) -> HttpResponse:
+    """
+    Redirect از لینک کوتاه به deep link روبیکا
+    مثال: miepcoj.ir/c/abc123 -> https://rubika.ir/BotName?start=FULLCODE
+    """
+    from .shortener import get_connection_code_from_short
+    
+    # دریافت کد کامل از cache
+    connection_code = get_connection_code_from_short(short_code)
+    
+    if not connection_code:
+        # اگر کد پیدا نشد یا منقضی شده
+        return render(request, 'rubika_bot/link_expired.html', status=404)
+    
+    # دریافت نام کاربری ربات
+    settings_obj = RubikaBotSettings.get_solo()
+    if not settings_obj.bot_username:
+        return HttpResponse('ربات پیکربندی نشده است.', status=500)
+    
+    # ساخت deep link روبیکا
+    bot_username = settings_obj.bot_username.lstrip('@')
+    rubika_link = f"https://rubika.ir/{bot_username}?start={connection_code}"
+    
+    # Redirect به ربات روبیکا
+    return redirect(rubika_link)

@@ -127,6 +127,7 @@ class RubikaBotEngine:
             'cancel_rejection': self._cancel_rejection,
             'sms_connect': self._start_sms_connection,
             'cancel_sms_connect': self._cancel_sms_connection,
+            'paste_connection_code': self._prompt_paste_connection_code,
         }
         handler = mapping.get(button_id.lower())
         if handler:
@@ -1571,6 +1572,18 @@ class RubikaBotEngine:
         message = '❌ فرایند اتصال لغو شد.'
         await self._send_text_message(chat_id, message)
     
+    async def _prompt_paste_connection_code(self, chat_id: str, user: RubikaUser) -> None:
+        """درخواست از کاربر برای paste کردن کد اتصال"""
+        message_lines = [
+            '📋 لطفاً کد اتصال دریافت شده از پیامک را در اینجا paste کنید:',
+            '',
+            '💡 کد شما 32 کاراکتر است و شبیه این است:',
+            '`a1b2c3d4e5f6...`',
+            '',
+            '⏰ توجه: کد تا 60 دقیقه معتبر است.',
+        ]
+        await self._send_text_message(chat_id, '\n'.join(message_lines))
+    
     async def _handle_sms_connection_input(self, chat_id: str, user: RubikaUser, text: str, state) -> None:
         """پردازش ورودی کاربر در فرایند اتصال از طریق SMS"""
         if state.step == 'national_code':
@@ -1737,15 +1750,15 @@ class RubikaBotEngine:
             await reset_state()
             
             message_lines = [
-                '✅ کد اتصال به شماره موبایل شما ارسال شد!',
+                '✅ پیامک حاوی لینک اتصال برای شما ارسال شد!',
                 '',
-                '📱 لطفاً پیامک دریافتی خود را بررسی کنید.',
+                '📱 پیامک را بررسی کنید و روی لینک کلیک کنید.',
                 '',
-                '🔑 برای اتصال، کد دریافت شده را با دستور زیر ارسال کنید:',
-                '`/connect [کد دریافتی]`',
+                '🔗 با کلیک روی لینک، ربات باز شده و اتصال به صورت خودکار برقرار می‌شود.',
                 '',
-                '⏰ این کد تا 60 دقیقه معتبر است.',
+                '⏰ این لینک تا 60 دقیقه معتبر است.',
             ]
+            
             await self._send_text_message(chat_id, '\n'.join(message_lines))
 
 
