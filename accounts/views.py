@@ -1163,12 +1163,28 @@ def batch_payslip_upload(request):
                 'message': 'حداقل یک فایل باید انتخاب شود.'
             }, status=400)
         
+        # محدودیت تعداد فایل‌ها برای جلوگیری از مشکلات سرور
+        MAX_FILES_PER_BATCH = 200
+        if len(files) > MAX_FILES_PER_BATCH:
+            return JsonResponse({
+                'success': False,
+                'message': f'حداکثر {MAX_FILES_PER_BATCH} فایل در هر بار قابل آپلود است.'
+            }, status=400)
+        
         success_count = 0
         errors = []
         success_files = []
         
+        # استفاده از bulk operations برای بهبود عملکرد
+        from django.db import transaction
+        
         for file in files:
             try:
+                # بررسی حجم فایل (حداکثر 10MB برای هر فایل)
+                if file.size > 10 * 1024 * 1024:  # 10MB
+                    errors.append(f"فایل {file.name}: حجم فایل بیش از حد مجاز است (حداکثر 10MB)")
+                    continue
+                
                 # استخراج کد پرسنلی از نام فایل
                 filename = file.name
                 # حذف پسوند
@@ -1205,34 +1221,36 @@ def batch_payslip_upload(request):
                 
                 # بررسی وجود فیش برای این ماه و سال
                 try:
-                    existing_payslip = Payslip.objects.filter(
-                        user_profile=user_profile,
-                        year=year,
-                        month=month
-                    ).first()
-                except Exception:
-                    # اگر جدول وجود نداشت، existing_payslip را None می‌کنیم
-                    existing_payslip = None
-                
-                if existing_payslip:
-                    # اگر فیش وجود دارد، فایل را جایگزین می‌کنیم
-                    existing_payslip.file.delete()
-                    existing_payslip.file = file
-                    existing_payslip.uploaded_by = request.user
-                    existing_payslip.save()
-                    success_count += 1
-                    success_files.append(f"{filename} → {user_profile.user.get_full_name()}")
-                else:
-                    # ایجاد فیش جدید
-                    payslip = Payslip.objects.create(
-                        user_profile=user_profile,
-                        file=file,
-                        month=month,
-                        year=year,
-                        uploaded_by=request.user
-                    )
-                    success_count += 1
-                    success_files.append(f"{filename} → {user_profile.user.get_full_name()}")
+                    with transaction.atomic():
+                        existing_payslip = Payslip.objects.filter(
+                            user_profile=user_profile,
+                            year=year,
+                            month=month
+                        ).select_for_update().first()
+                        
+                        if existing_payslip:
+                            # اگر فیش وجود دارد، فایل را جایگزین می‌کنیم
+                            # حذف فایل قدیمی
+                            if existing_payslip.file:
+                                existing_payslip.file.delete(save=False)
+                            existing_payslip.file = file
+                            existing_payslip.uploaded_by = request.user
+                            existing_payslip.save()
+                            success_count += 1
+                            success_files.append(f"{filename} → {user_profile.user.get_full_name()} (به‌روزرسانی)")
+                        else:
+                            # ایجاد فیش جدید
+                            payslip = Payslip.objects.create(
+                                user_profile=user_profile,
+                                file=file,
+                                month=month,
+                                year=year,
+                                uploaded_by=request.user
+                            )
+                            success_count += 1
+                            success_files.append(f"{filename} → {user_profile.user.get_full_name()}")
+                except Exception as db_error:
+                    errors.append(f"فایل {filename}: خطای دیتابیس - {str(db_error)}")
                     
             except Exception as e:
                 errors.append(f"فایل {filename}: خطا - {str(e)}")
