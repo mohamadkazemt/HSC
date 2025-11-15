@@ -178,6 +178,7 @@ LOGIN_REDIRECT_URL = '/dashboard/'
 DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 52428800  # 50MB
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000  # افزایش تعداد فیلدهای مجاز
+DATA_UPLOAD_MAX_NUMBER_FILES = 250  # حداکثر تعداد فایل‌ها در یک request
 FILE_UPLOAD_HANDLERS = [
     'django.core.files.uploadhandler.MemoryFileUploadHandler',
     'django.core.files.uploadhandler.TemporaryFileUploadHandler',

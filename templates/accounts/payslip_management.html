@@ -157,13 +157,22 @@
                         <p class="text-xs text-gray-400 dark:text-gray-600 mt-2">
                             نام فایل باید حاوی کد پرسنلی باشد (مثلاً: 12345.pdf یا 12345_1403_01.pdf)
                         </p>
+                        <p class="text-xs text-amber-600 dark:text-amber-400 mt-2 font-medium">
+                            ⚠️ حداکثر 200 فایل در هر بار | حداکثر 10MB برای هر فایل
+                        </p>
                     </label>
                 </div>
             </div>
             
             <!-- Selected Files List -->
             <div x-show="files.length > 0" class="space-y-2">
-                <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">فایل‌های انتخاب شده:</h3>
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        فایل‌های انتخاب شده: <span x-text="files.length"></span>
+                        <span x-show="files.length > 200" class="text-red-600 font-bold">⚠️ بیش از حد مجاز!</span>
+                        <span x-show="files.length > 150 && files.length <= 200" class="text-amber-600">⚠️ نزدیک به حد مجاز</span>
+                    </h3>
+                </div>
                 <div class="space-y-2 max-h-48 overflow-y-auto">
                     <template x-for="(file, index) in files" :key="index">
                         <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">

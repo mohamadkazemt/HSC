@@ -1189,35 +1189,58 @@ def batch_payslip_upload(request):
                 filename = file.name
                 # حذف پسوند
                 base_name = os.path.splitext(filename)[0]
+                
+                # تبدیل اعداد فارسی به انگلیسی
+                persian_digits = '۰۱۲۳۴۵۶۷۸۹'
+                english_digits = '0123456789'
+                trans_table = str.maketrans(persian_digits, english_digits)
+                base_name = base_name.translate(trans_table)
+                
                 # استخراج کد پرسنلی (فرض می‌کنیم نام فایل همان کد پرسنلی است یا حاوی آن است)
                 # می‌توانیم الگوهای مختلف را امتحان کنیم
                 personnel_code = base_name.strip()
                 
+                # اگر نام فایل شامل _ است، قسمت اول را بگیر (مثل 12345_1403_01.pdf)
+                if '_' in personnel_code:
+                    personnel_code = personnel_code.split('_')[0].strip()
+                
+                # اگر کد 5 رقمی است و با 11 شروع می‌شود، احتمالاً باید 6 رقمی باشد
+                # مثلاً 11003 باید 110003 باشد (صفر در وسط اضافه می‌شود)
+                if len(personnel_code) == 5 and personnel_code.startswith('11'):
+                    personnel_code_6digit = personnel_code[:3] + '0' + personnel_code[3:]  # 11003 -> 110003
+                else:
+                    personnel_code_6digit = None
+                
                 # جستجوی پروفایل کاربر بر اساس کد پرسنلی
+                user_profile = None
+                tried_codes = []
+                
+                # ابتدا با کد اصلی امتحان کن
                 try:
                     user_profile = UserProfile.objects.get(personnel_code=personnel_code)
+                    tried_codes.append(personnel_code)
                 except UserProfile.DoesNotExist:
-                    # اگر پیدا نشد، سعی می‌کنیم با الگوهای دیگر جستجو کنیم
-                    # مثلاً اگر نام فایل به صورت "12345_1403_01.pdf" باشد
-                    parts = base_name.split('_')
-                    if len(parts) > 0:
-                        personnel_code = parts[0].strip()
+                    tried_codes.append(personnel_code)
+                    # اگر پیدا نشد و نسخه 6 رقمی داریم، آن را امتحان کن
+                    if personnel_code_6digit:
                         try:
-                            user_profile = UserProfile.objects.get(personnel_code=personnel_code)
+                            user_profile = UserProfile.objects.get(personnel_code=personnel_code_6digit)
+                            tried_codes.append(personnel_code_6digit)
                         except UserProfile.DoesNotExist:
-                            errors.append(f"فایل {filename}: کد پرسنلی '{personnel_code}' یافت نشد")
-                            continue
+                            tried_codes.append(personnel_code_6digit)
                         except UserProfile.MultipleObjectsReturned:
-                            # اگر چند پروفایل با این کد پرسنلی وجود دارد، اولین مورد را انتخاب می‌کنیم
-                            user_profile = UserProfile.objects.filter(personnel_code=personnel_code).first()
-                            errors.append(f"⚠️ فایل {filename}: چند پروفایل با کد '{personnel_code}' یافت شد. اولین مورد انتخاب شد.")
-                    else:
-                        errors.append(f"فایل {filename}: کد پرسنلی '{personnel_code}' یافت نشد")
-                        continue
+                            user_profile = UserProfile.objects.filter(personnel_code=personnel_code_6digit).first()
+                            tried_codes.append(personnel_code_6digit)
                 except UserProfile.MultipleObjectsReturned:
                     # اگر چند پروفایل با این کد پرسنلی وجود دارد، اولین مورد را انتخاب می‌کنیم
                     user_profile = UserProfile.objects.filter(personnel_code=personnel_code).first()
                     errors.append(f"⚠️ فایل {filename}: چند پروفایل با کد '{personnel_code}' یافت شد. اولین مورد انتخاب شد.")
+                
+                # اگر هنوز پیدا نشد
+                if not user_profile:
+                    codes_str = ', '.join(tried_codes)
+                    errors.append(f"فایل {filename}: کد پرسنلی یافت نشد (امتحان شد: {codes_str})")
+                    continue
                 
                 # بررسی وجود فیش برای این ماه و سال
                 try:
