@@ -18,5 +18,6 @@ urlpatterns = [
     path('generate-code/', views.generate_connection_code, name='generate_code'),
     path('get-connection-link/', views.get_connection_link, name='get_connection_link'),
     path('webhook/', views.webhook_receiver, name='webhook'),
+    path('health/', views.health_check, name='health_check'),
     path('c/<str:short_code>/', views.short_link_redirect, name='short_link'),
 ]

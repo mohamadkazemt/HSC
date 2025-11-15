@@ -452,3 +452,62 @@ def short_link_redirect(request: HttpRequest, short_code: str) -> HttpResponse:
     except Exception as e:
         logger.exception(f"💥 Error in short_link_redirect: {e}")
         return HttpResponse(f'خطا در پردازش لینک: {str(e)}', status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def health_check(request: HttpRequest) -> JsonResponse:
+    """
+    Health check endpoint برای مانیتورینگ وضعیت سرویس
+    """
+    try:
+        from django.db import connection
+        from celery import current_app
+        
+        status = {
+            'status': 'healthy',
+            'timestamp': timezone.now().isoformat(),
+            'checks': {}
+        }
+        
+        # بررسی دیتابیس
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+            status['checks']['database'] = 'ok'
+        except Exception as e:
+            status['checks']['database'] = f'error: {str(e)}'
+            status['status'] = 'unhealthy'
+        
+        # بررسی Redis/Celery
+        try:
+            # بررسی اینکه celery worker زنده است
+            inspect = current_app.control.inspect()
+            active_workers = inspect.active()
+            if active_workers:
+                status['checks']['celery_workers'] = f'ok ({len(active_workers)} workers)'
+            else:
+                status['checks']['celery_workers'] = 'no workers found'
+                status['status'] = 'degraded'
+        except Exception as e:
+            status['checks']['celery_workers'] = f'error: {str(e)}'
+            status['status'] = 'unhealthy'
+        
+        # بررسی RubPy Integration Service
+        try:
+            service = RubPyIntegrationService.get_instance()
+            status['checks']['rubpy_service'] = 'ok' if service else 'not initialized'
+        except Exception as e:
+            status['checks']['rubpy_service'] = f'error: {str(e)}'
+        
+        # تعیین HTTP status code
+        http_status = 200 if status['status'] == 'healthy' else 503
+        
+        return JsonResponse(status, status=http_status)
+        
+    except Exception as e:
+        logger.exception(f"Error in health_check: {e}")
+        return JsonResponse({
+            'status': 'error',
+            'error': str(e)
+        }, status=500)
