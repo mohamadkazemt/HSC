@@ -1469,9 +1469,11 @@ class RubikaBotEngine:
                     leave_request.replacement_person = User.objects.get(id=data['replacement_id'])
                 
                 if data.get('start_time'):
-                    leave_request.start_time = datetime.fromisoformat(data['start_time']).time()
+                    from datetime import time as dt_time
+                    leave_request.start_time = dt_time.fromisoformat(data['start_time'])
                 if data.get('end_time'):
-                    leave_request.end_time = datetime.fromisoformat(data['end_time']).time()
+                    from datetime import time as dt_time
+                    leave_request.end_time = dt_time.fromisoformat(data['end_time'])
                 if data.get('leave_hours'):
                     leave_request.leave_hours = data['leave_hours']
                 
