@@ -232,18 +232,28 @@
 {% endblock %}
 
 {% block scripts %}
+{{ weekly_visits|json_script:"weekly-data" }}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
-  const weeklyData = JSON.parse('{{ weekly_visits|safe|escapejs }}'.replaceAll('&quot;','"'));
-  const labels = weeklyData.map(i => new Intl.DateTimeFormat('fa-IR-u-ca-persian').format(new Date(i.date)));
-  const counts = weeklyData.map(i => i.count);
-  const ctx = document.getElementById('weeklyVisitsChart');
-  if (ctx && window.Chart) {
-    new Chart(ctx, {
-      type: 'line',
-      data: { labels, datasets: [{ label: 'تعداد مراجعات', data: counts, fill: false, borderColor: '#3b82f6', tension: 0.35, pointRadius: 3 }] },
-      options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } }, maintainAspectRatio: false }
-    });
+  try {
+    const weeklyDataElement = document.getElementById('weekly-data');
+    if (!weeklyDataElement) {
+      console.error('عنصر weekly-data یافت نشد');
+      throw new Error('عنصر weekly-data یافت نشد');
+    }
+    const weeklyData = JSON.parse(weeklyDataElement.textContent);
+    const labels = weeklyData.map(i => new Intl.DateTimeFormat('fa-IR-u-ca-persian').format(new Date(i.date)));
+    const counts = weeklyData.map(i => i.count);
+    const ctx = document.getElementById('weeklyVisitsChart');
+    if (ctx && window.Chart) {
+      new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets: [{ label: 'تعداد مراجعات', data: counts, fill: false, borderColor: '#3b82f6', tension: 0.35, pointRadius: 3 }] },
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } }, maintainAspectRatio: false }
+      });
+    }
+  } catch (error) {
+    console.error('خطا در بارگذاری نمودار:', error);
   }
 </script>
 {% endblock %}

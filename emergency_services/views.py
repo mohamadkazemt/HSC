@@ -759,7 +759,7 @@ def dashboard(request):
         date = timezone.now().date() - timedelta(days=i)
         count = MedicalVisit.objects.filter(visit_time__date=date).count()
         weekly_visits.append({
-            'date': date,
+            'date': date.isoformat(),  # تبدیل به string برای JSON
             'count': count
         })
     weekly_visits.reverse()
