@@ -1,4 +1,0 @@
-block_name,type,status,location,is_active
-بلوک A-1,o,ready_for_drilling,محدوده شمالی,True
-بلوک B-2,w,loading,محدوده جنوبی,True
-بلوک C-3,w&o,ready_for_blasting,محدوده شرقی,True

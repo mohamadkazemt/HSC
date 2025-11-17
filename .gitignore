@@ -201,3 +201,11 @@ temp/
 
 # Project specific
 # Note: manage.py should be tracked in git (removed from ignore list)
+
+# Tests and training / demo files
+dev_only/
+static/sample_import_files/
+test_*.py
+check_*.py
+**/tests.py
+HSCprojects/settings/testing.py
