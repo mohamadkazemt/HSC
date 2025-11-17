@@ -1,0 +1,84 @@
+/* Custom styles for Django admin header and overview */
+.site-branding {
+  display: flex;
+  align-items: center;
+}
+.site-branding .brand-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+.site-branding .brand-logo {
+  width: 22px;
+  height: 22px;
+}
+.site-branding .brand-title {
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Superuser dropdown in header */
+.su-dropdown {
+  position: relative;
+  display: inline-block;
+}
+.su-toggle {
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.su-dropdown:hover .su-toggle {
+  background: rgba(255,255,255,0.1);
+}
+.su-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 24px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  min-width: 220px;
+  z-index: 1000;
+}
+.su-menu a {
+  display: block;
+  padding: 10px 12px;
+  color: #111;
+  text-decoration: none;
+}
+.su-menu a:hover {
+  background: #f3f4f6;
+}
+.su-dropdown:hover .su-menu {
+  display: block;
+}
+.user-sep { color: rgba(255,255,255,0.6); margin: 0 6px; }
+
+/* Overview page cards */
+.admin-cards {
+  display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px;
+}
+.card {
+  grid-column: span 12;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px;
+}
+@media (min-width: 768px) {
+  .card { grid-column: span 6; }
+}
+@media (min-width: 1024px) {
+  .card { grid-column: span 3; }
+}
+.card h3 { margin: 0 0 8px; font-size: 14px; color: #374151; }
+.card .value { font-size: 24px; font-weight: 700; color: #111827; }
+
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { border-bottom: 1px solid #eef2f7; padding: 10px 8px; text-align: right; }
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600;
+}
+.badge.success { background: #dcfce7; color: #166534; }
+.badge.warn { background: #fef3c7; color: #92400e; }
+.badge.fail { background: #fee2e2; color: #991b1b; }

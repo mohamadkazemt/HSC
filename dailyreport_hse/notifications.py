@@ -6,43 +6,13 @@ from django.urls import reverse
 
 from accounts.models import UserProfile
 from dashboard.models import Notification
+from dashboard.notification_utils import safe_notification as _safe_notification
 
 
 logger = logging.getLogger(__name__)
 
 
 HSE_MANAGER_GROUPS = ['مدیر HSE']
-
-
-def _safe_notification(
-    *,
-    user: Optional[User],
-    title: str,
-    message: str,
-    notification_type: str,
-    url: Optional[str],
-    actor: Optional[User],
-) -> None:
-    if not user:
-        return
-
-    if actor and actor == user:
-        return
-
-    try:
-        Notification.objects.create(
-            user=user,
-            title=title,
-            message=message,
-            notification_type=notification_type,
-            url=url,
-        )
-    except Exception as exc:  # pragma: no cover
-        logger.error(
-            "Failed to create daily report notification",
-            exc_info=True,
-            extra={'user_id': getattr(user, 'id', None), 'title': title},
-        )
 
 
 def _get_group_users(group_code: Optional[str]) -> Iterable[User]:

@@ -4,7 +4,10 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.template.defaultfilters import title
 from django.urls import reverse
 from HSCprojects import settings
-from dashboard.sms_utils import send_template_sms, logger
+from dashboard.sms_utils import send_template_sms
+import logging
+
+logger = logging.getLogger(__name__)
 from permissions.utils import permission_required
 from .forms import AnomalyForm, CommentForm
 from .models import AnomalyDescription, CorrectiveAction, Comment, LocationSection, Anomaly, Location

@@ -1,75 +1,20 @@
-from sms_ir import SmsIr
-from django.conf import settings
 import logging
+from core.sms_service import send_template_sms
 
 logger = logging.getLogger(__name__)
-
-sms_ir = SmsIr(api_key=settings.SMSIR_API_KEY, linenumber=settings.SMSIR_LINE_NUMBER)
 
 RUBIKA_CONNECTION_TEMPLATE = 920200
 
 def send_connection_code_sms(mobile_number, connection_code):
-    """
-    ارسال کد اتصال روبیکا از طریق SMS
-    
-    قالب پیامک در پنل SMS.ir باید به این صورت باشد:
-    ---
-    کد اتصال روبیکا:
-    #LINK#
-    این کد تا 60 دقیقه معتبر است.
-    ---
-    پارامتر: LINK (لینک کوتاه که با کلیک، کد را خودکار وارد می‌کند)
-    
-    توضیح: لینک deep link روبیکا که با کلیک، ربات را باز کرده و کد را خودکار ارسال می‌کند.
-    """
+    """ارسال کد اتصال روبیکا از طریق SMS با استفاده از سرویس مرکزی."""
     try:
-        logger.info(f"📱 شروع ارسال کد اتصال به شماره {mobile_number}")
-        logger.info(f"📝 Template ID: {RUBIKA_CONNECTION_TEMPLATE}")
-        logger.info(f"🔑 Connection code length: {len(connection_code)}")
-        
-        # دریافت نام کاربری ربات از تنظیمات
         from rubika_bot.models import RubikaBotSettings
         from rubika_bot.shortener import create_short_link
-        
         bot_settings = RubikaBotSettings.get_solo()
         bot_username = bot_settings.bot_username or "YourBot"
-        
-        # ساخت لینک کوتاه
-        # فرمت: https://miepcoj.ir/c/abc123
         short_link = create_short_link(connection_code, bot_username)
-        
-        logger.info(f"🔗 Short link created: {short_link}")
-        
-        parameters = [
-            {"Name": "LINK", "Value": short_link}
-        ]
-        
-        logger.info(f"📤 Sending SMS with parameters: {parameters}")
-        
-        response = sms_ir.send_verify_code(
-            number=mobile_number,
-            template_id=RUBIKA_CONNECTION_TEMPLATE,
-            parameters=parameters
-        )
-        
-        logger.info(f"📨 Response status code: {response.status_code}")
-        logger.info(f"📨 Response text: {response.text}")
-        
-        if response.status_code == 200:
-            response_data = response.json()
-            logger.info(f"✅ پاسخ SMS.ir: {response_data}")
-            
-            if response_data.get("status") == 1:
-                logger.info(f"✅ کد اتصال به {mobile_number} با موفقیت ارسال شد.")
-                return True
-            else:
-                error_message = response_data.get("message", "خطای نامشخص")
-                logger.error(f"❌ خطا در ارسال کد اتصال به {mobile_number}: {error_message}")
-                logger.error(f"❌ Full response: {response_data}")
-                return False
-        else:
-            logger.error(f"❌ خطا در ارسال کد اتصال: {response.status_code} - {response.text}")
-            return False
+        parameters = [{"Name": "LINK", "Value": short_link}]
+        return send_template_sms(mobile_number, RUBIKA_CONNECTION_TEMPLATE, parameters)
     except Exception as e:
         logger.exception(f"💥 خطا در ارسال کد اتصال: {e}")
         return False

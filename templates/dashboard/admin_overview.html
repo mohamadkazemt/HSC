@@ -1,0 +1,96 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+	<h1 style="margin-bottom:16px;">نمای کلی مدیریت</h1>
+	<div class="admin-cards">
+		<div class="card">
+			<h3>پیامک‌های امروز</h3>
+			<div class="value">{{ sms_today }}</div>
+		</div>
+		<div class="card">
+			<h3>ارسال ناموفق (24س)</h3>
+			<div class="value">{{ sms_failed_24h }}</div>
+		</div>
+		<div class="card">
+			<h3>اعلان‌های خوانده‌نشده</h3>
+			<div class="value">{{ notif_unread }}</div>
+		</div>
+		<div class="card">
+			<h3>قالب‌های فعال</h3>
+			<div class="value">{{ active_templates }}</div>
+		</div>
+	</div>
+
+	<div class="card" style="margin-top:16px;">
+		<h3>۵ قالب پیامک پرمصرف</h3>
+		<table class="table">
+			<thead>
+				<tr>
+					<th>نام</th>
+					<th>شناسه قالب</th>
+					<th>تعداد استفاده</th>
+					<th>وضعیت</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for t in top_templates %}
+					<tr>
+						<td><a href="{% url 'admin:dashboard_smstemplate_change' t.id %}">{{ t.name }}</a></td>
+						<td>{{ t.template_id }}</td>
+						<td>{{ t.usage_count }}</td>
+						<td>
+							{% if t.is_active %}
+								<span class="badge success">فعال</span>
+							{% else %}
+								<span class="badge fail">غیرفعال</span>
+							{% endif %}
+						</td>
+					</tr>
+				{% empty %}
+					<tr><td colspan="4">داده‌ای یافت نشد.</td></tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+
+	<div class="card" style="margin-top:16px;">
+		<h3>۱۰ پیامک اخیر</h3>
+		<table class="table">
+			<thead>
+				<tr>
+					<th>زمان</th>
+					<th>موبایل</th>
+					<th>قالب</th>
+					<th>وضعیت</th>
+					<th>رهگیری</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for s in recent_sms %}
+					<tr>
+						<td>{{ s.created_at|date:"Y-m-d H:i" }}</td>
+						<td>{{ s.mobile_number }}</td>
+						<td>{{ s.template_id }}</td>
+						<td>
+							{% if s.status == 'sent' %}
+								<span class="badge success">موفق</span>
+							{% elif s.status == 'failed' %}
+								<span class="badge fail">ناموفق</span>
+							{% elif s.status == 'rate_limited' %}
+								<span class="badge warn">محدودیت</span>
+							{% else %}
+								<span class="badge">{{ s.status }}</span>
+							{% endif %}
+						</td>
+						<td>{{ s.track_id|default:'-' }}</td>
+					</tr>
+				{% empty %}
+					<tr><td colspan="5">هنوز لاگ پیامکی ثبت نشده است.</td></tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+</div>
+{% endblock %}

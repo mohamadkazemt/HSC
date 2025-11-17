@@ -1,58 +1,11 @@
-from sms_ir import SmsIr
-from django.conf import settings
 import logging
 import jdatetime
+from core.sms_service import send_template_sms
 
 logger = logging.getLogger(__name__)
 
-# مقداردهی SMS.ir
-sms_ir = SmsIr(api_key=settings.SMSIR_API_KEY, linenumber=settings.SMSIR_LINE_NUMBER)
-
 # شناسه قالب پیامک جلسات
 MEETING_TEMPLATE = 226785  # قالب پیامک برای تمام عملیات جلسات
-
-def send_template_sms(mobile_number, template_id, parameters):
-    """
-    ارسال پیامک با قالب در SMS.ir
-    """
-    try:
-        print(f"\n=== شروع ارسال پیامک با قالب ===")
-        print(f"شماره موبایل: {mobile_number}")
-        print(f"شناسه قالب: {template_id}")
-        print(f"پارامترها: {parameters}")
-        
-        response = sms_ir.send_verify_code(
-            number=mobile_number,
-            template_id=template_id,
-            parameters=parameters
-        )
-        
-        print(f"پاسخ API: {response.text}")
-        
-        if response.status_code == 200:
-            response_data = response.json()  # تبدیل پاسخ به دیکشنری
-            logger.debug(f"پاسخ SMS.ir: {response_data}")
-            
-            # بررسی موفقیت‌آمیز بودن ارسال پیامک
-            if response_data.get("status") == 1 and response_data.get("message") == "موفق":
-                logger.info(f"پیامک با قالب {template_id} به {mobile_number} با موفقیت ارسال شد.")
-                print(f"پیامک با موفقیت ارسال شد")
-                return True
-            else:
-                error_message = response_data.get("message", "خطای نامشخص")
-                logger.error(f"خطا در ارسال پیامک به {mobile_number}: {error_message}")
-                print(f"خطا در ارسال پیامک: {error_message}")
-                return False
-        else:
-            logger.error(f"خطا در ارسال پیامک: {response.status_code} - {response.text}")
-            print(f"خطا در ارسال پیامک: {response.status_code} - {response.text}")
-            return False
-    except Exception as e:
-        logger.exception(f"خطا در ارسال پیامک: {e}")
-        print(f"خطا در ارسال پیامک: {e}")
-        import traceback
-        print(f"جزئیات خطا: {traceback.format_exc()}")
-        return False
 
 def send_meeting_sms(mobile, status, meeting_id, meeting_title, date, time):
     """

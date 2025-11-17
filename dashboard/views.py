@@ -14,6 +14,11 @@ from permissions.models import UserPermission, PartPermission, SectionPermission
 from accounts.models import UnitGroup, UserProfile, DriverLicense
 from django.contrib import messages
 from django.http import JsonResponse
+from django.contrib.admin.views.decorators import staff_member_required
+from django.http import HttpResponseForbidden
+from django.db.models import Count
+from datetime import timedelta
+from .models_sms import SMSLog, SMSTemplate
 
 name = 'dashboard'
 
@@ -376,3 +381,37 @@ def notification_detail(request, pk):
     }
     
     return render(request, 'dashboard/notification_detail.html', context)
+
+
+@staff_member_required
+def admin_overview(request):
+    """نمای کلی مدیریتی برای سوپر یوزرها: آمار پیامک‌ها و اعلان‌ها."""
+    if not request.user.is_superuser:
+        return HttpResponseForbidden("Only superusers may access this page.")
+
+    now = timezone.now()
+    start_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    last24 = now - timedelta(hours=24)
+
+    # Metrics
+    sms_today = SMSLog.objects.filter(created_at__gte=start_today).count()
+    sms_failed_24h = SMSLog.objects.filter(created_at__gte=last24, status__in=["failed", "rate_limited"]).count()
+    notif_unread = Notification.objects.filter(is_read=False).count()
+    active_templates = SMSTemplate.objects.filter(is_active=True).count()
+
+    # Top templates by usage
+    top_templates = SMSTemplate.objects.order_by('-usage_count')[:5]
+
+    # Recent SMS logs
+    recent_sms = SMSLog.objects.order_by('-created_at')[:10]
+
+    context = {
+        'title': 'نمای کلی مدیریت',
+        'sms_today': sms_today,
+        'sms_failed_24h': sms_failed_24h,
+        'notif_unread': notif_unread,
+        'active_templates': active_templates,
+        'top_templates': top_templates,
+        'recent_sms': recent_sms,
+    }
+    return render(request, 'dashboard/admin_overview.html', context)

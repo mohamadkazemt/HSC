@@ -13,44 +13,7 @@ logger = logging.getLogger(__name__)
 CRITICAL_PRIORITY_KEYWORDS = {'فوری', 'بحرانی', 'بحرانی ', 'critical', 'Critical', 'High', 'HIGH'}
 
 
-def _safe_notification(
-    *,
-    user: Optional[User],
-    title: str,
-    message: str,
-    notification_type: str = 'info',
-    url: Optional[str] = None,
-    actor: Optional[User] = None,
-    extra_log_context: Optional[dict] = None,
-    skip_actor_check: bool = False,  # برای مواردی که می‌خواهیم حتی به actor هم نتفیکیشن بدهیم
-) -> None:
-    """
-    Helper to create a notification safely without breaking the flow.
-    It skips notifications for anonymous/None users and avoids notifying
-    the actor (the user who triggered the action) unless skip_actor_check=True.
-    """
-
-    if not user:
-        logger.debug(f"Skipping notification: user is None (title: {title})")
-        return
-
-    if not skip_actor_check and actor and actor == user:
-        logger.debug(f"Skipping notification: actor ({actor.username}) is the same as user ({user.username}) (title: {title})")
-        return
-
-    try:
-        notification = Notification.objects.create(
-            user=user,
-            title=title,
-            message=message,
-            notification_type=notification_type,
-            url=url,
-        )
-        logger.info(f"Notification created successfully: ID={notification.id}, user={user.username}, title={title}")
-    except Exception as exc:  # pragma: no cover - defensive logging
-        context = extra_log_context or {}
-        context.update({'user_id': getattr(user, 'id', None), 'title': title})
-        logger.error("Failed to create notification", exc_info=True, extra={'context': context})
+from dashboard.notification_utils import safe_notification as _safe_notification
 
 
 def _notify_group_members(position_names: Iterable[str]) -> Iterable[User]:
@@ -173,19 +136,22 @@ def notify_comment_created(comment, *, actor: Optional[User] = None) -> None:
 
     targets = []
 
-    # Notify anomaly creator
+    # جمع آوری کاربران مرتبط
     if anomaly.created_by and anomaly.created_by.user:
         targets.append((anomaly.created_by.user, 'ایجاد کننده'))
-
-    # Notify follow-up officer
     if anomaly.followup and anomaly.followup.user:
         targets.append((anomaly.followup.user, 'مسئول پیگیری'))
-
-    # Notify parent comment owner for replies
     if comment.parent and comment.parent.user and comment.parent.user.user:
         targets.append((comment.parent.user.user, 'نویسنده کامنت والد'))
 
+    # جلوگیری از ارسال اعلان تکراری به یک کاربر (ممکن است یک نفر چند نقش داشته باشد)
+    seen_ids = set()
     for user, role in targets:
+        uid = getattr(user, 'id', None)
+        if uid in seen_ids:
+            logger.debug(f"Skipping duplicate comment notification for user_id={uid} anomaly_id={anomaly.id}")
+            continue
+        seen_ids.add(uid)
         _safe_notification(
             user=user,
             title='کامنت جدید روی آنومالی',

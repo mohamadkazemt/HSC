@@ -16,6 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.contrib.admin.views.decorators import staff_member_required
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic.base import RedirectView
@@ -23,6 +24,7 @@ from django.templatetags.static import static as static_url
 from HSCprojects import settings as project_settings
 from core import views  # وارد کردن views از اپلیکیشن core
 from rubika_bot import views as rubika_views  # برای لینک کوتاه
+from dashboard.views import admin_overview
 
 handler403 = views.custom_403_handler  # استفاده از هندلر از core
 
@@ -34,6 +36,7 @@ urlpatterns = [
     path('accounts/', include('accounts.urls', namespace='accounts')),
 
     path('admin/', admin.site.urls),
+    path('admin/overview/', staff_member_required(admin_overview), name='admin_overview'),
     path('dashboard/', include('dashboard.urls')),
     path('anomalis/', include('anomalis.urls')),
     path('select2/', include('django_select2.urls')),

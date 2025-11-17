@@ -5,41 +5,12 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 
 from dashboard.models import Notification
+from dashboard.notification_utils import safe_notification as _safe_notification
 
 from .services import MeetingService
 
 
 logger = logging.getLogger(__name__)
-
-
-def _safe_notification(
-    *,
-    user: Optional[User],
-    title: str,
-    message: str,
-    notification_type: str = 'info',
-    url: Optional[str] = None,
-    actor: Optional[User] = None,
-    context: Optional[dict] = None,
-) -> None:
-    if not user:
-        return
-
-    if actor and actor == user:
-        return
-
-    try:
-        Notification.objects.create(
-            user=user,
-            title=title,
-            message=message,
-            notification_type=notification_type,
-            url=url,
-        )
-    except Exception as exc:  # pragma: no cover
-        extra = context or {}
-        extra.update({'user_id': getattr(user, 'id', None), 'title': title})
-        logger.error("Failed to create meeting notification", exc_info=True, extra={'context': extra})
 
 
 def _meeting_url(meeting) -> str:

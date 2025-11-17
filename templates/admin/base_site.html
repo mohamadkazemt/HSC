@@ -1,0 +1,35 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}مدیریت سیستم | {{ block.super }}{% endblock %}
+
+{% block extrastyle %}
+	{{ block.super }}
+	<link rel="stylesheet" href="{% static 'css/admin_custom.css' %}">
+{% endblock %}
+
+{% block branding %}
+	<div class="site-branding">
+		<a href="/admin/" class="brand-link">
+			<img src="{% static 'admin/img/icon-yes.svg' %}" alt="logo" class="brand-logo">
+			<span class="brand-title">پنل مدیریت HSC</span>
+		</a>
+	</div>
+{% endblock %}
+
+{% block userlinks %}
+	{{ block.super }}
+	{% if request.user.is_authenticated and request.user.is_superuser %}
+		<span class="user-sep">|</span>
+		<div class="su-dropdown">
+			<a href="#" class="su-toggle">مدیریت پیامک و اعلان</a>
+			<div class="su-menu">
+				<a href="{% url 'admin_overview' %}">نمای کلی (Overview)</a>
+				<a href="{% url 'admin:dashboard_smslog_changelist' %}">لاگ پیامک‌ها</a>
+				<a href="{% url 'admin:dashboard_smstemplate_changelist' %}">قالب‌های پیامک</a>
+				<a href="{% url 'admin:dashboard_notification_changelist' %}">اعلان‌ها</a>
+			</div>
+		</div>
+	{% endif %}
+{% endblock %}
+

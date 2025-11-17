@@ -1,35 +1,17 @@
-from sms_ir import SmsIr
-from django.conf import settings
-import logging
+"""ابزارهای ارسال پیامک (نسخه مرکزی بهبود یافته).
 
-logger = logging.getLogger('smsir')
+این ماژول نسخه ساده و سینک ارسال پیامک را فراهم می‌کند. برای استفاده آسنکرون
+از تسک‌های سلری در فایل ``tasks.py`` همین اپ استفاده کنید.
 
-# مقداردهی SMS.ir
-sms_ir = SmsIr(api_key=settings.SMSIR_API_KEY, linenumber=settings.SMSIR_LINE_NUMBER)
+بهبودها نسبت به نسخه قبلی:
+ - اعتبارسنجی شماره موبایل (الگوی ساده ایران / بین‌المللی)
+ - تبدیل پاسخ به JSON و لاگ دقیق‌تر
+ - استخراج پیام خطا و کد رهگیری از پاسخ
+ - جلوگیری از ارسال با پارامترهای خالی
+ - رابط یکنواخت موفقیت (بر اساس status == 1 یا IsSuccessful)
+ - آماده برای استفاده در تسک‌های تکرار شونده با backoff
+"""
 
+from core.sms_service import send_template_sms  # رجوع به سرویس مرکزی
 
-def send_template_sms(mobile_number, template_id, parameters):
-    """
-    ارسال پیامک با قالب در SMS.ir
-    """
-    try:
-        response = sms_ir.send_verify_code(
-            number=mobile_number,
-            template_id=template_id,
-            parameters=parameters
-        )
-        if response.status_code == 200:
-            response_data = response
-            logger.debug(f"پاسخ SMS.ir: {response_data}")
-            if response_data.get("IsSuccessful"):
-                logger.info(f"پیامک با قالب {template_id} به {mobile_number} با موفقیت ارسال شد.")
-                return True
-            else:
-                logger.error(f"خطا در ارسال پیامک به {mobile_number}: {response_data.get('Message')}")
-                return False
-        else:
-            logger.error(f"خطا در ارسال پیامک: {response.status_code} - {response.text}")
-            return False
-    except Exception as e:
-        logger.exception(f"خطا در ارسال پیامک: {e}")
-        return False
+__all__ = ['send_template_sms']

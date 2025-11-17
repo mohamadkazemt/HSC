@@ -5,6 +5,10 @@ from django.utils import timezone
 from django.urls import reverse
 
 
+# Import SMS models
+from .models_sms import SMSLog, SMSTemplate
+
+
 
 
 

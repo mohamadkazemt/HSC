@@ -5,6 +5,7 @@ app_name = 'dashboard'
 
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
+    path('admin-overview/', views.admin_overview, name='admin_overview'),
     path('notifications/', views.notification_list, name='notification_list'),
     path('notifications/<int:pk>/', views.notification_detail, name='notification_detail'),
     path('notification/<int:notification_id>/mark-read/', views.mark_notification_and_redirect, name='mark_notification_and_redirect'),

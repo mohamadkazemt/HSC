@@ -1,0 +1,8 @@
+/* Custom admin overrides */
+body, #container {font-family: Vazirmatn, Arial, sans-serif;}
+#header, #header * {direction: rtl;}
+#user-tools {direction: rtl;}
+#user-tools a {font-size:12px;}
+.superuser-tools a {font-weight:500;}
+/* Cards & charts styling adjustments */
+.card p {font-family: monospace;}
