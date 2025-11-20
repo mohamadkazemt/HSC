@@ -1,14 +1,23 @@
 {% extends 'fire_extinguisher_management/base_fire.html' %}
 {% load form_extras fire_extinguisher_jalali %}
 {% block fire_content %}
-<div class="container mx-auto py-8" x-data="{ openCreate: false }">
+<div class="container mx-auto py-8" 
+     x-data="extinguisherListData()" 
+     x-init="importUrl = '{% url 'fire_extinguisher_management:import_excel_ajax' %}'; csrfToken = '{{ csrf_token }}'">
   <!-- Top Actions -->
   <div class="flex justify-between items-center mb-4">
     <div></div>
-    <button @click="openCreate = true" class="bg-green-600 text-white rounded-lg px-4 py-2 font-bold flex items-center gap-2 hover:bg-green-700">
-      <i class="fa fa-plus-circle"></i>
-      ثبت کپسول جدید
-    </button>
+    <div class="flex gap-2">
+      <button @click="openImport = true" 
+         class="bg-blue-600 text-white rounded-lg px-4 py-2 font-bold flex items-center gap-2 hover:bg-blue-700">
+        <i class="fa fa-file-excel"></i>
+        وارد کردن از Excel
+      </button>
+      <button @click="openCreate = true" class="bg-green-600 text-white rounded-lg px-4 py-2 font-bold flex items-center gap-2 hover:bg-green-700">
+        <i class="fa fa-plus-circle"></i>
+        ثبت کپسول جدید
+      </button>
+    </div>
   </div>
   <!-- Filters Card -->
   <div class="rounded-lg shadow-lg bg-white mb-8 p-6">
@@ -534,6 +543,253 @@
         });
       });
     });
+  </script>
+
+  <!-- Import Excel Modal -->
+  <template x-if="openImport">
+    <div class="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black bg-opacity-50 overflow-auto p-4">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl max-h-[calc(100vh-4rem)] overflow-y-auto">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center">
+            <i class="fa fa-file-excel text-blue-600 text-2xl mr-2"></i>
+            <span class="font-bold text-lg">وارد کردن کپسول‌ها از فایل Excel</span>
+          </div>
+          <button @click="openImport = false; uploadProgress = 0; importing = false" class="text-gray-400 hover:text-gray-600">
+            <i class="fa fa-times text-2xl"></i>
+          </button>
+        </div>
+
+        <!-- Instructions -->
+        <div class="rounded-lg bg-blue-50 border-r-4 border-blue-500 mb-6 p-4">
+          <div class="flex items-start">
+            <i class="fa fa-info-circle text-blue-600 text-xl ml-3 mt-1"></i>
+            <div>
+              <h4 class="font-bold mb-2">دستورالعمل:</h4>
+              <ol class="list-decimal mr-5 space-y-1 text-sm">
+                <li>ابتدا <a href="{% url 'fire_extinguisher_management:download_excel_template' %}" class="text-blue-600 hover:underline font-bold" target="_blank">فایل نمونه Excel</a> را دانلود کنید</li>
+                <li>اطلاعات کپسول‌ها را طبق نمونه وارد کنید</li>
+                <li>تاریخ‌ها به فرمت جلالی: <code class="bg-white px-2 py-1 rounded">۱۴۰۳/۱۰/۲۵</code></li>
+                <li>فایل را ذخیره و آپلود کنید</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- Download Template Button -->
+        <div class="mb-6 text-center">
+          <a href="{% url 'fire_extinguisher_management:download_excel_template' %}" target="_blank"
+             class="inline-flex items-center gap-2 bg-green-600 text-white rounded-lg px-6 py-3 font-bold hover:bg-green-700 transition duration-150 shadow">
+            <i class="fa fa-download"></i>
+            دانلود فایل نمونه Excel
+          </a>
+        </div>
+
+        <!-- Upload Form -->
+        <form @submit.prevent="handleImport" enctype="multipart/form-data" class="space-y-4" x-ref="importForm">
+          <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+          
+          <div>
+            <label class="block mb-2 font-bold">انتخاب فایل Excel <span class="text-red-500">*</span></label>
+            <input type="file" name="excel_file" accept=".xlsx" required
+                   class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                   @change="uploadProgress = 0">
+            <p class="text-gray-500 text-sm mt-2">
+              <i class="fa fa-info-circle"></i>
+              فقط فایل‌های xlsx با حجم حداکثر 5 مگابایت
+            </p>
+          </div>
+
+          <!-- Progress Bar -->
+          <div x-show="importing" class="space-y-2">
+            <div class="flex items-center justify-between text-sm">
+              <span>در حال پردازش...</span>
+              <span x-text="uploadProgress + '%'"></span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div class="bg-blue-600 h-3 rounded-full transition-all duration-300" 
+                   :style="'width: ' + uploadProgress + '%'"></div>
+            </div>
+          </div>
+
+          <!-- Results Container -->
+          <div x-ref="resultsContainer" class="hidden space-y-3"></div>
+
+          <div class="flex justify-end gap-2 pt-4 border-t">
+            <button type="button" @click="openImport = false; uploadProgress = 0; importing = false" 
+                    class="bg-gray-300 rounded-lg px-6 py-2 font-bold hover:bg-gray-400 transition duration-150"
+                    :disabled="importing">
+              انصراف
+            </button>
+            <button type="submit" 
+                    class="bg-blue-600 text-white rounded-lg px-6 py-2 font-bold hover:bg-blue-700 transition duration-150 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    :disabled="importing">
+              <i class="fa fa-upload"></i>
+              <span x-text="importing ? 'در حال آپلود...' : 'آپلود و وارد کردن'"></span>
+            </button>
+          </div>
+        </form>
+
+        <!-- Quick Reference Table -->
+        <div class="mt-6 pt-6 border-t">
+          <h4 class="font-bold mb-3 flex items-center">
+            <i class="fa fa-table text-indigo-600 ml-2"></i>
+            راهنمای سریع
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+            <div class="bg-gray-50 p-3 rounded-lg">
+              <strong>وضعیت‌های معتبر:</strong>
+              <code class="block mt-1 text-xs">operational, needs_maintenance, expired, reserved, under_test, disposed</code>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+              <strong>نوع مکان:</strong>
+              <code class="block mt-1 text-xs">section (بخش) یا machine (دستگاه)</code>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+              <strong>واحد ظرفیت:</strong>
+              <code class="block mt-1 text-xs">kg یا L</code>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-lg">
+              <strong>تاریخ:</strong>
+              <code class="block mt-1 text-xs">۱۴۰۳/۱۰/۲۵ یا 1403/10/25</code>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    function extinguisherListData() {
+      return {
+        openCreate: false,
+        openImport: false,
+        uploadProgress: 0,
+        importing: false,
+        importUrl: '',
+        csrfToken: '',
+        
+        handleImport() {
+          const formEl = this.$refs.importForm;
+          const formData = new FormData(formEl);
+          const resultsDiv = this.$refs.resultsContainer;
+          const fileInput = formEl.querySelector('input[type=file]');
+          
+          console.log('Import URL:', this.importUrl); // Debug
+          console.log('CSRF Token:', this.csrfToken); // Debug
+          console.log('Form Element:', formEl); // Debug
+          console.log('File Input:', fileInput); // Debug
+          console.log('File:', fileInput?.files[0]); // Debug
+          
+          // Debug FormData
+          for (let pair of formData.entries()) {
+            console.log(pair[0] + ': ' + pair[1]);
+          }
+          
+          if (!this.importUrl || this.importUrl === 'undefined') {
+            Swal.fire({ title: 'خطا', text: 'URL import یافت نشد', icon: 'error', confirmButtonText: 'تایید' });
+            return;
+          }
+          
+          if (!fileInput.files || !fileInput.files.length) {
+            Swal.fire({ title: 'خطا', text: 'لطفاً فایل Excel را انتخاب کنید', icon: 'error', confirmButtonText: 'تایید' });
+            return;
+          }
+          
+          this.importing = true;
+          this.uploadProgress = 10;
+          resultsDiv.innerHTML = '';
+          resultsDiv.classList.add('hidden');
+          
+          // Simulate upload progress
+          const progressInterval = setInterval(() => {
+            if (this.uploadProgress < 90) {
+              this.uploadProgress += 10;
+            }
+          }, 200);
+          
+          fetch(this.importUrl, {
+            method: 'POST',
+            headers: {
+              'X-CSRFToken': this.csrfToken,
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+          })
+          .then(async response => {
+            clearInterval(progressInterval);
+            this.uploadProgress = 100;
+            const data = await response.json();
+            if (!response.ok) throw data;
+            return data;
+          })
+          .then(data => {
+            resultsDiv.classList.remove('hidden');
+            let html = '';
+            
+            if (data.success_count > 0) {
+              html += `
+                <div class="rounded-lg p-4 bg-green-50 border-r-4 border-green-500 text-green-800">
+                  <div class="flex items-start">
+                    <i class="fa fa-check-circle text-xl ml-2 mt-0.5"></i>
+                    <span><strong>${data.success_count}</strong> کپسول با موفقیت ثبت شد</span>
+                  </div>
+                </div>
+              `;
+            }
+            
+            if (data.errors && data.errors.length > 0) {
+              const displayErrors = data.errors.slice(0, 10);
+              const remainingErrors = data.errors.length - 10;
+              
+              html += `
+                <div class="rounded-lg p-4 bg-red-50 border-r-4 border-red-500 text-red-800">
+                  <div class="flex items-start mb-2">
+                    <i class="fa fa-exclamation-circle text-xl ml-2 mt-0.5"></i>
+                    <strong>خطاها:</strong>
+                  </div>
+                  <ul class="mr-6 space-y-1 text-sm">
+                    ${displayErrors.map(err => `<li>${err}</li>`).join('')}
+                  </ul>
+                  ${remainingErrors > 0 ? `<p class="mt-2 text-sm font-bold">و ${remainingErrors} خطای دیگر...</p>` : ''}
+                </div>
+              `;
+            }
+            
+            resultsDiv.innerHTML = html;
+            
+            if (data.success_count > 0 && (!data.errors || data.errors.length === 0)) {
+              setTimeout(() => {
+                Swal.fire({
+                  title: 'موفق',
+                  text: `${data.success_count} کپسول با موفقیت ثبت شد`,
+                  icon: 'success',
+                  confirmButtonText: 'تایید'
+                }).then(() => {
+                  window.location.reload();
+                });
+              }, 1000);
+            }
+          })
+          .catch(error => {
+            clearInterval(progressInterval);
+            resultsDiv.classList.remove('hidden');
+            resultsDiv.innerHTML = `
+              <div class="rounded-lg p-4 bg-red-50 border-r-4 border-red-500 text-red-800">
+                <div class="flex items-start">
+                  <i class="fa fa-exclamation-circle text-xl ml-2 mt-0.5"></i>
+                  <span>${error.message || 'خطا در پردازش فایل Excel'}</span>
+                </div>
+              </div>
+            `;
+          })
+          .finally(() => {
+            clearInterval(progressInterval);
+            this.importing = false;
+            this.uploadProgress = 0;
+          });
+        }
+      };
+    }
   </script>
 </div>
 {% endblock %}

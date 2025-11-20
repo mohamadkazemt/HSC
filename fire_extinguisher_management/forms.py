@@ -104,4 +104,20 @@ class FireExtinguisherLocationForm(forms.Form):
         if location_type == 'machine' and location_section:
             raise forms.ValidationError("برای مکان از نوع دستگاه، نمی‌توانید بخش انتخاب کنید.")
 
-        return cleaned_data 
+        return cleaned_data
+
+class ExcelImportForm(forms.Form):
+    excel_file = forms.FileField(
+        label="فایل اکسل",
+        help_text="فایل اکسل با پسوند xlsx را انتخاب کنید",
+        widget=forms.FileInput(attrs={'accept': '.xlsx'})
+    )
+
+    def clean_excel_file(self):
+        file = self.cleaned_data.get('excel_file')
+        if file:
+            if not file.name.endswith('.xlsx'):
+                raise forms.ValidationError("فقط فایل‌های با فرمت xlsx پذیرفته می‌شود.")
+            if file.size > 5 * 1024 * 1024:  # 5MB
+                raise forms.ValidationError("حجم فایل نباید بیشتر از 5 مگابایت باشد.")
+        return file

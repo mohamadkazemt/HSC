@@ -4,12 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ورود به پورتال اورژانس</title>
+    
+    {% load static %}
+    <!-- Vazirmatn Font -->
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* استفاده از فونت سیستم برای سرعت بیشتر */
-        body {
-            font-family: Tahoma, Arial, sans-serif;
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Vazirmatn', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'],
+                    }
+                }
+            }
         }
+    </script>
+    <style>
         .gradient-bg {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
@@ -25,7 +38,7 @@
         .icon-ambulance::before { content: "🚑"; font-size: 3rem; }
     </style>
 </head>
-<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+<body class="font-sans gradient-bg min-h-screen flex items-center justify-center p-4">
     <div class="w-full max-w-md">
         <!-- دکمه‌های جابجایی بین صفحات لاگین -->
         <!-- ...existing code... -->

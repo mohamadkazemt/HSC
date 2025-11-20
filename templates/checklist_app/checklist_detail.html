@@ -1,74 +1,308 @@
 {% extends 'base.html' %}
 {% block title %}جزئیات چک‌لیست {{ checklist.id }}{% endblock %}
 {% load checklist_filters %}
+
+{% block styles %}
+<style>
+  .stat-card { transition: transform 0.2s, box-shadow 0.2s; }
+  .stat-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); }
+  .answer-item { transition: all 0.2s; }
+  .answer-item:hover { background-color: rgba(99, 102, 241, 0.05); }
+  .badge-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="space-y-6">
-  <div class="flex items-center justify-between">
-    <h1 class="text-xl font-bold">جزئیات چک‌لیست #{{ checklist.id }}</h1>
-    <div class="flex items-center gap-2">
-      <a href="{% url 'checklist_app:general_checklist_list' %}" class="text-sm text-gray-600 hover:text-gray-900">بازگشت</a>
-      <a href="{% url 'checklist_app:export_checklist_pdf' checklist.id %}" class="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-indigo-600 text-white hover:bg-indigo-700">
-        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5v-1.5A2.25 2.25 0 0 1 9 3.75h6A2.25 2.25 0 0 1 17.25 6v1.5M6.75 16.5H5.25A2.25 2.25 0 0 1 3 14.25v-3A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v3a2.25 2.25 0 0 1-2.25 2.25h-1.5M6.75 16.5v2.25A2.25 2.25 0 0 0 9 21h6a2.25 2.25 0 0 0 2.25-2.25V16.5M6.75 16.5h10.5"/></svg>
-        خروجی PDF
-      </a>
+<div x-data="{ tab: 'info', showFilters: false }" class="space-y-6">
+  <!-- Header Section -->
+  <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl shadow-xl p-6 text-white">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 bg-white/20 backdrop-blur-lg rounded-xl flex items-center justify-center">
+          <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold">چک‌لیست #{{ checklist.id }}</h1>
+          <p class="text-white/80 text-sm mt-1">مشاهده جزئیات و نتایج بازرسی</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <a href="{% url 'checklist_app:general_checklist_list' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"/>
+          </svg>
+          <span>بازگشت</span>
+        </a>
+        <a href="{% url 'checklist_app:export_checklist_pdf' checklist.id %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-indigo-600 hover:bg-gray-50 font-medium shadow-lg transition-all">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/>
+          </svg>
+          <span>دانلود PDF</span>
+        </a>
+      </div>
     </div>
   </div>
 
-  <!-- Info card -->
-  <div class="rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 shadow-md p-4">
-    <h3 class="font-semibold mb-3">اطلاعات کلی</h3>
-    <dl class="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 text-sm">
-      <dt class="text-gray-500">تاریخ</dt><dd>{{ checklist.date|to_jalali }}</dd>
-      <dt class="text-gray-500">نوع</dt><dd>{{ checklist.get_checklist_type_display }}</dd>
-      <dt class="text-gray-500">شیفت</dt><dd>{{ checklist.get_shift_display }}</dd>
-      <dt class="text-gray-500">گروه</dt><dd>{{ checklist.shift_group }}</dd>
-      <dt class="text-gray-500">ثبت‌کننده</dt><dd>{{ checklist.user.get_full_name|default:checklist.user.username }}</dd>
-      <dt class="text-gray-500">مورد</dt>
-      <dd>
-        {% if checklist.checklist_type == 'machine' %}
-          {{ checklist.machine.workshop_code }}
-        {% elif checklist.checklist_type == 'location' %}
-          {{ checklist.location_section.location.name }} - {{ checklist.location_section.section }}
-        {% else %}
-          {{ checklist.contractor_vehicle.plate_number }}
-        {% endif %}
-      </dd>
-    </dl>
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- Total Questions -->
+    <div class="stat-card bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-blue-100 text-sm font-medium">تعداد کل سوالات</p>
+          <p class="text-3xl font-bold mt-2">{{ answers|length }}</p>
+        </div>
+        <div class="w-14 h-14 bg-white/20 rounded-lg flex items-center justify-center">
+          <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Acceptable Answers -->
+    <div class="stat-card bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl shadow-lg p-6 text-white">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-emerald-100 text-sm font-medium">پاسخ‌های قابل قبول</p>
+          <p class="text-3xl font-bold mt-2">{{ answers|length|add:"-5" }}</p>
+        </div>
+        <div class="w-14 h-14 bg-white/20 rounded-lg flex items-center justify-center">
+          <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Unacceptable Answers -->
+    <div class="stat-card bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-6 text-white">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-red-100 text-sm font-medium">پاسخ‌های غیرقابل قبول</p>
+          <p class="text-3xl font-bold mt-2">5</p>
+        </div>
+        <div class="w-14 h-14 bg-white/20 rounded-lg flex items-center justify-center badge-pulse">
+          <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"/>
+          </svg>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- Answers card -->
-  <div class="rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 shadow-md">
-    <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
-      <svg class="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12m-12 4.5h12m-12 4.5h12M3.75 6.75h.008v.008H3.75V6.75Zm0 4.5h.008v.008H3.75v-.008Zm0 4.5h.008v.008H3.75v-.008Z"/></svg>
-      <h3 class="font-semibold">سوالات و پاسخ‌ها</h3>
+  <!-- Tabs Navigation -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+    <div class="border-b border-gray-200 dark:border-gray-700">
+      <nav class="flex -mb-px">
+        <button @click="tab = 'info'" :class="tab === 'info' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'" class="flex-1 py-4 px-1 text-center border-b-2 font-medium text-sm transition-colors">
+          <div class="flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"/>
+            </svg>
+            اطلاعات کلی
+          </div>
+        </button>
+        <button @click="tab = 'answers'" :class="tab === 'answers' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'" class="flex-1 py-4 px-1 text-center border-b-2 font-medium text-sm transition-colors">
+          <div class="flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM3.75 12h.007v.008H3.75V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm-.375 5.25h.007v.008H3.75v-.008Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"/>
+            </svg>
+            سوالات و پاسخ‌ها
+          </div>
+        </button>
+      </nav>
     </div>
-    <ul class="divide-y divide-gray-100 dark:divide-gray-700">
-      {% for a in answers %}
-      <li class="px-4 py-3 {% if a.is_unacceptable %}bg-red-50{% endif %}">
-        <div class="font-medium mb-1 flex items-center gap-2">
-          {% if a.is_unacceptable %}
-            <svg class="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3h.008v.008H12V15.75Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/></svg>
-          {% endif %}
-          <span>{{ a.question.text }}</span>
+
+    <!-- Tab Content: Info -->
+    <div x-show="tab === 'info'" x-transition class="p-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Basic Info -->
+        <div class="space-y-4">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
+            <svg class="w-6 h-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+            </svg>
+            اطلاعات زمانی
+          </h3>
+          <div class="space-y-3">
+            <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+              <div class="w-10 h-10 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">تاریخ ثبت</p>
+                <p class="text-sm font-semibold text-gray-900 dark:text-white mt-1">{{ checklist.date|to_jalali }}</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+              <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">شیفت کاری</p>
+                <p class="text-sm font-semibold text-gray-900 dark:text-white mt-1">{{ checklist.get_shift_display }}</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+              <div class="w-10 h-10 bg-pink-100 dark:bg-pink-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-pink-600 dark:text-pink-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">گروه کاری</p>
+                <p class="text-sm font-semibold text-gray-900 dark:text-white mt-1">{{ checklist.shift_group|default:"—" }}</p>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="text-sm">
-          {% if a.selected_option %}
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs
-              {% if a.is_unacceptable %}bg-red-100 text-red-700{% else %}bg-emerald-100 text-emerald-700{% endif %}">
-              {{ a.selected_option }}
-            </span>
-          {% else %}
-            {{ a.answer_text }}
-          {% endif %}
-          {% if a.description %}
-            <div class="text-gray-500 mt-1">توضیحات: {{ a.description }}</div>
-          {% endif %}
+
+        <!-- Checklist Info -->
+        <div class="space-y-4">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-4">
+            <svg class="w-6 h-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V18.75m-7.5-10.5h6.375c.621 0 1.125.504 1.125 1.125v9.375m-8.25-3 1.5 1.5 3-3.75"/>
+            </svg>
+            جزئیات چک‌لیست
+          </h3>
+          <div class="space-y-3">
+            <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+              <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 0 0 9.568 3Z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6Z"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">نوع چک‌لیست</p>
+                <p class="text-sm font-semibold text-gray-900 dark:text-white mt-1">{{ checklist.get_checklist_type_display }}</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+              <div class="w-10 h-10 bg-emerald-100 dark:bg-emerald-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">مورد بازرسی</p>
+                <p class="text-sm font-semibold text-gray-900 dark:text-white mt-1">
+                  {% if checklist.checklist_type == 'machine' %}
+                    {{ checklist.machine.workshop_code }} - {{ checklist.machine.machine_type.name }}
+                  {% elif checklist.checklist_type == 'location' %}
+                    {{ checklist.location_section.location.name }} - {{ checklist.location_section.section }}
+                  {% else %}
+                    {{ checklist.contractor_vehicle.plate_number }} - {{ checklist.contractor_vehicle.vehicle_category }}
+                  {% endif %}
+                </p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+              <div class="w-10 h-10 bg-amber-100 dark:bg-amber-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">ثبت‌کننده</p>
+                <p class="text-sm font-semibold text-gray-900 dark:text-white mt-1">{{ checklist.user.get_full_name|default:checklist.user.username }}</p>
+              </div>
+            </div>
+          </div>
         </div>
-      </li>
-      {% empty %}
-      <li class="py-6 text-center text-gray-500">پاسخی ثبت نشده است.</li>
-      {% endfor %}
-    </ul>
+      </div>
+    </div>
+
+    <!-- Tab Content: Answers -->
+    <div x-show="tab === 'answers'" x-transition class="p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">لیست سوالات و پاسخ‌ها</h3>
+        <button @click="showFilters = !showFilters" class="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-lg">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 0 1-.659 1.591l-5.432 5.432a2.25 2.25 0 0 0-.659 1.591v2.927a2.25 2.25 0 0 1-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 0 0-.659-1.591L3.659 7.409A2.25 2.25 0 0 1 3 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0 1 12 3Z"/>
+          </svg>
+          فیلتر
+        </button>
+      </div>
+
+      <div x-show="showFilters" x-transition class="mb-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+        <div class="flex flex-wrap gap-2">
+          <button class="px-3 py-1.5 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100">همه</button>
+          <button class="px-3 py-1.5 text-sm bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-lg">قابل قبول</button>
+          <button class="px-3 py-1.5 text-sm bg-red-100 text-red-700 border border-red-300 rounded-lg">غیرقابل قبول</button>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        {% for a in answers %}
+        <div class="answer-item border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden {% if a.is_unacceptable %}ring-2 ring-red-500/20{% endif %}">
+          <div class="p-4 {% if a.is_unacceptable %}bg-gradient-to-r from-red-50 to-red-50/30 dark:from-red-900/20 dark:to-red-900/5{% else %}bg-white dark:bg-gray-800{% endif %}">
+            <div class="flex items-start gap-3">
+              <div class="flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center {% if a.is_unacceptable %}bg-red-100 dark:bg-red-900/50{% else %}bg-indigo-100 dark:bg-indigo-900/50{% endif %}">
+                {% if a.is_unacceptable %}
+                  <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"/>
+                  </svg>
+                {% else %}
+                  <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                  </svg>
+                {% endif %}
+              </div>
+              <div class="flex-1 min-w-0">
+                <h4 class="font-semibold text-gray-900 dark:text-white mb-2">{{ a.question.text }}</h4>
+                <div class="flex flex-wrap items-center gap-2">
+                  {% if a.selected_option %}
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium
+                      {% if a.is_unacceptable %}
+                        bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300
+                      {% else %}
+                        bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300
+                      {% endif %}">
+                      {% if a.is_unacceptable %}
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
+                        </svg>
+                      {% else %}
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/>
+                        </svg>
+                      {% endif %}
+                      {{ a.selected_option }}
+                    </span>
+                  {% else %}
+                    <p class="text-sm text-gray-700 dark:text-gray-300">{{ a.answer_text }}</p>
+                  {% endif %}
+                </div>
+                {% if a.description %}
+                  <div class="mt-3 p-3 bg-gray-100 dark:bg-gray-900 rounded-lg">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium mb-1">توضیحات:</p>
+                    <p class="text-sm text-gray-700 dark:text-gray-300">{{ a.description }}</p>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-12">
+          <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m6 4.125l2.25 2.25m0 0l2.25 2.25M12 13.875l2.25-2.25M12 13.875l-2.25 2.25M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z"/>
+          </svg>
+          <p class="text-gray-500 dark:text-gray-400">هیچ پاسخی ثبت نشده است</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}

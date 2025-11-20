@@ -1,0 +1,166 @@
+{% extends 'fire_extinguisher_management/base_fire.html' %}
+{% load static %}
+
+{% block fire_content %}
+<div class="container mx-auto py-8">
+  <!-- Header -->
+  <div class="mb-6">
+    <h1 class="text-3xl font-bold mb-2">وارد کردن کپسول‌ها از فایل Excel</h1>
+    <p class="text-gray-600">فایل Excel خود را آپلود کنید تا کپسول‌های آتش‌نشانی به صورت دسته‌ای ثبت شوند</p>
+  </div>
+
+  <!-- Instructions Card -->
+  <div class="rounded-lg shadow-lg bg-blue-50 border-r-4 border-blue-500 mb-8 p-6">
+    <div class="flex items-start">
+      <i class="fa fa-info-circle text-blue-600 text-2xl ml-3 mt-1"></i>
+      <div>
+        <h3 class="font-bold text-lg mb-2">دستورالعمل:</h3>
+        <ol class="list-decimal mr-5 space-y-2">
+          <li>ابتدا <a href="{% url 'fire_extinguisher_management:download_excel_template' %}" class="text-blue-600 hover:underline font-bold">فایل نمونه Excel</a> را دانلود کنید</li>
+          <li>فایل را باز کرده و اطلاعات کپسول‌ها را طبق نمونه وارد کنید</li>
+          <li>فیلدهای دارای علامت * الزامی هستند</li>
+          <li>تاریخ‌ها را به فرمت جلالی <code class="bg-white px-2 py-1 rounded">۱۴۰۳/۱۰/۲۵</code> وارد کنید</li>
+          <li>فایل را ذخیره کرده و در قسمت زیر آپلود کنید</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- Download Template Button -->
+  <div class="mb-8 text-center">
+    <a href="{% url 'fire_extinguisher_management:download_excel_template' %}" 
+       class="inline-flex items-center gap-2 bg-green-600 text-white rounded-lg px-6 py-3 font-bold hover:bg-green-700 transition duration-150 shadow-lg">
+      <i class="fa fa-download"></i>
+      دانلود فایل نمونه Excel
+    </a>
+  </div>
+
+  <!-- Upload Form Card -->
+  <div class="rounded-lg shadow-lg bg-white mb-8 p-6">
+    <div class="flex items-center mb-4">
+      <i class="fa fa-file-excel text-green-600 text-2xl mr-2"></i>
+      <span class="font-bold text-lg">آپلود فایل Excel</span>
+    </div>
+    
+    <form method="post" enctype="multipart/form-data" class="space-y-4">
+      {% csrf_token %}
+      
+      <div>
+        <label class="block mb-2 font-bold">انتخاب فایل Excel <span class="text-red-500">*</span></label>
+        <div class="flex items-center gap-4">
+          <input type="file" name="excel_file" accept=".xlsx" required
+                 class="flex-1 rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+        </div>
+        {% if form.excel_file.errors %}
+          <div class="text-red-500 text-sm mt-1">
+            {% for error in form.excel_file.errors %}
+              {{ error }}
+            {% endfor %}
+          </div>
+        {% endif %}
+        <p class="text-gray-500 text-sm mt-2">
+          <i class="fa fa-info-circle"></i>
+          فقط فایل‌های با فرمت xlsx و حجم حداکثر 5 مگابایت پذیرفته می‌شود
+        </p>
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <a href="{% url 'fire_extinguisher_management:extinguisher_list' %}" 
+           class="bg-gray-300 rounded-lg px-6 py-2 font-bold hover:bg-gray-400 transition duration-150">
+          انصراف
+        </a>
+        <button type="submit" 
+                class="bg-blue-600 text-white rounded-lg px-6 py-2 font-bold hover:bg-blue-700 transition duration-150 flex items-center gap-2">
+          <i class="fa fa-upload"></i>
+          آپلود و وارد کردن
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+  <div class="space-y-3">
+    {% for message in messages %}
+      <div class="rounded-lg p-4 {% if message.tags == 'success' %}bg-green-50 border-r-4 border-green-500 text-green-800{% elif message.tags == 'error' %}bg-red-50 border-r-4 border-red-500 text-red-800{% elif message.tags == 'warning' %}bg-yellow-50 border-r-4 border-yellow-500 text-yellow-800{% else %}bg-blue-50 border-r-4 border-blue-500 text-blue-800{% endif %}">
+        <div class="flex items-start">
+          <i class="fa {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %} text-xl ml-2 mt-0.5"></i>
+          <span>{{ message }}</span>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Data Format Reference Card -->
+  <div class="rounded-lg shadow-lg bg-white p-6 mt-8">
+    <h3 class="font-bold text-lg mb-4 flex items-center">
+      <i class="fa fa-table text-indigo-600 ml-2"></i>
+      راهنمای فرمت داده‌ها
+    </h3>
+    
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-3 text-right text-xs font-bold text-gray-700">فیلد</th>
+            <th class="px-4 py-3 text-right text-xs font-bold text-gray-700">نوع</th>
+            <th class="px-4 py-3 text-right text-xs font-bold text-gray-700">مثال</th>
+            <th class="px-4 py-3 text-right text-xs font-bold text-gray-700">توضیحات</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr>
+            <td class="px-4 py-3 font-bold">شماره سریال</td>
+            <td class="px-4 py-3">متن</td>
+            <td class="px-4 py-3"><code class="bg-gray-100 px-2 py-1 rounded">FE-001</code></td>
+            <td class="px-4 py-3">باید یکتا باشد</td>
+          </tr>
+          <tr class="bg-gray-50">
+            <td class="px-4 py-3 font-bold">نوع کپسول</td>
+            <td class="px-4 py-3">متن</td>
+            <td class="px-4 py-3"><code class="bg-gray-100 px-2 py-1 rounded">پودر و گاز ABC</code></td>
+            <td class="px-4 py-3">باید دقیقاً با نام موجود در سیستم مطابقت داشته باشد</td>
+          </tr>
+          <tr>
+            <td class="px-4 py-3 font-bold">واحد ظرفیت</td>
+            <td class="px-4 py-3">متن</td>
+            <td class="px-4 py-3"><code class="bg-gray-100 px-2 py-1 rounded">kg</code> یا <code class="bg-gray-100 px-2 py-1 rounded">L</code></td>
+            <td class="px-4 py-3">فقط kg یا L</td>
+          </tr>
+          <tr class="bg-gray-50">
+            <td class="px-4 py-3 font-bold">تاریخ‌ها</td>
+            <td class="px-4 py-3">تاریخ</td>
+            <td class="px-4 py-3"><code class="bg-gray-100 px-2 py-1 rounded">۱۴۰۳/۱۰/۲۵</code></td>
+            <td class="px-4 py-3">به فرمت جلالی YYYY/MM/DD (با اعداد فارسی یا انگلیسی)</td>
+          </tr>
+          <tr>
+            <td class="px-4 py-3 font-bold">وضعیت</td>
+            <td class="px-4 py-3">متن</td>
+            <td class="px-4 py-3"><code class="bg-gray-100 px-2 py-1 rounded">operational</code></td>
+            <td class="px-4 py-3">operational, needs_maintenance, expired, reserved, under_test, disposed</td>
+          </tr>
+          <tr class="bg-gray-50">
+            <td class="px-4 py-3 font-bold">نوع مکان</td>
+            <td class="px-4 py-3">متن</td>
+            <td class="px-4 py-3"><code class="bg-gray-100 px-2 py-1 rounded">section</code></td>
+            <td class="px-4 py-3">section (بخش) یا machine (دستگاه)</td>
+          </tr>
+          <tr>
+            <td class="px-4 py-3 font-bold">نام بخش</td>
+            <td class="px-4 py-3">متن</td>
+            <td class="px-4 py-3"><code class="bg-gray-100 px-2 py-1 rounded">انبار مواد</code></td>
+            <td class="px-4 py-3">فقط اگر نوع مکان section باشد</td>
+          </tr>
+          <tr class="bg-gray-50">
+            <td class="px-4 py-3 font-bold">نام دستگاه</td>
+            <td class="px-4 py-3">متن</td>
+            <td class="px-4 py-3"><code class="bg-gray-100 px-2 py-1 rounded">بیل مکانیکی 01</code></td>
+            <td class="px-4 py-3">فقط اگر نوع مکان machine باشد</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

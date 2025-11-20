@@ -25,4 +25,9 @@ urlpatterns = [
 
     # Extinguisher Details API
     path('extinguishers/<int:pk>/details/', views.extinguisher_details_api, name='extinguisher_details_api'),
+    
+    # Excel Import/Export
+    path('extinguishers/download-template/', views.download_excel_template, name='download_excel_template'),
+    path('extinguishers/import/', views.import_excel, name='import_excel'),
+    path('extinguishers/import/ajax/', views.import_excel_ajax, name='import_excel_ajax'),
 ] 

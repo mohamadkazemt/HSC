@@ -51,7 +51,7 @@ def notify_checklist_failure(checklist, *, unacceptable_answers: List, actor: Op
         notification_type='warning',
         url=url,
         actor=None,
-        context={'checklist_id': checklist.id, 'target': 'submitter'},
+        extra_log_context={'checklist_id': checklist.id, 'target': 'submitter'},
     )
 
     # Notify managers
@@ -63,7 +63,7 @@ def notify_checklist_failure(checklist, *, unacceptable_answers: List, actor: Op
             notification_type='warning',
             url=url,
             actor=actor,
-            context={'checklist_id': checklist.id, 'target_group': 'HSE'},
+            extra_log_context={'checklist_id': checklist.id, 'target_group': 'HSE'},
         )
 
 
@@ -80,5 +80,5 @@ def notify_checklist_success(checklist, *, actor: Optional[User] = None) -> None
         notification_type='success',
         url=url,
         actor=None,
-        context={'checklist_id': checklist.id, 'target': 'submitter'},
+        extra_log_context={'checklist_id': checklist.id, 'target': 'submitter'},
     )

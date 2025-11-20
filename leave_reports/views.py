@@ -578,6 +578,10 @@ def leave_archive(request):
     
     leaves = leaves.order_by('-created_at')
     
+    # اگر درخواست خروجی اکسل باشد
+    if request.GET.get('export') == 'excel':
+        return export_leaves_to_excel(leaves)
+    
     # محاسبه آمار
     from django.utils import timezone
     total_count = leaves.count()
@@ -619,6 +623,142 @@ def leave_archive(request):
         'today_count': today_count,
         'page_title': 'آرشیو مرخصی‌ها',
     })
+
+
+def export_leaves_to_excel(leaves):
+    """خروجی اکسل درخواست‌های مرخصی"""
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+        from openpyxl.utils import get_column_letter
+    except ImportError:
+        return HttpResponse("لطفاً کتابخانه openpyxl را نصب کنید", status=500)
+    
+    # ایجاد workbook و worksheet
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "گزارش مرخصی‌ها"
+    
+    # تنظیمات RTL
+    ws.sheet_view.rightToLeft = True
+    
+    # تعریف استایل‌ها
+    header_font = Font(bold=True, size=12, color="FFFFFF")
+    header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    header_alignment = Alignment(horizontal="center", vertical="center")
+    
+    cell_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    
+    # عناوین ستون‌ها
+    headers = [
+        'ردیف',
+        'نام و نام خانوادگی',
+        'گروه کاری',
+        'نوع مرخصی',
+        'تاریخ شیفت',
+        'نوع شیفت',
+        'وضعیت',
+        'جانشین',
+        'تأیید کننده نهایی',
+        'تاریخ ثبت',
+        'توضیحات'
+    ]
+    
+    # نوشتن هدر
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num)
+        cell.value = header
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = header_alignment
+        cell.border = border
+    
+    # نوشتن داده‌ها
+    status_dict = {
+        'pending_replacement': 'در انتظار جانشین',
+        'pending_approval': 'در انتظار تأیید',
+        'approved': 'تأیید شده',
+        'rejected': 'رد شده'
+    }
+    
+    leave_type_dict = {
+        'regular': 'استحقاقی',
+        'sick_leave': 'استعلاجی',
+        'hourly': 'ساعتی',
+        'other': 'سایر'
+    }
+    
+    shift_type_dict = {
+        'day': 'روز',
+        'night': 'شب',
+        'extra': 'اضافه کاری'
+    }
+    
+    for idx, leave in enumerate(leaves, 2):
+        # تبدیل تاریخ میلادی به شمسی
+        shift_date_jalali = jdatetime.date.fromgregorian(date=leave.shift_date).strftime('%Y/%m/%d')
+        created_at_jalali = jdatetime.datetime.fromgregorian(datetime=leave.created_at).strftime('%Y/%m/%d %H:%M')
+        
+        row_data = [
+            idx - 1,
+            leave.user.get_full_name() if leave.user else '-',
+            leave.work_group or '-',
+            leave_type_dict.get(leave.leave_type, leave.leave_type),
+            shift_date_jalali,
+            shift_type_dict.get(leave.shift_type, leave.shift_type),
+            status_dict.get(leave.status, leave.status),
+            leave.replacement_person.get_full_name() if leave.replacement_person else '-',
+            leave.final_approver.user.get_full_name() if leave.final_approver else '-',
+            created_at_jalali,
+            leave.description or '-'
+        ]
+        
+        for col_num, value in enumerate(row_data, 1):
+            cell = ws.cell(row=idx, column=col_num)
+            cell.value = value
+            cell.alignment = cell_alignment
+            cell.border = border
+            
+            # رنگ‌بندی بر اساس وضعیت
+            if col_num == 7:  # ستون وضعیت
+                if leave.status == 'approved':
+                    cell.fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+                elif leave.status == 'rejected':
+                    cell.fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+                elif leave.status in ['pending_replacement', 'pending_approval']:
+                    cell.fill = PatternFill(start_color="FFEB9C", end_color="FFEB9C", fill_type="solid")
+    
+    # تنظیم عرض ستون‌ها
+    column_widths = [8, 25, 20, 15, 15, 12, 18, 25, 25, 20, 40]
+    for i, width in enumerate(column_widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = width
+    
+    # تنظیم ارتفاع ردیف هدر
+    ws.row_dimensions[1].height = 30
+    
+    # ذخیره در حافظه و ارسال
+    from io import BytesIO
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    # نام فایل با تاریخ شمسی
+    now_jalali = jdatetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f'leave_reports_{now_jalali}.xlsx'
+    
+    response = HttpResponse(
+        output.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    return response
 
 
 # ============= جزئیات درخواست =============

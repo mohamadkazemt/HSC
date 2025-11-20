@@ -8,6 +8,10 @@
     <link rel="icon" href="{{ site_settings.site_favicon.url }}">
     {% endif %}
     
+    {% load static %}
+    <!-- Vazirmatn Font -->
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       window.tailwind = window.tailwind || {};
@@ -15,7 +19,10 @@
         darkMode: 'class',
         theme: {
           extend: {
-            container: { center: true, padding: '1rem' }
+            container: { center: true, padding: '1rem' },
+            fontFamily: {
+              sans: ['Vazirmatn', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'],
+            }
           }
         }
       };
@@ -30,7 +37,7 @@
         }
     </style>
 </head>
-<body class="min-h-screen gradient-bg flex items-center justify-center p-4">
+<body class="min-h-screen font-sans gradient-bg flex items-center justify-center p-4">
     <!-- دکمه‌های جابجایی بین صفحات لاگین -->
     <!-- ...existing code... -->
     <!-- Background Pattern -->

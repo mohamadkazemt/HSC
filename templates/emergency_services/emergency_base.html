@@ -14,6 +14,9 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏥</text></svg>">
     {% endif %}
 
+    <!-- Vazirmatn Font -->
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+
     <!-- Tailwind CSS - استفاده از CDN برای اطمینان از لود شدن در سرور -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -22,7 +25,10 @@
         darkMode: 'class',
         theme: {
           extend: {
-            container: { center: true, padding: '1rem' }
+            container: { center: true, padding: '1rem' },
+            fontFamily: {
+              sans: ['Vazirmatn', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'],
+            }
           }
         }
       };

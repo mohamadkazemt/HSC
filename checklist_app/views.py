@@ -219,57 +219,95 @@ def get_general_questions(request):
 @permission_required("submit_general_checklist")
 @require_http_methods(["POST"])
 def submit_general_checklist(request):
-    data = json.loads(request.body)
-    print(f"Received data: {data}")
-    
-    # همیشه از گروه کاری کاربر استفاده می‌کنیم
-    user_profile = UserProfile.objects.get(user=request.user)
-    data['shift_group'] = user_profile.group
-    
-    checklist = Checklist.objects.create(
-        user=request.user,
-        checklist_type=data['checklist_type'],
-        machine_id=data.get('machine_id'),
-        location_section_id=data.get('location_section_id'),
-        contractor_vehicle_id=data.get('vehicle_id'),
-        shift=data['shift'],
-        shift_group=data['shift_group']
-    )
-    
-    has_unacceptable_answers = False
-    unacceptable_answers = []
-    
-    for answer_data in data['answers']:
-        print(f"Processing answer: {answer_data}")
-        question = Question.objects.get(id=answer_data['question_id'])
-        answer = Answer.objects.create(
-            checklist=checklist,
-            question=question,
-            answer_text=answer_data.get('answer_text'),
-            selected_option=answer_data.get('selected_option'),
-            description=answer_data.get('description')
+    try:
+        data = json.loads(request.body)
+        print(f"Received data: {data}")
+        
+        # بررسی داده‌های ورودی
+        if not data.get('checklist_type'):
+            return JsonResponse({'status': 'error', 'message': 'نوع چک‌لیست مشخص نشده است'}, status=400)
+        
+        if not data.get('shift'):
+            return JsonResponse({'status': 'error', 'message': 'شیفت مشخص نشده است'}, status=400)
+        
+        if not data.get('answers'):
+            return JsonResponse({'status': 'error', 'message': 'هیچ پاسخی ارسال نشده است'}, status=400)
+        
+        # همیشه از گروه کاری کاربر استفاده می‌کنیم
+        try:
+            user_profile = UserProfile.objects.get(user=request.user)
+            data['shift_group'] = user_profile.group
+        except UserProfile.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'پروفایل کاربری یافت نشد'}, status=400)
+        
+        # تبدیل مقادیر خالی به None
+        machine_id = data.get('machine_id')
+        location_section_id = data.get('location_section_id')
+        vehicle_id = data.get('vehicle_id')
+        
+        # تبدیل رشته خالی به None
+        machine_id = int(machine_id) if machine_id and machine_id != '' else None
+        location_section_id = int(location_section_id) if location_section_id and location_section_id != '' else None
+        vehicle_id = int(vehicle_id) if vehicle_id and vehicle_id != '' else None
+        
+        checklist = Checklist.objects.create(
+            user=request.user,
+            checklist_type=data['checklist_type'],
+            machine_id=machine_id,
+            location_section_id=location_section_id,
+            contractor_vehicle_id=vehicle_id,
+            shift=data['shift'],
+            shift_group=data['shift_group']
         )
         
-        # بررسی پاسخ‌های غیرقابل قبول
-        if question.question_type == 'option' and question.unacceptable_options:
-            unacceptable_list = [opt.strip() for opt in question.unacceptable_options.split(',')]
-            if answer.selected_option in unacceptable_list:
-                print(f"Unacceptable answer found: {answer.selected_option}")
-                has_unacceptable_answers = True
-                unacceptable_answers.append(answer)
-    
-    # اگر پاسخ غیرقابل قبول وجود دارد، آنومالی ایجاد می‌شود
-    if has_unacceptable_answers:
-        print(f"Found {len(unacceptable_answers)} unacceptable answers")
-        notify_checklist_failure(checklist, unacceptable_answers=unacceptable_answers, actor=request.user)
-        return JsonResponse({
-            'status': 'failure_detected',
-            'checklist_id': checklist.id,
-            'unacceptable_answers': [{'id': a.id, 'text': a.question.text} for a in unacceptable_answers]
-        })
-    
-    notify_checklist_success(checklist, actor=request.user)
-    return JsonResponse({'status': 'success', 'checklist_id': checklist.id})
+        has_unacceptable_answers = False
+        unacceptable_answers = []
+        
+        for answer_data in data['answers']:
+            print(f"Processing answer: {answer_data}")
+            try:
+                question = Question.objects.get(id=answer_data['question_id'])
+            except Question.DoesNotExist:
+                print(f"Question {answer_data['question_id']} not found")
+                continue
+                
+            answer = Answer.objects.create(
+                checklist=checklist,
+                question=question,
+                answer_text=answer_data.get('answer_text'),
+                selected_option=answer_data.get('selected_option'),
+                description=answer_data.get('description')
+            )
+            
+            # بررسی پاسخ‌های غیرقابل قبول
+            if question.question_type == 'option' and question.unacceptable_options:
+                unacceptable_list = [opt.strip() for opt in question.unacceptable_options.split(',')]
+                if answer.selected_option in unacceptable_list:
+                    print(f"Unacceptable answer found: {answer.selected_option}")
+                    has_unacceptable_answers = True
+                    unacceptable_answers.append(answer)
+        
+        # اگر پاسخ غیرقابل قبول وجود دارد، آنومالی ایجاد می‌شود
+        if has_unacceptable_answers:
+            print(f"Found {len(unacceptable_answers)} unacceptable answers")
+            notify_checklist_failure(checklist, unacceptable_answers=unacceptable_answers, actor=request.user)
+            return JsonResponse({
+                'status': 'failure_detected',
+                'checklist_id': checklist.id,
+                'unacceptable_answers': [{'id': a.id, 'text': a.question.text} for a in unacceptable_answers]
+            })
+        
+        notify_checklist_success(checklist, actor=request.user)
+        return JsonResponse({'status': 'success', 'checklist_id': checklist.id})
+        
+    except json.JSONDecodeError as e:
+        print(f"JSON decode error: {str(e)}")
+        return JsonResponse({'status': 'error', 'message': 'داده‌های ارسالی نامعتبر است'}, status=400)
+    except Exception as e:
+        print(f"Error in submit_general_checklist: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'status': 'error', 'message': f'خطا در ثبت چک‌لیست: {str(e)}'}, status=500)
 
 @login_required
 @permission_required("create_anomaly_from_failure")
