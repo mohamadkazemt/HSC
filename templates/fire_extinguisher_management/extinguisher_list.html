@@ -240,13 +240,13 @@
 
           <div class="mb-4 md:col-span-2">
             <label class="block mb-1 font-bold">نوع مکان</label>
-            <select name="location_type" id="location_type_select" class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 transition-colors">
+            <select name="location_type" x-model="locationType" @change="console.log('Location type changed to:', locationType)" class="no-select2 w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 transition-colors">
               <option value="section">بخش</option>
               <option value="machine">دستگاه</option>
             </select>
           </div>
 
-          <div class="mb-4" id="location_section_wrapper">
+          <div class="mb-4" x-show="locationType === 'section'">
             <label class="block mb-1 font-bold">بخش</label>
             <select name="location_section" class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 transition-colors">
               <option value="">-- انتخاب بخش --</option>
@@ -256,7 +256,7 @@
             </select>
           </div>
 
-          <div class="mb-4 hidden" id="location_machine_wrapper">
+          <div class="mb-4" x-show="locationType === 'machine'">
             <label class="block mb-1 font-bold">دستگاه</label>
             <select name="location_machine" class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 transition-colors">
               <option value="">-- انتخاب دستگاه --</option>
@@ -371,6 +371,8 @@
       function initSelect2(el) {
         if (!el) return;
         if (el.dataset.select2Init) return;
+        // Skip elements with 'no-select2' class (for Alpine.js compatibility)
+        if (el.classList && el.classList.contains('no-select2')) return;
         try {
           if ($.fn.select2) {
             $(el).select2({ dir: 'rtl', language: 'fa', width: '100%', theme: 'classic', placeholder: 'انتخاب کنید...', allowClear: true });
@@ -393,27 +395,8 @@
       document.addEventListener('focusin', function(e) {
         const t = e.target;
         if (t.classList && t.classList.contains('persian-datepicker')) initPersianDatepicker(t);
-        if (t.tagName === 'SELECT') initSelect2(t);
+        if (t.tagName === 'SELECT' && !t.classList.contains('no-select2')) initSelect2(t);
       });
-
-      // Toggle location fields (section vs machine)
-      const locType = document.getElementById('location_type_select');
-      const secWrap = document.getElementById('location_section_wrapper');
-      const machWrap = document.getElementById('location_machine_wrapper');
-      function toggleLocation() {
-        if (!locType) return;
-        if (locType.value === 'machine') {
-          secWrap.classList.add('hidden');
-          machWrap.classList.remove('hidden');
-        } else {
-          secWrap.classList.remove('hidden');
-          machWrap.classList.add('hidden');
-        }
-      }
-      if (locType) {
-        locType.addEventListener('change', toggleLocation);
-        toggleLocation();
-      }
 
       function showFieldError(field, error) {
         const parent = field.closest('div');
@@ -667,6 +650,7 @@
         importing: false,
         importUrl: '',
         csrfToken: '',
+        locationType: 'section',
         
         handleImport() {
           const formEl = this.$refs.importForm;
