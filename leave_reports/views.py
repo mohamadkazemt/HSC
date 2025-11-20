@@ -659,13 +659,16 @@ def export_leaves_to_excel(leaves):
     headers = [
         'ردیف',
         'نام و نام خانوادگی',
+        'کد پرسنلی',
         'گروه کاری',
         'نوع مرخصی',
         'تاریخ شیفت',
         'نوع شیفت',
         'وضعیت',
         'جانشین',
+        'کد پرسنلی جانشین',
         'تأیید کننده نهایی',
+        'کد پرسنلی تأیید کننده',
         'تاریخ ثبت',
         'توضیحات'
     ]
@@ -705,16 +708,32 @@ def export_leaves_to_excel(leaves):
         shift_date_jalali = jdatetime.date.fromgregorian(date=leave.shift_date).strftime('%Y/%m/%d')
         created_at_jalali = jdatetime.datetime.fromgregorian(datetime=leave.created_at).strftime('%Y/%m/%d %H:%M')
         
+        # دریافت کد پرسنلی افراد
+        user_personnel_code = '-'
+        if leave.user and hasattr(leave.user, 'userprofile'):
+            user_personnel_code = leave.user.userprofile.personnel_code or '-'
+        
+        replacement_personnel_code = '-'
+        if leave.replacement_person and hasattr(leave.replacement_person, 'userprofile'):
+            replacement_personnel_code = leave.replacement_person.userprofile.personnel_code or '-'
+        
+        approver_personnel_code = '-'
+        if leave.final_approver:
+            approver_personnel_code = leave.final_approver.personnel_code or '-'
+        
         row_data = [
             idx - 1,
             leave.user.get_full_name() if leave.user else '-',
+            user_personnel_code,
             leave.work_group or '-',
             leave_type_dict.get(leave.leave_type, leave.leave_type),
             shift_date_jalali,
             shift_type_dict.get(leave.shift_type, leave.shift_type),
             status_dict.get(leave.status, leave.status),
             leave.replacement_person.get_full_name() if leave.replacement_person else '-',
+            replacement_personnel_code,
             leave.final_approver.user.get_full_name() if leave.final_approver else '-',
+            approver_personnel_code,
             created_at_jalali,
             leave.description or '-'
         ]
@@ -726,7 +745,7 @@ def export_leaves_to_excel(leaves):
             cell.border = border
             
             # رنگ‌بندی بر اساس وضعیت
-            if col_num == 7:  # ستون وضعیت
+            if col_num == 8:  # ستون وضعیت
                 if leave.status == 'approved':
                     cell.fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
                 elif leave.status == 'rejected':
@@ -735,7 +754,7 @@ def export_leaves_to_excel(leaves):
                     cell.fill = PatternFill(start_color="FFEB9C", end_color="FFEB9C", fill_type="solid")
     
     # تنظیم عرض ستون‌ها
-    column_widths = [8, 25, 20, 15, 15, 12, 18, 25, 25, 20, 40]
+    column_widths = [8, 25, 12, 20, 15, 15, 12, 18, 25, 12, 25, 12, 20, 40]
     for i, width in enumerate(column_widths, 1):
         ws.column_dimensions[get_column_letter(i)].width = width
     
