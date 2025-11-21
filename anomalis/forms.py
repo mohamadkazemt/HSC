@@ -4,6 +4,7 @@ from django_select2.forms import Select2TagWidget
 from .models import Anomaly, UserProfile
 from .models import Location, Anomalytype, AnomalyDescription, HSE, CorrectiveAction, Priority, UserProfile
 from django.core.exceptions import ValidationError
+from .utils import validate_image_file
 import os
 import jdatetime
 
@@ -34,15 +35,14 @@ class AnomalyForm(forms.ModelForm):
     def clean_image(self):
         image = self.cleaned_data.get('image')
         if image:
-            # بررسی حجم فایل (حداکثر 5 مگابایت)
-            if image.size > 5 * 1024 * 1024:
-                raise forms.ValidationError('حجم تصویر نباید بیشتر از 5 مگابایت باشد')
-
-            # بررسی نوع فایل
-            valid_extensions = ['.jpg', '.jpeg', '.png']
-            ext = os.path.splitext(image.name)[1].lower()
-            if ext not in valid_extensions:
-                raise forms.ValidationError('فقط فایل‌های JPG و PNG مجاز هستند')
+            # استفاده از تابع اعتبارسنجی از utils
+            is_valid, error_message = validate_image_file(image)
+            if not is_valid:
+                raise forms.ValidationError(error_message)
+            
+            # بررسی حجم فایل (حداکثر 10 مگابایت قبل از فشرده‌سازی)
+            if image.size > 10 * 1024 * 1024:
+                raise forms.ValidationError('حجم تصویر نباید بیشتر از 10 مگابایت باشد')
 
         return image
 

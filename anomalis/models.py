@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.db import models
 from accounts.models import UserProfile
+from .utils import compress_image
 
 
 
@@ -130,6 +131,16 @@ class Anomaly(models.Model):
     class Meta:
         verbose_name = "آنومالی"
         verbose_name_plural = "آنومالی ها"
+
+    def save(self, *args, **kwargs):
+        """
+        فشرده‌سازی خودکار تصویر قبل از ذخیره‌سازی
+        """
+        if self.image:
+            # فشرده‌سازی تصویر با حداکثر 1 مگابایت و کیفیت 85
+            self.image = compress_image(self.image, max_size_mb=1, quality=85)
+        
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return str(self.description[:30]) + '...'

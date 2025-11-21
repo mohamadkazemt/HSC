@@ -246,6 +246,7 @@
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
 <script>
   document.addEventListener('alpine:init', () => {})
 
@@ -376,16 +377,73 @@
     // AJAX submit with inline error rendering
     const form = document.getElementById('anomalyForm');
     const alertBox = document.getElementById('formAlert');
-    function clearErrors(){
+    const clearErrors = () => {
       alertBox.classList.add('hidden'); alertBox.textContent='';
       document.querySelectorAll('[data-error-for]').forEach(n=>{ n.textContent=''; n.classList.add('hidden'); });
       ['location','section','anomalytype','anomalydescription','hse_type','correctiveaction','followup','priority','description','image','action']
         .forEach(name=>{ const el = document.getElementById('id_'+name); if(el){ el.classList.remove('ring-2','ring-rose-500','border-rose-300'); }});
-    }
+    };
+
+    // تابع فشرده‌سازی تصویر قبل از آپلود
+    const compressImage = async (file) => {
+      // تنظیمات فشرده‌سازی
+      const options = {
+        maxSizeMB: 1,              // حداکثر حجم 1 مگابایت
+        maxWidthOrHeight: 1920,    // حداکثر ابعاد 1920 پیکسل
+        useWebWorker: true,        // استفاده از Web Worker برای کارایی بهتر
+        fileType: 'image/jpeg',    // تبدیل به JPEG
+        initialQuality: 0.85       // کیفیت اولیه 85%
+      };
+
+      try {
+        console.log(`حجم اصلی تصویر: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+        
+        // فشرده‌سازی تصویر
+        const compressedFile = await imageCompression(file, options);
+        
+        console.log(`حجم فشرده شده: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
+        
+        // تبدیل به File object با نام مناسب
+        const fileName = file.name.replace(/\.[^/.]+$/, '') + '.jpg';
+        return new File([compressedFile], fileName, { type: 'image/jpeg' });
+      } catch (error) {
+        console.error('خطا در فشرده‌سازی تصویر:', error);
+        // در صورت خطا، فایل اصلی را برگردان
+        return file;
+      }
+    };
+
     if (form) {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         clearErrors();
+        
+        // فشرده‌سازی تصویر قبل از ارسال (اگر تصویری انتخاب شده باشد)
+        if (imageEl && imageEl.files && imageEl.files[0]) {
+          try {
+            // نمایش پیام در حال فشرده‌سازی
+            alertBox.textContent = 'در حال فشرده‌سازی تصویر...';
+            alertBox.classList.remove('hidden', 'border-rose-200', 'bg-rose-50', 'text-rose-700');
+            alertBox.classList.add('border-blue-200', 'bg-blue-50', 'text-blue-700');
+            
+            const originalFile = imageEl.files[0];
+            const compressedFile = await compressImage(originalFile);
+            
+            // ایجاد DataTransfer برای تنظیم فایل فشرده شده
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(compressedFile);
+            imageEl.files = dataTransfer.files;
+            
+            // پاک کردن پیام فشرده‌سازی
+            alertBox.classList.add('hidden');
+            alertBox.classList.remove('border-blue-200', 'bg-blue-50', 'text-blue-700');
+            alertBox.classList.add('border-rose-200', 'bg-rose-50', 'text-rose-700');
+          } catch (error) {
+            console.error('خطا در فشرده‌سازی:', error);
+            // ادامه با فایل اصلی
+          }
+        }
+        
         const fd = new FormData(form);
         try {
           const actionUrl = form.getAttribute('action');
@@ -433,14 +491,20 @@
       dz.addEventListener('click', () => imageEl.click());
       dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('ring-2','ring-indigo-500'); });
       dz.addEventListener('dragleave', () => dz.classList.remove('ring-2','ring-indigo-500'));
-      dz.addEventListener('drop', (e) => {
+      dz.addEventListener('drop', async (e) => {
         e.preventDefault(); dz.classList.remove('ring-2','ring-indigo-500');
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-          imageEl.files = e.dataTransfer.files;
           const file = e.dataTransfer.files[0];
+          
+          // نمایش پیش‌نمایش فوری
           const reader = new FileReader();
           reader.onload = (ev) => { preview.src = ev.target.result; preview.classList.remove('hidden'); };
           reader.readAsDataURL(file);
+          
+          // تنظیم فایل
+          const dataTransfer = new DataTransfer();
+          dataTransfer.items.add(file);
+          imageEl.files = dataTransfer.files;
         }
       });
       imageEl.addEventListener('change', (e) => {
