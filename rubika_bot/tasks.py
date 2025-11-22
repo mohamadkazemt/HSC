@@ -1,8 +1,10 @@
 # rubika_bot/tasks.py
 
 import logging
+from datetime import datetime
 from typing import Any, Dict
 
+import jdatetime
 from celery import shared_task
 
 from .constants import LOG_CLEANUP_DAYS
@@ -10,6 +12,19 @@ from .models import WebhookLog
 from .services import RubPyIntegrationService
 
 logger = logging.getLogger(__name__)
+
+
+def _format_jalali_date(date_value):
+    """Format Gregorian date into a Jalali YYYY/MM/DD string."""
+    if not date_value:
+        return 'نامشخص'
+    if isinstance(date_value, datetime):
+        date_value = date_value.date()
+    try:
+        jalali_date = jdatetime.date.fromgregorian(date=date_value)
+        return f'{jalali_date.year:04d}/{jalali_date.month:02d}/{jalali_date.day:02d}'
+    except Exception:
+        return str(date_value)
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
@@ -114,7 +129,7 @@ def send_leave_approval_request(self, chat_id: str, leave_request_id: int, appro
                 '',
                 f'👤 درخواست‌دهنده: {requester_name}',
                 f'📌 نوع مرخصی: {leave_type_display}',
-                f'📅 تاریخ: {leave_request.shift_date}',
+                f'📅 تاریخ: {_format_jalali_date(leave_request.shift_date)}',
                 f'🕐 شیفت: {shift_type_display}',
             ]
         else:  # manager
@@ -123,7 +138,7 @@ def send_leave_approval_request(self, chat_id: str, leave_request_id: int, appro
                 '',
                 f'👤 درخواست‌دهنده: {requester_name}',
                 f'📌 نوع مرخصی: {leave_type_display}',
-                f'📅 تاریخ: {leave_request.shift_date}',
+                f'📅 تاریخ: {_format_jalali_date(leave_request.shift_date)}',
                 f'🕐 شیفت: {shift_type_display}',
             ]
             
