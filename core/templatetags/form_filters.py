@@ -29,6 +29,30 @@ def add_class(field, css_class):
             return ''
 
 
+@register.simple_tag
+def field_classes(field, base_classes, error_classes=''):
+    """Return base classes with error styles appended when field has errors."""
+    try:
+        base = str(base_classes or '')
+        if field is None:
+            return base
+        errors = getattr(field, 'errors', None)
+        if errors:
+            return f"{base} {error_classes}".strip()
+        return base
+    except Exception:
+        return base_classes
+
+
+@register.filter(name='has_errors')
+def has_errors(field):
+    """Check whether a bound field contains validation errors."""
+    try:
+        return bool(getattr(field, 'errors', None))
+    except Exception:
+        return False
+
+
 @register.filter(name='split')
 def split(value, sep=None):
     """Split a string into a list by the given separator.

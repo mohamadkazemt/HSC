@@ -6,6 +6,8 @@ app_name = 'risk_assessment'
 urlpatterns = [
     # داشبورد اصلی
     path('dashboard/', views.risk_dashboard, name='risk_dashboard'),
+    # لیست جامع ریسک‌ها
+    path('list/', views.risk_global_list, name='risk_list'),
     
     # صفحه شروع (انتخاب شغل برای ثبت ریسک)
     path('create/', views.risk_create_start, name='risk_create'),

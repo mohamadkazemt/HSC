@@ -4,6 +4,8 @@ from django.contrib import messages
 from django.db.models import Count, Q
 from django.db.models.functions import TruncMonth
 from django.core.paginator import Paginator
+from django.utils import timezone
+from datetime import timedelta
 from accounts.models import Position
 from .models import RiskAssessment
 from .forms import RiskAssessmentForm, RiskReEvaluationForm, RiskFilterForm
@@ -51,6 +53,119 @@ def risk_dashboard(request):
     }
     
     return render(request, 'risk_assessment/dashboard.html', context)
+
+
+@login_required
+def risk_global_list(request):
+    """لیست جامع تمام ریسک‌های ثبت شده با فیلتر و اولویت‌بندی"""
+    risks = RiskAssessment.objects.select_related(
+        'position', 'hazard', 'consequence', 'responsible_person', 'created_by'
+    ).prefetch_related('people_at_risk')
+
+    filter_form = RiskFilterForm(request.GET or None)
+    if filter_form.is_valid():
+        position = filter_form.cleaned_data.get('position')
+        if position:
+            risks = risks.filter(position=position)
+
+        risk_level = filter_form.cleaned_data.get('risk_level')
+        if risk_level:
+            risks = risks.filter(risk_level=risk_level)
+
+        risk_source = filter_form.cleaned_data.get('risk_source')
+        if risk_source:
+            risks = risks.filter(risk_source=risk_source)
+
+        is_routine = filter_form.cleaned_data.get('is_routine')
+        if is_routine == 'true':
+            risks = risks.filter(is_routine=True)
+        elif is_routine == 'false':
+            risks = risks.filter(is_routine=False)
+
+        corrective_required = filter_form.cleaned_data.get('corrective_action_required')
+        if corrective_required == 'true':
+            risks = risks.filter(corrective_action_required=True)
+        elif corrective_required == 'false':
+            risks = risks.filter(corrective_action_required=False)
+
+    search_query = request.GET.get('q', '').strip()
+    if search_query:
+        risks = risks.filter(
+            Q(activity_component__icontains=search_query)
+            | Q(hazard__description__icontains=search_query)
+            | Q(potential_event__icontains=search_query)
+            | Q(causes__icontains=search_query)
+            | Q(position__name__icontains=search_query)
+            | Q(notes__icontains=search_query)
+        )
+
+    sort_option = request.GET.get('sort', 'critical')
+    if sort_option == 'newest':
+        risks = risks.order_by('-created_at')
+    elif sort_option == 'oldest':
+        risks = risks.order_by('created_at')
+    elif sort_option == 'deadline':
+        risks = risks.order_by('action_deadline', '-risk_number')
+    else:
+        risks = risks.order_by('-risk_number', '-created_at')
+
+    aggregates = risks.aggregate(
+        total=Count('id'),
+        high=Count('id', filter=Q(risk_level='High')),
+        medium=Count('id', filter=Q(risk_level='Medium')),
+        low=Count('id', filter=Q(risk_level='Low')),
+        corrective_open=Count('id', filter=Q(corrective_action_required=True))
+    )
+    stats = {key: aggregates.get(key, 0) or 0 for key in aggregates}
+
+    today = timezone.now().date()
+    lookahead = today + timedelta(days=14)
+    overdue_count = risks.filter(
+        corrective_action_required=True,
+        action_deadline__lt=today
+    ).count()
+    upcoming_actions = risks.filter(
+        corrective_action_required=True,
+        action_deadline__isnull=False,
+        action_deadline__gte=today,
+        action_deadline__lte=lookahead
+    ).order_by('action_deadline')[:5]
+
+    high_risk_alerts = risks.filter(risk_level='High').order_by('-risk_number', '-created_at')[:5]
+    recent_updates = risks.order_by('-updated_at')[:6]
+
+    try:
+        per_page = int(request.GET.get('per_page', 25))
+    except (TypeError, ValueError):
+        per_page = 25
+    per_page = max(5, min(per_page, 100))
+
+    paginator = Paginator(risks, per_page)
+    page_number = request.GET.get('page')
+    risks_page = paginator.get_page(page_number)
+
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+    query_string = query_params.urlencode()
+    per_page_options = sorted({25, 50, 75, 100, per_page})
+
+    context = {
+        'risks': risks_page,
+        'filter_form': filter_form,
+        'search_query': search_query,
+        'sort_option': sort_option,
+        'per_page': per_page,
+        'per_page_options': per_page_options,
+        'stats': stats,
+        'overdue_count': overdue_count,
+        'upcoming_actions': upcoming_actions,
+        'high_risk_alerts': high_risk_alerts,
+        'recent_updates': recent_updates,
+        'today': today,
+        'query_string': query_string,
+    }
+
+    return render(request, 'risk_assessment/risk_list.html', context)
 
 
 @login_required
