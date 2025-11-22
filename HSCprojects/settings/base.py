@@ -74,8 +74,9 @@ INSTALLED_APPS = [
     'fire_reports.apps.FireReportsConfig',
     'checklist_app.apps.ChecklistAppConfig',
     'emergency_services.apps.EmergencyServicesConfig',
-'fire_extinguisher_management.apps.FireExtinguisherManagementConfig',
+    'fire_extinguisher_management.apps.FireExtinguisherManagementConfig',
     'rubika_bot.apps.RubikaBotConfig',
+    'risk_assessment.apps.RiskAssessmentConfig',
 ]
 
 MIDDLEWARE = [

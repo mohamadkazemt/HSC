@@ -1,0 +1,35 @@
+from django.urls import path
+from . import views
+
+app_name = 'risk_assessment'
+
+urlpatterns = [
+    # داشبورد اصلی
+    path('dashboard/', views.risk_dashboard, name='risk_dashboard'),
+    
+    # صفحه شروع (انتخاب شغل برای ثبت ریسک)
+    path('create/', views.risk_create_start, name='risk_create'),
+    # alias برای سازگاری با قالب هایی که از نام قبلی استفاده می کنند
+    path('create/', views.risk_create_start, name='risk_create_start'),
+    
+    # لیست ریسک‌های یک شغل
+    path('position/<int:position_id>/', views.position_risk_list, name='position_risks'),
+    
+    # افزودن ریسک جدید برای شغل خاص
+    path('position/<int:position_id>/add/', views.risk_create_for_position, name='risk_create_for_position'),
+    
+    # ویرایش ریسک
+    path('risk/<int:risk_id>/edit/', views.risk_update, name='risk_update'),
+    
+    # جزئیات ریسک
+    path('risk/<int:risk_id>/', views.risk_detail, name='risk_detail'),
+    
+    # ارزیابی مجدد
+    path('risk/<int:risk_id>/re-evaluate/', views.risk_re_evaluate, name='risk_re_evaluate'),
+    
+    # حذف ریسک
+    path('risk/<int:risk_id>/delete/', views.risk_delete, name='risk_delete'),
+    
+    # نمایش ماتریس کلی
+    path('matrix/', views.risk_matrix_view, name='risk_matrix'),
+]

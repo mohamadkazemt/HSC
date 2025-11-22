@@ -1,0 +1,390 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}ریسک‌های {{ position.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <style>
+        .sticky-table thead th { position: sticky; top: 0; background:#f8f9fa; z-index: 2; }
+    </style>
+    <!-- Header -->
+    <div class="row mb-4 align-items-center">
+        <div class="col-md-8 mb-3 mb-md-0">
+            <h2 class="fw-bold mb-1">ارزیابی ریسک: {{ position.name }}</h2>
+            <p class="text-muted mb-0">ماتریس ریسک (احتمال × شدت) و وضعیت کنترلی</p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            <a href="{% url 'risk_assessment:risk_dashboard' %}" class="btn btn-light btn-sm me-2">
+                <i class="ki-duotone ki-arrow-right fs-6"></i>
+                بازگشت
+            </a>
+            <a href="{% url 'risk_assessment:risk_create_for_position' position.id %}" class="btn btn-success btn-sm">
+                <i class="ki-duotone ki-plus fs-6"></i>
+                ریسک جدید
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-2">
+        <div class="col-6 col-md-2">
+            <div class="card shadow-sm h-100">
+                <div class="card-body py-3 text-center">
+                    <div class="text-muted small">کل</div>
+                    <div class="h5 mb-0 text-primary">{{ total_count }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card shadow-sm h-100 border-danger">
+                <div class="card-body py-3 text-center">
+                    <div class="small text-danger">بالا</div>
+                    <div class="h5 mb-0 text-danger">{{ high_count }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card shadow-sm h-100 border-warning">
+                <div class="card-body py-3 text-center">
+                    <div class="small text-warning">متوسط</div>
+                    <div class="h5 mb-0 text-warning">{{ medium_count }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card shadow-sm h-100 border-success">
+                <div class="card-body py-3 text-center">
+                    <div class="small text-success">پایین</div>
+                    <div class="h5 mb-0 text-success">{{ low_count }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card shadow-sm h-100 border-info">
+                <div class="card-body py-3 text-center">
+                    <div class="small text-info">اقدام اصلاحی</div>
+                    <div class="h5 mb-0 text-info">{{ corrective_open }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card shadow-sm h-100 border-secondary">
+                <div class="card-body py-3 text-center">
+                    <div class="small text-secondary">ارزیابی مجدد</div>
+                    <div class="h5 mb-0 text-secondary">{{ reevaluated_count }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card shadow-sm h-100 border-danger">
+                <div class="card-body py-3 text-center">
+                    <div class="small text-danger">Overdue</div>
+                    <div class="h5 mb-0 text-danger">{{ overdue_count }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-2">
+            <div class="card shadow-sm h-100 border-success">
+                <div class="card-body py-3 text-center">
+                    <div class="small text-success">٪ کاهش میانگین</div>
+                    <div class="h5 mb-0 text-success">{{ reduction_percent }}%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Distribution Chart & Quick Filters -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light py-2"><span class="small fw-semibold">نمودار توزیع سطوح ریسک</span></div>
+                <div class="card-body">
+                    <canvas id="riskLevelChart" height="160"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light py-2"><span class="small fw-semibold">روند ۶ ماهه ریسک‌ها</span></div>
+                <div class="card-body">
+                    <canvas id="riskTrendChart" height="160"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light py-2 d-flex align-items-center justify-content-between">
+                    <span class="small fw-semibold">فیلترهای سریع</span>
+                    <small class="text-muted">کلیک برای اعمال</small>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="?risk_level=High" class="btn btn-sm btn-outline-danger">ریسک‌های بالا</a>
+                        <a href="?risk_level=Medium" class="btn btn-sm btn-outline-warning">ریسک‌های متوسط</a>
+                        <a href="?risk_level=Low" class="btn btn-sm btn-outline-success">ریسک‌های پایین</a>
+                        <a href="?corrective_action_required=on" class="btn btn-sm btn-outline-info">نیازمند اقدام</a>
+                        <a href="?is_mue=on" class="btn btn-sm btn-outline-danger">MUE</a>
+                        <a href="?is_emergency=on" class="btn btn-sm btn-outline-dark">اضطراری</a>
+                        <a href="?" class="btn btn-sm btn-outline-secondary">حذف فیلترها</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- فیلترها -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    {{ filter_form.risk_level.label_tag }}
+                    {{ filter_form.risk_level }}
+                </div>
+                <div class="col-md-3">
+                    {{ filter_form.risk_source.label_tag }}
+                    {{ filter_form.risk_source }}
+                </div>
+                <div class="col-md-2">
+                    {{ filter_form.is_routine.label_tag }}
+                    {{ filter_form.is_routine }}
+                </div>
+                <div class="col-md-2">
+                    {{ filter_form.corrective_action_required.label_tag }}
+                    {{ filter_form.corrective_action_required }}
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="ki-duotone ki-filter fs-3"></i>
+                        فیلتر
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- جدول ریسک‌ها -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle mb-0 sticky-table" style="font-size: 0.85rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 3%;">#</th>
+                            <th style="width: 12%;">فعالیت</th>
+                            <th style="width: 10%;">خطر</th>
+                            <th style="width: 10%;">رویداد محتمل</th>
+                            <th style="width: 10%;">پیامد</th>
+                            <th style="width: 5%;" class="text-center">P</th>
+                            <th style="width: 5%;" class="text-center">S</th>
+                            <th style="width: 5%;" class="text-center">RPN</th>
+                            <th style="width: 8%;" class="text-center">سطح</th>
+                            <th style="width: 6%;" class="text-center">MUE/اضطراری</th>
+                            <th style="width: 12%;">کنترل‌ها</th>
+                            <th style="width: 5%;" class="text-center">RPN باقی</th>
+                            <th style="width: 10%;" class="text-center">عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for risk in risks %}
+                        <tr class="{% if risk.risk_level == 'High' %}table-danger{% elif risk.risk_level == 'Medium' %}table-warning{% else %}table-light{% endif %} {% if risk.corrective_action_required %}border-start border-4 border-info{% endif %}">
+                            <td class="text-center fw-bold">{{ forloop.counter }}</td>
+                            <td class="text-center">
+                                {% if risk.is_mue %}
+                                <span class="badge bg-danger text-white d-inline-flex align-items-center gap-1 mb-1" title="قابل تبدیل به MUE">
+                                    <i class="fa-solid fa-circle-exclamation"></i>
+                                    MUE
+                                </span>
+                                {% endif %}
+                                {% if risk.is_emergency %}
+                                <span class="badge bg-warning text-dark d-inline-flex align-items-center gap-1" title="قابل تبدیل به شرایط اضطراری">
+                                    <i class="fa-solid fa-bolt"></i>
+                                    اضطراری
+                                </span>
+                                {% endif %}
+                                {% if not risk.is_mue and not risk.is_emergency %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted d-block">
+                                    {% if risk.is_routine %}
+                                    <span class="badge badge-primary">روتین</span>
+                                    {% else %}
+                                    <span class="badge badge-secondary">غیر روتین</span>
+                                    {% endif %}
+                                </small>
+                                {{ risk.activity_component|truncatewords:5 }}
+                            </td>
+                            <td>
+                                <small>{{ risk.hazard.name }}</small>
+                            </td>
+                            <td>
+                                <small>{{ risk.potential_event|truncatewords:6 }}</small>
+                            </td>
+                            <td>
+                                <small>{{ risk.consequence.name }}</small>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-light">{{ risk.probability }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-light">{{ risk.severity }}</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-{{ risk.get_risk_color }} fs-6 fw-bold">
+                                    {{ risk.risk_number }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-{{ risk.get_risk_color }}">
+                                    {{ risk.get_risk_level_display_fa }}
+                                </span>
+                            </td>
+                            <td>
+                                <small>
+                                    {% if risk.control_engineering %}
+                                    <span class="badge badge-info badge-sm">مهندسی</span>
+                                    {% endif %}
+                                    {% if risk.control_admin %}
+                                    <span class="badge badge-secondary badge-sm">اداری</span>
+                                    {% endif %}
+                                    {% if risk.control_ppe %}
+                                    <span class="badge badge-warning badge-sm">PPE</span>
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td class="text-center">
+                                {% if risk.residual_risk_number %}
+                                <span class="badge badge-{{ risk.get_residual_risk_color }} fs-6">
+                                    {{ risk.residual_risk_number }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'risk_assessment:risk_detail' risk.id %}" class="btn btn-light" title="جزئیات"><i class="ki-duotone ki-eye fs-5"></i></a>
+                                    <a href="{% url 'risk_assessment:risk_update' risk.id %}" class="btn btn-light" title="ویرایش"><i class="ki-duotone ki-pencil fs-5"></i></a>
+                                    <a href="{% url 'risk_assessment:risk_re_evaluate' risk.id %}" class="btn btn-light" title="ارزیابی مجدد"><i class="ki-duotone ki-arrows-circle fs-5"></i></a>
+                                </div>
+                                {% if risk.corrective_action_required %}
+                                <div class="mt-1"><span class="badge bg-info text-dark"><i class="fa-solid fa-wrench"></i> اقدام اصلاحی</span></div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="13" class="text-center py-5">
+                                <i class="ki-duotone ki-file-deleted fs-5x text-muted mb-3"></i>
+                                <p class="text-muted">هیچ ریسکی برای این شغل ثبت نشده است</p>
+                                <a href="{% url 'risk_assessment:risk_create_for_position' position.id %}" class="btn btn-success mt-2">
+                                    <i class="ki-duotone ki-plus fs-3"></i>
+                                    افزودن اولین ریسک
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if risks.has_other_pages %}
+        <div class="card-footer">
+            <nav>
+                <ul class="pagination pagination-sm justify-content-center mb-0">
+                    {% if risks.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">اولین</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ risks.previous_page_number }}">قبلی</a>
+                    </li>
+                    {% endif %}
+
+                    <li class="page-item active">
+                        <span class="page-link">
+                            صفحه {{ risks.number }} از {{ risks.paginator.num_pages }}
+                        </span>
+                    </li>
+
+                    {% if risks.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ risks.next_page_number }}">بعدی</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ risks.paginator.num_pages }}">آخرین</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- راهنما -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="alert alert-info d-flex align-items-center">
+                <i class="ki-duotone ki-information fs-2x me-3"></i>
+                <div>
+                    <strong>راهنما:</strong>
+                    <span class="badge badge-success ms-2">1-6 پایین (قابل پذیرش)</span>
+                    <span class="badge badge-warning ms-2">7-16 متوسط (نیاز به کاهش)</span>
+                    <span class="badge badge-danger ms-2">17-25 بالا (غیرقابل پذیرش)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+    const ctx = document.getElementById('riskLevelChart');
+    if(!ctx) return;
+    const data = {
+        labels: ['بالا','متوسط','پایین'],
+        datasets: [{
+            data: [{{ high_count|default:0 }}, {{ medium_count|default:0 }}, {{ low_count|default:0 }}],
+            backgroundColor: ['#dc3545','#ffc107','#198754'],
+            borderWidth: 0,
+            hoverOffset: 4
+        }]
+    };
+    new Chart(ctx, { type:'doughnut', data:data, options:{
+        plugins:{ legend:{ position:'bottom', labels:{ font:{ family:'IRANSans', size:12 } } } },
+        cutout:'60%',
+    }});
+
+    const trendCtx = document.getElementById('riskTrendChart');
+    if(trendCtx){
+         const trendLabels = {{ trend_labels|safe }};
+         const trendHigh = {{ trend_high|safe }};
+         const trendMedium = {{ trend_medium|safe }};
+         const trendLow = {{ trend_low|safe }};
+         new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                     labels: trendLabels,
+                     datasets: [
+                         {label:'High', data:trendHigh, borderColor:'#dc3545', backgroundColor:'rgba(220,53,69,.15)', tension:.3},
+                         {label:'Medium', data:trendMedium, borderColor:'#ffc107', backgroundColor:'rgba(255,193,7,.15)', tension:.3},
+                         {label:'Low', data:trendLow, borderColor:'#198754', backgroundColor:'rgba(25,135,84,.15)', tension:.3},
+                     ]
+                },
+                options:{
+                     plugins:{ legend:{ display:true, position:'bottom' } },
+                     scales:{
+                         y:{ beginAtZero:true, ticks:{ precision:0 } }
+                     }
+                }
+         });
+    }
+});
+</script>
+{% endblock %}

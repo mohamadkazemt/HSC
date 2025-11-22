@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+{% if action == 'create' %}افزودن ریسک جدید{% else %}ویرایش ریسک{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-11 mx-auto">
+            <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-3">
+                <div>
+                    <h3 class="fw-bold mb-0">
+                        {% if action == 'create' %}افزودن ریسک جدید برای {{ position.name }}{% else %}ویرایش ریسک{% endif %}
+                    </h3>
+                    <div class="text-muted small">لطفاً اطلاعات را با دقت وارد کنید؛ عدد ریسک لحظه‌ای محاسبه می‌شود.</div>
+                </div>
+                <div id="live-risk-pill" class="badge bg-secondary p-3 fs-6">
+                    RPN: <span id="live-rpn">-</span>
+                    <span id="live-level" class="ms-2"></span>
+                </div>
+            </div>
+            <form method="post" novalidate class="needs-validation" id="risk-form">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+
+                        <div class="row g-4">
+                            <!-- بخش 1: منشا و فعالیت -->
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                    <h5 class="mb-0"><i class="ki-duotone ki-information-5 text-primary"></i> منشا شناسایی و مشخصات فعالیت</h5>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#section-source" aria-expanded="true">نمایش/پنهان</button>
+                                </div>
+                                <div id="section-source" class="collapse show">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">{{ form.risk_source|as_crispy_field }}</div>
+                                        <div class="col-md-6">{{ form.risk_source_other|as_crispy_field }}</div>
+                                        <div class="col-md-9">{{ form.activity_component|as_crispy_field }}</div>
+                                        <div class="col-md-3">
+                                            <label class="form-label d-block">روتین؟</label>
+                                            <div class="form-check form-switch">
+                                                {{ form.is_routine }}
+                                                <label class="form-check-label" for="{{ form.is_routine.id_for_label }}">فعالیت روتین است</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">{{ form.job_tasks|as_crispy_field }}</div>
+                                        <div class="col-12">{{ form.related_positions|as_crispy_field }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- بخش 2: شناسایی خطر -->
+                            <div class="col-12 mt-4">
+                                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                    <h5 class="mb-0"><i class="ki-duotone ki-shield-cross text-danger"></i> شناسایی خطر و پیامد</h5>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#section-hazard" aria-expanded="true">نمایش/پنهان</button>
+                                </div>
+                                <div id="section-hazard" class="collapse show">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">{{ form.hazard|as_crispy_field }}</div>
+                                        <div class="col-md-6">{{ form.people_at_risk|as_crispy_field }}</div>
+                                        <div class="col-md-6">{{ form.potential_event|as_crispy_field }}</div>
+                                        <div class="col-md-6">{{ form.consequence|as_crispy_field }}</div>
+                                        <div class="col-12">{{ form.causes|as_crispy_field }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- بخش 3: کنترل‌های موجود -->
+                            <div class="col-12 mt-4">
+                                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                    <h5 class="mb-0"><i class="ki-duotone ki-security-user text-info"></i> کنترل‌های موجود</h5>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#section-existing" aria-expanded="true">نمایش/پنهان</button>
+                                </div>
+                                <div id="section-existing" class="collapse show">
+                                    <div class="row g-3">
+                                        <div class="col-12">{{ form.existing_controls|as_crispy_field }}</div>
+                                        <div class="col-12">{{ form.control_failure_causes|as_crispy_field }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- بخش الزامات قانونی -->
+                            <div class="col-12 mt-4">
+                                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                    <h5 class="mb-0"><i class="ki-duotone ki-shield-tick text-success"></i> الزامات قانونی</h5>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#section-legal" aria-expanded="true">نمایش/پنهان</button>
+                                </div>
+                                <div id="section-legal" class="collapse show">
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <div class="form-check form-switch mt-1">
+                                                {{ form.has_legal_requirement }}
+                                                <label class="form-check-label" for="{{ form.has_legal_requirement.id_for_label }}">الزام قانونی دارد</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">{{ form.legal_requirement_desc|as_crispy_field }}</div>
+                                        <div class="col-md-4">{{ form.is_legal_compliant|as_crispy_field }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- بخش 4: ارزیابی ریسک -->
+                            <div class="col-12 mt-4">
+                                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                    <h5 class="mb-0"><i class="ki-duotone ki-chart-simple-2 text-warning"></i> محاسبه ریسک اولیه</h5>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#section-initial" aria-expanded="true">نمایش/پنهان</button>
+                                </div>
+                                <div id="section-initial" class="collapse show">
+                                    <div class="alert alert-info small">هر بار مقدار احتمال یا شدت را تغییر دهید عدد ریسک به‌صورت لحظه‌ای بروزرسانی می‌شود.</div>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">{{ form.probability|as_crispy_field }}</div>
+                                        <div class="col-md-6">{{ form.severity|as_crispy_field }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- بخش 5: کنترل‌های پیشنهادی -->
+                            <div class="col-12 mt-4">
+                                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                    <h5 class="mb-0"><i class="ki-duotone ki-category text-success"></i> کنترل‌های پیشنهادی (Hierarchy)</h5>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#section-controls" aria-expanded="false">نمایش/پنهان</button>
+                                </div>
+                                <div id="section-controls" class="collapse">
+                                    <div class="row g-3">
+                                        <div class="col-12">{{ form.control_elimination|as_crispy_field }}</div>
+                                        <div class="col-12">{{ form.control_substitution|as_crispy_field }}</div>
+                                        <div class="col-12">{{ form.control_engineering|as_crispy_field }}</div>
+                                        <div class="col-12">{{ form.control_admin|as_crispy_field }}</div>
+                                        <div class="col-12">{{ form.control_ppe|as_crispy_field }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- بخش 6: اقدامات اصلاحی -->
+                            <div class="col-12 mt-4">
+                                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                    <h5 class="mb-0"><i class="ki-duotone ki-notepad text-primary"></i> اقدامات اصلاحی</h5>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#section-action" aria-expanded="false">نمایش/پنهان</button>
+                                </div>
+                                <div id="section-action" class="collapse">
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <div class="form-check form-switch">
+                                                {{ form.corrective_action_required }}
+                                                <label class="form-check-label" for="{{ form.corrective_action_required.id_for_label }}">نیاز به اقدام اصلاحی دارد</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">{{ form.action_number|as_crispy_field }}</div>
+                                        <div class="col-md-6">{{ form.responsible_person|as_crispy_field }}</div>
+                                        <div class="col-md-6">{{ form.action_date|as_crispy_field }}</div>
+                                        <div class="col-md-6">{{ form.action_deadline|as_crispy_field }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- بخش MUE و اضطراری -->
+                            <div class="col-12 mt-4">
+                                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                    <h5 class="mb-0"><i class="ki-duotone ki-warning-2 text-danger"></i> MUE و شرایط اضطراری</h5>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" data-bs-target="#section-mue" aria-expanded="false">نمایش/پنهان</button>
+                                </div>
+                                <div id="section-mue" class="collapse">
+                                    <div class="row g-3">
+                                        <div class="col-md-3">
+                                            <div class="form-check form-switch mt-1">
+                                                {{ form.is_mue }}
+                                                <label class="form-check-label" for="{{ form.is_mue.id_for_label }}">قابل تبدیل به MUE</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">{{ form.mue_code|as_crispy_field }}</div>
+                                        <div class="col-md-3">
+                                            <div class="form-check form-switch mt-1">
+                                                {{ form.is_emergency }}
+                                                <label class="form-check-label" for="{{ form.is_emergency.id_for_label }}">شرایط اضطراری</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">{{ form.emergency_code|as_crispy_field }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- بخش 7: یادداشت -->
+                            <div class="col-12 mt-4">{{ form.notes|as_crispy_field }}</div>
+                        </div>
+
+                        <!-- دکمه‌های عملیات -->
+                        <div class="d-flex justify-content-end mt-4 gap-2">
+                            <a href="{% url 'risk_assessment:position_risks' position.id %}" class="btn btn-light">انصراف</a>
+                            <button type="submit" class="btn btn-success px-5">
+                                <i class="ki-duotone ki-check fs-2"></i> ذخیره ریسک
+                            </button>
+                        </div>
+                    </form>
+        </div>
+    </div>
+</div>
+</div>
+
+<script>
+// Live RPN calculation
+function updateRPN(){
+  const pSelect = document.getElementById('id_probability');
+  const sSelect = document.getElementById('id_severity');
+  if(!pSelect || !sSelect) return;
+  const p = parseInt(pSelect.value || 0); const s = parseInt(sSelect.value || 0);
+  const rpnEl = document.getElementById('live-rpn');
+  const levelEl = document.getElementById('live-level');
+  if(p && s){
+     const rpn = p * s; rpnEl.textContent = rpn;
+     let lvl = '', badgeClass='badge bg-secondary';
+     if(rpn >= 17){ lvl='بالا'; badgeClass='badge bg-danger'; }
+     else if(rpn >= 7){ lvl='متوسط'; badgeClass='badge bg-warning text-dark'; }
+     else { lvl='پایین'; badgeClass='badge bg-success'; }
+     levelEl.className = badgeClass; levelEl.textContent = lvl;
+  } else { rpnEl.textContent='-'; levelEl.textContent=''; levelEl.className=''; }
+}
+document.addEventListener('change', updateRPN);
+document.addEventListener('DOMContentLoaded', updateRPN);
+</script>
+{% endblock %}

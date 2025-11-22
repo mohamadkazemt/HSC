@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+
+{% block title %}جزئیات ریسک{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-3">
+        <div class="col-md-8">
+            <h2>جزئیات کامل ارزیابی ریسک</h2>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'risk_assessment:position_risks' risk.position.id %}" class="btn btn-light">
+                بازگشت
+            </a>
+            <a href="{% url 'risk_assessment:risk_update' risk.id %}" class="btn btn-primary">
+                ویرایش
+            </a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="row g-4">
+                <!-- عدد ریسک -->
+                <div class="col-12">
+                    <div class="p-4 rounded border position-relative overflow-hidden" style="background:linear-gradient(135deg,#f8f9fa 0%,#ffffff 100%);">
+                        <div class="d-flex flex-column align-items-center">
+                            <h3 class="mb-3">عدد ریسک (RPN)</h3>
+                            <div class="d-flex align-items-center gap-4 flex-wrap justify-content-center">
+                                <div class="text-center">
+                                    <div class="small text-muted mb-1">اولیه</div>
+                                    <div class="display-5 fw-bold text-{{ risk.get_risk_color }}">{{ risk.risk_number }}</div>
+                                    <span class="badge badge-{{ risk.get_risk_color }}">{{ risk.get_risk_level_display_fa }}</span>
+                                    <div class="text-muted mt-1" style="font-size:.75rem;">P={{ risk.probability }} × S={{ risk.severity }}</div>
+                                </div>
+                                {% if risk.residual_risk_number %}
+                                <div class="text-center">
+                                    <div class="small text-muted mb-1">باقی‌مانده</div>
+                                    <div class="display-6 fw-bold text-{{ risk.get_residual_risk_color }}">{{ risk.residual_risk_number }}</div>
+                                    <span class="badge badge-{{ risk.get_residual_risk_color }}">{{ risk.residual_risk_level|default:'-' }}</span>
+                                    <div class="text-muted mt-1" style="font-size:.75rem;">تاریخ: {{ risk.re_evaluation_date }}</div>
+                                </div>
+                                <div class="text-center align-self-center">
+                                    {% if risk.residual_risk_number < risk.risk_number %}
+                                        <span class="badge bg-success d-inline-flex align-items-center gap-1">
+                                            <i class="fa-solid fa-arrow-down"></i> کاهش ریسک
+                                        </span>
+                                    {% elif risk.residual_risk_number > risk.risk_number %}
+                                        <span class="badge bg-danger d-inline-flex align-items-center gap-1">
+                                            <i class="fa-solid fa-arrow-up"></i> افزایش ریسک
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">بدون تغییر</span>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- اطلاعات پایه -->
+                <div class="col-md-6">
+                    <strong>شغل/سمت:</strong> {{ risk.position.name }}
+                </div>
+                <div class="col-md-6">
+                    <strong>منشا شناسایی:</strong> {{ risk.get_risk_source_display }}
+                </div>
+                <div class="col-12">
+                    <strong>فعالیت:</strong> {{ risk.activity_component }}
+                </div>
+                {% if risk.job_tasks.exists %}
+                <div class="col-12">
+                    <strong>اجزای فعالیت:</strong>
+                    {% for jt in risk.job_tasks.all %}
+                        <span class="badge bg-secondary">{{ jt.name }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if risk.related_positions.exists %}
+                <div class="col-12">
+                    <strong>مشاغل مشترک:</strong>
+                    {% for pos in risk.related_positions.all %}
+                        <span class="badge bg-info text-dark">{{ pos.name }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                <div class="col-12">
+                    <strong>خطر:</strong> {{ risk.hazard.name }}
+                </div>
+                <div class="col-12">
+                    <strong>رویداد محتمل:</strong> {{ risk.potential_event }}
+                </div>
+                <div class="col-12">
+                    <strong>علل:</strong><br>{{ risk.causes|linebreaks }}
+                </div>
+                <div class="col-12">
+                    <strong>پیامد احتمالی:</strong> {{ risk.consequence.name }}
+                </div>
+
+                <!-- MUE & Emergency Flags -->
+                <div class="col-md-6">
+                    <div class="p-3 border rounded h-100">
+                        <h6 class="fw-bold mb-2">وضعیت MUE</h6>
+                        {% if risk.is_mue %}
+                            <span class="badge bg-danger d-inline-flex align-items-center gap-1 mb-2">
+                                <i class="fa-solid fa-circle-exclamation"></i> قابل تبدیل به MUE
+                            </span>
+                            {% if risk.mue_code %}
+                            <div class="small text-muted">کد: {{ risk.mue_code }}</div>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">قابل تبدیل به MUE نیست</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 border rounded h-100">
+                        <h6 class="fw-bold mb-2">وضعیت شرایط اضطراری</h6>
+                        {% if risk.is_emergency %}
+                            <span class="badge bg-warning text-dark d-inline-flex align-items-center gap-1 mb-2">
+                                <i class="fa-solid fa-bolt"></i> امکان شرایط اضطراری
+                            </span>
+                            {% if risk.emergency_code %}
+                            <div class="small text-muted">کد: {{ risk.emergency_code }}</div>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">شرایط اضطراری ندارد</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- یادداشت -->
+                {% if risk.notes %}
+                <div class="col-12">
+                    <div class="alert alert-secondary">
+                        <strong>یادداشت‌ها:</strong><br>{{ risk.notes|linebreaks }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- تاریخچه تغییرات -->
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">تاریخچه تغییرات ریسک</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>زمان</th>
+                            <th>نوع</th>
+                            <th>P</th>
+                            <th>S</th>
+                            <th>RPN</th>
+                            <th>سطح</th>
+                            <th>P باقی</th>
+                            <th>S باقی</th>
+                            <th>RPN باقی</th>
+                            <th>سطح باقی</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for h in risk.history.all %}
+                        <tr class="{% if h.risk_level == 'High' %}table-danger{% elif h.risk_level == 'Medium' %}table-warning{% else %}table-success{% endif %}">
+                            <td class="text-nowrap">{{ h.created_at|date:'Y/m/d H:i' }}</td>
+                            <td>
+                                {% if h.change_type == 'initial' %}ایجاد{% elif h.change_type == 'update' %}بروزرسانی{% else %}ارزیابی مجدد{% endif %}
+                            </td>
+                            <td>{{ h.probability }}</td>
+                            <td>{{ h.severity }}</td>
+                            <td class="fw-bold">{{ h.risk_number }}</td>
+                            <td>{{ h.risk_level }}</td>
+                            <td>{{ h.residual_probability|default:'-' }}</td>
+                            <td>{{ h.residual_severity|default:'-' }}</td>
+                            <td class="fw-bold">{{ h.residual_risk_number|default:'-' }}</td>
+                            <td>{{ h.residual_risk_level|default:'-' }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="10" class="text-center text-muted py-3">تاریخچه‌ای ثبت نشده است</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

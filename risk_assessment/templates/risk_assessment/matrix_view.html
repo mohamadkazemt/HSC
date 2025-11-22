@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}ماتریس ریسک ۵×۵{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">ماتریس ریسک ۵×۵ (کل سیستم)</h2>
+    <a href="{% url 'risk_assessment:risk_dashboard' %}" class="btn btn-light-primary"><i class="ki-duotone ki-home"></i> داشبورد</a>
+  </div>
+  <div class="alert alert-info d-flex align-items-center gap-2">
+    <i class="ki-duotone ki-information fs-2"></i>
+    <small>تعداد ریسک ها در هر خانه بر اساس شدت (S) × احتمال (P) محاسبه شده است.</small>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-bordered text-center align-middle" style="min-width:600px;">
+      <thead class="table-light">
+        <tr>
+          <th class="bg-light" style="width:110px;">شدت \\ احتمال</th>
+          {% for p in probabilities %}
+            <th class="bg-secondary bg-opacity-10">P{{ p }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <th class="bg-secondary bg-opacity-10">S{{ row.severity }}</th>
+          {% for cell in row.cells %}
+          <td class="p-0">
+            <div class="py-3 text-white {% if cell.color == 'danger' %}bg-danger{% elif cell.color == 'warning' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+              <div class="fw-bold">RPN {{ cell.rpn }}</div>
+              <div class="small">{{ cell.count }} ریسک</div>
+            </div>
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="row mt-4 g-3">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3">راهنمای رنگ ها</h6>
+          <div class="d-flex flex-column gap-2">
+            <div class="d-flex align-items-center gap-2"><span class="badge" style="background:#dc3545">High ≥ 17</span><small>غیرقابل پذیرش - اقدام فوری</small></div>
+            <div class="d-flex align-items-center gap-2"><span class="badge" style="background:#ffc107;color:#000">Medium 7-16</span><small>نیاز به کاهش برنامه ریزی شده</small></div>
+            <div class="d-flex align-items-center gap-2"><span class="badge" style="background:#198754">Low ≤ 6</span><small>قابل پذیرش با پایش</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-8">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3">توضیحات</h6>
+          <p class="text-muted small mb-0">این ماتریس تعداد ریسک های ثبت شده را در هر ترکیب شدت و احتمال نمایش می دهد. برای تحلیل جزئی تر می توانید به لیست ریسک های هر شغل مراجعه کنید.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

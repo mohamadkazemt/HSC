@@ -1,0 +1,408 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}داشبورد ارزیابی ریسک{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header با گرادیانت -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="p-4 rounded-3 shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                    <div class="text-white">
+                        <h2 class="fw-bold mb-1 text-white">سیستم ارزیابی ریسک HSE</h2>
+                        <p class="mb-0 text-white-50">مدیریت و ارزیابی ریسک‌های شغلی بر اساس ماتریس ۵×۵</p>
+                    </div>
+                    <div>
+                        <a href="{% url 'risk_assessment:risk_create_start' %}" class="btn btn-light btn-lg shadow">
+                            <i class="ki-duotone ki-plus fs-2"></i>
+                            ایجاد ارزیابی جدید
+                        </a>
+                        <a href="{% url 'risk_assessment:risk_matrix' %}" class="btn btn-outline-light btn-lg ms-2">
+                            <i class="ki-duotone ki-element-11 fs-2"></i>
+                            ماتریس ۵×۵
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- آمار کلی با انیمیشن -->
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 hover-card" style="transition: transform 0.2s;">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-primary bg-opacity-10 rounded-circle p-3" style="width:70px;height:70px;display:flex;align-items:center;justify-content:center;">
+                                <i class="ki-duotone ki-chart-simple fs-2x text-primary"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1 small text-uppercase">کل ارزیابی‌ها</h6>
+                            <h2 class="mb-0 fw-bold">{{ total_assessments }}</h2>
+                            <div class="progress mt-2" style="height:4px;">
+                                <div class="progress-bar bg-primary" style="width:100%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 hover-card" style="transition: transform 0.2s;">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-danger bg-opacity-10 rounded-circle p-3" style="width:70px;height:70px;display:flex;align-items:center;justify-content:center;">
+                                <i class="ki-duotone ki-shield-cross fs-2x text-danger"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1 small text-uppercase">ریسک بالا</h6>
+                            <h2 class="mb-0 fw-bold text-danger">{{ high_risk_count }}</h2>
+                            <div class="progress mt-2" style="height:4px;">
+                                <div class="progress-bar bg-danger" style="width:{% widthratio high_risk_count total_assessments 100 %}%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 hover-card" style="transition: transform 0.2s;">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-warning bg-opacity-10 rounded-circle p-3" style="width:70px;height:70px;display:flex;align-items:center;justify-content:center;">
+                                <i class="ki-duotone ki-shield fs-2x text-warning"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1 small text-uppercase">ریسک متوسط</h6>
+                            <h2 class="mb-0 fw-bold text-warning">{{ medium_risk_count }}</h2>
+                            <div class="progress mt-2" style="height:4px;">
+                                <div class="progress-bar bg-warning" style="width:{% widthratio medium_risk_count total_assessments 100 %}%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 hover-card" style="transition: transform 0.2s;">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-success bg-opacity-10 rounded-circle p-3" style="width:70px;height:70px;display:flex;align-items:center;justify-content:center;">
+                                <i class="ki-duotone ki-shield-tick fs-2x text-success"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1 small text-uppercase">ریسک پایین</h6>
+                            <h2 class="mb-0 fw-bold text-success">{{ low_risk_count }}</h2>
+                            <div class="progress mt-2" style="height:4px;">
+                                <div class="progress-bar bg-success" style="width:{% widthratio low_risk_count total_assessments 100 %}%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- لیست مشاغل با جستجو و فیلتر -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <h4 class="fw-bold">مشاغل دارای ارزیابی ریسک</h4>
+            <p class="text-muted small mb-0">کلیک برای مشاهده جزئیات ریسک‌های هر شغل</p>
+        </div>
+        <div class="col-md-6">
+            <div class="input-group">
+                <span class="input-group-text bg-light border-0"><i class="fa-solid fa-search"></i></span>
+                <input type="text" id="searchPosition" class="form-control border-0 bg-light" placeholder="جستجوی شغل...">
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="positionsTable">
+                    <thead class="table-light" style="position:sticky;top:0;z-index:1;">
+                        <tr>
+                            <th class="px-4 py-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="fa-solid fa-user-tie text-primary"></i>
+                                    شغل/سمت
+                                </div>
+                            </th>
+                            <th class="text-center py-3">کل</th>
+                            <th class="text-center py-3">بالا</th>
+                            <th class="text-center py-3">متوسط</th>
+                            <th class="text-center py-3">پایین</th>
+                            <th class="text-center py-3">عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for position in positions %}
+                        <tr class="position-row">
+                            <td class="px-4">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="bg-primary bg-opacity-10 rounded p-2">
+                                        <i class="ki-duotone ki-user-square fs-2 text-primary"></i>
+                                    </div>
+                                    <span class="fw-semibold position-name">{{ position.name }}</span>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-light text-dark fs-6 fw-bold px-3 py-2">
+                                    {{ position.total_risks }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                {% if position.high_risks > 0 %}
+                                <span class="badge bg-danger fs-6 fw-bold px-3 py-2">
+                                    {{ position.high_risks }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if position.medium_risks > 0 %}
+                                <span class="badge bg-warning text-dark fs-6 fw-bold px-3 py-2">
+                                    {{ position.medium_risks }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if position.low_risks > 0 %}
+                                <span class="badge bg-success fs-6 fw-bold px-3 py-2">
+                                    {{ position.low_risks }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'risk_assessment:position_risks' position.id %}" 
+                                       class="btn btn-light-primary" title="مشاهده ریسک‌ها">
+                                        <i class="ki-duotone ki-eye fs-5"></i>
+                                        مشاهده
+                                    </a>
+                                    <a href="{% url 'risk_assessment:risk_create_for_position' position.id %}" 
+                                       class="btn btn-success" title="افزودن ریسک">
+                                        <i class="ki-duotone ki-plus fs-5"></i>
+                                        جدید
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <div class="d-flex flex-column align-items-center gap-3">
+                                    <i class="ki-duotone ki-file-deleted fs-5x text-muted"></i>
+                                    <p class="text-muted mb-0">هیچ ارزیابی ریسکی ثبت نشده است</p>
+                                    <a href="{% url 'risk_assessment:risk_create_start' %}" class="btn btn-primary">
+                                        شروع ارزیابی اولین ریسک
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- تحلیل‌های هوشمند -->
+    <div class="row mt-5 g-4">
+        <div class="col-12 mb-3">
+            <h3 class="fw-bold">
+                <i class="fa-solid fa-brain text-primary"></i>
+                تحلیل‌های هوشمند بر اساس داده‌های HSE
+            </h3>
+            <p class="text-muted small">تحلیل داده‌های آنومالی و حوادث برای شناسایی خطرات بالقوه</p>
+        </div>
+
+        <!-- خطرات پرتکرار -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header d-flex align-items-center gap-2 py-3" style="background:linear-gradient(135deg,#ffc107 0%,#ff9800 100%);">
+                    <i class="ki-duotone ki-shield-cross fs-2 text-white"></i>
+                    <h5 class="mb-0 text-white fw-bold">خطرات پرتکرار (90 روز گذشته)</h5>
+                </div>
+                <div class="card-body">
+                    {% if high_frequency_hazards %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>خطر</th>
+                                    <th class="text-center">تعداد</th>
+                                    <th class="text-center">ناایمن</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for hazard in high_frequency_hazards %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex flex-column">
+                                            <small class="fw-semibold">{{ hazard.anomalydescription__description|truncatewords:8 }}</small>
+                                            <span class="badge badge-light-info mt-1 align-self-start">{{ hazard.location__name }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary fw-bold">{{ hazard.total_count }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-danger fw-bold">{{ hazard.unsafe_count }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="alert alert-warning d-flex align-items-start gap-2 mt-3 mb-0">
+                        <i class="ki-duotone ki-information fs-2 flex-shrink-0"></i>
+                        <small>این خطرات در 90 روز گذشته بیش از 3 بار گزارش شده‌اند. توصیه می‌شود ارزیابی ریسک برای آن‌ها انجام شود.</small>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fa-regular fa-file-lines fs-3x text-muted mb-3 d-block"></i>
+                        <p class="text-muted">داده‌ای برای نمایش وجود ندارد</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- مکان‌های حساس -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header d-flex align-items-center gap-2 py-3" style="background:linear-gradient(135deg,#dc3545 0%,#c82333 100%);">
+                    <i class="ki-duotone ki-geolocation fs-2 text-white"></i>
+                    <h5 class="mb-0 text-white fw-bold">مکان‌های حساس</h5>
+                </div>
+                <div class="card-body">
+                    {% if critical_locations %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>مکان</th>
+                                    <th class="text-center">آنومالی</th>
+                                    <th class="text-center">حادثه</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for location in critical_locations %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="fa-solid fa-location-dot text-danger"></i>
+                                            <strong>{{ location.name }}</strong>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-warning text-dark fw-bold">{{ location.anomaly_count }}</span>
+                                        <small class="text-danger d-block mt-1">({{ location.unsafe_anomaly_count }} ناایمن)</small>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if location.incident_count > 0 %}
+                                        <span class="badge bg-danger fw-bold">{{ location.incident_count }}</span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="alert alert-danger d-flex align-items-start gap-2 mt-3 mb-0">
+                        <i class="ki-duotone ki-shield-cross fs-2 flex-shrink-0"></i>
+                        <small>این مکان‌ها بیشترین آنومالی و حادثه را داشته‌اند. نیاز به توجه ویژه دارند.</small>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fa-regular fa-file-lines fs-3x text-muted mb-3 d-block"></i>
+                        <p class="text-muted">داده‌ای برای نمایش وجود ندارد</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- آمار حوادث -->
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header d-flex align-items-center gap-2 py-3" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);">
+                    <i class="ki-duotone ki-information-4 fs-2 text-white"></i>
+                    <h5 class="mb-0 text-white fw-bold">آمار حوادث 12 ماه گذشته</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-3">
+                            <div class="text-center p-4 rounded-3 shadow-sm" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);">
+                                <h1 class="fw-bold text-white mb-1">{{ incident_stats.total_incidents }}</h1>
+                                <p class="text-white-50 mb-0 small">کل حوادث ثبت شده</p>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            {% if incident_stats.injury_stats %}
+                            <h6 class="mb-3 fw-bold">
+                                <i class="fa-solid fa-chart-pie text-primary"></i>
+                                انواع آسیب‌های رخ داده:
+                            </h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for injury in incident_stats.injury_stats %}
+                                <span class="badge bg-light text-dark border fs-6 px-3 py-2">
+                                    <i class="fa-solid fa-hand-dots text-danger"></i>
+                                    {{ injury.injury_type.name }}
+                                    <span class="badge bg-danger ms-1">{{ injury.count }}</span>
+                                </span>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="alert alert-success d-flex align-items-center gap-2 mb-0">
+                                <i class="fa-solid fa-circle-check fs-2"></i>
+                                <span>هیچ حادثه‌ای در 12 ماه گذشته ثبت نشده است.</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-card:hover { transform: translateY(-5px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
+#searchPosition { transition: all .2s; }
+#searchPosition:focus { box-shadow: 0 0 0 .25rem rgba(102,126,234,.25); }
+</style>
+
+<script>
+// جستجوی لحظه‌ای مشاغل
+document.getElementById('searchPosition')?.addEventListener('input', function(e){
+    const search = e.target.value.toLowerCase();
+    document.querySelectorAll('.position-row').forEach(row => {
+        const name = row.querySelector('.position-name').textContent.toLowerCase();
+        row.style.display = name.includes(search) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}
