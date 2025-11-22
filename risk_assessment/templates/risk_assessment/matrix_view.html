@@ -2,60 +2,84 @@
 {% load static %}
 {% block title %}ماتریس ریسک ۵×۵{% endblock %}
 {% block content %}
-<div class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold">ماتریس ریسک ۵×۵ (کل سیستم)</h2>
-    <a href="{% url 'risk_assessment:risk_dashboard' %}" class="btn btn-light-primary"><i class="ki-duotone ki-home"></i> داشبورد</a>
-  </div>
-  <div class="alert alert-info d-flex align-items-center gap-2">
-    <i class="ki-duotone ki-information fs-2"></i>
-    <small>تعداد ریسک ها در هر خانه بر اساس شدت (S) × احتمال (P) محاسبه شده است.</small>
-  </div>
-  <div class="table-responsive">
-    <table class="table table-bordered text-center align-middle" style="min-width:600px;">
-      <thead class="table-light">
-        <tr>
-          <th class="bg-light" style="width:110px;">شدت \\ احتمال</th>
-          {% for p in probabilities %}
-            <th class="bg-secondary bg-opacity-10">P{{ p }}</th>
-          {% endfor %}
-        </tr>
-      </thead>
-      <tbody>
-        {% for row in rows %}
-        <tr>
-          <th class="bg-secondary bg-opacity-10">S{{ row.severity }}</th>
-          {% for cell in row.cells %}
-          <td class="p-0">
-            <div class="py-3 text-white {% if cell.color == 'danger' %}bg-danger{% elif cell.color == 'warning' %}bg-warning text-dark{% else %}bg-success{% endif %}">
-              <div class="fw-bold">RPN {{ cell.rpn }}</div>
-              <div class="small">{{ cell.count }} ریسک</div>
-            </div>
-          </td>
-          {% endfor %}
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  <div class="row mt-4 g-3">
-    <div class="col-md-4">
-      <div class="card border-0 shadow-sm">
-        <div class="card-body">
-          <h6 class="fw-bold mb-3">راهنمای رنگ ها</h6>
-          <div class="d-flex flex-column gap-2">
-            <div class="d-flex align-items-center gap-2"><span class="badge" style="background:#dc3545">High ≥ 17</span><small>غیرقابل پذیرش - اقدام فوری</small></div>
-            <div class="d-flex align-items-center gap-2"><span class="badge" style="background:#ffc107;color:#000">Medium 7-16</span><small>نیاز به کاهش برنامه ریزی شده</small></div>
-            <div class="d-flex align-items-center gap-2"><span class="badge" style="background:#198754">Low ≤ 6</span><small>قابل پذیرش با پایش</small></div>
-          </div>
-        </div>
+<div class="px-4 py-6 sm:px-6 lg:px-8">
+  <div class="mx-auto max-w-6xl space-y-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p class="text-sm font-semibold text-indigo-500">Risk Matrix Overview</p>
+        <h1 class="text-2xl font-black text-gray-900 dark:text-white">ماتریس ریسک ۵×۵ (کل سیستم)</h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">توزیع ریسک‌ها بر اساس شدت (S) و احتمال (P) برای پایش جامع.</p>
+      </div>
+      <a href="{% url 'risk_assessment:risk_dashboard' %}" class="inline-flex items-center gap-2 rounded-2xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800">
+        <i class="ki-duotone ki-home text-lg"></i>
+        بازگشت به داشبورد
+      </a>
+    </div>
+
+    <div class="rounded-3xl border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-sm text-indigo-700 shadow-sm dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-100">
+      <div class="flex items-center gap-3">
+        <i class="ki-duotone ki-information text-xl"></i>
+        <p>تعداد ریسک‌ها در هر خانه براساس ضرب شدت (S) و احتمال (P) محاسبه می‌شود. روی هر خانه تمرکز کنید تا ظرفیت کنترلی مشخص شود.</p>
       </div>
     </div>
-    <div class="col-md-8">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <h6 class="fw-bold mb-3">توضیحات</h6>
-          <p class="text-muted small mb-0">این ماتریس تعداد ریسک های ثبت شده را در هر ترکیب شدت و احتمال نمایش می دهد. برای تحلیل جزئی تر می توانید به لیست ریسک های هر شغل مراجعه کنید.</p>
+
+    <div class="overflow-hidden rounded-3xl border border-gray-100 bg-white p-4 shadow-lg dark:border-gray-800 dark:bg-gray-900">
+      <div class="grid grid-cols-6 gap-2 text-center text-sm font-semibold text-gray-600 dark:text-gray-300">
+        <div class="flex h-16 flex-col items-center justify-center rounded-2xl bg-gray-50 text-xs font-bold uppercase tracking-wide text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+          شدت \ احتمال
+        </div>
+        {% for p in probabilities %}
+        <div class="flex h-16 flex-col items-center justify-center rounded-2xl bg-gray-50 text-base font-bold text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+          P{{ p }}
+        </div>
+        {% endfor %}
+      </div>
+      <div class="mt-2 grid grid-cols-6 gap-2">
+        {% for row in rows %}
+          <div class="flex h-24 flex-col items-center justify-center rounded-2xl bg-gray-50 text-base font-bold text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+            S{{ row.severity }}
+          </div>
+          {% for cell in row.cells %}
+          <div class="flex h-24 flex-col items-center justify-center rounded-2xl text-center text-white shadow-sm transition hover:scale-[1.015] hover:shadow-md {% if cell.color == 'danger' %}bg-gradient-to-l from-red-600 to-rose-500{% elif cell.color == 'warning' %}bg-gradient-to-l from-amber-300 to-amber-500 text-gray-900{% else %}bg-gradient-to-l from-emerald-400 to-emerald-600{% endif %}">
+            <div class="text-xs font-semibold uppercase tracking-wide">RPN {{ cell.rpn }}</div>
+            <div class="mt-1 text-lg font-black">{{ cell.count }}</div>
+            <p class="text-[11px] text-white/80 {% if cell.color == 'warning' %}text-gray-700{% endif %}">ریسک</p>
+          </div>
+          {% endfor %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-3">
+      <div class="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <h2 class="mb-4 text-base font-bold text-gray-900 dark:text-white">راهنمای رنگ‌ها</h2>
+        <ul class="space-y-3 text-sm text-gray-600 dark:text-gray-300">
+          <li class="flex items-center gap-3">
+            <span class="inline-flex items-center rounded-full bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-600 dark:bg-red-500/20 dark:text-red-300">High ≥ 17</span>
+            <span>غیرقابل پذیرش – اقدام فوری</span>
+          </li>
+          <li class="flex items-center gap-3">
+            <span class="inline-flex items-center rounded-full bg-amber-400/10 px-3 py-1 text-xs font-semibold text-amber-500 dark:bg-amber-500/20">Medium 7-16</span>
+            <span>نیازمند برنامه کاهش هدفمند</span>
+          </li>
+          <li class="flex items-center gap-3">
+            <span class="inline-flex items-center rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300">Low ≤ 6</span>
+            <span>قابل پذیرش با پایش دوره‌ای</span>
+          </li>
+        </ul>
+      </div>
+      <div class="lg:col-span-2 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <h2 class="mb-4 text-base font-bold text-gray-900 dark:text-white">تحلیل ماتریس</h2>
+        <p class="text-sm leading-6 text-gray-600 dark:text-gray-300">این ماتریس نشان می‌دهد در کدام ترکیب شدت و احتمال، تراکم ریسک بیشتری وجود دارد. برای اولویت‌بندی اقدامات، بر خانه‌های قرمز تمرکز کرده و اقدامات کنترلی را مطابق سلسله‌مراتب کنترل‌ها اعمال کنید. در مناطق زرد می‌توان با بهبود کنترل‌های موجود ریسک را به ناحیه سبز منتقل کرد.</p>
+        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+          <div class="rounded-2xl border border-red-100 bg-red-50/70 p-4 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
+            <p class="font-semibold">ناحیه بحرانی</p>
+            <p class="mt-1 text-xs">ریسک‌های با RPN ≥ 17 نیازمند توقف فعالیت یا اقدام اصلاحی فوری هستند.</p>
+          </div>
+          <div class="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 text-sm text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+            <p class="font-semibold">ناحیه قابل پذیرش</p>
+            <p class="mt-1 text-xs">ریسک‌های ≤ 6 نیازمند پایش دوره‌ای و ثبت کنترل‌ها هستند.</p>
+          </div>
         </div>
       </div>
     </div>
