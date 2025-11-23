@@ -66,7 +66,6 @@ class RiskAssessmentAdmin(admin.ModelAdmin):
         ('مشخصات فعالیت', {
             'fields': (
                 'activity_component',
-                'job_tasks',
                 'is_routine',
             )
         }),
@@ -149,7 +148,7 @@ class RiskAssessmentAdmin(admin.ModelAdmin):
         }),
     )
     
-    filter_horizontal = ['people_at_risk', 'job_tasks', 'related_positions']
+    filter_horizontal = ['people_at_risk']
 
     def get_inlines(self, request, obj=None):
         return [RiskHistoryInline]

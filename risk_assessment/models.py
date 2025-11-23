@@ -83,14 +83,6 @@ class RiskAssessment(models.Model):
         related_name='risk_assessments'
     )
 
-    related_positions = models.ManyToManyField(
-        Position,
-        blank=True,
-        related_name='shared_risks',
-        verbose_name="مشاغل مشترک",
-        help_text="در صورت مشترک بودن این ریسک در چند شغل دیگر انتخاب کنید"
-    )
-    
     risk_source = models.CharField(
         max_length=50, 
         choices=SOURCE_CHOICES, 
@@ -108,14 +100,6 @@ class RiskAssessment(models.Model):
     activity_component = models.CharField(
         max_length=255, 
         verbose_name="اجزا شغل/فعالیت/تجهیز"
-    )
-
-    job_tasks = models.ManyToManyField(
-        JobTask,
-        blank=True,
-        related_name='risks',
-        verbose_name="اجزای فعالیت انتخابی",
-        help_text="از بین اجزای ثبت‌شده برای شغل، موارد مرتبط با این ریسک را انتخاب کنید"
     )
     
     is_routine = models.BooleanField(

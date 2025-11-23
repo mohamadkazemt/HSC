@@ -15,8 +15,6 @@ class RiskAssessmentForm(forms.ModelForm):
             'risk_source',
             'risk_source_other',
             'activity_component',
-            'job_tasks',
-            'related_positions',
             'is_routine',
             'hazard',
             'people_at_risk',
@@ -51,8 +49,6 @@ class RiskAssessmentForm(forms.ModelForm):
             'risk_source': forms.Select(attrs={'class': 'form-select'}),
             'risk_source_other': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'توضیح دهید...'}),
             'activity_component': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'مثال: راهبری لودر'}),
-            'job_tasks': forms.SelectMultiple(attrs={'class': 'form-select', 'size': '6'}),
-            'related_positions': forms.SelectMultiple(attrs={'class': 'form-select', 'size': '6'}),
             'is_routine': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'hazard': forms.Select(attrs={'class': 'form-select'}),
             'people_at_risk': forms.SelectMultiple(attrs={'class': 'form-select', 'size': '5'}),
@@ -91,8 +87,6 @@ class RiskAssessmentForm(forms.ModelForm):
         
         # تنظیم فیلدهای اختیاری
         self.fields['people_at_risk'].required = False
-        self.fields['job_tasks'].required = False
-        self.fields['related_positions'].required = False
         
     def clean(self):
         cleaned_data = super().clean()
