@@ -330,12 +330,14 @@ def anomalis(request):
         )
 
     # Get base anomaly queryset
-    if request.user.groups.filter(name='مسئول پیگیری').exists():
-        if has_position(request.user, ['مدیر HSE']):
-            base_queryset = Anomaly.objects.all().order_by('-created_at')
-        else:
-            user_profile = UserProfile.objects.get(user=request.user)
-            base_queryset = Anomaly.objects.filter(followup=user_profile).order_by('-created_at')
+    # اگر کاربر عضو گروه "مدیر HSE" باشد، همه آنومالی‌ها را نمایش بده
+    if request.user.groups.filter(name='مدیر HSE').exists():
+        base_queryset = Anomaly.objects.all().order_by('-created_at')
+    # اگر کاربر در گروه "مسئول پیگیری" باشد، فقط آنومالی‌های خودش را ببیند
+    elif request.user.groups.filter(name='مسئول پیگیری').exists():
+        user_profile = UserProfile.objects.get(user=request.user)
+        base_queryset = Anomaly.objects.filter(followup=user_profile).order_by('-created_at')
+    # بقیه کاربران همه آنومالی‌ها را می‌بینند
     else:
         base_queryset = Anomaly.objects.all().order_by('-created_at')
     
@@ -402,12 +404,14 @@ def get_corrective_action(request, description_id):
 @login_required
 def anomaly_list(request):
     # Get base anomaly queryset
-    if request.user.groups.filter(name='مسئول پیگیری').exists():
-        if has_position(request.user, ['مدیر HSE']):
-            base_queryset = Anomaly.objects.all().order_by('-created_at')
-        else:
-            user_profile = UserProfile.objects.get(user=request.user)
-            base_queryset = Anomaly.objects.filter(followup=user_profile).order_by('-created_at')
+    # اگر کاربر عضو گروه "مدیر HSE" باشد، همه آنومالی‌ها را نمایش بده
+    if request.user.groups.filter(name='مدیر HSE').exists():
+        base_queryset = Anomaly.objects.all().order_by('-created_at')
+    # اگر کاربر در گروه "مسئول پیگیری" باشد، فقط آنومالی‌های خودش را ببیند
+    elif request.user.groups.filter(name='مسئول پیگیری').exists():
+        user_profile = UserProfile.objects.get(user=request.user)
+        base_queryset = Anomaly.objects.filter(followup=user_profile).order_by('-created_at')
+    # بقیه کاربران همه آنومالی‌ها را می‌بینند
     else:
         base_queryset = Anomaly.objects.all().order_by('-created_at')
     
@@ -439,7 +443,7 @@ def anomaly_list(request):
 
 
 @login_required
-@user_passes_test(lambda u: has_position(u, ['مدیر HSE']))
+@user_passes_test(lambda u: u.groups.filter(name='مدیر HSE').exists())
 def export_anomalies_to_excel(request):
     # Get base anomaly queryset
     base_queryset = Anomaly.objects.all()
@@ -504,8 +508,8 @@ def anomaly_detail_view(request, pk):
         request=request
     )
 
-    # چک کردن اینکه آیا کاربر مدیر HSE است
-    is_hse_manager = has_position(request.user, ['مدیر HSE', 'بازرس شیفت ایمنی'])
+    # چک کردن اینکه آیا کاربر در گروه مدیر HSE یا بازرس شیفت ایمنی است
+    is_hse_manager = request.user.groups.filter(name__in=['مدیر HSE', 'بازرس شیفت ایمنی']).exists()
 
     if request.method == "POST":
         form = CommentForm(request.POST, request.FILES)  # Pass request.FILES
@@ -690,7 +694,7 @@ def request_safe(request, pk):
 
 
 @login_required
-@user_passes_test(lambda u: has_position(u, ['مدیر HSE', 'بازرس شیفت ایمنی']))
+@user_passes_test(lambda u: u.groups.filter(name__in=['مدیر HSE', 'بازرس شیفت ایمنی']).exists())
 def approve_safe(request, pk):
     anomaly = get_object_or_404(Anomaly, pk=pk)
 
@@ -722,7 +726,7 @@ def approve_safe(request, pk):
 
 
 @login_required
-@user_passes_test(lambda u: has_position(u, ['مدیر HSE', 'بازرس شیفت ایمنی']))
+@user_passes_test(lambda u: u.groups.filter(name__in=['مدیر HSE', 'بازرس شیفت ایمنی']).exists())
 def reject_safe(request, pk):
     anomaly = get_object_or_404(Anomaly, pk=pk)
 
@@ -1260,7 +1264,7 @@ def anomaly_reports_api(request):
 
 
 @login_required
-@user_passes_test(lambda u: has_position(u, ['مدیر HSE']))
+@user_passes_test(lambda u: u.groups.filter(name='مدیر HSE').exists())
 def export_report_to_excel(request):
     form = AnomalyReportForm(request.GET)
     start_date_str = request.GET.get('start_date')
