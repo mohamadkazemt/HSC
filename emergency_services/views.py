@@ -148,84 +148,124 @@ def create_visit(request):
         data = request.POST.copy()
         
         # تبدیل تاریخ‌های دریافتی
+        date_conversion_errors = []
         try:
             # تبدیل تاریخ مراجعه
             if data.get('visit_time'):
-                visit_time = persian_to_english_numbers(data['visit_time'].strip())
-                visit_time = re.sub(r'[^0-9/ :]', '', visit_time)
-                date_part, time_part = visit_time.split(' ')
-                year, month, day = map(int, date_part.split('/'))
-                
-                # جدا کردن ساعت، دقیقه، ثانیه و میلی‌ثانیه
-                time_parts = time_part.split(':')
-                hour = int(time_parts[0])
-                minute = int(time_parts[1])
-                second = int(time_parts[2].split('.')[0]) if '.' in time_parts[2] else int(time_parts[2])
-                
-                # تصحیح سال دو رقمی
-                if year < 100:
-                    year += 1400
-                
-                # تبدیل به تاریخ میلادی
-                jalali_date = jdatetime.datetime(year, month, day, hour, minute, second)
-                gregorian_date = jalali_date.togregorian()
-                data['visit_time'] = gregorian_date.strftime('%Y-%m-%d %H:%M:%S')
-                print('Converted visit time:', data['visit_time'])
+                try:
+                    visit_time = persian_to_english_numbers(data['visit_time'].strip())
+                    visit_time = re.sub(r'[^0-9/ :]', '', visit_time)
+                    if ' ' not in visit_time:
+                        date_conversion_errors.append('فرمت زمان مراجعه نامعتبر است. لطفاً تاریخ و ساعت را با فاصله وارد کنید.')
+                    else:
+                        date_part, time_part = visit_time.split(' ', 1)
+                        year, month, day = map(int, date_part.split('/'))
+                        
+                        # جدا کردن ساعت، دقیقه، ثانیه و میلی‌ثانیه
+                        time_parts = time_part.split(':')
+                        hour = int(time_parts[0])
+                        minute = int(time_parts[1]) if len(time_parts) > 1 else 0
+                        second = int(time_parts[2].split('.')[0]) if len(time_parts) > 2 and '.' in time_parts[2] else (int(time_parts[2]) if len(time_parts) > 2 else 0)
+                        
+                        # تصحیح سال دو رقمی
+                        if year < 100:
+                            year += 1400
+                        
+                        # تبدیل به تاریخ میلادی
+                        jalali_date = jdatetime.datetime(year, month, day, hour, minute, second)
+                        gregorian_date = jalali_date.togregorian()
+                        data['visit_time'] = gregorian_date.strftime('%Y-%m-%d %H:%M:%S')
+                        print('Converted visit time:', data['visit_time'])
+                except (ValueError, IndexError, AttributeError) as e:
+                    date_conversion_errors.append(f'خطا در تبدیل زمان مراجعه: {str(e)}')
+                    print('Error converting visit_time:', str(e))
             
             # تبدیل تاریخ پذیرش در بیمارستان
             if data.get('hospital_admission_time'):
-                admission_time = persian_to_english_numbers(data['hospital_admission_time'].strip())
-                admission_time = re.sub(r'[^0-9/ :]', '', admission_time)
-                date_part, time_part = admission_time.split(' ')
-                year, month, day = map(int, date_part.split('/'))
-                
-                # جدا کردن ساعت، دقیقه، ثانیه و میلی‌ثانیه
-                time_parts = time_part.split(':')
-                hour = int(time_parts[0])
-                minute = int(time_parts[1])
-                second = int(time_parts[2].split('.')[0]) if '.' in time_parts[2] else int(time_parts[2])
-                
-                # تصحیح سال دو رقمی
-                if year < 100:
-                    year += 1400
-                
-                # تبدیل به تاریخ میلادی
-                jalali_date = jdatetime.datetime(year, month, day, hour, minute, second)
-                gregorian_date = jalali_date.togregorian()
-                data['hospital_admission_time'] = gregorian_date.strftime('%Y-%m-%d %H:%M:%S')
-                print('Converted admission time:', data['hospital_admission_time'])
+                try:
+                    admission_time = persian_to_english_numbers(data['hospital_admission_time'].strip())
+                    admission_time = re.sub(r'[^0-9/ :]', '', admission_time)
+                    if ' ' not in admission_time:
+                        date_conversion_errors.append('فرمت زمان پذیرش در بیمارستان نامعتبر است.')
+                    else:
+                        date_part, time_part = admission_time.split(' ', 1)
+                        year, month, day = map(int, date_part.split('/'))
+                        
+                        # جدا کردن ساعت، دقیقه، ثانیه و میلی‌ثانیه
+                        time_parts = time_part.split(':')
+                        hour = int(time_parts[0])
+                        minute = int(time_parts[1]) if len(time_parts) > 1 else 0
+                        second = int(time_parts[2].split('.')[0]) if len(time_parts) > 2 and '.' in time_parts[2] else (int(time_parts[2]) if len(time_parts) > 2 else 0)
+                        
+                        # تصحیح سال دو رقمی
+                        if year < 100:
+                            year += 1400
+                        
+                        # تبدیل به تاریخ میلادی
+                        jalali_date = jdatetime.datetime(year, month, day, hour, minute, second)
+                        gregorian_date = jalali_date.togregorian()
+                        data['hospital_admission_time'] = gregorian_date.strftime('%Y-%m-%d %H:%M:%S')
+                        print('Converted admission time:', data['hospital_admission_time'])
+                except (ValueError, IndexError, AttributeError) as e:
+                    date_conversion_errors.append(f'خطا در تبدیل زمان پذیرش: {str(e)}')
+                    print('Error converting hospital_admission_time:', str(e))
             
             # تبدیل تاریخ ترخیص از بیمارستان
             if data.get('hospital_discharge_time'):
-                discharge_time = persian_to_english_numbers(data['hospital_discharge_time'].strip())
-                discharge_time = re.sub(r'[^0-9/ :]', '', discharge_time)
-                date_part, time_part = discharge_time.split(' ')
-                year, month, day = map(int, date_part.split('/'))
-                
-                # جدا کردن ساعت، دقیقه، ثانیه و میلی‌ثانیه
-                time_parts = time_part.split(':')
-                hour = int(time_parts[0])
-                minute = int(time_parts[1])
-                second = int(time_parts[2].split('.')[0]) if '.' in time_parts[2] else int(time_parts[2])
-                
-                # تصحیح سال دو رقمی
-                if year < 100:
-                    year += 1400
-                
-                # تبدیل به تاریخ میلادی
-                jalali_date = jdatetime.datetime(year, month, day, hour, minute, second)
-                gregorian_date = jalali_date.togregorian()
-                data['hospital_discharge_time'] = gregorian_date.strftime('%Y-%m-%d %H:%M:%S')
-                print('Converted discharge time:', data['hospital_discharge_time'])
-        except (ValueError, IndexError, AttributeError) as e:
-            print('Error converting dates:', str(e))
-            messages.error(request, 'لطفاً تاریخ‌ها را به فرمت صحیح وارد کنید (مثال: 1404/02/07 18:49:51)')
-            form = MedicalVisitForm()
-            medicine_formset = MedicineSelectFormSet(prefix='medicines')
+                try:
+                    discharge_time = persian_to_english_numbers(data['hospital_discharge_time'].strip())
+                    discharge_time = re.sub(r'[^0-9/ :]', '', discharge_time)
+                    if ' ' not in discharge_time:
+                        date_conversion_errors.append('فرمت زمان ترخیص از بیمارستان نامعتبر است.')
+                    else:
+                        date_part, time_part = discharge_time.split(' ', 1)
+                        year, month, day = map(int, date_part.split('/'))
+                        
+                        # جدا کردن ساعت، دقیقه، ثانیه و میلی‌ثانیه
+                        time_parts = time_part.split(':')
+                        hour = int(time_parts[0])
+                        minute = int(time_parts[1]) if len(time_parts) > 1 else 0
+                        second = int(time_parts[2].split('.')[0]) if len(time_parts) > 2 and '.' in time_parts[2] else (int(time_parts[2]) if len(time_parts) > 2 else 0)
+                        
+                        # تصحیح سال دو رقمی
+                        if year < 100:
+                            year += 1400
+                        
+                        # تبدیل به تاریخ میلادی
+                        jalali_date = jdatetime.datetime(year, month, day, hour, minute, second)
+                        gregorian_date = jalali_date.togregorian()
+                        data['hospital_discharge_time'] = gregorian_date.strftime('%Y-%m-%d %H:%M:%S')
+                        print('Converted discharge time:', data['hospital_discharge_time'])
+                except (ValueError, IndexError, AttributeError) as e:
+                    date_conversion_errors.append(f'خطا در تبدیل زمان ترخیص: {str(e)}')
+                    print('Error converting hospital_discharge_time:', str(e))
+            
+            # اگر خطا در تبدیل تاریخ‌ها وجود داشت، فرم را با خطا نمایش بده
+            if date_conversion_errors:
+                for error_msg in date_conversion_errors:
+                    messages.error(request, error_msg)
+                form = MedicalVisitForm(data)
+                medicine_formset = MedicineSelectFormSet(data, prefix='medicines')
+                services = MedicalService.objects.all()
+                initial_personnel_type = request.POST.get('personnel_type') or 'company'
+                return render(request, 'emergency_services/visit_form.html', {
+                    'form': form,
+                    'medicine_formset': medicine_formset,
+                    'services': services,
+                    'initial_personnel_type': initial_personnel_type,
+                })
+        except Exception as e:
+            print('Unexpected error converting dates:', str(e))
+            messages.error(request, f'خطای غیرمنتظره در تبدیل تاریخ‌ها: {str(e)}')
+            form = MedicalVisitForm(data)
+            medicine_formset = MedicineSelectFormSet(data, prefix='medicines')
+            services = MedicalService.objects.all()
+            initial_personnel_type = request.POST.get('personnel_type') or 'company'
             return render(request, 'emergency_services/visit_form.html', {
                 'form': form,
                 'medicine_formset': medicine_formset,
-                'services': MedicalService.objects.all(),
+                'services': services,
+                'initial_personnel_type': initial_personnel_type,
             })
         
         form = MedicalVisitForm(data)
@@ -240,7 +280,15 @@ def create_visit(request):
                 
                 # ذخیره فرم مراجعه
                 visit = form.save(commit=False)
-                visit.created_by = UserProfile.objects.get(user=request.user)
+                # ایجاد UserProfile در صورت عدم وجود
+                user_profile, created = UserProfile.objects.get_or_create(
+                    user=request.user,
+                    defaults={
+                        'personnel_code': '',
+                        'mobile': '',
+                    }
+                )
+                visit.created_by = user_profile
                 visit.save()
                 form.save_m2m()  # ذخیره رابطه چند به چند خدمات
                 
@@ -275,13 +323,37 @@ def create_visit(request):
         else:
             print('Form errors:', form.errors)  # لاگ خطاهای فرم
             print('Medicine formset errors:', medicine_formset.errors)  # لاگ خطاهای فرم‌ست داروها
+            
+            # جمع‌آوری تمام خطاها برای نمایش به کاربر
+            error_messages = []
+            for field, errors in form.errors.items():
+                for error in errors:
+                    field_label = form.fields[field].label if field in form.fields else field
+                    error_messages.append(f"{field_label}: {error}")
+            
+            for form_index, form_errors in enumerate(medicine_formset.errors):
+                if form_errors:
+                    for field, errors in form_errors.items():
+                        for error in errors:
+                            error_messages.append(f"دارو (ردیف {form_index + 1}): {error}")
+            
+            if error_messages:
+                messages.error(request, 'لطفاً خطاهای زیر را برطرف کنید:')
+                for msg in error_messages[:5]:  # نمایش حداکثر 5 خطای اول
+                    messages.error(request, f'  • {msg}')
+                if len(error_messages) > 5:
+                    messages.error(request, f'  و {len(error_messages) - 5} خطای دیگر...')
     else:
         form = MedicalVisitForm()
         medicine_formset = MedicineSelectFormSet(prefix='medicines')
     
     services = MedicalService.objects.all()
     
-    initial_personnel_type = request.POST.get('personnel_type') or (getattr(form, 'initial', {}).get('personnel_type')) or 'company'
+    # تعیین نوع پرسنل از POST یا از فرم یا مقدار پیش‌فرض
+    if request.method == 'POST':
+        initial_personnel_type = request.POST.get('personnel_type') or form.data.get('personnel_type') or 'company'
+    else:
+        initial_personnel_type = getattr(form, 'initial', {}).get('personnel_type') or 'company'
 
     context = {
         'form': form,
@@ -682,7 +754,15 @@ def return_medicine(request, usage_id):
         if form.is_valid():
             return_obj = form.save(commit=False)
             return_obj.usage = usage
-            return_obj.returned_by = UserProfile.objects.get(user=request.user)
+            # ایجاد UserProfile در صورت عدم وجود
+            user_profile, created = UserProfile.objects.get_or_create(
+                user=request.user,
+                defaults={
+                    'personnel_code': '',
+                    'mobile': '',
+                }
+            )
+            return_obj.returned_by = user_profile
             return_obj.save()
             
             messages.success(request, f'برگشت {return_obj.quantity} عدد {usage.medicine.name} با موفقیت ثبت شد.')
