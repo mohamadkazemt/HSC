@@ -376,6 +376,11 @@ def risk_detail(request, risk_id):
     # تولید بینش‌های هوشمند
     insights = generate_risk_insights(risk)
     
+    # محاسبه تفاوت ریسک
+    risk_difference = None
+    if risk.residual_risk_number:
+        risk_difference = risk.residual_risk_number - risk.risk_number
+    
     context = {
         'risk': risk,
         'insights': insights,
@@ -383,6 +388,7 @@ def risk_detail(request, risk_id):
         'related_incidents': insights['related_incidents'],
         'trend_data': insights['anomaly_trend'],
         'suggestions': insights['suggestions'],
+        'risk_difference': risk_difference,
     }
     
     return render(request, 'risk_assessment/risk_detail.html', context)
