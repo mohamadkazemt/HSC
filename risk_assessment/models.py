@@ -133,6 +133,7 @@ class RiskAssessment(models.Model):
     
     people_at_risk = models.ManyToManyField(
         Position, 
+        blank=True,
         related_name='risks_exposed_to', 
         verbose_name="افراد در معرض خطر",
         help_text="سمت‌هایی که در معرض این خطر هستند"
@@ -360,6 +361,57 @@ class RiskAssessment(models.Model):
         blank=True,
         verbose_name="یادداشت‌ها"
     )
+
+    def clean(self):
+        """اعتبارسنجی مدل"""
+        from django.core.exceptions import ValidationError
+        errors = {}
+        
+        # بررسی محدوده probability و severity
+        if self.probability and self.probability not in [1, 2, 3, 4, 5]:
+            errors['probability'] = 'مقدار احتمال باید بین 1 تا 5 باشد.'
+        
+        if self.severity and self.severity not in [1, 2, 3, 4, 5]:
+            errors['severity'] = 'مقدار شدت باید بین 1 تا 5 باشد.'
+        
+        # بررسی ریسک باقی‌مانده
+        if self.residual_probability and self.residual_probability not in [1, 2, 3, 4, 5]:
+            errors['residual_probability'] = 'مقدار احتمال باقی‌مانده باید بین 1 تا 5 باشد.'
+        
+        if self.residual_severity and self.residual_severity not in [1, 2, 3, 4, 5]:
+            errors['residual_severity'] = 'مقدار شدت باقی‌مانده باید بین 1 تا 5 باشد.'
+        
+        # بررسی اینکه اگر یکی از فیلدهای residual پر شده باشد، بقیه هم باید پر باشند
+        residual_fields = [self.residual_probability, self.residual_severity, self.re_evaluation_date]
+        if any(residual_fields) and not all(residual_fields):
+            errors['residual_probability'] = 'برای ارزیابی مجدد باید هر سه فیلد تاریخ، احتمال و شدت را پر کنید.'
+        
+        # بررسی تاریخ‌ها
+        if self.action_date and self.action_deadline:
+            if self.action_date > self.action_deadline:
+                errors['action_deadline'] = 'مهلت اقدام نمی‌تواند قبل از تاریخ اقدام باشد.'
+        
+        # بررسی فیلدهای شرطی
+        if self.risk_source == 'other' and not self.risk_source_other:
+            errors['risk_source_other'] = 'لطفاً منشا را توضیح دهید.'
+        
+        if self.has_legal_requirement and not self.legal_requirement_desc:
+            errors['legal_requirement_desc'] = 'لطفاً الزام قانونی را شرح دهید.'
+        
+        if self.corrective_action_required:
+            if not self.action_deadline:
+                errors['action_deadline'] = 'لطفاً مهلت اقدام را مشخص کنید.'
+            if not self.responsible_person:
+                errors['responsible_person'] = 'لطفاً مسئول اجرا را مشخص کنید.'
+        
+        if self.is_mue and not self.mue_code:
+            errors['mue_code'] = 'لطفاً کد MUE را وارد کنید.'
+        
+        if self.is_emergency and not self.emergency_code:
+            errors['emergency_code'] = 'لطفاً کد شرایط اضطراری را وارد کنید.'
+        
+        if errors:
+            raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
         """محاسبه خودکار RPN و ثبت تاریخچه تغییرات"""

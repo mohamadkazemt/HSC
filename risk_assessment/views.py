@@ -209,7 +209,7 @@ def position_risk_list(request, position_id):
     low_count = risks.filter(risk_level='Low').count()
     corrective_open = risks.filter(corrective_action_required=True).count()
     reevaluated_count = risks.filter(residual_risk_number__isnull=False).count()
-    overdue_count = risks.filter(corrective_action_required=True, action_deadline__lt=None).count()
+    
     # اقدام‌های اصلاحی با مهلت گذشته (deadline تاریخ گذشته و هنوز اقدام لازم است)
     from django.utils import timezone
     today = timezone.now().date()
@@ -310,6 +310,10 @@ def risk_create_for_position(request, position_id):
             
             messages.success(request, f'ریسک با موفقیت ثبت شد. عدد ریسک: {risk.risk_number}')
             return redirect('risk_assessment:position_risks', position_id=position.id)
+        else:
+            # لاگ خطاها برای دیباگ
+            print("Form errors:", form.errors)
+            print("Form data:", request.POST)
     else:
         form = RiskAssessmentForm(initial={'position': position})
     

@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load crispy_forms_tags form_filters %}
+{% load crispy_forms_tags form_filters form_helpers static %}
 
 {% block title %}
 {% if action == 'create' %}افزودن ریسک جدید{% else %}ویرایش ریسک{% endif %}
@@ -34,12 +34,7 @@
             {% endif %}
 
             <!-- Form sections -->
-            {% with input_classes='block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400'
-                textarea_classes='block w-full rounded-lg border border-gray-300 bg-gray-50 p-3 text-sm text-gray-900 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 min-h-[7.5rem]'
-                error_input_classes='border-red-400 focus:border-red-500 focus:ring-red-500 bg-red-50/70 dark:border-red-400 dark:bg-red-900/40 dark:text-red-100 placeholder:text-red-400'
-                help_text_classes='text-xs text-gray-500 dark:text-gray-400'
-                card_error_classes='border-red-300 bg-red-50/70 dark:border-red-500/40 dark:bg-red-900/30'
-            %}
+            {% with input_classes="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400" textarea_classes="block w-full rounded-lg border border-gray-300 bg-gray-50 p-3 text-sm text-gray-900 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 min-h-[7.5rem]" error_input_classes="border-red-400 focus:border-red-500 focus:ring-red-500 bg-red-50/70 dark:border-red-400 dark:bg-red-900/40 dark:text-red-100 placeholder:text-red-400" help_text_classes="text-xs text-gray-500 dark:text-gray-400" card_error_classes="border-red-300 bg-red-50/70 dark:border-red-500/40 dark:bg-red-900/30" %}
             <div class="space-y-6">
                 <div x-data="{ open: true }" class="rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
                     <button type="button" class="flex w-full items-center justify-between gap-4 px-6 py-4 text-right" @click="open = !open">
@@ -169,7 +164,8 @@
                                     <p class="{{ help_text_classes }}">{{ field.help_text }}</p>
                                     {% endif %}
                                 </div>
-                                {% endwith %}
+                            {% endwith %}
+                            
                             {% with field=form.people_at_risk %}
                                 {% field_classes field input_classes error_input_classes as field_class %}
                                 <div class="space-y-2">
@@ -180,7 +176,8 @@
                                     <p class="{{ help_text_classes }}">{{ field.help_text }}</p>
                                     {% endif %}
                                 </div>
-                                {% endwith %}
+                            {% endwith %}
+                            
                             {% with field=form.potential_event %}
                                 {% field_classes field textarea_classes error_input_classes as field_class %}
                                 <div class="space-y-2">
@@ -191,7 +188,8 @@
                                     <p class="{{ help_text_classes }}">{{ field.help_text }}</p>
                                     {% endif %}
                                 </div>
-                                {% endwith %}
+                            {% endwith %}
+                            
                             {% with field=form.consequence %}
                                 {% field_classes field textarea_classes error_input_classes as field_class %}
                                 <div class="space-y-2">
@@ -202,7 +200,8 @@
                                     <p class="{{ help_text_classes }}">{{ field.help_text }}</p>
                                     {% endif %}
                                 </div>
-                                {% endwith %}
+                            {% endwith %}
+                            
                             {% with field=form.causes %}
                                 {% field_classes field textarea_classes error_input_classes as field_class %}
                                 <div class="space-y-2 md:col-span-2">
@@ -213,7 +212,7 @@
                                     <p class="{{ help_text_classes }}">{{ field.help_text }}</p>
                                     {% endif %}
                                 </div>
-                                {% endwith %}
+                            {% endwith %}
                         </div>
                     </div>
                 </div>
@@ -510,4 +509,8 @@ document.addEventListener('DOMContentLoaded', () => {
     focusFirstErrorBlock();
 });
 </script>
+
+<!-- اعتبارسنجی سمت کلاینت -->
+<script src="{% static 'js/risk_form_validation.js' %}"></script>
+
 {% endblock %}

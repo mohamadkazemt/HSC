@@ -12,7 +12,6 @@ class RiskAssessmentForm(forms.ModelForm):
     class Meta:
         model = RiskAssessment
         fields = [
-            'position',
             'risk_source',
             'risk_source_other',
             'activity_component',
@@ -90,23 +89,87 @@ class RiskAssessmentForm(forms.ModelForm):
         self.helper.form_method = 'post'
         self.helper.form_class = 'form-horizontal'
         
+        # تنظیم فیلدهای اختیاری
+        self.fields['people_at_risk'].required = False
+        self.fields['job_tasks'].required = False
+        self.fields['related_positions'].required = False
+        
     def clean(self):
         cleaned_data = super().clean()
+        errors = {}
         
         # اگر منشا "سایر" انتخاب شده، باید توضیح داده شود
         if cleaned_data.get('risk_source') == 'other' and not cleaned_data.get('risk_source_other'):
-            raise ValidationError({'risk_source_other': 'لطفاً منشا را توضیح دهید.'})
+            errors['risk_source_other'] = 'لطفاً منشا را توضیح دهید.'
         
         # اگر الزام قانونی وجود دارد، باید شرح داده شود
-        if cleaned_data.get('has_legal_requirement') and not cleaned_data.get('legal_requirement_desc'):
-            raise ValidationError({'legal_requirement_desc': 'لطفاً الزام قانونی را شرح دهید.'})
+        if cleaned_data.get('has_legal_requirement'):
+            if not cleaned_data.get('legal_requirement_desc'):
+                errors['legal_requirement_desc'] = 'لطفاً الزام قانونی را شرح دهید.'
+            if cleaned_data.get('is_legal_compliant') is None:
+                errors['is_legal_compliant'] = 'لطفاً وضعیت رعایت الزام قانونی را مشخص کنید.'
         
-        # اگر نیاز به اقدام اصلاحی است، باید مهلت تعیین شود
+        # اگر نیاز به اقدام اصلاحی است، فیلدهای مربوطه باید پر شوند
         if cleaned_data.get('corrective_action_required'):
             if not cleaned_data.get('action_deadline'):
-                raise ValidationError({'action_deadline': 'لطفاً مهلت اقدام را مشخص کنید.'})
+                errors['action_deadline'] = 'لطفاً مهلت اقدام را مشخص کنید.'
             if not cleaned_data.get('responsible_person'):
-                raise ValidationError({'responsible_person': 'لطفاً مسئول اجرا را مشخص کنید.'})
+                errors['responsible_person'] = 'لطفاً مسئول اجرا را مشخص کنید.'
+            
+            # بررسی منطقی بودن تاریخ‌ها
+            action_date = cleaned_data.get('action_date')
+            action_deadline = cleaned_data.get('action_deadline')
+            if action_date and action_deadline:
+                if action_date > action_deadline:
+                    errors['action_deadline'] = 'مهلت اقدام نمی‌تواند قبل از تاریخ اقدام باشد.'
+        
+        # اگر MUE فعال است، باید کد آن وارد شود
+        if cleaned_data.get('is_mue') and not cleaned_data.get('mue_code'):
+            errors['mue_code'] = 'لطفاً کد MUE را وارد کنید.'
+        
+        # اگر شرایط اضطراری فعال است، باید کد آن وارد شود
+        if cleaned_data.get('is_emergency') and not cleaned_data.get('emergency_code'):
+            errors['emergency_code'] = 'لطفاً کد شرایط اضطراری را وارد کنید.'
+        
+        # بررسی وجود حداقل یکی از فیلدهای اصلی
+        if not cleaned_data.get('activity_component'):
+            errors['activity_component'] = 'این فیلد الزامی است.'
+        
+        if not cleaned_data.get('hazard'):
+            errors['hazard'] = 'لطفاً نوع خطر را انتخاب کنید.'
+        
+        if not cleaned_data.get('potential_event'):
+            errors['potential_event'] = 'لطفاً رویداد احتمالی را مشخص کنید.'
+        
+        if not cleaned_data.get('causes'):
+            errors['causes'] = 'لطفاً علل احتمالی وقوع را شرح دهید.'
+        
+        if not cleaned_data.get('consequence'):
+            errors['consequence'] = 'لطفاً نوع پیامد را انتخاب کنید.'
+        
+        if not cleaned_data.get('existing_controls'):
+            errors['existing_controls'] = 'لطفاً کنترل‌های موجود را شرح دهید.'
+        
+        if not cleaned_data.get('control_failure_causes'):
+            errors['control_failure_causes'] = 'لطفاً علل احتمالی شکست کنترل‌ها را شرح دهید.'
+        
+        # بررسی probability و severity
+        probability = cleaned_data.get('probability')
+        severity = cleaned_data.get('severity')
+        
+        if not probability:
+            errors['probability'] = 'لطفاً احتمال وقوع را انتخاب کنید.'
+        elif probability not in [1, 2, 3, 4, 5]:
+            errors['probability'] = 'مقدار احتمال باید بین 1 تا 5 باشد.'
+        
+        if not severity:
+            errors['severity'] = 'لطفاً شدت پیامد را انتخاب کنید.'
+        elif severity not in [1, 2, 3, 4, 5]:
+            errors['severity'] = 'مقدار شدت باید بین 1 تا 5 باشد.'
+        
+        # اگر خطا داریم، raise ValidationError
+        if errors:
+            raise ValidationError(errors)
         
         return cleaned_data
 
@@ -135,6 +198,7 @@ class RiskReEvaluationForm(forms.ModelForm):
         
     def clean(self):
         cleaned_data = super().clean()
+        errors = {}
         
         # هر سه فیلد باید با هم پر شوند
         date = cleaned_data.get('re_evaluation_date')
@@ -142,7 +206,28 @@ class RiskReEvaluationForm(forms.ModelForm):
         sev = cleaned_data.get('residual_severity')
         
         if any([date, prob, sev]) and not all([date, prob, sev]):
-            raise ValidationError('برای ارزیابی مجدد باید هر سه فیلد تاریخ، احتمال و شدت را پر کنید.')
+            if not date:
+                errors['re_evaluation_date'] = 'تاریخ ارزیابی مجدد الزامی است.'
+            if not prob:
+                errors['residual_probability'] = 'احتمال باقی‌مانده الزامی است.'
+            if not sev:
+                errors['residual_severity'] = 'شدت باقی‌مانده الزامی است.'
+        
+        # بررسی محدوده مقادیر
+        if prob and prob not in [1, 2, 3, 4, 5]:
+            errors['residual_probability'] = 'مقدار احتمال باید بین 1 تا 5 باشد.'
+        
+        if sev and sev not in [1, 2, 3, 4, 5]:
+            errors['residual_severity'] = 'مقدار شدت باید بین 1 تا 5 باشد.'
+        
+        # بررسی تاریخ منطقی
+        if date:
+            from django.utils import timezone
+            if date > timezone.now().date():
+                errors['re_evaluation_date'] = 'تاریخ ارزیابی مجدد نمی‌تواند در آینده باشد.'
+        
+        if errors:
+            raise ValidationError(errors)
         
         return cleaned_data
 
