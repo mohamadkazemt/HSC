@@ -21,51 +21,63 @@
   {% endif %}
 
   <!-- Leave Inbox Widget (کارتابل مرخصی‌ها) -->
-  <div class="rounded-xl bg-white dark:bg-gray-800 shadow-lg overflow-hidden">
-    <div class="px-6 py-4 bg-gradient-to-r from-purple-600 to-purple-500 text-white flex items-center gap-3">
-      <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 9v.906a2.25 2.25 0 0 1-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 0 0 1.183 1.981l6.478 3.488m8.839 2.51-4.66-2.51m0 0-1.023-.55a2.25 2.25 0 0 0-2.134 0l-1.022.55m0 0-4.661 2.51m16.5 1.615a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V8.844a2.25 2.25 0 0 1 1.183-1.981l7.5-4.039a2.25 2.25 0 0 1 2.134 0l7.5 4.039a2.25 2.25 0 0 1 1.183 1.98V19.5Z"/>
-      </svg>
-      <div class="flex-1">
-        <h3 class="text-lg font-bold">کارتابل مرخصی‌ها</h3>
-        <p class="text-purple-100 text-sm">درخواست‌ها و تأییدهای شما</p>
+  {% if pending_replacement_approvals or pending_manager_approvals %}
+  <div class="rounded-2xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-800 shadow-xl overflow-hidden">
+    <div class="px-6 py-5 bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-500 text-white flex items-center gap-4 relative overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-r from-purple-600/90 to-indigo-600/90"></div>
+      <div class="relative z-10 flex items-center gap-4 flex-1">
+        <div class="p-3 rounded-xl bg-white/20 backdrop-blur-sm">
+          <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 9v.906a2.25 2.25 0 0 1-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 0 0 1.183 1.981l6.478 3.488m8.839 2.51-4.66-2.51m0 0-1.023-.55a2.25 2.25 0 0 0-2.134 0l-1.022.55m0 0-4.661 2.51m16.5 1.615a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V8.844a2.25 2.25 0 0 1 1.183-1.981l7.5-4.039a2.25 2.25 0 0 1 2.134 0l7.5 4.039a2.25 2.25 0 0 1 1.183 1.98V19.5Z"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <h3 class="text-xl font-bold mb-1">کارتابل مرخصی‌ها</h3>
+          <p class="text-purple-100 text-sm">درخواست‌ها و تأییدهای شما</p>
+        </div>
+        <span class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-white/30 backdrop-blur-sm text-white text-lg font-bold shadow-lg">
+          {{ pending_replacement_approvals|length|add:pending_manager_approvals|length }}
+        </span>
       </div>
-      {% if pending_replacement_approvals or pending_manager_approvals %}
-      <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-white/20 text-white text-sm font-bold">
-        {{ pending_replacement_approvals|length|add:pending_manager_approvals|length }}
-      </span>
-      {% endif %}
     </div>
 
-    <div class="divide-y divide-gray-200 dark:divide-gray-700">
+    <div class="p-6 space-y-6">
       <!-- Replacement Approvals Section -->
       {% if pending_replacement_approvals %}
-      <div class="p-6">
-        <div class="flex items-center gap-2 mb-4">
-          <div class="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center">
-            <svg class="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+      <div>
+        <div class="flex items-center gap-3 mb-4 pb-3 border-b border-blue-200 dark:border-blue-800">
+          <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+            <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
             </svg>
           </div>
-          <h4 class="text-base font-semibold text-gray-900 dark:text-white">تأیید جایگزینی</h4>
-          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+          <div class="flex-1">
+            <h4 class="text-base font-bold text-gray-900 dark:text-white">تأیید جایگزینی</h4>
+            <p class="text-xs text-gray-500 dark:text-gray-400">درخواست‌های منتظر تأیید شما</p>
+          </div>
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 shadow-sm">
             {{ pending_replacement_approvals|length }}
           </span>
         </div>
         <div class="space-y-3">
           {% for leave in pending_replacement_approvals %}
-          <div class="replacement-request-row p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 transition-all" data-leave-id="{{ leave.id }}">
+          <div class="replacement-request-row group p-5 rounded-xl border-2 border-blue-100 dark:border-blue-900/50 bg-white dark:bg-gray-800/50 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5" data-leave-id="{{ leave.id }}">
             <div class="flex items-start justify-between gap-4">
               <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2 mb-2">
-                  <p class="text-sm font-medium text-gray-900 dark:text-white">
-                    {{ leave.user.get_full_name|default:leave.user.username }}
-                  </p>
-                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-                    {{ leave.get_leave_type_display }}
-                  </span>
+                <div class="flex items-center gap-2 mb-3">
+                  <div class="h-10 w-10 rounded-full bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                    {{ leave.user.get_full_name|default:leave.user.username|slice:":1" }}
+                  </div>
+                  <div class="flex-1">
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                      {{ leave.user.get_full_name|default:leave.user.username }}{% if leave.user.userprofile and leave.user.userprofile.personnel_code %} <span class="text-gray-500">({{ leave.user.userprofile.personnel_code }})</span>{% endif %}
+                    </p>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 mt-1">
+                      {{ leave.get_leave_type_display }}
+                    </span>
+                  </div>
                 </div>
-                <div class="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
+                <div class="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/30 rounded-lg p-2">
                   <span class="flex items-center gap-1">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/>
@@ -82,14 +94,14 @@
                 </div>
               </div>
               <div class="flex items-center gap-2">
-                <button onclick="approveReplacement({{ leave.id }})" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm hover:shadow transition-all">
-                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <button onclick="approveReplacement({{ leave.id }})" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-md hover:shadow-lg transition-all transform hover:scale-105">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/>
                   </svg>
                   تأیید
                 </button>
-                <button onclick="showRejectModal({{ leave.id }}, 'replacement')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 shadow-sm hover:shadow transition-all">
-                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <button onclick="showRejectModal({{ leave.id }}, 'replacement')" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 shadow-md hover:shadow-lg transition-all transform hover:scale-105">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
                   </svg>
                   رد
@@ -104,32 +116,40 @@
 
       <!-- Manager Approvals Section -->
       {% if pending_manager_approvals %}
-      <div class="p-6">
-        <div class="flex items-center gap-2 mb-4">
-          <div class="h-8 w-8 rounded-lg bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
-            <svg class="h-5 w-5 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+      <div>
+        <div class="flex items-center gap-3 mb-4 pb-3 border-b border-purple-200 dark:border-purple-800">
+          <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-lg">
+            <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z"/>
             </svg>
           </div>
-          <h4 class="text-base font-semibold text-gray-900 dark:text-white">تأیید نهایی مدیر</h4>
-          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300">
+          <div class="flex-1">
+            <h4 class="text-base font-bold text-gray-900 dark:text-white">تأیید نهایی مدیر</h4>
+            <p class="text-xs text-gray-500 dark:text-gray-400">درخواست‌های منتظر تأیید نهایی</p>
+          </div>
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 shadow-sm">
             {{ pending_manager_approvals|length }}
           </span>
         </div>
         <div class="space-y-3">
           {% for leave in pending_manager_approvals %}
-          <div class="manager-request-row p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 transition-all" data-leave-id="{{ leave.id }}">
+          <div class="manager-request-row group p-5 rounded-xl border-2 border-purple-100 dark:border-purple-900/50 bg-white dark:bg-gray-800/50 hover:border-purple-300 dark:hover:border-purple-700 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-0.5" data-leave-id="{{ leave.id }}">
             <div class="flex items-start justify-between gap-4">
               <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2 mb-2">
-                  <p class="text-sm font-medium text-gray-900 dark:text-white">
-                    {{ leave.user.get_full_name|default:leave.user.username }}
-                  </p>
-                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-                    {{ leave.get_leave_type_display }}
-                  </span>
+                <div class="flex items-center gap-2 mb-3">
+                  <div class="h-10 w-10 rounded-full bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                    {{ leave.user.get_full_name|default:leave.user.username|slice:":1" }}
+                  </div>
+                  <div class="flex-1">
+                    <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                      {{ leave.user.get_full_name|default:leave.user.username }}{% if leave.user.userprofile and leave.user.userprofile.personnel_code %} <span class="text-gray-500">({{ leave.user.userprofile.personnel_code }})</span>{% endif %}
+                    </p>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 mt-1">
+                      {{ leave.get_leave_type_display }}
+                    </span>
+                  </div>
                 </div>
-                <div class="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400">
+                <div class="flex items-center gap-4 text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/30 rounded-lg p-2">
                   <span class="flex items-center gap-1">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/>
@@ -146,14 +166,14 @@
                 </div>
               </div>
               <div class="flex items-center gap-2">
-                <button onclick="approveManager({{ leave.id }})" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm hover:shadow transition-all">
-                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <button onclick="approveManager({{ leave.id }})" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-md hover:shadow-lg transition-all transform hover:scale-105">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/>
                   </svg>
                   تأیید
                 </button>
-                <button onclick="showRejectModal({{ leave.id }}, 'manager')" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 shadow-sm hover:shadow transition-all">
-                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <button onclick="showRejectModal({{ leave.id }}, 'manager')" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 shadow-md hover:shadow-lg transition-all transform hover:scale-105">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/>
                   </svg>
                   رد
@@ -167,27 +187,18 @@
       {% endif %}
     </div>
 
-    <!-- Empty State -->
-    {% if not pending_replacement_approvals and not pending_manager_approvals %}
-    <div class="p-8 text-center">
-      <svg class="mx-auto h-16 w-16 text-gray-400 dark:text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
-      </svg>
-      <h3 class="text-sm font-medium text-gray-900 dark:text-white mb-1">درخواستی برای تأیید وجود ندارد</h3>
-      <p class="text-sm text-gray-500 dark:text-gray-400">همه درخواست‌های شما در کارتابل قابل مشاهده است</p>
-    </div>
-    {% endif %}
 
     <!-- View All Link -->
-    <div class="px-6 py-3 bg-gray-50 dark:bg-gray-900/40 border-t border-gray-200 dark:border-gray-700">
-      <a href="{% url 'leave_reports:my_inbox' %}" class="text-sm font-medium text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 flex items-center justify-center gap-2 group">
+    <div class="px-6 py-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-t border-purple-200 dark:border-purple-800">
+      <a href="{% url 'leave_reports:my_inbox' %}" class="text-sm font-semibold text-purple-700 hover:text-purple-800 dark:text-purple-300 dark:hover:text-purple-200 flex items-center justify-center gap-2 group transition-colors">
         <span>مشاهده کارتابل کامل</span>
-        <svg class="h-4 w-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+        <svg class="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
         </svg>
       </a>
     </div>
   </div>
+  {% endif %}
 
   <!-- Reject Modal -->
   <div id="rejectModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
@@ -222,64 +233,132 @@
     </div>
   </div>
 
-  <!-- Stat cards -->
-  {% if stats %}
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-<div class="rounded-xl card-gradient-brand shadow-soft p-5 flex items-center gap-4">
-      <div class="h-12 w-12 rounded-lg bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 flex items-center justify-center">
-        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z"/></svg>
-      </div>
-      <div>
-        <p class="text-sm text-gray-500 dark:text-gray-400">کل ناهنجاری‌ها</p>
-        <p class="text-2xl font-bold">{{ stats.total_anomalies }}</p>
-      </div>
-    </div>
-<div class="rounded-xl card-gradient-success shadow-soft p-5 flex items-center gap-4">
-      <div class="h-12 w-12 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
-        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"/></svg>
-      </div>
-      <div>
-        <p class="text-sm text-gray-500 dark:text-gray-400">تکمیل شده</p>
-        <p class="text-2xl font-bold">{{ stats.completed_anomalies }}</p>
+  <!-- Quick Access Forms - بلوک‌های دسترسی سریع (دسته‌بندی شده و هوشمند) -->
+  {% if quick_access_forms_by_category %}
+  <div class="rounded-xl bg-white dark:bg-gray-800 shadow-lg overflow-hidden mb-6">
+    <div class="px-6 py-4 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white">
+      <div class="flex items-center gap-3">
+        <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"/>
+        </svg>
+        <div>
+          <h3 class="text-lg font-bold">دسترسی سریع</h3>
+          <p class="text-indigo-100 text-sm">فرم‌های پراستفاده</p>
+        </div>
       </div>
     </div>
-<div class="rounded-xl card-gradient-warning shadow-soft p-5 flex items-center gap-4">
-      <div class="h-12 w-12 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
-        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/></svg>
-      </div>
-      <div>
-        <p class="text-sm text-gray-500 dark:text-gray-400">در حال پیگیری</p>
-        <p class="text-2xl font-bold">{{ stats.in_progress_anomalies }}</p>
+    <div class="p-6">
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        {% for category_name, category_data in quick_access_forms_by_category.items %}
+          {% for form in category_data.forms %}
+          <a href="{% url form.url %}" class="group relative overflow-hidden rounded-xl bg-gradient-to-br {{ form.bg_gradient }} {{ form.hover }} text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+            <div class="p-4 sm:p-5 flex flex-col items-center justify-center text-center min-h-[120px] sm:min-h-[140px]">
+              <div class="mb-2 sm:mb-3 p-2 sm:p-3 rounded-xl bg-white/20 backdrop-blur-sm group-hover:bg-white/30 transition-all">
+                <svg class="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="{{ form.icon }}"/>
+                </svg>
+              </div>
+              <h4 class="font-semibold text-xs sm:text-sm leading-tight group-hover:scale-105 transition-transform">{{ form.label }}</h4>
+              <span class="mt-2 px-2 py-0.5 rounded-md text-[10px] sm:text-xs font-medium bg-white/20 backdrop-blur-sm {% if category_data.color == 'indigo' %}text-indigo-100{% elif category_data.color == 'green' %}text-green-100{% elif category_data.color == 'blue' %}text-blue-100{% elif category_data.color == 'red' %}text-red-100{% elif category_data.color == 'amber' %}text-amber-100{% elif category_data.color == 'teal' %}text-teal-100{% endif %}">
+                {{ category_name }}
+              </span>
+            </div>
+            <div class="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          </a>
+          {% endfor %}
+        {% endfor %}
       </div>
     </div>
   </div>
   {% endif %}
 
-  <!-- Main grid -->
+  <!-- Stat cards - آمار کلی (دسته‌بندی شده و هوشمند) -->
+  {% if stats_by_category %}
+  <div class="mb-6">
+    <div class="mb-4 flex items-center gap-3">
+      <div class="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
+        <svg class="h-6 w-6 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
+        </svg>
+      </div>
+      <h3 class="text-lg font-bold text-gray-900 dark:text-white">آمار کلی</h3>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+      {% for category_name, category_data in stats_by_category.items %}
+        {% for stat in category_data.stats %}
+        <a href="{% url stat.url %}" class="group rounded-2xl bg-gradient-to-br {{ stat.gradient }} text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 overflow-hidden relative">
+          <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div class="relative p-4 sm:p-6">
+            <div class="flex items-center justify-between mb-3 sm:mb-4">
+              <div class="p-2 sm:p-3 rounded-xl bg-white/20 backdrop-blur-sm group-hover:bg-white/30 transition-all group-hover:rotate-12">
+                <svg class="h-5 w-5 sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="{{ stat.icon }}"/>
+                </svg>
+              </div>
+              <svg class="h-4 w-4 sm:h-5 sm:w-5 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/>
+              </svg>
+            </div>
+            <p class="text-[10px] sm:text-xs {% if category_data.color == 'indigo' %}text-purple-100{% elif category_data.color == 'green' %}text-orange-100{% elif category_data.color == 'blue' %}text-blue-100{% elif category_data.color == 'red' %}text-red-100{% elif category_data.color == 'amber' %}text-amber-100{% elif category_data.color == 'teal' %}text-teal-100{% endif %} mb-1 sm:mb-2 font-medium">{{ stat.label }}</p>
+            <p class="text-2xl sm:text-3xl font-bold {% if stat.sub_value is not None %}mb-1{% endif %}">{{ stat.value|default:0 }}</p>
+            {% if stat.sub_value is not None and stat.sub_value > 0 %}
+            <p class="text-[10px] sm:text-xs {% if category_data.color == 'indigo' %}text-purple-200{% elif category_data.color == 'green' %}text-orange-200{% elif category_data.color == 'blue' %}text-blue-200{% elif category_data.color == 'red' %}text-red-200{% elif category_data.color == 'amber' %}text-amber-200{% elif category_data.color == 'teal' %}text-teal-200{% endif %}">{{ stat.sub_label }}: {{ stat.sub_value }}</p>
+            {% endif %}
+            <span class="mt-2 inline-block px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-medium bg-white/20 backdrop-blur-sm {% if category_data.color == 'indigo' %}text-indigo-100{% elif category_data.color == 'green' %}text-green-100{% elif category_data.color == 'blue' %}text-blue-100{% elif category_data.color == 'red' %}text-red-100{% elif category_data.color == 'amber' %}text-amber-100{% elif category_data.color == 'teal' %}text-teal-100{% endif %}">
+              {{ category_name }}
+            </span>
+          </div>
+        </a>
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Main grid - اعلان‌ها و فعالیت‌ها -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Recent notifications -->
     <div class="lg:col-span-1">
-      <div class="rounded-xl bg-white dark:bg-gray-800 shadow">
-<div class="px-5 py-4 gradient-header rounded-t-xl flex items-center justify-between shadow-soft">
-          <h3 class="font-semibold">آخرین اعلان‌ها</h3>
-          <a href="{% url 'dashboard:notification_list' %}" class="text-sm text-indigo-600 dark:text-indigo-400">مشاهده همه</a>
-        </div>
-        <div class="divide-y divide-gray-100 dark:divide-gray-700">
-          {% for notification in recent_notifications %}
-          <a href="{{ notification.get_absolute_url }}" class="flex items-start gap-3 px-5 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/40">
-            <div class="mt-0.5 h-8 w-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/></svg>
+      <div class="rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border border-blue-200 dark:border-blue-800 shadow-xl overflow-hidden">
+        <div class="px-6 py-5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white flex items-center justify-between relative overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-r from-blue-600/90 to-cyan-600/90"></div>
+          <div class="relative z-10 flex items-center gap-3 flex-1">
+            <div class="p-2.5 rounded-xl bg-white/20 backdrop-blur-sm">
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/>
+              </svg>
             </div>
-            <div class="flex-1">
-              <div class="flex items-center justify-between">
-                <p class="text-sm font-medium">{{ notification.title|default:"اعلان" }}</p>
-                <span class="text-xs text-gray-500">{{ notification.created_at|timesince }} پیش</span>
+            <h3 class="text-lg font-bold">آخرین اعلان‌ها</h3>
+          </div>
+          <a href="{% url 'dashboard:notification_list' %}" class="relative z-10 text-sm text-white/90 hover:text-white font-medium transition-colors">همه</a>
+        </div>
+        <div class="p-4 space-y-2 max-h-[500px] overflow-y-auto">
+          {% for notification in recent_notifications %}
+          <a href="{{ notification.get_absolute_url }}" class="group block p-4 rounded-xl bg-white dark:bg-gray-800/50 border border-blue-100 dark:border-blue-900/50 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md transition-all duration-200">
+            <div class="flex items-start gap-3">
+              <div class="mt-0.5 h-10 w-10 flex items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white shadow-md group-hover:scale-110 transition-transform">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/>
+                </svg>
               </div>
-              <p class="mt-1 text-sm text-gray-600 dark:text-gray-300 line-clamp-2">{{ notification.message }}</p>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-start justify-between gap-2 mb-1">
+                  <p class="text-sm font-semibold text-gray-900 dark:text-white line-clamp-1">{{ notification.title|default:"اعلان" }}</p>
+                  <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ notification.created_at|timesince }} پیش</span>
+                </div>
+                <p class="text-xs text-gray-600 dark:text-gray-300 line-clamp-2">{{ notification.message }}</p>
+              </div>
             </div>
           </a>
           {% empty %}
-          <div class="px-5 py-8 text-center text-sm text-gray-500">اعلانی موجود نیست.</div>
+          <div class="p-8 text-center">
+            <div class="mx-auto h-16 w-16 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center mb-3">
+              <svg class="h-8 w-8 text-blue-500 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/>
+              </svg>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">اعلانی موجود نیست</p>
+          </div>
           {% endfor %}
         </div>
       </div>
@@ -287,54 +366,86 @@
 
     <!-- Recent activities -->
     <div class="lg:col-span-2">
-      <div class="rounded-xl bg-white dark:bg-gray-800 shadow">
-<div class="px-5 py-4 gradient-header rounded-t-xl flex items-center justify-between shadow-soft">
-          <h3 class="font-semibold">فعالیت‌های اخیر شما</h3>
-          <a href="{% url 'dashboard:activity_list' %}" class="text-sm text-indigo-600 dark:text-indigo-400">مشاهده همه</a>
+      <div class="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800 shadow-xl overflow-hidden">
+        <div class="px-6 py-5 bg-gradient-to-r from-emerald-600 to-teal-500 text-white flex items-center justify-between relative overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-r from-emerald-600/90 to-teal-600/90"></div>
+          <div class="relative z-10 flex items-center gap-3 flex-1">
+            <div class="p-2.5 rounded-xl bg-white/20 backdrop-blur-sm">
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+              </svg>
+            </div>
+            <h3 class="text-lg font-bold">فعالیت‌های اخیر شما</h3>
+          </div>
+          <a href="{% url 'dashboard:activity_list' %}" class="relative z-10 text-sm text-white/90 hover:text-white font-medium transition-colors">همه</a>
         </div>
-        <ul class="divide-y divide-gray-100 dark:divide-gray-700">
+        <div class="p-4 space-y-2 max-h-[500px] overflow-y-auto">
           {% for activity in recent_activities %}
-          <li class="px-5 py-3">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200 text-xs font-semibold">{{ activity.get_activity_type_display }}</span>
-                <div>
-                  <p class="text-sm font-medium">{{ activity.description }}</p>
-                  <p class="text-xs text-gray-500">{{ activity.created_at|timesince }} پیش</p>
+          <div class="group p-4 rounded-xl bg-white dark:bg-gray-800/50 border border-emerald-100 dark:border-emerald-900/50 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-md transition-all duration-200">
+            <div class="flex items-center gap-4">
+              <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center text-white font-bold text-sm shadow-md group-hover:scale-110 transition-transform">
+                {{ activity.get_activity_type_display|slice:":1" }}
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-semibold text-gray-900 dark:text-white mb-1">{{ activity.description }}</p>
+                <div class="flex items-center gap-2">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                    {{ activity.get_activity_type_display }}
+                  </span>
+                  <span class="text-xs text-gray-500 dark:text-gray-400">{{ activity.created_at|timesince }} پیش</span>
                 </div>
               </div>
             </div>
-          </li>
+          </div>
           {% empty %}
-          <li class="px-5 py-8 text-center text-sm text-gray-500">فعالیتی ثبت نشده است.</li>
+          <div class="p-8 text-center">
+            <div class="mx-auto h-16 w-16 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center mb-3">
+              <svg class="h-8 w-8 text-emerald-500 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+              </svg>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">فعالیتی ثبت نشده است</p>
+          </div>
           {% endfor %}
-        </ul>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Permissions table -->
-  <div class="rounded-xl bg-white dark:bg-gray-800 shadow">
-    <div class="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
-      <h3 class="font-semibold">دسترسی‌های شما</h3>
+  <div class="rounded-2xl bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-900/20 dark:to-gray-900/20 border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
+    <div class="px-6 py-5 bg-gradient-to-r from-slate-600 to-gray-600 text-white flex items-center gap-3 relative overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-r from-slate-600/90 to-gray-600/90"></div>
+      <div class="relative z-10 flex items-center gap-3 flex-1">
+        <div class="p-2.5 rounded-xl bg-white/20 backdrop-blur-sm">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-bold">دسترسی‌های شما</h3>
+      </div>
     </div>
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto p-6">
       <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-<thead class="table-header-gradient">
-          <tr>
-            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500">نوع دسترسی</th>
-            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500">نام صفحه/ماژول</th>
-            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500">مشاهده</th>
-            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500">ایجاد</th>
-            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500">ویرایش</th>
-            <th class="px-4 py-3 text-center text-xs font-medium text-gray-500">حذف</th>
+        <thead>
+          <tr class="bg-gradient-to-r from-slate-100 to-gray-100 dark:from-slate-800 dark:to-gray-800">
+            <th class="px-4 py-3 text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">نوع دسترسی</th>
+            <th class="px-4 py-3 text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">نام صفحه/ماژول</th>
+            <th class="px-4 py-3 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">مشاهده</th>
+            <th class="px-4 py-3 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">ایجاد</th>
+            <th class="px-4 py-3 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">ویرایش</th>
+            <th class="px-4 py-3 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">حذف</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+        <tbody class="bg-white dark:bg-gray-800/50 divide-y divide-gray-200 dark:divide-gray-700">
           {% for perm in user_access_permissions %}
-          <tr class="bg-white dark:bg-gray-800">
-            <td class="px-4 py-3 text-sm">{{ perm.type }}</td>
-            <td class="px-4 py-3 text-sm">{{ perm.view_label }}</td>
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/70 transition-colors">
+            <td class="px-4 py-3">
+              <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                {{ perm.type }}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white">{{ perm.view_label }}</td>
             <td class="px-4 py-3 text-center">
               {% if perm.can_view %}
               <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
