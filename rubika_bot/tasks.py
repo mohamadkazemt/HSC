@@ -124,19 +124,31 @@ def send_leave_approval_request(self, chat_id: str, leave_request_id: int, appro
         message_lines = []
         
         if approval_type == 'replacement':
+            # ساختن اطلاعات درخواست‌دهنده با کد پرسنلی
+            requester_info = f'👤 درخواست‌دهنده: {requester_name}'
+            requester_profile = getattr(leave_request.user, 'userprofile', None)
+            if requester_profile and requester_profile.personnel_code:
+                requester_info += f' (کد پرسنلی: {requester_profile.personnel_code})'
+            
             message_lines = [
                 '🔔 درخواست جایگزینی مرخصی',
                 '',
-                f'👤 درخواست‌دهنده: {requester_name}',
+                requester_info,
                 f'📌 نوع مرخصی: {leave_type_display}',
                 f'📅 تاریخ: {_format_jalali_date(leave_request.shift_date)}',
                 f'🕐 شیفت: {shift_type_display}',
             ]
         else:  # manager
+            # ساختن اطلاعات درخواست‌دهنده با کد پرسنلی
+            requester_info = f'👤 درخواست‌دهنده: {requester_name}'
+            requester_profile = getattr(leave_request.user, 'userprofile', None)
+            if requester_profile and requester_profile.personnel_code:
+                requester_info += f' (کد پرسنلی: {requester_profile.personnel_code})'
+            
             message_lines = [
                 '🔔 درخواست تایید مرخصی',
                 '',
-                f'👤 درخواست‌دهنده: {requester_name}',
+                requester_info,
                 f'📌 نوع مرخصی: {leave_type_display}',
                 f'📅 تاریخ: {_format_jalali_date(leave_request.shift_date)}',
                 f'🕐 شیفت: {shift_type_display}',
@@ -145,7 +157,14 @@ def send_leave_approval_request(self, chat_id: str, leave_request_id: int, appro
             # اگر جایگزین دارد، نمایش بده
             if leave_request.replacement_person:
                 replacement_name = leave_request.replacement_person.get_full_name() or leave_request.replacement_person.username
-                message_lines.append(f'👥 جایگزین: {replacement_name}')
+                replacement_info = f'👥 جایگزین: {replacement_name}'
+                
+                # اضافه کردن کد پرسنلی جایگزین
+                replacement_profile = getattr(leave_request.replacement_person, 'userprofile', None)
+                if replacement_profile and replacement_profile.personnel_code:
+                    replacement_info += f' (کد پرسنلی: {replacement_profile.personnel_code})'
+                
+                message_lines.append(replacement_info)
         
         # اضافه کردن توضیحات اگر وجود داشت
         if leave_request.description:
