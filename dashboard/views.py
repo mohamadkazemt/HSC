@@ -25,6 +25,17 @@ name = 'dashboard'
 
 @login_required
 def dashboard(request):
+    # بررسی اینکه آیا کاربر پرسنل اورژانس است (پرستار یا پزشک - نه مدیر)
+    is_emergency_nurse = request.user.groups.filter(name='EmergencyNurse').exists()
+    is_emergency_doctor = request.user.groups.filter(name='EmergencyDoctor').exists()
+    is_emergency_manager = request.user.groups.filter(name='EmergencyManager').exists()
+    
+    # اگر کاربر پرستار یا پزشک است (نه مدیر) و سوپریوزر هم نیست، redirect به emergency
+    if (is_emergency_nurse or is_emergency_doctor) and not is_emergency_manager and not request.user.is_superuser:
+        messages.warning(request, 'شما فقط به بخش اورژانس دسترسی دارید.')
+        from django.shortcuts import redirect
+        return redirect('emergency_services:dashboard')
+    
     # بررسی نقش کاربر و وضعیت گواهینامه
     is_operator = any('اپراتور' in group.name for group in request.user.groups.all())
     driver_license = None
