@@ -216,7 +216,8 @@
               <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">رد درخواست مرخصی</h3>
               <div class="mt-4">
                 <label for="rejectReason" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">دلیل رد درخواست:</label>
-                <textarea id="rejectReason" rows="4" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-purple-500 focus:ring-purple-500" placeholder="لطفاً دلیل رد را توضیح دهید..."></textarea>
+                <textarea id="rejectReason" rows="4" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-purple-500 focus:ring-purple-500 transition-colors" placeholder="لطفاً دلیل رد را توضیح دهید (حداقل 10 کاراکتر)..."></textarea>
+                <div id="rejectError" class="hidden mt-2 text-sm text-red-600 dark:text-red-400"></div>
               </div>
             </div>
           </div>
@@ -662,8 +663,20 @@ function approveManager(leaveId) {
 function showRejectModal(leaveId, type) {
     currentLeaveId = leaveId;
     currentRejectType = type;
-    document.getElementById('rejectReason').value = '';
+    const reasonInput = document.getElementById('rejectReason');
+    const errorDiv = document.getElementById('rejectError');
+    
+    reasonInput.value = '';
+    reasonInput.classList.remove('border-red-500', 'ring-red-500');
+    
+    if (errorDiv) {
+        errorDiv.textContent = '';
+        errorDiv.classList.add('hidden');
+    }
+    
     document.getElementById('rejectModal').classList.remove('hidden');
+    // Focus on textarea after modal is shown
+    setTimeout(() => reasonInput.focus(), 100);
 }
 
 function closeRejectModal() {
@@ -673,20 +686,41 @@ function closeRejectModal() {
 }
 
 function confirmReject() {
-    const reason = document.getElementById('rejectReason').value.trim();
+    const reasonInput = document.getElementById('rejectReason');
+    const reason = reasonInput.value.trim();
+    const errorDiv = document.getElementById('rejectError');
     
+    // Clear previous errors
+    if (errorDiv) {
+        errorDiv.textContent = '';
+        errorDiv.classList.add('hidden');
+    }
+    reasonInput.classList.remove('border-red-500', 'ring-red-500');
+    
+    // Validation
     if (!reason) {
-        showNotification('لطفاً دلیل رد را وارد کنید', 'error');
+        showFieldError('وارد کردن دلیل رد الزامی است');
+        return;
+    }
+    
+    if (reason.length < 10) {
+        showFieldError('دلیل رد باید حداقل 10 کاراکتر باشد');
         return;
     }
 
     const csrftoken = getCookie('csrftoken');
+    if (!csrftoken) {
+        showFieldError('خطا: توکن امنیتی یافت نشد');
+        return;
+    }
+
     const url = currentRejectType === 'replacement' 
         ? `/leave_reports/reject-replacement/${currentLeaveId}/`
         : `/leave_reports/reject-manager/${currentLeaveId}/`;
 
     const formData = new FormData();
     formData.append('rejection_reason', reason);
+    formData.append('csrfmiddlewaretoken', csrftoken);
 
     fetch(url, {
         method: 'POST',
@@ -696,7 +730,14 @@ function confirmReject() {
         },
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        return response.json().then(data => {
+            if (!response.ok) {
+                throw { data, response };
+            }
+            return data;
+        });
+    })
     .then(data => {
         if (data.status === 'success') {
             showNotification(data.message, 'success');
@@ -721,13 +762,61 @@ function confirmReject() {
                 }, 400);
             }
         } else {
-            showNotification(data.message, 'error');
+            // Handle validation errors
+            let errorMessage = data.message || 'خطا در اعتبارسنجی فرم';
+            if (data.errors) {
+                const errorList = [];
+                if (data.errors.rejection_reason) {
+                    errorList.push(...(Array.isArray(data.errors.rejection_reason) ? data.errors.rejection_reason : [data.errors.rejection_reason]));
+                }
+                if (errorList.length > 0) {
+                    errorMessage = errorList.join('، ');
+                }
+            }
+            showFieldError(errorMessage);
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        showNotification('خطا در برقراری ارتباط با سرور', 'error');
+        let errorMessage = 'خطا در برقراری ارتباط با سرور';
+        
+        if (error && error.data) {
+            // Handle error response from server
+            const errorData = error.data;
+            errorMessage = errorData.message || 'خطا در اعتبارسنجی فرم';
+            if (errorData.errors) {
+                const errorList = [];
+                if (errorData.errors.rejection_reason) {
+                    const reasonErrors = Array.isArray(errorData.errors.rejection_reason) 
+                        ? errorData.errors.rejection_reason 
+                        : [errorData.errors.rejection_reason];
+                    errorList.push(...reasonErrors);
+                }
+                if (errorList.length > 0) {
+                    errorMessage = errorList.join('، ');
+                }
+            }
+        }
+        
+        showFieldError(errorMessage);
     });
+}
+
+function showFieldError(message) {
+    const reasonInput = document.getElementById('rejectReason');
+    let errorDiv = document.getElementById('rejectError');
+    
+    if (!errorDiv) {
+        errorDiv = document.createElement('div');
+        errorDiv.id = 'rejectError';
+        errorDiv.className = 'mt-2 text-sm text-red-600 dark:text-red-400';
+        reasonInput.parentNode.appendChild(errorDiv);
+    }
+    
+    errorDiv.textContent = message;
+    errorDiv.classList.remove('hidden');
+    reasonInput.classList.add('border-red-500', 'ring-red-500');
+    reasonInput.focus();
 }
 
 // Close modal on Escape key
