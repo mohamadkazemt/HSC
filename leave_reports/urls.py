@@ -97,6 +97,18 @@ URLS_WITH_LABELS = [
         "name": "api_parts_by_section",
         "label": "مرخصی_API قسمت‌ها بر اساس بخش",
     },
+    {
+        "path": "api/unit-groups-by-part/",
+        "view": views.api_get_unit_groups_by_part,
+        "name": "api_unit_groups_by_part",
+        "label": "مرخصی_API گروه‌های واحد بر اساس قسمت",
+    },
+    {
+        "path": "api/positions-by-unit-group/",
+        "view": views.api_get_positions_by_unit_group,
+        "name": "api_positions_by_unit_group",
+        "label": "مرخصی_API سمت‌ها بر اساس گروه واحد",
+    },
 ]
 
 urlpatterns = [path(item["path"], item["view"], name=item["name"]) for item in URLS_WITH_LABELS]

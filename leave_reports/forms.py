@@ -1,6 +1,6 @@
 from django import forms
 from .models import ShiftReport, ApprovalHierarchy
-from accounts.models import UserProfile, Section, Part
+from accounts.models import UserProfile, Section, Part, UnitGroup, Position
 from django.contrib.auth.models import User
 import jdatetime
 
@@ -160,7 +160,39 @@ class RejectLeaveForm(forms.Form):
 
 
 class ApprovalHierarchyForm(forms.ModelForm):
-    """فرم مدیریت سلسله مراتب تأیید"""
+    """فرم مدیریت سلسله مراتب تأیید با قابلیت ترکیب چند شرط"""
+    
+    approver = forms.ModelChoiceField(
+        queryset=UserProfile.objects.filter(user__is_active=True),
+        widget=forms.Select(attrs={
+            'class': 'form-control select2',
+            'data-placeholder': 'انتخاب تأیید کننده'
+        }),
+        label='تأیید کننده',
+        required=True,
+        help_text='تأیید کننده الزامی است'
+    )
+    
+    specific_user = forms.ModelChoiceField(
+        queryset=User.objects.filter(is_active=True),
+        widget=forms.Select(attrs={
+            'class': 'form-control select2',
+            'data-placeholder': 'انتخاب کاربر خاص (اختیاری)'
+        }),
+        label='کاربر خاص',
+        required=False,
+        help_text='برای تعریف تأیید کننده خاص برای یک کاربر مشخص'
+    )
+    
+    work_group = forms.ChoiceField(
+        choices=[('', '--- انتخاب کنید ---')] + UserProfile.GROUP_CHOICES,
+        widget=forms.Select(attrs={
+            'class': 'form-control select2',
+            'data-placeholder': 'انتخاب گروه کاری'
+        }),
+        label='گروه کاری',
+        required=False
+    )
     
     section = forms.ModelChoiceField(
         queryset=Section.objects.all(),
@@ -182,32 +214,96 @@ class ApprovalHierarchyForm(forms.ModelForm):
         required=False
     )
     
-    approver = forms.ModelChoiceField(
-        queryset=UserProfile.objects.all(),
+    unit_group = forms.ModelChoiceField(
+        queryset=UnitGroup.objects.all(),
         widget=forms.Select(attrs={
             'class': 'form-control select2',
-            'data-placeholder': 'انتخاب تأیید کننده'
+            'data-placeholder': 'انتخاب گروه واحد'
         }),
-        label='تأیید کننده',
-        required=True
+        label='گروه واحد',
+        required=False
+    )
+    
+    position = forms.ModelChoiceField(
+        queryset=Position.objects.all(),
+        widget=forms.Select(attrs={
+            'class': 'form-control select2',
+            'data-placeholder': 'انتخاب سمت'
+        }),
+        label='سمت',
+        required=False
     )
     
     class Meta:
         model = ApprovalHierarchy
-        fields = ['section', 'part', 'approver']
+        fields = [
+            'approver', 'specific_user', 'work_group', 
+            'section', 'part', 'unit_group', 'position'
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # تنظیم queryset برای فیلدهای وابسته
+        if self.instance and self.instance.pk:
+            # اگر بخش انتخاب شده، فقط قسمت‌های آن بخش را نمایش بده
+            if self.instance.section:
+                self.fields['part'].queryset = Part.objects.filter(section=self.instance.section)
+            else:
+                self.fields['part'].queryset = Part.objects.all()
+            
+            # اگر قسمت انتخاب شده، فقط گروه‌های واحد آن قسمت را نمایش بده
+            if self.instance.part:
+                self.fields['unit_group'].queryset = UnitGroup.objects.filter(part=self.instance.part)
+            else:
+                self.fields['unit_group'].queryset = UnitGroup.objects.all()
+            
+            # اگر گروه واحد انتخاب شده، فقط سمت‌های آن گروه را نمایش بده
+            if self.instance.unit_group:
+                self.fields['position'].queryset = Position.objects.filter(unit_group=self.instance.unit_group)
+            else:
+                self.fields['position'].queryset = Position.objects.all()
+        else:
+            # برای فرم جدید، همه گزینه‌ها را نمایش بده
+            self.fields['part'].queryset = Part.objects.all()
+            self.fields['unit_group'].queryset = UnitGroup.objects.all()
+            self.fields['position'].queryset = Position.objects.all()
 
     def clean(self):
         cleaned_data = super().clean()
         section = cleaned_data.get('section')
         part = cleaned_data.get('part')
+        unit_group = cleaned_data.get('unit_group')
+        position = cleaned_data.get('position')
         
-        if not section and not part:
-            raise forms.ValidationError('باید حداقل یکی از فیلدهای بخش یا قسمت را انتخاب کنید.')
-        
-        if section and part:
-            # بررسی اینکه قسمت متعلق به بخش انتخاب شده است
+        # بررسی اینکه اگر part انتخاب شده، باید section آن را هم داشته باشد
+        if part and section:
             if part.section != section:
                 raise forms.ValidationError('قسمت انتخاب شده متعلق به بخش انتخاب شده نیست.')
+        
+        # بررسی اینکه اگر unit_group انتخاب شده، باید part آن را هم داشته باشد
+        if unit_group and part:
+            if unit_group.part != part:
+                raise forms.ValidationError('گروه واحد انتخاب شده متعلق به قسمت انتخاب شده نیست.')
+        
+        # بررسی اینکه اگر position انتخاب شده، باید unit_group آن را هم داشته باشد
+        if position and unit_group:
+            if position.unit_group != unit_group:
+                raise forms.ValidationError('سمت انتخاب شده متعلق به گروه واحد انتخاب شده نیست.')
+        
+        # بررسی اینکه حداقل یک معیار (به جز approver) انتخاب شده باشد
+        has_criteria = any([
+            cleaned_data.get('specific_user'),
+            cleaned_data.get('work_group'),
+            cleaned_data.get('section'),
+            cleaned_data.get('part'),
+            cleaned_data.get('unit_group'),
+            cleaned_data.get('position'),
+        ])
+        
+        if not has_criteria:
+            raise forms.ValidationError(
+                'باید حداقل یکی از فیلدهای معیار (کاربر خاص، گروه کاری، بخش، قسمت، گروه واحد، یا سمت) را انتخاب کنید.'
+            )
         
         return cleaned_data
 

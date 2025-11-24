@@ -35,14 +35,67 @@ class ShiftReportAdmin(admin.ModelAdmin):
 
 @admin.register(ApprovalHierarchy)
 class ApprovalHierarchyAdmin(admin.ModelAdmin):
-    list_display = ['get_location', 'approver', 'created_at']
-    list_filter = ['section', 'part']
-    search_fields = ['approver__user__first_name', 'approver__user__last_name', 'section__name', 'part__name']
+    list_display = ['approver', 'get_criteria_display', 'get_weight_display', 'created_at', 'updated_at']
+    list_filter = [
+        'work_group', 'section', 'part', 'unit_group', 'position', 
+        'created_at', 'updated_at'
+    ]
+    search_fields = [
+        'approver__user__first_name', 
+        'approver__user__last_name', 
+        'approver__user__username',
+        'specific_user__first_name',
+        'specific_user__last_name',
+        'section__name', 
+        'part__name',
+        'unit_group__name',
+        'position__name'
+    ]
     
-    def get_location(self, obj):
+    fieldsets = (
+        ('تأیید کننده', {
+            'fields': ('approver',)
+        }),
+        ('معیارهای تطبیق', {
+            'fields': (
+                'specific_user',
+                'work_group',
+                'position',
+                'unit_group',
+                'part',
+                'section',
+            ),
+            'description': 'حداقل یکی از این فیلدها باید انتخاب شود. قانون با معیارهای بیشتر اولویت بالاتری دارد.'
+        }),
+        ('اطلاعات زمانی', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    readonly_fields = ['created_at', 'updated_at']
+    
+    def get_criteria_display(self, obj):
+        """نمایش معیارهای انتخاب شده"""
+        criteria = []
+        if obj.specific_user:
+            criteria.append(f"کاربر: {obj.specific_user.get_full_name()}")
+        if obj.work_group:
+            criteria.append(f"گروه: {obj.get_work_group_display()}")
+        if obj.position:
+            criteria.append(f"سمت: {obj.position.name}")
+        if obj.unit_group:
+            criteria.append(f"گروه واحد: {obj.unit_group.name}")
         if obj.part:
-            return f"{obj.part.name} ({obj.part.section.name})"
-        elif obj.section:
-            return obj.section.name
-        return "-"
-    get_location.short_description = "بخش/قسمت"
+            criteria.append(f"قسمت: {obj.part.name}")
+        if obj.section:
+            criteria.append(f"بخش: {obj.section.name}")
+        
+        return " + ".join(criteria) if criteria else "عمومی"
+    get_criteria_display.short_description = "معیارها"
+    
+    def get_weight_display(self, obj):
+        """نمایش وزن قانون"""
+        return obj.get_weight()
+    get_weight_display.short_description = "وزن"
+    get_weight_display.admin_order_field = 'id'  # برای مرتب‌سازی بر اساس وزن نیاز به annotation داریم

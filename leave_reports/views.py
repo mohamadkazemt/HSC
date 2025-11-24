@@ -152,25 +152,29 @@ def my_inbox(request):
     ).select_related('user', 'crate_by')
     
     # 2. درخواست‌هایی که باید به عنوان مدیر تأیید کنم
+    # استفاده از منطق جدید: بررسی همه درخواست‌های pending_approval
+    # و بررسی اینکه آیا کاربر فعلی تأیید کننده آن‌ها است یا نه
     pending_as_manager = ShiftReport.objects.none()
     if hasattr(request.user, 'userprofile'):
         user_profile = request.user.userprofile
         
-        # پیدا کردن بخش‌ها/قسمت‌هایی که من تأیید کننده آن‌ها هستم
-        hierarchies = ApprovalHierarchy.objects.filter(approver=user_profile)
+        # پیدا کردن همه درخواست‌های pending_approval
+        all_pending = ShiftReport.objects.filter(
+            status='pending_approval',
+            replacement_approved=True
+        ).select_related('user', 'replacement_person', 'crate_by', 'user__userprofile')
         
-        q_objects = Q()
-        for hierarchy in hierarchies:
-            if hierarchy.part:
-                q_objects |= Q(user__userprofile__part=hierarchy.part)
-            elif hierarchy.section:
-                q_objects |= Q(user__userprofile__section=hierarchy.section)
+        # فیلتر کردن درخواست‌هایی که کاربر فعلی می‌تواند آن‌ها را تأیید کند
+        matching_leaves = []
+        for leave in all_pending:
+            approver = leave.get_required_approver()
+            if approver and approver == user_profile:
+                matching_leaves.append(leave.id)
         
-        if q_objects:
+        # تبدیل به QuerySet
+        if matching_leaves:
             pending_as_manager = ShiftReport.objects.filter(
-                q_objects,
-                status='pending_approval',
-                replacement_approved=True
+                id__in=matching_leaves
             ).select_related('user', 'replacement_person', 'crate_by')
     
     # ترکیب درخواست‌های منتظر
@@ -1008,14 +1012,68 @@ def api_get_parts_by_section(request):
     from accounts.models import Part
     
     section_id = request.GET.get('section_id')
+    part_id = request.GET.get('part_id')  # برای استفاده در جاوااسکریپت
     
-    if not section_id:
+    if not section_id and not part_id:
         return JsonResponse({'results': [], 'pagination': {'more': False}})
     
-    parts = Part.objects.filter(section_id=section_id)
+    if section_id:
+        parts = Part.objects.filter(section_id=section_id)
+        results = [{'id': part.id, 'text': part.name} for part in parts]
+    else:
+        results = []
     
-    results = [{'id': '', 'text': '--- انتخاب کنید ---'}]
-    results.extend([{'id': part.id, 'text': part.name} for part in parts])
+    return JsonResponse({
+        'results': results,
+        'pagination': {'more': False}
+    })
+
+
+@login_required
+def api_get_unit_groups_by_part(request):
+    """API برای دریافت گروه‌های واحد بر اساس قسمت"""
+    import logging
+    from accounts.models import UnitGroup
+    
+    logger = logging.getLogger(__name__)
+    part_id = request.GET.get('part_id')
+    
+    logger.info(f"🔍 api_get_unit_groups_by_part called with part_id: {part_id}")
+    
+    if not part_id:
+        logger.warning("⚠️ No part_id provided")
+        return JsonResponse({'results': [], 'pagination': {'more': False}})
+    
+    try:
+        unit_groups = UnitGroup.objects.filter(part_id=part_id)
+        logger.info(f"📊 Found {unit_groups.count()} unit groups for part_id {part_id}")
+        
+        results = [{'id': unit_group.id, 'text': unit_group.name} for unit_group in unit_groups]
+        logger.info(f"✅ Returning results: {results}")
+        
+        return JsonResponse({
+            'results': results,
+            'pagination': {'more': False}
+        })
+    except Exception as e:
+        logger.error(f"❌ Error in api_get_unit_groups_by_part: {str(e)}", exc_info=True)
+        return JsonResponse({'results': [], 'pagination': {'more': False}}, status=500)
+
+
+@login_required
+def api_get_positions_by_unit_group(request):
+    """API برای دریافت سمت‌ها بر اساس گروه واحد"""
+    
+    from accounts.models import Position
+    
+    unit_group_id = request.GET.get('unit_group_id')
+    
+    if not unit_group_id:
+        return JsonResponse({'results': [], 'pagination': {'more': False}})
+    
+    positions = Position.objects.filter(unit_group_id=unit_group_id)
+    
+    results = [{'id': position.id, 'text': position.name} for position in positions]
     
     return JsonResponse({
         'results': results,

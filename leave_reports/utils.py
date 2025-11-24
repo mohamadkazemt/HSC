@@ -61,88 +61,54 @@ def send_notification_to_manager(leave_request):
     """
     ارسال اعلان به مدیر تأیید کننده برای تأیید نهایی درخواست مرخصی
     همراه با دکمه‌های تایید و رد در ربات روبیکا
+    از متد get_required_approver() برای پیدا کردن تأیید کننده استفاده می‌کند
     """
     import logging
     from dashboard.models import Notification
-    from .models import ApprovalHierarchy
     
     logger = logging.getLogger(__name__)
     
     logger.info(f"📤 send_notification_to_manager called for leave request #{leave_request.id}")
     
-    # پیدا کردن مدیر تأیید کننده
-    requester_profile = getattr(leave_request.user, 'userprofile', None)
-    logger.info(f"   - Requester: {leave_request.user.username}")
-    logger.info(f"   - Requester profile: {requester_profile}")
+    # استفاده از متد جدید برای پیدا کردن تأیید کننده
+    approver_profile = leave_request.get_required_approver()
     
-    if not requester_profile:
-        logger.warning(f"⚠️ Requester has no profile, cannot find manager")
+    if not approver_profile:
+        logger.warning(f"⚠️ No approver found for leave request #{leave_request.id}")
         return
     
-    logger.info(f"   - Requester part: {requester_profile.part}")
-    logger.info(f"   - Requester section: {requester_profile.section}")
-    
-    # بررسی سلسله مراتب تأیید
-    hierarchy = None
-    if requester_profile.part:
-        # اول سلسله مراتب خاص Part را بررسی می‌کنیم
-        hierarchy = ApprovalHierarchy.objects.filter(part=requester_profile.part).first()
-        logger.info(f"   - Looking for hierarchy by part: {requester_profile.part} -> Found: {hierarchy}")
-        
-        # اگر برای Part خاص تأیید کننده‌ای نبود، سلسله مراتب کلی Section را بررسی می‌کنیم
-        if not hierarchy and requester_profile.section:
-            hierarchy = ApprovalHierarchy.objects.filter(
-                section=requester_profile.section, 
-                part__isnull=True
-            ).first()
-            logger.info(f"   - No part hierarchy, checking section: {requester_profile.section} -> Found: {hierarchy}")
-    elif requester_profile.section:
-        # فقط سلسله مراتب کلی Section را بررسی می‌کنیم
-        hierarchy = ApprovalHierarchy.objects.filter(
-            section=requester_profile.section, 
-            part__isnull=True
-        ).first()
-        logger.info(f"   - Looking for hierarchy by section: {requester_profile.section} -> Found: {hierarchy}")
-    
-    if not hierarchy:
-        logger.warning(f"⚠️ No approval hierarchy found for this requester")
+    if not approver_profile.user:
+        logger.warning(f"⚠️ Approver profile has no associated user")
         return
     
-    logger.info(f"   - Hierarchy found: {hierarchy}")
-    logger.info(f"   - Approver profile: {hierarchy.approver}")
-    logger.info(f"   - Approver user: {hierarchy.approver.user if hierarchy.approver else None}")
+    manager = approver_profile.user
+    logger.info(f"✅ Manager found: {manager.username} (profile: {approver_profile})")
     
-    if hierarchy and hierarchy.approver and hierarchy.approver.user:
-        manager = hierarchy.approver.user
-        logger.info(f"✅ Manager found: {manager.username}")
-        
-        leave_type_display = leave_request.get_leave_type_display()
-        requester_name = leave_request.user.get_full_name() or leave_request.user.username
-        
-        # ایجاد URL برای نمایش جزئیات
-        url = reverse('leave_reports:leave_detail', args=[leave_request.id])
-        
-        message = f'درخواست {leave_type_display} {requester_name} برای تاریخ {leave_request.shift_date} منتظر تأیید نهایی شماست.'
-        title = 'درخواست تأیید مرخصی'
-        
-        # ارسال نوتیفیکیشن به داشبورد وب
-        Notification.objects.create(
-            user=manager,
-            title=title,
-            message=message,
-            notification_type='info',  # اطلاع‌رسانی
-            url=url
-        )
-        
-        # ارسال پیام با دکمه‌های تایید/رد به ربات روبیکا
-        logger.info(f"📲 Calling send_leave_approval_notification_to_rubika for manager")
-        send_leave_approval_notification_to_rubika(
-            user=manager,
-            leave_request=leave_request,
-            approval_type='manager'
-        )
-    else:
-        logger.warning(f"⚠️ Could not send notification - missing hierarchy or approver")
+    leave_type_display = leave_request.get_leave_type_display()
+    requester_name = leave_request.user.get_full_name() or leave_request.user.username
+    
+    # ایجاد URL برای نمایش جزئیات
+    url = reverse('leave_reports:leave_detail', args=[leave_request.id])
+    
+    message = f'درخواست {leave_type_display} {requester_name} برای تاریخ {leave_request.shift_date} منتظر تأیید نهایی شماست.'
+    title = 'درخواست تأیید مرخصی'
+    
+    # ارسال نوتیفیکیشن به داشبورد وب
+    Notification.objects.create(
+        user=manager,
+        title=title,
+        message=message,
+        notification_type='info',  # اطلاع‌رسانی
+        url=url
+    )
+    
+    # ارسال پیام با دکمه‌های تایید/رد به ربات روبیکا
+    logger.info(f"📲 Calling send_leave_approval_notification_to_rubika for manager")
+    send_leave_approval_notification_to_rubika(
+        user=manager,
+        leave_request=leave_request,
+        approval_type='manager'
+    )
 
 
 def send_notification_to_requester_approved(leave_request, approved_by_type='manager'):

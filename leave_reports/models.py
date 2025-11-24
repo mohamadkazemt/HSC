@@ -1,31 +1,160 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.timezone import now
-from accounts.models import UserProfile, Section, Part
+from django.db.models import Q
+from accounts.models import UserProfile, Section, Part, UnitGroup, Position
 from django.core.exceptions import ValidationError
 
 
 class ApprovalHierarchy(models.Model):
     """
-    تعریف سلسله مراتب تأیید برای درخواست‌های مرخصی
+    تعریف سلسله مراتب تأیید برای درخواست‌های مرخصی با قابلیت ترکیب چند شرط
+    از قوانین با وزن بالاتر (مشخص‌تر) برای تطبیق استفاده می‌شود
     """
-    section = models.ForeignKey(Section, on_delete=models.CASCADE, null=True, blank=True, verbose_name="بخش")
-    part = models.ForeignKey(Part, on_delete=models.CASCADE, null=True, blank=True, verbose_name="قسمت")
+    # تأیید کننده (الزامی)
     approver = models.ForeignKey(UserProfile, on_delete=models.CASCADE, verbose_name="تأیید کننده")
+    
+    # فیلدهای معیار (همه اختیاری - برای ترکیب قوانین)
+    specific_user = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True, 
+        verbose_name="کاربر خاص",
+        help_text="برای تعریف تأیید کننده خاص برای یک کاربر مشخص"
+    )
+    work_group = models.CharField(
+        max_length=2, 
+        choices=UserProfile.GROUP_CHOICES, 
+        null=True, 
+        blank=True, 
+        verbose_name="گروه کاری"
+    )
+    section = models.ForeignKey(
+        Section, 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True, 
+        verbose_name="بخش"
+    )
+    part = models.ForeignKey(
+        Part, 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True, 
+        verbose_name="قسمت"
+    )
+    unit_group = models.ForeignKey(
+        UnitGroup, 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True, 
+        verbose_name="گروه"
+    )
+    position = models.ForeignKey(
+        Position, 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True, 
+        verbose_name="سمت"
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="تاریخ بروزرسانی")
 
     class Meta:
         verbose_name = "سلسله مراتب تأیید"
         verbose_name_plural = "سلسله مراتب تأیید"
-        unique_together = ['section', 'part']  # یک تأیید کننده برای هر بخش/قسمت
+        # حذف unique_together چون حالا می‌توان چند قانون برای یک بخش/قسمت داشت
+        indexes = [
+            models.Index(fields=['work_group', 'section', 'part']),
+            models.Index(fields=['specific_user']),
+            models.Index(fields=['position', 'unit_group']),
+        ]
+
+    def get_weight(self):
+        """
+        محاسبه وزن قانون برای تعیین میزان مشخص بودن آن
+        وزن بالاتر = قانون مشخص‌تر = اولویت بیشتر
+        """
+        weight = 0
+        
+        if self.specific_user:
+            weight += 100  # بالاترین اولویت برای کاربر خاص
+        
+        if self.position:
+            weight += 50
+        
+        if self.work_group:
+            weight += 40
+        
+        if self.unit_group:
+            weight += 30
+        
+        if self.part:
+            weight += 20
+        
+        if self.section:
+            weight += 10
+        
+        return weight
+
+    def matches_user_profile(self, user_profile):
+        """
+        بررسی اینکه آیا این قانون با پروفایل کاربر تطبیق دارد
+        یک قانون تطبیق دارد اگر:
+        - همه فیلدهای تعریف شده در قانون با پروفایل کاربر مطابقت داشته باشند
+        - یا فیلد در قانون None باشد (یعنی نادیده گرفته شود)
+        """
+        # بررسی specific_user
+        if self.specific_user:
+            if user_profile.user != self.specific_user:
+                return False
+        
+        # بررسی work_group
+        if self.work_group:
+            if user_profile.group != self.work_group:
+                return False
+        
+        # بررسی section
+        if self.section:
+            if user_profile.section != self.section:
+                return False
+        
+        # بررسی part
+        if self.part:
+            if user_profile.part != self.part:
+                return False
+        
+        # بررسی unit_group
+        if self.unit_group:
+            if user_profile.unit_group != self.unit_group:
+                return False
+        
+        # بررسی position
+        if self.position:
+            if user_profile.position != self.position:
+                return False
+        
+        return True
 
     def __str__(self):
+        parts = []
+        if self.specific_user:
+            parts.append(f"کاربر: {self.specific_user.get_full_name()}")
+        if self.work_group:
+            parts.append(f"گروه: {self.get_work_group_display()}")
+        if self.position:
+            parts.append(f"سمت: {self.position.name}")
+        if self.unit_group:
+            parts.append(f"گروه واحد: {self.unit_group.name}")
         if self.part:
-            return f"تأیید کننده {self.part.name}: {self.approver}"
-        elif self.section:
-            return f"تأیید کننده {self.section.name}: {self.approver}"
-        return f"تأیید کننده: {self.approver}"
+            parts.append(f"قسمت: {self.part.name}")
+        if self.section:
+            parts.append(f"بخش: {self.section.name}")
+        
+        criteria = " + ".join(parts) if parts else "عمومی"
+        return f"{self.approver} ({criteria})"
 
 
 class ShiftReport(models.Model):
@@ -148,6 +277,51 @@ class ShiftReport(models.Model):
         }
         return icons.get(self.status, 'fa-question-circle')
 
+    def get_required_approver(self):
+        """
+        پیدا کردن تأیید کننده مورد نیاز بر اساس بهترین تطبیق با قوانین ApprovalHierarchy
+        از قوانین با وزن بالاتر (مشخص‌تر) استفاده می‌کند
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        requester_profile = getattr(self.user, 'userprofile', None)
+        if not requester_profile:
+            logger.warning(f"❌ Requester {self.user.username} has no profile")
+            return None
+        
+        logger.info(f"🔍 Finding approver for user: {self.user.username}")
+        logger.info(f"   Profile: group={requester_profile.group}, section={requester_profile.section}, "
+                   f"part={requester_profile.part}, unit_group={requester_profile.unit_group}, "
+                   f"position={requester_profile.position}")
+        
+        # پیدا کردن همه قوانینی که با پروفایل کاربر تطبیق دارند
+        matching_rules = []
+        
+        for rule in ApprovalHierarchy.objects.select_related(
+            'approver', 'approver__user', 'section', 'part', 'unit_group', 'position', 'specific_user'
+        ).all():
+            if rule.matches_user_profile(requester_profile):
+                weight = rule.get_weight()
+                matching_rules.append((weight, rule))
+                logger.info(f"   ✅ Rule matched: {rule} (weight: {weight})")
+        
+        if not matching_rules:
+            logger.warning(f"⚠️ No matching approval rule found for user {self.user.username}")
+            return None
+        
+        # مرتب‌سازی بر اساس وزن (نزولی) - قانون با وزن بالاتر اولویت دارد
+        matching_rules.sort(key=lambda x: x[0], reverse=True)
+        
+        # برگرداندن تأیید کننده از قانون با بالاترین وزن
+        best_rule = matching_rules[0][1]
+        approver = best_rule.approver
+        
+        logger.info(f"✅ Best matching rule: {best_rule} (weight: {matching_rules[0][0]})")
+        logger.info(f"   Approver: {approver}")
+        
+        return approver
+
     def can_be_approved_by(self, user):
         """بررسی اینکه آیا کاربر می‌تواند این درخواست را تأیید کند"""
         import logging
@@ -170,49 +344,18 @@ class ShiftReport(models.Model):
                 logger.warning(f"❌ User has no profile")
                 return False
             
-            requester_profile = getattr(self.user, 'userprofile', None)
-            logger.info(f"  Requester profile: {requester_profile}")
-            if not requester_profile:
-                logger.warning(f"❌ Requester has no profile")
+            # استفاده از متد جدید برای پیدا کردن تأیید کننده مورد نیاز
+            required_approver = self.get_required_approver()
+            
+            if not required_approver:
+                logger.warning(f"❌ No approver found for this request")
                 return False
             
-            logger.info(f"  Requester part: {requester_profile.part}, section: {requester_profile.section}")
-            
-            # بررسی سلسله مراتب تأیید
-            # اول بررسی می‌کنیم آیا برای Part خاص تأیید کننده‌ای تعریف شده یا نه
-            hierarchy = None
-            if requester_profile.part:
-                # اول سلسله مراتب خاص Part را بررسی می‌کنیم
-                hierarchy = ApprovalHierarchy.objects.filter(part=requester_profile.part).first()
-                logger.info(f"  Looking for hierarchy by part: {requester_profile.part} -> Found: {hierarchy}")
-                
-                # اگر برای Part خاص تأیید کننده‌ای نبود، سلسله مراتب کلی Section را بررسی می‌کنیم
-                if not hierarchy and requester_profile.section:
-                    hierarchy = ApprovalHierarchy.objects.filter(
-                        section=requester_profile.section, 
-                        part__isnull=True
-                    ).first()
-                    logger.info(f"  No part hierarchy, looking for section hierarchy: {requester_profile.section} -> Found: {hierarchy}")
-            elif requester_profile.section:
-                # فقط سلسله مراتب کلی Section را بررسی می‌کنیم
-                hierarchy = ApprovalHierarchy.objects.filter(
-                    section=requester_profile.section, 
-                    part__isnull=True
-                ).first()
-                logger.info(f"  Looking for hierarchy by section: {requester_profile.section} -> Found: {hierarchy}")
-            else:
-                logger.warning(f"❌ Requester has no part or section")
-                return False
-            
-            logger.info(f"  Hierarchy found: {hierarchy}")
-            if hierarchy:
-                logger.info(f"  Hierarchy approver: {hierarchy.approver}, Current user: {user_profile}")
-            
-            if hierarchy and hierarchy.approver == user_profile:
+            if required_approver == user_profile:
                 logger.info(f"✅ User is authorized approver")
                 return True
             else:
-                logger.warning(f"❌ User is not the approver for this hierarchy")
+                logger.warning(f"❌ User is not the approver. Required: {required_approver}, Current: {user_profile}")
         
         logger.warning(f"❌ No matching approval condition")
         return False
