@@ -136,6 +136,16 @@
             <i class="fa-solid fa-hashtag text-xs ml-1"></i>
             کد پرسنلی: {{ profile.personnel_code }}
           {% endif %}
+          {% if edit_user.username %}
+            <span class="mx-2">|</span>
+            <i class="fa-solid fa-at text-xs ml-1"></i>
+            نام کاربری: {{ edit_user.username }}
+          {% endif %}
+          {% if profile.national_code %}
+            <span class="mx-2">|</span>
+            <i class="fa-solid fa-id-card text-xs ml-1"></i>
+            کد ملی: {{ profile.national_code }}
+          {% endif %}
         </p>
       </div>
     </div>
@@ -219,6 +229,28 @@
               {% if form.mobile.errors %}
                 <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ form.mobile.errors.0 }}</p>
               {% endif %}
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <i class="fa-solid fa-at text-gray-400 text-xs ml-1"></i>
+                نام کاربری
+              </label>
+              <input type="text" 
+                     value="{{ edit_user.username }}" 
+                     readonly
+                     class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 text-sm shadow-sm text-gray-600 dark:text-gray-400 cursor-not-allowed">
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">این فیلد قابل ویرایش نیست</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <i class="fa-solid fa-id-card text-gray-400 text-xs ml-1"></i>
+                کد ملی
+              </label>
+              <input type="text" 
+                     value="{{ profile.national_code|default:'' }}" 
+                     readonly
+                     class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 text-sm shadow-sm text-gray-600 dark:text-gray-400 cursor-not-allowed">
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">این فیلد قابل ویرایش نیست</p>
             </div>
           </div>
 

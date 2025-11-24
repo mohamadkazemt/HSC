@@ -432,11 +432,22 @@
               {% endif %}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-left">
-              <a href="{% url 'accounts:personnel_edit' p.user.id %}" 
-                 class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md">
-                <i class="fa-solid fa-pen-to-square text-xs"></i>
-                <span>ویرایش</span>
-              </a>
+              <div class="flex items-center gap-2">
+                <a href="{% url 'accounts:personnel_edit' p.user.id %}" 
+                   class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md">
+                  <i class="fa-solid fa-pen-to-square text-xs"></i>
+                  <span>ویرایش</span>
+                </a>
+                {% if user.is_superuser and rubika_bot_token %}
+                <button type="button" 
+                        onclick="copyRubikaToken('{{ rubika_bot_token|escapejs }}', this)"
+                        class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+                        title="کپی توکن ربات روبیکا">
+                  <i class="fa-solid fa-copy text-xs"></i>
+                  <span>کپی توکن</span>
+                </button>
+                {% endif %}
+              </div>
             </td>
           </tr>
           {% empty %}
@@ -671,5 +682,81 @@
       resetSelect($position, 'همه سمت‌ها');
     }
   });
+
+  // Function to copy Rubika bot token to clipboard
+  function copyRubikaToken(token, buttonElement) {
+    if (!token) {
+      alert('توکن ربات موجود نیست.');
+      return;
+    }
+
+    // Create a temporary textarea element
+    const textarea = document.createElement('textarea');
+    textarea.value = token;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    textarea.style.left = '-999999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    textarea.setSelectionRange(0, 99999); // For mobile devices
+
+    try {
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      
+      if (successful) {
+        // Show success feedback
+        const originalHTML = buttonElement.innerHTML;
+        buttonElement.innerHTML = '<i class="fa-solid fa-check text-xs"></i><span>کپی شد!</span>';
+        buttonElement.classList.remove('bg-purple-50', 'dark:bg-purple-900/30', 'text-purple-600', 'dark:text-purple-400');
+        buttonElement.classList.add('bg-green-50', 'dark:bg-green-900/30', 'text-green-600', 'dark:text-green-400');
+        
+        // Show toast notification
+        showToast('توکن ربات با موفقیت کپی شد!', 'success');
+        
+        // Reset button after 2 seconds
+        setTimeout(function() {
+          buttonElement.innerHTML = originalHTML;
+          buttonElement.classList.remove('bg-green-50', 'dark:bg-green-900/30', 'text-green-600', 'dark:text-green-400');
+          buttonElement.classList.add('bg-purple-50', 'dark:bg-purple-900/30', 'text-purple-600', 'dark:text-purple-400');
+        }, 2000);
+      } else {
+        alert('خطا در کپی کردن توکن. لطفاً به صورت دستی کپی کنید.');
+      }
+    } catch (err) {
+      document.body.removeChild(textarea);
+      console.error('خطا در کپی کردن:', err);
+      alert('خطا در کپی کردن توکن. لطفاً به صورت دستی کپی کنید.');
+    }
+  }
+
+  // Toast notification function
+  function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-lg shadow-lg text-sm font-medium transition-all duration-300 ${
+      type === 'success' 
+        ? 'bg-green-500 text-white' 
+        : 'bg-red-500 text-white'
+    }`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    // Animate in
+    setTimeout(() => {
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateX(-50%) translateY(0)';
+    }, 10);
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(-50%) translateY(-20px)';
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }, 300);
+    }, 3000);
+  }
 </script>
 {% endblock %}

@@ -562,6 +562,16 @@ def personnel_list(request):
     qs_no_unit_group = qs_without(['unit_group', 'position'])
     qs_no_position = qs_without(['position'])
 
+    # Get Rubika bot token for superusers
+    rubika_bot_token = None
+    try:
+        from rubika_bot.models import RubikaBotSettings
+        settings_obj = RubikaBotSettings.get_solo()
+        if settings_obj.token:
+            rubika_bot_token = settings_obj.token
+    except Exception:
+        pass
+    
     context = {
         'page_obj': page_obj,
         'personnel': page_obj,  # backward compatibility
@@ -586,6 +596,7 @@ def personnel_list(request):
         'qs_no_part': qs_no_part,
         'qs_no_unit_group': qs_no_unit_group,
         'qs_no_position': qs_no_position,
+        'rubika_bot_token': rubika_bot_token,
     }
     return render(request, 'accounts/personnel_list.html', context)
 

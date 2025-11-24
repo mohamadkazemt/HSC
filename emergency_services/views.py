@@ -1663,7 +1663,8 @@ def api_personnel_delete(request, pk):
     if request.method == 'POST':
         user = get_object_or_404(User, pk=pk)
         # حذف از گروه‌های اورژانس به جای حذف کاربر
-        user.groups.filter(name__in=['EmergencyManager', 'EmergencyDoctor', 'EmergencyNurse']).clear()
+        emergency_groups = user.groups.filter(name__in=['EmergencyManager', 'EmergencyDoctor', 'EmergencyNurse'])
+        user.groups.remove(*emergency_groups)
         user.is_active = False
         user.save()
         return JsonResponse({'success': True})
