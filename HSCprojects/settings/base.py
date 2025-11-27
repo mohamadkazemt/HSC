@@ -77,6 +77,7 @@ INSTALLED_APPS = [
     'fire_extinguisher_management.apps.FireExtinguisherManagementConfig',
     'rubika_bot.apps.RubikaBotConfig',
     'risk_assessment.apps.RiskAssessmentConfig',
+    'hse_docs.apps.HseDocsConfig',
 ]
 
 MIDDLEWARE = [

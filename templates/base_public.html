@@ -1,0 +1,187 @@
+{% load static %}
+<!doctype html>
+<html lang="fa" dir="rtl" class="h-full" x-data="publicLayout()" x-init="initTheme()">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% if today_jalali %}<meta name="today-jalali" content="{{ today_jalali }}">{% endif %}
+    <title>{% block title %}اسناد HSE{% endblock %}{% if site_settings and site_settings.site_name %} - {{ site_settings.site_name }}{% endif %}</title>
+    {% if site_settings and site_settings.seo_description %}
+    <meta name="description" content="{{ site_settings.seo_description|striptags|truncatechars:160 }}">
+    {% endif %}
+    {% if site_settings and site_settings.site_favicon %}
+    <link rel="icon" href="{{ site_settings.site_favicon.url }}">
+    {% endif %}
+
+    <!-- Tailwind CSS (CDN in debug, compiled CSS in production) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      window.tailwind = window.tailwind || {};
+      window.tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            container: { center: true, padding: '1rem' },
+            fontFamily: {
+              sans: ['Vazirmatn', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'],
+            }
+          }
+        }
+      };
+    </script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+
+    {% block styles %}{% endblock %}
+    {% block extra_css %}{% endblock %}
+    {% block extra_head %}{% endblock %}
+    
+    <style>
+      [x-cloak] { display: none !important; }
+    </style>
+
+    <!-- Core vendor scripts loaded EARLY so Alpine x-init can use them -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+  </head>
+  <body class="h-full font-sans antialiased bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
+    <!-- Simple Public Header -->
+    <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 shadow-sm">
+      <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <!-- Logo & Site Name -->
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700 overflow-hidden shrink-0">
+              {% if site_settings and site_settings.company_logo %}
+                <img src="{{ site_settings.company_logo.url }}" alt="{{ site_settings.site_name|default:'لوگو' }}" class="h-10 w-10 object-contain">
+              {% else %}
+                <svg class="h-6 w-6 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+                </svg>
+              {% endif %}
+            </div>
+            <div class="min-w-0">
+              <h1 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
+                {{ site_settings.site_name|default:'سامانه اسناد HSE' }}
+              </h1>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Global Toast Messages -->
+    {% if messages %}
+    <div class="fixed top-20 left-4 z-50 space-y-3 w-[22rem] sm:w-[26rem]" x-cloak aria-live="assertive" aria-atomic="true">
+      {% for message in messages %}
+      <div
+        x-data="{ show: true, progress: 100, duration: 6000, t: null,
+                   start() { const s = Date.now(); this.t = setInterval(() => {
+                     const e = Date.now() - s; this.progress = Math.max(0, 100 - (e/this.duration)*100);
+                     if (e >= this.duration) { this.close(); }
+                   }, 50); },
+                   pause() { if (this.t) clearInterval(this.t); this.t = null; },
+                   resume() { if (!this.t && this.progress > 0) this.start(); },
+                   close() { this.show = false; if (this.t) clearInterval(this.t); this.t = null; } }"
+        x-init="start()"
+        x-show="show"
+        x-transition.opacity.duration.250ms
+        class="relative overflow-hidden rounded-xl border shadow-xl backdrop-blur px-4 py-3 pr-12
+          {% if 'success' in message.tags %} bg-green-50 border-green-200 text-green-800 dark:bg-green-900/30 dark:text-green-100 dark:border-green-700
+          {% elif 'warning' in message.tags %} bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-900/30 dark:text-amber-100 dark:border-amber-700
+          {% elif 'error' in message.tags or 'danger' in message.tags %} bg-red-50 border-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-100 dark:border-red-700
+          {% else %} bg-indigo-50 border-indigo-200 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-100 dark:border-indigo-700
+          {% endif %}"
+        @mouseenter="pause()" @mouseleave="resume()"
+        role="alert"
+      >
+        <div class="flex items-start gap-3">
+          <div class="mt-0.5">
+            {% if 'success' in message.tags %}
+              <i class="fa-solid fa-circle-check text-green-500 dark:text-green-400 text-xl"></i>
+            {% elif 'warning' in message.tags %}
+              <i class="fa-solid fa-triangle-exclamation text-amber-500 dark:text-amber-400 text-xl"></i>
+            {% elif 'error' in message.tags or 'danger' in message.tags %}
+              <i class="fa-solid fa-circle-xmark text-red-500 dark:text-red-400 text-xl"></i>
+            {% else %}
+              <i class="fa-solid fa-circle-info text-indigo-500 dark:text-indigo-400 text-xl"></i>
+            {% endif %}
+          </div>
+          <div class="text-sm leading-6">{{ message|safe }}</div>
+        </div>
+
+        <!-- Close button -->
+        <button type="button" class="absolute top-2 left-2 text-current/60 hover:text-current" @click="close()" aria-label="بستن">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <!-- Progress bar -->
+        <div class="absolute inset-x-0 bottom-0 h-1/2"> 
+          <div class="h-1 bg-black/10 dark:bg-white/10">
+            <div class="h-1 bg-current/60" :style="`width:${progress}%; transition: width 50ms linear;`"></div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Main Content Area -->
+    <main class="min-h-[calc(100vh-4rem)] bg-gray-50 dark:bg-gray-900">
+      <div class="container mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+
+    <!-- Simple Footer -->
+    <footer class="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 mt-auto">
+      <div class="container mx-auto px-4 py-4 text-center text-sm text-gray-600 dark:text-gray-300">
+        {% if site_settings and site_settings.site_name %}
+          © <span x-text="new Date().getFullYear()"></span> {{ site_settings.site_name }}. تمامی حقوق محفوظ است.
+        {% else %}
+          © <span x-text="new Date().getFullYear()"></span> MKT. All rights reserved.
+        {% endif %}
+      </div>
+    </footer>
+
+    <!-- Alpine Plugins (must be before core) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Simplified public layout function (no sidebar) -->
+    <script>
+      window.publicLayout = function () {
+        return {
+          isDark: false,
+          initTheme() {
+            const STORAGE_KEY = 'theme';
+            function getStoredTheme() {
+              try { return localStorage.getItem(STORAGE_KEY); } catch (_) { return null; }
+            }
+            function systemPrefersDark() {
+              return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            }
+            function applyTheme(theme) {
+              const isDark = theme === 'dark';
+              document.documentElement.classList.toggle('dark', isDark);
+              document.documentElement.setAttribute('data-theme', theme);
+            }
+            const saved = getStoredTheme();
+            const theme = saved ? saved : (systemPrefersDark() ? 'dark' : 'light');
+            this.isDark = theme === 'dark';
+            applyTheme(theme);
+          }
+        };
+      };
+    </script>
+
+    <!-- App JS -->
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block scripts %}{% endblock %}
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>
+

@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}مدیریت موضوعات{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <!-- Header -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+    <div class="flex items-center justify-between flex-wrap gap-4">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+        <i class="fa-solid fa-tags ml-2"></i>مدیریت موضوعات
+      </h1>
+      <div class="flex gap-3">
+        <a href="{% url 'hse_docs:admin_dashboard' %}" 
+           class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors">
+          <i class="fa-solid fa-arrow-right ml-2"></i>بازگشت به داشبورد
+        </a>
+        <a href="/admin/hse_docs/topiccategory/add/" 
+           class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors">
+          <i class="fa-solid fa-plus ml-2"></i>موضوع جدید
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Topics Grid -->
+  {% if topics %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% for topic in topics %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow p-6">
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-2">
+                {% if topic.icon %}
+                  <i class="{{ topic.icon }} text-2xl text-indigo-600 dark:text-indigo-400"></i>
+                {% else %}
+                  <svg class="h-8 w-8 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 6h.008v.008H6V6z" />
+                  </svg>
+                {% endif %}
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                  {{ topic.title }}
+                </h3>
+              </div>
+              {% if topic.description %}
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                  {{ topic.description|truncatewords:15 }}
+                </p>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Stats -->
+          <div class="flex items-center justify-between mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <span class="text-sm text-gray-600 dark:text-gray-400">تعداد اسناد:</span>
+            <span class="text-lg font-bold text-indigo-600 dark:text-indigo-400">{{ topic.doc_count }}</span>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex gap-2">
+            <a href="{% url 'hse_docs:view_topic' topic.slug %}" 
+               target="_blank"
+               class="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-center text-sm font-medium transition-colors">
+              <i class="fa-solid fa-eye ml-1"></i>مشاهده
+            </a>
+            <a href="/admin/hse_docs/topiccategory/{{ topic.id }}/change/" 
+               class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium transition-colors">
+              <i class="fa-solid fa-edit"></i>
+            </a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-12 text-center">
+      <i class="fa-solid fa-folder-open text-6xl text-gray-400 mb-4"></i>
+      <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">هیچ موضوعی یافت نشد</h3>
+      <p class="text-gray-600 dark:text-gray-400 mb-4">
+        در حال حاضر هیچ موضوعی تعریف نشده است.
+      </p>
+      <a href="/admin/hse_docs/topiccategory/add/" 
+         class="inline-block px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors">
+        ایجاد اولین موضوع
+      </a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+

@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}مرکز تولید QR کد{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <!-- Header -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+        <i class="fa-solid fa-qrcode ml-2"></i>مرکز تولید QR کد
+      </h1>
+      <a href="{% url 'hse_docs:admin_dashboard' %}" 
+         class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">
+        <i class="fa-solid fa-arrow-right ml-2"></i>بازگشت به داشبورد
+      </a>
+    </div>
+  </div>
+
+  <!-- Instructions -->
+  <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
+    <div class="flex items-start gap-3">
+      <i class="fa-solid fa-info-circle text-blue-600 dark:text-blue-400 text-xl mt-1"></i>
+      <div>
+        <h3 class="font-semibold text-blue-900 dark:text-blue-100 mb-1">راهنمای استفاده</h3>
+        <p class="text-sm text-blue-800 dark:text-blue-200">
+          برای هر بخش، گروه یا دسته‌بندی موضوع، QR کد تولید کنید. کاربران با اسکن این کدها می‌توانند مستقیماً به اسناد مربوطه دسترسی پیدا کنند.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sections QR Codes -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
+      <i class="fa-solid fa-building ml-2"></i>QR کدهای بخش‌ها
+    </h2>
+    {% if sections %}
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for section in sections %}
+          <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 text-center">
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-3">{{ section.name }}</h3>
+            <img src="{% url 'hse_docs:generate_qr' 'section' section.id %}" 
+                 alt="QR Code for {{ section.name }}"
+                 class="mx-auto mb-3 border border-gray-200 dark:border-gray-700 rounded">
+            <a href="{% url 'hse_docs:generate_qr' 'section' section.id %}" 
+               download="qr-section-{{ section.id }}.png"
+               class="inline-block px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">
+              <i class="fa-solid fa-download ml-1"></i>دانلود QR کد
+            </a>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-gray-600 dark:text-gray-400 text-center py-8">
+        هیچ بخشی تعریف نشده است.
+      </p>
+    {% endif %}
+  </div>
+
+  <!-- Unit Groups QR Codes -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
+      <i class="fa-solid fa-users ml-2"></i>QR کدهای گروه‌ها
+    </h2>
+    {% if unit_groups %}
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for group in unit_groups %}
+          <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 text-center">
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-3">{{ group.name }}</h3>
+            <img src="{% url 'hse_docs:generate_qr' 'group' group.id %}" 
+                 alt="QR Code for {{ group.name }}"
+                 class="mx-auto mb-3 border border-gray-200 dark:border-gray-700 rounded">
+            <a href="{% url 'hse_docs:generate_qr' 'group' group.id %}" 
+               download="qr-group-{{ group.id }}.png"
+               class="inline-block px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">
+              <i class="fa-solid fa-download ml-1"></i>دانلود QR کد
+            </a>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-gray-600 dark:text-gray-400 text-center py-8">
+        هیچ گروهی تعریف نشده است.
+      </p>
+    {% endif %}
+  </div>
+
+  <!-- Topic Categories QR Codes -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
+      <i class="fa-solid fa-folder ml-2"></i>QR کدهای دسته‌بندی‌های موضوع
+    </h2>
+    {% if topic_categories %}
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for topic in topic_categories %}
+          <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 text-center">
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-3">
+              {% if topic.icon %}
+                <i class="{{ topic.icon }} ml-2"></i>
+              {% endif %}
+              {{ topic.title }}
+            </h3>
+            <img src="{% url 'hse_docs:generate_qr' 'topic' topic.slug %}" 
+                 alt="QR Code for {{ topic.title }}"
+                 class="mx-auto mb-3 border border-gray-200 dark:border-gray-700 rounded">
+            <a href="{% url 'hse_docs:generate_qr' 'topic' topic.slug %}" 
+               download="qr-topic-{{ topic.slug }}.png"
+               class="inline-block px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors">
+              <i class="fa-solid fa-download ml-1"></i>دانلود QR کد
+            </a>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-gray-600 dark:text-gray-400 text-center py-8">
+        هیچ دسته‌بندی موضوعی تعریف نشده است.
+      </p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+

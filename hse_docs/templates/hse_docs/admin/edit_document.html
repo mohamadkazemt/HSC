@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}ویرایش سند: {{ document.title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+        ویرایش سند: {{ document.title }}
+      </h1>
+      <a href="{% url 'hse_docs:admin_dashboard' %}" 
+         class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300">
+        <i class="fa-solid fa-arrow-right ml-2"></i>بازگشت به داشبورد
+      </a>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+      {% csrf_token %}
+      
+      <!-- Title -->
+      <div>
+        <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          {{ form.title.label }}
+        </label>
+        {{ form.title }}
+        {% if form.title.errors %}
+          <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.title.errors }}</p>
+        {% endif %}
+      </div>
+
+      <!-- File -->
+      <div>
+        <label for="{{ form.file.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          {{ form.file.label }}
+        </label>
+        {% if document.file %}
+          <div class="mb-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">فایل فعلی:</p>
+            <a href="{{ document.file.url }}" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline">
+              <i class="fa-solid fa-file ml-1"></i>{{ document.file.name|slice:"-30:" }}
+            </a>
+          </div>
+        {% endif %}
+        {{ form.file }}
+        {% if form.file.errors %}
+          <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.file.errors }}</p>
+        {% endif %}
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          برای تغییر فایل، فایل جدید را انتخاب کنید. در غیر این صورت فایل فعلی حفظ می‌شود.
+        </p>
+      </div>
+
+      <!-- Topic Category (Required) -->
+      <div>
+        <label for="{{ form.topic_category.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          {{ form.topic_category.label }}
+        </label>
+        {{ form.topic_category }}
+        {% if form.topic_category.errors %}
+          <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.topic_category.errors }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Section and Unit Group -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="{{ form.section.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {{ form.section.label }}
+          </label>
+          {{ form.section }}
+          {% if form.section.errors %}
+            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.section.errors }}</p>
+          {% endif %}
+        </div>
+        <div>
+          <label for="{{ form.unit_group.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {{ form.unit_group.label }}
+          </label>
+          {{ form.unit_group }}
+          {% if form.unit_group.errors %}
+            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.unit_group.errors }}</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Version -->
+      <div>
+        <label for="{{ form.version.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          {{ form.version.label }}
+        </label>
+        {{ form.version }}
+        {% if form.version.errors %}
+          <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.version.errors }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Description -->
+      <div>
+        <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          {{ form.description.label }}
+        </label>
+        {{ form.description }}
+        {% if form.description.errors %}
+          <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.description.errors }}</p>
+        {% endif %}
+      </div>
+
+      <!-- Is Active -->
+      <div class="flex items-center">
+        {{ form.is_active }}
+        <label for="{{ form.is_active.id_for_label }}" class="mr-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+          {{ form.is_active.label }}
+        </label>
+      </div>
+
+      <!-- Form Errors -->
+      {% if form.non_field_errors %}
+        <div class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <p class="text-sm text-red-600 dark:text-red-400">{{ form.non_field_errors }}</p>
+        </div>
+      {% endif %}
+
+      <!-- Submit Button -->
+      <div class="flex gap-4">
+        <button type="submit" 
+                class="flex-1 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors">
+          <i class="fa-solid fa-save ml-2"></i>ذخیره تغییرات
+        </button>
+        <a href="{% url 'hse_docs:admin_dashboard' %}" 
+           class="px-6 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors">
+          انصراف
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% block scripts %}
+<script>
+  $(document).ready(function() {
+    $('#{{ form.topic_category.id_for_label }}').select2({ dir: 'rtl' });
+    $('#{{ form.section.id_for_label }}').select2({ allowClear: true, dir: 'rtl' });
+    $('#{{ form.unit_group.id_for_label }}').select2({ allowClear: true, dir: 'rtl' });
+
+    $('#{{ form.section.id_for_label }}').on('change', function() {
+      if ($(this).val()) {
+        $('#{{ form.unit_group.id_for_label }}').val(null).trigger('change');
+      }
+    });
+    $('#{{ form.unit_group.id_for_label }}').on('change', function() {
+      if ($(this).val()) {
+        $('#{{ form.section.id_for_label }}').val(null).trigger('change');
+      }
+    });
+  });
+</script>
+{% endblock %}
+{% endblock %}
+

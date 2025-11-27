@@ -57,6 +57,7 @@ urlpatterns = [
     path('core/', include('core.urls', namespace='core')),
     path('rubika-bot/', include(('rubika_bot.urls', 'rubika_bot'), namespace='rubika_bot')),
     path('risk/', include(('risk_assessment.urls', 'risk_assessment'), namespace='risk_assessment')),
+    path('hse-docs/', include(('hse_docs.urls', 'hse_docs'), namespace='hse_docs')),
 ]
 
 # اضافه کردن مسیرهای media و static در حالت debug

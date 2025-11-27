@@ -1,0 +1,230 @@
+{% extends 'base_public.html' %}
+{% load static %}
+{% load hse_docs_jalali %}
+
+{% block title %}
+  {% if folder_type == 'section' %}
+    اسناد بخش {{ folder_object.name }}
+  {% elif folder_type == 'group' %}
+    اسناد گروه {{ folder_object.name }}
+  {% elif folder_type == 'topic' %}
+    اسناد دسته‌بندی {{ folder_object.title }}
+  {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* Mobile-optimized search input */
+  #id_query {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    font-size: 1rem;
+    border: 1px solid rgb(209 213 219);
+    border-radius: 0.5rem;
+    background-color: white;
+    color: rgb(17 24 39);
+    transition: all 0.2s;
+  }
+  .dark #id_query {
+    border-color: rgb(75 85 99);
+    background-color: rgb(31 41 55);
+    color: rgb(243 244 246);
+  }
+  #id_query:focus {
+    outline: none;
+    border-color: rgb(99 102 241);
+    ring: 2px;
+    ring-color: rgb(99 102 241);
+  }
+  @media (min-width: 640px) {
+    #id_query {
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <!-- Header Section -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
+    <div class="flex items-start gap-3 sm:gap-4">
+      {% if folder_type == 'topic' and folder_object.icon %}
+        <div class="shrink-0">
+          <i class="{{ folder_object.icon }} text-3xl sm:text-4xl text-indigo-600 dark:text-indigo-400"></i>
+        </div>
+      {% endif %}
+      <div class="flex-1 min-w-0">
+        <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          {% if folder_type == 'section' %}
+            اسناد بخش: {{ folder_object.name }}
+          {% elif folder_type == 'group' %}
+            اسناد گروه: {{ folder_object.name }}
+          {% elif folder_type == 'topic' %}
+            {{ folder_object.title }}
+          {% endif %}
+        </h1>
+        {% if folder_object.description %}
+          <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">{{ folder_object.description }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile-Optimized Search Bar -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 mb-4 sm:mb-6">
+    <form method="get" class="flex flex-col sm:flex-row gap-3">
+      <div class="flex-1">
+        {{ search_form.query }}
+      </div>
+      <div class="flex gap-2 sm:gap-3">
+        <button type="submit" class="flex-1 sm:flex-none px-6 py-3 sm:py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors text-base sm:text-sm">
+          <i class="fa-solid fa-search ml-2"></i>جستجو
+        </button>
+        {% if search_form.query.value %}
+          <a href="{% if folder_type == 'topic' %}{% url 'hse_docs:view_topic' folder_object.slug %}{% elif folder_type == 'section' %}{% url 'hse_docs:view_section' folder_object.id %}{% else %}{% url 'hse_docs:view_group' folder_object.id %}{% endif %}" 
+             class="px-4 py-3 sm:py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors text-base sm:text-sm flex items-center justify-center">
+            <i class="fa-solid fa-times ml-2"></i>پاک کردن
+          </a>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+
+  <!-- Documents Grid - Mobile Optimized -->
+  {% if documents %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
+      {% for document in documents %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-shadow p-4 sm:p-6">
+          <!-- Document Header -->
+          <div class="flex items-start justify-between mb-3 sm:mb-4 gap-3">
+            <div class="flex-1 min-w-0">
+              <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
+                {{ document.title }}
+              </h3>
+              {% if document.description %}
+                <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
+                  {{ document.description|truncatewords:15 }}
+                </p>
+              {% endif %}
+            </div>
+            <div class="text-2xl sm:text-3xl text-gray-400 shrink-0">
+              {% if document.get_file_extension == 'pdf' %}
+                <i class="fa-solid fa-file-pdf text-red-500"></i>
+              {% elif document.get_file_extension in 'doc,docx' %}
+                <i class="fa-solid fa-file-word text-blue-500"></i>
+              {% elif document.get_file_extension in 'xls,xlsx' %}
+                <i class="fa-solid fa-file-excel text-green-500"></i>
+              {% elif document.get_file_extension in 'ppt,pptx' %}
+                <i class="fa-solid fa-file-powerpoint text-orange-500"></i>
+              {% elif document.get_file_extension in 'jpg,jpeg,png' %}
+                <i class="fa-solid fa-file-image text-purple-500"></i>
+              {% else %}
+                <i class="fa-solid fa-file text-gray-500"></i>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Badges -->
+          <div class="flex flex-wrap gap-2 mb-3 sm:mb-4">
+            {% if view_context == 'topic' %}
+              <!-- When viewing by topic, show section/group badges -->
+              {% if document.section %}
+                <span class="px-2 sm:px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full text-xs font-medium">
+                  <i class="fa-solid fa-building ml-1"></i>{{ document.section.name }}
+                </span>
+              {% endif %}
+              {% if document.unit_group %}
+                <span class="px-2 sm:px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 rounded-full text-xs font-medium">
+                  <i class="fa-solid fa-users ml-1"></i>{{ document.unit_group.name }}
+                </span>
+              {% endif %}
+              {% if not document.section and not document.unit_group %}
+                <span class="px-2 sm:px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full text-xs font-medium">
+                  <i class="fa-solid fa-globe ml-1"></i>عمومی
+                </span>
+              {% endif %}
+            {% elif view_context == 'section' or view_context == 'group' %}
+              <!-- When viewing by section/group, show topic badge -->
+              <span class="px-2 sm:px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200 rounded-full text-xs font-medium">
+                {% if document.topic_category.icon %}
+                  <i class="{{ document.topic_category.icon }} ml-1"></i>
+                {% endif %}
+                {{ document.topic_category.title }}
+              </span>
+            {% endif %}
+            
+            <!-- Version Badge -->
+            <span class="px-2 sm:px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-full text-xs font-medium">
+              v{{ document.version }}
+            </span>
+          </div>
+
+          <!-- Document Info -->
+          <div class="flex items-center justify-between text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-3 sm:mb-4">
+            <span class="flex items-center">
+              <i class="fa-solid fa-calendar ml-1"></i>
+              <span class="hidden sm:inline">{{ document.uploaded_at|jalali_date:"%Y/%m/%d" }}</span>
+              <span class="sm:hidden">{{ document.uploaded_at|jalali_date:"%y/%m/%d" }}</span>
+            </span>
+            <span class="flex items-center">
+              <i class="fa-solid fa-file ml-1"></i>
+              {{ document.get_file_size }}
+            </span>
+          </div>
+
+          <!-- Actions - Mobile Optimized -->
+          <div class="flex gap-2">
+            <a href="{{ document.file.url }}" 
+               target="_blank"
+               class="flex-1 px-3 sm:px-4 py-2.5 sm:py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-center font-medium transition-colors text-sm sm:text-base flex items-center justify-center">
+              <i class="fa-solid fa-download ml-2"></i>دانلود
+            </a>
+            <a href="{% url 'hse_docs:document_detail' document.pk %}" 
+               class="px-3 sm:px-4 py-2.5 sm:py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors flex items-center justify-center">
+              <i class="fa-solid fa-eye"></i>
+            </a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <!-- Pagination - Mobile Optimized -->
+    {% if documents.has_other_pages %}
+      <div class="flex justify-center items-center gap-2 mt-6 flex-wrap">
+        {% if documents.has_previous %}
+          <a href="?page={{ documents.previous_page_number }}{% if search_form.query.value %}&query={{ search_form.query.value }}{% endif %}" 
+             class="px-3 sm:px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm sm:text-base">
+            <i class="fa-solid fa-chevron-right"></i>
+          </a>
+        {% endif %}
+        
+        <span class="px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm sm:text-base">
+          صفحه {{ documents.number }} از {{ documents.paginator.num_pages }}
+        </span>
+        
+        {% if documents.has_next %}
+          <a href="?page={{ documents.next_page_number }}{% if search_form.query.value %}&query={{ search_form.query.value }}{% endif %}" 
+             class="px-3 sm:px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm sm:text-base">
+            <i class="fa-solid fa-chevron-left"></i>
+          </a>
+        {% endif %}
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 sm:p-12 text-center">
+      <i class="fa-solid fa-folder-open text-5xl sm:text-6xl text-gray-400 mb-4"></i>
+      <h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2">هیچ سندی یافت نشد</h3>
+      <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+        {% if search_form.query.value %}
+          نتیجه‌ای برای "{{ search_form.query.value }}" یافت نشد.
+        {% else %}
+          در حال حاضر هیچ سندی در این دسته‌بندی وجود ندارد.
+        {% endif %}
+      </p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+

@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load hse_docs_jalali %}
+
+{% block title %}داشبورد مدیریت اسناد HSE{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <!-- Header -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
+    <div class="flex items-center justify-between flex-wrap gap-4">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+        مدیریت اسناد HSE
+      </h1>
+      <div class="flex gap-3">
+        <a href="{% url 'hse_docs:upload_document' %}" 
+           class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors">
+          <i class="fa-solid fa-upload ml-2"></i>بارگذاری سند جدید
+        </a>
+        <a href="{% url 'hse_docs:qr_center' %}" 
+           class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors">
+          <i class="fa-solid fa-qrcode ml-2"></i>مرکز QR کد
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">کل اسناد</p>
+          <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ stats.total_documents }}</p>
+        </div>
+        <div class="text-4xl text-indigo-500">
+          <i class="fa-solid fa-file"></i>
+        </div>
+      </div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">دسته‌بندی‌ها</p>
+          <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ stats.total_topics }}</p>
+        </div>
+        <div class="text-4xl text-blue-500">
+          <i class="fa-solid fa-folder"></i>
+        </div>
+      </div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">بخش‌ها</p>
+          <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ stats.total_sections }}</p>
+        </div>
+        <div class="text-4xl text-green-500">
+          <i class="fa-solid fa-building"></i>
+        </div>
+      </div>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">گروه‌ها</p>
+          <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ stats.total_groups }}</p>
+        </div>
+        <div class="text-4xl text-purple-500">
+          <i class="fa-solid fa-users"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Documents -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">آخرین اسناد بارگذاری شده</h2>
+    
+    {% if documents %}
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead class="bg-gray-50 dark:bg-gray-700">
+            <tr>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">عنوان</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">دسته‌بندی</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">بخش/گروه</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">تاریخ</th>
+              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">عملیات</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            {% for document in documents %}
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm font-medium text-gray-900 dark:text-white">{{ document.title }}</div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400">v{{ document.version }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 py-1 text-xs font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200 rounded-full">
+                    {{ document.topic_category.title }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                  {% if document.section %}
+                    <i class="fa-solid fa-building ml-1"></i>{{ document.section.name }}
+                  {% elif document.unit_group %}
+                    <i class="fa-solid fa-users ml-1"></i>{{ document.unit_group.name }}
+                  {% else %}
+                    <span class="text-gray-400">عمومی</span>
+                  {% endif %}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                  {{ document.uploaded_at|jalali_date:"%Y/%m/%d" }}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <a href="{% url 'hse_docs:edit_document' document.pk %}" 
+                     class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 ml-4">
+                    <i class="fa-solid fa-edit"></i>
+                  </a>
+                  <a href="{{ document.file.url }}" target="_blank" 
+                     class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300">
+                    <i class="fa-solid fa-download"></i>
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="text-center py-12">
+        <i class="fa-solid fa-folder-open text-6xl text-gray-400 mb-4"></i>
+        <p class="text-gray-600 dark:text-gray-400">هنوز سندی بارگذاری نشده است.</p>
+        <a href="{% url 'hse_docs:upload_document' %}" 
+           class="mt-4 inline-block px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors">
+          بارگذاری اولین سند
+        </a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
