@@ -4,6 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.db.models import Count, Q
 from django.db import transaction
+from django.urls import reverse
 from .models import Section, Part, UnitGroup, Position, UserProfile
 from functools import wraps
 from django.core.exceptions import PermissionDenied
@@ -110,7 +111,7 @@ def organization_add(request):
         
         if not name:
             messages.error(request, 'نام الزامی است.')
-            return redirect(f'accounts:organization_manage?type={entity_type}')
+            return redirect(f"{reverse('accounts:organization_manage')}?type={entity_type}")
         
         # Normalize name
         name = ' '.join(name.split())
@@ -134,7 +135,7 @@ def organization_add(request):
                     for p in existing:
                         if ' '.join(p.name.split()) == name:
                             messages.error(request, 'قسمتی با این نام در این بخش از قبل وجود دارد.')
-                            return redirect(f'accounts:organization_manage?type={entity_type}')
+                            return redirect(f"{reverse('accounts:organization_manage')}?type={entity_type}")
                     Part.objects.create(name=name, section=section, description=description)
                     messages.success(request, 'قسمت با موفقیت اضافه شد.')
                     
@@ -148,7 +149,7 @@ def organization_add(request):
                     for ug in existing:
                         if ' '.join(ug.name.split()) == name:
                             messages.error(request, 'گروهی با این نام در این قسمت از قبل وجود دارد.')
-                            return redirect(f'accounts:organization_manage?type={entity_type}')
+                            return redirect(f"{reverse('accounts:organization_manage')}?type={entity_type}")
                     UnitGroup.objects.create(name=name, part=part, description=description)
                     messages.success(request, 'گروه با موفقیت اضافه شد.')
                     
@@ -162,14 +163,14 @@ def organization_add(request):
                     for pos in existing:
                         if ' '.join(pos.name.split()) == name:
                             messages.error(request, 'سمتی با این نام در این گروه از قبل وجود دارد.')
-                            return redirect(f'accounts:organization_manage?type={entity_type}')
+                            return redirect(f"{reverse('accounts:organization_manage')}?type={entity_type}")
                     Position.objects.create(name=name, unit_group=unit_group, description=description)
                     messages.success(request, 'سمت با موفقیت اضافه شد.')
                     
         except Exception as e:
             messages.error(request, f'خطا در ایجاد: {str(e)}')
         
-        return redirect(f'accounts:organization_manage?type={entity_type}')
+        return redirect(f"{reverse('accounts:organization_manage')}?type={entity_type}")
     
     return redirect('accounts:organization_manage')
 
@@ -184,7 +185,7 @@ def organization_edit(request, entity_type, entity_id):
         
         if not name:
             messages.error(request, 'نام الزامی است.')
-            return redirect(f'accounts:organization_manage?type={entity_type}')
+            return redirect(f"{reverse('accounts:organization_manage')}?type={entity_type}")
         
         name = ' '.join(name.split())
         
@@ -241,7 +242,7 @@ def organization_edit(request, entity_type, entity_id):
         except Exception as e:
             messages.error(request, f'خطا در ویرایش: {str(e)}')
         
-        return redirect(f'accounts:organization_manage?type={entity_type}')
+        return redirect(f"{reverse('accounts:organization_manage')}?type={entity_type}")
     
     return redirect('accounts:organization_manage')
 
@@ -291,7 +292,7 @@ def organization_delete(request, entity_type, entity_id):
         except Exception as e:
             messages.error(request, f'خطا در حذف: {str(e)}')
         
-        return redirect(f'accounts:organization_manage?type={entity_type}')
+        return redirect(f"{reverse('accounts:organization_manage')}?type={entity_type}")
     
     return redirect('accounts:organization_manage')
 
@@ -306,7 +307,7 @@ def organization_merge(request, entity_type):
         
         if not source_id or not target_id or source_id == target_id:
             messages.error(request, 'لطفاً دو مورد مختلف را انتخاب کنید.')
-            return redirect(f'accounts:organization_manage?type={entity_type}')
+            return redirect(f"{reverse('accounts:organization_manage')}?type={entity_type}")
         
         try:
             with transaction.atomic():
@@ -351,7 +352,7 @@ def organization_merge(request, entity_type):
         except Exception as e:
             messages.error(request, f'خطا در ادغام: {str(e)}')
         
-        return redirect(f'accounts:organization_manage?type={entity_type}')
+        return redirect(f"{reverse('accounts:organization_manage')}?type={entity_type}")
     
     return redirect('accounts:organization_manage')
 
