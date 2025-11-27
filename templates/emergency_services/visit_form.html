@@ -351,7 +351,33 @@
           $el.persianDatepicker({
             format: 'YYYY/MM/DD HH:mm:ss',
             timePicker: { enabled: true, second: true },
-            autoClose: true
+            autoClose: true,
+            calendar: { persian: { locale: 'fa' } },
+            initialValueType: 'persian', // استفاده از persian به عنوان نوع اولیه
+            observer: false, // غیرفعال کردن observer تا خودمان کنترل کنیم
+            onSelect: function(unix) {
+              try {
+                if (typeof persianDate !== 'undefined') {
+                  // جبران timezone: getTimezoneOffset() مقدار منفی برمی‌گرداند
+                  // برای ایران (UTC+3:30) مقدار -210 برمی‌گرداند
+                  const timezoneOffsetMs = new Date().getTimezoneOffset() * 60000;
+                  const adjustedUnix = unix + timezoneOffsetMs;
+                  const pd = new persianDate(adjustedUnix);
+                  const formatted = pd.toCalendar('persian').format('YYYY/MM/DD HH:mm:ss');
+                  // تنظیم مقدار با استفاده از val و سپس update
+                  setTimeout(() => {
+                    $el.val(formatted);
+                    // اطمینان از اینکه persianDatepicker مقدار را می‌بیند
+                    const picker = $el.data('datepicker');
+                    if (picker && typeof picker.update === 'function') {
+                      picker.update();
+                    }
+                  }, 10);
+                }
+              } catch (e) {
+                console.warn('Date conversion error:', e);
+              }
+            }
           });
         };
         ['#id_visit_time', '#id_hospital_admission_time', '#id_hospital_discharge_time'].forEach(sel => {

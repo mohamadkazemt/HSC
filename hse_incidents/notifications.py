@@ -58,7 +58,7 @@ def notify_incident_report_created(incident, *, actor: Optional[User] = None) ->
             notification_type=notification_type,
             url=url,
             actor=actor,
-            extra={'incident_id': incident.id, 'severity': severity},
+            extra_log_context={'incident_id': incident.id, 'severity': severity},
         )
 
     # Escalate for critical incidents
@@ -75,7 +75,7 @@ def notify_incident_report_created(incident, *, actor: Optional[User] = None) ->
                 notification_type='error',
                 url=url,
                 actor=actor,
-                extra={'incident_id': incident.id, 'severity': severity},
+                extra_log_context={'incident_id': incident.id, 'severity': severity},
             )
 
     # Confirmation for the author
@@ -87,7 +87,7 @@ def notify_incident_report_created(incident, *, actor: Optional[User] = None) ->
         notification_type='success',
         url=url,
         actor=None,
-        extra={'incident_id': incident.id, 'target': 'author_confirmation'},
+        extra_log_context={'incident_id': incident.id, 'target': 'author_confirmation'},
     )
 
 
@@ -106,7 +106,7 @@ def notify_incident_completion(incident, *, actor: Optional[User] = None) -> Non
         notification_type='success',
         url=url,
         actor=None,
-        extra={'incident_id': incident.id, 'target': 'author'},
+        extra_log_context={'incident_id': incident.id, 'target': 'author'},
     )
 
     # Managers get notified
@@ -118,7 +118,7 @@ def notify_incident_completion(incident, *, actor: Optional[User] = None) -> Non
             notification_type='info',
             url=url,
             actor=actor,
-            extra={'incident_id': incident.id, 'target_group': 'managers'},
+            extra_log_context={'incident_id': incident.id, 'target_group': 'managers'},
         )
 
 

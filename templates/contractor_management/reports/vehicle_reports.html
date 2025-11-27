@@ -344,8 +344,26 @@
               autoClose: true,
               calendar: { persian: { locale: 'fa' } },
               observer: true,
-              onSelect: function() {
-                // Optional: trigger change event
+              onSelect: function(unix) {
+                try {
+                  const date = new Date(unix);
+                  const utcDate = new Date(Date.UTC(
+                    date.getUTCFullYear(),
+                    date.getUTCMonth(),
+                    date.getUTCDate(),
+                    12, 0, 0, 0
+                  ));
+                  if (typeof persianDate !== 'undefined') {
+                    const pd = new persianDate(utcDate);
+                    const jalaliDate = pd.toCalendar('persian');
+                    const formatted = jalaliDate.format('YYYY/MM/DD');
+                    setTimeout(() => {
+                      $('#start_date').val(formatted);
+                    }, 0);
+                  }
+                } catch (e) {
+                  console.warn('Date conversion error:', e);
+                }
               }
             });
             
@@ -355,8 +373,26 @@
               autoClose: true,
               calendar: { persian: { locale: 'fa' } },
               observer: true,
-              onSelect: function() {
-                // Optional: trigger change event
+              onSelect: function(unix) {
+                try {
+                  const date = new Date(unix);
+                  const utcDate = new Date(Date.UTC(
+                    date.getUTCFullYear(),
+                    date.getUTCMonth(),
+                    date.getUTCDate(),
+                    12, 0, 0, 0
+                  ));
+                  if (typeof persianDate !== 'undefined') {
+                    const pd = new persianDate(utcDate);
+                    const jalaliDate = pd.toCalendar('persian');
+                    const formatted = jalaliDate.format('YYYY/MM/DD');
+                    setTimeout(() => {
+                      $('#end_date').val(formatted);
+                    }, 0);
+                  }
+                } catch (e) {
+                  console.warn('Date conversion error:', e);
+                }
               }
             });
           }, 100);

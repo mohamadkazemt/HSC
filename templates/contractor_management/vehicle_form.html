@@ -253,7 +253,28 @@
               },
               observer: true,
               altField: fieldSelector,
-              altFormat: 'YYYY/MM/DD'
+              altFormat: 'YYYY/MM/DD',
+              onSelect: function(unix) {
+                try {
+                  const date = new Date(unix);
+                  const utcDate = new Date(Date.UTC(
+                    date.getUTCFullYear(),
+                    date.getUTCMonth(),
+                    date.getUTCDate(),
+                    12, 0, 0, 0
+                  ));
+                  if (typeof persianDate !== 'undefined') {
+                    const pd = new persianDate(utcDate);
+                    const jalaliDate = pd.toCalendar('persian');
+                    const formatted = jalaliDate.format('YYYY/MM/DD');
+                    setTimeout(() => {
+                      $input.val(formatted);
+                    }, 0);
+                  }
+                } catch (e) {
+                  console.warn('Date conversion error:', e);
+                }
+              }
             });
             
             // Set the value after initialization if it exists

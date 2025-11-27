@@ -260,3 +260,24 @@ class RiskFilterForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-select'}),
         label="نیاز به اقدام اصلاحی"
     )
+
+
+class ExcelImportForm(forms.Form):
+    """فرم آپلود فایل Excel برای import ریسک‌ها"""
+    excel_file = forms.FileField(
+        label="فایل Excel",
+        help_text="فقط فایل‌های .xlsx پذیرفته می‌شود",
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': '.xlsx',
+        })
+    )
+    
+    def clean_excel_file(self):
+        file = self.cleaned_data.get('excel_file')
+        if file:
+            if not file.name.endswith('.xlsx'):
+                raise ValidationError('فقط فایل‌های Excel (.xlsx) پذیرفته می‌شود.')
+            if file.size > 10 * 1024 * 1024:  # 10 MB
+                raise ValidationError('حجم فایل نباید بیشتر از 10 مگابایت باشد.')
+        return file

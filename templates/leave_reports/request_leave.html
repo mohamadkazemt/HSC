@@ -426,13 +426,59 @@ function leaveRequestWizard() {
         initJalaliDatePicker() {
             setTimeout(() => {
                 if (window.jQuery && $.fn.persianDatepicker) {
-                    $('#id_shift_date').persianDatepicker({
+                    // Get today's date from server (via meta tag) for minDate restriction
+                    let todayJalali = null;
+                    const todayMeta = document.querySelector('meta[name="today-jalali"]');
+                    if (todayMeta) {
+                        const todayStr = todayMeta.getAttribute('content');
+                        if (todayStr && typeof persianDate !== 'undefined') {
+                            const [year, month, day] = todayStr.split('/').map(num => parseInt(num));
+                            todayJalali = new persianDate([year, month, day]);
+                        }
+                    }
+                    // Fallback to client-side if server date not available
+                    if (!todayJalali && typeof persianDate !== 'undefined') {
+                        todayJalali = new persianDate();
+                    }
+                    
+                    const pickerConfig = {
                         format: 'YYYY/MM/DD',
                         autoClose: true,
+                        calendar: {
+                            persian: {
+                                locale: 'fa',
+                                leapYearMode: 'astronomical' // ⚠️ CRITICAL: Fix for leap year 1403/1404
+                            }
+                        },
                         onSelect: (unix) => {
-                            this.formData.shift_date = $('#id_shift_date').val();
+                            try {
+                                if (typeof persianDate !== 'undefined') {
+                                    const dateObj = new Date(unix);
+                                    const utcDate = new Date(Date.UTC(
+                                        dateObj.getUTCFullYear(),
+                                        dateObj.getUTCMonth(),
+                                        dateObj.getUTCDate(),
+                                        12, 0, 0, 0
+                                    ));
+                                    const pd = new persianDate(utcDate);
+                                    const formatted = pd.toCalendar('persian').format('YYYY/MM/DD');
+                                    setTimeout(() => {
+                                        $('#id_shift_date').val(formatted);
+                                        this.formData.shift_date = formatted;
+                                    }, 10);
+                                }
+                            } catch (e) {
+                                console.warn('Date conversion error:', e);
+                            }
                         }
-                    });
+                    };
+                    
+                    // Add minDate to prevent past dates (future dates are allowed)
+                    if (todayJalali) {
+                        pickerConfig.minDate = todayJalali;
+                    }
+                    
+                    $('#id_shift_date').persianDatepicker(pickerConfig);
                 }
                 
                 // Sync other form fields

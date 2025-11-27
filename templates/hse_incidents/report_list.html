@@ -287,6 +287,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Initialize Persian Date Pickers
   if (window.jQuery && $.fn.persianDatepicker) {
     $('.jalali-datepicker').each(function() {
+      const $input = $(this);
       $(this).persianDatepicker({
         format: 'YYYY/MM/DD',
         autoClose: true,
@@ -295,6 +296,34 @@ document.addEventListener('DOMContentLoaded', function() {
         persianDigit: false,  // استفاده از اعداد انگلیسی
         timePicker: {
           enabled: false
+        },
+        calendar: {
+          persian: {
+            locale: 'fa'
+          }
+        },
+        onSelect: function(unix) {
+          // استفاده از UTC برای جلوگیری از جابه‌جایی یک روزه
+          try {
+            const date = new Date(unix);
+            const utcDate = new Date(Date.UTC(
+              date.getUTCFullYear(),
+              date.getUTCMonth(),
+              date.getUTCDate(),
+              12, 0, 0, 0
+            ));
+            
+            if (typeof persianDate !== 'undefined') {
+              const pd = new persianDate(utcDate);
+              const jalaliDate = pd.toCalendar('persian');
+              const formatted = jalaliDate.format('YYYY/MM/DD');
+              setTimeout(() => {
+                $input.val(formatted);
+              }, 0);
+            }
+          } catch (e) {
+            console.warn('Date conversion error:', e);
+          }
         }
       });
     });

@@ -396,6 +396,41 @@
                 </div>
               </div>
             </div>
+            
+            <!-- Risk Assessment Section -->
+            <div class="bg-blue-50 dark:bg-blue-900 border-r-4 border-blue-500 p-4 rounded-lg">
+              <label class="flex items-center gap-3 cursor-pointer mb-4">
+                <input type="checkbox" name="add_to_risk" @change="showRiskFields = !showRiskFields" 
+                       class="rounded text-blue-600 focus:ring-blue-500">
+                <span class="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                  <svg class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                  </svg>
+                  آیا می‌خواهید این حادثه به ریسک واحد اضافه شود؟
+                </span>
+              </label>
+              
+              <div x-show="showRiskFields" x-collapse class="mt-4">
+                <div>
+                  <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                    <svg class="inline h-4 w-4 ml-1 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+                    </svg>
+                    سمت/شغل مرتبط <span class="text-red-600">*</span>
+                  </label>
+                  <select name="risk_position" id="risk-position-select"
+                          class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-blue-500 focus:ring-blue-500 shadow-sm">
+                    <option value="">انتخاب کنید</option>
+                    {% for position in positions %}
+                    <option value="{{ position.id }}">{{ position.name }}</option>
+                    {% endfor %}
+                  </select>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    سمت/شغلی که این حادثه در آن رخ داده است را انتخاب کنید
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -442,6 +477,7 @@ function incidentWizard() {
     showFireTruckTime: false,
     showAmbulanceTime: false,
     showHospitalizedFields: false,
+    showRiskFields: false,
     
     init() {
       // استفاده از nextTick برای اطمینان از رندر شدن کامل DOM
@@ -539,22 +575,75 @@ function incidentWizard() {
     initializeDatePickers() {
       // چون jQuery و persianDatepicker از base.html لود شده‌اند، مستقیماً استفاده می‌کنیم  
       if (window.jQuery && $.fn.persianDatepicker) {
+        // Get today's date from Django (server-side) for maxDate restriction
+        let todayJalali = null;
+        const todayMeta = document.querySelector('meta[name="today-jalali"]');
+        if (todayMeta) {
+          const todayStr = todayMeta.getAttribute('content');
+          if (todayStr && typeof persianDate !== 'undefined') {
+            const [year, month, day] = todayStr.split('/').map(num => parseInt(num));
+            todayJalali = new persianDate([year, month, day]);
+          }
+        }
+        
         $('.jalali-datepicker').each(function() {
           // اگر قبلاً مقداردهی شده، ابتدا destroy کن
           if ($(this).data('datepicker')) {
             $(this).data('datepicker').destroy();
           }
           
-          $(this).persianDatepicker({
+          const $input = $(this);
+          const pickerConfig = {
             format: 'YYYY/MM/DD',
             autoClose: true,
             initialValue: false,
-            observer: true,
+            initialValueType: 'persian', // استفاده از persian به عنوان نوع اولیه
+            observer: false, // غیرفعال کردن observer تا خودمان کنترل کنیم
             persianDigit: true,
             timePicker: {
               enabled: false
+            },
+            calendar: {
+              persian: {
+                locale: 'fa',
+                leapYearMode: 'astronomical' // ⚠️ CRITICAL: Fix for leap year 1403/1404
+              }
+            },
+            onSelect: function(unix) {
+              try {
+                // استفاده از persianDate با unix اما با محاسبه صحیح سال کبیسه
+                // ایجاد Date object از unix و سپس تبدیل به persianDate با UTC
+                if (typeof persianDate !== 'undefined') {
+                  const dateObj = new Date(unix);
+                  // استفاده از UTC برای جلوگیری از مشکل timezone و سال کبیسه
+                  const utcDate = new Date(Date.UTC(
+                    dateObj.getUTCFullYear(),
+                    dateObj.getUTCMonth(),
+                    dateObj.getUTCDate(),
+                    12, 0, 0, 0
+                  ));
+                  const pd = new persianDate(utcDate);
+                  const formatted = pd.toCalendar('persian').format('YYYY/MM/DD');
+                  setTimeout(() => {
+                    $input.val(formatted);
+                    const picker = $input.data('datepicker');
+                    if (picker && typeof picker.update === 'function') {
+                      picker.update();
+                    }
+                  }, 10);
+                }
+              } catch (e) {
+                console.warn('Date conversion error:', e);
+              }
             }
-          });
+          };
+          
+          // Add maxDate restriction if today is available (prevent future dates)
+          if (todayJalali) {
+            pickerConfig.maxDate = todayJalali;
+          }
+          
+          $(this).persianDatepicker(pickerConfig);
         });
         console.log('Datepickers initialized successfully');
       } else {

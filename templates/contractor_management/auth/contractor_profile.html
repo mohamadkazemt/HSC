@@ -420,7 +420,28 @@
         calendar: { persian: { locale: 'fa' } },
         navigator: { enabled: true, scroll: { enabled: true } },
         toolbox: { enabled: true, calendarSwitch: { enabled: false } },
-        timePicker: { enabled: false }
+        timePicker: { enabled: false },
+        onSelect: function(unix) {
+          try {
+            const date = new Date(unix);
+            const utcDate = new Date(Date.UTC(
+              date.getUTCFullYear(),
+              date.getUTCMonth(),
+              date.getUTCDate(),
+              12, 0, 0, 0
+            ));
+            if (typeof persianDate !== 'undefined') {
+              const pd = new persianDate(utcDate);
+              const jalaliDate = pd.toCalendar('persian');
+              const formatted = jalaliDate.format('YYYY/MM/DD');
+              setTimeout(() => {
+                $bd.val(formatted);
+              }, 0);
+            }
+          } catch (e) {
+            console.warn('Date conversion error:', e);
+          }
+        }
       });
     }
   });

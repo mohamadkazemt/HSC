@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Import ریسک‌ها از Excel{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-4xl">
+        <header class="flex flex-col gap-4 border-b border-gray-100 pb-6 dark:border-gray-800 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm font-semibold text-indigo-500">HSE Risk Assessment</p>
+                <h1 class="mt-2 text-2xl font-black text-gray-900 dark:text-white">Import ریسک‌ها از Excel</h1>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">فایل Excel را آپلود کنید تا ریسک‌ها به صورت خودکار وارد سیستم شوند.</p>
+            </div>
+            <a href="{% url 'risk_assessment:risk_list' %}" class="inline-flex items-center gap-2 rounded-2xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800">
+                <i class="fa-solid fa-arrow-right text-lg"></i>
+                بازگشت به لیست
+            </a>
+        </header>
+
+        <div class="mt-8 grid gap-6 lg:grid-cols-3">
+            <!-- فرم آپلود -->
+            <div class="lg:col-span-2">
+                <div class="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                    <h2 class="mb-4 text-lg font-bold text-gray-900 dark:text-white">آپلود فایل Excel</h2>
+                    
+                    <form method="post" enctype="multipart/form-data" class="space-y-4">
+                        {% csrf_token %}
+                        
+                        {% if form.non_field_errors %}
+                        <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+                        
+                        <div class="space-y-2">
+                            <label for="{{ form.excel_file.id_for_label }}" class="block text-sm font-medium text-gray-900 dark:text-gray-100">
+                                {{ form.excel_file.label }}
+                            </label>
+                            <input type="file" name="{{ form.excel_file.name }}" id="{{ form.excel_file.id_for_label }}" 
+                                   accept=".xlsx" 
+                                   class="block w-full rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400">
+                            {% if form.excel_file.errors %}
+                            <div class="text-sm text-red-600 dark:text-red-400">
+                                {{ form.excel_file.errors }}
+                            </div>
+                            {% endif %}
+                            {% if form.excel_file.help_text %}
+                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ form.excel_file.help_text }}</p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="flex flex-wrap gap-3 pt-4">
+                            <button type="submit" class="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500">
+                                <i class="fa-solid fa-upload text-lg"></i>
+                                آپلود و Import
+                            </button>
+                            <a href="{% url 'risk_assessment:risk_list' %}" class="inline-flex items-center gap-2 rounded-2xl border border-gray-200 px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">
+                                انصراف
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- راهنما -->
+            <aside class="space-y-6">
+                <div class="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                    <h3 class="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-900 dark:text-white">
+                        <i class="fa-solid fa-download text-indigo-500"></i>
+                        دانلود الگو
+                    </h3>
+                    <p class="mb-4 text-xs text-gray-500 dark:text-gray-400">
+                        برای ساخت فایل Excel مطابق با فرمت سیستم، ابتدا الگو را دانلود کنید.
+                    </p>
+                    <a href="{% url 'risk_assessment:risk_template' %}" class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500">
+                        <i class="fa-solid fa-file-excel text-lg"></i>
+                        دانلود الگوی Excel
+                    </a>
+                </div>
+
+                <div class="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                    <h3 class="mb-4 text-sm font-semibold text-gray-900 dark:text-white">راهنمای استفاده</h3>
+                    <ul class="space-y-2 text-xs text-gray-500 dark:text-gray-400">
+                        <li class="flex items-start gap-2">
+                            <span class="mt-1 h-1.5 w-1.5 rounded-full bg-indigo-500"></span>
+                            <span>فقط فایل‌های .xlsx پذیرفته می‌شود</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="mt-1 h-1.5 w-1.5 rounded-full bg-indigo-500"></span>
+                            <span>فیلدهای دارای علامت * الزامی هستند</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="mt-1 h-1.5 w-1.5 rounded-full bg-indigo-500"></span>
+                            <span>نام شغل، خطر و نوع پیامد باید دقیقاً با سیستم مطابقت داشته باشد</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="mt-1 h-1.5 w-1.5 rounded-full bg-indigo-500"></span>
+                            <span>احتمال و شدت باید عدد بین 1 تا 5 باشد</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="mt-1 h-1.5 w-1.5 rounded-full bg-indigo-500"></span>
+                            <span>تاریخ‌ها به فرمت جلالی YYYY/MM/DD</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="mt-1 h-1.5 w-1.5 rounded-full bg-indigo-500"></span>
+                            <span>ریسک‌های وارد شده در وضعیت "در انتظار تأیید" قرار می‌گیرند</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="rounded-3xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/40 dark:bg-amber-500/10">
+                    <p class="text-xs font-semibold text-amber-800 dark:text-amber-200">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+                        نکته مهم
+                    </p>
+                    <p class="mt-2 text-xs text-amber-700 dark:text-amber-300">
+                        در صورت وجود خطا در فایل، فقط ردیف‌های معتبر وارد می‌شوند و خطاها به شما نمایش داده می‌شود.
+                    </p>
+                </div>
+            </aside>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

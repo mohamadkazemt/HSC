@@ -87,11 +87,64 @@
         if ($.fn.persianDatepicker) {
           $(root).find('.jalali-date').each(function(){
             const $el = $(this); try{ $el.prop('type','text'); }catch(e){}
-            $el.persianDatepicker({ format:'YYYY/MM/DD', autoClose:true });
+            $el.persianDatepicker({ 
+              format:'YYYY/MM/DD', 
+              autoClose:true,
+              calendar: { persian: { locale: 'fa' } },
+              onSelect: function(unix) {
+                try {
+                  const date = new Date(unix);
+                  const utcDate = new Date(Date.UTC(
+                    date.getUTCFullYear(),
+                    date.getUTCMonth(),
+                    date.getUTCDate(),
+                    12, 0, 0, 0
+                  ));
+                  if (typeof persianDate !== 'undefined') {
+                    const pd = new persianDate(utcDate);
+                    const jalaliDate = pd.toCalendar('persian');
+                    const formatted = jalaliDate.format('YYYY/MM/DD');
+                    setTimeout(() => {
+                      $el.val(formatted);
+                    }, 0);
+                  }
+                } catch (e) {
+                  console.warn('Date conversion error:', e);
+                }
+              }
+            });
           });
           $(root).find('.jalali-datetime').each(function(){
             const $el = $(this); try{ $el.prop('type','text'); }catch(e){}
-            $el.persianDatepicker({ format:'YYYY/MM/DD HH:mm:ss', timePicker:{ enabled:true, second:true }, autoClose:true });
+            $el.persianDatepicker({ 
+              format:'YYYY/MM/DD HH:mm:ss', 
+              timePicker:{ enabled:true, second:true }, 
+              autoClose:true,
+              calendar: { persian: { locale: 'fa' } },
+              onSelect: function(unix) {
+                try {
+                  const date = new Date(unix);
+                  const utcDate = new Date(Date.UTC(
+                    date.getUTCFullYear(),
+                    date.getUTCMonth(),
+                    date.getUTCDate(),
+                    date.getUTCHours(),
+                    date.getUTCMinutes(),
+                    date.getUTCSeconds()
+                  ));
+                  if (typeof persianDate !== 'undefined') {
+                    const pd = new persianDate(utcDate);
+                    const jalaliDate = pd.toCalendar('persian');
+                    const formatted = jalaliDate.format('YYYY/MM/DD HH:mm:ss');
+                    setTimeout(() => {
+                      $el.val(formatted);
+                    }, 0);
+                  }
+                } catch (e) {
+                  console.warn('Date conversion error:', e);
+                }
+              }
+            });
           });
         }
       }

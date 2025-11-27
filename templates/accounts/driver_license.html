@@ -404,11 +404,11 @@
             altField: '#id_expiry_date',
             altFormat: 'YYYY-MM-DD', // what Django will receive
             altFieldFormatter: function(unixTime) {
-                // Convert to Gregorian date in YYYY-MM-DD format
+                // Convert to Gregorian date in YYYY-MM-DD format using UTC to avoid timezone issues
                 const gregorianDate = new Date(unixTime);
-                const year = gregorianDate.getFullYear();
-                const month = String(gregorianDate.getMonth() + 1).padStart(2, '0');
-                const day = String(gregorianDate.getDate()).padStart(2, '0');
+                const year = gregorianDate.getUTCFullYear();
+                const month = String(gregorianDate.getUTCMonth() + 1).padStart(2, '0');
+                const day = String(gregorianDate.getUTCDate()).padStart(2, '0');
                 return `${year}-${month}-${day}`;
             },
             autoClose: true,

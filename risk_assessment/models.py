@@ -345,6 +345,56 @@ class RiskAssessment(models.Model):
         blank=True,
         verbose_name="یادداشت‌ها"
     )
+    
+    # ====== فرآیند تأیید ======
+    APPROVAL_STATUS_CHOICES = [
+        ('pending', 'در انتظار تأیید'),
+        ('approved', 'تأیید شده'),
+        ('rejected', 'رد شده'),
+    ]
+    
+    approval_status = models.CharField(
+        max_length=20,
+        choices=APPROVAL_STATUS_CHOICES,
+        default='pending',
+        verbose_name="وضعیت تأیید"
+    )
+    
+    approved_by = models.ForeignKey(
+        UserProfile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='approved_risks',
+        verbose_name="تأیید شده توسط"
+    )
+    
+    approved_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="تاریخ تأیید"
+    )
+    
+    rejected_by = models.ForeignKey(
+        UserProfile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='rejected_risks',
+        verbose_name="رد شده توسط"
+    )
+    
+    rejected_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="تاریخ رد"
+    )
+    
+    rejection_reason = models.TextField(
+        blank=True,
+        verbose_name="دلیل رد",
+        help_text="در صورت رد ریسک، دلیل آن را ذکر کنید"
+    )
 
     def clean(self):
         """اعتبارسنجی مدل"""

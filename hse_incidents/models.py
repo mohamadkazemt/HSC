@@ -49,6 +49,8 @@ class IncidentReport(models.Model):
                                       related_name="authored_incidents",
                                       verbose_name="نویسنده گزارش")
     is_completed = models.BooleanField(default=False, verbose_name="تکمیل شده")
+    related_risk = models.ForeignKey('risk_assessment.RiskAssessment', on_delete=models.SET_NULL, null=True, blank=True,
+                                     related_name="related_incidents", verbose_name="ریسک مرتبط")
 
 
 class HseCompletionReport(models.Model):

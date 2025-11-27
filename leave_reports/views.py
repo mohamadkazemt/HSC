@@ -116,9 +116,13 @@ def request_leave(request):
             request=request
         )
     
+    # Get today's date in Persian (Jalali) format for date picker minDate
+    today_jalali = jdatetime.date.today().strftime('%Y/%m/%d')
+    
     return render(request, 'leave_reports/request_leave.html', {
         'form': form,
         'page_title': 'درخواست مرخصی جدید',
+        'today_jalali': today_jalali,
     })
 
 
@@ -617,6 +621,9 @@ def leave_archive(request):
         request=request
     )
     
+    # Get today's date in Persian (Jalali) format for date picker (optional, for archive search)
+    today_jalali = jdatetime.date.today().strftime('%Y/%m/%d')
+    
     return render(request, 'leave_reports/leave_archive.html', {
         'form': form,
         'page_obj': leaves_page,
@@ -626,6 +633,7 @@ def leave_archive(request):
         'rejected_count': rejected_count,
         'today_count': today_count,
         'page_title': 'آرشیو مرخصی‌ها',
+        'today_jalali': today_jalali,
     })
 
 

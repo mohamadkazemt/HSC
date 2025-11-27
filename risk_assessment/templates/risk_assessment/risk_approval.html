@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+{% if action == 'approve' %}تأیید ریسک{% else %}رد ریسک{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-4xl">
+        <div class="flex flex-col gap-4 border-b border-gray-100 pb-6 dark:border-gray-800 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <p class="text-sm font-semibold {% if action == 'approve' %}text-emerald-500{% else %}text-red-500{% endif %}">
+                    {% if action == 'approve' %}Risk Approval{% else %}Risk Rejection{% endif %}
+                </p>
+                <h1 class="text-2xl font-black text-gray-900 dark:text-white">
+                    {% if action == 'approve' %}تأیید ریسک{% else %}رد ریسک{% endif %}
+                </h1>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {% if action == 'approve' %}
+                        با تأیید این ریسک، در سیستم ثبت نهایی می‌شود.
+                    {% else %}
+                        با رد این ریسک، نیاز به اصلاح و ارسال مجدد دارد.
+                    {% endif %}
+                </p>
+            </div>
+            <a href="{% url 'risk_assessment:risk_detail' risk.id %}" class="inline-flex items-center gap-2 rounded-2xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800">
+                <i class="ki-duotone ki-arrow-right text-lg"></i>
+                بازگشت
+            </a>
+        </div>
+
+        <!-- خلاصه ریسک -->
+        <div class="mt-6 rounded-3xl border border-gray-200 bg-white p-6 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+            <h2 class="mb-4 text-lg font-bold text-gray-900 dark:text-white">خلاصه ریسک</h2>
+            <div class="grid gap-4 md:grid-cols-2">
+                <div>
+                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400">شغل/سمت</p>
+                    <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ risk.position.name }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400">فعالیت/جزء</p>
+                    <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ risk.activity_component }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400">خطر</p>
+                    <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ risk.hazard.description }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400">عدد ریسک (RPN)</p>
+                    <p class="mt-1 text-2xl font-black {% if risk.get_risk_color == 'danger' %}text-red-600{% elif risk.get_risk_color == 'warning' %}text-amber-500{% else %}text-emerald-500{% endif %}">
+                        {{ risk.risk_number }}
+                    </p>
+                    <span class="mt-1 inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold {% if risk.get_risk_color == 'danger' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400{% elif risk.get_risk_color == 'warning' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400{% else %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400{% endif %}">
+                        {{ risk.get_risk_level_display_fa }}
+                    </span>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400">ایجاد شده توسط</p>
+                    <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
+                        {% if risk.created_by %}{{ risk.created_by.user.get_full_name|default:risk.created_by.user.username }}{% else %}نامشخص{% endif %}
+                    </p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-500 dark:text-gray-400">تاریخ ایجاد</p>
+                    <p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ risk.created_at|date:"Y/m/d H:i" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- فرم تأیید/رد -->
+        <div class="mt-6 rounded-3xl border {% if action == 'approve' %}border-emerald-200 bg-emerald-50{% else %}border-red-200 bg-red-50{% endif %} p-6 shadow-lg dark:{% if action == 'approve' %}border-emerald-800 dark:bg-emerald-900/20{% else %}border-red-800 dark:bg-red-900/20{% endif %}">
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                
+                {% if action == 'approve' %}
+                    <div class="flex items-center gap-3 rounded-2xl bg-emerald-100 p-4 dark:bg-emerald-900/30">
+                        <i class="ki-duotone ki-check-circle text-2xl text-emerald-600 dark:text-emerald-400"></i>
+                        <div>
+                            <p class="font-semibold text-emerald-900 dark:text-emerald-100">آیا از تأیید این ریسک اطمینان دارید؟</p>
+                            <p class="mt-1 text-sm text-emerald-700 dark:text-emerald-300">با تأیید، این ریسک در سیستم ثبت نهایی می‌شود و برای همه کاربران قابل مشاهده خواهد بود.</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="submit" class="flex-1 rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500">
+                            <i class="ki-duotone ki-check-circle text-lg"></i>
+                            تأیید ریسک
+                        </button>
+                        <a href="{% url 'risk_assessment:risk_detail' risk.id %}" class="rounded-2xl border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200">
+                            انصراف
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-3 rounded-2xl bg-red-100 p-4 dark:bg-red-900/30">
+                            <i class="ki-duotone ki-cross-circle text-2xl text-red-600 dark:text-red-400"></i>
+                            <div>
+                                <p class="font-semibold text-red-900 dark:text-red-100">آیا از رد این ریسک اطمینان دارید؟</p>
+                                <p class="mt-1 text-sm text-red-700 dark:text-red-300">لطفاً دلیل رد را به صورت واضح وارد کنید تا ایجادکننده بتواند ریسک را اصلاح کند.</p>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label for="rejection_reason" class="block text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                                دلیل رد <span class="text-red-500">*</span>
+                            </label>
+                            <textarea 
+                                id="rejection_reason" 
+                                name="rejection_reason" 
+                                rows="4" 
+                                required
+                                class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm focus:border-red-500 focus:ring-2 focus:ring-red-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                                placeholder="مثال: اطلاعات ناقص است، نیاز به بررسی بیشتر دارد، ..."
+                            ></textarea>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">این دلیل به ایجادکننده ریسک نمایش داده می‌شود.</p>
+                        </div>
+                        
+                        <div class="flex gap-3">
+                            <button type="submit" class="flex-1 rounded-2xl bg-red-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-red-500">
+                                <i class="ki-duotone ki-cross-circle text-lg"></i>
+                                رد ریسک
+                            </button>
+                            <a href="{% url 'risk_assessment:risk_detail' risk.id %}" class="rounded-2xl border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200">
+                                انصراف
+                            </a>
+                        </div>
+                    </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

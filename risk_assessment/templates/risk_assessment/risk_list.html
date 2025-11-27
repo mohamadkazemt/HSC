@@ -23,6 +23,14 @@
           <i class="ki-duotone ki-element-8 text-lg"></i>
           ماتریس ۵×۵ کل سیستم
         </a>
+        <a href="{% url 'risk_assessment:risk_export' %}{% if query_string %}?{{ query_string }}{% endif %}" class="inline-flex items-center gap-2 rounded-2xl border border-white/50 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
+          <i class="fa-solid fa-file-excel text-lg"></i>
+          Export به Excel
+        </a>
+        <a href="{% url 'risk_assessment:risk_import' %}" class="inline-flex items-center gap-2 rounded-2xl border border-white/50 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
+          <i class="fa-solid fa-file-import text-lg"></i>
+          Import از Excel
+        </a>
       </div>
     </div>
   </section>

@@ -1,9 +1,24 @@
 # hse_incidents/forms.py
 from django import forms
 from .models import IncidentReport, HseCompletionReport
+from accounts.models import Position
+from anomalis.models import AnomalyDescription
 
 
 class IncidentReportForm(forms.ModelForm):
+    add_to_risk = forms.BooleanField(
+        required=False,
+        label="آیا می‌خواهید این حادثه به ریسک واحد اضافه شود؟",
+        widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
+    )
+    risk_position = forms.ModelChoiceField(
+        queryset=Position.objects.all(),
+        required=False,
+        label="سمت/شغل مرتبط",
+        empty_label="انتخاب کنید",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
     class Meta:
         model = IncidentReport
         fields = [

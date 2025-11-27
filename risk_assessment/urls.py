@@ -34,4 +34,14 @@ urlpatterns = [
     
     # نمایش ماتریس کلی
     path('matrix/', views.risk_matrix_view, name='risk_matrix'),
+    
+    # فرآیند تأیید (فقط برای مدیر HSE)
+    path('risk/<int:risk_id>/approve/', views.risk_approve, name='risk_approve'),
+    path('risk/<int:risk_id>/reject/', views.risk_reject, name='risk_reject'),
+    path('pending/', views.risk_pending_list, name='risk_pending_list'),
+    
+    # Import/Export Excel
+    path('export/', views.risk_export_excel, name='risk_export'),
+    path('import/', views.risk_import_excel, name='risk_import'),
+    path('template/', views.risk_download_template, name='risk_template'),
 ]

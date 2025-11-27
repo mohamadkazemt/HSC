@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}ریسک‌های در انتظار تأیید{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-6 lg:px-10">
+    <!-- Hero -->
+    <section class="relative overflow-hidden rounded-3xl bg-gradient-to-l from-amber-600 via-amber-500 to-orange-600 text-white shadow-xl">
+        <div class="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_#ffffff40,_transparent_70%)]"></div>
+        <div class="relative flex flex-col gap-6 px-6 py-8 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.3em] text-white/70">Pending Approval</p>
+                <h1 class="mt-2 text-2xl font-black leading-relaxed sm:text-3xl">ریسک‌های در انتظار تأیید</h1>
+                <p class="mt-3 max-w-3xl text-sm text-white/70">لیست ریسک‌هایی که نیاز به بررسی و تأیید شما دارند.</p>
+            </div>
+            <div class="flex flex-wrap gap-3">
+                <a href="{% url 'risk_assessment:risk_dashboard' %}" class="inline-flex items-center gap-2 rounded-2xl bg-white/90 px-4 py-3 text-sm font-semibold text-amber-700 shadow-md transition hover:bg-white">
+                    <i class="ki-duotone ki-home text-lg"></i>
+                    بازگشت به داشبورد
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Alert -->
+    {% if pending_count == 0 %}
+    <div class="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center dark:border-emerald-800 dark:bg-emerald-900/20">
+        <i class="ki-duotone ki-check-circle text-4xl text-emerald-600 dark:text-emerald-400"></i>
+        <p class="mt-3 text-lg font-semibold text-emerald-900 dark:text-emerald-100">هیچ ریسکی در انتظار تأیید نیست</p>
+        <p class="mt-1 text-sm text-emerald-700 dark:text-emerald-300">همه ریسک‌ها بررسی شده‌اند.</p>
+    </div>
+    {% else %}
+    <!-- Stats -->
+    <div class="mt-6 grid gap-4 md:grid-cols-3">
+        <article class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-700">
+            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400">کل در انتظار</p>
+            <p class="mt-3 text-3xl font-black text-amber-600">{{ pending_count }}</p>
+        </article>
+        <article class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-700">
+            <p class="text-xs font-semibold text-red-500">ریسک بالا</p>
+            <p class="mt-3 text-3xl font-black text-red-600">
+                {% for risk in risks %}{% if risk.risk_level == 'High' %}{{ forloop.counter0|add:1 }}{% endif %}{% endfor %}
+            </p>
+        </article>
+        <article class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200 dark:bg-gray-900 dark:ring-gray-700">
+            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400">آخرین بروزرسانی</p>
+            <p class="mt-3 text-sm font-semibold text-gray-900 dark:text-white">
+                {% if risks %}{{ risks.0.created_at|date:"Y/m/d H:i" }}{% else %}-{% endif %}
+            </p>
+        </article>
+    </div>
+
+    <!-- Table -->
+    <div class="mt-6 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 dark:bg-gray-900">
+                    <tr>
+                        <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">شغل</th>
+                        <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">فعالیت</th>
+                        <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">عدد ریسک</th>
+                        <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">ایجاد شده توسط</th>
+                        <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">تاریخ</th>
+                        <th class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">عملیات</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for risk in risks %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                        <td class="whitespace-nowrap px-6 py-4 text-sm font-semibold text-gray-900 dark:text-white">
+                            {{ risk.position.name }}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                            {{ risk.activity_component|truncatewords:5 }}
+                        </td>
+                        <td class="whitespace-nowrap px-6 py-4">
+                            <span class="inline-flex items-center rounded-full px-3 py-1 text-sm font-bold {% if risk.get_risk_color == 'danger' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400{% elif risk.get_risk_color == 'warning' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400{% else %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400{% endif %}">
+                                {{ risk.risk_number }}
+                            </span>
+                        </td>
+                        <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600 dark:text-gray-300">
+                            {% if risk.created_by %}{{ risk.created_by.user.get_full_name|default:risk.created_by.user.username }}{% else %}-{% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                            {{ risk.created_at|date:"Y/m/d H:i" }}
+                        </td>
+                        <td class="whitespace-nowrap px-6 py-4 text-sm">
+                            <div class="flex gap-2">
+                                <a href="{% url 'risk_assessment:risk_detail' risk.id %}" class="rounded-lg bg-indigo-100 px-3 py-1.5 text-xs font-semibold text-indigo-700 transition hover:bg-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400">
+                                    مشاهده
+                                </a>
+                                <a href="{% url 'risk_assessment:risk_approve' risk.id %}" class="rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                    تأیید
+                                </a>
+                                <a href="{% url 'risk_assessment:risk_reject' risk.id %}" class="rounded-lg bg-red-100 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400">
+                                    رد
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                            هیچ ریسکی در انتظار تأیید نیست
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if risks.has_other_pages %}
+        <div class="border-t border-gray-200 bg-gray-50 px-6 py-4 dark:border-gray-700 dark:bg-gray-900">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-700 dark:text-gray-300">
+                    نمایش {{ risks.start_index }} تا {{ risks.end_index }} از {{ risks.paginator.count }} ریسک
+                </div>
+                <div class="flex gap-2">
+                    {% if risks.has_previous %}
+                    <a href="?page={{ risks.previous_page_number }}" class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200">
+                        قبلی
+                    </a>
+                    {% endif %}
+                    {% if risks.has_next %}
+                    <a href="?page={{ risks.next_page_number }}" class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200">
+                        بعدی
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+

@@ -4,6 +4,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% if today_jalali %}<meta name="today-jalali" content="{{ today_jalali }}">{% endif %}
     <title>{% block title %}داشبورد{% endblock %}{% if site_settings and site_settings.site_name %} - {{ site_settings.site_name }}{% endif %}</title>
     {% if site_settings and site_settings.seo_description %}
     <meta name="description" content="{{ site_settings.seo_description|striptags|truncatechars:160 }}">
@@ -41,6 +42,7 @@
 
     {% block styles %}{% endblock %}
     {% block extra_css %}{% endblock %}
+    {% block extra_head %}{% endblock %}
     
     <style>
       [x-cloak] { display: none !important; }
@@ -178,19 +180,154 @@
 
     <!-- Global initializer for Jalali pickers (safe, idempotent) -->
     <script>
+      // Helper function برای تبدیل unix timestamp به تاریخ شمسی با جبران timezone
+      function fixJalaliDateFromUnix(unix, format) {
+        try {
+          // مستقیماً از persianDate استفاده می‌کنیم بدون تبدیل به Date object
+          // این کار از مشکل timezone جلوگیری می‌کند
+          if (typeof persianDate !== 'undefined') {
+            // ایجاد یک persianDate object مستقیماً از unix timestamp
+            const pd = new persianDate(unix);
+            // استفاده از toCalendar برای اطمینان از شمسی بودن
+            const jalaliDate = pd.toCalendar('persian');
+            return jalaliDate.format(format || 'YYYY/MM/DD');
+          }
+        } catch (e) {
+          console.warn('Date conversion error:', e);
+        }
+        return null;
+      }
+      
       document.addEventListener('DOMContentLoaded', function(){
         if (window.jQuery && $.fn.persianDatepicker) {
+          // Get today's date from server if available, otherwise use client-side
+          let todayJalali = null;
+          const todayMeta = document.querySelector('meta[name="today-jalali"]');
+          if (todayMeta) {
+            const todayStr = todayMeta.getAttribute('content');
+            if (todayStr) {
+              const [year, month, day] = todayStr.split('/').map(num => parseInt(num));
+              todayJalali = new persianDate([year, month, day]);
+            }
+          }
+          // Fallback to client-side if server date not available
+          if (!todayJalali && typeof persianDate !== 'undefined') {
+            todayJalali = new persianDate();
+          }
+          
           $('.jalali-date').each(function(){
             const $el = $(this); try { $el.prop('type','text'); } catch(e) {}
             if (!$el.data('hasJalali')) {
-              $el.persianDatepicker({ format:'YYYY/MM/DD', autoClose:true });
+              const pickerConfig = { 
+                format:'YYYY/MM/DD', 
+                autoClose:true,
+                calendar: { 
+                  persian: { 
+                    locale: 'fa',
+                    leapYearMode: 'astronomical' // ⚠️ CRITICAL: Fix for leap year 1403/1404
+                  } 
+                },
+                initialValueType: 'persian',
+                observer: false
+              };
+              
+              // Add maxDate if today is available and input doesn't have data-allow-future
+              if (todayJalali && !$el.data('allow-future')) {
+                pickerConfig.maxDate = todayJalali;
+              }
+              
+              $el.persianDatepicker(pickerConfig);
+              
+              // Override onSelect to handle date formatting correctly
+              const picker = $el.data('datepicker');
+              if (picker && picker.config) {
+                const originalOnSelect = picker.config.onSelect;
+                picker.config.onSelect = function(unix) {
+                  try {
+                    if (typeof persianDate !== 'undefined') {
+                      const dateObj = new Date(unix);
+                      const utcDate = new Date(Date.UTC(
+                        dateObj.getUTCFullYear(),
+                        dateObj.getUTCMonth(),
+                        dateObj.getUTCDate(),
+                        12, 0, 0, 0
+                      ));
+                      const pd = new persianDate(utcDate);
+                      const formatted = pd.toCalendar('persian').format('YYYY/MM/DD');
+                      setTimeout(() => {
+                        $el.val(formatted);
+                        if (picker && typeof picker.update === 'function') {
+                          picker.update();
+                        }
+                      }, 10);
+                    }
+                    if (originalOnSelect) originalOnSelect.call(this, unix);
+                  } catch (e) {
+                    console.warn('Date conversion error:', e);
+                  }
+                };
+              }
+              
               $el.data('hasJalali', true);
             }
           });
           $('.jalali-datetime').each(function(){
             const $el = $(this); try { $el.prop('type','text'); } catch(e) {}
             if (!$el.data('hasJalali')) {
-              $el.persianDatepicker({ format:'YYYY/MM/DD HH:mm:ss', timePicker:{ enabled:true, second:true }, autoClose:true });
+              const pickerConfig = { 
+                format:'YYYY/MM/DD HH:mm:ss', 
+                timePicker:{ enabled:true, second:true }, 
+                autoClose:true,
+                calendar: { 
+                  persian: { 
+                    locale: 'fa',
+                    leapYearMode: 'astronomical' // ⚠️ CRITICAL: Fix for leap year 1403/1404
+                  } 
+                },
+                initialValueType: 'persian',
+                observer: false
+              };
+              
+              // Add maxDate if today is available and input doesn't have data-allow-future
+              if (todayJalali && !$el.data('allow-future')) {
+                pickerConfig.maxDate = todayJalali;
+              }
+              
+              $el.persianDatepicker(pickerConfig);
+              
+              // Override onSelect to handle date formatting correctly
+              const picker = $el.data('datepicker');
+              if (picker && picker.config) {
+                const originalOnSelect = picker.config.onSelect;
+                picker.config.onSelect = function(unix) {
+                  try {
+                    if (typeof persianDate !== 'undefined') {
+                      const dateObj = new Date(unix);
+                      const utcDate = new Date(Date.UTC(
+                        dateObj.getUTCFullYear(),
+                        dateObj.getUTCMonth(),
+                        dateObj.getUTCDate(),
+                        dateObj.getUTCHours(),
+                        dateObj.getUTCMinutes(),
+                        dateObj.getUTCSeconds(),
+                        0
+                      ));
+                      const pd = new persianDate(utcDate);
+                      const formatted = pd.toCalendar('persian').format('YYYY/MM/DD HH:mm:ss');
+                      setTimeout(() => {
+                        $el.val(formatted);
+                        if (picker && typeof picker.update === 'function') {
+                          picker.update();
+                        }
+                      }, 10);
+                    }
+                    if (originalOnSelect) originalOnSelect.call(this, unix);
+                  } catch (e) {
+                    console.warn('Date conversion error:', e);
+                  }
+                };
+              }
+              
               $el.data('hasJalali', true);
             }
           });

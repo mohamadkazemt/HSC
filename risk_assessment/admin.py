@@ -20,12 +20,14 @@ class RiskAssessmentAdmin(admin.ModelAdmin):
         'hazard',
         'risk_number_colored',
         'risk_level_badge',
+        'approval_status_badge',
         'residual_risk_number_colored',
         'corrective_action_required',
         'created_at',
     ]
     
     list_filter = [
+        'approval_status',
         'risk_level',
         'position',
         'risk_source',
@@ -53,6 +55,8 @@ class RiskAssessmentAdmin(admin.ModelAdmin):
         'residual_risk_level',
         'created_at',
         'updated_at',
+        'approved_at',
+        'rejected_at',
     ]
     
     fieldsets = (
@@ -138,6 +142,16 @@ class RiskAssessmentAdmin(admin.ModelAdmin):
             ),
             'classes': ('collapse',),
         }),
+        ('فرآیند تأیید', {
+            'fields': (
+                'approval_status',
+                'approved_by',
+                'approved_at',
+                'rejected_by',
+                'rejected_at',
+                'rejection_reason',
+            )
+        }),
         ('سایر اطلاعات', {
             'fields': (
                 'notes',
@@ -194,6 +208,22 @@ class RiskAssessmentAdmin(admin.ModelAdmin):
         )
     residual_risk_number_colored.short_description = 'ریسک باقی'
     residual_risk_number_colored.admin_order_field = 'residual_risk_number'
+    
+    def approval_status_badge(self, obj):
+        """نمایش وضعیت تأیید با badge رنگی"""
+        status_map = {
+            'pending': ('warning', 'در انتظار'),
+            'approved': ('success', 'تأیید شده'),
+            'rejected': ('danger', 'رد شده'),
+        }
+        color, label = status_map.get(obj.approval_status, ('secondary', '-'))
+        return format_html(
+            '<span style="background-color:{};color:#fff;padding:4px 10px;border-radius:12px;font-size:11px;">{}</span>',
+            self._get_bg_color(color),
+            label
+        )
+    approval_status_badge.short_description = 'وضعیت تأیید'
+    approval_status_badge.admin_order_field = 'approval_status'
 
 
 class RiskHistoryInline(admin.TabularInline):

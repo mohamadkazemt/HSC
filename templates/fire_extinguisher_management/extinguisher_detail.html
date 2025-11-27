@@ -274,7 +274,35 @@ document.addEventListener('DOMContentLoaded', function(){
     if(el.dataset.pdatepickerInit) return;
     try{
       const $el = window.jQuery ? window.jQuery(el) : null;
-      const opts = { format: 'YYYY/MM/DD', autoClose: true, initialValue: false, persianDigit: false, observer: true };
+      const opts = { 
+        format: 'YYYY/MM/DD', 
+        autoClose: true, 
+        initialValue: false, 
+        persianDigit: false, 
+        observer: true,
+        calendar: { persian: { locale: 'fa' } },
+        onSelect: function(unix) {
+          try {
+            const date = new Date(unix);
+            const utcDate = new Date(Date.UTC(
+              date.getUTCFullYear(),
+              date.getUTCMonth(),
+              date.getUTCDate(),
+              12, 0, 0, 0
+            ));
+            if (typeof persianDate !== 'undefined') {
+              const pd = new persianDate(utcDate);
+              const jalaliDate = pd.toCalendar('persian');
+              const formatted = jalaliDate.format('YYYY/MM/DD');
+              setTimeout(() => {
+                $el.val(formatted);
+              }, 0);
+            }
+          } catch (e) {
+            console.warn('Date conversion error:', e);
+          }
+        }
+      };
       if($el && $el.persianDatepicker){ $el.persianDatepicker(opts); el.dataset.pdatepickerInit = '1'; }
       else if($el && $el.pDatepicker){ $el.pDatepicker(opts); el.dataset.pdatepickerInit = '1'; }
       else if(typeof persianDate === 'function' && typeof PDatepicker !== 'undefined'){
@@ -284,7 +312,7 @@ document.addEventListener('DOMContentLoaded', function(){
   }
   // Initialize select2 if available
   function initSelect2(el){ if(!el) return; if(el.dataset.select2Init) return; try{ if(window.jQuery && jQuery.fn.select2){ jQuery(el).select2({ dir:'rtl', language:'fa', width:'100%' }); el.dataset.select2Init='1'; } }catch(e){ console.warn('select2 init failed', e); } }
-  function jalaliToIso(val){ if(!val) return val; try{ const v = toLatinDigits(String(val).trim()); if(typeof persianDate !== 'undefined'){ const pd = new persianDate(v); const d = pd.toDate(); if(d && d.getFullYear){ const yyyy=d.getFullYear(); const mm=String(d.getMonth()+1).padStart(2,'0'); const dd=String(d.getDate()).padStart(2,'0'); return `${yyyy}-${mm}-${dd}`; } } const norm = v.replace(/\//g,'-'); if(/^\d{4}-\d{1,2}-\d{1,2}$/.test(norm)){ const parts = norm.split('-'); return `${parts[0].padStart(4,'0')}-${String(parts[1]).padStart(2,'0')}-${String(parts[2]).padStart(2,'0')}`; } }catch(e){} return val; }
+  function jalaliToIso(val){ if(!val) return val; try{ const v = toLatinDigits(String(val).trim()); if(typeof persianDate !== 'undefined'){ const pd = new persianDate(v); const d = pd.toDate(); if(d && d.getUTCFullYear){ const yyyy=d.getUTCFullYear(); const mm=String(d.getUTCMonth()+1).padStart(2,'0'); const dd=String(d.getUTCDate()).padStart(2,'0'); return `${yyyy}-${mm}-${dd}`; } } const norm = v.replace(/\//g,'-'); if(/^\d{4}-\d{1,2}-\d{1,2}$/.test(norm)){ const parts = norm.split('-'); return `${parts[0].padStart(4,'0')}-${String(parts[1]).padStart(2,'0')}-${String(parts[2]).padStart(2,'0')}`; } }catch(e){} return val; }
 
   function showFieldError(form, fieldName, error){
     const field = form.querySelector(`[name="${fieldName}"]`);

@@ -29,8 +29,63 @@ from dashboard.sms_utils import send_template_sms
 from dashboard.utils import log_user_activity
 from django.urls import reverse
 from .notifications import notify_incident_report_created, notify_incident_completion
+from risk_assessment.models import RiskAssessment
+from anomalis.models import AnomalyDescription
+from accounts.models import Position
 
 logger = logging.getLogger(__name__)
+
+
+def create_risk_from_incident(incident, position, user_profile):
+    """
+    ایجاد ریسک از حادثه ثبت شده
+    """
+    try:
+        # دریافت اولین نوع جراحت (یا ایجاد یک پیش‌فرض)
+        injury_type = incident.injury_type.first()
+        if not injury_type:
+            from .models import InjuryType
+            # اگر نوع جراحتی وجود نداشت، یک پیش‌فرض ایجاد می‌کنیم یا از اولین نوع استفاده می‌کنیم
+            injury_type = InjuryType.objects.first()
+            if not injury_type:
+                # اگر هیچ نوع جراحتی وجود نداشت، نمی‌توانیم ریسک ایجاد کنیم
+                return None
+        
+        # دریافت اولین AnomalyDescription (یا ایجاد یک پیش‌فرض)
+        # از آنجایی که نمی‌دانیم دقیقاً چه نوع خطری است، از اولین مورد استفاده می‌کنیم
+        # یا می‌توانیم بر اساس توضیحات حادثه یک مورد مناسب پیدا کنیم
+        hazard = AnomalyDescription.objects.first()
+        if not hazard:
+            # اگر هیچ AnomalyDescription وجود نداشت، نمی‌توانیم ریسک ایجاد کنیم
+            return None
+        
+        # ایجاد ریسک با اطلاعات حادثه
+        risk = RiskAssessment.objects.create(
+            position=position,
+            risk_source='incidents',  # منشا: حوادث و شبه حوادث
+            activity_component=incident.section.section if incident.section else incident.location.name if incident.location else "حادثه",
+            is_routine=False,  # حوادث معمولاً غیر روتین هستند
+            hazard=hazard,
+            potential_event=incident.full_description[:255] if len(incident.full_description) > 255 else incident.full_description,
+            causes=incident.initial_cause,
+            consequence=injury_type,
+            existing_controls="کنترل‌های موجود در زمان حادثه بررسی نشده است",
+            control_failure_causes="نیاز به بررسی بیشتر",
+            probability=3,  # پیش‌فرض: متوسط (وقوع سالیانه)
+            severity=3,  # پیش‌فرض: آسیب خیلی شدید
+            created_by=user_profile,
+            approval_status='pending',  # در انتظار تأیید
+            notes=f"این ریسک از حادثه شماره {incident.id} ایجاد شده است."
+        )
+        
+        # اتصال ریسک به حادثه
+        incident.related_risk = risk
+        incident.save()
+        
+        return risk
+    except Exception as e:
+        logger.error(f"خطا در ایجاد ریسک از حادثه {incident.id}: {e}")
+        return None
 
 def persian_to_english_numbers(persian_str):
     persian_to_english = {
@@ -48,7 +103,11 @@ def report_incident(request):
         user_profile = UserProfile.objects.get(user=request.user)
     except UserProfile.DoesNotExist:
         messages.error(request, "پروفایل کاربری شما یافت نشد. لطفا با مدیر سیستم تماس بگیرید.")
-        return render(request, 'hse_incidents/incident_report_form.html', {'form': IncidentReportForm()})
+        today_jalali = jdatetime.date.today().strftime('%Y/%m/%d')
+        return render(request, 'hse_incidents/incident_report_form.html', {
+            'form': IncidentReportForm(),
+            'today_jalali': today_jalali,
+        })
 
     # ثبت فعالیت مشاهده فرم گزارش حادثه
     if request.method == 'GET':
@@ -64,6 +123,7 @@ def report_incident(request):
 
     locations = Location.objects.all()
     sections = LocationSection.objects.all()
+    positions = Position.objects.all().order_by('name')
 
     if request.method == 'POST':
         # کپی داده‌ها برای تبدیل تاریخ شمسی به میلادی قبل از اعتبارسنجی فرم
@@ -92,16 +152,32 @@ def report_incident(request):
                 ).first()
                 if existing_report:
                     messages.warning(request, "گزارش مشابهی برای این تاریخ، ساعت و محل قبلاً ثبت شده است. لطفاً بررسی کنید.")
+                    today_jalali = jdatetime.date.today().strftime('%Y/%m/%d')
                     return render(request, 'hse_incidents/incident_report_form.html', {
                         'form': form,
                         'locations': locations,
                         'sections': sections,
+                        'positions': positions,
+                        'today_jalali': today_jalali,
                     })
 
                 incident = form.save(commit=False)
                 incident.report_author = user_profile
                 incident.save()
                 form.save_m2m()
+                
+                # بررسی اینکه آیا کاربر می‌خواهد به ریسک اضافه شود
+                add_to_risk = cleaned.get('add_to_risk', False)
+                risk_position = cleaned.get('risk_position')
+                
+                if add_to_risk and risk_position:
+                    risk = create_risk_from_incident(incident, risk_position, user_profile)
+                    if risk:
+                        messages.success(request, f"گزارش حادثه ثبت شد و ریسک مرتبط با عدد ریسک {risk.risk_number} ایجاد شد.")
+                    else:
+                        messages.warning(request, "گزارش حادثه ثبت شد اما ایجاد ریسک با خطا مواجه شد. لطفاً به صورت دستی ریسک را ایجاد کنید.")
+                elif add_to_risk and not risk_position:
+                    messages.warning(request, "گزارش حادثه ثبت شد اما برای ایجاد ریسک، لطفاً سمت/شغل را انتخاب کنید.")
 
                 # ثبت فعالیت ایجاد گزارش حادثه
                 log_user_activity(
@@ -153,15 +229,27 @@ def report_incident(request):
             # فرم نامعتبر است
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 return JsonResponse({'status': 'error', 'message': 'فرم نامعتبر است', 'errors': form.errors}, status=400)
+            # Get today's date in Persian (Jalali) format for date picker maxDate
+            today_jalali = jdatetime.date.today().strftime('%Y/%m/%d')
             return render(request, 'hse_incidents/incident_report_form.html', {
                 'form': form,
                 'locations': locations,
                 'sections': sections,
+                'positions': positions,
+                'today_jalali': today_jalali,
             })
 
     # GET یا در صورت عدم POST موفق
     form = IncidentReportForm()
-    return render(request, 'hse_incidents/incident_report_form.html', {'form': form, 'locations': locations, 'sections': sections})
+    # Get today's date in Persian (Jalali) format for date picker maxDate
+    today_jalali = jdatetime.date.today().strftime('%Y/%m/%d')
+    return render(request, 'hse_incidents/incident_report_form.html', {
+        'form': form, 
+        'locations': locations, 
+        'sections': sections,
+        'positions': positions,
+        'today_jalali': today_jalali,
+    })
 
 
 @login_required

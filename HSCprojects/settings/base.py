@@ -113,6 +113,7 @@ TEMPLATES = [
                 'shift_manager.context_processors.shift_data_processor',
                 'permissions.context_processors.permission_context',
                 'core.context_processors.site_settings',
+                'core.context_processors.today_jalali',
             ],
             'builtins': [
                 # Make project's Jalali template filters available globally

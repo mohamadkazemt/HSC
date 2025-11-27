@@ -88,19 +88,106 @@
 
     <!-- Global Jalali picker initializer -->
     <script>
+      // Helper function برای تبدیل unix timestamp به تاریخ شمسی با جبران timezone
+      function fixJalaliDateFromUnix(unix, format) {
+        try {
+          if (typeof persianDate !== 'undefined') {
+            // جبران timezone: getTimezoneOffset() مقدار منفی برمی‌گرداند
+            const timezoneOffsetMs = new Date().getTimezoneOffset() * 60000;
+            const adjustedUnix = unix + timezoneOffsetMs;
+            const pd = new persianDate(adjustedUnix);
+            const jalaliDate = pd.toCalendar('persian');
+            return jalaliDate.format(format || 'YYYY/MM/DD');
+          }
+        } catch (e) {
+          console.warn('Date conversion error:', e);
+        }
+        return null;
+      }
+      
       document.addEventListener('DOMContentLoaded', function(){
         if (window.jQuery && $.fn.persianDatepicker) {
           $('.jalali-date').each(function(){
             const $el = $(this); try { $el.prop('type','text'); } catch(e) {}
             if (!$el.data('hasJalali')) {
-              $el.persianDatepicker({ format:'YYYY/MM/DD', autoClose:true });
+              $el.persianDatepicker({ 
+                format:'YYYY/MM/DD', 
+                autoClose:true,
+                calendar: { persian: { locale: 'fa' } },
+                initialValueType: 'persian',
+                observer: false,
+                onSelect: function(unix) {
+                  try {
+                    // استفاده از persianDate با unix اما با محاسبه صحیح سال کبیسه
+                    // ایجاد Date object از unix و سپس تبدیل به persianDate با UTC
+                    if (typeof persianDate !== 'undefined') {
+                      const dateObj = new Date(unix);
+                      // استفاده از UTC برای جلوگیری از مشکل timezone و سال کبیسه
+                      const utcDate = new Date(Date.UTC(
+                        dateObj.getUTCFullYear(),
+                        dateObj.getUTCMonth(),
+                        dateObj.getUTCDate(),
+                        12, 0, 0, 0
+                      ));
+                      const pd = new persianDate(utcDate);
+                      const formatted = pd.toCalendar('persian').format('YYYY/MM/DD');
+                      setTimeout(() => {
+                        $el.val(formatted);
+                        const picker = $el.data('datepicker');
+                        if (picker && typeof picker.update === 'function') {
+                          picker.update();
+                        }
+                      }, 10);
+                    }
+                  } catch (e) {
+                    console.warn('Date conversion error:', e);
+                  }
+                }
+              });
               $el.data('hasJalali', true);
             }
           });
           $('.jalali-datetime').each(function(){
             const $el = $(this); try { $el.prop('type','text'); } catch(e) {}
             if (!$el.data('hasJalali')) {
-              $el.persianDatepicker({ format:'YYYY/MM/DD HH:mm:ss', timePicker:{ enabled:true, second:true }, autoClose:true });
+              $el.persianDatepicker({ 
+                format:'YYYY/MM/DD HH:mm:ss', 
+                timePicker:{ enabled:true, second:true }, 
+                autoClose:true,
+                calendar: { persian: { locale: 'fa' } },
+                initialValueType: 'persian',
+                observer: false,
+                onSelect: function(unix) {
+                  try {
+                    // استفاده از persianDate با unix اما با محاسبه صحیح سال کبیسه
+                    // ایجاد Date object از unix و سپس تبدیل به persianDate با UTC
+                    if (typeof persianDate !== 'undefined') {
+                      const dateObj = new Date(unix);
+                      // استفاده از UTC برای جلوگیری از مشکل timezone و سال کبیسه
+                      const utcDate = new Date(Date.UTC(
+                        dateObj.getUTCFullYear(),
+                        dateObj.getUTCMonth(),
+                        dateObj.getUTCDate(),
+                        dateObj.getUTCHours(),
+                        dateObj.getUTCMinutes(),
+                        dateObj.getUTCSeconds(),
+                        0
+                      ));
+                      const pd = new persianDate(utcDate);
+                      const formatted = pd.toCalendar('persian').format('YYYY/MM/DD HH:mm:ss');
+                      setTimeout(() => {
+                        $el.val(formatted);
+                        const picker = $el.data('datepicker');
+                        if (picker && typeof picker.update === 'function') {
+                          picker.update();
+                        }
+                      }, 10);
+                    }
+                  } catch (e) {
+                    console.warn('Date conversion error:', e);
+                  }
+                }
+              });
               $el.data('hasJalali', true);
             }
           });
