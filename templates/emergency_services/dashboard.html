@@ -229,6 +229,62 @@
     </ul>
   </div>
 </div>
+
+<!-- Most Frequent Visitors This Month -->
+{% if top_visitors %}
+<div class="rounded-lg shadow-lg bg-white dark:bg-gray-800 mt-6">
+  <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2 rounded-t-lg bg-gradient-to-l from-purple-50 to-white dark:from-gray-800 dark:to-gray-800">
+    <i class="fa-solid fa-user-injured text-purple-600"></i>
+    <h3 class="font-semibold text-gray-800 dark:text-gray-100">بیشترین مراجعه‌کننده/کنندگان در ماه جاری</h3>
+  </div>
+  <div class="p-4">
+    <div class="mb-3">
+      <p class="text-sm text-gray-600 dark:text-gray-400">
+        <span class="font-semibold text-purple-600 dark:text-purple-400">{{ max_visit_count }}</span> مراجعه
+      </p>
+    </div>
+    <ul class="space-y-3">
+      {% for visitor in top_visitors %}
+        <li class="flex items-center justify-between p-3 rounded-md bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800">
+          <div class="flex items-center gap-3 flex-1">
+            <div class="h-10 w-10 rounded-full bg-purple-500 text-white flex items-center justify-center font-semibold">
+              <i class="fa-solid fa-user"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="font-medium text-gray-900 dark:text-white truncate">
+                {% if visitor.type == 'company' %}
+                  {{ visitor.person.user.get_full_name|default:visitor.person.user.username }}
+                {% else %}
+                  {{ visitor.person.full_name|default:visitor.person.name }}
+                {% endif %}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {% if visitor.type == 'company' %}
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                    <i class="fa-solid fa-building"></i>
+                    پرسنل شرکت
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300">
+                    <i class="fa-solid fa-hard-hat"></i>
+                    پرسنل پیمانکار
+                  </span>
+                {% endif %}
+              </p>
+            </div>
+          </div>
+          <div class="text-left ml-4">
+            <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-purple-500 text-white text-sm font-semibold">
+              <i class="fa-solid fa-arrow-trend-up"></i>
+              {{ visitor.count }} بار
+            </span>
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}

@@ -844,6 +844,77 @@ def dashboard(request):
         })
     weekly_visits.reverse()
     
+    # بیشترین مراجعه‌کننده در ماه جاری
+    # فیلتر مراجعات ماه جاری
+    current_month = timezone.now().month
+    current_year = timezone.now().year
+    monthly_visits_qs = MedicalVisit.objects.filter(
+        visit_time__year=current_year,
+        visit_time__month=current_month
+    )
+    
+    # شمارش مراجعات برای هر فرد (پرسنل شرکت)
+    company_visitors = monthly_visits_qs.filter(
+        personnel_type='company',
+        company_personnel__isnull=False
+    ).values('company_personnel').annotate(
+        visit_count=Count('id')
+    ).order_by('-visit_count')
+    
+    # شمارش مراجعات برای هر فرد (پرسنل پیمانکار)
+    contractor_visitors = monthly_visits_qs.filter(
+        personnel_type='contractor',
+        contractor_personnel__isnull=False
+    ).values('contractor_personnel').annotate(
+        visit_count=Count('id')
+    ).order_by('-visit_count')
+    
+    # پیدا کردن بیشترین تعداد مراجعات
+    top_visitors = []
+    max_count = 0
+    
+    # بررسی پرسنل شرکت
+    for visitor in company_visitors:
+        count = visitor['visit_count']
+        try:
+            person = UserProfile.objects.get(pk=visitor['company_personnel'])
+            if count > max_count:
+                max_count = count
+                top_visitors = [{
+                    'person': person,
+                    'count': count,
+                    'type': 'company'
+                }]
+            elif count == max_count and max_count > 0:
+                top_visitors.append({
+                    'person': person,
+                    'count': count,
+                    'type': 'company'
+                })
+        except UserProfile.DoesNotExist:
+            continue
+    
+    # بررسی پرسنل پیمانکار
+    for visitor in contractor_visitors:
+        count = visitor['visit_count']
+        try:
+            person = Employee.objects.get(pk=visitor['contractor_personnel'])
+            if count > max_count:
+                max_count = count
+                top_visitors = [{
+                    'person': person,
+                    'count': count,
+                    'type': 'contractor'
+                }]
+            elif count == max_count and max_count > 0:
+                top_visitors.append({
+                    'person': person,
+                    'count': count,
+                    'type': 'contractor'
+                })
+        except Employee.DoesNotExist:
+            continue
+    
     context = {
         'total_visits': total_visits,
         'today_visits': today_visits,
@@ -863,6 +934,8 @@ def dashboard(request):
         'user_role': user_role,
         'my_visits_count': my_visits_count,
         'my_recent_visits': my_recent_visits,
+        'top_visitors': top_visitors,
+        'max_visit_count': max_count,
     }
     
     return render(request, 'emergency_services/dashboard.html', context)

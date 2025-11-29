@@ -525,9 +525,24 @@ def leave_archive(request):
         messages.error(request, 'شما دسترسی به این بخش را ندارید.')
         return redirect('dashboard:dashboard')
     
-    form = LeaveSearchForm(request.GET)
+    # اگر تاریخ‌ها در URL خالی هستند، آن‌ها را از GET حذف کن تا در فرم خالی نمایش داده شوند
+    get_data = request.GET.copy()
+    
+    # بررسی کن که آیا تاریخ‌ها واقعاً وارد شده‌اند یا خالی هستند
+    date_from_value = get_data.get('date_from', '').strip()
+    date_to_value = get_data.get('date_to', '').strip()
+    
+    # اگر تاریخ‌ها خالی هستند، آن‌ها را از GET حذف کن
+    if not date_from_value:
+        if 'date_from' in get_data:
+            del get_data['date_from']
+    if not date_to_value:
+        if 'date_to' in get_data:
+            del get_data['date_to']
+    
+    form = LeaveSearchForm(get_data)
     leaves = ShiftReport.objects.all().select_related(
-        'user', 'replacement_person', 'final_approver', 'rejected_by', 'crate_by'
+        'user', 'user__userprofile', 'replacement_person', 'final_approver', 'rejected_by', 'crate_by'
     )
     
     # فیلتر بر اساس جستجو
@@ -538,6 +553,12 @@ def leave_archive(request):
                 Q(user__first_name__icontains=user_search) |
                 Q(user__last_name__icontains=user_search) |
                 Q(user__username__icontains=user_search)
+            )
+        
+        personnel_code = form.cleaned_data.get('personnel_code')
+        if personnel_code:
+            leaves = leaves.filter(
+                Q(user__userprofile__personnel_code__icontains=personnel_code)
             )
         
         status = form.cleaned_data.get('status')

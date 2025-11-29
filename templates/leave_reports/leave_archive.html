@@ -81,6 +81,21 @@
                         >
                     </div>
 
+                    <!-- Personnel Code -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <i class="fas fa-id-card text-gray-400"></i>
+                            کد پرسنلی
+                        </label>
+                        <input 
+                            type="text" 
+                            name="personnel_code"
+                            value="{{ form.personnel_code.value|default:'' }}"
+                            placeholder="کد پرسنلی"
+                            class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                        >
+                    </div>
+
                     <!-- Leave Type -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -229,7 +244,7 @@
                                 </div>
                                 <div>
                                     <div class="text-sm font-medium text-gray-900 dark:text-white">
-                                        {{ request.user.get_full_name }}
+                                        {{ request.user.get_full_name }}{% if request.user.userprofile.personnel_code %} ({{ request.user.userprofile.personnel_code }}){% endif %}
                                     </div>
                                     <div class="text-xs text-gray-500 dark:text-gray-400">
                                         {{ request.work_group|default:"نامشخص" }}
@@ -312,7 +327,7 @@
                             </div>
                             <div>
                                 <h3 class="text-sm font-bold text-gray-900 dark:text-white">
-                                    {{ request.user.get_full_name }}
+                                    {{ request.user.get_full_name }}{% if request.user.userprofile.personnel_code %} ({{ request.user.userprofile.personnel_code }}){% endif %}
                                 </h3>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">
                                     {{ request.work_group|default:"نامشخص" }}
@@ -439,5 +454,88 @@ function archiveManager() {
         }
     };
 }
+
+// جلوگیری از پر شدن خودکار فیلدهای تاریخ توسط date picker
+document.addEventListener('DOMContentLoaded', function() {
+    // صبر کن تا date picker ها initialize شوند
+    setTimeout(function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const dateFrom = urlParams.get('date_from');
+        const dateTo = urlParams.get('date_to');
+        
+        // اگر در URL تاریخ نیست، فیلدها را خالی کن
+        if (!dateFrom || dateFrom.trim() === '') {
+            const dateFromInput = document.querySelector('input[name="date_from"]');
+            if (dateFromInput) {
+                // اگر فیلد پر شده اما در URL نیست، خالی کن
+                if (dateFromInput.value && dateFromInput.value.trim() !== '') {
+                    dateFromInput.value = '';
+                    // Reset date picker
+                    if (window.jQuery && $(dateFromInput).data('datepicker')) {
+                        const picker = $(dateFromInput).data('datepicker');
+                        if (picker && typeof picker.clear === 'function') {
+                            picker.clear();
+                        } else if (picker && typeof picker.setDate === 'function') {
+                            picker.setDate(null);
+                        }
+                    }
+                }
+            }
+        }
+        
+        if (!dateTo || dateTo.trim() === '') {
+            const dateToInput = document.querySelector('input[name="date_to"]');
+            if (dateToInput) {
+                if (dateToInput.value && dateToInput.value.trim() !== '') {
+                    dateToInput.value = '';
+                    // Reset date picker
+                    if (window.jQuery && $(dateToInput).data('datepicker')) {
+                        const picker = $(dateToInput).data('datepicker');
+                        if (picker && typeof picker.clear === 'function') {
+                            picker.clear();
+                        } else if (picker && typeof picker.setDate === 'function') {
+                            picker.setDate(null);
+                        }
+                    }
+                }
+            }
+        }
+    }, 800);
+    
+    // همچنین بعد از تغییر URL (مثلاً بعد از submit فرم) هم بررسی کن
+    window.addEventListener('popstate', function() {
+        setTimeout(function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const dateFrom = urlParams.get('date_from');
+            const dateTo = urlParams.get('date_to');
+            
+            if (!dateFrom || dateFrom.trim() === '') {
+                const dateFromInput = document.querySelector('input[name="date_from"]');
+                if (dateFromInput && dateFromInput.value) {
+                    dateFromInput.value = '';
+                    if (window.jQuery && $(dateFromInput).data('datepicker')) {
+                        const picker = $(dateFromInput).data('datepicker');
+                        if (picker && typeof picker.clear === 'function') {
+                            picker.clear();
+                        }
+                    }
+                }
+            }
+            
+            if (!dateTo || dateTo.trim() === '') {
+                const dateToInput = document.querySelector('input[name="date_to"]');
+                if (dateToInput && dateToInput.value) {
+                    dateToInput.value = '';
+                    if (window.jQuery && $(dateToInput).data('datepicker')) {
+                        const picker = $(dateToInput).data('datepicker');
+                        if (picker && typeof picker.clear === 'function') {
+                            picker.clear();
+                        }
+                    }
+                }
+            }
+        }, 300);
+    });
+});
 </script>
 {% endblock %}

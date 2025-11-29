@@ -320,6 +320,15 @@ class LeaveSearchForm(forms.Form):
         label='جستجو کاربر'
     )
     
+    personnel_code = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500',
+            'placeholder': 'کد پرسنلی'
+        }),
+        label='کد پرسنلی'
+    )
+    
     status = forms.ChoiceField(
         required=False,
         choices=[('', 'همه وضعیت‌ها')] + list(ShiftReport.STATUS_CHOICES),

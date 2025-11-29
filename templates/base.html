@@ -231,6 +231,11 @@
                 observer: false
               };
               
+              // اگر input خالی است، مقدار اولیه set نکن
+              if (!$el.val() || $el.val().trim() === '') {
+                pickerConfig.initialValue = false;
+              }
+              
               // Add maxDate if today is available and input doesn't have data-allow-future
               if (todayJalali && !$el.data('allow-future')) {
                 pickerConfig.maxDate = todayJalali;
