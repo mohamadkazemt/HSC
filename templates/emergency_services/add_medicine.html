@@ -11,10 +11,19 @@
     <div>
       <label class="block text-sm mb-1">دارو</label>
       {{ form.medicine }}
+      {% if form.errors.medicine %}
+        <p class="text-xs text-red-600 mt-1">{{ form.errors.medicine }}</p>
+      {% endif %}
     </div>
     <div>
-      <label class="block text-sm mb-1">تعداد</label>
+      <label class="block text-sm mb-1" id="quantity_label">تعداد/حجم</label>
       {{ form.quantity }}
+      {% if form.quantity.help_text %}
+        <p class="text-xs text-gray-500 mt-1">{{ form.quantity.help_text }}</p>
+      {% endif %}
+      {% if form.errors.quantity %}
+        <p class="text-xs text-red-600 mt-1">{{ form.errors.quantity }}</p>
+      {% endif %}
     </div>
     <div class="flex items-center justify-end gap-2">
       <a href="{% url 'emergency_services:visit_detail' visit.id %}" class="px-4 py-2 rounded-md bg-gray-100 text-gray-700">انصراف</a>
@@ -22,4 +31,45 @@
     </div>
   </form>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+  $(function(){
+    // Initialize Select2
+    $('#id_medicine_select').select2({ width: '100%', dir: 'rtl' });
+    
+    // تغییر label و placeholder بر اساس نوع دارو انتخاب شده
+    function updateQuantityLabel() {
+      const medicineId = $('#id_medicine_select').val();
+      if (!medicineId) {
+        $('#quantity_label').text('تعداد/حجم');
+        $('#id_quantity_select').attr('placeholder', '1');
+        return;
+      }
+      
+      // دریافت اطلاعات دارو از طریق AJAX یا از داده‌های موجود
+      // برای سادگی، از داده‌های موجود در select استفاده می‌کنیم
+      const selectedOption = $('#id_medicine_select option:selected');
+      const optionText = selectedOption.text();
+      
+      // بررسی اینکه آیا دارو مایع است (بر اساس متن option که شامل "شیشه" است)
+      if (optionText.includes('شیشه')) {
+        $('#quantity_label').text('حجم (سی‌سی)');
+        $('#id_quantity_select').attr('placeholder', 'مثلاً 50');
+      } else {
+        $('#quantity_label').text('تعداد');
+        $('#id_quantity_select').attr('placeholder', '1');
+      }
+    }
+    
+    // اجرای تابع در بارگذاری اولیه
+    updateQuantityLabel();
+    
+    // اجرای تابع هنگام تغییر دارو
+    $('#id_medicine_select').on('change', updateQuantityLabel);
+  });
+</script>
 {% endblock %}

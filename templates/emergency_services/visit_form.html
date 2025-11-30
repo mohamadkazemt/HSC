@@ -208,7 +208,7 @@
               {% if f.errors.medicine %}<p class="text-xs text-red-600 mt-1">{{ f.errors.medicine }}</p>{% endif %}
             </div>
             <div>
-              <label class="block text-sm font-medium mb-1">تعداد</label>
+              <label class="block text-sm font-medium mb-1 quantity-label" data-index="{{ forloop.counter0 }}">تعداد/حجم</label>
               {{ f.quantity }}
               {% if f.errors.quantity %}<p class="text-xs text-red-600 mt-1">{{ f.errors.quantity }}</p>{% endif %}
             </div>
@@ -229,7 +229,7 @@
             {{ medicine_formset.empty_form.medicine|safe }}
           </div>
           <div>
-            <label class="block text-sm font-medium mb-1">تعداد</label>
+            <label class="block text-sm font-medium mb-1 quantity-label" data-index="__index__">تعداد/حجم</label>
             {{ medicine_formset.empty_form.quantity|safe }}
           </div>
           <div class="flex md:justify-end">
@@ -348,26 +348,51 @@
         // Jalali datetime for known fields and any with class
         const applyJalali = ($el) => {
           try { $el.prop('type','text'); } catch(e) {}
+          
+          // Fix 1: Extract date as string to avoid timezone offset
+          const currentValue = $el.val();
+          let initialValue = false;
+          if (currentValue && currentValue.trim() !== '') {
+            // If value contains datetime, extract date part (YYYY-MM-DD)
+            const dateMatch = currentValue.match(/^(\d{4}-\d{2}-\d{2})/);
+            if (dateMatch) {
+              initialValue = dateMatch[1]; // Use only date part
+            } else {
+              initialValue = currentValue;
+            }
+          }
+          
           $el.persianDatepicker({
             format: 'YYYY/MM/DD HH:mm:ss',
             timePicker: { enabled: true, second: true },
             autoClose: true,
-            calendar: { persian: { locale: 'fa' } },
-            initialValueType: 'persian', // استفاده از persian به عنوان نوع اولیه
-            observer: false, // غیرفعال کردن observer تا خودمان کنترل کنیم
+            calendar: { 
+              persian: { 
+                locale: 'fa',
+                leapYearMode: 'astronomical' // Fix 2: Use astronomical leap year calculation
+              } 
+            },
+            initialValueType: 'gregorian', // Use gregorian for initial value to avoid timezone issues
+            initialValue: initialValue,
+            observer: false,
             onSelect: function(unix) {
               try {
                 if (typeof persianDate !== 'undefined') {
-                  // جبران timezone: getTimezoneOffset() مقدار منفی برمی‌گرداند
-                  // برای ایران (UTC+3:30) مقدار -210 برمی‌گرداند
-                  const timezoneOffsetMs = new Date().getTimezoneOffset() * 60000;
-                  const adjustedUnix = unix + timezoneOffsetMs;
-                  const pd = new persianDate(adjustedUnix);
+                  const dateObj = new Date(unix);
+                  // Use UTC to avoid timezone offset issues
+                  const utcDate = new Date(Date.UTC(
+                    dateObj.getUTCFullYear(),
+                    dateObj.getUTCMonth(),
+                    dateObj.getUTCDate(),
+                    dateObj.getUTCHours(),
+                    dateObj.getUTCMinutes(),
+                    dateObj.getUTCSeconds(),
+                    0
+                  ));
+                  const pd = new persianDate(utcDate);
                   const formatted = pd.toCalendar('persian').format('YYYY/MM/DD HH:mm:ss');
-                  // تنظیم مقدار با استفاده از val و سپس update
                   setTimeout(() => {
                     $el.val(formatted);
-                    // اطمینان از اینکه persianDatepicker مقدار را می‌بیند
                     const picker = $el.data('datepicker');
                     if (picker && typeof picker.update === 'function') {
                       picker.update();
@@ -401,11 +426,46 @@
       },
       refreshSelect2() {
         const opts = { width: '100%', dir: 'rtl' };
-        $(this.container).find('select').each(function(){
-          const $s = $(this);
+        $(this.container).find('select').each((index, el) => {
+          const $s = $(el);
           if ($s.data('select2')) { $s.select2('destroy'); }
           initSelect2WithOptionalAjax($s, opts);
+          
+          // اگر select مربوط به دارو است، event listener برای تغییر label اضافه کن
+          if ($s.attr('name') && $s.attr('name').includes('medicine')) {
+            $s.off('change.medicineLabel').on('change.medicineLabel', () => {
+              this.updateQuantityLabel($s);
+            });
+            // اجرای اولیه برای label
+            this.updateQuantityLabel($s);
+          }
         });
+      },
+      updateQuantityLabel($medicineSelect) {
+        // پیدا کردن row مربوطه
+        const $row = $medicineSelect.closest('[data-index]');
+        const $label = $row.find('.quantity-label');
+        const $quantityInput = $row.find('input[name*="quantity"]');
+        
+        const medicineId = $medicineSelect.val();
+        if (!medicineId) {
+          $label.text('تعداد/حجم');
+          $quantityInput.attr('placeholder', '1');
+          return;
+        }
+        
+        // دریافت متن option انتخاب شده
+        const selectedOption = $medicineSelect.find('option:selected');
+        const optionText = selectedOption.text();
+        
+        // بررسی اینکه آیا دارو مایع است (بر اساس متن option که شامل "شیشه" است)
+        if (optionText.includes('شیشه')) {
+          $label.text('حجم (سی‌سی)');
+          $quantityInput.attr('placeholder', 'مثلاً 50');
+        } else {
+          $label.text('تعداد');
+          $quantityInput.attr('placeholder', '1');
+        }
       },
       addRow() {
         const tmpl = document.getElementById('medicine-empty-template').innerHTML;
@@ -418,6 +478,12 @@
         this.totalInput.value = index + 1;
         this.renumber();
         this.refreshSelect2();
+        // تنظیم label برای row جدید
+        const $newRow = $(node);
+        const $medicineSelect = $newRow.find('select[name*="medicine"]');
+        if ($medicineSelect.length) {
+          this.updateQuantityLabel($medicineSelect);
+        }
       },
       removeRow(ev) {
         const row = ev.target.closest('[data-index]');

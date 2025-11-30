@@ -110,19 +110,37 @@
           $('.jalali-date').each(function(){
             const $el = $(this); try { $el.prop('type','text'); } catch(e) {}
             if (!$el.data('hasJalali')) {
+              // Fix 1: Extract date as string (YYYY-MM-DD) to avoid timezone offset
+              const currentValue = $el.val();
+              let initialValue = false;
+              if (currentValue && currentValue.trim() !== '') {
+                // If value is a date string (YYYY-MM-DD), use it directly
+                // If it's a datetime string, extract only the date part
+                const dateMatch = currentValue.match(/^(\d{4}-\d{2}-\d{2})/);
+                if (dateMatch) {
+                  initialValue = dateMatch[1]; // Use only YYYY-MM-DD part
+                } else {
+                  initialValue = currentValue;
+                }
+              }
+              
               $el.persianDatepicker({ 
                 format:'YYYY/MM/DD', 
                 autoClose:true,
-                calendar: { persian: { locale: 'fa' } },
-                initialValueType: 'persian',
+                calendar: { 
+                  persian: { 
+                    locale: 'fa',
+                    leapYearMode: 'astronomical' // Fix 2: Use astronomical leap year calculation
+                  } 
+                },
+                initialValueType: 'gregorian', // Use gregorian for initial value to avoid timezone issues
+                initialValue: initialValue,
                 observer: false,
                 onSelect: function(unix) {
                   try {
-                    // استفاده از persianDate با unix اما با محاسبه صحیح سال کبیسه
-                    // ایجاد Date object از unix و سپس تبدیل به persianDate با UTC
                     if (typeof persianDate !== 'undefined') {
                       const dateObj = new Date(unix);
-                      // استفاده از UTC برای جلوگیری از مشکل timezone و سال کبیسه
+                      // Use UTC to avoid timezone offset issues
                       const utcDate = new Date(Date.UTC(
                         dateObj.getUTCFullYear(),
                         dateObj.getUTCMonth(),
@@ -150,20 +168,37 @@
           $('.jalali-datetime').each(function(){
             const $el = $(this); try { $el.prop('type','text'); } catch(e) {}
             if (!$el.data('hasJalali')) {
+              // Fix 1: Extract date as string to avoid timezone offset
+              const currentValue = $el.val();
+              let initialValue = false;
+              if (currentValue && currentValue.trim() !== '') {
+                // If value contains datetime, extract date part (YYYY-MM-DD)
+                const dateMatch = currentValue.match(/^(\d{4}-\d{2}-\d{2})/);
+                if (dateMatch) {
+                  initialValue = dateMatch[1]; // Use only date part
+                } else {
+                  initialValue = currentValue;
+                }
+              }
+              
               $el.persianDatepicker({ 
                 format:'YYYY/MM/DD HH:mm:ss', 
                 timePicker:{ enabled:true, second:true }, 
                 autoClose:true,
-                calendar: { persian: { locale: 'fa' } },
-                initialValueType: 'persian',
+                calendar: { 
+                  persian: { 
+                    locale: 'fa',
+                    leapYearMode: 'astronomical' // Fix 2: Use astronomical leap year calculation
+                  } 
+                },
+                initialValueType: 'gregorian', // Use gregorian for initial value
+                initialValue: initialValue,
                 observer: false,
                 onSelect: function(unix) {
                   try {
-                    // استفاده از persianDate با unix اما با محاسبه صحیح سال کبیسه
-                    // ایجاد Date object از unix و سپس تبدیل به persianDate با UTC
                     if (typeof persianDate !== 'undefined') {
                       const dateObj = new Date(unix);
-                      // استفاده از UTC برای جلوگیری از مشکل timezone و سال کبیسه
+                      // Use UTC to avoid timezone offset issues
                       const utcDate = new Date(Date.UTC(
                         dateObj.getUTCFullYear(),
                         dateObj.getUTCMonth(),

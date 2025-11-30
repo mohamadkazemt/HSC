@@ -99,7 +99,7 @@
         <thead class="bg-gray-50 dark:bg-gray-700/50">
           <tr class="text-right">
             <th class="px-4 py-2">دارو</th>
-            <th class="px-4 py-2">تعداد</th>
+            <th class="px-4 py-2">تعداد/حجم</th>
             <th class="px-4 py-2">عملیات</th>
           </tr>
         </thead>
@@ -107,7 +107,9 @@
           {% for u in medicine_usages %}
             <tr>
               <td class="px-4 py-2">{{ u.medicine.name }}</td>
-              <td class="px-4 py-2">{{ u.quantity }}</td>
+              <td class="px-4 py-2">
+                {{ u.quantity }} {% if u.medicine.drug_type == 'Liquid' %}سی‌سی{% else %}عدد{% endif %}
+              </td>
               <td class="px-4 py-2">
                 <div class="inline-flex items-center gap-2">
                   <a href="{% url 'emergency_services:return_medicine' u.id %}" class="p-2 rounded hover:bg-amber-50" title="برگشت">

@@ -22,12 +22,25 @@
         {% if form.errors.category %}<p class="text-xs text-red-600 mt-1">{{ form.errors.category }}</p>{% endif %}
       </div>
       <div>
-        <label class="block text-sm font-medium mb-1">موجودی</label>
+        <label class="block text-sm font-medium mb-1">نوع دارو</label>
+        {{ form.drug_type }}
+        {% if form.errors.drug_type %}<p class="text-xs text-red-600 mt-1">{{ form.errors.drug_type }}</p>{% endif %}
+      </div>
+      <div id="total_unit_volume_container" style="display: none;">
+        <label class="block text-sm font-medium mb-1">حجم کل واحد (سی‌سی) <span class="text-red-500">*</span></label>
+        {{ form.total_unit_volume }}
+        {% if form.total_unit_volume.help_text %}<p class="text-xs text-gray-500 mt-1">{{ form.total_unit_volume.help_text }}</p>{% endif %}
+        {% if form.errors.total_unit_volume %}<p class="text-xs text-red-600 mt-1">{{ form.errors.total_unit_volume }}</p>{% endif %}
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">موجودی فعلی</label>
         {{ form.quantity }}
+        {% if form.errors.quantity %}<p class="text-xs text-red-600 mt-1">{{ form.errors.quantity }}</p>{% endif %}
       </div>
       <div>
         <label class="block text-sm font-medium mb-1">حد بحرانی</label>
         {{ form.critical_threshold }}
+        {% if form.errors.critical_threshold %}<p class="text-xs text-red-600 mt-1">{{ form.errors.critical_threshold }}</p>{% endif %}
       </div>
       <div>
         <label class="block text-sm font-medium mb-1">تاریخ انقضا (جلالی)</label>
@@ -51,13 +64,57 @@
 <script>
   $(function(){
     $('#id_category').addClass('select2').select2({ width: '100%', dir: 'rtl' });
+    
+    // نمایش شرطی فیلد حجم کل واحد برای داروهای مایع
+    function toggleTotalUnitVolume() {
+      const drugType = $('#id_drug_type').val();
+      const $container = $('#total_unit_volume_container');
+      const $field = $('#id_total_unit_volume');
+      
+      if (drugType === 'Liquid') {
+        $container.show();
+        $field.prop('required', true);
+      } else {
+        $container.hide();
+        $field.prop('required', false);
+        $field.val('');
+      }
+    }
+    
+    // اجرای تابع در بارگذاری اولیه
+    toggleTotalUnitVolume();
+    
+    // اجرای تابع هنگام تغییر نوع دارو
+    $('#id_drug_type').on('change', toggleTotalUnitVolume);
+    
     $('.jalali-date').each(function(){
       const $el = $(this);
       try { $el.prop('type','text'); } catch(e) {}
+      
+      // Fix 1: Extract date as string (YYYY-MM-DD) to avoid timezone offset
+      const currentValue = $el.val();
+      let initialValue = false;
+      if (currentValue && currentValue.trim() !== '') {
+        // If value is a date string (YYYY-MM-DD), use it directly
+        const dateMatch = currentValue.match(/^(\d{4}-\d{2}-\d{2})/);
+        if (dateMatch) {
+          initialValue = dateMatch[1]; // Use only YYYY-MM-DD part
+        } else {
+          initialValue = currentValue;
+        }
+      }
+      
       $el.persianDatepicker({ 
         format: 'YYYY/MM/DD', 
         autoClose: true,
-        calendar: { persian: { locale: 'fa' } },
+        calendar: { 
+          persian: { 
+            locale: 'fa',
+            leapYearMode: 'astronomical' // Fix 2: Use astronomical leap year calculation
+          } 
+        },
+        initialValueType: 'gregorian', // Use gregorian for initial value to avoid timezone issues
+        initialValue: initialValue,
         onSelect: function(unix) {
           try {
             const date = new Date(unix);

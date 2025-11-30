@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from accounts.models import UserProfile
 from contractor_management.models import Contractor, Employee
 from django.utils.translation import gettext_lazy as _
+from decimal import Decimal
 
 class MedicineCategory(models.Model):
     """دسته‌بندی دارو"""
@@ -19,11 +20,19 @@ class MedicineCategory(models.Model):
 
 class Medicine(models.Model):
     """مدل دارو"""
+    DRUG_TYPE_CHOICES = [
+        ('Solid', _('جامد (قرص/آمپول)')),
+        ('Liquid', _('مایع (شربت)')),
+    ]
+    
     name = models.CharField(_("نام دارو"), max_length=200)
     category = models.ForeignKey(MedicineCategory, on_delete=models.SET_NULL, null=True, verbose_name=_("دسته‌بندی"))
-    quantity = models.PositiveIntegerField(_("موجودی فعلی"))
+    drug_type = models.CharField(_("نوع دارو"), max_length=10, choices=DRUG_TYPE_CHOICES, default='Solid')
+    quantity = models.DecimalField(_("موجودی فعلی"), max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    total_unit_volume = models.DecimalField(_("حجم کل واحد (سی‌سی)"), max_digits=10, decimal_places=2, null=True, blank=True, 
+                                           help_text=_("برای داروهای مایع: حجم کل یک واحد (مثلاً 100 برای یک شیشه 100 سی‌سی)"))
     expiry_date = models.DateField(_("تاریخ انقضا"))
-    critical_threshold = models.PositiveIntegerField(_("حد بحرانی هشدار"))
+    critical_threshold = models.DecimalField(_("حد بحرانی هشدار"), max_digits=10, decimal_places=2, default=Decimal('0.00'))
     is_active = models.BooleanField(_("فعال"), default=True)
     created_at = models.DateTimeField(_("تاریخ ایجاد"), auto_now_add=True)
     updated_at = models.DateTimeField(_("تاریخ بروزرسانی"), auto_now=True)
@@ -43,8 +52,19 @@ class Medicine(models.Model):
         """بررسی رسیدن به حد بحرانی"""
         return self.quantity <= self.critical_threshold
     
+    def clean(self):
+        """اعتبارسنجی فیلدها"""
+        if self.drug_type == 'Liquid':
+            if not self.total_unit_volume or self.total_unit_volume <= 0:
+                raise ValidationError({
+                    'total_unit_volume': _("برای داروهای مایع، حجم کل واحد (سی‌سی) باید مقدار مثبت داشته باشد.")
+                })
+    
     def save(self, *args, **kwargs):
         """اعمال منطق موجودی و تاریخ انقضا"""
+        # اعتبارسنجی قبل از ذخیره
+        self.full_clean()
+        
         if self.is_expired():
             self.is_active = False
         super().save(*args, **kwargs)
@@ -54,37 +74,43 @@ class Medicine(models.Model):
         from django.contrib.auth.models import User, Group
         
         # دریافت گروه‌های مدیر HSE و مدیر اورژانس
-        hse_group = Group.objects.get(name='مدیر HSE')
-        emergency_group = Group.objects.get(name='مدیر اورژانس')
-        
-        # دریافت کاربران این گروه‌ها
-        hse_managers = User.objects.filter(groups=hse_group)
-        emergency_managers = User.objects.filter(groups=emergency_group)
-        
-        # ترکیب لیست مدیران
-        managers = list(hse_managers) + list(emergency_managers)
-        
-        if self.is_critical():
-            # ارسال نوتیفیکیشن هشدار موجودی به همه مدیران
-            for manager in managers:
-                Notification.objects.create(
-                    user=manager,
-                    title=f"هشدار موجودی دارو",
-                    message=f"موجودی داروی {self.name} به حد بحرانی رسیده است ({self.quantity} عدد)",
-                    notification_type="warning",
-                    is_read=False
-                )
-        
-        if self.is_expired():
-            # ارسال نوتیفیکیشن انقضا به همه مدیران
-            for manager in managers:
-                Notification.objects.create(
-                    user=manager,
-                    title=f"هشدار انقضای دارو",
-                    message=f"داروی {self.name} منقضی شده است",
-                    notification_type="error",
-                    is_read=False
-                )
+        try:
+            hse_group = Group.objects.get(name='مدیر HSE')
+            emergency_group = Group.objects.get(name='مدیر اورژانس')
+            
+            # دریافت کاربران این گروه‌ها
+            hse_managers = User.objects.filter(groups=hse_group)
+            emergency_managers = User.objects.filter(groups=emergency_group)
+            
+            # ترکیب لیست مدیران
+            managers = list(hse_managers) + list(emergency_managers)
+            
+            if self.is_critical():
+                # تعیین واحد نمایش بر اساس نوع دارو
+                unit_display = "سی‌سی" if self.drug_type == 'Liquid' else "عدد"
+                # ارسال نوتیفیکیشن هشدار موجودی به همه مدیران
+                for manager in managers:
+                    Notification.objects.create(
+                        user=manager,
+                        title=f"هشدار موجودی دارو",
+                        message=f"موجودی داروی {self.name} به حد بحرانی رسیده است ({self.quantity} {unit_display})",
+                        notification_type="warning",
+                        is_read=False
+                    )
+            
+            if self.is_expired():
+                # ارسال نوتیفیکیشن انقضا به همه مدیران
+                for manager in managers:
+                    Notification.objects.create(
+                        user=manager,
+                        title=f"هشدار انقضای دارو",
+                        message=f"داروی {self.name} منقضی شده است",
+                        notification_type="error",
+                        is_read=False
+                    )
+        except Group.DoesNotExist:
+            # اگر گروه‌ها وجود نداشتند، از ارسال نوتیفیکیشن صرف‌نظر می‌کنیم
+            pass
 
 
 class MedicalService(models.Model):
@@ -170,7 +196,8 @@ class MedicineUsage(models.Model):
     """استفاده از دارو در ویزیت"""
     visit = models.ForeignKey(MedicalVisit, on_delete=models.CASCADE, related_name="medicine_usages", verbose_name=_("مراجعه"))
     medicine = models.ForeignKey(Medicine, on_delete=models.PROTECT, verbose_name=_("دارو"))
-    quantity = models.PositiveIntegerField(_("تعداد"))
+    quantity = models.DecimalField(_("تعداد/حجم (سی‌سی برای مایعات)"), max_digits=10, decimal_places=2, 
+                                   help_text=_("برای داروهای مایع: مقدار بر اساس سی‌سی وارد شود. برای سایر داروها: تعداد واحد"))
     created_at = models.DateTimeField(_("تاریخ ثبت"), auto_now_add=True)
     
     class Meta:
@@ -178,28 +205,59 @@ class MedicineUsage(models.Model):
         verbose_name_plural = _("استفاده‌های دارو")
     
     def __str__(self):
-        return f"{self.medicine.name} ({self.quantity}) - {self.visit}"
+        unit = "سی‌سی" if self.medicine.drug_type == 'Liquid' else "عدد"
+        return f"{self.medicine.name} ({self.quantity} {unit}) - {self.visit}"
+    
+    def _calculate_deduction_amount(self):
+        """
+        محاسبه مقدار کسر از موجودی بر اساس نوع دارو
+        برای داروهای مایع: مقدار CC را به تعداد شیشه تبدیل می‌کند
+        برای سایر داروها: همان مقدار وارد شده کسر می‌شود
+        """
+        if self.medicine.drug_type == 'Liquid':
+            # برای داروهای مایع: مقدار CC را بر حجم کل واحد تقسیم می‌کنیم
+            if not self.medicine.total_unit_volume or self.medicine.total_unit_volume <= 0:
+                raise ValidationError(_("حجم کل واحد برای این داروی مایع تعریف نشده است."))
+            # محاسبه تعداد شیشه مصرف شده
+            bottles_consumed = Decimal(str(self.quantity)) / Decimal(str(self.medicine.total_unit_volume))
+            return bottles_consumed
+        else:
+            # برای داروهای جامد: همان مقدار وارد شده
+            return Decimal(str(self.quantity))
     
     def save(self, *args, **kwargs):
         """کاهش موجودی دارو پس از ثبت"""
         if not self.pk:  # فقط برای رکوردهای جدید
-            # بررسی موجودی کافی
-            if self.medicine.quantity < self.quantity:
-                raise ValidationError(_("موجودی دارو کافی نیست."))
-            
             # بررسی تاریخ انقضا
             if self.medicine.is_expired():
                 raise ValidationError(_("این دارو منقضی شده است."))
             
+            # محاسبه مقدار کسر از موجودی
+            deduction_amount = self._calculate_deduction_amount()
+            
+            # بررسی موجودی کافی
+            if self.medicine.quantity < deduction_amount:
+                unit = "شیشه" if self.medicine.drug_type == 'Liquid' else "عدد"
+                raise ValidationError(
+                    _("موجودی دارو کافی نیست. موجودی فعلی: %(current)s %(unit)s"),
+                    code='insufficient_stock',
+                    params={
+                        'current': self.medicine.quantity,
+                        'unit': unit
+                    }
+                )
+            
             # کاهش موجودی
-            self.medicine.quantity -= self.quantity
+            self.medicine.quantity -= deduction_amount
             self.medicine.save()
         
         super().save(*args, **kwargs)
     
     def delete(self, *args, **kwargs):
         """افزایش موجودی دارو پس از حذف"""
-        self.medicine.quantity += self.quantity
+        # محاسبه مقدار برگشتی به موجودی
+        return_amount = self._calculate_deduction_amount()
+        self.medicine.quantity += return_amount
         self.medicine.save()
         super().delete(*args, **kwargs)
 
@@ -207,7 +265,8 @@ class MedicineUsage(models.Model):
 class MedicineReturn(models.Model):
     """برگشت دارو به انبار"""
     usage = models.ForeignKey(MedicineUsage, on_delete=models.CASCADE, verbose_name=_("مصرف دارو"))
-    quantity = models.PositiveIntegerField(_("تعداد برگشتی"))
+    quantity = models.DecimalField(_("تعداد/حجم برگشتی (سی‌سی برای مایعات)"), max_digits=10, decimal_places=2,
+                                   help_text=_("برای داروهای مایع: مقدار بر اساس سی‌سی وارد شود. برای سایر داروها: تعداد واحد"))
     return_reason = models.TextField(_("دلیل برگشت"))
     returned_by = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True, verbose_name=_("برگشت دهنده"))
     created_at = models.DateTimeField(_("تاریخ ثبت"), auto_now_add=True)
@@ -217,19 +276,49 @@ class MedicineReturn(models.Model):
         verbose_name_plural = _("برگشت‌های دارو")
     
     def __str__(self):
-        return f"برگشت {self.quantity} عدد {self.usage.medicine.name}"
+        unit = "سی‌سی" if self.usage.medicine.drug_type == 'Liquid' else "عدد"
+        return f"برگشت {self.quantity} {unit} {self.usage.medicine.name}"
+    
+    def _calculate_return_amount(self):
+        """
+        محاسبه مقدار برگشتی به موجودی بر اساس نوع دارو
+        برای داروهای مایع: مقدار CC را به تعداد شیشه تبدیل می‌کند
+        برای سایر داروها: همان مقدار وارد شده اضافه می‌شود
+        """
+        if self.usage.medicine.drug_type == 'Liquid':
+            # برای داروهای مایع: مقدار CC را بر حجم کل واحد تقسیم می‌کنیم
+            if not self.usage.medicine.total_unit_volume or self.usage.medicine.total_unit_volume <= 0:
+                raise ValidationError(_("حجم کل واحد برای این داروی مایع تعریف نشده است."))
+            # محاسبه تعداد شیشه برگشتی
+            bottles_returned = Decimal(str(self.quantity)) / Decimal(str(self.usage.medicine.total_unit_volume))
+            return bottles_returned
+        else:
+            # برای داروهای جامد: همان مقدار وارد شده
+            return Decimal(str(self.quantity))
     
     def clean(self):
         """اعتبارسنجی تعداد برگشتی"""
         if self.quantity > self.usage.quantity:
-            raise ValidationError(_("تعداد برگشتی نمی‌تواند از تعداد مصرف شده بیشتر باشد."))
+            unit = "سی‌سی" if self.usage.medicine.drug_type == 'Liquid' else "عدد"
+            raise ValidationError(
+                _("تعداد/حجم برگشتی نمی‌تواند از تعداد/حجم مصرف شده (%(used)s %(unit)s) بیشتر باشد."),
+                code='invalid',
+                params={
+                    'used': self.usage.quantity,
+                    'unit': unit
+                }
+            )
     
     def save(self, *args, **kwargs):
         """افزایش موجودی دارو پس از برگشت"""
         if not self.pk:  # فقط برای رکوردهای جدید
             self.clean()
+            
+            # محاسبه مقدار برگشتی به موجودی
+            return_amount = self._calculate_return_amount()
+            
             # افزایش موجودی
-            self.usage.medicine.quantity += self.quantity
+            self.usage.medicine.quantity += return_amount
             self.usage.medicine.save()
             
             # بروزرسانی مصرف

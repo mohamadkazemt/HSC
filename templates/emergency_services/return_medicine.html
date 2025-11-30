@@ -9,10 +9,13 @@
   <form method="post" class="p-4 space-y-4">
     {% csrf_token %}
     <div>
-      <label class="block text-sm mb-1">تعداد برگشتی</label>
+      <label class="block text-sm mb-1" id="quantity_label">تعداد/حجم برگشتی</label>
       {{ form.quantity }}
-      {% if form.fields.quantity.help_text %}
-        <p class="text-xs text-gray-500 mt-1">{{ form.fields.quantity.help_text }}</p>
+      {% if form.quantity.help_text %}
+        <p class="text-xs text-gray-500 mt-1">{{ form.quantity.help_text }}</p>
+      {% endif %}
+      {% if form.errors.quantity %}
+        <p class="text-xs text-red-600 mt-1">{{ form.errors.quantity }}</p>
       {% endif %}
     </div>
     <div>
@@ -25,4 +28,17 @@
     </div>
   </form>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  $(function(){
+    // تغییر label بر اساس نوع دارو
+    {% if usage.medicine.drug_type == 'Liquid' %}
+      $('#quantity_label').text('حجم برگشتی (سی‌سی)');
+    {% else %}
+      $('#quantity_label').text('تعداد برگشتی');
+    {% endif %}
+  });
+</script>
 {% endblock %}
