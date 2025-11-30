@@ -217,13 +217,13 @@ def dashboard(request):
     try:
         if request.user.is_superuser:
             stats['total_anomalies'] = Anomaly.objects.count()
-            stats['completed_anomalies'] = Anomaly.objects.filter(status='completed').count()
-            stats['in_progress_anomalies'] = Anomaly.objects.filter(status='in_progress').count()
+            stats['completed_anomalies'] = Anomaly.objects.filter(action=True).count()
+            stats['in_progress_anomalies'] = Anomaly.objects.filter(action=False).count()
         else:
             user_anomalies = Anomaly.objects.filter(created_by__user=request.user)
             stats['total_anomalies'] = user_anomalies.count()
-            stats['completed_anomalies'] = user_anomalies.filter(status='completed').count()
-            stats['in_progress_anomalies'] = user_anomalies.filter(status='in_progress').count()
+            stats['completed_anomalies'] = user_anomalies.filter(action=True).count()
+            stats['in_progress_anomalies'] = user_anomalies.filter(action=False).count()
     except Exception as e:
         print(f"Error in anomalies stats: {e}")
         pass
