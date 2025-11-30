@@ -12,7 +12,7 @@
     <div class="rounded-lg shadow-lg bg-white flex flex-col items-center p-6 border-t-4 border-yellow-400">
       <i class="fa fa-tools text-yellow-400 text-4xl mb-2"></i>
       <div class="text-lg font-bold text-yellow-700">نیازمند سرویس</div>
-      <div class="text-2xl font-extrabold">{{ status_counts.maintenance }}</div>
+      <div class="text-2xl font-extrabold">{{ status_counts.needs_maintenance }}</div>
     </div>
     <!-- Expired -->
     <div class="rounded-lg shadow-lg bg-white flex flex-col items-center p-6 border-t-4 border-red-500">
@@ -40,7 +40,11 @@
         <span class="font-bold text-gray-700">{{ service.extinguisher_tag }}</span>
         <span class="text-sm text-gray-500">{{ service.service_type }}</span>
         <span class="text-sm text-red-600 font-semibold">{{ service.days_remaining }} روز باقی مانده</span>
+        {% if service.extinguisher_id %}
         <a href="{% url 'fire_extinguisher_management:extinguisher_detail' service.extinguisher_id %}" class="text-blue-600 hover:underline">جزئیات</a>
+        {% else %}
+        <span class="text-gray-400">جزئیات</span>
+        {% endif %}
       </li>
       {% empty %}
       <li class="text-gray-400">هیچ سرویس فوری وجود ندارد.</li>
@@ -62,8 +66,12 @@
             <i class="fa fa-wrench text-blue-600"></i>
           </div>
           <div class="ml-4">
-            <div class="font-bold text-gray-700">{{ activity.service_type }}</div>
-            <div class="text-sm text-gray-500">کپسول: {{ activity.extinguisher_tag }} | سرویس‌دهنده: {{ activity.provider_name }}</div>
+            <div class="font-bold text-gray-700">{{ activity.get_service_type_display }}</div>
+            <div class="text-sm text-gray-500">
+              کپسول: {{ activity.extinguisher.serial_tag }} | 
+              سرویس‌دهنده: {% if activity.performed_by_user %}{{ activity.performed_by_user.get_full_name|default:activity.performed_by_user.username }}{% else %}{{ activity.performed_by_external|default:"نامشخص" }}{% endif %} | 
+              تاریخ: {{ activity.service_date|date:"Y/m/d" }}
+            </div>
           </div>
         </li>
         {% empty %}

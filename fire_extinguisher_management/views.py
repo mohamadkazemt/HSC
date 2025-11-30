@@ -35,18 +35,41 @@ def extinguisher_create_ajax(request):
 def dashboard(request):
     # Get counts for different statuses
     status_counts = {
-        'operational': FireExtinguisher.objects.filter(status='OPERATIONAL').count(),
-        'needs_maintenance': FireExtinguisher.objects.filter(status='NEEDS_MAINTENANCE').count(),
-        'expired': FireExtinguisher.objects.filter(status='EXPIRED').count(),
-        'reserved': FireExtinguisher.objects.filter(status='RESERVED').count(),
+        'operational': FireExtinguisher.objects.filter(status='operational').count(),
+        'needs_maintenance': FireExtinguisher.objects.filter(status='needs_maintenance').count(),
+        'expired': FireExtinguisher.objects.filter(status='expired').count(),
+        'reserved': FireExtinguisher.objects.filter(status='reserved').count(),
     }
 
     # Get upcoming service dates
     today = timezone.now().date()
-    upcoming_services = FireExtinguisher.objects.filter(
+    upcoming_extinguishers = FireExtinguisher.objects.filter(
         Q(next_scheduled_service_date__lte=today + timedelta(days=30)) |
         Q(pressure_test_due_date__lte=today + timedelta(days=30))
     ).select_related('extinguisher_type')
+    
+    # Prepare upcoming services data with calculated fields
+    upcoming_services = []
+    for extinguisher in upcoming_extinguishers:
+        # Calculate days remaining for next service
+        days_remaining = None
+        service_type = None
+        
+        if extinguisher.next_scheduled_service_date:
+            days_remaining = (extinguisher.next_scheduled_service_date - today).days
+            service_type = 'سرویس دوره‌ای'
+        elif extinguisher.pressure_test_due_date:
+            days_remaining = (extinguisher.pressure_test_due_date - today).days
+            service_type = 'تست فشار'
+        
+        if days_remaining is not None:
+            upcoming_services.append({
+                'extinguisher': extinguisher,
+                'extinguisher_tag': extinguisher.serial_tag,
+                'extinguisher_id': extinguisher.pk,
+                'service_type': service_type,
+                'days_remaining': days_remaining,
+            })
 
     # Get recent service records
     recent_services = ServiceRecord.objects.select_related(
