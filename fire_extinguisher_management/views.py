@@ -403,6 +403,7 @@ def download_excel_template(request):
         'نوع مکان (section یا machine)*',
         'نام بخش',
         'نام دستگاه',
+        'تاریخ آخرین شارژ (۱۴۰۳/۱۰/۲۵)',
         'توضیحات'
     ]
     
@@ -434,6 +435,7 @@ def download_excel_template(request):
             'section',
             'انبار مواد',
             '',
+            '۱۴۰۳/۰۹/۱۵',
             'کپسول نمونه'
         ],
         [
@@ -451,6 +453,7 @@ def download_excel_template(request):
             'machine',
             '',
             'بیل مکانیکی 01',
+            '',
             ''
         ]
     ]
@@ -554,7 +557,8 @@ def import_excel(request):
                         location_type = str(row[11]).strip() if row[11] else None
                         section_name = str(row[12]).strip() if row[12] else None
                         machine_name = str(row[13]).strip() if row[13] else None
-                        notes = str(row[14]).strip() if row[14] else ""
+                        last_charge_date = row[14] if len(row) > 14 else None
+                        notes = str(row[15]).strip() if len(row) > 15 and row[15] else ""
                         
                         # Validate required fields
                         if not all([serial_tag, type_name, manufacturer, model_number, 
@@ -635,6 +639,7 @@ def import_excel(request):
                         purchase_date = parse_date(purchase_date)
                         manufacture_date = parse_date(manufacture_date)
                         commission_date = parse_date(commission_date)
+                        last_charge_date_parsed = parse_date(last_charge_date) if last_charge_date else None
                         
                         if not purchase_date or not commission_date:
                             errors.append(f"ردیف {row_num}: فرمت تاریخ نامعتبر است")
@@ -671,7 +676,7 @@ def import_excel(request):
                             continue
                         
                         # Create extinguisher
-                        FireExtinguisher.objects.create(
+                        extinguisher = FireExtinguisher.objects.create(
                             serial_tag=serial_tag,
                             extinguisher_type=ext_type,
                             manufacturer=manufacturer,
@@ -686,8 +691,10 @@ def import_excel(request):
                             location_type=location_type,
                             location_section=location_section,
                             location_machine=location_machine,
+                            last_charge_date=last_charge_date_parsed,
                             notes=notes
                         )
+                        # next_charge_date به صورت خودکار در متد save محاسبه می‌شود
                         success_count += 1
                         
                     except Exception as e:
@@ -783,7 +790,8 @@ def import_excel_ajax(request):
                 location_type = str(row[11]).strip() if row[11] else None
                 section_name = str(row[12]).strip() if row[12] else None
                 machine_name = str(row[13]).strip() if row[13] else None
-                notes = str(row[14]).strip() if row[14] else ""
+                last_charge_date = row[14] if len(row) > 14 else None
+                notes = str(row[15]).strip() if len(row) > 15 and row[15] else ""
                 
                 # Validate required fields
                 if not all([serial_tag, type_name, manufacturer, model_number, 
@@ -873,6 +881,7 @@ def import_excel_ajax(request):
                 purchase_date = parse_date(purchase_date)
                 manufacture_date = parse_date(manufacture_date)
                 commission_date = parse_date(commission_date)
+                last_charge_date_parsed = parse_date(last_charge_date) if last_charge_date else None
                 
                 if not purchase_date or not commission_date:
                     errors.append(f"ردیف {row_num}: فرمت تاریخ نامعتبر است")
@@ -909,7 +918,7 @@ def import_excel_ajax(request):
                     continue
                 
                 # Create extinguisher
-                FireExtinguisher.objects.create(
+                extinguisher = FireExtinguisher.objects.create(
                     serial_tag=serial_tag,
                     extinguisher_type=ext_type,
                     manufacturer=manufacturer,
@@ -924,8 +933,10 @@ def import_excel_ajax(request):
                     location_type=location_type,
                     location_section=location_section,
                     location_machine=location_machine,
+                    last_charge_date=last_charge_date_parsed,
                     notes=notes
                 )
+                # next_charge_date به صورت خودکار در متد save محاسبه می‌شود
                 success_count += 1
                 
             except Exception as e:
