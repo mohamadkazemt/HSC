@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% load checklist_filters %}
+{% block title %}مدیریت برنامه‌های زمان‌بندی چک‌لیست{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-xl font-bold">مدیریت برنامه‌های زمان‌بندی چک‌لیست</h1>
+    <a href="{% url 'checklist_app:schedule_checklist_form' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 shadow">
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+      </svg>
+      ایجاد برنامه جدید
+    </a>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-md p-4">
+    <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+      <select name="checklist_type" class="rounded-md border border-gray-300 px-3 py-2">
+        <option value="">همه انواع چک‌لیست</option>
+        {% for k, v in checklist_type_choices %}
+        <option value="{{ k }}" {% if current_filters.checklist_type == k %}selected{% endif %}>{{ v }}</option>
+        {% endfor %}
+      </select>
+      <select name="schedule_type" class="rounded-md border border-gray-300 px-3 py-2">
+        <option value="">همه انواع برنامه‌ریزی</option>
+        {% for k, v in schedule_type_choices %}
+        <option value="{{ k }}" {% if current_filters.schedule_type == k %}selected{% endif %}>{{ v }}</option>
+        {% endfor %}
+      </select>
+      <select name="is_active" class="rounded-md border border-gray-300 px-3 py-2">
+        <option value="">همه وضعیت‌ها</option>
+        <option value="true" {% if current_filters.is_active == 'true' %}selected{% endif %}>فعال</option>
+        <option value="false" {% if current_filters.is_active == 'false' %}selected{% endif %}>غیرفعال</option>
+      </select>
+      <div class="flex gap-2">
+        <button type="submit" class="flex-1 px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">
+          فیلتر
+        </button>
+        <a href="?" class="px-4 py-2 rounded-md border hover:bg-gray-50">
+          پاک‌سازی
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Schedules List -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-md overflow-hidden">
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+        <tr>
+          <th class="p-3 text-right">نام برنامه</th>
+          <th class="p-3 text-right">نوع چک‌لیست</th>
+          <th class="p-3 text-right">نوع برنامه‌ریزی</th>
+          <th class="p-3 text-right">هدف</th>
+          <th class="p-3 text-right">تنظیمات</th>
+          <th class="p-3 text-right">وضعیت</th>
+          <th class="p-3 text-right">تاریخ ایجاد</th>
+          <th class="p-3 text-center">اقدامات</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+        {% for schedule in schedules %}
+        <tr>
+          <td class="p-3 font-medium">{{ schedule.name }}</td>
+          <td class="p-3">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs">
+              {{ schedule.get_checklist_type_display }}
+            </span>
+          </td>
+          <td class="p-3">
+            <span class="text-gray-600 dark:text-gray-400">{{ schedule.get_schedule_type_display }}</span>
+          </td>
+          <td class="p-3">
+            {% if schedule.target_machine %}
+              {{ schedule.target_machine.workshop_code }}
+            {% elif schedule.target_location_section %}
+              {{ schedule.target_location_section.section }}
+            {% elif schedule.target_contractor_vehicle %}
+              {{ schedule.target_contractor_vehicle.plate_number }}
+            {% else %}
+              <span class="text-gray-400">—</span>
+            {% endif %}
+          </td>
+          <td class="p-3 text-xs text-gray-600 dark:text-gray-400">
+            {% if schedule.schedule_type == 'monthly_days' %}
+              روزهای: {{ schedule.monthly_days|join:", " }}
+            {% elif schedule.schedule_type == 'specific_dates' %}
+              {{ schedule.specific_dates|length }} تاریخ مشخص
+            {% elif schedule.schedule_type == 'weekly' %}
+              هفتگی
+            {% endif %}
+          </td>
+          <td class="p-3">
+            {% if schedule.is_active %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs">فعال</span>
+            {% else %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-gray-50 text-gray-700 text-xs">غیرفعال</span>
+            {% endif %}
+          </td>
+          <td class="p-3">{{ schedule.created_at|to_jalali }}</td>
+          <td class="p-3 text-center">
+            <div class="flex items-center justify-center gap-2">
+              <a href="{% url 'checklist_app:schedule_checklist_edit' schedule.id %}" 
+                 class="inline-flex items-center justify-center h-9 w-9 rounded-md bg-indigo-600/90 text-white hover:bg-indigo-700 shadow" 
+                 title="ویرایش">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"/>
+                </svg>
+              </a>
+              <button onclick="toggleActive({{ schedule.id }}, {{ schedule.is_active|yesno:'false,true' }})" 
+                      class="inline-flex items-center justify-center h-9 w-9 rounded-md {% if schedule.is_active %}bg-yellow-600/90{% else %}bg-emerald-600/90{% endif %} text-white hover:opacity-80 shadow" 
+                      title="{% if schedule.is_active %}غیرفعال{% else %}فعال{% endif %}">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  {% if schedule.is_active %}
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636"/>
+                  {% else %}
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                  {% endif %}
+                </svg>
+              </button>
+              <button onclick="deleteSchedule({{ schedule.id }}, '{{ schedule.name }}')" 
+                      class="inline-flex items-center justify-center h-9 w-9 rounded-md bg-red-600/90 text-white hover:bg-red-700 shadow" 
+                      title="حذف">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/>
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="p-6 text-center text-gray-500">هیچ برنامه زمان‌بندی‌ای یافت نشد.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+function getCSRF() {
+  return (document.cookie.match(/csrftoken=([^;]+)/) || [])[1];
+}
+
+function toggleActive(scheduleId, currentStatus) {
+  if (!confirm('آیا مطمئن هستید که می‌خواهید وضعیت این برنامه را تغییر دهید؟')) {
+    return;
+  }
+  
+  fetch('{% url "checklist_app:schedule_checklist_toggle_active" %}', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCSRF()
+    },
+    body: JSON.stringify({ schedule_id: scheduleId })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.status === 'success') {
+      alert(data.message);
+      location.reload();
+    } else {
+      alert('خطا: ' + data.message);
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('خطا در ارتباط با سرور');
+  });
+}
+
+function deleteSchedule(scheduleId, scheduleName) {
+  if (!confirm(`آیا مطمئن هستید که می‌خواهید برنامه "${scheduleName}" را حذف کنید؟\n\nتوجه: این عمل غیرقابل بازگشت است.`)) {
+    return;
+  }
+  
+  fetch('{% url "checklist_app:schedule_checklist_delete" %}', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCSRF()
+    },
+    body: JSON.stringify({ schedule_id: scheduleId })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.status === 'success') {
+      alert(data.message);
+      location.reload();
+    } else {
+      alert('خطا: ' + data.message);
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('خطا در ارتباط با سرور');
+  });
+}
+</script>
+{% endblock %}
+

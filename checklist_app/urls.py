@@ -87,6 +87,54 @@ URLS_WITH_LABELS = [
         "view": views.import_questions_view,
         "name": "import_questions",
         "label": "چک لیست_ایمپورت سوالات"
+    },
+    {
+        "path": "pending-scheduled/",
+        "view": views.pending_scheduled_checklists_view,
+        "name": "pending_scheduled_checklists",
+        "label": "چک لیست_چک لیست‌های برنامه‌ریزی شده در انتظار"
+    },
+    {
+        "path": "api/pending-tasks/",
+        "view": views.get_pending_tasks_api,
+        "name": "get_pending_tasks_api",
+        "label": "چک لیست_API چک لیست‌های در انتظار"
+    },
+    {
+        "path": "upcoming-scheduled/",
+        "view": views.upcoming_scheduled_checklists_view,
+        "name": "upcoming_scheduled_checklists",
+        "label": "چک لیست_چک لیست‌های برنامه‌ریزی شده آینده"
+    },
+    {
+        "path": "schedules/",
+        "view": views.schedule_checklist_list_view,
+        "name": "schedule_checklist_list",
+        "label": "چک لیست_لیست برنامه‌های زمان‌بندی"
+    },
+    {
+        "path": "schedules/add/",
+        "view": views.schedule_checklist_form_view,
+        "name": "schedule_checklist_form",
+        "label": "چک لیست_ایجاد برنامه زمان‌بندی"
+    },
+    {
+        "path": "schedules/edit/<int:pk>/",
+        "view": views.schedule_checklist_form_view,
+        "name": "schedule_checklist_edit",
+        "label": "چک لیست_ویرایش برنامه زمان‌بندی"
+    },
+    {
+        "path": "schedules/delete/",
+        "view": views.schedule_checklist_delete_view,
+        "name": "schedule_checklist_delete",
+        "label": "چک لیست_حذف برنامه زمان‌بندی"
+    },
+    {
+        "path": "schedules/toggle-active/",
+        "view": views.schedule_checklist_toggle_active_view,
+        "name": "schedule_checklist_toggle_active",
+        "label": "چک لیست_فعال/غیرفعال کردن برنامه زمان‌بندی"
     }
 ]
 

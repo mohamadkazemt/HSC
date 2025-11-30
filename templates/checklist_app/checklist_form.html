@@ -12,6 +12,44 @@
 {% endblock %}
 {% block content %}
 <div x-data="generalChecklist()" x-init="init()" class="space-y-6">
+  <!-- Scheduled Instance Info -->
+  {% if scheduled_instance %}
+  <div class="rounded-lg border bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800 shadow-md">
+    <div class="p-4">
+      <div class="flex items-start gap-3">
+        <svg class="w-6 h-6 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/>
+        </svg>
+        <div class="flex-1">
+          <h3 class="font-semibold text-indigo-900 dark:text-indigo-100 mb-1">چک‌لیست برنامه‌ریزی شده</h3>
+          <p class="text-sm text-indigo-700 dark:text-indigo-300 mb-2">{{ scheduled_instance.schedule.name }} - موعد: {{ scheduled_instance.due_date|to_jalali }}</p>
+          <p class="text-xs text-indigo-600 dark:text-indigo-400">این چک‌لیست از برنامه زمان‌بندی شده ایجاد شده است.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Pending Scheduled Checklists Alert -->
+  {% if pending_instances and not scheduled_instance %}
+  <div class="rounded-lg border bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 shadow-md">
+    <div class="p-4">
+      <div class="flex items-start gap-3">
+        <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/>
+        </svg>
+        <div class="flex-1">
+          <h3 class="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">شما {{ pending_instances|length }} چک‌لیست برنامه‌ریزی شده در انتظار دارید</h3>
+          <p class="text-sm text-yellow-700 dark:text-yellow-300 mb-2">این چک‌لیست‌ها باید قبل از ثبت گزارش روزانه تکمیل شوند.</p>
+          <a href="{% url 'checklist_app:pending_scheduled_checklists' %}" class="text-sm text-yellow-800 dark:text-yellow-200 underline hover:text-yellow-900 dark:hover:text-yellow-100">
+            مشاهده چک‌لیست‌های در انتظار →
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
   <!-- Step 1: setup -->
   <div class="rounded-lg border bg-white dark:bg-gray-800 dark:border-gray-700 shadow-md">
     <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-100 dark:border-gray-700">
@@ -46,6 +84,20 @@
               <option value="{{ m.id }}">{{ m.workshop_code }} - {{ m.machine_type.name }}</option>
               {% endfor %}
             </select>
+            <!-- Machine Status Selection -->
+            <div x-show="form.checklist_type==='machine' && form.machine_id" class="mt-3">
+              <span class="block text-sm font-medium mb-2">وضعیت ماشین</span>
+              <div class="flex gap-3">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" x-model="form.machine_status" value="healthy" class="w-4 h-4 text-indigo-600">
+                  <span class="text-sm">سالم</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" x-model="form.machine_status" value="broken" class="w-4 h-4 text-indigo-600">
+                  <span class="text-sm">خراب/در حال تعمیر</span>
+                </label>
+              </div>
+            </div>
           </div>
           <div x-show="form.checklist_type==='location'">
             <select x-ref="location" x-model="form.location_section_id" :required="form.checklist_type==='location'" class="w-full rounded border border-gray-300 p-2">
@@ -141,11 +193,32 @@
   function getCSRF(){ return (document.cookie.match(/csrftoken=([^;]+)/)||[])[1]; }
   function generalChecklist(){
     return {
-      form:{ checklist_type:'machine', machine_id:'', location_section_id:'', vehicle_id:'', shift:'{% firstof shift_choices.0.0 'day' %}' },
+      form:{ 
+        checklist_type:'machine', 
+        machine_id:'', 
+        location_section_id:'', 
+        vehicle_id:'', 
+        shift:'{% firstof shift_choices.0.0 'day' %}', 
+        machine_status:'', 
+        scheduled_instance_id:'{% if scheduled_instance %}{{ scheduled_instance.id }}{% endif %}' 
+      },
       questions:[],
       checklist_id:null,
+      machine_broken:false,
       modal:{ open:false, unacceptable:[], users:[], followup_id:'' },
       init(){
+        // اگر scheduled_instance وجود دارد، فرم را با اطلاعات آن پر می‌کنیم
+        {% if scheduled_instance %}
+        this.form.checklist_type = '{{ scheduled_instance.schedule.checklist_type }}';
+        {% if scheduled_instance.schedule.target_machine %}
+        this.form.machine_id = '{{ scheduled_instance.schedule.target_machine.id }}';
+        {% elif scheduled_instance.schedule.target_location_section %}
+        this.form.location_section_id = '{{ scheduled_instance.schedule.target_location_section.id }}';
+        {% elif scheduled_instance.schedule.target_contractor_vehicle %}
+        this.form.vehicle_id = '{{ scheduled_instance.schedule.target_contractor_vehicle.id }}';
+        {% endif %}
+        {% endif %}
+
         // راه‌اندازی Select2 برای شیفت
         this.$nextTick(() => {
           if(this.$refs.shift && !$(this.$refs.shift).hasClass('select2-hidden-accessible')) {
@@ -164,8 +237,10 @@
         
         // نظارت بر تغییر نوع چک‌لیست
         this.$watch('form.checklist_type', (val)=>{
-          // پاک‌سازی مقادیر غیرمرتبط
+          // پاک‌سازی مقادیر غیرمرتبط (مگر اینکه scheduled_instance باشد)
+          {% if not scheduled_instance %}
           this.form.machine_id=''; this.form.location_section_id=''; this.form.vehicle_id='';
+          {% endif %}
           // راه‌اندازی مجدد فقط برای سلکت مرتبط
           this.initDynamicSelect();
         });
@@ -215,6 +290,7 @@
       async start(){
         // اعتبارسنجی بر اساس نوع چک‌لیست
         if(this.form.checklist_type==='machine' && !this.form.machine_id){ alert('لطفاً ماشین را انتخاب کنید'); return; }
+        if(this.form.checklist_type==='machine' && !this.form.machine_status){ alert('لطفاً وضعیت ماشین را انتخاب کنید'); return; }
         if(this.form.checklist_type==='location' && !this.form.location_section_id){ alert('لطفاً بخش مکانی را انتخاب کنید'); return; }
         if(this.form.checklist_type==='contractor_vehicle' && !this.form.vehicle_id){ alert('لطفاً خودرو پیمانکار را انتخاب کنید'); return; }
         // fetch questions
@@ -223,16 +299,29 @@
           body: JSON.stringify(this.form)
         });
         const data = await res.json();
-        this.questions = data.questions.map(q=>({ ...q, answer_text:'', selected_option:'', description:'' }));
-        // scroll to questions
-        setTimeout(()=>window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'}),50);
+        
+        // اگر ماشین خراب است، سوالات نمایش داده نمی‌شوند
+        if(data.machine_broken){
+          this.questions = [];
+          this.machine_broken = true;
+          alert('ماشین در حال تعمیر است. چک‌لیست با وضعیت "خراب" ثبت می‌شود.');
+          // scroll to submit button
+          setTimeout(()=>window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'}),50);
+        } else {
+          this.questions = data.questions.map(q=>({ ...q, answer_text:'', selected_option:'', description:'' }));
+          this.machine_broken = false;
+          // scroll to questions
+          setTimeout(()=>window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'}),50);
+        }
       },
       setOption(id, opt){ const q=this.questions.find(q=>q.id===id); if(q){ q.selected_option=opt; } },
       setText(id, val){ const q=this.questions.find(q=>q.id===id); if(q){ q.answer_text=val; } },
       setDesc(id, val){ const q=this.questions.find(q=>q.id===id); if(q){ q.description=val; } },
       async finalize(){
         try {
-          const payload={...this.form, answers: this.questions.map(q=>({ question_id:q.id, answer_text:q.answer_text, selected_option:q.selected_option, description:q.description })) };
+          // اگر ماشین خراب است، نیازی به پاسخ نیست
+          const answers = this.machine_broken ? [] : this.questions.map(q=>({ question_id:q.id, answer_text:q.answer_text, selected_option:q.selected_option, description:q.description }));
+          const payload={...this.form, answers: answers };
           console.log('Sending payload:', payload);
           
           const res = await fetch('{% url "checklist_app:submit_general_checklist" %}',{ 

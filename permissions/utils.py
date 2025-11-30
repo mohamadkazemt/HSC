@@ -207,6 +207,10 @@ def permission_required(view_name):
     def decorator(view_func):
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
+            # اگر کاربر superuser باشد، اجازه دسترسی بده
+            if request.user.is_superuser:
+                return view_func(request, *args, **kwargs)
+            
             permissions = check_permission(request.user, view_name)
             if not any(permissions.values()):  # اگر هیچ دسترسی وجود نداشت
                 raise PermissionDenied("شما اجازه دسترسی به این بخش را ندارید.")

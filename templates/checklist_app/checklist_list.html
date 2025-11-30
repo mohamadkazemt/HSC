@@ -107,6 +107,7 @@
           <th class="p-3 text-right">تاریخ (جلالی)</th>
           <th class="p-3 text-right">نوع</th>
           <th class="p-3 text-right">مورد</th>
+          <th class="p-3 text-right">وضعیت ماشین</th>
           <th class="p-3 text-right">شیفت</th>
           <th class="p-3 text-right">گروه</th>
           <th class="p-3 text-center">اقدامات</th>
@@ -137,6 +138,19 @@
           <td class="p-3">
             {% if c.checklist_type == 'machine' %}{{ c.machine.workshop_code }}{% elif c.checklist_type == 'location' %}{{ c.location_section.section }}{% else %}{{ c.contractor_vehicle.plate_number }}{% endif %}
           </td>
+          <td class="p-3">
+            {% if c.checklist_type == 'machine' %}
+              {% if c.machine_status == 'healthy' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs">سالم</span>
+              {% elif c.machine_status == 'broken' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full bg-red-50 text-red-700 text-xs">خراب</span>
+              {% else %}
+                <span class="text-gray-400">—</span>
+              {% endif %}
+            {% else %}
+              <span class="text-gray-400">—</span>
+            {% endif %}
+          </td>
           <td class="p-3">{{ c.get_shift_display }}</td>
           <td class="p-3">{{ c.shift_group }}</td>
           <td class="p-3 text-center">
@@ -146,7 +160,7 @@
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" class="p-6 text-center text-gray-500">موردی یافت نشد.</td></tr>
+        <tr><td colspan="8" class="p-6 text-center text-gray-500">موردی یافت نشد.</td></tr>
         {% endfor %}
       </tbody>
     </table>

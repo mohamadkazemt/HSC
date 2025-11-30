@@ -17,6 +17,7 @@ from BaseInfo.models import MiningBlock, MiningMachine, Dump
 from django.views.generic import TemplateView, DetailView
 from django.urls import path
 from shift_manager.utils import get_current_shift_and_group
+from checklist_app.services import check_pending_tasks
 import logging
 from django.views.generic import ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -84,6 +85,25 @@ class CreateDailyReportView(APIView):
             if not current_shift or not current_group:
                 return Response(
                     {"error": "شیفت یا گروه کاری جاری شناسایی نشد."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            
+            # بررسی وجود چک‌لیست‌های برنامه‌ریزی شده در انتظار
+            has_pending, pending_list, error_message = check_pending_tasks(request.user)
+            if has_pending:
+                return Response(
+                    {
+                        "error": "قبل از ثبت گزارش روزانه، باید چک‌لیست‌های برنامه‌ریزی شده تکمیل شوند.",
+                        "pending_tasks": [
+                            {
+                                "schedule_name": inst.schedule.name,
+                                "due_date": inst.due_date.strftime('%Y-%m-%d'),
+                                "checklist_type": inst.schedule.get_checklist_type_display(),
+                            }
+                            for inst in pending_list
+                        ],
+                        "error_message": error_message
+                    },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -259,6 +279,12 @@ class DailyReportFormView(LoginRequiredMixin, TemplateView):
         current_shift, current_group = get_current_shift_and_group(self.request.user)
         context['current_shift'] = current_shift
         context['current_group'] = current_group
+        
+        # بررسی وجود چک‌لیست‌های برنامه‌ریزی شده در انتظار
+        has_pending, pending_list, error_message = check_pending_tasks(self.request.user)
+        context['has_pending_checklists'] = has_pending
+        context['pending_checklists'] = pending_list
+        context['pending_checklists_error'] = error_message
 
         # فیلتر کردن MiningMachine ها بر اساس اسم گروه کاری (با در نظر گرفتن هر دو مسیر تنظیم گروه کاری)
         drilling_machines = (

@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% load checklist_filters %}
+{% block title %}چک‌لیست‌های برنامه‌ریزی شده آینده{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-bold">چک‌لیست‌های برنامه‌ریزی شده آینده</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        نمایش چک‌لیست‌های برنامه‌ریزی شده از {{ today|to_jalali }} تا {{ future_date|to_jalali }}
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="{% url 'checklist_app:pending_scheduled_checklists' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded bg-yellow-600 text-white hover:bg-yellow-700 shadow">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/>
+        </svg>
+        چک‌لیست‌های در انتظار
+      </a>
+      <a href="{% url 'checklist_app:general_checklist_form' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 shadow">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+        </svg>
+        چک‌لیست جدید
+      </a>
+    </div>
+  </div>
+
+  {% if instances_by_date %}
+  <div class="space-y-4">
+    {% for date_key, instances in instances_by_date.items %}
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-md overflow-hidden">
+      <div class="px-4 py-3 bg-gradient-to-r {% if date_key == today %}from-red-500 to-red-600{% elif date_key < today %}from-gray-500 to-gray-600{% else %}from-indigo-500 to-indigo-600{% endif %} text-white">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/>
+            </svg>
+            <h2 class="text-lg font-semibold">{{ date_key|to_jalali }}</h2>
+            {% if date_key == today %}
+            <span class="px-2 py-1 rounded-full text-xs bg-white/20">امروز</span>
+            {% elif date_key < today %}
+            <span class="px-2 py-1 rounded-full text-xs bg-white/20">گذشته</span>
+            {% endif %}
+          </div>
+          <span class="text-sm bg-white/20 px-3 py-1 rounded-full">{{ instances|length }} چک‌لیست</span>
+        </div>
+      </div>
+      
+      <div class="p-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {% for instance in instances %}
+          <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 {% if instance.status == 'pending' %}bg-yellow-50 dark:bg-yellow-900/20{% elif instance.status == 'completed' %}bg-emerald-50 dark:bg-emerald-900/20{% else %}bg-gray-50 dark:bg-gray-700/50{% endif %}">
+            <div class="flex items-start justify-between mb-2">
+              <h3 class="font-semibold text-gray-900 dark:text-white">{{ instance.schedule.name }}</h3>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                {% if instance.status == 'pending' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300
+                {% elif instance.status == 'completed' %}bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300
+                {% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                {{ instance.get_status_display }}
+              </span>
+            </div>
+            
+            <div class="space-y-1 text-sm mb-3">
+              <div class="flex items-center gap-2">
+                <span class="text-gray-500 dark:text-gray-400">نوع:</span>
+                <span class="font-medium text-gray-900 dark:text-white">{{ instance.schedule.get_checklist_type_display }}</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-gray-500 dark:text-gray-400">هدف:</span>
+                <span class="font-medium text-gray-900 dark:text-white">
+                  {% if instance.schedule.target_machines and instance.schedule.target_machines_list %}
+                    {% for machine in instance.schedule.target_machines_list %}
+                      {{ machine.workshop_code }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                  {% elif instance.schedule.target_machine %}
+                    {{ instance.schedule.target_machine.workshop_code }}
+                  {% elif instance.schedule.target_location_sections and instance.schedule.target_location_sections_list %}
+                    {% for section in instance.schedule.target_location_sections_list %}
+                      {{ section.location.name }} - {{ section.section }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                  {% elif instance.schedule.target_location_section %}
+                    {{ instance.schedule.target_location_section.location.name }} - {{ instance.schedule.target_location_section.section }}
+                  {% elif instance.schedule.target_contractor_vehicles and instance.schedule.target_contractor_vehicles_list %}
+                    {% for vehicle in instance.schedule.target_contractor_vehicles_list %}
+                      {{ vehicle.plate_number }}{% if not forloop.last %}, {% endif %}
+                    {% endfor %}
+                  {% elif instance.schedule.target_contractor_vehicle %}
+                    {{ instance.schedule.target_contractor_vehicle.plate_number }}
+                  {% else %}
+                    نامشخص
+                  {% endif %}
+                </span>
+              </div>
+              {% if instance.completed_by %}
+              <div class="flex items-center gap-2">
+                <span class="text-gray-500 dark:text-gray-400">تکمیل شده توسط:</span>
+                <span class="font-medium text-gray-900 dark:text-white">{{ instance.completed_by.get_full_name|default:instance.completed_by.username }}</span>
+              </div>
+              {% endif %}
+            </div>
+            
+            {% if instance.status == 'pending' and date_key <= today %}
+            <a href="{% url 'checklist_app:general_checklist_form' %}?scheduled_instance_id={{ instance.id }}" 
+               class="block w-full text-center px-3 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition-colors text-sm">
+              شروع چک‌لیست
+            </a>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-md p-12 text-center">
+    <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/>
+    </svg>
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">هیچ چک‌لیست برنامه‌ریزی شده‌ای وجود ندارد</h3>
+    <p class="text-gray-500 dark:text-gray-400 mb-6">برای ایجاد چک‌لیست‌های برنامه‌ریزی شده، به بخش مدیریت Django مراجعه کنید.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+

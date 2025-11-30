@@ -10,6 +10,12 @@ register = template.Library()
 def to_jalali(value, fmt='%Y/%m/%d %H:%M'):
     if value is None:
         return ''
+    
+    # Handle date objects
+    from datetime import date
+    if isinstance(value, date) and not isinstance(value, datetime):
+        value = datetime.combine(value, datetime.min.time())
+    
     if isinstance(value, str):
         try:
             value = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')

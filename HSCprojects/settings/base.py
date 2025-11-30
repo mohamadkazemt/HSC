@@ -314,6 +314,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'rubika_bot.tasks.cleanup_webhook_logs',
         'schedule': crontab(hour=3, minute=0),
     },
+    'create_scheduled_checklist_instances': {
+        'task': 'checklist_app.tasks.create_scheduled_checklist_instances',
+        'schedule': crontab(hour=0, minute=0),  # هر روز ساعت 00:00
+    },
 }
 
 # Email Configuration

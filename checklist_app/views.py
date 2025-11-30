@@ -6,7 +6,14 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator
 from django.contrib.auth import get_user_model
 from django.db.models import Q
-from .models import Checklist, Question, Answer
+from django.contrib import messages
+from .models import Checklist, Question, Answer, ChecklistSchedule, ScheduledChecklistInstance
+from .forms import ChecklistScheduleForm
+from .services import (
+    get_pending_scheduled_checklists,
+    claim_scheduled_checklist,
+    check_pending_tasks
+)
 from BaseInfo.models import MiningMachine, TypeMachine
 from contractor_management.models import Vehicle
 from anomalis.models import (
@@ -20,7 +27,7 @@ from anomalis.models import (
 )
 from accounts.models import UserProfile
 import json
-from permissions.utils import permission_required
+from permissions.utils import permission_required, check_permission
 import jdatetime
 from datetime import datetime, time
 from urllib.parse import urlencode
@@ -163,11 +170,29 @@ def general_checklist_form_view(request):
     location_sections = LocationSection.objects.all()
     contractor_vehicles = Vehicle.objects.all()
     
+    # دریافت scheduled_instance_id از query parameter
+    scheduled_instance_id = request.GET.get('scheduled_instance_id')
+    scheduled_instance = None
+    if scheduled_instance_id:
+        try:
+            scheduled_instance = ScheduledChecklistInstance.objects.select_related('schedule').get(
+                id=scheduled_instance_id,
+                status='pending'
+            )
+        except ScheduledChecklistInstance.DoesNotExist:
+            pass
+    
+    # دریافت چک‌لیست‌های در انتظار برای نمایش
+    from django.utils import timezone
+    pending_instances = get_pending_scheduled_checklists(request.user, timezone.now().date())
+    
     context = {
         'machines': machines,
         'location_sections': location_sections,
         'contractor_vehicles': contractor_vehicles,
         'shift_choices': Checklist.CHECKLIST_SHIFT_CHOICES,
+        'scheduled_instance': scheduled_instance,
+        'pending_instances': pending_instances,
     }
     return render(request, 'checklist_app/checklist_form.html', context)
 
@@ -193,6 +218,15 @@ def get_general_questions(request):
     machine_id = data.get('machine_id')
     location_section_id = data.get('location_section_id')
     vehicle_id = data.get('vehicle_id')
+    machine_status = data.get('machine_status')  # دریافت وضعیت ماشین
+    
+    # برای چک‌لیست ماشین، اگر وضعیت "خراب" باشد، سوالات را برنمی‌گردانیم
+    if checklist_type == 'machine' and machine_status == 'broken':
+        return JsonResponse({
+            'questions': [],
+            'machine_broken': True,
+            'message': 'ماشین در حال تعمیر است. چک‌لیست با وضعیت "خراب" ثبت می‌شود.'
+        })
     
     all_questions = Question.objects.all()
     questions = [q for q in all_questions if checklist_type in q.question_scopes]
@@ -213,7 +247,7 @@ def get_general_questions(request):
         'options': q.options.split(',') if q.options else [],
     } for q in questions]
     
-    return JsonResponse({'questions': questions_data})
+    return JsonResponse({'questions': questions_data, 'machine_broken': False})
 
 @login_required
 @permission_required("submit_general_checklist")
@@ -244,11 +278,26 @@ def submit_general_checklist(request):
         machine_id = data.get('machine_id')
         location_section_id = data.get('location_section_id')
         vehicle_id = data.get('vehicle_id')
+        machine_status = data.get('machine_status')
+        scheduled_instance_id = data.get('scheduled_instance_id')  # شناسه نمونه برنامه‌ریزی شده
         
         # تبدیل رشته خالی به None
         machine_id = int(machine_id) if machine_id and machine_id != '' else None
         location_section_id = int(location_section_id) if location_section_id and location_section_id != '' else None
         vehicle_id = int(vehicle_id) if vehicle_id and vehicle_id != '' else None
+        scheduled_instance_id = int(scheduled_instance_id) if scheduled_instance_id and scheduled_instance_id != '' else None
+        
+        # اگر این چک‌لیست از یک برنامه زمان‌بندی شده است، باید آن را claim کنیم
+        scheduled_instance = None
+        if scheduled_instance_id:
+            success, instance, error_msg = claim_scheduled_checklist(scheduled_instance_id, request.user)
+            if not success:
+                return JsonResponse({'status': 'error', 'message': error_msg or 'خطا در ادعای چک‌لیست برنامه‌ریزی شده'}, status=400)
+            scheduled_instance = instance
+        
+        # برای چک‌لیست ماشین، وضعیت ماشین اجباری است
+        if data['checklist_type'] == 'machine' and not machine_status:
+            return JsonResponse({'status': 'error', 'message': 'وضعیت ماشین (سالم/خراب) باید مشخص شود'}, status=400)
         
         checklist = Checklist.objects.create(
             user=request.user,
@@ -257,8 +306,20 @@ def submit_general_checklist(request):
             location_section_id=location_section_id,
             contractor_vehicle_id=vehicle_id,
             shift=data['shift'],
-            shift_group=data['shift_group']
+            shift_group=data['shift_group'],
+            machine_status=machine_status if data['checklist_type'] == 'machine' else None,
+            scheduled_instance=scheduled_instance
         )
+        
+        # اگر ماشین خراب است، نیازی به پاسخ به سوالات نیست
+        if data['checklist_type'] == 'machine' and machine_status == 'broken':
+            # برای ماشین خراب، چک‌لیست بدون پاسخ به سوالات ثبت می‌شود
+            notify_checklist_success(checklist, actor=request.user)
+            return JsonResponse({
+                'status': 'success',
+                'checklist_id': checklist.id,
+                'message': 'چک‌لیست با وضعیت "خراب" ثبت شد'
+            })
         
         has_unacceptable_answers = False
         unacceptable_answers = []
@@ -1041,3 +1102,271 @@ def import_questions_view(request):
             'status': 'error',
             'message': error_msg
         }, status=500)
+
+
+@login_required
+@permission_required("view_pending_scheduled_checklists")
+def pending_scheduled_checklists_view(request):
+    """
+    نمایش لیست چک‌لیست‌های برنامه‌ریزی شده در انتظار برای کاربر جاری
+    """
+    from django.utils import timezone
+    from BaseInfo.models import MiningMachine
+    from anomalis.models import LocationSection
+    from contractor_management.models import Vehicle
+    
+    target_date = timezone.now().date()
+    
+    pending_instances = get_pending_scheduled_checklists(request.user, target_date)
+    
+    # بارگذاری اطلاعات targets برای هر instance
+    for instance in pending_instances:
+        schedule = instance.schedule
+        # بارگذاری target_machines
+        if schedule.target_machines:
+            schedule.target_machines_list = MiningMachine.objects.filter(id__in=schedule.target_machines)
+        # بارگذاری target_location_sections
+        if schedule.target_location_sections:
+            schedule.target_location_sections_list = LocationSection.objects.filter(id__in=schedule.target_location_sections)
+        # بارگذاری target_contractor_vehicles
+        if schedule.target_contractor_vehicles:
+            schedule.target_contractor_vehicles_list = Vehicle.objects.filter(id__in=schedule.target_contractor_vehicles)
+    
+    context = {
+        'pending_instances': pending_instances,
+        'target_date': target_date,
+    }
+    
+    return render(request, 'checklist_app/pending_scheduled_checklists.html', context)
+
+
+@login_required
+@permission_required("get_pending_tasks")
+@require_http_methods(["GET", "POST"])
+def get_pending_tasks_api(request):
+    """
+    API endpoint برای دریافت لیست چک‌لیست‌های در انتظار
+    استفاده می‌شود توسط dailyreport_hse برای بررسی قبل از ثبت گزارش
+    """
+    from django.utils import timezone
+    
+    target_date = timezone.now().date()
+    
+    has_pending, pending_list, error_message = check_pending_tasks(request.user, target_date)
+    
+    pending_data = [{
+        'id': inst.id,
+        'schedule_name': inst.schedule.name,
+        'due_date': inst.due_date.strftime('%Y-%m-%d'),
+        'checklist_type': inst.schedule.get_checklist_type_display(),
+        'target': (
+            str(inst.schedule.target_machine) if inst.schedule.target_machine else
+            str(inst.schedule.target_location_section) if inst.schedule.target_location_section else
+            str(inst.schedule.target_contractor_vehicle) if inst.schedule.target_contractor_vehicle else
+            'نامشخص'
+        )
+    } for inst in pending_list]
+    
+    return JsonResponse({
+        'has_pending': has_pending,
+        'pending_tasks': pending_data,
+        'error_message': error_message
+    })
+
+
+@login_required
+@permission_required("view_upcoming_scheduled_checklists")
+def upcoming_scheduled_checklists_view(request):
+    """
+    نمایش چک‌لیست‌های برنامه‌ریزی شده آینده (تا 30 روز آینده)
+    """
+    from django.utils import timezone
+    from datetime import timedelta
+    from django.db.models import Q
+    from BaseInfo.models import MiningMachine
+    from anomalis.models import LocationSection
+    from contractor_management.models import Vehicle
+    
+    today = timezone.now().date()
+    future_date = today + timedelta(days=30)
+    
+    # دریافت چک‌لیست‌های برنامه‌ریزی شده آینده
+    upcoming_instances = ScheduledChecklistInstance.objects.filter(
+        due_date__gte=today,
+        due_date__lte=future_date,
+        schedule__is_active=True
+    ).select_related('schedule').prefetch_related(
+        'schedule__target_machine',
+        'schedule__target_location_section',
+        'schedule__target_contractor_vehicle'
+    ).order_by('due_date', 'schedule__name')
+    
+    # بارگذاری اطلاعات targets برای هر instance
+    for instance in upcoming_instances:
+        schedule = instance.schedule
+        # بارگذاری target_machines
+        if schedule.target_machines:
+            schedule.target_machines_list = MiningMachine.objects.filter(id__in=schedule.target_machines)
+        # بارگذاری target_location_sections
+        if schedule.target_location_sections:
+            schedule.target_location_sections_list = LocationSection.objects.filter(id__in=schedule.target_location_sections)
+        # بارگذاری target_contractor_vehicles
+        if schedule.target_contractor_vehicles:
+            schedule.target_contractor_vehicles_list = Vehicle.objects.filter(id__in=schedule.target_contractor_vehicles)
+    
+    # گروه‌بندی بر اساس تاریخ
+    instances_by_date = {}
+    for instance in upcoming_instances:
+        date_key = instance.due_date
+        if date_key not in instances_by_date:
+            instances_by_date[date_key] = []
+        instances_by_date[date_key].append(instance)
+    
+    context = {
+        'upcoming_instances': upcoming_instances,
+        'instances_by_date': instances_by_date,
+        'today': today,
+        'future_date': future_date,
+    }
+    
+    return render(request, 'checklist_app/upcoming_scheduled_checklists.html', context)
+
+
+@login_required
+def schedule_checklist_list_view(request):
+    """
+    لیست برنامه‌های زمان‌بندی چک‌لیست
+    فقط برای superuser
+    """
+    if not request.user.is_superuser:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("شما دسترسی به این صفحه را ندارید.")
+    
+    schedules = ChecklistSchedule.objects.all().order_by('-created_at')
+    
+    # فیلترها
+    checklist_type_filter = request.GET.get('checklist_type', '')
+    schedule_type_filter = request.GET.get('schedule_type', '')
+    is_active_filter = request.GET.get('is_active', '')
+    
+    if checklist_type_filter:
+        schedules = schedules.filter(checklist_type=checklist_type_filter)
+    if schedule_type_filter:
+        schedules = schedules.filter(schedule_type=schedule_type_filter)
+    if is_active_filter == 'true':
+        schedules = schedules.filter(is_active=True)
+    elif is_active_filter == 'false':
+        schedules = schedules.filter(is_active=False)
+    
+    context = {
+        'schedules': schedules,
+        'checklist_type_choices': Checklist.CHECKLIST_TYPE_CHOICES,
+        'schedule_type_choices': ChecklistSchedule.SCHEDULE_TYPE_CHOICES,
+        'current_filters': {
+            'checklist_type': checklist_type_filter,
+            'schedule_type': schedule_type_filter,
+            'is_active': is_active_filter,
+        }
+    }
+    
+    return render(request, 'checklist_app/schedule_list.html', context)
+
+
+@login_required
+def schedule_checklist_form_view(request, pk=None):
+    """
+    فرم ایجاد/ویرایش برنامه زمان‌بندی
+    فقط برای superuser
+    """
+    if not request.user.is_superuser:
+        from django.http import HttpResponseForbidden
+        return HttpResponseForbidden("شما دسترسی به این صفحه را ندارید.")
+    
+    schedule = None
+    if pk:
+        schedule = get_object_or_404(ChecklistSchedule, pk=pk)
+    
+    if request.method == 'POST':
+        # دیباگ: چاپ مقادیر POST
+        print("POST data:", request.POST)
+        print("target_location_sections:", request.POST.getlist('target_location_sections'))
+        print("target_machines:", request.POST.getlist('target_machines'))
+        print("target_contractor_vehicles:", request.POST.getlist('target_contractor_vehicles'))
+        
+        form = ChecklistScheduleForm(request.POST, instance=schedule)
+        if form.is_valid():
+            schedule = form.save()
+            messages.success(request, f'برنامه زمان‌بندی "{schedule.name}" با موفقیت {"به‌روزرسانی" if pk else "ایجاد"} شد.')
+            return redirect('checklist_app:schedule_checklist_list')
+        else:
+            # نمایش خطاهای فرم برای دیباگ
+            print("Form errors:", form.errors)
+            print("Form non_field_errors:", form.non_field_errors())
+            print("Form cleaned_data:", form.cleaned_data if hasattr(form, 'cleaned_data') else 'No cleaned_data')
+            for field, errors in form.errors.items():
+                messages.error(request, f'{field}: {", ".join(errors)}')
+    else:
+        form = ChecklistScheduleForm(instance=schedule)
+    
+    context = {
+        'form': form,
+        'schedule': schedule,
+        'machines': MiningMachine.objects.filter(is_active=True),
+        'location_sections': LocationSection.objects.all(),
+        'contractor_vehicles': Vehicle.objects.all(),  # مدل Vehicle فیلد is_active ندارد
+    }
+    
+    return render(request, 'checklist_app/schedule_form.html', context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def schedule_checklist_delete_view(request):
+    """
+    حذف برنامه زمان‌بندی
+    فقط برای superuser
+    """
+    if not request.user.is_superuser:
+        return JsonResponse({'status': 'error', 'message': 'شما دسترسی به این عملیات را ندارید.'}, status=403)
+    
+    data = json.loads(request.body)
+    schedule_id = data.get('schedule_id')
+    
+    try:
+        schedule = ChecklistSchedule.objects.get(id=schedule_id)
+        schedule_name = schedule.name
+        schedule.delete()
+        return JsonResponse({'status': 'success', 'message': f'برنامه "{schedule_name}" با موفقیت حذف شد.'})
+    except ChecklistSchedule.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'برنامه زمان‌بندی یافت نشد.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["POST"])
+def schedule_checklist_toggle_active_view(request):
+    """
+    فعال/غیرفعال کردن برنامه زمان‌بندی
+    فقط برای superuser
+    """
+    if not request.user.is_superuser:
+        return JsonResponse({'status': 'error', 'message': 'شما دسترسی به این عملیات را ندارید.'}, status=403)
+    
+    data = json.loads(request.body)
+    schedule_id = data.get('schedule_id')
+    
+    try:
+        schedule = ChecklistSchedule.objects.get(id=schedule_id)
+        schedule.is_active = not schedule.is_active
+        schedule.save()
+        status_text = 'فعال' if schedule.is_active else 'غیرفعال'
+        return JsonResponse({
+            'status': 'success',
+            'message': f'برنامه "{schedule.name}" {status_text} شد.',
+            'is_active': schedule.is_active
+        })
+    except ChecklistSchedule.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'برنامه زمان‌بندی یافت نشد.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

@@ -1,0 +1,716 @@
+{% extends 'base.html' %}
+{% block title %}{% if schedule %}ویرایش{% else %}ایجاد{% endif %} برنامه زمان‌بندی چک‌لیست{% endblock %}
+
+{% block styles %}
+<style>
+  .select2-container { width: 100% !important; }
+  .select2-container .select2-selection--single { 
+    height: 40px; 
+    min-height: 40px; 
+    border: 1px solid #d1d5db; 
+    border-radius: 0.375rem; 
+    display: flex; 
+    align-items: center; 
+  }
+  .select2-container .select2-selection__rendered { line-height: 38px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="scheduleForm()" x-init="init()" class="max-w-4xl mx-auto space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-xl font-bold">{% if schedule %}ویرایش{% else %}ایجاد{% endif %} برنامه زمان‌بندی</h1>
+    <a href="{% url 'checklist_app:schedule_checklist_list' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded border hover:bg-gray-50">
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3"/>
+      </svg>
+      بازگشت
+    </a>
+  </div>
+
+  <form method="post" class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-md p-6 space-y-6">
+    {% csrf_token %}
+    
+    <!-- نمایش خطاهای کلی فرم -->
+    {% if form.non_field_errors %}
+    <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+      <ul class="list-disc list-inside text-sm text-red-600 dark:text-red-400">
+        {% for error in form.non_field_errors %}
+        <li>{{ error }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+    
+    <!-- نام برنامه -->
+    <div>
+      <label class="block text-sm font-medium mb-2">{{ form.name.label }}</label>
+      {{ form.name }}
+      {% if form.name.errors %}
+      <p class="mt-1 text-sm text-red-600">{{ form.name.errors.0 }}</p>
+      {% endif %}
+    </div>
+
+    <!-- نوع چک‌لیست -->
+    <div>
+      <label class="block text-sm font-medium mb-2">{{ form.checklist_type.label }} <span class="text-red-500">*</span></label>
+      {{ form.checklist_type }}
+      {% if form.checklist_type.errors %}
+      <p class="mt-1 text-sm text-red-600">{{ form.checklist_type.errors.0 }}</p>
+      {% endif %}
+    </div>
+
+    <!-- نوع برنامه‌ریزی -->
+    <div>
+      <label class="block text-sm font-medium mb-2">{{ form.schedule_type.label }} <span class="text-red-500">*</span></label>
+      {{ form.schedule_type }}
+      {% if form.schedule_type.errors %}
+      <p class="mt-1 text-sm text-red-600">{{ form.schedule_type.errors.0 }}</p>
+      {% endif %}
+    </div>
+
+    <!-- تنظیمات برنامه‌ریزی (پویا) -->
+    <div x-show="formData.schedule_type === 'monthly_days'" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-2">{{ form.monthly_days_input.label }} <span class="text-red-500">*</span></label>
+        {{ form.monthly_days_input }}
+        <p class="mt-1 text-xs text-gray-500">{{ form.monthly_days_input.help_text }}</p>
+        {% if form.monthly_days_input.errors %}
+        <p class="mt-1 text-sm text-red-600">{{ form.monthly_days_input.errors.0 }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div x-show="formData.schedule_type === 'specific_dates'" 
+         x-effect="if (formData.schedule_type === 'specific_dates') {
+           $nextTick(() => {
+             // منتظر می‌مانیم تا jQuery و persianDatepicker لود شوند
+             const tryInit = () => {
+               const input = document.getElementById('date-picker-input');
+               if (input && window.jQuery && $.fn.persianDatepicker) {
+                 // بررسی می‌کنیم که element قابل مشاهده است
+                 const rect = input.getBoundingClientRect();
+                 if (rect.width > 0 && rect.height > 0) {
+                   if (!input.dataset.pdatepickerInit) {
+                     initDatePicker();
+                   }
+                 } else {
+                   // اگر هنوز قابل مشاهده نیست، دوباره تلاش می‌کنیم
+                   setTimeout(tryInit, 100);
+                 }
+               } else {
+                 // اگر jQuery یا persianDatepicker لود نشده، دوباره تلاش می‌کنیم
+                 setTimeout(tryInit, 100);
+               }
+             };
+             setTimeout(tryInit, 100);
+           });
+         }"
+         class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-2">تاریخ‌های مشخص <span class="text-red-500">*</span></label>
+        <div class="space-y-2">
+          <!-- لیست تاریخ‌های انتخاب شده -->
+          <div id="selected-dates-list" class="flex flex-wrap gap-2 mb-2">
+            <!-- تاریخ‌های انتخاب شده اینجا نمایش داده می‌شوند -->
+          </div>
+          <!-- Input برای datepicker -->
+          <input 
+            type="text" 
+            id="date-picker-input" 
+            class="w-full rounded-md border border-gray-300 px-3 py-2" 
+            placeholder="انتخاب تاریخ"
+            data-allow-future="true"
+            x-ref="dateInput">
+          <button 
+            type="button" 
+            onclick="addDate()" 
+            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+            افزودن تاریخ
+          </button>
+        </div>
+        <!-- فیلد پنهان برای ارسال به سرور -->
+        <input type="hidden" name="specific_dates_input" id="specific-dates-hidden" value="{% if form.specific_dates_input.value %}{{ form.specific_dates_input.value }}{% endif %}">
+        <p class="mt-1 text-xs text-gray-500">تاریخ‌ها را با datepicker انتخاب کنید و دکمه "افزودن تاریخ" را بزنید</p>
+        {% if form.specific_dates_input.errors %}
+        <p class="mt-1 text-sm text-red-600">{{ form.specific_dates_input.errors.0 }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div x-show="formData.schedule_type === 'weekly'" class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+      <p class="text-sm text-blue-800 dark:text-blue-200">
+        <strong>نکته:</strong> برنامه‌ریزی هفتگی در حال حاضر هر دوشنبه اجرا می‌شود.
+      </p>
+    </div>
+
+    <!-- هدف (پویا بر اساس نوع چک‌لیست) - چند انتخابی -->
+    <div x-show="formData.checklist_type === 'machine'">
+      <label class="block text-sm font-medium mb-2">ماشین‌های هدف <span class="text-red-500">*</span></label>
+      <select 
+        x-ref="targetMachines" 
+        name="target_machines" 
+        multiple 
+        class="w-full rounded-md border border-gray-300 px-3 py-2"
+        style="min-height: 120px;">
+        {% for machine in machines %}
+        <option value="{{ machine.id }}" {% if machine.id in form.target_machines.value %}selected{% endif %}>
+          {{ machine.workshop_code }} - {{ machine.machine_type.name }}
+        </option>
+        {% endfor %}
+      </select>
+      <p class="mt-1 text-xs text-gray-500">می‌توانید چندین ماشین را انتخاب کنید (Ctrl+Click یا Cmd+Click)</p>
+      {% if form.target_machines.errors %}
+      <p class="mt-1 text-sm text-red-600">{{ form.target_machines.errors.0 }}</p>
+      {% endif %}
+    </div>
+
+    <div x-show="formData.checklist_type === 'location'">
+      <label class="block text-sm font-medium mb-2">بخش‌های مکانی هدف <span class="text-red-500">*</span></label>
+      <select 
+        x-ref="targetLocations" 
+        name="target_location_sections" 
+        multiple 
+        class="w-full rounded-md border border-gray-300 px-3 py-2"
+        style="min-height: 120px;">
+        {% for section in location_sections %}
+        <option value="{{ section.id }}" {% if section.id in form.target_location_sections.value %}selected{% endif %}>
+          {{ section.location.name }} - {{ section.section }}
+        </option>
+        {% endfor %}
+      </select>
+      <p class="mt-1 text-xs text-gray-500">می‌توانید چندین بخش مکانی را انتخاب کنید (Ctrl+Click یا Cmd+Click)</p>
+      {% if form.target_location_sections.errors %}
+      <p class="mt-1 text-sm text-red-600">{{ form.target_location_sections.errors.0 }}</p>
+      {% endif %}
+    </div>
+
+    <div x-show="formData.checklist_type === 'contractor_vehicle'">
+      <label class="block text-sm font-medium mb-2">ماشین‌های پیمانکار هدف <span class="text-red-500">*</span></label>
+      <select 
+        x-ref="targetVehicle" 
+        name="target_contractor_vehicles" 
+        multiple 
+        class="w-full rounded-md border border-gray-300 px-3 py-2"
+        style="min-height: 120px;">
+        {% for vehicle in contractor_vehicles %}
+        <option value="{{ vehicle.id }}" {% if vehicle.id in form.target_contractor_vehicles.value %}selected{% endif %}>
+          {{ vehicle.plate_number }} - {{ vehicle.vehicle_category }}
+        </option>
+        {% endfor %}
+      </select>
+      <p class="mt-1 text-xs text-gray-500">می‌توانید چندین ماشین پیمانکار را انتخاب کنید (Ctrl+Click یا Cmd+Click)</p>
+      {% if form.target_contractor_vehicles.errors %}
+      <p class="mt-1 text-sm text-red-600">{{ form.target_contractor_vehicles.errors.0 }}</p>
+      {% endif %}
+    </div>
+
+    <!-- فعال/غیرفعال -->
+    <div class="flex items-center gap-2">
+      {{ form.is_active }}
+      <label for="{{ form.is_active.id_for_label }}" class="text-sm font-medium">{{ form.is_active.label }}</label>
+    </div>
+
+    <!-- دکمه‌های ارسال -->
+    <div class="flex items-center justify-end gap-3 pt-4 border-t">
+      <a href="{% url 'checklist_app:schedule_checklist_list' %}" class="px-4 py-2 rounded-md border hover:bg-gray-50">
+        انصراف
+      </a>
+      <button type="submit" class="px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">
+        {% if schedule %}به‌روزرسانی{% else %}ایجاد{% endif %}
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- jQuery و Select2 در base.html لود شده‌اند، نیازی به لود مجدد نیست -->
+
+<script>
+// تابع برای راه‌اندازی datepicker (idempotent)
+function initDatePicker() {
+  // بررسی وجود jQuery و persianDatepicker
+  if (!window.jQuery) {
+    console.warn('jQuery not available, retrying...');
+    setTimeout(initDatePicker, 100);
+    return;
+  }
+  
+  if (!$.fn.persianDatepicker) {
+    console.warn('persianDatepicker not available, retrying...');
+    setTimeout(initDatePicker, 100);
+    return;
+  }
+  
+  const input = document.getElementById('date-picker-input');
+  if (!input) {
+    console.warn('Datepicker input not found');
+    return;
+  }
+  
+  // بررسی اینکه element قابل مشاهده است
+  const rect = input.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) {
+    console.warn('Datepicker input not visible yet, retrying...');
+    setTimeout(initDatePicker, 100);
+    return;
+  }
+  
+  // اگر قبلاً راه‌اندازی شده، دوباره راه‌اندازی نکن
+  if (input.dataset.pdatepickerInit || $(input).data('datepicker')) {
+    return;
+  }
+  
+  try {
+    const $input = $(input);
+      $input.prop('type', 'text');
+      
+      // Get today's date for maxDate if needed
+      let todayJalali = null;
+      const todayMeta = document.querySelector('meta[name="today-jalali"]');
+      if (todayMeta) {
+        const todayStr = todayMeta.getAttribute('content');
+        if (todayStr && typeof persianDate !== 'undefined') {
+          const [year, month, day] = todayStr.split('/').map(num => parseInt(num));
+          todayJalali = new persianDate([year, month, day]);
+        }
+      }
+      
+      const pickerConfig = {
+        format: 'YYYY/MM/DD',
+        autoClose: true,
+        calendar: {
+          persian: {
+            locale: 'fa',
+            leapYearMode: 'astronomical'
+          }
+        },
+        initialValueType: 'persian',
+        observer: false,
+        initialValue: false
+      };
+      
+      // Add maxDate if today is available and input doesn't have data-allow-future
+      if (todayJalali && !input.dataset.allowFuture) {
+        pickerConfig.maxDate = todayJalali;
+      }
+      
+      $input.persianDatepicker(pickerConfig);
+      
+      // Override onSelect to handle date formatting correctly
+      const picker = $input.data('datepicker');
+      if (picker && picker.config) {
+        const originalOnSelect = picker.config.onSelect;
+        picker.config.onSelect = function(unix) {
+          try {
+            // ذخیره unix timestamp در input element و picker
+            if (unix) {
+              input.dataset.unixTimestamp = unix.toString();
+              // همچنین در picker ذخیره می‌کنیم
+              if (picker) {
+                picker.selectedUnix = unix;
+                picker.unix = unix;
+              }
+            }
+            
+            if (typeof persianDate !== 'undefined') {
+              const dateObj = new Date(unix);
+              const utcDate = new Date(Date.UTC(
+                dateObj.getUTCFullYear(),
+                dateObj.getUTCMonth(),
+                dateObj.getUTCDate(),
+                12, 0, 0, 0
+              ));
+              const pd = new persianDate(utcDate);
+              const formatted = pd.toCalendar('persian').format('YYYY/MM/DD');
+              setTimeout(() => {
+                $input.val(formatted);
+                // اطمینان از ذخیره unix timestamp
+                if (unix) {
+                  input.dataset.unixTimestamp = unix.toString();
+                  if (picker) {
+                    picker.selectedUnix = unix;
+                    picker.unix = unix;
+                  }
+                }
+                if (picker && typeof picker.update === 'function') {
+                  picker.update();
+                }
+              }, 10);
+            }
+            if (originalOnSelect) originalOnSelect.call(this, unix);
+          } catch (e) {
+            console.warn('Date conversion error:', e);
+          }
+        };
+      }
+      
+      input.dataset.pdatepickerInit = '1';
+      $input.data('hasJalali', true);
+      console.log('Datepicker initialized successfully');
+    } catch (e) {
+      console.error('Datepicker init error:', e);
+    }
+}
+
+// تابع‌های سراسری برای مدیریت تاریخ‌ها
+function addDate() {
+  const input = document.getElementById('date-picker-input');
+  const dateValue = input.value.trim();
+  if (!dateValue) {
+    alert('لطفاً ابتدا یک تاریخ انتخاب کنید');
+    return;
+  }
+  
+  console.log('Adding date:', dateValue);
+  
+  // تبدیل تاریخ شمسی به میلادی
+  let gregorianDate;
+  try {
+    // ابتدا سعی می‌کنیم unix timestamp را از input element بگیریم
+    let unixTimestamp = null;
+    if (input.dataset.unixTimestamp) {
+      unixTimestamp = parseInt(input.dataset.unixTimestamp);
+      console.log('Found unix timestamp in dataset:', unixTimestamp);
+    } else {
+      // اگر در dataset نبود، از datepicker بگیریم
+      const $input = $(input);
+      const picker = $input.data('datepicker');
+      if (picker) {
+        if (picker.selectedUnix) {
+          unixTimestamp = picker.selectedUnix;
+          console.log('Found unix timestamp in picker.selectedUnix:', unixTimestamp);
+        } else if (picker.unix) {
+          unixTimestamp = picker.unix;
+          console.log('Found unix timestamp in picker.unix:', unixTimestamp);
+        } else if (picker.view && picker.view.selected) {
+          unixTimestamp = picker.view.selected.unix;
+          console.log('Found unix timestamp in picker.view.selected.unix:', unixTimestamp);
+        } else {
+          console.log('No unix timestamp found in picker, will use fallback method');
+        }
+      } else {
+        console.log('Picker not found, will use fallback method');
+      }
+    }
+    
+    if (unixTimestamp && !isNaN(unixTimestamp) && typeof persianDate !== 'undefined') {
+      // استفاده از unix timestamp برای تبدیل دقیق‌تر
+      const dateObj = new Date(unixTimestamp);
+      const utcDate = new Date(Date.UTC(
+        dateObj.getUTCFullYear(),
+        dateObj.getUTCMonth(),
+        dateObj.getUTCDate(),
+        12, 0, 0, 0
+      ));
+      const year = utcDate.getUTCFullYear();
+      const month = utcDate.getUTCMonth() + 1;
+      const day = utcDate.getUTCDate();
+      gregorianDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    } else if (typeof persianDate !== 'undefined') {
+      // روش fallback: تبدیل از string تاریخ شمسی
+      // تبدیل اعداد فارسی به انگلیسی
+      const toLatinDigits = (str) => {
+        if (!str) return str;
+        const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+        const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+        let result = str;
+        for (let i = 0; i < 10; i++) {
+          result = result.replace(new RegExp(persianDigits[i], 'g'), i);
+          result = result.replace(new RegExp(arabicDigits[i], 'g'), i);
+        }
+        return result;
+      };
+      
+      const dateValueLatin = toLatinDigits(dateValue);
+      const parts = dateValueLatin.split('/');
+      if (parts.length === 3) {
+        const year = parseInt(parts[0].trim());
+        const month = parseInt(parts[1].trim());
+        const day = parseInt(parts[2].trim());
+        
+        // اعتبارسنجی اعداد
+        if (isNaN(year) || isNaN(month) || isNaN(day)) {
+          console.error('Invalid date parts:', { year, month, day, original: dateValue, latin: dateValueLatin });
+          alert('تاریخ نامعتبر است. لطفاً دوباره انتخاب کنید.');
+          return;
+        }
+        
+        // اعتبارسنجی محدوده ماه و روز
+        if (month < 1 || month > 12 || day < 1 || day > 31) {
+          alert('تاریخ نامعتبر است. ماه باید بین 1 تا 12 و روز باید بین 1 تا 31 باشد.');
+          return;
+        }
+        
+        // ایجاد تاریخ شمسی
+        const jdate = new persianDate([year, month, day]);
+        
+        // تبدیل به میلادی - استفاده از toDate() برای گرفتن Date object
+        const gdate = jdate.toCalendar('gregory');
+        const dateObj = gdate.toDate();
+        
+        // استخراج سال، ماه و روز میلادی از Date object
+        const gYear = dateObj.getFullYear();
+        const gMonth = dateObj.getMonth() + 1; // getMonth() returns 0-11
+        const gDay = dateObj.getDate();
+        
+        // بررسی معتبر بودن مقادیر
+        if (isNaN(gYear) || isNaN(gMonth) || isNaN(gDay) || gYear < 1900 || gYear > 2100) {
+          console.error('Invalid conversion result:', { gYear, gMonth, gDay, dateObj });
+          alert('خطا در تبدیل تاریخ. لطفاً دوباره تلاش کنید.');
+          return;
+        }
+        
+        // فرمت کردن به YYYY-MM-DD
+        gregorianDate = `${gYear}-${String(gMonth).padStart(2, '0')}-${String(gDay).padStart(2, '0')}`;
+        console.log('Converted date:', { jalali: `${year}/${month}/${day}`, gregorian: gregorianDate });
+      } else {
+        alert('فرمت تاریخ نامعتبر است. لطفاً از datepicker استفاده کنید.');
+        return;
+      }
+    } else {
+      alert('کتابخانه تاریخ شمسی لود نشده است.');
+      return;
+    }
+    
+    // بررسی نهایی معتبر بودن تاریخ میلادی
+    if (!gregorianDate || !gregorianDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      console.error('Invalid date format:', gregorianDate);
+      alert('خطا در فرمت تاریخ. لطفاً دوباره تلاش کنید.');
+      return;
+    }
+  } catch (e) {
+    console.error('Error converting date:', e);
+    alert('خطا در تبدیل تاریخ: ' + (e.message || 'خطای نامشخص'));
+    return;
+  }
+  
+  // بررسی تکراری نبودن
+  const scheduleForm = Alpine.store('scheduleForm') || window.scheduleFormInstance;
+  if (!scheduleForm) {
+    alert('خطا: فرم یافت نشد.');
+    return;
+  }
+  
+  if (!scheduleForm.selectedDates.includes(gregorianDate)) {
+    scheduleForm.selectedDates.push(gregorianDate);
+    scheduleForm.updateDatesDisplay();
+    input.value = ''; // پاک کردن input
+    input.dataset.unixTimestamp = ''; // پاک کردن unix timestamp
+  } else {
+    alert('این تاریخ قبلاً اضافه شده است');
+  }
+}
+
+function removeDate(index) {
+  const scheduleForm = Alpine.store('scheduleForm') || window.scheduleFormInstance;
+  if (scheduleForm) {
+    scheduleForm.selectedDates.splice(index, 1);
+    scheduleForm.updateDatesDisplay();
+  }
+}
+
+function scheduleForm() {
+  const formInstance = {
+    formData: {
+      checklist_type: '{{ form.checklist_type.value|default:"machine" }}',
+      schedule_type: '{{ form.schedule_type.value|default:"monthly_days" }}'
+    },
+    selectedDates: [],
+    init() {
+      // بارگذاری تاریخ‌های موجود از فرم
+      const existingDatesEl = document.getElementById('specific-dates-hidden');
+      if (existingDatesEl && existingDatesEl.value) {
+        // فقط تاریخ‌های معتبر (فرمت YYYY-MM-DD) را قبول می‌کنیم
+        this.selectedDates = existingDatesEl.value.split(',')
+          .map(d => d.trim())
+          .filter(d => d && d.match(/^\d{4}-\d{2}-\d{2}$/));
+        this.updateDatesDisplay();
+      }
+      
+      // راه‌اندازی Select2 برای multi-select
+      this.$nextTick(() => {
+        const opts = { width: '100%', dir: 'rtl', allowClear: true };
+        
+        // Multi-select برای ماشین‌ها
+        if (this.$refs.targetMachines) {
+          $(this.$refs.targetMachines).select2({
+            ...opts,
+            placeholder: 'انتخاب ماشین‌ها...',
+            closeOnSelect: false
+          });
+        }
+        
+        // Multi-select برای بخش‌های مکانی
+        if (this.$refs.targetLocations) {
+          $(this.$refs.targetLocations).select2({
+            ...opts,
+            placeholder: 'انتخاب بخش‌های مکانی...',
+            closeOnSelect: false
+          });
+        }
+        
+        // Multi-select برای ماشین‌های پیمانکار
+        if (this.$refs.targetVehicle) {
+          $(this.$refs.targetVehicle).select2({
+            ...opts,
+            placeholder: 'انتخاب ماشین‌های پیمانکار...',
+            closeOnSelect: false
+          });
+        }
+        
+        $('select[name="checklist_type"]').select2(opts).on('change', (e) => {
+          this.formData.checklist_type = e.target.value;
+        });
+        
+        $('select[name="schedule_type"]').select2(opts).on('change', (e) => {
+          this.formData.schedule_type = e.target.value;
+        });
+      });
+      
+      // راه‌اندازی اولیه datepicker اگر نوع برنامه‌ریزی از ابتدا "تاریخ‌های مشخص" باشد
+      if (this.formData.schedule_type === 'specific_dates') {
+        this.$nextTick(() => {
+          const tryInit = () => {
+            const input = document.getElementById('date-picker-input');
+            if (input && window.jQuery && $.fn.persianDatepicker) {
+              const rect = input.getBoundingClientRect();
+              if (rect.width > 0 && rect.height > 0) {
+                if (!input.dataset.pdatepickerInit) {
+                  initDatePicker();
+                }
+              } else {
+                setTimeout(tryInit, 100);
+              }
+            } else {
+              setTimeout(tryInit, 100);
+            }
+          };
+          setTimeout(tryInit, 100);
+        });
+      }
+      
+      // اضافه کردن event listener برای submit فرم
+      const form = document.querySelector('form');
+      if (form) {
+        form.addEventListener('submit', (e) => {
+          // اطمینان از sync شدن Select2 با select element اصلی
+          // این کار ضروری است چون Select2 ممکن است مقادیر را در DOM اصلی sync نکند
+          $('select[multiple]').each(function() {
+            const $select = $(this);
+            if ($select.data('select2')) {
+              // گرفتن مقادیر از Select2 و set کردن به select element اصلی
+              const selectedValues = $select.val() || [];
+              // Clear کردن options قبلی
+              $select.find('option').prop('selected', false);
+              // Set کردن options جدید
+              selectedValues.forEach(function(value) {
+                $select.find('option[value="' + value + '"]').prop('selected', true);
+              });
+              // Trigger change event برای اطمینان
+              $select.trigger('change');
+            }
+          });
+          
+          // اطمینان از به‌روزرسانی فیلدهای hidden قبل از submit
+          this.updateDatesDisplay();
+          
+          // بررسی اینکه فیلدهای required پر شده‌اند
+          const scheduleType = this.formData.schedule_type;
+          if (scheduleType === 'specific_dates') {
+            if (this.selectedDates.length === 0) {
+              e.preventDefault();
+              alert('لطفاً حداقل یک تاریخ انتخاب کنید.');
+              return false;
+            }
+          }
+          
+          // بررسی اینکه target انتخاب شده است (با استفاده از Select2 API)
+          const checklistType = this.formData.checklist_type;
+          if (checklistType === 'machine') {
+            const $targetMachines = $('select[name="target_machines"]');
+            const selectedMachines = $targetMachines.val() || [];
+            if (selectedMachines.length === 0) {
+              e.preventDefault();
+              alert('لطفاً حداقل یک ماشین هدف انتخاب کنید.');
+              return false;
+            }
+          } else if (checklistType === 'location') {
+            const $targetLocations = $('select[name="target_location_sections"]');
+            const selectedLocations = $targetLocations.val() || [];
+            if (selectedLocations.length === 0) {
+              e.preventDefault();
+              alert('لطفاً حداقل یک بخش مکانی هدف انتخاب کنید.');
+              return false;
+            }
+          } else if (checklistType === 'contractor_vehicle') {
+            const $targetVehicles = $('select[name="target_contractor_vehicles"]');
+            const selectedVehicles = $targetVehicles.val() || [];
+            if (selectedVehicles.length === 0) {
+              e.preventDefault();
+              alert('لطفاً حداقل یک ماشین پیمانکار هدف انتخاب کنید.');
+              return false;
+            }
+          }
+        });
+      }
+    },
+    updateDatesDisplay() {
+      const container = document.getElementById('selected-dates-list');
+      if (!container) return;
+      
+      container.innerHTML = '';
+      
+      // فیلتر کردن فقط string های معتبر تاریخ
+      const validDates = this.selectedDates.filter(date => {
+        return typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/);
+      });
+      
+      validDates.forEach((date, index) => {
+        // تبدیل تاریخ میلادی به شمسی برای نمایش
+        let displayDate = date;
+        try {
+          if (typeof persianDate !== 'undefined') {
+            const parts = date.split('-');
+            if (parts.length === 3) {
+              const gdate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+              const pd = new persianDate(gdate);
+              displayDate = pd.toCalendar('persian').format('YYYY/MM/DD');
+            }
+          }
+        } catch (e) {
+          console.warn('Error converting date for display:', e);
+        }
+        
+        const badge = document.createElement('span');
+        badge.className = 'inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm';
+        
+        // استفاده از textContent برای امنیت بیشتر
+        const dateText = document.createTextNode(displayDate);
+        badge.appendChild(dateText);
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'text-blue-600 hover:text-blue-800 mr-1';
+        removeBtn.textContent = '×';
+        removeBtn.onclick = () => removeDate(index);
+        badge.appendChild(removeBtn);
+        
+        container.appendChild(badge);
+      });
+      
+      // به‌روزرسانی فیلد پنهان فقط با تاریخ‌های معتبر
+      const hiddenInput = document.getElementById('specific-dates-hidden');
+      if (hiddenInput) {
+        hiddenInput.value = validDates.join(',');
+      }
+    }
+  };
+  
+  // ذخیره instance برای دسترسی از تابع‌های سراسری
+  window.scheduleFormInstance = formInstance;
+  
+  return formInstance;
+}
+</script>
+{% endblock %}
+

@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% load checklist_filters %}
+{% block title %}چک‌لیست‌های برنامه‌ریزی شده در انتظار{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-xl font-bold">چک‌لیست‌های برنامه‌ریزی شده در انتظار</h1>
+    <a href="{% url 'checklist_app:general_checklist_form' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 shadow">
+      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+      </svg>
+      چک‌لیست جدید
+    </a>
+  </div>
+
+  {% if pending_instances %}
+  <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
+    <div class="flex items-start gap-3">
+      <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/>
+      </svg>
+      <div>
+        <h3 class="font-semibold text-yellow-800 dark:text-yellow-200 mb-1">توجه!</h3>
+        <p class="text-sm text-yellow-700 dark:text-yellow-300">
+          شما {{ pending_instances|length }} چک‌لیست برنامه‌ریزی شده در انتظار دارید که باید قبل از ثبت گزارش روزانه تکمیل شوند.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for instance in pending_instances %}
+    <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-md hover:shadow-lg transition-shadow">
+      <div class="p-5">
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex-1">
+            <h3 class="font-semibold text-gray-900 dark:text-white mb-1">{{ instance.schedule.name }}</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              <span class="inline-flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/>
+                </svg>
+                موعد: {{ instance.due_date|to_jalali }}
+              </span>
+            </p>
+          </div>
+          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">
+            در انتظار
+          </span>
+        </div>
+
+        <div class="space-y-2 mb-4">
+          <div class="flex items-center gap-2 text-sm">
+            <span class="text-gray-500 dark:text-gray-400">نوع:</span>
+            <span class="font-medium text-gray-900 dark:text-white">{{ instance.schedule.get_checklist_type_display }}</span>
+          </div>
+          <div class="flex items-center gap-2 text-sm">
+            <span class="text-gray-500 dark:text-gray-400">هدف:</span>
+            <span class="font-medium text-gray-900 dark:text-white">
+              {% if instance.schedule.target_machines and instance.schedule.target_machines_list %}
+                {% for machine in instance.schedule.target_machines_list %}
+                  {{ machine.workshop_code }}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+              {% elif instance.schedule.target_machine %}
+                {{ instance.schedule.target_machine.workshop_code }}
+              {% elif instance.schedule.target_location_sections and instance.schedule.target_location_sections_list %}
+                {% for section in instance.schedule.target_location_sections_list %}
+                  {{ section.location.name }} - {{ section.section }}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+              {% elif instance.schedule.target_location_section %}
+                {{ instance.schedule.target_location_section.location.name }} - {{ instance.schedule.target_location_section.section }}
+              {% elif instance.schedule.target_contractor_vehicles and instance.schedule.target_contractor_vehicles_list %}
+                {% for vehicle in instance.schedule.target_contractor_vehicles_list %}
+                  {{ vehicle.plate_number }}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+              {% elif instance.schedule.target_contractor_vehicle %}
+                {{ instance.schedule.target_contractor_vehicle.plate_number }}
+              {% else %}
+                نامشخص
+              {% endif %}
+            </span>
+          </div>
+        </div>
+
+        <a href="{% url 'checklist_app:general_checklist_form' %}?scheduled_instance_id={{ instance.id }}" 
+           class="block w-full text-center px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition-colors">
+          <span class="flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+            </svg>
+            شروع چک‌لیست
+          </span>
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-md p-12 text-center">
+    <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+    </svg>
+    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">هیچ چک‌لیست در انتظاری وجود ندارد</h3>
+    <p class="text-gray-500 dark:text-gray-400 mb-6">تمام چک‌لیست‌های برنامه‌ریزی شده تکمیل شده‌اند.</p>
+    <a href="{% url 'checklist_app:general_checklist_form' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+      </svg>
+      ایجاد چک‌لیست جدید
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+

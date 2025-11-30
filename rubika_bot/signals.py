@@ -46,7 +46,7 @@ def send_notification_to_rubika(sender, instance: Notification, created, **kwarg
     
     logger.info(f"  ✅ User has chat_id: {profile.chat_id}")
     
-    # انتخاب آیکون مناسب بر اساس نوع نوتیفیکیشن
+    # انتخاب آیکون مناسب بر اساس نوع نوتیفیکیشن و عنوان
     icons = {
         'info': 'ℹ️',
         'success': '✅',
@@ -55,6 +55,22 @@ def send_notification_to_rubika(sender, instance: Notification, created, **kwarg
         'meeting': '📅',
     }
     icon = icons.get(instance.notification_type, 'ℹ️')
+    
+    # آیکون خاص برای چک‌لیست‌های برنامه‌ریزی شده
+    if instance.title:
+        title_lower = instance.title.lower()
+        if 'چک‌لیست' in instance.title or 'checklist' in title_lower:
+            if 'برنامه‌ریزی شده' in instance.title or 'scheduled' in title_lower:
+                if instance.notification_type == 'warning':
+                    icon = '⚠️📋'  # هشدار چک‌لیست برنامه‌ریزی شده
+                else:
+                    icon = '📋'  # چک‌لیست برنامه‌ریزی شده
+            elif instance.notification_type == 'warning':
+                icon = '⚠️📋'  # هشدار چک‌لیست
+            elif instance.notification_type == 'success':
+                icon = '✅📋'  # موفقیت چک‌لیست
+            else:
+                icon = '📋'  # چک‌لیست عادی
     
     # ساختن متن پیام
     message_lines = []
@@ -70,7 +86,11 @@ def send_notification_to_rubika(sender, instance: Notification, created, **kwarg
     # افزودن لینک در صورت وجود
     if instance.url:
         message_lines.append('')
-        message_lines.append('🔗 برای مشاهده جزئیات به پنل وب مراجعه کنید.')
+        # برای چک‌لیست‌های برنامه‌ریزی شده، پیام خاص
+        if instance.title and ('چک‌لیست برنامه‌ریزی شده' in instance.title or 'scheduled' in instance.title.lower()):
+            message_lines.append('🔗 برای تکمیل چک‌لیست به پنل وب مراجعه کنید.')
+        else:
+            message_lines.append('🔗 برای مشاهده جزئیات به پنل وب مراجعه کنید.')
     
     text = '\n'.join(message_lines)
     

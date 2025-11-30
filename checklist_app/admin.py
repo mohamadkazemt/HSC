@@ -1,18 +1,26 @@
 from django.contrib import admin
-from .models import Checklist, Question, Answer
+from .models import Checklist, Question, Answer, ChecklistSchedule, ScheduledChecklistInstance
 
 @admin.register(Checklist)
 class ChecklistAdmin(admin.ModelAdmin):
-    list_display = ('id', 'checklist_type', 'get_item', 'date', 'shift', 'shift_group', 'user')
-    list_filter = ('checklist_type', 'date', 'shift', 'shift_group')
+    list_display = ('id', 'checklist_type', 'get_item', 'machine_status', 'date', 'shift', 'shift_group', 'user', 'has_scheduled_instance')
+    list_filter = ('checklist_type', 'date', 'shift', 'shift_group', 'machine_status')
     search_fields = ('user__username', 'user__first_name', 'user__last_name', 'machine__workshop_code', 'location_section__section')
     date_hierarchy = 'date'
 
     def get_item(self, obj):
         if obj.checklist_type == 'machine':
             return obj.machine
-        return obj.location_section
+        elif obj.checklist_type == 'location':
+            return obj.location_section
+        elif obj.checklist_type == 'contractor_vehicle':
+            return obj.contractor_vehicle
+        return '-'
     get_item.short_description = 'آیتم'
+    
+    def has_scheduled_instance(self, obj):
+        return '✓' if obj.scheduled_instance else '-'
+    has_scheduled_instance.short_description = 'برنامه‌ریزی شده'
 
 @admin.register(Question)
 class QuestionAdmin(admin.ModelAdmin):
@@ -47,3 +55,32 @@ class AnswerAdmin(admin.ModelAdmin):
             return obj.selected_option
         return obj.answer_text
     get_answer.short_description = 'پاسخ'
+
+@admin.register(ChecklistSchedule)
+class ChecklistScheduleAdmin(admin.ModelAdmin):
+    list_display = ('name', 'checklist_type', 'schedule_type', 'get_target', 'is_active', 'created_at')
+    list_filter = ('checklist_type', 'schedule_type', 'is_active', 'created_at')
+    search_fields = ('name',)
+    date_hierarchy = 'created_at'
+    
+    def get_target(self, obj):
+        if obj.checklist_type == 'machine':
+            return obj.target_machine
+        elif obj.checklist_type == 'location':
+            return obj.target_location_section
+        elif obj.checklist_type == 'contractor_vehicle':
+            return obj.target_contractor_vehicle
+        return '-'
+    get_target.short_description = 'هدف'
+
+@admin.register(ScheduledChecklistInstance)
+class ScheduledChecklistInstanceAdmin(admin.ModelAdmin):
+    list_display = ('schedule', 'due_date', 'status', 'completed_by', 'completed_at', 'created_at')
+    list_filter = ('status', 'due_date', 'schedule__checklist_type', 'schedule__is_active')
+    search_fields = ('schedule__name', 'completed_by__username', 'completed_by__first_name', 'completed_by__last_name')
+    date_hierarchy = 'due_date'
+    readonly_fields = ('created_at',)
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related('schedule', 'completed_by')

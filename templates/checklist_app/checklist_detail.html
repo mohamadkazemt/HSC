@@ -206,6 +206,42 @@
                 </p>
               </div>
             </div>
+            {% if checklist.checklist_type == 'machine' and checklist.machine_status %}
+            <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+              <div class="w-10 h-10 {% if checklist.machine_status == 'healthy' %}bg-emerald-100 dark:bg-emerald-900{% else %}bg-red-100 dark:bg-red-900{% endif %} rounded-lg flex items-center justify-center flex-shrink-0">
+                {% if checklist.machine_status == 'healthy' %}
+                  <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                  </svg>
+                {% else %}
+                  <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"/>
+                  </svg>
+                {% endif %}
+              </div>
+              <div class="flex-1">
+                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">وضعیت ماشین</p>
+                <p class="text-sm font-semibold {% if checklist.machine_status == 'healthy' %}text-emerald-700 dark:text-emerald-400{% else %}text-red-700 dark:text-red-400{% endif %} mt-1">
+                  {{ checklist.get_machine_status_display }}
+                </p>
+              </div>
+            </div>
+            {% endif %}
+            {% if checklist.scheduled_instance %}
+            <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
+              <div class="w-10 h-10 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">چک‌لیست برنامه‌ریزی شده</p>
+                <p class="text-sm font-semibold text-gray-900 dark:text-white mt-1">
+                  {{ checklist.scheduled_instance.schedule.name }} ({{ checklist.scheduled_instance.due_date|to_jalali }})
+                </p>
+              </div>
+            </div>
+            {% endif %}
             <div class="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
               <div class="w-10 h-10 bg-amber-100 dark:bg-amber-900 rounded-lg flex items-center justify-center flex-shrink-0">
                 <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
