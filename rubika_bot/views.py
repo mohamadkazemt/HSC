@@ -61,22 +61,23 @@ def webhook_receiver(request: HttpRequest) -> JsonResponse:
     ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
 
     if not is_ip_allowed(ip):
-        WebhookLog.log_warning('وبهوک غیرمجاز', f'درخواست از IP غیرمجاز: {ip}')
+        # Log warning asynchronously to avoid blocking
+        process_webhook_task.delay({'_ip': ip, '_log_warning': 'وبهوک غیرمجاز', '_log_message': f'درخواست از IP غیرمجاز: {ip}'})
         return JsonResponse({'ok': False, 'error': 'forbidden'}, status=403)
 
     try:
         payload = json.loads(request.body.decode('utf-8') or '{}')
     except json.JSONDecodeError:
-        WebhookLog.log_error('وبهوک نامعتبر', 'JSON معتبر نیست', {'ip': ip})
+        # Log error asynchronously to avoid blocking
+        process_webhook_task.delay({'_ip': ip, '_log_error': 'وبهوک نامعتبر', '_log_message': 'JSON معتبر نیست', '_log_data': {'ip': ip}})
         return JsonResponse({'ok': False, 'error': 'invalid json'}, status=400)
 
-    # Log the incoming request immediately
-    WebhookLog.log_incoming(
-        'دریافت وبهوک', f'دریافت به‌روزرسانی از {ip}', {'ip': ip, 'payload': payload}
-    )
+    # Store IP in payload for logging in background task
+    payload['_ip'] = ip
 
     # --- NEW ARCHITECTURE ---
     # Queue the payload for background processing and return immediately.
+    # Logging is done asynchronously in the task to avoid blocking the response.
     process_webhook_task.delay(payload)
     
     # Return a success response instantly to the Rubika server.

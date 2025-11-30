@@ -75,6 +75,25 @@ def process_webhook_task(self, payload: Dict[str, Any]) -> None:
     """
     Processes an incoming webhook payload in the background.
     """
+    # Handle special logging cases (for errors/warnings from webhook_receiver)
+    if '_log_warning' in payload:
+        WebhookLog.log_warning(payload['_log_warning'], payload.get('_log_message', ''), payload.get('_log_data'))
+        return
+    if '_log_error' in payload:
+        WebhookLog.log_error(payload['_log_error'], payload.get('_log_message', ''), payload.get('_log_data'))
+        return
+    
+    # Log incoming webhook asynchronously (moved from webhook_receiver for performance)
+    try:
+        ip = payload.pop('_ip', 'unknown')
+        # Remove special logging keys before logging
+        clean_payload = {k: v for k, v in payload.items() if not k.startswith('_log_')}
+        WebhookLog.log_incoming(
+            'دریافت وبهوک', f'دریافت به‌روزرسانی از {ip}', {'ip': ip, 'payload': clean_payload}
+        )
+    except Exception as log_exc:
+        logger.warning("Failed to log incoming webhook: %s", log_exc)
+    
     logger.info(
         "Task 'process_webhook_task' started for payload: %s",
         payload.get("update", {}).get("type"),

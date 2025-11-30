@@ -130,16 +130,22 @@ class RubikaBotEngine:
         if last_name: defaults['last_name'] = last_name
 
         rubika_user, created = await sync_to_async(RubikaUser.objects.get_or_create, thread_sensitive=True)(chat_id=chat_id, defaults=defaults)
-        await sync_to_async(rubika_user.touch_seen, thread_sensitive=True)()
-
+        
+        # Optimized: Update last_seen and other fields in a single query if needed
         if not created:
-            attrs_to_update: Dict[str, Any] = {}
+            attrs_to_update: Dict[str, Any] = {'last_seen': timezone.now()}
             if first_name and rubika_user.first_name != first_name: attrs_to_update['first_name'] = first_name
             if last_name and rubika_user.last_name != last_name: attrs_to_update['last_name'] = last_name
-            if attrs_to_update:
+            if len(attrs_to_update) > 1:  # More than just last_seen
                 await sync_to_async(RubikaUser.objects.filter(pk=rubika_user.pk).update, thread_sensitive=True)(**attrs_to_update)
                 for key, value in attrs_to_update.items():
                     setattr(rubika_user, key, value)
+            else:
+                # Only update last_seen
+                await sync_to_async(rubika_user.touch_seen, thread_sensitive=True)()
+        else:
+            # New user, last_seen is already set in defaults or will be set on first touch_seen
+            await sync_to_async(rubika_user.touch_seen, thread_sensitive=True)()
         return rubika_user
 
     def _extract_names(self, raw_payload: Dict[str, Any], message: Message) -> Tuple[Optional[str], Optional[str]]:
@@ -209,32 +215,28 @@ class RubikaBotEngine:
             await self._handle_plain_text(chat_id, text, user)
 
     async def _handle_plain_text(self, chat_id: str, text: str, user: RubikaUser) -> None:
-        # Check if user is in SMS connection flow
+        # Optimized: Fetch both states in a single query batch
         @sync_to_async(thread_sensitive=True)
-        def get_connection_state():
-            from rubika_bot.models import ConnectionRequestState
+        def get_states():
+            from rubika_bot.models import ConnectionRequestState, LeaveRequestState
+            connection_state = None
+            leave_state = None
             try:
-                return ConnectionRequestState.objects.get(rubika_user=user)
+                connection_state = ConnectionRequestState.objects.get(rubika_user=user)
             except ConnectionRequestState.DoesNotExist:
-                return None
+                pass
+            try:
+                leave_state = LeaveRequestState.objects.get(rubika_user=user)
+            except LeaveRequestState.DoesNotExist:
+                pass
+            return connection_state, leave_state
         
-        connection_state = await get_connection_state()
+        connection_state, leave_state = await get_states()
         
         # If in SMS connection flow, handle accordingly
         if connection_state and connection_state.step != 'idle':
             await self._handle_sms_connection_input(chat_id, user, text, connection_state)
             return
-        
-        # Check if user is in leave request flow
-        @sync_to_async(thread_sensitive=True)
-        def get_leave_state():
-            from rubika_bot.models import LeaveRequestState
-            try:
-                return LeaveRequestState.objects.get(rubika_user=user)
-            except LeaveRequestState.DoesNotExist:
-                return None
-        
-        leave_state = await get_leave_state()
         
         # If in leave request flow, handle accordingly
         if leave_state and leave_state.step != 'idle':
@@ -518,12 +520,12 @@ class RubikaBotEngine:
             await self._send_text_message(chat_id, message, buttons)
             return
         
-        # Get user profile and payslips
+        # Get user profile and payslips (optimized with select_related)
         @sync_to_async(thread_sensitive=True)
         def get_payslips():
             from accounts.models import UserProfile, Payslip
             try:
-                profile = UserProfile.objects.get(user=user.user)
+                profile = UserProfile.objects.select_related('position', 'section').get(user=user.user)
                 payslips = list(Payslip.objects.filter(user_profile=profile).order_by('-year', '-month')[:12])
                 return profile, payslips
             except UserProfile.DoesNotExist:
@@ -605,13 +607,13 @@ class RubikaBotEngine:
             await self._send_text_message(chat_id, message)
             return
         
-        # Get payslip from database
+        # Get payslip from database (optimized with select_related)
         @sync_to_async(thread_sensitive=True)
         def get_payslip():
             from accounts.models import UserProfile, Payslip
             try:
-                profile = UserProfile.objects.get(user=user.user)
-                payslip = Payslip.objects.get(user_profile=profile, year=year, month=month)
+                profile = UserProfile.objects.select_related('position', 'section').get(user=user.user)
+                payslip = Payslip.objects.select_related('user_profile').get(user_profile=profile, year=year, month=month)
                 return payslip
             except (UserProfile.DoesNotExist, Payslip.DoesNotExist):
                 return None
@@ -849,11 +851,11 @@ class RubikaBotEngine:
         if not leave_type:
             return
         
-        # Update state
+        # Update state (optimized with get_or_create_for_user)
         @sync_to_async(thread_sensitive=True)
         def update_state():
             from rubika_bot.models import LeaveRequestState
-            state = LeaveRequestState.objects.get(rubika_user=user)
+            state = LeaveRequestState.get_or_create_for_user(user)
             state.update_step('date', {'leave_type': leave_type})
             return state
         
@@ -1008,7 +1010,7 @@ class RubikaBotEngine:
         @sync_to_async(thread_sensitive=True)
         def update_state():
             from rubika_bot.models import LeaveRequestState
-            state = LeaveRequestState.objects.get(rubika_user=user)
+            state = LeaveRequestState.get_or_create_for_user(user)
             state.update_step('hourly_times')
         
         await update_state()
@@ -1034,7 +1036,7 @@ class RubikaBotEngine:
         @sync_to_async(thread_sensitive=True)
         def update_state():
             from rubika_bot.models import LeaveRequestState
-            state = LeaveRequestState.objects.get(rubika_user=user)
+            state = LeaveRequestState.get_or_create_for_user(user)
             state.update_step('description')
         
         await update_state()
@@ -1446,11 +1448,11 @@ class RubikaBotEngine:
             from datetime import datetime
             
             try:
-                state = LeaveRequestState.objects.get(rubika_user=user)
+                state = LeaveRequestState.objects.select_related('rubika_user', 'rubika_user__user').get(rubika_user=user)
                 data = state.data
                 
-                # Get user profile
-                profile = UserProfile.objects.get(user=user.user)
+                # Get user profile (optimized with select_related)
+                profile = UserProfile.objects.select_related('position', 'section', 'user').get(user=user.user)
                 
                 # Create leave request
                 leave_request = ShiftReport()
