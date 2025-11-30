@@ -2093,7 +2093,8 @@ class RubPyIntegrationService:
 
     def __init__(self) -> None:
         settings_obj = RubikaBotSettings.get_solo()
-        if not settings_obj.token:
+        token = settings_obj.get_token_safe()
+        if not token:
             raise ValueError("توکن ربات روبیکا در تنظیمات یافت نشد.")
 
         self._loop = asyncio.new_event_loop()
@@ -2122,7 +2123,7 @@ class RubPyIntegrationService:
 
         try:
             self.client = BotClient(
-                token=settings_obj.token,
+                token=token,
                 use_webhook=True,
                 timeout=BOT_REQUEST_TIMEOUT,
                 connector=connector,

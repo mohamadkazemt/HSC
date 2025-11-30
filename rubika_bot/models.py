@@ -2,11 +2,15 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from django_cryptography.fields import encrypt
+from django_cryptography.core.signing import BadSignature
+import logging
 import uuid
 from urllib.parse import quote
 
 from .constants import CONNECTION_CODE_TTL_MINUTES
 from .validators import validate_rubika_token
+
+logger = logging.getLogger(__name__)
 
 
 class RubikaBotSettings(models.Model):
@@ -49,6 +53,26 @@ class RubikaBotSettings(models.Model):
     def get_solo(cls):
         obj, _ = cls.objects.get_or_create(pk=1)
         return obj
+    
+    def get_token_safe(self) -> str | None:
+        """Safely get token, handling BadSignature errors."""
+        try:
+            return self.token
+        except BadSignature:
+            logger.error("Token field is corrupted (BadSignature). Resetting to None.")
+            self.token = None
+            self.save(update_fields=['token'])
+            return None
+    
+    def get_proxy_password_safe(self) -> str | None:
+        """Safely get proxy password, handling BadSignature errors."""
+        try:
+            return self.proxy_password
+        except BadSignature:
+            logger.error("Proxy password field is corrupted (BadSignature). Resetting to None.")
+            self.proxy_password = None
+            self.save(update_fields=['proxy_password'])
+            return None
 
     def build_proxy_url(self) -> str:
         if not self.proxy_enabled:
@@ -59,7 +83,7 @@ class RubikaBotSettings(models.Model):
             return ''
         auth = ''
         username = (self.proxy_username or '').strip()
-        password = self.proxy_password or ''
+        password = self.get_proxy_password_safe() or ''
         if username:
             auth = quote(username, safe='')
             if password:

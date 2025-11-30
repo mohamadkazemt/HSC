@@ -90,6 +90,10 @@ def webhook_receiver(request: HttpRequest) -> JsonResponse:
 def settings_view(request: HttpRequest) -> HttpResponse:
     """Render and update Rubika bot settings in the admin panel."""
     settings_obj = RubikaBotSettings.get_solo()
+    # Use safe methods to handle any BadSignature errors
+    settings_obj.get_token_safe()
+    settings_obj.get_proxy_password_safe()
+    
     if request.method == 'POST':
         token = (request.POST.get('token') or '').strip() or None
         bot_username = (request.POST.get('bot_username') or '').strip() or None
@@ -141,6 +145,10 @@ def settings_view(request: HttpRequest) -> HttpResponse:
             code=sample_code,
         )
 
+    # Safely access encrypted fields for context
+    proxy_password_saved = bool(settings_obj.get_proxy_password_safe())
+    proxy_preview = settings_obj.get_masked_proxy_url()
+
     context = {
         'settings': settings_obj,
         'users_page': page_obj,
@@ -148,8 +156,8 @@ def settings_view(request: HttpRequest) -> HttpResponse:
         'search_query': search or '',
         'deeplink_template': DEEPLINK_TEMPLATE,
         'deeplink_example': deeplink_example,
-        'proxy_password_saved': bool(settings_obj.proxy_password),
-        'proxy_preview': settings_obj.get_masked_proxy_url(),
+        'proxy_password_saved': proxy_password_saved,
+        'proxy_preview': proxy_preview,
         'proxy_choices': RubikaBotSettings._meta.get_field('proxy_scheme').choices,
     }
     return render(request, 'rubika_bot/settings.html', context)
@@ -224,7 +232,7 @@ def action_test_proxy(request: HttpRequest) -> JsonResponse:
 
     settings_obj = RubikaBotSettings.get_solo()
     if use_saved_password and not password:
-        password = settings_obj.proxy_password or ''
+        password = settings_obj.get_proxy_password_safe() or ''
         if not username and settings_obj.proxy_username:
             username = settings_obj.proxy_username
 

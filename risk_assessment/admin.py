@@ -236,10 +236,16 @@ class RiskHistoryInline(admin.TabularInline):
     can_delete = False
     
     def risk_number_colored(self, obj):
-        """نمایش عدد ریسک با رنگ"""
-        # History شیء متد get_risk_color ندارد؛ بر اساس risk_level نقشه می‌کنیم
-        color_map = {'Low': 'success', 'Medium': 'warning', 'High': 'danger'}
-        color = color_map.get(obj.risk_level, 'secondary')
+        """نمایش عدد ریسک با رنگ - منطق ماتریس JHA"""
+        # History شیء متد get_risk_color ندارد؛ بر اساس risk_number نقشه می‌کنیم
+        if not obj.risk_number:
+            color = 'secondary'
+        elif obj.risk_number >= 15:
+            color = 'danger'
+        elif obj.risk_number in [5, 6, 8, 9, 10, 12]:
+            color = 'warning'
+        else:
+            color = 'success'
         return format_html(
             '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 3px; font-weight: bold;">{}</span>',
             self._get_bg_color(color),
@@ -261,10 +267,14 @@ class RiskHistoryInline(admin.TabularInline):
     risk_level_badge.short_description = 'سطح ریسک'
     
     def residual_risk_number_colored(self, obj):
-        """نمایش عدد ریسک باقی‌مانده با رنگ"""
+        """نمایش عدد ریسک باقی‌مانده با رنگ - منطق ماتریس JHA"""
         if obj.residual_risk_number:
-            color_map = {'Low': 'success', 'Medium': 'warning', 'High': 'danger'}
-            color = color_map.get(obj.residual_risk_level, 'secondary')
+            if obj.residual_risk_number >= 15:
+                color = 'danger'
+            elif obj.residual_risk_number in [5, 6, 8, 9, 10, 12]:
+                color = 'warning'
+            else:
+                color = 'success'
             return format_html(
                 '<span style="background-color: {}; color: white; padding: 3px 8px; border-radius: 3px; font-weight: bold;">{}</span>',
                 self._get_bg_color(color),

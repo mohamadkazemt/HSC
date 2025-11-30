@@ -460,10 +460,13 @@ class RiskAssessment(models.Model):
         # محاسبه RPN اولیه
         self.risk_number = self.probability * self.severity
 
-        # تعیین سطح ریسک اولیه بر اساس ماتریس ۵×۵
-        if self.risk_number >= 17:
+        # تعیین سطح ریسک اولیه بر اساس ماتریس JHA
+        # قرمز: RPN >= 15 (15, 16, 20, 25)
+        # زرد: RPN در [5, 6, 8, 9, 10, 12]
+        # سبز: RPN در [1, 2, 3, 4]
+        if self.risk_number >= 15:
             self.risk_level = 'High'
-        elif self.risk_number >= 7:
+        elif self.risk_number in [5, 6, 8, 9, 10, 12]:
             self.risk_level = 'Medium'
         else:
             self.risk_level = 'Low'
@@ -471,9 +474,9 @@ class RiskAssessment(models.Model):
         # محاسبه ریسک باقی‌مانده اگر داده شد
         if self.residual_probability and self.residual_severity:
             self.residual_risk_number = self.residual_probability * self.residual_severity
-            if self.residual_risk_number >= 17:
+            if self.residual_risk_number >= 15:
                 self.residual_risk_level = 'High'
-            elif self.residual_risk_number >= 7:
+            elif self.residual_risk_number in [5, 6, 8, 9, 10, 12]:
                 self.residual_risk_level = 'Medium'
             else:
                 self.residual_risk_level = 'Low'
@@ -517,24 +520,32 @@ class RiskAssessment(models.Model):
             )
     
     def get_risk_color(self):
-        """دریافت رنگ بر اساس سطح ریسک"""
-        colors = {
-            'Low': 'success',      # سبز
-            'Medium': 'warning',   # زرد
-            'High': 'danger',      # قرمز
-        }
-        return colors.get(self.risk_level, 'secondary')
+        """دریافت رنگ بر اساس عدد ریسک (RPN) - منطق ماتریس JHA"""
+        if not self.risk_number:
+            return 'secondary'
+        # قرمز: RPN >= 15 (15, 16, 20, 25)
+        # زرد: RPN در [5, 6, 8, 9, 10, 12]
+        # سبز: RPN در [1, 2, 3, 4]
+        if self.risk_number >= 15:
+            return 'danger'
+        elif self.risk_number in [5, 6, 8, 9, 10, 12]:
+            return 'warning'
+        else:
+            return 'success'
     
     def get_residual_risk_color(self):
-        """دریافت رنگ بر اساس سطح ریسک باقی‌مانده"""
-        if not self.residual_risk_level:
+        """دریافت رنگ بر اساس عدد ریسک باقی‌مانده - منطق ماتریس JHA"""
+        if not self.residual_risk_number:
             return 'secondary'
-        colors = {
-            'Low': 'success',
-            'Medium': 'warning',
-            'High': 'danger',
-        }
-        return colors.get(self.residual_risk_level, 'secondary')
+        # قرمز: RPN >= 15 (15, 16, 20, 25)
+        # زرد: RPN در [5, 6, 8, 9, 10, 12]
+        # سبز: RPN در [1, 2, 3, 4]
+        if self.residual_risk_number >= 15:
+            return 'danger'
+        elif self.residual_risk_number in [5, 6, 8, 9, 10, 12]:
+            return 'warning'
+        else:
+            return 'success'
     
     def get_risk_level_display_fa(self):
         """نمایش فارسی سطح ریسک"""

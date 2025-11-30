@@ -495,9 +495,13 @@ def risk_matrix_view(request):
                 probability=probability,
                 approval_status='approved'  # فقط ریسک‌های تأیید شده
             ).count()
-            if rpn >= 17:
+            # منطق رنگ‌بندی بر اساس ماتریس JHA
+            # قرمز: RPN >= 15 (15, 16, 20, 25)
+            # زرد: RPN در [5, 6, 8, 9, 10, 12] (شامل دو سلول با RPN=5 و دو سلول با RPN=6)
+            # آبی/سبز: RPN در [1, 2, 3, 4]
+            if rpn >= 15:
                 color = 'danger'
-            elif rpn >= 7:
+            elif rpn in [5, 6, 8, 9, 10, 12]:
                 color = 'warning'
             else:
                 color = 'success'
