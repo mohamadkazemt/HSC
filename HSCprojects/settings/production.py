@@ -8,7 +8,7 @@ from decouple import config
 # 2. حالا تنظیمات مخصوص production را بازنویسی کن
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = config('DEBUG', default=False, cast=bool)
 
 # SECURITY WARNING: keep the secret key used in production secret!
 # این کلید باید از فایل .env خوانده شود
