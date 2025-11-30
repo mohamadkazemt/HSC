@@ -4,7 +4,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.core.exceptions import ValidationError
-from datetime import timedelta
+from datetime import timedelta, date
 from django.utils.translation import gettext_lazy as _
 
 User = get_user_model()
@@ -62,6 +62,10 @@ class FireExtinguisher(models.Model):
     next_scheduled_service_date = models.DateField(null=True, blank=True, verbose_name=_("تاریخ سرویس بعدی"))
     pressure_test_due_date = models.DateField(null=True, blank=True, verbose_name=_("تاریخ تست فشار"))
     
+    # Charge Information
+    last_charge_date = models.DateField(null=True, blank=True, verbose_name=_("تاریخ آخرین شارژ"))
+    next_charge_date = models.DateField(null=True, blank=True, verbose_name=_("تاریخ شارژ بعدی"))
+    
     # Replacement Information
     replaced_by_extinguisher = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True,
                                                related_name='replacement_for', verbose_name=_("جایگزین شده با"))
@@ -108,6 +112,14 @@ class FireExtinguisher(models.Model):
             return self.last_serviced_date + timedelta(days=365 * self.extinguisher_type.pressure_test_interval_years)
         return None
 
+    def save(self, *args, **kwargs):
+        # محاسبه خودکار تاریخ شارژ بعدی
+        if self.last_charge_date:
+            self.next_charge_date = self.last_charge_date + timedelta(days=365)
+        else:
+            self.next_charge_date = None
+        super().save(*args, **kwargs)
+
 class ServiceRecord(models.Model):
     SERVICE_TYPE_CHOICES = [
         ('inspection', _('بازرسی')),
@@ -149,4 +161,80 @@ class ServiceRecord(models.Model):
 
     def __str__(self):
         return f"{self.extinguisher.serial_tag} - {self.get_service_type_display()} - {self.service_date}"
+
+
+class MonthlyInspection(models.Model):
+    """
+    مدل ثبت سوابق بازدید ماهانه کپسول‌های آتش‌نشانی
+    """
+    extinguisher = models.ForeignKey(
+        FireExtinguisher, 
+        on_delete=models.CASCADE, 
+        related_name='monthly_inspections',
+        verbose_name=_("کپسول آتش‌نشانی")
+    )
+    
+    # چک‌لیست بازدید
+    pressure_charge_status = models.BooleanField(
+        default=False, 
+        verbose_name=_("وضعیت شارژ (فشار)")
+    )
+    gauge_status = models.BooleanField(
+        default=False, 
+        verbose_name=_("وضعیت گیج")
+    )
+    hose_nozzle_status = models.BooleanField(
+        default=False, 
+        verbose_name=_("وضعیت شیلنگ و نازل")
+    )
+    body_condition = models.BooleanField(
+        default=False, 
+        verbose_name=_("وضعیت بدنه")
+    )
+    safety_pin_seal_status = models.BooleanField(
+        default=False, 
+        verbose_name=_("وضعیت ضامن و پلمپ")
+    )
+    
+    # اطلاعات بازدید
+    inspector = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        verbose_name=_("بازدید کننده")
+    )
+    inspection_date = models.DateField(
+        default=date.today, 
+        verbose_name=_("تاریخ بازدید")
+    )
+    notes = models.TextField(
+        blank=True, 
+        verbose_name=_("توضیحات")
+    )
+    
+    class Meta:
+        verbose_name = _("بازدید ماهانه")
+        verbose_name_plural = _("بازدیدهای ماهانه")
+        ordering = ['-inspection_date']
+        indexes = [
+            models.Index(fields=['-inspection_date']),
+            models.Index(fields=['extinguisher', '-inspection_date']),
+        ]
+
+    def __str__(self):
+        return f"{self.extinguisher.serial_tag} - {self.inspection_date}"
+
+    @property
+    def is_passed(self):
+        """
+        بررسی می‌کند که آیا همه موارد چک‌لیست صحیح هستند یا خیر
+        """
+        return (
+            self.pressure_charge_status and
+            self.gauge_status and
+            self.hose_nozzle_status and
+            self.body_condition and
+            self.safety_pin_seal_status
+        )
 

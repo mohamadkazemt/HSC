@@ -203,7 +203,7 @@
        <input type="text" name="manufacture_date"
          class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 persian-datepicker text-center transition-colors"
          placeholder="انتخاب تاریخ" readonly
-         {% if form.manufacture_date.value %}value="{{ form.manufacture_date.value }}"{% endif %}>
+         {% if form.manufacture_date.value %}value="{{ form.manufacture_date.value|date:'Y-m-d' }}"{% endif %}>
      </div>
 
      <div class="mb-4">
@@ -211,7 +211,7 @@
        <input type="text" name="purchase_date"
          class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 persian-datepicker text-center transition-colors"
          placeholder="انتخاب تاریخ" readonly
-         {% if form.purchase_date.value %}value="{{ form.purchase_date.value }}"{% endif %}>
+         {% if form.purchase_date.value %}value="{{ form.purchase_date.value|date:'Y-m-d' }}"{% endif %}>
      </div>
 
      <div class="mb-4">
@@ -219,7 +219,7 @@
        <input type="text" name="commission_date"
          class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 persian-datepicker text-center transition-colors"
          placeholder="انتخاب تاریخ" readonly
-         {% if form.commission_date.value %}value="{{ form.commission_date.value }}"{% endif %}>
+         {% if form.commission_date.value %}value="{{ form.commission_date.value|date:'Y-m-d' }}"{% endif %}>
           </div>
 
           <div class="mb-4">
@@ -271,7 +271,7 @@
             <input type="text" name="last_serviced_date"
                    class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 persian-datepicker text-center transition-colors"
                    placeholder="انتخاب تاریخ" readonly
-                   {% if form.last_serviced_date.value %}value="{{ form.last_serviced_date.value }}"{% endif %}>
+                   {% if form.last_serviced_date.value %}value="{{ form.last_serviced_date.value|date:'Y-m-d' }}"{% endif %}>
           </div>
 
           <div class="mb-4">
@@ -279,7 +279,7 @@
             <input type="text" name="next_scheduled_service_date"
                    class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 persian-datepicker text-center transition-colors"
                    placeholder="انتخاب تاریخ" readonly
-                   {% if form.next_scheduled_service_date.value %}value="{{ form.next_scheduled_service_date.value }}"{% endif %}>
+                   {% if form.next_scheduled_service_date.value %}value="{{ form.next_scheduled_service_date.value|date:'Y-m-d' }}"{% endif %}>
           </div>
 
           <div class="mb-4">
@@ -287,7 +287,7 @@
             <input type="text" name="pressure_test_due_date"
                    class="w-full rounded-lg border-gray-300 focus:border-green-500 focus:ring-green-500 persian-datepicker text-center transition-colors"
                    placeholder="انتخاب تاریخ" readonly
-                   {% if form.pressure_test_due_date.value %}value="{{ form.pressure_test_due_date.value }}"{% endif %}>
+                   {% if form.pressure_test_due_date.value %}value="{{ form.pressure_test_due_date.value|date:'Y-m-d' }}"{% endif %}>
           </div>
 
           <div class="mb-4">
@@ -333,17 +333,47 @@
         if (!el) return;
         if (el.dataset.pdatepickerInit) return; // already initialized
         const $el = $(el);
+        
+        // Extract initial value from input (YYYY-MM-DD format from Django)
+        let initialValue = null;
+        const inputValue = el.value;
+        if (inputValue) {
+          // Parse YYYY-MM-DD (Gregorian) and convert to Jalali for display
+          // This avoids timezone issues by treating it as a pure date string
+          try {
+            const parts = inputValue.trim().split('-');
+            if (parts.length === 3) {
+              const year = parseInt(parts[0], 10);
+              const month = parseInt(parts[1], 10);
+              const day = parseInt(parts[2], 10);
+              // Create a date at noon UTC to avoid timezone shifts
+              const dateObj = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+              initialValue = dateObj.getTime();
+            }
+          } catch (e) {
+            // If parsing fails, let datepicker handle it
+            initialValue = false;
+          }
+        }
+        
         const opts = {
           format: 'YYYY/MM/DD',
           autoClose: true,
-          initialValue: false,
+          initialValue: initialValue !== null ? initialValue : false,
+          initialValueType: 'gregorian',
           persianDigit: false,
           responsive: true,
           observer: true,
-          calendar: { persian: { locale: 'fa' } },
+          calendar: { 
+            persian: { 
+              locale: 'fa',
+              leapYearMode: 'astronomical'  // Fix leap year calculation
+            } 
+          },
           toolbox: { calendarSwitch: { enabled: false } },
           onSelect: function(unix) {
             try {
+              // Use UTC methods to avoid timezone conversion
               const date = new Date(unix);
               const year = date.getUTCFullYear();
               const month = String(date.getUTCMonth() + 1).padStart(2, '0');

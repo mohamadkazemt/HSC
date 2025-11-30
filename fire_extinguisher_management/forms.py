@@ -1,5 +1,5 @@
 from django import forms
-from .models import FireExtinguisherType, FireExtinguisher, ServiceRecord
+from .models import FireExtinguisherType, FireExtinguisher, ServiceRecord, MonthlyInspection
 from django.contrib.contenttypes.models import ContentType
 
 class FireExtinguisherTypeForm(forms.ModelForm):
@@ -17,13 +17,22 @@ class FireExtinguisherForm(forms.ModelForm):
         widgets = {
             'notes': forms.Textarea(attrs={'rows': 3}),
             'replacement_notes': forms.Textarea(attrs={'rows': 3}),
-            'purchase_date': forms.TextInput(attrs={'class': 'form-control', 'data-jdp': 'true'}),
-            'manufacture_date': forms.TextInput(attrs={'class': 'form-control', 'data-jdp': 'true'}),
-            'commission_date': forms.TextInput(attrs={'class': 'form-control', 'data-jdp': 'true'}),
-            'last_serviced_date': forms.TextInput(attrs={'class': 'form-control', 'data-jdp': 'true'}),
-            'next_scheduled_service_date': forms.TextInput(attrs={'class': 'form-control', 'data-jdp': 'true'}),
-            'pressure_test_due_date': forms.TextInput(attrs={'class': 'form-control', 'data-jdp': 'true'}),
+            'purchase_date': forms.TextInput(attrs={'class': 'form-control jalali-date'}),
+            'manufacture_date': forms.TextInput(attrs={'class': 'form-control jalali-date'}),
+            'commission_date': forms.TextInput(attrs={'class': 'form-control jalali-date'}),
+            'last_serviced_date': forms.TextInput(attrs={'class': 'form-control jalali-date'}),
+            'next_scheduled_service_date': forms.TextInput(attrs={'class': 'form-control jalali-date'}),
+            'pressure_test_due_date': forms.TextInput(attrs={'class': 'form-control jalali-date'}),
+            'last_charge_date': forms.TextInput(attrs={'class': 'form-control jalali-date'}),
+            'next_charge_date': forms.TextInput(attrs={'class': 'form-control jalali-date', 'readonly': True}),
         }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # فیلد next_charge_date فقط خواندنی است (به صورت خودکار محاسبه می‌شود)
+        if 'next_charge_date' in self.fields:
+            self.fields['next_charge_date'].widget.attrs['readonly'] = True
+            self.fields['next_charge_date'].widget.attrs['style'] = 'background-color: #f3f4f6; cursor: not-allowed;'
 
 class ServiceRecordForm(forms.ModelForm):
     class Meta:
@@ -121,3 +130,12 @@ class ExcelImportForm(forms.Form):
             if file.size > 5 * 1024 * 1024:  # 5MB
                 raise forms.ValidationError("حجم فایل نباید بیشتر از 5 مگابایت باشد.")
         return file
+
+class MonthlyInspectionForm(forms.ModelForm):
+    class Meta:
+        model = MonthlyInspection
+        fields = '__all__'
+        widgets = {
+            'notes': forms.Textarea(attrs={'rows': 3}),
+            'inspection_date': forms.TextInput(attrs={'class': 'form-control jalali-date'}),
+        }

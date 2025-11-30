@@ -44,10 +44,16 @@
       </div>
       <hr class="my-4">
       <h3 class="font-semibold mb-2">سرویس‌ها</h3>
-      <div class="flex gap-4 items-center">
+      <div class="flex gap-4 items-center flex-wrap">
         <div class="text-sm text-gray-500">آخرین سرویس: <span class="font-medium">{% if extinguisher.last_serviced_date %}{{ extinguisher.last_serviced_date|jalali_date }}{% else %}-{% endif %}</span></div>
         <div class="text-sm text-gray-500">سرویس بعدی: <span class="font-medium">{% if extinguisher.next_scheduled_service_date %}{{ extinguisher.next_scheduled_service_date|jalali_date }}{% else %}-{% endif %}</span></div>
         <div class="text-sm text-gray-500">تست فشار: <span class="font-medium">{% if extinguisher.pressure_test_due_date %}{{ extinguisher.pressure_test_due_date|jalali_date }}{% else %}-{% endif %}</span></div>
+      </div>
+      <hr class="my-4">
+      <h3 class="font-semibold mb-2">شارژ</h3>
+      <div class="flex gap-4 items-center flex-wrap">
+        <div class="text-sm text-gray-500">آخرین شارژ: <span class="font-medium">{% if extinguisher.last_charge_date %}{{ extinguisher.last_charge_date|jalali_date }}{% else %}-{% endif %}</span></div>
+        <div class="text-sm text-gray-500">شارژ بعدی: <span class="font-medium">{% if extinguisher.next_charge_date %}{{ extinguisher.next_charge_date|jalali_date }}{% else %}-{% endif %}</span></div>
       </div>
     </div>
 

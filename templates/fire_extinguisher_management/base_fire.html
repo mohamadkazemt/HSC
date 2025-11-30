@@ -65,7 +65,7 @@
         }
       });
 
-      // Initialize Persian Datepicker
+      // Initialize Persian Datepicker for .persian-datepicker class
       $('.persian-datepicker').each(function() {
         $(this).persianDatepicker({
           format: 'YYYY/MM/DD',
@@ -80,6 +80,83 @@
           }
         });
       });
+
+      // Initialize Jalali Datepicker for .jalali-date class (from base.html)
+      // This ensures datepicker works even if base.html script hasn't run yet
+      if (window.jQuery && $.fn.persianDatepicker) {
+        $('.jalali-date').each(function() {
+          const $el = $(this);
+          if (!$el.data('hasJalali')) {
+            try {
+              $el.prop('type', 'text');
+            } catch(e) {}
+            
+            const pickerConfig = {
+              format: 'YYYY/MM/DD',
+              autoClose: true,
+              calendar: {
+                persian: {
+                  locale: 'fa',
+                  leapYearMode: 'astronomical'
+                }
+              },
+              initialValueType: 'persian',
+              observer: false
+            };
+            
+            // Get today's date from server if available
+            let todayJalali = null;
+            const todayMeta = document.querySelector('meta[name="today-jalali"]');
+            if (todayMeta) {
+              const todayStr = todayMeta.getAttribute('content');
+              if (todayStr) {
+                const [year, month, day] = todayStr.split('/').map(num => parseInt(num));
+                if (typeof persianDate !== 'undefined') {
+                  todayJalali = new persianDate([year, month, day]);
+                }
+              }
+            }
+            
+            if (todayJalali && !$el.data('allow-future')) {
+              pickerConfig.maxDate = todayJalali;
+            }
+            
+            $el.persianDatepicker(pickerConfig);
+            
+            // Override onSelect to handle date formatting correctly
+            const picker = $el.data('datepicker');
+            if (picker && picker.config) {
+              const originalOnSelect = picker.config.onSelect;
+              picker.config.onSelect = function(unix) {
+                try {
+                  if (typeof persianDate !== 'undefined') {
+                    const dateObj = new Date(unix);
+                    const utcDate = new Date(Date.UTC(
+                      dateObj.getUTCFullYear(),
+                      dateObj.getUTCMonth(),
+                      dateObj.getUTCDate(),
+                      12, 0, 0, 0
+                    ));
+                    const pd = new persianDate(utcDate);
+                    const formatted = pd.toCalendar('persian').format('YYYY/MM/DD');
+                    setTimeout(() => {
+                      $el.val(formatted);
+                      if (picker && typeof picker.update === 'function') {
+                        picker.update();
+                      }
+                    }, 10);
+                  }
+                  if (originalOnSelect) originalOnSelect.call(this, unix);
+                } catch (e) {
+                  console.warn('Date conversion error:', e);
+                }
+              };
+            }
+            
+            $el.data('hasJalali', true);
+          }
+        });
+      }
     });
   </script>
 {% endblock %}
