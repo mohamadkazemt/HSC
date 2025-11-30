@@ -747,32 +747,34 @@ def general_question_edit_view(request, pk):
         data = request.POST
         
         # به‌روزرسانی سوال
-        question.question_scope = data['question_scope']
+        question.question_scopes = data.getlist('question_scopes')
         question.question_type = data['question_type']
         question.text = data['text']
         question.options = data.get('options', '')
         question.unacceptable_options = data.get('unacceptable_options', '')
-        question.anomaly_type_id = data['anomaly_type']
-        question.hse_type = data['hse_type']
-        question.default_priority_on_fail_id = data['default_priority_on_fail']
-        question.default_corrective_action = data['default_corrective_action']
-        question.default_anomaly_description_id = data.get('default_anomaly_description', '')
-
-        # به‌روزرسانی نوع ماشین، بخش مکانی یا دسته‌بندی خودرو
-        if data['question_scope'] == 'machine' and data.get('machine_type'):
-            question.machine_type_id = data['machine_type']
-            question.location_section = None
-            question.vehicle_category = None
-        elif data['question_scope'] == 'location' and data.get('location_section'):
-            question.location_section_id = data['location_section']
-            question.machine_type = None
-            question.vehicle_category = None
-        elif data['question_scope'] == 'contractor_vehicle' and data.get('vehicle_category'):
-            question.vehicle_category = data['vehicle_category']
-            question.machine_type = None
-            question.location_section = None
+        question.anomaly_type_id = data.get('anomaly_type') or None
+        question.hse_type = data.get('hse_type') or None
+        question.default_priority_on_fail_id = data.get('default_priority_on_fail') or None
+        question.default_corrective_action = data.get('default_corrective_action', '')
+        question.default_anomaly_description_id = data.get('default_anomaly_description') or None
+        question.vehicle_categories = data.getlist('vehicle_categories', [])
+        question.is_required = data.get('is_required') == 'on'
         
         question.save()
+
+        # تنظیم انواع ماشین
+        if 'machine' in question.question_scopes:
+            machine_types = data.getlist('machine_types')
+            question.machine_types.set(machine_types)
+        else:
+            question.machine_types.clear()
+
+        # تنظیم بخش‌های مکانی
+        if 'location' in question.question_scopes:
+            location_sections = data.getlist('location_sections')
+            question.location_sections.set(location_sections)
+        else:
+            question.location_sections.clear()
         
         return redirect('checklist_app:general_question_list')
     
