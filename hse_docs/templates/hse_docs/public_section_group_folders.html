@@ -201,38 +201,58 @@
 </div>
 
 <script>
-  // اگر Font Awesome لود شد و آیکون سفارشی وجود دارد، آن را نمایش بده
+  // فقط اگر آیکون سفارشی وجود داشته باشد، Font Awesome را بررسی کن
+  // در غیر این صورت، تصویر PNG را همیشه نگه دار
   document.addEventListener('DOMContentLoaded', function() {
-    // بررسی اینکه آیا Font Awesome لود شده است
+    // بررسی اینکه آیا آیکون سفارشی وجود دارد
+    const customIcons = document.querySelectorAll('.fa-icon');
+    
+    // اگر هیچ آیکون سفارشی وجود نداشته باشد، هیچ کاری نکن (تصویر PNG نمایش داده می‌شود)
+    if (customIcons.length === 0) {
+      return;
+    }
+    
+    // فقط اگر آیکون سفارشی وجود داشته باشد، Font Awesome را بررسی کن
     const testIcon = document.createElement('i');
     testIcon.className = 'fa-solid fa-folder';
     testIcon.style.position = 'absolute';
     testIcon.style.visibility = 'hidden';
+    testIcon.style.opacity = '0';
+    testIcon.style.pointerEvents = 'none';
     document.body.appendChild(testIcon);
     
     setTimeout(function() {
-      const computedStyle = window.getComputedStyle(testIcon, ':before');
-      const fontFamily = computedStyle.getPropertyValue('font-family');
-      
-      // اگر Font Awesome لود شده باشد و آیکون سفارشی وجود دارد
-      if (fontFamily && fontFamily.includes('Font Awesome')) {
-        // تمام آیکون‌های Font Awesome سفارشی را نمایش بده و تصویر را مخفی کن
-        document.querySelectorAll('.fa-icon').forEach(function(icon) {
-          icon.style.display = 'block';
-          // تصویر را در همان wrapper مخفی کن
-          const wrapper = icon.closest('.folder-icon-wrapper');
-          if (wrapper) {
-            const img = wrapper.querySelector('.img-icon');
-            if (img) {
-              img.style.display = 'none';
+      try {
+        const computedStyle = window.getComputedStyle(testIcon, ':before');
+        const fontFamily = computedStyle.getPropertyValue('font-family');
+        const content = computedStyle.getPropertyValue('content');
+        
+        // فقط اگر Font Awesome واقعاً لود شده باشد
+        const fontAwesomeLoaded = fontFamily && fontFamily.includes('Font Awesome') && content && content !== 'none' && content !== '';
+        
+        if (fontAwesomeLoaded) {
+          // فقط آیکون‌های Font Awesome سفارشی را نمایش بده
+          customIcons.forEach(function(icon) {
+            icon.style.display = 'block';
+            // تصویر را در همان wrapper مخفی کن
+            const wrapper = icon.closest('.folder-icon-wrapper');
+            if (wrapper) {
+              const img = wrapper.querySelector('.img-icon');
+              if (img) {
+                img.style.display = 'none';
+              }
             }
-          }
-        });
+          });
+        }
+        // اگر Font Awesome لود نشده باشد، تصویر PNG نمایش داده می‌شود
+      } catch (e) {
+        // در صورت خطا، تصویر PNG را نگه دار
+      } finally {
+        if (document.body.contains(testIcon)) {
+          document.body.removeChild(testIcon);
+        }
       }
-      // اگر Font Awesome لود نشده باشد، تصویر PNG قبلاً نمایش داده شده است
-      
-      document.body.removeChild(testIcon);
-    }, 500);
+    }, 300);
   });
 </script>
 {% endblock %}
