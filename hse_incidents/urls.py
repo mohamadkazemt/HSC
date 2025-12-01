@@ -88,6 +88,18 @@ URLS_WITH_LABELS = [
         "name": "injury_type_delete",
         "label": "مدیریت جراحات_حذف جراحت (AJAX)",
     },
+    {
+        "path": "dashboard/",
+        "view": views.incident_dashboard,
+        "name": "dashboard",
+        "label": "حوادث HSE_داشبورد حوادث",
+    },
+    {
+        "path": "dashboard/update_start_date/",
+        "view": views.update_dashboard_start_date_ajax,
+        "name": "update_dashboard_start_date",
+        "label": "حوادث HSE_به‌روزرسانی تاریخ شروع (AJAX)",
+    },
 ]
 
 urlpatterns = [

@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from permissions.utils import permission_required
-from .models import IncidentReport, InjuryType, HseCompletionReport
+from .models import IncidentReport, InjuryType, HseCompletionReport, IncidentDashboardSettings
 from accounts.models import UserProfile
 from django.contrib import messages
 from django.http import JsonResponse
@@ -860,3 +860,312 @@ def injury_type_delete_ajax(request, pk):
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
     
     return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=400)
+
+
+@login_required
+def incident_dashboard(request):
+    """داشبورد کامل حوادث HSE"""
+    from datetime import date, timedelta, datetime
+    from django.db.models import Count, Sum, Q, F
+    from fire_reports.models import FireReport
+    import jdatetime
+    
+    # دریافت تنظیمات داشبورد
+    settings = IncidentDashboardSettings.get_settings()
+    
+    # محاسبه تاریخ ابتدای سال جاری (شمسی)
+    today_jalali = jdatetime.date.today()
+    year_start_jalali = jdatetime.date(today_jalali.year, 1, 1)
+    year_start_gregorian = year_start_jalali.togregorian()
+    
+    # محاسبه روزهای بدون حادثه
+    days_without_incident = 0
+    start_date = None
+    if settings.days_without_incident_start_date:
+        start_date = settings.days_without_incident_start_date
+    else:
+        # اگر تاریخ شروع تنظیم نشده، از ابتدای سال استفاده می‌کنیم
+        start_date = year_start_gregorian
+    
+    today = date.today()
+    days_without_incident = (today - start_date).days
+    if days_without_incident < 0:
+        days_without_incident = 0
+    
+    # فیلتر حوادث از ابتدای سال تا کنون
+    incidents_this_year = IncidentReport.objects.filter(
+        incident_date__gte=year_start_gregorian
+    )
+    
+    # محاسبه تعداد کل حوادث
+    total_incidents = incidents_this_year.count()
+    
+    # محاسبه ساعت-کار کل (از ابتدای سال تا کنون)
+    days_passed = (date.today() - year_start_gregorian).days + 1
+    total_man_hours = days_passed * settings.average_man_hours_per_day
+    
+    # محاسبه شاخص FR (Frequency Rate)
+    # FR = (تعداد حوادث × 1,000,000) / ساعت-کار کل
+    fr_value = 0
+    if total_man_hours > 0:
+        fr_value = (total_incidents * 1_000_000) / total_man_hours
+    
+    # محاسبه شاخص SR (Severity Rate)
+    # SR = (مجموع روزهای کاری از دست رفته × 1,000,000) / ساعت-کار کل
+    total_lost_workdays = HseCompletionReport.objects.filter(
+        incident_report__incident_date__gte=year_start_gregorian,
+        lost_workdays__isnull=False
+    ).aggregate(total=Sum('lost_workdays'))['total'] or 0
+    
+    sr_value = 0
+    if total_man_hours > 0:
+        sr_value = (total_lost_workdays * 1_000_000) / total_man_hours
+    
+    # محاسبه شاخص FSI (Frequency Severity Index)
+    # FSI = (FR × SR) / 1,000
+    fsi_value = 0
+    if fr_value > 0 and sr_value > 0:
+        fsi_value = (fr_value * sr_value) / 1_000
+    
+    # آمار تفکیکی حوادث بر اساس نوع
+    # حوادث فردی: حوادثی که related_entity = 'کاراوران' یا involved_person وجود دارد
+    individual_incidents = incidents_this_year.filter(
+        Q(related_entity__icontains='کاراوران') | Q(involved_person__isnull=False)
+    ).distinct().count()
+    
+    # حوادث آتش‌سوزی: حوادثی که fire_truck_needed = True یا از FireReport
+    fire_incidents_from_reports = incidents_this_year.filter(fire_truck_needed=True).count()
+    # همچنین حوادث آتش از FireReport
+    from django.utils import timezone
+    year_start_datetime = timezone.make_aware(
+        datetime.combine(year_start_gregorian, datetime.min.time())
+    )
+    fire_reports_this_year = FireReport.objects.filter(
+        report_date__gte=year_start_datetime
+    )
+    fire_incidents_from_fire_reports = fire_reports_this_year.aggregate(
+        total=Sum('fire_incident_count')
+    )['total'] or 0
+    fire_incidents = fire_incidents_from_reports + fire_incidents_from_fire_reports
+    
+    # حوادث تصادفات: حوادثی که transportation_type پر شده یا ambulance_needed = True
+    accident_incidents = incidents_this_year.filter(
+        Q(transportation_type__isnull=False) | Q(ambulance_needed=True)
+    ).exclude(
+        Q(related_entity__icontains='کاراوران') | Q(involved_person__isnull=False)
+    ).exclude(fire_truck_needed=True).distinct().count()
+    
+    # سایر حوادث
+    other_incidents = total_incidents - individual_incidents - fire_incidents_from_reports - accident_incidents
+    
+    # تفکیک بر اساس کارفرما و پیمانکاران
+    # حوادث کارفرما (کاراوران)
+    company_incidents = incidents_this_year.filter(
+        Q(related_entity__icontains='کاراوران') | 
+        (Q(related_contractor__isnull=True) & Q(involved_person__isnull=False))
+    ).distinct().count()
+    
+    # حوادث پیمانکاران
+    contractor_incidents = incidents_this_year.filter(
+        Q(related_contractor__isnull=False) | 
+        Q(related_contractor_employees__isnull=False)
+    ).distinct().count()
+    
+    # آماده‌سازی داده‌های نمودار برای شاخص‌ها (12 ماه گذشته)
+    chart_data = {
+        'months': [],
+        'fr_values': [],
+        'sr_values': [],
+        'fsi_values': [],
+        'days_without_incident': [],
+    }
+    
+    # محاسبه شاخص‌ها برای هر ماه از ابتدای سال
+    current_date = year_start_gregorian
+    cumulative_days_without = 0
+    last_severe_incident_date = settings.days_without_incident_start_date
+    
+    while current_date <= date.today():
+        month_start = date(current_date.year, current_date.month, 1)
+        # محاسبه آخرین روز ماه
+        if current_date.month == 12:
+            month_end = date(current_date.year, 12, 31)
+        else:
+            month_end = date(current_date.year, current_date.month + 1, 1) - timedelta(days=1)
+        
+        if month_end > date.today():
+            month_end = date.today()
+        
+        # حوادث این ماه
+        month_incidents = IncidentReport.objects.filter(
+            incident_date__gte=month_start,
+            incident_date__lte=month_end
+        )
+        
+        # بررسی حادثه شدید در این ماه
+        severe_incident = month_incidents.filter(
+            is_severe_production_stoppage=True
+        ).order_by('-incident_date').first()
+        
+        if severe_incident:
+            last_severe_incident_date = severe_incident.incident_date
+            cumulative_days_without = 0
+        elif last_severe_incident_date:
+            cumulative_days_without = (month_end - last_severe_incident_date).days
+        else:
+            cumulative_days_without = (month_end - year_start_gregorian).days
+        
+        # محاسبه ساعت-کار این ماه
+        month_days = (month_end - month_start).days + 1
+        month_man_hours = month_days * settings.average_man_hours_per_day
+        
+        # محاسبه FR برای این ماه
+        month_fr = 0
+        if month_man_hours > 0:
+            month_fr = (month_incidents.count() * 1_000_000) / month_man_hours
+        
+        # محاسبه SR برای این ماه
+        month_lost_days = HseCompletionReport.objects.filter(
+            incident_report__incident_date__gte=month_start,
+            incident_report__incident_date__lte=month_end,
+            lost_workdays__isnull=False
+        ).aggregate(total=Sum('lost_workdays'))['total'] or 0
+        
+        month_sr = 0
+        if month_man_hours > 0:
+            month_sr = (month_lost_days * 1_000_000) / month_man_hours
+        
+        # محاسبه FSI برای این ماه
+        month_fsi = 0
+        if month_fr > 0 and month_sr > 0:
+            month_fsi = (month_fr * month_sr) / 1_000
+        
+        # تبدیل به شمسی برای نمایش
+        month_jalali = jdatetime.date.fromgregorian(date=month_start)
+        month_name = month_jalali.strftime('%Y/%m')
+        
+        chart_data['months'].append(month_name)
+        chart_data['fr_values'].append(round(month_fr, 2))
+        chart_data['sr_values'].append(round(month_sr, 2))
+        chart_data['fsi_values'].append(round(month_fsi, 2))
+        chart_data['days_without_incident'].append(cumulative_days_without)
+        
+        # رفتن به ماه بعد
+        if current_date.month == 12:
+            current_date = date(current_date.year + 1, 1, 1)
+        else:
+            current_date = date(current_date.year, current_date.month + 1, 1)
+    
+    # آماده‌سازی داده‌های نمودار تفکیک حوادث
+    incident_type_chart = {
+        'labels': ['حوادث فردی', 'آتش‌سوزی', 'تصادفات', 'سایر'],
+        'data': [individual_incidents, fire_incidents, accident_incidents, other_incidents]
+    }
+    
+    # آماده‌سازی داده‌های نمودار تفکیک کارفرما/پیمانکار
+    entity_chart = {
+        'labels': ['کارفرما (کاراوران)', 'پیمانکاران'],
+        'data': [company_incidents, contractor_incidents]
+    }
+    
+    # آخرین حوادث
+    recent_incidents = incidents_this_year.order_by('-incident_date', '-incident_time')[:10]
+    
+    # حوادث شدید منجر به توقف تولید
+    severe_incidents = incidents_this_year.filter(
+        is_severe_production_stoppage=True
+    ).order_by('-incident_date', '-incident_time')
+    
+    # تبدیل تاریخ شروع به شمسی برای نمایش
+    start_date_jalali = None
+    if start_date:
+        start_date_jalali = jdatetime.date.fromgregorian(date=start_date).strftime('%Y/%m/%d')
+    
+    # بررسی اینکه آیا تاریخ شروع از تنظیمات آمده یا از ابتدای سال
+    is_start_date_from_settings = bool(settings.days_without_incident_start_date)
+    
+    context = {
+        'days_without_incident': days_without_incident,
+        'start_date': start_date,
+        'start_date_jalali': start_date_jalali,
+        'is_start_date_from_settings': is_start_date_from_settings,
+        'fr_value': round(fr_value, 2),
+        'sr_value': round(sr_value, 2),
+        'fsi_value': round(fsi_value, 2),
+        'total_incidents': total_incidents,
+        'total_lost_workdays': total_lost_workdays,
+        'total_man_hours': total_man_hours,
+        'individual_incidents': individual_incidents,
+        'fire_incidents': fire_incidents,
+        'accident_incidents': accident_incidents,
+        'other_incidents': other_incidents,
+        'company_incidents': company_incidents,
+        'contractor_incidents': contractor_incidents,
+        'chart_data': chart_data,
+        'incident_type_chart': incident_type_chart,
+        'entity_chart': entity_chart,
+        'recent_incidents': recent_incidents,
+        'severe_incidents': severe_incidents,
+        'settings': settings,
+        'year_start_jalali': year_start_jalali.strftime('%Y/%m/%d'),
+    }
+    
+    return render(request, 'hse_incidents/dashboard.html', context)
+
+
+@login_required
+@ensure_csrf_cookie
+def update_dashboard_start_date_ajax(request):
+    """به‌روزرسانی تاریخ شروع شمارش روزهای بدون حادثه"""
+    from datetime import date
+    from accounts.models import UserProfile
+    
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Only POST allowed'}, status=405)
+    
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+    except UserProfile.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'پروفایل کاربری یافت نشد'}, status=400)
+    
+    try:
+        data = json.loads(request.body)
+        date_str = data.get('start_date', '').strip()
+        
+        if not date_str:
+            return JsonResponse({'status': 'error', 'message': 'تاریخ الزامی است'}, status=400)
+        
+        # تبدیل تاریخ شمسی به میلادی
+        try:
+            normalized = persian_to_english_numbers(date_str)
+            separator = '/' if '/' in normalized else '-'
+            parts = list(map(int, normalized.split(separator)))
+            gregorian_date = jdatetime.date(parts[0], parts[1], parts[2]).togregorian()
+        except (ValueError, IndexError) as e:
+            return JsonResponse({'status': 'error', 'message': 'فرمت تاریخ نامعتبر است'}, status=400)
+        
+        # به‌روزرسانی تنظیمات
+        settings = IncidentDashboardSettings.get_settings()
+        settings.days_without_incident_start_date = gregorian_date
+        settings.updated_by = user_profile
+        settings.save()
+        
+        # محاسبه روزهای بدون حادثه جدید
+        today = date.today()
+        days_without_incident = (today - gregorian_date).days
+        if days_without_incident < 0:
+            days_without_incident = 0
+        
+        # تبدیل به شمسی برای نمایش
+        start_date_jalali = jdatetime.date.fromgregorian(date=gregorian_date).strftime('%Y/%m/%d')
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'تاریخ شروع با موفقیت به‌روزرسانی شد',
+            'days_without_incident': days_without_incident,
+            'start_date_jalali': start_date_jalali
+        })
+        
+    except Exception as e:
+        logger.error(f"خطا در به‌روزرسانی تاریخ شروع: {e}")
+        return JsonResponse({'status': 'error', 'message': f'خطا: {str(e)}'}, status=500)

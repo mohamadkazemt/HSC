@@ -51,6 +51,13 @@ class IncidentReport(models.Model):
     is_completed = models.BooleanField(default=False, verbose_name="تکمیل شده")
     related_risk = models.ForeignKey('risk_assessment.RiskAssessment', on_delete=models.SET_NULL, null=True, blank=True,
                                      related_name="related_incidents", verbose_name="ریسک مرتبط")
+    is_severe_production_stoppage = models.BooleanField(default=False, verbose_name="حادثه شدید منجر به توقف تولید")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ثبت")
+    
+    class Meta:
+        verbose_name = "گزارش حادثه"
+        verbose_name_plural = "گزارشات حوادث"
+        ordering = ['-incident_date', '-incident_time']
 
 
 class HseCompletionReport(models.Model):
@@ -103,3 +110,37 @@ class HseCompletionReport(models.Model):
     class Meta:
         verbose_name = "گزارش تکمیل حادثه"
         verbose_name_plural = "گزارشات تکمیل حوادث"
+
+
+class IncidentDashboardSettings(models.Model):
+    """تنظیمات داشبورد حوادث - ذخیره تاریخ شروع شمارش روزهای بدون حادثه"""
+    days_without_incident_start_date = models.DateField(
+        null=True, 
+        blank=True, 
+        verbose_name="تاریخ شروع شمارش روزهای بدون حادثه (آخرین حادثه شدید منجر به توقف تولید)"
+    )
+    average_man_hours_per_day = models.IntegerField(
+        default=2000,
+        verbose_name="میانگین ساعت-کار روزانه (برای محاسبه شاخص‌های FR, SR, FSI)"
+    )
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="تاریخ آخرین بروزرسانی")
+    updated_by = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True, blank=True,
+                                   related_name="updated_incident_settings", verbose_name="بروزرسانی شده توسط")
+    
+    class Meta:
+        verbose_name = "تنظیمات داشبورد حوادث"
+        verbose_name_plural = "تنظیمات داشبورد حوادث"
+    
+    def save(self, *args, **kwargs):
+        # فقط یک رکورد مجاز است
+        if not self.pk and IncidentDashboardSettings.objects.exists():
+            # اگر رکوردی وجود دارد، آن را بروزرسانی می‌کنیم
+            existing = IncidentDashboardSettings.objects.first()
+            self.pk = existing.pk
+        return super().save(*args, **kwargs)
+    
+    @classmethod
+    def get_settings(cls):
+        """دریافت تنظیمات (ایجاد در صورت عدم وجود)"""
+        settings, created = cls.objects.get_or_create(pk=1)
+        return settings

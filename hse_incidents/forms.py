@@ -31,6 +31,7 @@ class IncidentReportForm(forms.ModelForm):
             'hospitalized', 'hospitalized_time',
             'transportation_type',
             'full_description', 'initial_cause',
+            'is_severe_production_stoppage',
         ]
         widgets = {
             'incident_date': forms.TextInput(attrs={'autocomplete': 'off'}),
