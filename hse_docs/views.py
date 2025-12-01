@@ -1,6 +1,6 @@
 # hse_docs/views.py
 from django.shortcuts import render, get_object_or_404
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.core.paginator import Paginator
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib import messages
@@ -12,10 +12,33 @@ from accounts.models import Section, UnitGroup
 
 
 def view_section(request, id):
-    """Public view: Documents for a specific Section"""
+    """Public view: Show topic folders for a specific Section"""
     section = get_object_or_404(Section, pk=id)
+    
+    # Get all topic categories that have documents in this section
+    topics = TopicCategory.objects.filter(
+        documents__section=section,
+        documents__is_active=True
+    ).annotate(
+        document_count=Count('documents', filter=Q(documents__section=section, documents__is_active=True))
+    ).filter(document_count__gt=0).distinct().order_by('title')
+    
+    context = {
+        'folder_type': 'section',
+        'folder_object': section,
+        'topics': topics,
+    }
+    return render(request, 'hse_docs/public_section_group_folders.html', context)
+
+
+def view_section_topic(request, section_id, topic_slug):
+    """Public view: Documents for a specific TopicCategory in a specific Section"""
+    section = get_object_or_404(Section, pk=section_id)
+    topic = get_object_or_404(TopicCategory, slug=topic_slug)
+    
     documents = Document.objects.filter(
         section=section,
+        topic_category=topic,
         is_active=True
     ).select_related('topic_category', 'section', 'unit_group').order_by('-uploaded_at')
     
@@ -34,8 +57,9 @@ def view_section(request, id):
         documents_page = paginator.page(1)
     
     context = {
-        'folder_type': 'section',
+        'folder_type': 'section_topic',
         'folder_object': section,
+        'topic': topic,
         'documents': documents_page,
         'search_form': search_form,
         'view_context': 'section',  # For badge display
@@ -44,10 +68,33 @@ def view_section(request, id):
 
 
 def view_group(request, id):
-    """Public view: Documents for a specific UnitGroup"""
+    """Public view: Show topic folders for a specific UnitGroup"""
     unit_group = get_object_or_404(UnitGroup, pk=id)
+    
+    # Get all topic categories that have documents in this group
+    topics = TopicCategory.objects.filter(
+        documents__unit_group=unit_group,
+        documents__is_active=True
+    ).annotate(
+        document_count=Count('documents', filter=Q(documents__unit_group=unit_group, documents__is_active=True))
+    ).filter(document_count__gt=0).distinct().order_by('title')
+    
+    context = {
+        'folder_type': 'group',
+        'folder_object': unit_group,
+        'topics': topics,
+    }
+    return render(request, 'hse_docs/public_section_group_folders.html', context)
+
+
+def view_group_topic(request, group_id, topic_slug):
+    """Public view: Documents for a specific TopicCategory in a specific UnitGroup"""
+    unit_group = get_object_or_404(UnitGroup, pk=group_id)
+    topic = get_object_or_404(TopicCategory, slug=topic_slug)
+    
     documents = Document.objects.filter(
         unit_group=unit_group,
+        topic_category=topic,
         is_active=True
     ).select_related('topic_category', 'section', 'unit_group').order_by('-uploaded_at')
     
@@ -66,8 +113,9 @@ def view_group(request, id):
         documents_page = paginator.page(1)
     
     context = {
-        'folder_type': 'group',
+        'folder_type': 'group_topic',
         'folder_object': unit_group,
+        'topic': topic,
         'documents': documents_page,
         'search_form': search_form,
         'view_context': 'group',  # For badge display
@@ -105,6 +153,18 @@ def view_topic(request, slug):
         'view_context': 'topic',  # For badge display
     }
     return render(request, 'hse_docs/public_folder_detail.html', context)
+
+
+def public_folder_list(request):
+    """Public view: List all topic categories as folders"""
+    topics = TopicCategory.objects.all().annotate(
+        document_count=Count('documents', filter=Q(documents__is_active=True))
+    ).filter(document_count__gt=0).order_by('title')
+    
+    context = {
+        'topics': topics,
+    }
+    return render(request, 'hse_docs/public_folder_list.html', context)
 
 
 def document_detail(request, pk):
@@ -201,12 +261,14 @@ def qr_center(request):
 
 @staff_member_required
 def generate_qr_code(request, qr_type, obj_id):
-    """Generate QR code image for Section, UnitGroup, or TopicCategory"""
+    """Generate QR code image for Section, UnitGroup, TopicCategory, or Main Folder List"""
     from django.http import HttpResponse
     import qrcode
     
     # Build URL based on type
-    if qr_type == 'section':
+    if qr_type == 'main' or qr_type == 'folder_list':
+        url = reverse('hse_docs:public_folder_list')
+    elif qr_type == 'section':
         url = reverse('hse_docs:view_section', kwargs={'id': obj_id})
     elif qr_type == 'group':
         url = reverse('hse_docs:view_group', kwargs={'id': obj_id})

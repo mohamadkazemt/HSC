@@ -5,9 +5,12 @@ from . import views
 app_name = 'hse_docs'
 
 urlpatterns = [
-    # Public QR Views
+    # Public Views
+    path('', views.public_folder_list, name='public_folder_list'),
     path('section/<int:id>/', views.view_section, name='view_section'),
+    path('section/<int:section_id>/topic/<slug:topic_slug>/', views.view_section_topic, name='view_section_topic'),
     path('group/<int:id>/', views.view_group, name='view_group'),
+    path('group/<int:group_id>/topic/<slug:topic_slug>/', views.view_group_topic, name='view_group_topic'),
     path('topic/<slug:slug>/', views.view_topic, name='view_topic'),
     path('document/<int:pk>/', views.document_detail, name='document_detail'),
     

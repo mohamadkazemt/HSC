@@ -49,11 +49,40 @@
 <div class="max-w-7xl mx-auto">
   <!-- Header Section -->
   <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
+    <!-- Back Button -->
+    <div class="mb-4">
+      {% if folder_type == 'section_topic' %}
+        <a href="{% url 'hse_docs:view_section' folder_object.id %}" 
+           class="inline-flex items-center text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-sm sm:text-base py-2">
+          <i class="fa-solid fa-arrow-right ml-2"></i>
+          بازگشت به فولدرهای بخش
+        </a>
+      {% elif folder_type == 'group_topic' %}
+        <a href="{% url 'hse_docs:view_group' folder_object.id %}" 
+           class="inline-flex items-center text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-sm sm:text-base py-2">
+          <i class="fa-solid fa-arrow-right ml-2"></i>
+          بازگشت به فولدرهای گروه
+        </a>
+      {% else %}
+        <a href="{% url 'hse_docs:public_folder_list' %}" 
+           class="inline-flex items-center text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-sm sm:text-base py-2">
+          <i class="fa-solid fa-arrow-right ml-2"></i>
+          بازگشت به فولدرها
+        </a>
+      {% endif %}
+    </div>
+    
     <div class="flex items-start gap-3 sm:gap-4">
       {% if folder_type == 'topic' and folder_object.icon %}
         <div class="shrink-0">
           <i class="{{ folder_object.icon }} text-3xl sm:text-4xl text-indigo-600 dark:text-indigo-400"></i>
         </div>
+      {% elif folder_type == 'section_topic' or folder_type == 'group_topic' %}
+        {% if topic.icon %}
+          <div class="shrink-0">
+            <i class="{{ topic.icon }} text-3xl sm:text-4xl text-indigo-600 dark:text-indigo-400"></i>
+          </div>
+        {% endif %}
       {% endif %}
       <div class="flex-1 min-w-0">
         <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
@@ -63,9 +92,17 @@
             اسناد گروه: {{ folder_object.name }}
           {% elif folder_type == 'topic' %}
             {{ folder_object.title }}
+          {% elif folder_type == 'section_topic' %}
+            {{ topic.title }} - بخش {{ folder_object.name }}
+          {% elif folder_type == 'group_topic' %}
+            {{ topic.title }} - گروه {{ folder_object.name }}
           {% endif %}
         </h1>
-        {% if folder_object.description %}
+        {% if folder_type == 'section_topic' or folder_type == 'group_topic' %}
+          {% if topic.description %}
+            <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">{{ topic.description }}</p>
+          {% endif %}
+        {% elif folder_object.description %}
           <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">{{ folder_object.description }}</p>
         {% endif %}
       </div>

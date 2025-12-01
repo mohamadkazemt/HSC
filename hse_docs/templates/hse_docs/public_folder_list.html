@@ -1,0 +1,94 @@
+{% extends 'base_public.html' %}
+{% load static %}
+
+{% block title %}اسناد HSE - فولدرها{% endblock %}
+
+{% block extra_css %}
+<style>
+  .folder-card {
+    transition: all 0.3s ease;
+  }
+  .folder-card:hover {
+    transform: translateY(-4px);
+  }
+  .folder-icon {
+    font-size: 3rem;
+  }
+  @media (min-width: 640px) {
+    .folder-icon {
+      font-size: 4rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <!-- Header Section -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
+    <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
+      <i class="fa-solid fa-folder-open ml-2 text-indigo-600 dark:text-indigo-400"></i>
+      فولدرهای اسناد HSE
+    </h1>
+    <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+      برای مشاهده اسناد، روی فولدر مورد نظر کلیک کنید
+    </p>
+  </div>
+
+  <!-- Folders Grid - Mobile Optimized -->
+  {% if topics %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+      {% for topic in topics %}
+        <a href="{% url 'hse_docs:view_topic' topic.slug %}" 
+           class="folder-card bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-lg p-6 sm:p-8 text-center block">
+          <!-- Folder Icon -->
+          <div class="mb-4">
+            {% if topic.icon %}
+              <i class="{{ topic.icon }} folder-icon text-indigo-600 dark:text-indigo-400"></i>
+            {% else %}
+              <i class="fa-solid fa-folder folder-icon text-indigo-600 dark:text-indigo-400"></i>
+            {% endif %}
+          </div>
+          
+          <!-- Folder Title -->
+          <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
+            {{ topic.title }}
+          </h3>
+          
+          <!-- Folder Description -->
+          {% if topic.description %}
+            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+              {{ topic.description|truncatewords:10 }}
+            </p>
+          {% endif %}
+          
+          <!-- Document Count Badge -->
+          <div class="flex items-center justify-center gap-2">
+            <span class="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200 rounded-full text-xs sm:text-sm font-medium">
+              <i class="fa-solid fa-file ml-1"></i>
+              {{ topic.document_count }} سند
+            </span>
+          </div>
+          
+          <!-- Click Indicator -->
+          <div class="mt-4 text-xs text-gray-500 dark:text-gray-400">
+            <i class="fa-solid fa-arrow-left ml-1"></i>
+            کلیک برای مشاهده
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 sm:p-12 text-center">
+      <i class="fa-solid fa-folder-open text-5xl sm:text-6xl text-gray-400 mb-4"></i>
+      <h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2">
+        هیچ فولدری یافت نشد
+      </h3>
+      <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+        در حال حاضر هیچ فولدری با اسناد فعال وجود ندارد.
+      </p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+

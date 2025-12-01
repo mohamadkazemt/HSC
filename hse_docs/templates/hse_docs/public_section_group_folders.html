@@ -1,0 +1,123 @@
+{% extends 'base_public.html' %}
+{% load static %}
+
+{% block title %}
+  {% if folder_type == 'section' %}
+    فولدرهای بخش {{ folder_object.name }}
+  {% elif folder_type == 'group' %}
+    فولدرهای گروه {{ folder_object.name }}
+  {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .folder-card {
+    transition: all 0.3s ease;
+  }
+  .folder-card:hover {
+    transform: translateY(-4px);
+  }
+  .folder-icon {
+    font-size: 3rem;
+  }
+  @media (min-width: 640px) {
+    .folder-icon {
+      font-size: 4rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <!-- Header Section -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 sm:p-6 mb-4 sm:mb-6">
+    <!-- Back Button -->
+    <div class="mb-4">
+      <a href="{% url 'hse_docs:public_folder_list' %}" 
+         class="inline-flex items-center text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 text-sm sm:text-base py-2">
+        <i class="fa-solid fa-arrow-right ml-2"></i>
+        بازگشت به فولدرها
+      </a>
+    </div>
+    
+    <div class="flex items-start gap-3 sm:gap-4">
+      <div class="shrink-0">
+        {% if folder_type == 'section' %}
+          <i class="fa-solid fa-building text-3xl sm:text-4xl text-indigo-600 dark:text-indigo-400"></i>
+        {% elif folder_type == 'group' %}
+          <i class="fa-solid fa-users text-3xl sm:text-4xl text-indigo-600 dark:text-indigo-400"></i>
+        {% endif %}
+      </div>
+      <div class="flex-1 min-w-0">
+        <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          {% if folder_type == 'section' %}
+            فولدرهای بخش: {{ folder_object.name }}
+          {% elif folder_type == 'group' %}
+            فولدرهای گروه: {{ folder_object.name }}
+          {% endif %}
+        </h1>
+        <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+          برای مشاهده اسناد، روی فولدر مورد نظر کلیک کنید
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Folders Grid - Mobile Optimized -->
+  {% if topics %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+      {% for topic in topics %}
+        <a href="{% if folder_type == 'section' %}{% url 'hse_docs:view_section_topic' folder_object.id topic.slug %}{% elif folder_type == 'group' %}{% url 'hse_docs:view_group_topic' folder_object.id topic.slug %}{% endif %}" 
+           class="folder-card bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-lg p-6 sm:p-8 text-center block">
+          <!-- Folder Icon -->
+          <div class="mb-4">
+            {% if topic.icon %}
+              <i class="{{ topic.icon }} folder-icon text-indigo-600 dark:text-indigo-400"></i>
+            {% else %}
+              <i class="fa-solid fa-folder folder-icon text-indigo-600 dark:text-indigo-400"></i>
+            {% endif %}
+          </div>
+          
+          <!-- Folder Title -->
+          <h3 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
+            {{ topic.title }}
+          </h3>
+          
+          <!-- Folder Description -->
+          {% if topic.description %}
+            <p class="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4 line-clamp-2">
+              {{ topic.description|truncatewords:10 }}
+            </p>
+          {% endif %}
+          
+          <!-- Document Count Badge -->
+          <div class="flex items-center justify-center gap-2">
+            <span class="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-200 rounded-full text-xs sm:text-sm font-medium">
+              <i class="fa-solid fa-file ml-1"></i>
+              {{ topic.document_count }} سند
+            </span>
+          </div>
+          
+          <!-- Click Indicator -->
+          <div class="mt-4 text-xs text-gray-500 dark:text-gray-400">
+            <i class="fa-solid fa-arrow-left ml-1"></i>
+            کلیک برای مشاهده
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 sm:p-12 text-center">
+      <i class="fa-solid fa-folder-open text-5xl sm:text-6xl text-gray-400 mb-4"></i>
+      <h3 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white mb-2">
+        هیچ فولدری یافت نشد
+      </h3>
+      <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400">
+        در حال حاضر هیچ فولدری با اسناد فعال در این {% if folder_type == 'section' %}بخش{% elif folder_type == 'group' %}گروه{% endif %} وجود ندارد.
+      </p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+

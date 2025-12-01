@@ -31,6 +31,47 @@
     </div>
   </div>
 
+  <!-- Main Folder List QR Code -->
+  <div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 border-2 border-indigo-200 dark:border-indigo-800 rounded-xl p-6 mb-6">
+    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
+      <i class="fa-solid fa-folder-open ml-2 text-indigo-600 dark:text-indigo-400"></i>QR کد صفحه اصلی فولدرها
+    </h2>
+    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+      این QR کد کاربران را به صفحه اصلی فولدرها (لیست تمام موضوعات) هدایت می‌کند.
+    </p>
+    <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
+      <div class="border-2 border-indigo-300 dark:border-indigo-700 rounded-lg p-4 bg-white dark:bg-gray-800">
+        <img src="{% url 'hse_docs:generate_qr' 'main' 'folder_list' %}" 
+             alt="QR Code for Main Folder List"
+             class="mx-auto mb-3 w-48 h-48">
+        <a href="{% url 'hse_docs:generate_qr' 'main' 'folder_list' %}" 
+           download="qr-main-folder-list.png"
+           class="inline-block w-full px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors text-center">
+          <i class="fa-solid fa-download ml-1"></i>دانلود QR کد صفحه اصلی
+        </a>
+      </div>
+      <div class="flex-1">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-4">
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-2">مزایای استفاده:</h3>
+          <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-2">
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check-circle text-green-500 mt-1"></i>
+              <span>دسترسی به تمام فولدرهای اسناد HSE</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check-circle text-green-500 mt-1"></i>
+              <span>نمایش تمام موضوعات در یک صفحه</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <i class="fa-solid fa-check-circle text-green-500 mt-1"></i>
+              <span>رابط کاربری ساده و قابل استفاده</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Sections QR Codes -->
   <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 mb-6">
     <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">

@@ -869,6 +869,7 @@ def incident_dashboard(request):
     from django.db.models import Count, Sum, Q, F
     from fire_reports.models import FireReport
     import jdatetime
+    import math
     
     # دریافت تنظیمات داشبورد
     settings = IncidentDashboardSettings.get_settings()
@@ -922,10 +923,10 @@ def incident_dashboard(request):
         sr_value = (total_lost_workdays * 1_000_000) / total_man_hours
     
     # محاسبه شاخص FSI (Frequency Severity Index)
-    # FSI = (FR × SR) / 1,000
+    # FSI = √((FR × SR) / 1,000)
     fsi_value = 0
     if fr_value > 0 and sr_value > 0:
-        fsi_value = (fr_value * sr_value) / 1_000
+        fsi_value = math.sqrt((fr_value * sr_value) / 1_000)
     
     # آمار تفکیکی حوادث بر اساس نوع
     # حوادث فردی: حوادثی که related_entity = 'کاراوران' یا involved_person وجود دارد
@@ -1038,7 +1039,7 @@ def incident_dashboard(request):
         # محاسبه FSI برای این ماه
         month_fsi = 0
         if month_fr > 0 and month_sr > 0:
-            month_fsi = (month_fr * month_sr) / 1_000
+            month_fsi = math.sqrt((month_fr * month_sr) / 1_000)
         
         # تبدیل به شمسی برای نمایش
         month_jalali = jdatetime.date.fromgregorian(date=month_start)
