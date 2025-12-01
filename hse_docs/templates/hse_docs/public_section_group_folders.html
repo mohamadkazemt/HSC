@@ -38,30 +38,13 @@
     height: 4.5rem;
   }
   .folder-icon {
-    position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
     height: 100%;
     object-fit: contain;
     transition: all 0.3s ease;
-  }
-  .folder-icon.img-icon {
-    display: block;
     filter: drop-shadow(0 4px 6px rgba(99, 102, 241, 0.3));
   }
-  .folder-icon.fa-icon {
-    font-size: 4.5rem;
-    line-height: 1;
-    display: none;
-    color: #6366f1;
-    filter: drop-shadow(0 4px 6px rgba(99, 102, 241, 0.3));
-  }
-  .dark .folder-icon.img-icon {
-    filter: drop-shadow(0 4px 6px rgba(129, 140, 248, 0.4));
-  }
-  .dark .folder-icon.fa-icon {
-    color: #818cf8;
+  .dark .folder-icon {
     filter: drop-shadow(0 4px 6px rgba(129, 140, 248, 0.4));
   }
   @media (min-width: 640px) {
@@ -84,11 +67,6 @@
   }
   .folder-card:hover .folder-icon {
     transform: scale(1.1) rotate(-5deg);
-  }
-  .folder-card:hover .folder-icon.img-icon {
-    filter: drop-shadow(0 8px 12px rgba(99, 102, 241, 0.4));
-  }
-  .folder-card:hover .folder-icon.fa-icon {
     filter: drop-shadow(0 8px 12px rgba(99, 102, 241, 0.4));
   }
   .folder-title {
@@ -166,12 +144,7 @@
            class="folder-card rounded-2xl p-6 sm:p-8 text-center block">
           <!-- Folder Icon - Local PNG image -->
           <div class="folder-icon-wrapper">
-            <!-- Local PNG Folder Icon (always shown) -->
-            <img src="{% static 'images/5994710.png' %}" alt="فولدر" class="folder-icon img-icon">
-            <!-- Font Awesome Icon (hidden by default, shown if Font Awesome is loaded and custom icon exists) -->
-            {% if topic.icon %}
-              <i class="{{ topic.icon }} folder-icon fa-icon" style="display: none;"></i>
-            {% endif %}
+            <img src="{% static 'images/5994710.png' %}" alt="فولدر" class="folder-icon">
           </div>
           
           <!-- Folder Title -->
@@ -200,60 +173,5 @@
   {% endif %}
 </div>
 
-<script>
-  // فقط اگر آیکون سفارشی وجود داشته باشد، Font Awesome را بررسی کن
-  // در غیر این صورت، تصویر PNG را همیشه نگه دار
-  document.addEventListener('DOMContentLoaded', function() {
-    // بررسی اینکه آیا آیکون سفارشی وجود دارد
-    const customIcons = document.querySelectorAll('.fa-icon');
-    
-    // اگر هیچ آیکون سفارشی وجود نداشته باشد، هیچ کاری نکن (تصویر PNG نمایش داده می‌شود)
-    if (customIcons.length === 0) {
-      return;
-    }
-    
-    // فقط اگر آیکون سفارشی وجود داشته باشد، Font Awesome را بررسی کن
-    const testIcon = document.createElement('i');
-    testIcon.className = 'fa-solid fa-folder';
-    testIcon.style.position = 'absolute';
-    testIcon.style.visibility = 'hidden';
-    testIcon.style.opacity = '0';
-    testIcon.style.pointerEvents = 'none';
-    document.body.appendChild(testIcon);
-    
-    setTimeout(function() {
-      try {
-        const computedStyle = window.getComputedStyle(testIcon, ':before');
-        const fontFamily = computedStyle.getPropertyValue('font-family');
-        const content = computedStyle.getPropertyValue('content');
-        
-        // فقط اگر Font Awesome واقعاً لود شده باشد
-        const fontAwesomeLoaded = fontFamily && fontFamily.includes('Font Awesome') && content && content !== 'none' && content !== '';
-        
-        if (fontAwesomeLoaded) {
-          // فقط آیکون‌های Font Awesome سفارشی را نمایش بده
-          customIcons.forEach(function(icon) {
-            icon.style.display = 'block';
-            // تصویر را در همان wrapper مخفی کن
-            const wrapper = icon.closest('.folder-icon-wrapper');
-            if (wrapper) {
-              const img = wrapper.querySelector('.img-icon');
-              if (img) {
-                img.style.display = 'none';
-              }
-            }
-          });
-        }
-        // اگر Font Awesome لود نشده باشد، تصویر PNG نمایش داده می‌شود
-      } catch (e) {
-        // در صورت خطا، تصویر PNG را نگه دار
-      } finally {
-        if (document.body.contains(testIcon)) {
-          document.body.removeChild(testIcon);
-        }
-      }
-    }, 300);
-  });
-</script>
 {% endblock %}
 
