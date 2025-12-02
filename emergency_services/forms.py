@@ -303,8 +303,9 @@ class EmergencyPersonnelForm(forms.ModelForm):
         if commit:
             user.save()
             
-            # حذف گروه‌های قبلی اورژانس
-            user.groups.filter(name__in=['EmergencyManager', 'EmergencyDoctor', 'EmergencyNurse']).delete()
+            # حذف کاربر از گروه‌های قبلی اورژانس
+            emergency_groups = user.groups.filter(name__in=['EmergencyManager', 'EmergencyDoctor', 'EmergencyNurse'])
+            user.groups.remove(*emergency_groups)
             
             # افزودن به گروه جدید
             role = self.cleaned_data['role']
