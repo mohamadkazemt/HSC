@@ -1,4 +1,3 @@
-این فایل رو اجرا کنم؟
 from django.core.management.base import BaseCommand
 from accounts.models import Position
 from permissions.models import PositionPermission
