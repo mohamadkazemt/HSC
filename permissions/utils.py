@@ -227,10 +227,27 @@ def class_permission_required(view_name):
 
         @method_decorator(wraps(original_dispatch), name='dispatch')
         def new_dispatch(self, *args, **kwargs):
-            # بررسی دسترسی‌ها
+            # بررسی اول: user authenticated باشد
+            if not self.request.user.is_authenticated:
+                # Redirect به login اگر LoginRequiredMixin استفاده کنیم
+                # اما اگر decorator قبل اجرا شده، بگذار exception بخوری
+                from django.contrib.auth.views import redirect_to_login
+                return redirect_to_login(self.request.get_full_path())
+            
+            # اگر superuser باشد، اجازه بده
+            if self.request.user.is_superuser:
+                logger.debug(f"Superuser {self.request.user.username} accessing {view_name}")
+                return original_dispatch(self, *args, **kwargs)
+            
+            # بررسی دسترسی‌ها (can_view یا any permission)
             permissions = check_permission(self.request.user, view_name)
-            if not permissions.get("can_view", False):
+            logger.debug(f"User {self.request.user.username} checking view {view_name}: {permissions}")
+            
+            if not any(permissions.values()):  # اگر هیچ دسترسی وجود نداشت
+                logger.warning(f"User {self.request.user.username} denied access to {view_name}")
                 raise PermissionDenied("شما اجازه دسترسی به این بخش را ندارید.")
+            
+            logger.info(f"User {self.request.user.username} granted access to {view_name}")
             return original_dispatch(self, *args, **kwargs)
 
         cls.dispatch = new_dispatch
