@@ -22,7 +22,7 @@ class IncidentReportForm(forms.ModelForm):
     class Meta:
         model = IncidentReport
         fields = [
-            'incident_date', 'incident_time', 'location', 'section',
+            'incident_date', 'incident_time', 'incident_type', 'location', 'section',
             'involved_person', 'involved_equipment',
             'injury_type', 'affected_body_part', 'damage_description',
             'related_entity', 'related_contractor','related_contractor_employees',

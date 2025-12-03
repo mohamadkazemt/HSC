@@ -1,13 +1,13 @@
 from django.contrib import admin
 
 # Register your models here.
-from .models import IncidentReport, InjuryType, HseCompletionReport, IncidentDashboardSettings
+from .models import IncidentReport, InjuryType, HseCompletionReport, IncidentDashboardSettings, IncidentType
 
 
 @admin.register(IncidentReport)
 class IncidentReportAdmin(admin.ModelAdmin):
-    list_display = ['id', 'incident_date', 'location', 'is_severe_production_stoppage', 'is_completed']
-    list_filter = ['incident_date', 'is_severe_production_stoppage', 'is_completed', 'fire_truck_needed', 'ambulance_needed']
+    list_display = ['id', 'incident_date', 'incident_type', 'location', 'is_severe_production_stoppage', 'is_completed']
+    list_filter = ['incident_date', 'incident_type', 'is_severe_production_stoppage', 'is_completed', 'fire_truck_needed', 'ambulance_needed']
     search_fields = ['full_description', 'initial_cause', 'location__name']
     date_hierarchy = 'incident_date'
 
@@ -16,6 +16,14 @@ class IncidentReportAdmin(admin.ModelAdmin):
 class InjuryTypeAdmin(admin.ModelAdmin):
     list_display = ['id', 'name']
     search_fields = ['name']
+
+
+@admin.register(IncidentType)
+class IncidentTypeAdmin(admin.ModelAdmin):
+    list_display = ['id', 'category', 'name']
+    list_filter = ['category']
+    search_fields = ['name']
+    ordering = ['category', 'name']
 
 
 @admin.register(HseCompletionReport)

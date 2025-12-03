@@ -119,6 +119,35 @@
                      class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-orange-500 focus:ring-orange-500 shadow-sm">
             </div>
             
+            <!-- Incident Type -->
+            <div>
+              <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                <svg class="inline h-4 w-4 ml-1 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9.303-3.376c.866-1.5-.217-3.374-1.948-3.374h-14.71c-1.73 0-2.813 1.874-1.948 3.374L9.051 3.378c.866-1.5 3.032-1.5 3.898 0l8.953 15.748zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+                نوع حادثه <span class="text-red-600">*</span>
+              </label>
+              <select name="incident_type" required
+                      class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-orange-500 focus:ring-orange-500 shadow-sm">
+                <option value="">انتخاب کنید</option>
+                <optgroup label="حوادث انسانی (فردی)">
+                  {% for incident_type in incident_types_human %}
+                  <option value="{{ incident_type.id }}">{{ incident_type.name }}</option>
+                  {% endfor %}
+                </optgroup>
+                <optgroup label="حوادث تجهیزاتی">
+                  {% for incident_type in incident_types_equipment %}
+                  <option value="{{ incident_type.id }}">{{ incident_type.name }}</option>
+                  {% endfor %}
+                </optgroup>
+                <optgroup label="حوادث محیط زیستی">
+                  {% for incident_type in incident_types_environmental %}
+                  <option value="{{ incident_type.id }}">{{ incident_type.name }}</option>
+                  {% endfor %}
+                </optgroup>
+              </select>
+            </div>
+            
             <!-- Location -->
             <div>
               <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
