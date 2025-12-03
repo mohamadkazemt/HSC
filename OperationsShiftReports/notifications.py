@@ -54,6 +54,12 @@ def _get_operations_staff() -> Iterable[User]:
 
 
 def notify_shift_report_created(shift_report, *, inactive_loaders: List[dict], actor: Optional[User] = None) -> None:
+    """Send notification when shift report is created.
+    
+    فقط به افرادی که مرتبط هستند اطلاع داده می‌شود:
+    - نویسنده گزارش
+    - اعضای گروه کاری مرتبط
+    """
     url = reverse('OperationsShiftReports:shift_report_detail', args=[shift_report.id]) if shift_report.id else None
     date = shift_report.shift_date.strftime('%Y/%m/%d') if shift_report.shift_date else 'نامشخص'
     base_message = f'گزارش شیفت گروه {shift_report.group} برای تاریخ {date} ثبت شد.'
@@ -71,11 +77,13 @@ def notify_shift_report_created(shift_report, *, inactive_loaders: List[dict], a
 
     recipients = set()
 
+    # اعضای گروه کاری
     for user in _get_group_users(shift_report.group):
         recipients.add(user)
 
-    for staff_user in _get_operations_staff():
-        recipients.add(staff_user)
+    # نویسنده گزارش (عموما از همین گروه هست اما برای اطمینان)
+    if hasattr(shift_report, 'user') and shift_report.user:
+        recipients.add(shift_report.user)
 
     for user in recipients:
         _safe_notification(

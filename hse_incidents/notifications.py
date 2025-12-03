@@ -36,7 +36,13 @@ def _incident_url(incident) -> str:
 
 
 def notify_incident_report_created(incident, *, actor: Optional[User] = None) -> None:
-    """Notify key stakeholders that a new incident report has been created."""
+    """Notify key stakeholders that a new incident report has been created.
+    
+    فقط به افرادی که مرتبط هستند اطلاع داده می‌شود:
+    - نویسنده گزارش (تأیید برای اطلاع)
+    - مدیران HSE
+    - افسران HSE و مدیران HSE (در صورت اولویت بالا)
+    """
 
     url = _incident_url(incident)
     location_name = incident.location.name if incident.location else 'محل نامشخص'
@@ -50,6 +56,7 @@ def notify_incident_report_created(incident, *, actor: Optional[User] = None) ->
 
     notification_type = 'error' if severity == 'critical' else 'warning'
 
+    # Notify HSE managers
     for user in _notify_group_members(INCIDENT_MANAGER_GROUPS):
         _safe_notification(
             user=user,

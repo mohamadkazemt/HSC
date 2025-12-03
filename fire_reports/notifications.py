@@ -76,7 +76,14 @@ def _has_unsuitable_status(report) -> bool:
 
 
 def notify_fire_report_created(report, *, actor: Optional[User] = None) -> None:
-    """Notify stakeholders when a new fire report is submitted."""
+    """Notify stakeholders when a new fire report is submitted.
+    
+    فقط به افرادی که مرتبط هستند اطلاع داده می‌شود:
+    - رانندگان شیفت (shift operator)
+    - آتش‌نشان (firefighter)
+    - مدیران HSE
+    - رئیس HSEC (اگر مشکل وجود داشته باشد)
+    """
 
     url = _report_url(report)
     has_issue = _has_unsuitable_status(report)
@@ -92,6 +99,17 @@ def notify_fire_report_created(report, *, actor: Optional[User] = None) -> None:
         url=url,
         actor=actor,
         context={'report_id': report.id, 'target': 'shift_operator'},
+    )
+
+    # Notify firefighter
+    _safe_notification(
+        user=report.firefighter,
+        title='ثبت گزارش آتش‌نشانی',
+        message=f'گزارش شما با شماره {report.id} ثبت شد و در انتظار بررسی است.',
+        notification_type='success',
+        url=url,
+        actor=actor,
+        context={'report_id': report.id, 'target': 'firefighter'},
     )
 
     # Notify managers

@@ -44,7 +44,13 @@ def _anomaly_url(anomaly) -> str:
 
 
 def notify_anomaly_created(anomaly, *, actor: Optional[User] = None) -> None:
-    """Send notifications after an anomaly is created."""
+    """Send notifications after an anomaly is created.
+    
+    فقط به افرادی که مرتبط هستند اطلاع داده می‌شود:
+    - مسئول پیگیری (همیشه)
+    - ایجاد‌کننده (در صورت انتخاب skip_actor_check)
+    - در اولویت بحرانی: مدیر HSE و بازرس شیفت ایمنی
+    """
 
     url = _anomaly_url(anomaly)
     creator_name = anomaly.created_by.user.get_full_name() if anomaly.created_by and anomaly.created_by.user else 'سیستم'
@@ -74,19 +80,7 @@ def notify_anomaly_created(anomaly, *, actor: Optional[User] = None) -> None:
     else:
         logger.warning(f"Could not send notification to followup officer for anomaly {anomaly.id}: followup_user is None")
 
-    # HSE managers
-    for user in _notify_group_members(['مدیر HSE']):
-        _safe_notification(
-            user=user,
-            title='ثبت آنومالی جدید',
-            message=f'آنومالی شماره {anomaly.id} در {location_name} ثبت شد. مسئول پیگیری: {anomaly.followup}.',
-            notification_type='info',
-            url=url,
-            actor=actor,
-            extra_log_context={'anomaly_id': anomaly.id, 'target_group': 'مدیر HSE'},
-        )
-
-    # High priority escalation
+    # High priority escalation - فقط اگر اولویت بحرانی باشد
     priority_value = getattr(anomaly.priority, 'priority', '')
     if priority_value:
         normalized_priority = priority_value.strip()

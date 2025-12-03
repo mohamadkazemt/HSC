@@ -28,6 +28,13 @@ def _get_hse_managers() -> Iterable[User]:
 
 
 def notify_daily_report_created(daily_report, *, issues: List[str], actor: Optional[User] = None) -> None:
+    """Send notification after a daily report is created.
+    
+    فقط به افرادی که مرتبط هستند اطلاع داده می‌شود:
+    - نویسنده گزارش
+    - اعضای گروه کاری مرتبط
+    - مدیران HSE
+    """
     url = reverse('dailyreport_hse:daily_report_detail', args=[daily_report.id]) if daily_report.id else None
     message = f'گزارش روزانه HSE گروه {daily_report.work_group} در شیفت {daily_report.shift} ثبت شد.'
 
@@ -41,11 +48,16 @@ def notify_daily_report_created(daily_report, *, issues: List[str], actor: Optio
         notification_type = 'info'
 
     recipients = set()
+    
+    # اعضای گروه کاری
     for user in _get_group_users(daily_report.work_group):
         recipients.add(user)
+    
+    # مدیران HSE
     for user in _get_hse_managers():
         recipients.add(user)
 
+    # نویسنده گزارش
     recipients.add(daily_report.user)
 
     for user in recipients:
