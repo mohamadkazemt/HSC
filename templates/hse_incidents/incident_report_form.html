@@ -130,21 +130,9 @@
               <select name="incident_type" required
                       class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-orange-500 focus:ring-orange-500 shadow-sm">
                 <option value="">انتخاب کنید</option>
-                <optgroup label="حوادث انسانی (فردی)">
-                  {% for incident_type in incident_types_human %}
-                  <option value="{{ incident_type.id }}">{{ incident_type.name }}</option>
-                  {% endfor %}
-                </optgroup>
-                <optgroup label="حوادث تجهیزاتی">
-                  {% for incident_type in incident_types_equipment %}
-                  <option value="{{ incident_type.id }}">{{ incident_type.name }}</option>
-                  {% endfor %}
-                </optgroup>
-                <optgroup label="حوادث محیط زیستی">
-                  {% for incident_type in incident_types_environmental %}
-                  <option value="{{ incident_type.id }}">{{ incident_type.name }}</option>
-                  {% endfor %}
-                </optgroup>
+                <option value="human">حوادث انسانی (فردی)</option>
+                <option value="equipment">حوادث تجهیزاتی</option>
+                <option value="environmental">حوادث محیط زیستی</option>
               </select>
             </div>
             

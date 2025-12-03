@@ -4,7 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from permissions.utils import permission_required
-from .models import IncidentReport, InjuryType, HseCompletionReport, IncidentDashboardSettings, IncidentType
+from .models import IncidentReport, InjuryType, HseCompletionReport, IncidentDashboardSettings
 from accounts.models import UserProfile
 from django.contrib import messages
 from django.http import JsonResponse
@@ -107,12 +107,6 @@ def report_incident(request):
         return render(request, 'hse_incidents/incident_report_form.html', {
             'form': IncidentReportForm(),
             'today_jalali': today_jalali,
-            'locations': [],
-            'sections': [],
-            'positions': [],
-            'incident_types_human': [],
-            'incident_types_equipment': [],
-            'incident_types_environmental': [],
         })
 
     # ثبت فعالیت مشاهده فرم گزارش حادثه
@@ -130,11 +124,6 @@ def report_incident(request):
     locations = Location.objects.all()
     sections = LocationSection.objects.all()
     positions = Position.objects.all().order_by('name')
-    
-    # دریافت انواع حادثه بر اساس دسته‌بندی
-    incident_types_human = IncidentType.objects.filter(category='human')
-    incident_types_equipment = IncidentType.objects.filter(category='equipment')
-    incident_types_environmental = IncidentType.objects.filter(category='environmental')
 
     if request.method == 'POST':
         # کپی داده‌ها برای تبدیل تاریخ شمسی به میلادی قبل از اعتبارسنجی فرم
@@ -169,9 +158,6 @@ def report_incident(request):
                         'locations': locations,
                         'sections': sections,
                         'positions': positions,
-                        'incident_types_human': incident_types_human,
-                        'incident_types_equipment': incident_types_equipment,
-                        'incident_types_environmental': incident_types_environmental,
                         'today_jalali': today_jalali,
                     })
 
@@ -250,9 +236,6 @@ def report_incident(request):
                 'locations': locations,
                 'sections': sections,
                 'positions': positions,
-                'incident_types_human': incident_types_human,
-                'incident_types_equipment': incident_types_equipment,
-                'incident_types_environmental': incident_types_environmental,
                 'today_jalali': today_jalali,
             })
 
@@ -265,9 +248,6 @@ def report_incident(request):
         'locations': locations, 
         'sections': sections,
         'positions': positions,
-        'incident_types_human': incident_types_human,
-        'incident_types_equipment': incident_types_equipment,
-        'incident_types_environmental': incident_types_environmental,
         'today_jalali': today_jalali,
     })
 

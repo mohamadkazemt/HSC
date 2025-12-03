@@ -17,31 +17,17 @@ class InjuryType(models.Model):
         verbose_name_plural = "انواع جراحت"
 
 
-class IncidentType(models.Model):
-    INCIDENT_CATEGORIES = [
+class IncidentReport(models.Model):
+    INCIDENT_TYPE_CHOICES = [
         ('human', 'حوادث انسانی (فردی)'),
         ('equipment', 'حوادث تجهیزاتی'),
         ('environmental', 'حوادث محیط زیستی'),
     ]
     
-    category = models.CharField(max_length=20, choices=INCIDENT_CATEGORIES, verbose_name="دسته بندی حادثه")
-    name = models.CharField(max_length=255, verbose_name="نوع حادثه")
-    description = models.TextField(blank=True, null=True, verbose_name="توضیحات")
-
-    def __str__(self):
-        return f"{self.get_category_display()} - {self.name}"
-
-    class Meta:
-        verbose_name = "نوع حادثه"
-        verbose_name_plural = "انواع حادثه"
-        ordering = ['category', 'name']
-
-
-class IncidentReport(models.Model):
     incident_date = models.DateField(verbose_name="تاریخ وقوع حادثه")
     incident_time = models.TimeField(verbose_name="ساعت وقوع حادثه")
-    incident_type = models.ForeignKey(IncidentType, on_delete=models.SET_NULL, null=True, blank=False,
-                                      verbose_name="نوع حادثه")
+    incident_type = models.CharField(max_length=20, choices=INCIDENT_TYPE_CHOICES, null=True, blank=False,
+                                     verbose_name="نوع حادثه")
     # حذف فیلد incident_location
     location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True, blank=True,
                                 verbose_name="سایت حادثه")
