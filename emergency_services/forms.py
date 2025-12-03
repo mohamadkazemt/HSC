@@ -400,16 +400,33 @@ class MedicineForm(forms.ModelForm):
         # اگر دارو مایع است، فیلد total_unit_volume را الزامی کن
         if self.instance and self.instance.pk and self.instance.drug_type == 'Liquid':
             self.fields['total_unit_volume'].required = True
+        
+        # تبدیل تاریخ میلادی به شمسی برای نمایش
+        if self.instance and self.instance.pk and self.instance.expiry_date:
+            try:
+                import jdatetime
+                gregorian_date = self.instance.expiry_date
+                jalali_date = jdatetime.date.fromgregorian(date=gregorian_date)
+                self.fields['expiry_date'].initial = f"{jalali_date.year}/{str(jalali_date.month).zfill(2)}/{str(jalali_date.day).zfill(2)}"
+            except:
+                self.fields['expiry_date'].initial = self.instance.expiry_date
     
     def clean(self):
         cleaned_data = super().clean()
         drug_type = cleaned_data.get('drug_type')
         total_unit_volume = cleaned_data.get('total_unit_volume')
+        expiry_date = cleaned_data.get('expiry_date')
         
         # اگر دارو مایع است، total_unit_volume باید مقدار داشته باشد
         if drug_type == 'Liquid':
             if not total_unit_volume or total_unit_volume <= 0:
                 self.add_error('total_unit_volume', _("برای داروهای مایع، حجم کل واحد (سی‌سی) باید مقدار مثبت داشته باشد."))
+        
+        # بررسی تاریخ انقضا (باید آینده باشد)
+        if expiry_date:
+            from django.utils import timezone
+            if expiry_date < timezone.now().date():
+                self.add_error('expiry_date', _("تاریخ انقضا نمی‌تواند در گذشته باشد."))
         
         return cleaned_data
 

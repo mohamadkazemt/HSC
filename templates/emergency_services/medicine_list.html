@@ -2,6 +2,123 @@
 {% load static %}
 {% block title %}انبار دارو{% endblock %}
 
+{% block styles %}
+<style>
+  @keyframes scale-in {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .animate-scale-in {
+    animation: scale-in 0.3s ease-out;
+  }
+
+  /* Modern Select2 Styling */
+  .select2-container--default.select2-container--open .select2-selection--single {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  }
+
+  .select2-container--default .select2-selection--single {
+    height: 2.75rem;
+    border-width: 2px;
+    border-color: #e5e7eb;
+    border-radius: 0.5rem;
+    background-color: white;
+    transition: all 0.2s ease;
+  }
+
+  .dark .select2-container--default .select2-selection--single {
+    background-color: #374151;
+    border-color: #4b5563;
+  }
+
+  .select2-container--default .select2-selection--single:hover {
+    border-color: #d1d5db;
+  }
+
+  .select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 2.25rem;
+    color: #1f2937;
+    font-weight: 500;
+  }
+
+  .dark .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #f3f4f6;
+  }
+
+  .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 2.75rem;
+  }
+
+  .select2-dropdown {
+    border-width: 2px;
+    border-color: #e5e7eb;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  }
+
+  .dark .select2-dropdown {
+    background-color: #374151;
+    border-color: #4b5563;
+  }
+
+  .select2-results__option {
+    padding: 0.75rem;
+    text-align: right;
+    transition: all 0.15s ease;
+  }
+
+  .dark .select2-results__option {
+    color: #f3f4f6;
+  }
+
+  .select2-results__option:hover {
+    background-color: #dbeafe;
+  }
+
+  .dark .select2-results__option:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+  }
+
+  .select2-results__option--highlighted {
+    background-color: #3b82f6;
+    color: white;
+  }
+
+  /* Input Focus Effects */
+  input[type="text"]:focus,
+  select:focus {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Smooth checkbox styling */
+  input[type="checkbox"] {
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  /* Group hover effect when checkbox is checked */
+  .group:has(> input:checked) {
+    border-color: #60a5fa;
+  }
+
+  .dark .group:has(> input:checked) {
+    border-color: #3b82f6;
+    background-color: rgba(59, 130, 246, 0.05);
+  }
+
+  /* Filter button transitions */
+  button, a {
+    transition: all 0.2s ease;
+  }
+
+  /* Icon animations */
+  i.fa-chevron-down {
+    transition: transform 0.3s ease;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="rounded-lg shadow-lg bg-white dark:bg-gray-800">
   <div class="p-4 rounded-t-lg bg-gradient-to-l from-indigo-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
@@ -29,45 +146,107 @@
     </div>
   </div>
 
-  <!-- Filters -->
-  <div x-data="{ open: false }" class="border-b border-gray-100 dark:border-gray-700">
-    <button @click="open = !open" class="w-full flex items-center justify-between p-4 text-sm">
-      <span class="flex items-center gap-2">
-        <i class="fa-solid fa-filter text-gray-500"></i>
-        فیلتر پیشرفته
+  <!-- Modern Filter Section -->
+  <div x-data="{ open: false }" class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-800 border-b border-gray-200 dark:border-gray-700">
+    <button @click="open = !open" class="w-full flex items-center justify-between px-6 py-4 hover:bg-white/50 dark:hover:bg-gray-700/50 transition-all">
+      <span class="flex items-center gap-3">
+        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-md">
+          <i class="fa-solid fa-filter text-sm"></i>
+        </div>
+        <div class="text-right">
+          <h3 class="font-bold text-gray-900 dark:text-white">فیلتر پیشرفته</h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">جستجو و فیلتر کردن داروها</p>
+        </div>
       </span>
-      <i :class="open ? 'fa-chevron-up' : 'fa-chevron-down'" class="fa-solid text-gray-400"></i>
+      <i :class="open ? 'fa-chevron-up' : 'fa-chevron-down'" class="fa-solid text-gray-500 dark:text-gray-400 transition-transform" style="transform: var(--rotate);"></i>
     </button>
-    <div x-show="open" x-collapse class="p-4 pt-0">
-      <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-3">
+    
+    <div x-show="open" x-collapse class="px-6 py-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50">
+      <form method="get" class="space-y-6">
+        <!-- Search Bar - Full Width -->
         <div>
-          <label class="block text-sm mb-1">دسته‌بندی</label>
-          <select name="category" id="id_filter_category" class="select2 w-full">
-            <option value="">همه</option>
-            {% for c in categories %}
-              <option value="{{ c.id }}" {% if filters.category|default:''|stringformat:'s' == c.id|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>
-            {% endfor %}
-          </select>
+          <label class="block text-sm font-semibold mb-2.5 text-gray-700 dark:text-gray-300">
+            <i class="fa-solid fa-magnifying-glass ml-2 text-blue-600 dark:text-blue-400"></i>
+            جستجو در تمام ستون‌ها
+          </label>
+          <div class="relative">
+            <input type="text" 
+                   name="search" 
+                   value="{{ filters.search|default:'' }}" 
+                   placeholder="نام دارو، دسته‌بندی، نوع، توضیحات..." 
+                   class="w-full px-5 py-3 pl-12 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100 transition-all shadow-sm hover:border-gray-300">
+            <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+          </div>
         </div>
-        <div class="flex items-center gap-2">
-          <input type="checkbox" name="is_expired" value="true" id="id_is_expired" class="rounded" {% if filters.is_expired == 'true' %}checked{% endif %}>
-          <label for="id_is_expired" class="text-sm">منقضی</label>
+
+        <!-- Filter Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <!-- Category Filter -->
+          <div>
+            <label class="block text-sm font-semibold mb-2.5 text-gray-700 dark:text-gray-300">
+              <i class="fa-solid fa-tag ml-2 text-green-600 dark:text-green-400"></i>
+              دسته‌بندی
+            </label>
+            <select name="category" id="id_filter_category" class="select2 w-full">
+              <option value="">📦 همه دسته‌ها</option>
+              {% for c in categories %}
+                <option value="{{ c.id }}" {% if filters.category|default:''|stringformat:'s' == c.id|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Status Filter -->
+          <div>
+            <label class="block text-sm font-semibold mb-2.5 text-gray-700 dark:text-gray-300">
+              <i class="fa-solid fa-power-off ml-2 text-purple-600 dark:text-purple-400"></i>
+              وضعیت
+            </label>
+            <select name="is_active" class="select2 w-full">
+              <option value="">✓ همه</option>
+              <option value="true" {% if filters.is_active == 'true' %}selected{% endif %}>🟢 فعال</option>
+              <option value="false" {% if filters.is_active == 'false' %}selected{% endif %}>🔴 غیرفعال</option>
+            </select>
+          </div>
+
+          <!-- Spacer for grid alignment -->
+          <div></div>
         </div>
-        <div class="flex items-center gap-2">
-          <input type="checkbox" name="is_critical" value="true" id="id_is_critical" class="rounded" {% if filters.is_critical == 'true' %}checked{% endif %}>
-          <label for="id_is_critical" class="text-sm">در آستانه بحرانی</label>
+
+        <!-- Checkbox Filters -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Expired Medicines -->
+          <div class="flex items-center p-4 rounded-xl border-2 border-gray-200 dark:border-gray-600 hover:border-red-300 dark:hover:border-red-500 transition-all cursor-pointer group"
+               onclick="document.getElementById('id_is_expired').checked = !document.getElementById('id_is_expired').checked">
+            <input type="checkbox" name="is_expired" value="true" id="id_is_expired" class="w-5 h-5 rounded-lg cursor-pointer accent-red-600" {% if filters.is_expired == 'true' %}checked{% endif %}>
+            <label for="id_is_expired" class="mr-3 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer flex-1">
+              <span class="text-red-600 dark:text-red-400 font-bold">⏰</span>
+              داروهای منقضی
+            </label>
+            <span class="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-2.5 py-1 rounded-full font-semibold group-hover:bg-red-200 dark:group-hover:bg-red-900/50 transition-all">منقضی</span>
+          </div>
+
+          <!-- Critical Stock -->
+          <div class="flex items-center p-4 rounded-xl border-2 border-gray-200 dark:border-gray-600 hover:border-amber-300 dark:hover:border-amber-500 transition-all cursor-pointer group"
+               onclick="document.getElementById('id_is_critical').checked = !document.getElementById('id_is_critical').checked">
+            <input type="checkbox" name="is_critical" value="true" id="id_is_critical" class="w-5 h-5 rounded-lg cursor-pointer accent-amber-600" {% if filters.is_critical == 'true' %}checked{% endif %}>
+            <label for="id_is_critical" class="mr-3 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer flex-1">
+              <span class="text-amber-600 dark:text-amber-400 font-bold">⚠️</span>
+              موجودی بحرانی
+            </label>
+            <span class="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-2.5 py-1 rounded-full font-semibold group-hover:bg-amber-200 dark:group-hover:bg-amber-900/50 transition-all">بحرانی</span>
+          </div>
         </div>
-        <div class="flex items-center gap-2">
-          <label class="text-sm">وضعیت:</label>
-          <select name="is_active" class="select2 w-full">
-            <option value="">همه</option>
-            <option value="true" {% if filters.is_active == 'true' %}selected{% endif %}>فعال</option>
-            <option value="false" {% if filters.is_active == 'false' %}selected{% endif %}>غیرفعال</option>
-          </select>
-        </div>
-        <div class="md:col-span-4 flex justify-end gap-2">
-          <a href="?" class="px-3 py-1.5 rounded-md bg-gray-100 text-gray-700">حذف فیلتر</a>
-          <button type="submit" class="px-3 py-1.5 rounded-md bg-indigo-600 text-white">اعمال</button>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+          <a href="?" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all font-medium shadow-sm">
+            <i class="fa-solid fa-redo-alt"></i>
+            حذف فیلترها
+          </a>
+          <button type="submit" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 transition-all font-semibold shadow-md hover:shadow-lg">
+            <i class="fa-solid fa-check"></i>
+            اعمال فیلترها
+          </button>
         </div>
       </form>
     </div>
@@ -123,7 +302,14 @@
               {% endif %}
             </td>
             <td class="px-4 py-2">
-              <a href="{% url 'emergency_services:edit_medicine' m.id %}" class="text-indigo-600 hover:underline">ویرایش</a>
+              <div class="flex items-center gap-2">
+                <button onclick="openIncreaseStockModal({{ m.id }}, '{{ m.name|escapejs }}')"
+                        class="text-emerald-600 hover:underline inline-flex items-center gap-1">
+                  <i class="fa-solid fa-plus-circle"></i>
+                  شارژ
+                </button>
+                <a href="{% url 'emergency_services:edit_medicine' m.id %}" class="text-indigo-600 hover:underline">ویرایش</a>
+              </div>
             </td>
           </tr>
         {% empty %}
@@ -148,14 +334,138 @@
     {% endif %}
   </div>
 </div>
+
+<!-- Modal for Increase Stock -->
+<div id="increaseStockModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4" onclick="closeIncreaseStockModal()">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden animate-scale-in" onclick="event.stopPropagation()">
+    
+    <!-- Modal Header -->
+    <div class="bg-gradient-to-r from-emerald-600 to-green-600 p-6 flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
+          <i class="fa-solid fa-plus-circle text-white text-xl"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-white">افزایش موجودی دارو</h3>
+          <p id="medicineName" class="text-sm text-white/90 mt-0.5"></p>
+        </div>
+      </div>
+      <button onclick="closeIncreaseStockModal()" class="text-white/80 hover:text-white transition-colors">
+        <i class="fa-solid fa-times text-xl"></i>
+      </button>
+    </div>
+    
+    <!-- Modal Body -->
+    <form id="increaseStockForm" class="p-6 space-y-4">
+      {% csrf_token %}
+      <input type="hidden" id="medicineId" name="medicine_id">
+      
+      <div>
+        <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+          <i class="fa-solid fa-box-open ml-1"></i>
+          مقدار افزایش
+        </label>
+        <input type="number" 
+               id="quantityInput" 
+               name="quantity" 
+               min="1" 
+               required
+               placeholder="مثلاً 10"
+               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100 transition-all text-lg font-semibold">
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+          <i class="fa-solid fa-calendar ml-1"></i>
+          تاریخ انقضا (اختیاری)
+        </label>
+        <input type="text" 
+               id="expiryDateInput" 
+               name="expiry_date" 
+               placeholder="1403/12/15"
+               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100 transition-all jalali-date"
+               autocomplete="off">
+        <small class="text-gray-500 dark:text-gray-400 mt-1 block">برای ترک خالی، نمی‌خواهید تاریخ تعیین کنید</small>
+      </div>
+      
+      <div>
+        <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+          <i class="fa-solid fa-note-sticky ml-1"></i>
+          توضیحات (اختیاری)
+        </label>
+        <textarea id="notesInput" 
+                  name="notes" 
+                  rows="2"
+                  placeholder="توضیحات تکمیلی درباره این شارژ..."
+                  class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent dark:bg-gray-700 dark:text-gray-100 transition-all resize-none"></textarea>
+      </div>
+    </form>
+    
+    <!-- Modal Footer -->
+    <div class="bg-gray-50 dark:bg-gray-900 px-6 py-4 flex items-center justify-end gap-3 border-t border-gray-200 dark:border-gray-700">
+      <button onclick="closeIncreaseStockModal()" 
+              type="button"
+              class="px-5 py-2.5 rounded-xl bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-all font-medium">
+        <i class="fa-solid fa-times ml-1"></i>
+        انصراف
+      </button>
+      <button onclick="submitIncreaseStock()" 
+              type="button"
+              class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 text-white hover:from-emerald-700 hover:to-green-700 transition-all font-medium shadow-lg">
+        <i class="fa-solid fa-check ml-1"></i>
+        ثبت افزایش
+      </button>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<!-- Persian Date Picker -->
+<script src="https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css" />
 <script>
   $(function(){
     $('.select2').select2({ width:'100%', dir:'rtl' });
+    
+    // Initialize Persian datepicker for expiry date
+    if ($.fn.persianDatepicker) {
+      $('#expiryDateInput').persianDatepicker({
+        format: 'YYYY/MM/DD',
+        autoClose: true,
+        initialValueType: 'persian',
+        observer: false,
+        calendar: {
+          persian: {
+            locale: 'fa',
+            leapYearMode: 'astronomical'
+          }
+        },
+        onSelect: function(unix) {
+          try {
+            if (typeof persianDate !== 'undefined') {
+              const dateObj = new Date(unix);
+              const utcDate = new Date(Date.UTC(
+                dateObj.getUTCFullYear(),
+                dateObj.getUTCMonth(),
+                dateObj.getUTCDate(),
+                12, 0, 0, 0
+              ));
+              const pd = new persianDate(utcDate);
+              const formatted = pd.toCalendar('persian').format('YYYY/MM/DD');
+              $('#expiryDateInput').val(formatted);
+            }
+          } catch (e) {
+            console.warn('Date conversion error:', e);
+          }
+        }
+      });
+    }
+    
     // Progress bars coloring and width
     document.querySelectorAll('[data-quantity][data-threshold]').forEach(c => {
       const qty = parseFloat(c.getAttribute('data-quantity')) || 0;
@@ -170,6 +480,113 @@
         else bar.classList.add('bg-emerald-500');
       }
     });
+  });
+
+  // Functions for Increase Stock Modal
+  function openIncreaseStockModal(medicineId, medicineName) {
+    document.getElementById('medicineId').value = medicineId;
+    document.getElementById('medicineName').textContent = medicineName;
+    document.getElementById('quantityInput').value = '';
+    document.getElementById('expiryDateInput').value = '';
+    document.getElementById('notesInput').value = '';
+    document.getElementById('increaseStockModal').classList.remove('hidden');
+    // Focus on quantity input
+    setTimeout(() => {
+      document.getElementById('quantityInput').focus();
+    }, 100);
+  }
+
+  function closeIncreaseStockModal() {
+    document.getElementById('increaseStockModal').classList.add('hidden');
+    document.getElementById('increaseStockForm').reset();
+  }
+
+  function submitIncreaseStock() {
+    const medicineId = document.getElementById('medicineId').value;
+    const quantity = document.getElementById('quantityInput').value;
+    const expiryDate = document.getElementById('expiryDateInput').value;
+    const notes = document.getElementById('notesInput').value;
+
+    if (!quantity || quantity <= 0) {
+      Swal.fire({
+        icon: 'error',
+        title: 'خطا',
+        text: 'لطفاً مقدار معتبر وارد کنید',
+        confirmButtonText: 'متوجه شدم',
+        confirmButtonColor: '#dc2626'
+      });
+      return;
+    }
+
+    // Show loading
+    Swal.fire({
+      title: 'در حال پردازش...',
+      html: 'لطفاً صبر کنید',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    const formData = new FormData();
+    formData.append('quantity', quantity);
+    if (expiryDate) {
+      formData.append('expiry_date', expiryDate);
+    }
+    formData.append('notes', notes);
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+    fetch(`/emergency/api/medicines/${medicineId}/increase-stock/`, {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        Swal.fire({
+          icon: 'success',
+          title: 'موفق!',
+          text: data.message || 'موجودی با موفقیت افزایش یافت',
+          confirmButtonText: 'عالی',
+          confirmButtonColor: '#10b981'
+        }).then(() => {
+          closeIncreaseStockModal();
+          // Reload page to show updated data
+          window.location.reload();
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'خطا',
+          text: data.message || 'خطا در افزایش موجودی',
+          confirmButtonText: 'متوجه شدم',
+          confirmButtonColor: '#dc2626'
+        });
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'خطا',
+        text: 'خطا در ارتباط با سرور',
+        confirmButtonText: 'متوجه شدم',
+        confirmButtonColor: '#dc2626'
+      });
+    });
+  }
+
+  // Allow Enter key to submit in quantity input
+  document.addEventListener('DOMContentLoaded', function() {
+    const quantityInput = document.getElementById('quantityInput');
+    if (quantityInput) {
+      quantityInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          submitIncreaseStock();
+        }
+      });
+    }
   });
 </script>
 {% endblock %}

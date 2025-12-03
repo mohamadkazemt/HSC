@@ -21,7 +21,8 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='incidentreport',
             name='created_at',
-            field=models.DateTimeField(auto_now_add=True, null=True, verbose_name='تاریخ ثبت'),
+            field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now, verbose_name='تاریخ ثبت'),
+            preserve_default=False,
         ),
         # ایجاد مدل IncidentDashboardSettings
         migrations.CreateModel(

@@ -486,15 +486,27 @@ def remove_medicine_from_visit(request, usage_id):
 
 @login_required
 @emergency_personnel_required
+@login_required
+@emergency_personnel_required
 def medicine_list(request):
     """لیست داروها"""
     medicines = Medicine.objects.all().order_by('name')
     
     # فیلترها
+    search = request.GET.get('search', '').strip()
     category = request.GET.get('category')
     is_expired = request.GET.get('is_expired')
     is_critical = request.GET.get('is_critical')
     is_active = request.GET.get('is_active')
+    
+    # جستجو در تمام ستون‌ها
+    if search:
+        medicines = medicines.filter(
+            Q(name__icontains=search) |
+            Q(category__name__icontains=search) |
+            Q(drug_type__icontains=search) |
+            Q(description__icontains=search)
+        )
     
     if category:
         medicines = medicines.filter(category_id=category)
@@ -521,6 +533,7 @@ def medicine_list(request):
         'medicines': medicines,
         'categories': categories,
         'filters': {
+            'search': search,
             'category': category,
             'is_expired': is_expired,
             'is_critical': is_critical,
@@ -1395,18 +1408,54 @@ def api_medicine_save(request):
         expiry_date = data.get('expiry_date')
         if expiry_date:
             try:
-                expiry_date = persian_to_english_numbers(expiry_date.strip())
-                expiry_date = re.sub(r'[^0-9/]', '', expiry_date)
-                year, month, day = map(int, expiry_date.split('/'))
+                expiry_date_str = persian_to_english_numbers(expiry_date.strip())
+                expiry_date_str = re.sub(r'[^0-9/]', '', expiry_date_str)
+                
+                # بررسی فرمت تاریخ
+                if '/' not in expiry_date_str:
+                    return JsonResponse({
+                        'success': False,
+                        'errors': {'expiry_date': ['فرمت تاریخ باید به صورت YYYY/MM/DD باشد']}
+                    })
+                
+                parts = expiry_date_str.split('/')
+                if len(parts) != 3:
+                    return JsonResponse({
+                        'success': False,
+                        'errors': {'expiry_date': ['فرمت تاریخ نامعتبر است']}
+                    })
+                
+                year, month, day = map(int, parts)
+                
+                # تبدیل سال دو رقمی به چهار رقمی
                 if year < 100:
                     year += 1400
-                jalali_date = jdatetime.date(year, month, day)
+                
+                # بررسی صحت تاریخ شمسی
+                try:
+                    jalali_date = jdatetime.date(year, month, day)
+                except ValueError as ve:
+                    return JsonResponse({
+                        'success': False,
+                        'errors': {'expiry_date': [f'تاریخ نامعتبر: {str(ve)}']}
+                    })
+                
+                # تبدیل به تاریخ میلادی
                 gregorian_date = jalali_date.togregorian()
+                
+                # بررسی اینکه تاریخ انقضا در آینده باشد
+                if gregorian_date < timezone.now().date():
+                    return JsonResponse({
+                        'success': False,
+                        'errors': {'expiry_date': ['تاریخ انقضا نمی‌تواند در گذشته باشد']}
+                    })
+                
                 data['expiry_date'] = gregorian_date.strftime('%Y-%m-%d')
+                
             except Exception as e:
                 return JsonResponse({
                     'success': False,
-                    'errors': {'expiry_date': ['فرمت تاریخ نامعتبر است']}
+                    'errors': {'expiry_date': [f'خطا در تبدیل تاریخ: {str(e)}']}
                 })
         
         form = MedicineForm(data, instance=medicine if medicine_id else None)
@@ -1427,6 +1476,78 @@ def api_medicine_delete(request, pk):
         medicine.delete()
         return JsonResponse({'success': True})
     return JsonResponse({'success': False})
+
+@login_required
+def api_medicine_increase_stock(request, pk):
+    """API افزایش موجودی دارو"""
+    if request.method == 'POST':
+        medicine = get_object_or_404(Medicine, pk=pk)
+        
+        try:
+            from jdatetime import datetime as jdatetime
+            from datetime import datetime
+            
+            quantity = int(request.POST.get('quantity', 0))
+            notes = request.POST.get('notes', '').strip()
+            expiry_date_str = request.POST.get('expiry_date', '').strip()
+            
+            if quantity <= 0:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'مقدار باید بیشتر از صفر باشد'
+                })
+            
+            # تبدیل تاریخ انقضا اگر وارد شده باشد
+            if expiry_date_str:
+                try:
+                    # تبدیل تاریخ شمسی به میلادی
+                    parts = expiry_date_str.replace('/', '-').split('-')
+                    if len(parts) == 3:
+                        j_year, j_month, j_day = int(parts[0]), int(parts[1]), int(parts[2])
+                        j_date = jdatetime(j_year, j_month, j_day)
+                        expiry_date = j_date.togregorian()
+                        
+                        # بررسی اینکه تاریخ انقضا در آینده باشد
+                        if expiry_date <= datetime.now().date():
+                            return JsonResponse({
+                                'success': False,
+                                'message': 'تاریخ انقضا باید در آینده باشد'
+                            })
+                        medicine.expiry_date = expiry_date
+                    else:
+                        return JsonResponse({
+                            'success': False,
+                            'message': 'فرمت تاریخ نامعتبر است. از فرمت YYYY/MM/DD استفاده کنید'
+                        })
+                except Exception as e:
+                    return JsonResponse({
+                        'success': False,
+                        'message': f'خطا در تبدیل تاریخ: {str(e)}'
+                    })
+            
+            # افزایش موجودی
+            medicine.quantity += quantity
+            medicine.save()
+            
+            # ثبت در لاگ (اختیاری - می‌توانید مدل جداگانه برای تاریخچه بسازید)
+            return JsonResponse({
+                'success': True,
+                'message': f'موجودی دارو با موفقیت {quantity} واحد افزایش یافت',
+                'new_quantity': medicine.quantity
+            })
+            
+        except ValueError:
+            return JsonResponse({
+                'success': False,
+                'message': 'مقدار وارد شده نامعتبر است'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'خطا در افزایش موجودی: {str(e)}'
+            })
+    
+    return JsonResponse({'success': False, 'message': 'متد نامعتبر'})
 
 @login_required
 def api_categories_list(request):
@@ -1945,4 +2066,80 @@ def delete_equipment(request, pk):
         except Exception as e:
             messages.error(request, f'خطا در حذف تجهیز: {str(e)}')
     
-    return redirect('emergency_services:equipment_list') 
+    return redirect('emergency_services:equipment_list')
+
+
+@login_required
+@emergency_personnel_required
+def expired_medicines_report(request):
+    """گزارش داروهای منقضی برای بازرسان و مدیران"""
+    from emergency_services.models import ExpiredMedicineLog
+    from django.core.paginator import Paginator
+    
+    # بررسی دسترسی (فقط مدیران و بازرسان)
+    is_manager = request.user.groups.filter(
+        name__in=['مدیر HSE', 'مدیر اورژانس']
+    ).exists()
+    is_inspector = request.user.groups.filter(name='بازرس HSE').exists()
+    
+    if not (is_manager or is_inspector or request.user.is_superuser):
+        messages.error(request, 'شما مجاز به دسترسی به این گزارش نیستید.')
+        return redirect('emergency_services:dashboard')
+    
+    # فیلترها
+    logs = ExpiredMedicineLog.objects.all().order_by('-disposal_date')
+    
+    search = request.GET.get('search', '').strip()
+    if search:
+        logs = logs.filter(
+            Q(medicine_name__icontains=search) |
+            Q(medicine_category__icontains=search)
+        )
+    
+    date_from = request.GET.get('date_from')
+    if date_from:
+        try:
+            date_from = datetime.strptime(date_from, '%Y-%m-%d')
+            logs = logs.filter(disposal_date__gte=date_from)
+        except:
+            pass
+    
+    date_to = request.GET.get('date_to')
+    if date_to:
+        try:
+            date_to = datetime.strptime(date_to, '%Y-%m-%d')
+            logs = logs.filter(disposal_date__lte=date_to)
+        except:
+            pass
+    
+    disposal_method = request.GET.get('disposal_method')
+    if disposal_method:
+        logs = logs.filter(disposal_method=disposal_method)
+    
+    # آمار‌ها
+    total_logs = logs.count()
+    total_quantity = logs.aggregate(Sum('quantity'))['quantity__sum'] or 0
+    
+    # صفحه‌بندی
+    paginator = Paginator(logs, 50)
+    page = request.GET.get('page')
+    logs_page = paginator.get_page(page)
+    
+    context = {
+        'logs': logs_page,
+        'total_logs': total_logs,
+        'total_quantity': total_quantity,
+        'search': search,
+        'date_from': date_from if date_from else '',
+        'date_to': date_to if date_to else '',
+        'disposal_method': disposal_method,
+        'disposal_methods': [
+            ('deleted', 'حذف از سیستم'),
+            ('incinerated', 'سوزانده شده'),
+            ('donated', 'اهدا شده'),
+            ('returned', 'برگشت به تولیدکننده'),
+            ('other', 'سایر'),
+        ]
+    }
+    
+    return render(request, 'emergency_services/expired_medicines_report.html', context)

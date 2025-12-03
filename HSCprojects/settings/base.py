@@ -10,10 +10,21 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 import os
+import sys
 from pathlib import Path
 from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime
-from celery.schedules import crontab
+
+# Import celery schedules فقط اگر celery دسترسی داشته باشد
+try:
+    from celery.schedules import crontab
+    CELERY_AVAILABLE = True
+except ImportError:
+    CELERY_AVAILABLE = False
+    # برای migrations و makemigrations، crontab لازم نیست
+    if not ('makemigrations' in sys.argv or 'migrate' in sys.argv):
+        raise
+
 from django.conf.locale.fa import formats as fa_formats
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -309,16 +320,35 @@ RUBIKA_BOT = {
     'PROXY_URL': os.environ.get('RUBIKA_PROXY_URL', ''),
 }
 
-CELERY_BEAT_SCHEDULE = {
-    'rubika_bot_cleanup_webhook_logs': {
-        'task': 'rubika_bot.tasks.cleanup_webhook_logs',
-        'schedule': crontab(hour=3, minute=0),
-    },
-    'create_scheduled_checklist_instances': {
-        'task': 'checklist_app.tasks.create_scheduled_checklist_instances',
-        'schedule': crontab(hour=0, minute=0),  # هر روز ساعت 00:00
-    },
-}
+if CELERY_AVAILABLE:
+    CELERY_BEAT_SCHEDULE = {
+        'rubika_bot_cleanup_webhook_logs': {
+            'task': 'rubika_bot.tasks.cleanup_webhook_logs',
+            'schedule': crontab(hour=3, minute=0),
+        },
+        'create_scheduled_checklist_instances': {
+            'task': 'checklist_app.tasks.create_scheduled_checklist_instances',
+            'schedule': crontab(hour=0, minute=0),  # هر روز ساعت 00:00
+        },
+        # Emergency Services Tasks
+        'cleanup_expired_medicines': {
+            'task': 'emergency_services.tasks.cleanup_expired_medicines_task',
+            'schedule': crontab(hour=2, minute=0),  # هر روز ساعت 2 صبح
+            'options': {'expires': 3600}
+        },
+        'check_medicine_stock_levels': {
+            'task': 'emergency_services.tasks.check_medicine_stock_levels_task',
+            'schedule': crontab(hour=8, minute=0),  # هر روز ساعت 8 صبح
+            'options': {'expires': 3600}
+        },
+        'mark_expired_medicines_inactive': {
+            'task': 'emergency_services.tasks.mark_expired_medicines_inactive_task',
+            'schedule': crontab(minute=0),  # هر ساعت
+            'options': {'expires': 3600}
+        },
+    }
+else:
+    CELERY_BEAT_SCHEDULE = {}
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'

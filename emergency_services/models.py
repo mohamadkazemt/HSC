@@ -382,4 +382,49 @@ class EmergencyEquipment(models.Model):
                     message=f"تجهیز {self.name} با شماره سریال {self.serial_number} نیاز به کالیبراسیون دارد. {days_until_calibration} روز تا تاریخ کالیبراسیون باقی مانده است.",
                     notification_type="warning",
                     is_read=False
-                ) 
+                )
+
+
+class ExpiredMedicineLog(models.Model):
+    """ثبت تاریخچه داروهای منقضی برای دیدگاه بازرسان"""
+    medicine_name = models.CharField(_("نام دارو"), max_length=200)
+    medicine_category = models.CharField(_("دسته‌بندی"), max_length=100, blank=True)
+    quantity = models.DecimalField(_("موجودی هنگام انقضا"), max_digits=10, decimal_places=2)
+    expiry_date = models.DateField(_("تاریخ انقضا"))
+    detected_date = models.DateField(_("تاریخ تشخیص منقضی"), auto_now_add=True)
+    disposal_date = models.DateField(_("تاریخ حذف/دفع"), null=True, blank=True)
+    disposal_method = models.CharField(
+        _("روش دفع"),
+        max_length=50,
+        choices=[
+            ('deleted', 'حذف از سیستم'),
+            ('incinerated', 'سوزانده شده'),
+            ('donated', 'اهدا شده'),
+            ('returned', 'برگشت به تولیدکننده'),
+            ('other', 'سایر'),
+        ],
+        default='deleted'
+    )
+    notes = models.TextField(_("یادداشت‌ها"), blank=True, null=True)
+    disposal_by_user = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name=_("حذف شده توسط"),
+        related_name='medicine_disposals'
+    )
+    created_at = models.DateTimeField(_("تاریخ ثبت"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("تاریخ آخرین بروزرسانی"), auto_now=True)
+    
+    class Meta:
+        verbose_name = _("گزارش دارو منقضی")
+        verbose_name_plural = _("گزارش‌های داروهای منقضی")
+        ordering = ['-disposal_date', '-detected_date']
+        indexes = [
+            models.Index(fields=['-disposal_date']),
+            models.Index(fields=['-detected_date']),
+        ]
+    
+    def __str__(self):
+        return f"{self.medicine_name} - {self.expiry_date}"

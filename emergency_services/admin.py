@@ -7,7 +7,8 @@ from .models import (
     MedicalService,
     MedicineReturn,
     Hospital,
-    EmergencyEquipment
+    EmergencyEquipment,
+    ExpiredMedicineLog
 )
 
 
@@ -94,4 +95,29 @@ class EmergencyEquipmentAdmin(admin.ModelAdmin):
     search_fields = ('name', 'serial_number', 'description')
     list_editable = ('is_active',)
     readonly_fields = ('created_at', 'updated_at')
-    date_hierarchy = 'next_calibration_date' 
+
+
+@admin.register(ExpiredMedicineLog)
+class ExpiredMedicineLogAdmin(admin.ModelAdmin):
+    list_display = ('medicine_name', 'medicine_category', 'quantity', 'expiry_date', 'disposal_date', 'disposal_method')
+    list_filter = ('disposal_method', 'disposal_date', 'detected_date')
+    search_fields = ('medicine_name', 'medicine_category')
+    readonly_fields = ('created_at', 'updated_at', 'detected_date')
+    date_hierarchy = 'disposal_date'
+    fieldsets = (
+        ('اطلاعات دارو', {
+            'fields': ('medicine_name', 'medicine_category', 'quantity', 'expiry_date')
+        }),
+        ('اطلاعات دفع', {
+            'fields': ('disposal_date', 'disposal_method', 'disposal_by_user', 'notes')
+        }),
+        ('تاریخچه', {
+            'fields': ('detected_date', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def get_readonly_fields(self, request, obj=None):
+        if obj:  # Editing an existing object
+            return self.readonly_fields + ('medicine_name', 'medicine_category', 'quantity', 'expiry_date')
+        return self.readonly_fields

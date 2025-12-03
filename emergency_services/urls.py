@@ -173,6 +173,13 @@ URLS_WITH_LABELS = [
         "name": "delete_equipment",
         "label": "اورژانس_حذف تجهیز"
     },
+    # Reports
+    {
+        "path": "medicines/expired-report/",
+        "view": views.expired_medicines_report,
+        "name": "expired_medicines_report",
+        "label": "اورژانس_گزارش داروهای منقضی"
+    },
     # Data Management
     {
         "path": "data-management/",
@@ -198,6 +205,12 @@ URLS_WITH_LABELS = [
         "view": views.api_medicine_delete,
         "name": "api_medicine_delete",
         "label": "اورژانس_API حذف دارو"
+    },
+    {
+        "path": "api/medicines/<int:pk>/increase-stock/",
+        "view": views.api_medicine_increase_stock,
+        "name": "api_medicine_increase_stock",
+        "label": "اورژانس_API افزایش موجودی دارو"
     },
     {
         "path": "api/categories/",

@@ -1,0 +1,219 @@
+{% extends 'emergency_services/emergency_base.html' %}
+{% load static %}
+{% block title %}گزارش داروهای منقضی{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <!-- Page Header -->
+  <div class="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-xl p-6 border border-red-200 dark:border-red-800">
+    <div class="flex items-center gap-4">
+      <div class="flex h-14 w-14 items-center justify-center rounded-lg bg-gradient-to-br from-red-500 to-orange-600 text-white shadow-lg">
+        <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+      </div>
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">گزارش داروهای منقضی</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">پیگیری و کنترل داروهای منقضی و دفع شده</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border-l-4 border-red-500">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-gray-600 dark:text-gray-400 text-sm font-medium">کل داروهای منقضی</p>
+          <p class="text-4xl font-bold text-red-600 dark:text-red-400 mt-2">{{ total_logs }}</p>
+        </div>
+        <i class="fa-solid fa-pills text-5xl text-red-500/20"></i>
+      </div>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border-l-4 border-orange-500">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-gray-600 dark:text-gray-400 text-sm font-medium">کل موجودی دفع شده</p>
+          <p class="text-4xl font-bold text-orange-600 dark:text-orange-400 mt-2">{{ total_quantity|floatformat:0 }}</p>
+          <p class="text-xs text-gray-500 mt-1">واحد</p>
+        </div>
+        <i class="fa-solid fa-chart-column text-5xl text-orange-500/20"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-200 dark:border-gray-700">
+    <h3 class="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+      <i class="fa-solid fa-filter ml-2 text-blue-600"></i>
+      فیلترها
+    </h3>
+    
+    <form method="get" class="space-y-4">
+      <!-- Search -->
+      <div>
+        <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">جستجو</label>
+        <input type="text" name="search" value="{{ search }}" 
+               placeholder="نام دارو، دسته‌بندی..."
+               class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500">
+      </div>
+
+      <!-- Date Range -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">از تاریخ</label>
+          <input type="date" name="date_from" value="{{ date_from }}"
+                 class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">تا تاریخ</label>
+          <input type="date" name="date_to" value="{{ date_to }}"
+                 class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500">
+        </div>
+      </div>
+
+      <!-- Disposal Method -->
+      <div>
+        <label class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">روش دفع</label>
+        <select name="disposal_method" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500">
+          <option value="">تمام روش‌ها</option>
+          {% for method_code, method_name in disposal_methods %}
+            <option value="{{ method_code }}" {% if disposal_method == method_code %}selected{% endif %}>
+              {{ method_name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Buttons -->
+      <div class="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <button type="submit" class="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium">
+          <i class="fa-solid fa-search ml-2"></i>
+          جستجو
+        </button>
+        <a href="{% url 'emergency_services:expired_medicines_report' %}" class="flex-1 px-4 py-2.5 bg-gray-300 text-gray-900 rounded-lg hover:bg-gray-400 transition-all font-medium text-center">
+          <i class="fa-solid fa-redo ml-2"></i>
+          حذف فیلترها
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Table Section -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden border border-gray-200 dark:border-gray-700">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
+          <tr class="text-right">
+            <th class="px-6 py-3 font-semibold text-gray-700 dark:text-gray-300">نام دارو</th>
+            <th class="px-6 py-3 font-semibold text-gray-700 dark:text-gray-300">دسته‌بندی</th>
+            <th class="px-6 py-3 font-semibold text-gray-700 dark:text-gray-300">موجودی</th>
+            <th class="px-6 py-3 font-semibold text-gray-700 dark:text-gray-300">تاریخ انقضا</th>
+            <th class="px-6 py-3 font-semibold text-gray-700 dark:text-gray-300">تاریخ تشخیص</th>
+            <th class="px-6 py-3 font-semibold text-gray-700 dark:text-gray-300">روش دفع</th>
+            <th class="px-6 py-3 font-semibold text-gray-700 dark:text-gray-300">تاریخ دفع</th>
+            <th class="px-6 py-3 font-semibold text-gray-700 dark:text-gray-300">یادداشت‌ها</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+          {% for log in logs %}
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+              <td class="px-6 py-4 font-medium text-gray-900 dark:text-gray-100">
+                {{ log.medicine_name }}
+              </td>
+              <td class="px-6 py-4 text-gray-600 dark:text-gray-400">
+                <span class="inline-block px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
+                  {{ log.medicine_category }}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-gray-900 dark:text-gray-100 font-semibold">
+                {{ log.quantity|floatformat:2 }}
+              </td>
+              <td class="px-6 py-4 text-gray-600 dark:text-gray-400">
+                {{ log.expiry_date }}
+              </td>
+              <td class="px-6 py-4 text-gray-600 dark:text-gray-400">
+                {{ log.detected_date }}
+              </td>
+              <td class="px-6 py-4">
+                {% if log.disposal_method == 'deleted' %}
+                  <span class="inline-block px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-full text-xs font-medium">
+                    🗑️ حذف از سیستم
+                  </span>
+                {% elif log.disposal_method == 'incinerated' %}
+                  <span class="inline-block px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full text-xs font-medium">
+                    🔥 سوزانده شده
+                  </span>
+                {% elif log.disposal_method == 'donated' %}
+                  <span class="inline-block px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full text-xs font-medium">
+                    🤝 اهدا شده
+                  </span>
+                {% elif log.disposal_method == 'returned' %}
+                  <span class="inline-block px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-xs font-medium">
+                    ↩️ برگشت شده
+                  </span>
+                {% else %}
+                  <span class="inline-block px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full text-xs font-medium">
+                    ➕ سایر
+                  </span>
+                {% endif %}
+              </td>
+              <td class="px-6 py-4 text-gray-600 dark:text-gray-400">
+                {{ log.disposal_date|default:"-" }}
+              </td>
+              <td class="px-6 py-4 text-gray-600 dark:text-gray-400 text-xs max-w-xs truncate" title="{{ log.notes }}">
+                {{ log.notes|truncatewords:5|default:"-" }}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                <i class="fa-solid fa-inbox text-4xl mb-4 opacity-50"></i>
+                <p class="text-lg font-medium">هیچ رکوردی یافت نشد</p>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if logs.has_other_pages %}
+      <div class="bg-gray-50 dark:bg-gray-800 px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-center gap-2">
+        {% if logs.has_previous %}
+          <a href="?page={{ logs.previous_page_number }}&search={{ search }}&disposal_method={{ disposal_method }}" 
+             class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600">
+            قبلی
+          </a>
+        {% endif %}
+        
+        <span class="text-gray-600 dark:text-gray-400 px-4">
+          صفحه {{ logs.number }} از {{ logs.paginator.num_pages }}
+        </span>
+        
+        {% if logs.has_next %}
+          <a href="?page={{ logs.next_page_number }}&search={{ search }}&disposal_method={{ disposal_method }}" 
+             class="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600">
+            بعدی
+          </a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Info Box -->
+  <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
+    <div class="flex gap-4">
+      <i class="fa-solid fa-circle-info text-3xl text-blue-600 dark:text-blue-400 flex-shrink-0"></i>
+      <div>
+        <h3 class="font-semibold text-blue-900 dark:text-blue-300 mb-2">اطلاعات گزارش</h3>
+        <p class="text-sm text-blue-800 dark:text-blue-400">
+          این گزارش تمام داروهای منقضی که از سیستم حذف شده‌اند را نمایش می‌دهد. 
+          بازرسان می‌توانند از این گزارش برای بررسی دفع مناسب داروهای منقضی استفاده کنند.
+          روش دفع را می‌توان بر اساس نوع دارو و قوانین محلی انتخاب کنید.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
