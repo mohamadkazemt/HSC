@@ -351,27 +351,52 @@
     }
 
     // Description -> HSE type and Corrective Actions
+    const loadCorrectiveActions = async (descriptionId) => {
+      if (!descriptionId) return;
+      setDisabled(correctiveEl, true);
+      hseTypeEl && (hseTypeEl.value = '');
+      clearOptions(correctiveEl, 'اقدام اصلاحی ...');
+      try {
+        const hseData = await fetchJSON(urlHse.replace(/0\/?$/, `${descriptionId}/`));
+        if (hseTypeEl && hseData && hseData.hse_type) {
+          hseTypeEl.value = hseData.hse_type;
+        }
+      } catch (err) { console.error('خطا در دریافت نوع HSE:', err); }
+      try {
+        const actData = await fetchJSON(urlAction.replace(/0\/?$/, `${descriptionId}/`));
+        if (actData.actions && actData.actions.length > 0) {
+          (actData.actions || []).forEach(a => { 
+            const opt = document.createElement('option'); 
+            opt.value = a.id; 
+            opt.textContent = a.description; 
+            correctiveEl.appendChild(opt); 
+          });
+          setDisabled(correctiveEl, false);
+          if (correctiveEl._choices) {
+            correctiveEl._choices.setChoices(
+              Array.from(correctiveEl.options).map(o=>({value:o.value,label:o.text})), 
+              'value','label', 
+              true
+            );
+          }
+        } else {
+          clearOptions(correctiveEl, 'اقدام اصلاحی مرتبطی یافت نشد');
+        }
+      } catch (err) { 
+        console.error('خطا در دریافت اقدامات اصلاحی:', err); 
+        clearOptions(correctiveEl, 'خطا در بارگذاری اقدامات اصلاحی');
+      }
+    };
+
     if (anomalyDescEl) {
       anomalyDescEl.addEventListener('change', async (e) => {
-        const idVal = e.target.value;
-        setDisabled(correctiveEl, true);
-        hseTypeEl && (hseTypeEl.value = '');
-        clearOptions(correctiveEl, 'اقدام اصلاحی ...');
-        if (idVal) {
-          try {
-            const hseData = await fetchJSON(urlHse.replace(/0\/?$/, `${idVal}/`));
-            if (hseTypeEl && hseData && hseData.hse_type) {
-              hseTypeEl.value = hseData.hse_type;
-            }
-          } catch (err) { console.error(err); }
-          try {
-            const actData = await fetchJSON(urlAction.replace(/0\/?$/, `${idVal}/`));
-            (actData.actions || []).forEach(a => { const opt = document.createElement('option'); opt.value=a.id; opt.textContent=a.description; correctiveEl.appendChild(opt); });
-            setDisabled(correctiveEl, false);
-            if (correctiveEl._choices) correctiveEl._choices.setChoices(Array.from(correctiveEl.options).map(o=>({value:o.value,label:o.text})), 'value','label', true);
-          } catch (err) { console.error(err); }
-        }
+        await loadCorrectiveActions(e.target.value);
       });
+      
+      // بارگذاری اقدامات اصلاحی در صورت وجود مقدار اولیه (برای ویرایش)
+      if (anomalyDescEl.value) {
+        loadCorrectiveActions(anomalyDescEl.value);
+      }
     }
 
     // AJAX submit with inline error rendering

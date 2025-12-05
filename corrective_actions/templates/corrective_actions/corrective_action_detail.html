@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}جزئیات اقدام اصلاحی/پیشگیرانه - {{ corrective_action.tracking_code }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6 max-w-7xl">
+  <!-- Header -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+          <i class="fas fa-clipboard-check text-indigo-600 dark:text-indigo-400 text-2xl"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+            اقدام اصلاحی/پیشگیرانه - {{ corrective_action.tracking_code }}
+          </h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">فرم MIE-MD-M-FR-025-V02</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="{% url 'corrective_actions:list' %}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600">
+          <i class="fas fa-arrow-right"></i>
+          بازگشت به لیست
+        </a>
+        <a href="{% url 'corrective_actions:update' corrective_action.pk %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+          <i class="fas fa-edit"></i>
+          ویرایش
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- اطلاعات اصلی -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden mb-6">
+    <div class="bg-gradient-to-l from-indigo-600 to-indigo-500 px-6 py-4">
+      <h2 class="text-xl font-bold text-white">اطلاعات اصلی</h2>
+    </div>
+    <div class="p-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">شماره اقدام</label>
+          <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ corrective_action.tracking_code }}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">تاریخ ثبت</label>
+          <p class="text-lg font-semibold text-gray-900 dark:text-white">
+            {% if corrective_action.jalali_created_at %}
+              {{ corrective_action.jalali_created_at }}
+            {% else %}
+              {{ corrective_action.created_at|date:"Y/m/d" }}
+            {% endif %}
+          </p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">نوع اقدام</label>
+          <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ corrective_action.get_action_type_display }}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">موضوع</label>
+          <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ corrective_action.get_topic_display }}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">ورودی عدم انطباق</label>
+          <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ corrective_action.get_source_display }}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">وضعیت</label>
+          <span class="inline-flex px-3 py-1 text-sm font-medium rounded-full
+            {% if corrective_action.status == 'closed' %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400
+            {% elif corrective_action.status == 'open' %}bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400
+            {% elif corrective_action.status == 'review' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400
+            {% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+            {{ corrective_action.get_status_display }}
+          </span>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">درخواست کننده</label>
+          <p class="text-lg font-semibold text-gray-900 dark:text-white">
+            {% if corrective_action.requester %}
+              {{ corrective_action.requester.user.get_full_name|default:corrective_action.requester.user.username }}
+            {% else %}
+              -
+            {% endif %}
+          </p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">پذیرنده / مسئول رسیدگی</label>
+          <p class="text-lg font-semibold text-gray-900 dark:text-white">
+            {% if corrective_action.receiver %}
+              {{ corrective_action.receiver.user.get_full_name|default:corrective_action.receiver.user.username }}
+            {% else %}
+              -
+            {% endif %}
+          </p>
+        </div>
+        {% if corrective_action.related_incident %}
+        <div>
+          <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">رویداد مرتبط</label>
+          <a href="{% url 'hse_incidents:report_details' corrective_action.related_incident.pk %}" class="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 font-medium">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+            </svg>
+            مشاهده رویداد #{{ corrective_action.related_incident.id }}
+          </a>
+        </div>
+        {% endif %}
+        {% if corrective_action.related_risk %}
+        <div>
+          <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">ریسک مرتبط</label>
+          <a href="{% url 'risk_assessment:risk_detail' corrective_action.related_risk.pk %}" class="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 font-medium">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+            </svg>
+            مشاهده ریسک #{{ corrective_action.related_risk.risk_number }}
+          </a>
+        </div>
+        {% endif %}
+        {% if corrective_action.related_anomaly %}
+        <div>
+          <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">آنومالی مرتبط</label>
+          <a href="{% url 'anomalis:anomaly_detail' corrective_action.related_anomaly.pk %}" class="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 font-medium">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+            </svg>
+            مشاهده آنومالی #{{ corrective_action.related_anomaly.id }}
+          </a>
+        </div>
+        {% endif %}
+        {% if corrective_action.effectiveness_result is not None %}
+        <div>
+          <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">نتیجه اثربخشی</label>
+          <span class="inline-flex px-3 py-1 text-sm font-medium rounded-full
+            {% if corrective_action.effectiveness_result %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400
+            {% else %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400{% endif %}">
+            {% if corrective_action.effectiveness_result %}موثر{% else %}غیرموثر{% endif %}
+          </span>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="mt-6">
+        <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">شرح عدم انطباق</label>
+        <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 text-gray-900 dark:text-white">
+          {{ corrective_action.description|linebreaks }}
+        </div>
+      </div>
+
+      {% if corrective_action.root_cause_analysis %}
+      <div class="mt-6">
+        <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">علل ریشه‌ای عدم انطباق</label>
+        <div class="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 text-gray-900 dark:text-white">
+          {{ corrective_action.root_cause_analysis|linebreaks }}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- جدول مراحل اقدام -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden mb-6">
+    <div class="bg-gradient-to-l from-green-600 to-green-500 px-6 py-4">
+      <h2 class="text-xl font-bold text-white">اقدامات اصلاحی / پیشگیرانه</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-gray-50 dark:bg-gray-900">
+          <tr>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">شرح اقدام</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">متولی اجرا</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">مهلت اقدام</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">تاریخ انجام</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">وضعیت</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          {% for step in corrective_action.action_steps.all %}
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+              <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">{{ step.description }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                {% if step.responsible %}
+                  {{ step.responsible.user.get_full_name|default:step.responsible.user.username }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                {% if step.jalali_deadline %}
+                  {{ step.jalali_deadline }}
+                {% else %}
+                  {{ step.deadline|date:"Y/m/d" }}
+                {% endif %}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                {% if step.completion_date %}
+                  {% if step.jalali_completion_date %}
+                    {{ step.jalali_completion_date }}
+                  {% else %}
+                    {{ step.completion_date|date:"Y/m/d" }}
+                  {% endif %}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 py-1 text-xs font-medium rounded-full
+                  {% if step.is_done %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400
+                  {% else %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400{% endif %}">
+                  {% if step.is_done %}انجام شده{% else %}در حال انجام{% endif %}
+                </span>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                هیچ مرحله اقدامی ثبت نشده است.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- جدول ارزیابی ریسک ناشی از اقدام -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+    <div class="bg-gradient-to-l from-amber-600 to-amber-500 px-6 py-4">
+      <h2 class="text-xl font-bold text-white">ارزیابی ریسک ناشی از اقدام</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-gray-50 dark:bg-gray-900">
+          <tr>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">خطر / جنبه</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">رویداد</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">پیامد</th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">اقدام کنترلی پیشنهادی</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          {% for risk in corrective_action.side_effect_risks.all %}
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+              <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">{{ risk.hazard }}</td>
+              <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{{ risk.event }}</td>
+              <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{{ risk.consequence }}</td>
+              <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{{ risk.control_measure }}</td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                هیچ ریسک ناشی از اقدامی ثبت نشده است.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

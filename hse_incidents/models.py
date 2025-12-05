@@ -62,6 +62,20 @@ class IncidentReport(models.Model):
     is_severe_production_stoppage = models.BooleanField(default=False, verbose_name="حادثه شدید منجر به توقف تولید")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ثبت")
     
+    def __str__(self):
+        """نمایش اطلاعات حادثه برای dropdown و نمایش"""
+        try:
+            import jdatetime
+            jalali_date = jdatetime.date.fromgregorian(date=self.incident_date)
+            date_str = jalali_date.strftime('%Y/%m/%d')
+        except:
+            date_str = self.incident_date.strftime('%Y-%m-%d')
+        
+        incident_type_display = self.get_incident_type_display() if self.incident_type else 'نامشخص'
+        location_str = f" - {self.location.name}" if self.location else ""
+        
+        return f"گزارش حادثه #{self.id} - {date_str} - {incident_type_display}{location_str}"
+    
     class Meta:
         verbose_name = "گزارش حادثه"
         verbose_name_plural = "گزارشات حوادث"

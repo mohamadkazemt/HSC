@@ -741,6 +741,45 @@
                 </div>
               </li>
               
+              <!-- Corrective Actions (nested) -->
+              <li>
+                <div x-data="{ openCorrectiveActions: false }" class="space-y-1">
+                  <button @click="openCorrectiveActions = !openCorrectiveActions" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-medium text-gray-600 hover:text-emerald-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                    <span class="flex items-center gap-x-2">
+                      <svg class="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                      </svg>
+                      <span>اقدامات اصلاحی/پیشگیرانه</span>
+                    </span>
+                    <svg class="h-5 w-5 text-gray-400" :class="openCorrectiveActions ? 'rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                  <ul x-show="openCorrectiveActions" x-collapse class="pr-6 space-y-1">
+                    <li>
+                      <a href="{% url 'corrective_actions:list' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-emerald-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                        <span class="flex items-center gap-2">
+                          <svg class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 17.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                          </svg>
+                          <span>لیست اقدامات</span>
+                        </span>
+                      </a>
+                    </li>
+                    <li>
+                      <a href="{% url 'corrective_actions:create' %}" class="block rounded-md p-2 text-sm text-gray-600 hover:text-emerald-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                        <span class="flex items-center gap-2">
+                          <svg class="h-5 w-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                          </svg>
+                          <span>ایجاد اقدام جدید</span>
+                        </span>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </li>
+              
               <!-- HSE Documents & QR Management (nested) -->
               <li>
                 <div x-data="{ openHSEDocs: false }" class="space-y-1">

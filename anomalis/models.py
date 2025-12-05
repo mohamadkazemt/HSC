@@ -143,7 +143,18 @@ class Anomaly(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return str(self.description[:30]) + '...'
+        """نمایش اطلاعات آنومالی برای dropdown و نمایش"""
+        try:
+            import jdatetime
+            jalali_date = jdatetime.date.fromgregorian(date=self.created_at.date())
+            date_str = jalali_date.strftime('%Y/%m/%d')
+        except:
+            date_str = self.created_at.strftime('%Y-%m-%d')
+        
+        location_str = f" - {self.location.name}" if self.location else ""
+        desc_short = self.description[:50] + '...' if len(self.description) > 50 else self.description
+        
+        return f"آنومالی #{self.id} - {date_str} - {desc_short}{location_str}"
 
 
 

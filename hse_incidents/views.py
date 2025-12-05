@@ -476,7 +476,21 @@ def report_details(request, report_id):
             return render(request, 'hse_incidents/hse_completion_form.html', {'form': form})
          else:
               form = HseCompletionReportForm(instance=hse_completion)
-    return render(request, 'hse_incidents/report_details.html', {'report': report, 'form': form,'hse_completion':hse_completion})
+    
+    # دریافت اقدامات اصلاحی مرتبط با این حادثه
+    related_corrective_actions = []
+    try:
+        from corrective_actions.models import CorrectiveAction
+        related_corrective_actions = CorrectiveAction.objects.filter(related_incident=report).select_related('requester', 'receiver').order_by('-created_at')
+    except ImportError:
+        pass
+    
+    return render(request, 'hse_incidents/report_details.html', {
+        'report': report, 
+        'form': form,
+        'hse_completion': hse_completion,
+        'related_corrective_actions': related_corrective_actions,
+    })
 
 
 @permission_required("export_reports_excel")

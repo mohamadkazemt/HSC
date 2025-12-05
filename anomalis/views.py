@@ -379,6 +379,7 @@ def get_anomalydescription(request):
     return JsonResponse({'descriptions': descriptions_list})
 
 
+@login_required
 def get_hse_type(request, description_id):
     try:
         anomaly_description = AnomalyDescription.objects.get(id=description_id)
@@ -387,13 +388,14 @@ def get_hse_type(request, description_id):
         return JsonResponse({'error': 'Description not found'}, status=404)
 
 
+@login_required
 def get_corrective_action(request, description_id):
     try:
         corrective_actions = CorrectiveAction.objects.filter(anomali_type_id=description_id)
         actions_list = list(corrective_actions.values('id', 'description'))
         return JsonResponse({'actions': actions_list})
-    except CorrectiveAction.DoesNotExist:
-        return JsonResponse({'error': 'Corrective action not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': 'خطا در دریافت اقدامات اصلاحی', 'details': str(e)}, status=404)
 
 
 
@@ -553,13 +555,22 @@ def anomaly_detail_view(request, pk):
 
         return redirect('anomalis:anomaly_detail', pk=anomaly.id)
 
+    # دریافت اقدامات اصلاحی مرتبط با این آنومالی
+    related_corrective_actions = []
+    try:
+        from corrective_actions.models import CorrectiveAction
+        related_corrective_actions = CorrectiveAction.objects.filter(related_anomaly=anomaly).select_related('requester', 'receiver').order_by('-created_at')
+    except ImportError:
+        pass
+    
     context = {
         'anomaly': anomaly,
         'comments': anomaly.root_comments,
         'form': CommentForm(),
         'title': 'جزئیات آنومالی',
         'is_hse_manager': is_hse_manager,
-        'is_request_sent': anomaly.is_request_sent
+        'is_request_sent': anomaly.is_request_sent,
+        'related_corrective_actions': related_corrective_actions,
     }
 
     return render(request, 'anomalis/anomaly-details.html', context)

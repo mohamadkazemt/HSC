@@ -419,6 +419,14 @@ def risk_detail(request, risk_id):
     if risk.residual_risk_number:
         risk_difference = risk.residual_risk_number - risk.risk_number
     
+    # دریافت اقدامات اصلاحی مرتبط با این ریسک
+    related_corrective_actions = []
+    try:
+        from corrective_actions.models import CorrectiveAction
+        related_corrective_actions = CorrectiveAction.objects.filter(related_risk=risk).select_related('requester', 'receiver').order_by('-created_at')
+    except ImportError:
+        pass
+    
     context = {
         'risk': risk,
         'insights': insights,
@@ -427,6 +435,7 @@ def risk_detail(request, risk_id):
         'trend_data': insights['anomaly_trend'],
         'suggestions': insights['suggestions'],
         'risk_difference': risk_difference,
+        'related_corrective_actions': related_corrective_actions,
     }
     
     return render(request, 'risk_assessment/risk_detail.html', context)

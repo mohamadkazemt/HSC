@@ -1,0 +1,547 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}تنظیمات هوش مصنوعی{% endblock %}
+
+{% block styles %}
+<style>
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  .status-success {
+    background-color: #d1fae5;
+    color: #065f46;
+  }
+  .status-error {
+    background-color: #fee2e2;
+    color: #991b1b;
+  }
+  .status-unknown {
+    background-color: #e5e7eb;
+    color: #374151;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6 max-w-5xl">
+  <!-- Page header -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+          <i class="fas fa-robot text-indigo-600 dark:text-indigo-400 text-2xl"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">تنظیمات هوش مصنوعی</h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">مدیریت API و تنظیمات سرویس AI</p>
+        </div>
+      </div>
+      <a href="{% url 'core:site_settings' %}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600">
+        <i class="fas fa-arrow-right"></i>
+        بازگشت
+      </a>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  {% if messages %}
+  <div class="space-y-2 mb-6">
+    {% for message in messages %}
+      <div class="rounded-lg p-3 text-sm {% if message.tags == 'success' %}bg-green-50 text-green-800 dark:bg-green-900/30 dark:text-green-200{% else %}bg-red-50 text-red-800 dark:bg-red-900/30 dark:text-red-200{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Test Connection Status -->
+  {% if test_info %}
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">وضعیت آخرین تست</h2>
+      <span class="status-badge {% if test_info.status %}status-success{% elif test_info.status == False %}status-error{% else %}status-unknown{% endif %}">
+        {% if test_info.status %}
+          <i class="fas fa-check-circle"></i>
+          موفق
+        {% elif test_info.status == False %}
+          <i class="fas fa-times-circle"></i>
+          ناموفق
+        {% else %}
+          <i class="fas fa-question-circle"></i>
+          نامشخص
+        {% endif %}
+      </span>
+    </div>
+    <div class="text-sm text-gray-600 dark:text-gray-400">
+      <p><strong>زمان تست:</strong> {{ test_info.tested_at|date:"Y/m/d H:i" }}</p>
+      {% if test_info.message %}
+      <p class="mt-2"><strong>پیام:</strong> {{ test_info.message }}</p>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <form method="POST" class="space-y-6">
+    {% csrf_token %}
+    
+    <!-- Provider Settings -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+      <div class="bg-gradient-to-l from-indigo-600 to-indigo-500 px-6 py-4">
+        <h2 class="text-xl font-bold text-white">تنظیمات ارائه‌دهنده</h2>
+      </div>
+      <div class="p-6 space-y-6">
+        <!-- Provider -->
+        <div>
+          <label for="{{ form.provider.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {{ form.provider.label }} <span class="text-red-500">*</span>
+          </label>
+          {{ form.provider }}
+          {% if form.provider.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ form.provider.errors.0 }}</p>
+          {% endif %}
+          <div class="mt-2 space-y-2">
+            <p class="text-xs text-gray-500 dark:text-gray-400">
+              ارائه‌دهنده AI را انتخاب کنید.
+            </p>
+            <div id="provider-help-google" class="hidden p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p class="text-xs font-semibold text-blue-800 dark:text-blue-200 mb-2">
+                <i class="fas fa-info-circle ml-1"></i>
+                راهنمای Google AI Studio:
+              </p>
+              <ol class="text-xs text-blue-700 dark:text-blue-300 list-decimal list-inside space-y-1">
+                <li>به <a href="{{ google_ai_studio_url }}" target="_blank" class="underline font-medium">Google AI Studio</a> بروید</li>
+                <li>وارد حساب Google خود شوید</li>
+                <li>از منوی سمت چپ، "Get API key" را انتخاب کنید</li>
+                <li>API Key را کپی کنید و در فیلد زیر وارد کنید</li>
+                <li>مدل پیشنهادی: <code class="bg-blue-100 dark:bg-blue-800 px-1 rounded">gemini-pro</code> یا <code class="bg-blue-100 dark:bg-blue-800 px-1 rounded">gemini-2.0-flash-exp</code></li>
+              </ol>
+            </div>
+            <div id="provider-help-openai" class="hidden p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+              <p class="text-xs font-semibold text-green-800 dark:text-green-200 mb-2">
+                <i class="fas fa-info-circle ml-1"></i>
+                راهنمای OpenAI:
+              </p>
+              <p class="text-xs text-green-700 dark:text-green-300">
+                API Key را از <a href="https://platform.openai.com/api-keys" target="_blank" class="underline">OpenAI Platform</a> دریافت کنید.
+              </p>
+            </div>
+            <div id="provider-help-anthropic" class="hidden p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+              <p class="text-xs font-semibold text-purple-800 dark:text-purple-200 mb-2">
+                <i class="fas fa-info-circle ml-1"></i>
+                راهنمای Anthropic Claude:
+              </p>
+              <p class="text-xs text-purple-700 dark:text-purple-300">
+                API Key را از <a href="https://console.anthropic.com/" target="_blank" class="underline">Anthropic Console</a> دریافت کنید.
+              </p>
+            </div>
+            <div id="provider-help-local" class="hidden p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+              <p class="text-xs font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                <i class="fas fa-info-circle ml-1"></i>
+                راهنمای Local API (Ollama):
+              </p>
+              <p class="text-xs text-gray-700 dark:text-gray-300">
+                برای استفاده از API محلی، باید <a href="https://ollama.ai/" target="_blank" class="underline">Ollama</a> را نصب و اجرا کنید.
+                API Key نیاز نیست.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- API Key -->
+        <div>
+          <label for="{{ form.api_key.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {{ form.api_key.label }}
+            {% if settings.get_api_key_safe %}
+              <span class="text-xs text-green-600 dark:text-green-400">(تنظیم شده)</span>
+            {% endif %}
+          </label>
+          {{ form.api_key }}
+          {% if form.api_key.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ form.api_key.errors.0 }}</p>
+          {% endif %}
+          {% if form.api_key.help_text %}
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.api_key.help_text }}</p>
+          {% endif %}
+        </div>
+
+        <!-- API Base URL -->
+        <div>
+          <label for="{{ form.api_base_url.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {{ form.api_base_url.label }}
+          </label>
+          {{ form.api_base_url }}
+          {% if form.api_base_url.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ form.api_base_url.errors.0 }}</p>
+          {% endif %}
+          {% if form.api_base_url.help_text %}
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.api_base_url.help_text }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Model -->
+        <div>
+          <label for="{{ form.model.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {{ form.model.label }} <span class="text-red-500">*</span>
+          </label>
+          {{ form.model }}
+          {% if form.model.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ form.model.errors.0 }}</p>
+          {% endif %}
+          {% if form.model.help_text %}
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.model.help_text }}</p>
+          {% endif %}
+          <div id="model-suggestions" class="mt-2 hidden">
+            <p class="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">مدل‌های پیشنهادی:</p>
+            <div id="google-models" class="hidden">
+              <div class="flex flex-wrap gap-2">
+                <button type="button" class="model-suggestion-btn text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800" data-model="gemini-pro">gemini-pro</button>
+                <button type="button" class="model-suggestion-btn text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800" data-model="gemini-2.0-flash-exp">gemini-2.0-flash-exp</button>
+                <button type="button" class="model-suggestion-btn text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800" data-model="gemini-1.5-flash">gemini-1.5-flash</button>
+                <button type="button" class="model-suggestion-btn text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-800" data-model="gemini-1.5-pro">gemini-1.5-pro</button>
+              </div>
+            </div>
+            <div id="openai-models" class="hidden">
+              <div class="flex flex-wrap gap-2">
+                <button type="button" class="model-suggestion-btn text-xs px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded hover:bg-green-200 dark:hover:bg-green-800" data-model="gpt-4">gpt-4</button>
+                <button type="button" class="model-suggestion-btn text-xs px-2 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded hover:bg-green-200 dark:hover:bg-green-800" data-model="gpt-3.5-turbo">gpt-3.5-turbo</button>
+              </div>
+            </div>
+            <div id="anthropic-models" class="hidden">
+              <div class="flex flex-wrap gap-2">
+                <button type="button" class="model-suggestion-btn text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded hover:bg-purple-200 dark:hover:bg-purple-800" data-model="claude-3-opus-20240229">claude-3-opus</button>
+                <button type="button" class="model-suggestion-btn text-xs px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded hover:bg-purple-200 dark:hover:bg-purple-800" data-model="claude-3-sonnet-20240229">claude-3-sonnet</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Advanced Settings -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+      <div class="bg-gradient-to-l from-purple-600 to-purple-500 px-6 py-4">
+        <h2 class="text-xl font-bold text-white">تنظیمات پیشرفته</h2>
+      </div>
+      <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Timeout -->
+        <div>
+          <label for="{{ form.timeout.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {{ form.timeout.label }}
+          </label>
+          {{ form.timeout }}
+          {% if form.timeout.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ form.timeout.errors.0 }}</p>
+          {% endif %}
+          {% if form.timeout.help_text %}
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.timeout.help_text }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Max Retries -->
+        <div>
+          <label for="{{ form.max_retries.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {{ form.max_retries.label }}
+          </label>
+          {{ form.max_retries }}
+          {% if form.max_retries.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ form.max_retries.errors.0 }}</p>
+          {% endif %}
+          {% if form.max_retries.help_text %}
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.max_retries.help_text }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Cache Timeout -->
+        <div>
+          <label for="{{ form.cache_timeout.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {{ form.cache_timeout.label }}
+          </label>
+          {{ form.cache_timeout }}
+          {% if form.cache_timeout.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ form.cache_timeout.errors.0 }}</p>
+          {% endif %}
+          {% if form.cache_timeout.help_text %}
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.cache_timeout.help_text }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Temperature -->
+        <div>
+          <label for="{{ form.temperature.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {{ form.temperature.label }}
+          </label>
+          {{ form.temperature }}
+          {% if form.temperature.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ form.temperature.errors.0 }}</p>
+          {% endif %}
+          {% if form.temperature.help_text %}
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.temperature.help_text }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+      <div class="bg-gradient-to-l from-green-600 to-green-500 px-6 py-4">
+        <h2 class="text-xl font-bold text-white">وضعیت</h2>
+      </div>
+      <div class="p-6">
+        <div class="flex items-center gap-3">
+          <label for="{{ form.is_active.id_for_label }}" class="flex items-center gap-2 cursor-pointer">
+            {{ form.is_active }}
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {{ form.is_active.label }}
+            </span>
+          </label>
+          {% if form.is_active.errors %}
+            <p class="text-sm text-red-600">{{ form.is_active.errors.0 }}</p>
+          {% endif %}
+        </div>
+        {% if form.is_active.help_text %}
+          <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ form.is_active.help_text }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center justify-between">
+      <div class="text-xs text-gray-500 dark:text-gray-400">
+        <p><i class="fas fa-info-circle ml-1"></i> بعد از وارد کردن API Key، حتماً دکمه "تست اتصال" را بزنید تا از صحت تنظیمات اطمینان حاصل کنید.</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <button type="button" id="test-connection-btn" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center gap-2 transition-colors">
+          <i class="fas fa-plug"></i>
+          تست اتصال
+        </button>
+        <button type="submit" class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium transition-colors">
+          <i class="fas fa-save ml-2"></i>ذخیره تنظیمات
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Test Result Modal -->
+<div id="test-result-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
+    <div class="p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">نتیجه تست اتصال</h3>
+        <button type="button" onclick="closeTestModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div id="test-result-content" class="space-y-3">
+        <!-- محتوا به صورت داینامیک پر می‌شود -->
+      </div>
+      <div class="mt-6 flex justify-end">
+        <button type="button" onclick="closeTestModal()" class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">
+          بستن
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script>
+  function closeTestModal() {
+    document.getElementById('test-result-modal').classList.add('hidden');
+  }
+
+  function showTestModal(content, isSuccess) {
+    const modal = document.getElementById('test-result-modal');
+    const contentDiv = document.getElementById('test-result-content');
+    
+    contentDiv.innerHTML = content;
+    modal.classList.remove('hidden');
+  }
+
+  $('#test-connection-btn').click(function() {
+    const btn = $(this);
+    const originalText = btn.html();
+    
+    // Disable button and show loading
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> در حال تست...');
+    
+    // Call test API
+    $.ajax({
+      url: '{% url "core:ai_test_connection" %}',
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val(),
+        'Content-Type': 'application/json'
+      },
+      success: function(response) {
+        let content = '';
+        let isSuccess = response.success;
+        
+        if (isSuccess) {
+          content = `
+            <div class="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/30 rounded-lg">
+              <i class="fas fa-check-circle text-green-600 dark:text-green-400 text-2xl"></i>
+              <div>
+                <p class="font-semibold text-green-800 dark:text-green-200">${response.message}</p>
+                ${response.details ? `
+                  <div class="mt-2 text-sm text-green-700 dark:text-green-300">
+                    <p><strong>Provider:</strong> ${response.details.provider}</p>
+                    <p><strong>Model:</strong> ${response.details.model}</p>
+                    ${response.details.test_response ? `<p class="mt-2"><strong>پاسخ تست:</strong> ${response.details.test_response}</p>` : ''}
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          `;
+        } else {
+          // بررسی نوع خطا برای نمایش بهتر
+          let errorIcon = 'fa-times-circle';
+          let errorClass = 'text-red-600 dark:text-red-400';
+          let bgClass = 'bg-red-50 dark:bg-red-900/30';
+          let textClass = 'text-red-800 dark:text-red-200';
+          let detailTextClass = 'text-red-700 dark:text-red-300';
+          
+          if (response.message.includes('quota') || response.message.includes('rate limit') || response.message.includes('429')) {
+            errorIcon = 'fa-exclamation-triangle';
+            errorClass = 'text-yellow-600 dark:text-yellow-400';
+            bgClass = 'bg-yellow-50 dark:bg-yellow-900/30';
+            textClass = 'text-yellow-800 dark:text-yellow-200';
+            detailTextClass = 'text-yellow-700 dark:text-yellow-300';
+          } else if (response.message.includes('API Key') || response.message.includes('401') || response.message.includes('403')) {
+            errorIcon = 'fa-key';
+            errorClass = 'text-orange-600 dark:text-orange-400';
+            bgClass = 'bg-orange-50 dark:bg-orange-900/30';
+            textClass = 'text-orange-800 dark:text-orange-200';
+            detailTextClass = 'text-orange-700 dark:text-orange-300';
+          }
+          
+          content = `
+            <div class="flex items-start gap-3 p-4 ${bgClass} rounded-lg">
+              <i class="fas ${errorIcon} ${errorClass} text-2xl mt-1"></i>
+              <div class="flex-1">
+                <p class="font-semibold ${textClass} mb-2">${response.message}</p>
+                ${response.details ? `
+                  <div class="mt-2 text-sm ${detailTextClass} space-y-1">
+                    ${response.details.provider ? `<p><strong>Provider:</strong> ${response.details.provider}</p>` : ''}
+                    ${response.details.model ? `<p><strong>Model:</strong> ${response.details.model}</p>` : ''}
+                    ${response.details.error ? `<p class="mt-2 text-xs opacity-75"><strong>جزئیات خطا:</strong> ${response.details.error}</p>` : ''}
+                  </div>
+                ` : ''}
+                ${response.message.includes('quota') || response.message.includes('rate limit') ? `
+                  <div class="mt-3 p-3 bg-white dark:bg-gray-800 rounded border border-yellow-200 dark:border-yellow-800">
+                    <p class="text-xs ${detailTextClass} mb-2"><strong>راهکار:</strong></p>
+                    <ul class="text-xs ${detailTextClass} list-disc list-inside space-y-1">
+                      <li>چند دقیقه صبر کنید و دوباره تست کنید</li>
+                      <li>به <a href="https://ai.dev/usage" target="_blank" class="underline">صفحه usage</a> مراجعه کنید</li>
+                      <li>از مدل دیگری استفاده کنید (مثلاً gemini-pro)</li>
+                    </ul>
+                  </div>
+                ` : ''}
+                ${response.message.includes('API Key') ? `
+                  <div class="mt-3 p-3 bg-white dark:bg-gray-800 rounded border border-orange-200 dark:border-orange-800">
+                    <p class="text-xs ${detailTextClass} mb-2"><strong>راهکار:</strong></p>
+                    <ul class="text-xs ${detailTextClass} list-disc list-inside space-y-1">
+                      <li>API Key را از <a href="https://aistudio.google.com/" target="_blank" class="underline">Google AI Studio</a> دریافت کنید</li>
+                      <li>مطمئن شوید API Key معتبر و فعال است</li>
+                      <li>API Key را در فیلد مربوطه وارد کنید</li>
+                    </ul>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          `;
+        }
+        
+        showTestModal(content, isSuccess);
+      },
+      error: function(xhr) {
+        let errorMsg = 'خطا در ارتباط با سرور';
+        if (xhr.responseJSON && xhr.responseJSON.message) {
+          errorMsg = xhr.responseJSON.message;
+        }
+        
+        const content = `
+          <div class="flex items-center gap-3 p-4 bg-red-50 dark:bg-red-900/30 rounded-lg">
+            <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400 text-2xl"></i>
+            <div>
+              <p class="font-semibold text-red-800 dark:text-red-200">خطا</p>
+              <p class="text-sm text-red-700 dark:text-red-300 mt-1">${errorMsg}</p>
+            </div>
+          </div>
+        `;
+        
+        showTestModal(content, false);
+      },
+      complete: function() {
+        // Re-enable button
+        btn.prop('disabled', false).html(originalText);
+      }
+    });
+  });
+
+  // Auto-update API Base URL when provider changes
+  $('#id_provider').change(function() {
+    const provider = $(this).val();
+    const apiBaseUrlField = $('#id_api_base_url');
+    
+    const defaults = {
+      'openai': 'https://api.openai.com/v1',
+      'anthropic': 'https://api.anthropic.com/v1',
+      'google': 'https://generativelanguage.googleapis.com/v1beta',
+      'local': 'http://localhost:11434/v1',
+    };
+    
+    if (defaults[provider] && !apiBaseUrlField.val()) {
+      apiBaseUrlField.val(defaults[provider]);
+    }
+    
+    // Update model placeholder
+    const modelField = $('#id_model');
+    const modelDefaults = {
+      'openai': 'gpt-4',
+      'anthropic': 'claude-3-opus-20240229',
+      'google': 'gemini-pro',
+      'local': 'llama2',
+    };
+    
+    if (modelDefaults[provider] && !modelField.val()) {
+      modelField.attr('placeholder', modelDefaults[provider]);
+    }
+    
+    // نمایش/مخفی کردن راهنماها
+    $('[id^="provider-help-"]').addClass('hidden');
+    $(`#provider-help-${provider}`).removeClass('hidden');
+    
+    // نمایش/مخفی کردن پیشنهادات مدل
+    $('#model-suggestions').removeClass('hidden');
+    $('#google-models, #openai-models, #anthropic-models').addClass('hidden');
+    if (provider === 'google') {
+      $('#google-models').removeClass('hidden');
+    } else if (provider === 'openai') {
+      $('#openai-models').removeClass('hidden');
+    } else if (provider === 'anthropic') {
+      $('#anthropic-models').removeClass('hidden');
+    } else {
+      $('#model-suggestions').addClass('hidden');
+    }
+  });
+  
+  // Trigger change on page load to show initial help
+  $('#id_provider').trigger('change');
+  
+  // Model suggestion buttons
+  $(document).on('click', '.model-suggestion-btn', function() {
+    const model = $(this).data('model');
+    $('#id_model').val(model);
+  });
+</script>
+{% endblock %}

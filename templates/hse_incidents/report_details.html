@@ -50,6 +50,15 @@
         </svg>
         بازگشت به لیست
       </a>
+      {% url 'corrective_actions:create' as corrective_action_create_url %}
+      {% if corrective_action_create_url %}
+      <a href="{{ corrective_action_create_url }}?incident_id={{ report.id }}" class="bg-emerald-600 text-white rounded-lg px-4 py-2 font-bold hover:bg-emerald-700 transition flex items-center gap-2">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+        </svg>
+        ایجاد اقدام اصلاحی
+      </a>
+      {% endif %}
       <a href="{% url 'hse_incidents:report_details_pdf' report.id %}" class="bg-red-600 text-white rounded-lg px-4 py-2 font-bold hover:bg-red-700 transition flex items-center gap-2">
         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -508,6 +517,54 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Part 3: Related Corrective Actions -->
+  {% if related_corrective_actions %}
+  <div class="mb-6">
+    <div class="info-card bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+      <div class="bg-gradient-to-r from-emerald-100 to-green-100 dark:from-emerald-900 dark:to-green-900 px-6 py-4 border-b flex items-center justify-between">
+        <h2 class="text-lg font-bold text-emerald-700 dark:text-emerald-200 flex items-center gap-2">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+          </svg>
+          اقدامات اصلاحی/پیشگیرانه مرتبط
+        </h2>
+        <span class="text-sm font-semibold text-emerald-800 dark:text-emerald-200 bg-white/50 dark:bg-emerald-800/50 px-3 py-1 rounded-full">
+          {{ related_corrective_actions|length }} مورد
+        </span>
+      </div>
+      <div class="p-6">
+        <div class="space-y-3">
+          {% for action in related_corrective_actions %}
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center gap-3 mb-2">
+                    <a href="{% url 'corrective_actions:detail' action.pk %}" class="text-base font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300">
+                      {{ action.tracking_code }}
+                    </a>
+                    <span class="px-2 py-1 text-xs font-medium rounded-full
+                      {% if action.status == 'closed' %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400
+                      {% elif action.status == 'open' %}bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400
+                      {% elif action.status == 'review' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400
+                      {% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                      {{ action.get_status_display }}
+                    </span>
+                  </div>
+                  <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">{{ action.get_action_type_display }} - {{ action.get_topic_display }}</p>
+                  <p class="text-sm text-gray-500 dark:text-gray-500 line-clamp-2">{{ action.description|truncatewords:20 }}</p>
+                </div>
+                <a href="{% url 'corrective_actions:detail' action.pk %}" class="ml-4 px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium transition">
+                  مشاهده
+                </a>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
     </div>
   </div>
   {% endif %}

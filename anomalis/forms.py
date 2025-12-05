@@ -206,6 +206,17 @@ class AnomalyForm(forms.ModelForm):
             else:
                 self.fields[field].widget.attrs['class'] = 'error-field'
 
+        # فیلتر کردن اقدامات اصلاحی بر اساس anomalydescription
+        instance = kwargs.get('instance')
+        if instance and instance.anomalydescription:
+            # اگر instance وجود دارد و anomalydescription دارد، فقط اقدامات مرتبط را نمایش بده
+            self.fields['correctiveaction'].queryset = CorrectiveAction.objects.filter(
+                anomali_type=instance.anomalydescription
+            )
+        else:
+            # اگر instance وجود ندارد، queryset را خالی کن تا از طریق JavaScript پر شود
+            self.fields['correctiveaction'].queryset = CorrectiveAction.objects.none()
+
         # تنظیم اجباری بودن فیلدها
         required_fields = ['location', 'anomalytype', 'followup', 'anomalydescription',
                            'correctiveaction', 'priority']

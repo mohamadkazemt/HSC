@@ -89,6 +89,7 @@ INSTALLED_APPS = [
     'rubika_bot.apps.RubikaBotConfig',
     'risk_assessment.apps.RiskAssessmentConfig',
     'hse_docs.apps.HseDocsConfig',
+    'corrective_actions.apps.CorrectiveActionsConfig',
 ]
 
 MIDDLEWARE = [
@@ -346,6 +347,17 @@ if CELERY_AVAILABLE:
             'schedule': crontab(minute=0),  # هر ساعت
             'options': {'expires': 3600}
         },
+        # Corrective Actions Automation Tasks
+        'check_unresolved_anomalies': {
+            'task': 'corrective_actions.tasks.check_unresolved_anomalies',
+            'schedule': crontab(hour=6, minute=0),  # هر روز ساعت 6 صبح
+            'options': {'expires': 3600}
+        },
+        'check_high_risk_assessments': {
+            'task': 'corrective_actions.tasks.check_high_risk_assessments',
+            'schedule': crontab(hour=7, minute=0),  # هر روز ساعت 7 صبح
+            'options': {'expires': 3600}
+        },
     }
 else:
     CELERY_BEAT_SCHEDULE = {}
@@ -533,4 +545,32 @@ LOGGING = {
 SMS_ENABLED = True
 SMS_PROVIDER = 'smsir'  # Using the existing SMS provider
 SMS_API_KEY = SMSIR_API_KEY  # Using the existing API key
-SMS_LINE_NUMBER = SMSIR_LINE_NUMBER  # Using the existing line number 
+SMS_LINE_NUMBER = SMSIR_LINE_NUMBER  # Using the existing line number
+
+# AI Service Configuration
+# برای استفاده از OpenAI:
+# AI_API_KEY = os.environ.get('AI_API_KEY', '')
+# AI_API_BASE_URL = 'https://api.openai.com/v1'
+# AI_MODEL = 'gpt-4'  # یا 'gpt-3.5-turbo'
+# AI_PROVIDER = 'openai'
+
+# برای استفاده از Anthropic Claude:
+# AI_API_KEY = os.environ.get('AI_API_KEY', '')
+# AI_API_BASE_URL = 'https://api.anthropic.com/v1'
+# AI_MODEL = 'claude-3-opus-20240229'  # یا مدل‌های دیگر
+# AI_PROVIDER = 'anthropic'
+
+# برای استفاده از API محلی (مثل Ollama):
+# AI_API_KEY = ''  # برای API محلی نیاز نیست
+# AI_API_BASE_URL = 'http://localhost:11434/v1'  # آدرس Ollama
+# AI_MODEL = 'llama2'  # یا مدل‌های دیگر
+# AI_PROVIDER = 'local'
+
+# تنظیمات پیش‌فرض (غیرفعال - باید تنظیم شود)
+AI_API_KEY = os.environ.get('AI_API_KEY', '')
+AI_API_BASE_URL = os.environ.get('AI_API_BASE_URL', 'https://api.openai.com/v1')
+AI_MODEL = os.environ.get('AI_MODEL', 'gpt-4')
+AI_PROVIDER = os.environ.get('AI_PROVIDER', 'openai')  # openai, anthropic, local
+AI_TIMEOUT = int(os.environ.get('AI_TIMEOUT', '30'))
+AI_MAX_RETRIES = int(os.environ.get('AI_MAX_RETRIES', '3'))
+AI_CACHE_TIMEOUT = int(os.environ.get('AI_CACHE_TIMEOUT', '3600'))  # 1 hour 

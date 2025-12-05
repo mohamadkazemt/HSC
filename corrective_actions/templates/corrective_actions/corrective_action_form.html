@@ -1,0 +1,633 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if corrective_action %}ویرایش{% else %}ایجاد{% endif %} اقدام اصلاحی/پیشگیرانه{% endblock %}
+
+{% block styles %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+  .select2-container { width: 100% !important; }
+  .select2-container .select2-selection--single { 
+    height: 42px; 
+    min-height: 42px; 
+    border: 1px solid #d1d5db; 
+    border-radius: 0.5rem; 
+    display: flex; 
+    align-items: center; 
+  }
+  .select2-container .select2-selection__rendered { 
+    line-height: 40px; 
+    padding-right: 12px;
+  }
+  .formset-row {
+    transition: all 0.3s ease;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6 max-w-7xl">
+  <!-- Header -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+          <i class="fas fa-clipboard-check text-indigo-600 dark:text-indigo-400 text-2xl"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+            {% if corrective_action %}ویرایش{% else %}ایجاد{% endif %} اقدام اصلاحی/پیشگیرانه
+          </h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">فرم MIE-MD-M-FR-025-V02</p>
+        </div>
+      </div>
+      <a href="{% url 'corrective_actions:list' %}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600">
+        <i class="fas fa-arrow-right"></i>
+        بازگشت به لیست
+      </a>
+    </div>
+  </div>
+
+  <form method="POST" class="space-y-6">
+    {% csrf_token %}
+    
+    <!-- بخش اصلی فرم -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+      <div class="bg-gradient-to-l from-indigo-600 to-indigo-500 px-6 py-4 flex items-center justify-between">
+        <h2 class="text-xl font-bold text-white">اطلاعات اصلی</h2>
+        {% if not corrective_action %}
+        <button type="button" id="ai-assist-btn" class="px-4 py-2 bg-white text-indigo-600 rounded-lg hover:bg-indigo-50 text-sm font-medium flex items-center gap-2">
+          <i class="fas fa-robot"></i>
+          <span>کمک هوش مصنوعی</span>
+        </button>
+        {% endif %}
+      </div>
+      <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- شماره اقدام -->
+          <div>
+            <label for="{{ form.tracking_code.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {{ form.tracking_code.label }} <span class="text-red-500">*</span>
+            </label>
+            {{ form.tracking_code }}
+            {% if form.tracking_code.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.tracking_code.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- تاریخ ثبت -->
+          {% if form.created_at %}
+          <div>
+            <label for="{{ form.created_at.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {{ form.created_at.label }}
+            </label>
+            {{ form.created_at }}
+            {% if form.created_at.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.created_at.errors.0 }}</p>
+            {% endif %}
+          </div>
+          {% else %}
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              تاریخ ثبت
+            </label>
+            <p class="text-sm text-gray-500 dark:text-gray-400 italic">تاریخ به صورت خودکار ثبت می‌شود</p>
+          </div>
+          {% endif %}
+
+          <!-- نوع اقدام -->
+          <div>
+            <label for="{{ form.action_type.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {{ form.action_type.label }} <span class="text-red-500">*</span>
+            </label>
+            {{ form.action_type }}
+            {% if form.action_type.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.action_type.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- موضوع -->
+          <div>
+            <label for="{{ form.topic.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {{ form.topic.label }} <span class="text-red-500">*</span>
+            </label>
+            {{ form.topic }}
+            {% if form.topic.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.topic.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- ورودی عدم انطباق -->
+          <div>
+            <label for="{{ form.source.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {{ form.source.label }} <span class="text-red-500">*</span>
+            </label>
+            {{ form.source }}
+            {% if form.source.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.source.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- وضعیت -->
+          <div>
+            <label for="{{ form.status.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {{ form.status.label }}
+            </label>
+            {{ form.status }}
+            {% if form.status.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.status.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- درخواست کننده -->
+          <div>
+            <label for="{{ form.requester.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {{ form.requester.label }}
+            </label>
+            {{ form.requester }}
+            {% if form.requester.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.requester.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- پذیرنده / مسئول رسیدگی -->
+          <div>
+            <label for="{{ form.receiver.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {{ form.receiver.label }}
+            </label>
+            {{ form.receiver }}
+            {% if form.receiver.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.receiver.errors.0 }}</p>
+            {% endif %}
+          </div>
+
+          <!-- رویداد مرتبط -->
+          {% if form.related_incident %}
+          <div>
+            <label for="{{ form.related_incident.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {{ form.related_incident.label }}
+            </label>
+            {{ form.related_incident }}
+            {% if form.related_incident.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.related_incident.errors.0 }}</p>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          <!-- ریسک مرتبط -->
+          {% if form.related_risk %}
+          <div>
+            <label for="{{ form.related_risk.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {{ form.related_risk.label }}
+            </label>
+            {{ form.related_risk }}
+            {% if form.related_risk.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.related_risk.errors.0 }}</p>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          <!-- آنومالی مرتبط -->
+          {% if form.related_anomaly %}
+          <div>
+            <label for="{{ form.related_anomaly.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {{ form.related_anomaly.label }}{% if form.related_anomaly.field.required %} <span class="text-red-500">*</span>{% endif %}
+            </label>
+            {{ form.related_anomaly }}
+            {% if form.related_anomaly.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.related_anomaly.errors.0 }}</p>
+            {% endif %}
+            {% if related_anomaly_id %}
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">این آنومالی از صفحه آنومالی انتخاب شده است</p>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          <!-- نتیجه اثربخشی -->
+          <div>
+            <label for="{{ form.effectiveness_result.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              {{ form.effectiveness_result.label }}
+            </label>
+            {{ form.effectiveness_result }}
+            {% if form.effectiveness_result.errors %}
+              <p class="mt-1 text-sm text-red-600">{{ form.effectiveness_result.errors.0 }}</p>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- شرح عدم انطباق -->
+        <div class="mt-6">
+          <div class="flex items-center justify-between mb-2">
+            <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              {{ form.description.label }} <span class="text-red-500">*</span>
+            </label>
+            <button type="button" id="ai-generate-root-cause-btn" class="text-xs text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 flex items-center gap-1" title="تولید تحلیل علل ریشه‌ای با AI">
+              <i class="fas fa-magic"></i>
+              <span>تولید تحلیل علل ریشه‌ای</span>
+            </button>
+          </div>
+          {{ form.description }}
+          {% if form.description.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ form.description.errors.0 }}</p>
+          {% endif %}
+        </div>
+
+        <!-- علل ریشه‌ای -->
+        <div class="mt-6">
+          <label for="{{ form.root_cause_analysis.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {{ form.root_cause_analysis.label }}
+          </label>
+          {{ form.root_cause_analysis }}
+          {% if form.root_cause_analysis.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ form.root_cause_analysis.errors.0 }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- جدول مراحل اقدام -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+      <div class="bg-gradient-to-l from-green-600 to-green-500 px-6 py-4 flex items-center justify-between">
+        <h2 class="text-xl font-bold text-white">اقدامات اصلاحی / پیشگیرانه</h2>
+        <button type="button" id="add-action-step" class="px-4 py-2 bg-white text-green-600 rounded-lg hover:bg-green-50 text-sm font-medium">
+          <i class="fas fa-plus ml-2"></i>افزودن ردیف
+        </button>
+      </div>
+      <div class="p-6">
+        {{ action_step_formset.management_form }}
+        <div id="action-steps-container" class="space-y-4">
+          {% for form in action_step_formset %}
+            <div class="formset-row border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900/50">
+              <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">شرح اقدام</label>
+                  {{ form.description }}
+                  {{ form.id }}
+                  {% if form.DELETE %}
+                    {{ form.DELETE }}
+                  {% endif %}
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">متولی اجرا</label>
+                  {{ form.responsible }}
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">مهلت اقدام</label>
+                  {{ form.deadline }}
+                </div>
+                <div class="flex items-end gap-2">
+                  <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">تاریخ انجام</label>
+                    {{ form.completion_date }}
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                      {{ form.is_done }}
+                      <span class="text-sm text-gray-700 dark:text-gray-300">انجام شد</span>
+                    </label>
+                    {% if form.DELETE %}
+                    <button type="button" class="delete-row px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              {% if form.errors %}
+                <div class="mt-2 text-sm text-red-600">
+                  {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- جدول ارزیابی ریسک ناشی از اقدام -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+      <div class="bg-gradient-to-l from-amber-600 to-amber-500 px-6 py-4 flex items-center justify-between">
+        <h2 class="text-xl font-bold text-white">ارزیابی ریسک ناشی از اقدام</h2>
+        <button type="button" id="add-risk-row" class="px-4 py-2 bg-white text-amber-600 rounded-lg hover:bg-amber-50 text-sm font-medium">
+          <i class="fas fa-plus ml-2"></i>افزودن ردیف
+        </button>
+      </div>
+      <div class="p-6">
+        {{ side_effect_risk_formset.management_form }}
+        <div id="risks-container" class="space-y-4">
+          {% for form in side_effect_risk_formset %}
+            <div class="formset-row border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-900/50">
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">خطر / جنبه</label>
+                  {{ form.hazard }}
+                  {{ form.id }}
+                  {% if form.DELETE %}
+                    {{ form.DELETE }}
+                  {% endif %}
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">رویداد</label>
+                  {{ form.event }}
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">پیامد</label>
+                  {{ form.consequence }}
+                </div>
+                <div class="flex items-end gap-2">
+                  <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">اقدام کنترلی</label>
+                    {{ form.control_measure }}
+                  </div>
+                  {% if form.DELETE %}
+                  <button type="button" class="delete-row px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                  {% endif %}
+                </div>
+              </div>
+              {% if form.errors %}
+                <div class="mt-2 text-sm text-red-600">
+                  {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- دکمه‌های ارسال -->
+    <div class="flex items-center justify-end gap-4">
+      <a href="{% url 'corrective_actions:list' %}" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 font-medium">
+        انصراف
+      </a>
+      <button type="submit" class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">
+        <i class="fas fa-save ml-2"></i>ذخیره
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+  $(document).ready(function() {
+    // Initialize Select2
+    $('select').select2({
+      dir: 'rtl',
+      language: 'fa'
+    });
+    
+    // اگر anomaly_id در URL وجود دارد، فیلد related_anomaly را انتخاب کن
+    {% if related_anomaly_id %}
+    $(document).ready(function() {
+      const anomalyField = $('#id_related_anomaly');
+      if (anomalyField.length && !anomalyField.val()) {
+        anomalyField.val({{ related_anomaly_id }}).trigger('change');
+      }
+    });
+    {% endif %}
+
+    // Formset management for action steps
+    let actionStepTotalForms = $('#id_action_steps-TOTAL_FORMS');
+    let actionStepFormCount = parseInt(actionStepTotalForms.val());
+    
+    $('#add-action-step').click(function() {
+      let newForm = $('.formset-row').first().clone();
+      newForm.find('input, select').val('');
+      newForm.find('input[type="checkbox"]').prop('checked', false);
+      newForm.find('input[name*="-id"]').remove();
+      newForm.find('input, select').each(function() {
+        let name = $(this).attr('name');
+        if (name) {
+          name = name.replace(/-\d+-/, '-' + actionStepFormCount + '-');
+          $(this).attr('name', name);
+        }
+        let id = $(this).attr('id');
+        if (id) {
+          id = id.replace(/-\d+-/, '-' + actionStepFormCount + '-');
+          $(this).attr('id', id);
+        }
+      });
+      newForm.find('.delete-row').show();
+      newForm.find('input[name*="-DELETE"]').prop('checked', false);
+      $('#action-steps-container').append(newForm);
+      actionStepTotalForms.val(++actionStepFormCount);
+      $('select').select2({dir: 'rtl', language: 'fa'});
+    });
+
+    // Formset management for risks
+    let riskTotalForms = $('#id_side_effect_risks-TOTAL_FORMS');
+    let riskFormCount = parseInt(riskTotalForms.val());
+    
+    $('#add-risk-row').click(function() {
+      let newForm = $('#risks-container .formset-row').first().clone();
+      newForm.find('input').val('');
+      newForm.find('input[name*="-id"]').remove();
+      newForm.find('input, select').each(function() {
+        let name = $(this).attr('name');
+        if (name) {
+          name = name.replace(/-\d+-/, '-' + riskFormCount + '-');
+          $(this).attr('name', name);
+        }
+        let id = $(this).attr('id');
+        if (id) {
+          id = id.replace(/-\d+-/, '-' + riskFormCount + '-');
+          $(this).attr('id', id);
+        }
+      });
+      newForm.find('.delete-row').show();
+      newForm.find('input[name*="-DELETE"]').prop('checked', false);
+      $('#risks-container').append(newForm);
+      riskTotalForms.val(++riskFormCount);
+    });
+
+    // Delete row functionality
+    $(document).on('click', '.delete-row', function() {
+      let row = $(this).closest('.formset-row');
+      let deleteInput = row.find('input[name*="-DELETE"]');
+      if (deleteInput.length) {
+        deleteInput.prop('checked', true);
+        row.hide();
+      } else {
+        row.remove();
+      }
+    });
+
+    // AI Assistant functionality
+    $('#ai-assist-btn').click(function() {
+      const btn = $(this);
+      const originalText = btn.html();
+      
+      // Disable button and show loading
+      btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> در حال پردازش...');
+      
+      // Collect form data
+      const formData = {
+        related_anomaly_id: $('#id_related_anomaly').val() || null,
+        related_incident_id: $('#id_related_incident').val() || null,
+        related_risk_id: $('#id_related_risk').val() || null,
+        user_description: $('#id_description').val() || ''
+      };
+      
+      // Call AI API
+      $.ajax({
+        url: '{% url "corrective_actions:ai_generate_suggestions" %}',
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val(),
+          'Content-Type': 'application/json'
+        },
+        data: JSON.stringify(formData),
+        success: function(response) {
+          if (response.success && response.suggestions) {
+            const suggestions = response.suggestions;
+            
+            // Fill form fields
+            if (suggestions.action_type) {
+              $('#id_action_type').val(suggestions.action_type).trigger('change');
+            }
+            if (suggestions.topic) {
+              $('#id_topic').val(suggestions.topic).trigger('change');
+            }
+            if (suggestions.source) {
+              $('#id_source').val(suggestions.source).trigger('change');
+            }
+            if (suggestions.description) {
+              $('#id_description').val(suggestions.description);
+            }
+            if (suggestions.root_cause_analysis) {
+              $('#id_root_cause_analysis').val(suggestions.root_cause_analysis);
+            }
+            
+            // Fill action steps
+            if (suggestions.action_steps && suggestions.action_steps.length > 0) {
+              // Clear existing action steps (except first one if it exists)
+              const existingSteps = $('#action-steps-container .formset-row');
+              if (existingSteps.length > 0) {
+                existingSteps.slice(1).remove();
+                actionStepFormCount = 1;
+                actionStepTotalForms.val(1);
+              }
+              
+              // Add new action steps
+              suggestions.action_steps.forEach(function(step, index) {
+                if (index === 0 && existingSteps.length > 0) {
+                  // Use first existing row
+                  const firstRow = existingSteps.first();
+                  firstRow.find('input[name*="-description"]').val(step.description);
+                  if (step.deadline) {
+                    // Convert Jalali date to Gregorian if needed
+                    firstRow.find('input[name*="-deadline"]').val(step.deadline);
+                  }
+                } else {
+                  // Add new row
+                  $('#add-action-step').click();
+                  const newRow = $('#action-steps-container .formset-row').last();
+                  newRow.find('input[name*="-description"]').val(step.description);
+                  if (step.deadline) {
+                    newRow.find('input[name*="-deadline"]').val(step.deadline);
+                  }
+                }
+              });
+            }
+            
+            // Fill side effect risks
+            if (suggestions.side_effect_risks && suggestions.side_effect_risks.length > 0) {
+              const existingRisks = $('#risks-container .formset-row');
+              if (existingRisks.length > 0) {
+                existingRisks.slice(1).remove();
+                riskFormCount = 1;
+                riskTotalForms.val(1);
+              }
+              
+              suggestions.side_effect_risks.forEach(function(risk, index) {
+                if (index === 0 && existingRisks.length > 0) {
+                  const firstRow = existingRisks.first();
+                  firstRow.find('input[name*="-hazard"]').val(risk.hazard);
+                  firstRow.find('input[name*="-event"]').val(risk.event);
+                  firstRow.find('input[name*="-consequence"]').val(risk.consequence);
+                  firstRow.find('input[name*="-control_measure"]').val(risk.control_measure);
+                } else {
+                  $('#add-risk-row').click();
+                  const newRow = $('#risks-container .formset-row').last();
+                  newRow.find('input[name*="-hazard"]').val(risk.hazard);
+                  newRow.find('input[name*="-event"]').val(risk.event);
+                  newRow.find('input[name*="-consequence"]').val(risk.consequence);
+                  newRow.find('input[name*="-control_measure"]').val(risk.control_measure);
+                }
+              });
+            }
+            
+            // Show success message
+            alert('فرم با موفقیت توسط هوش مصنوعی پر شد! لطفاً اطلاعات را بررسی و در صورت نیاز ویرایش کنید.');
+          } else {
+            alert('خطا در تولید پیشنهادات: ' + (response.error || 'خطای نامشخص'));
+          }
+        },
+        error: function(xhr) {
+          let errorMsg = 'خطا در ارتباط با سرور';
+          if (xhr.responseJSON && xhr.responseJSON.error) {
+            errorMsg = xhr.responseJSON.error;
+          }
+          alert('خطا: ' + errorMsg);
+        },
+        complete: function() {
+          // Re-enable button
+          btn.prop('disabled', false).html(originalText);
+        }
+      });
+    });
+
+    // AI Generate Root Cause
+    $('#ai-generate-root-cause-btn').click(function() {
+      const btn = $(this);
+      const description = $('#id_description').val();
+      
+      if (!description || description.trim() === '') {
+        alert('لطفاً ابتدا شرح عدم انطباق را وارد کنید.');
+        return;
+      }
+      
+      const originalText = btn.html();
+      btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> در حال تولید...');
+      
+      $.ajax({
+        url: '{% url "corrective_actions:ai_generate_root_cause" %}',
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val(),
+          'Content-Type': 'application/json'
+        },
+        data: JSON.stringify({description: description}),
+        success: function(response) {
+          if (response.success && response.root_cause_analysis) {
+            $('#id_root_cause_analysis').val(response.root_cause_analysis);
+            alert('تحلیل علل ریشه‌ای با موفقیت تولید شد!');
+          } else {
+            alert('خطا در تولید تحلیل: ' + (response.error || 'خطای نامشخص'));
+          }
+        },
+        error: function(xhr) {
+          let errorMsg = 'خطا در ارتباط با سرور';
+          if (xhr.responseJSON && xhr.responseJSON.error) {
+            errorMsg = xhr.responseJSON.error;
+          }
+          alert('خطا: ' + errorMsg);
+        },
+        complete: function() {
+          btn.prop('disabled', false).html(originalText);
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}
+

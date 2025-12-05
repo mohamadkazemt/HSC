@@ -4,340 +4,323 @@
 {% block title %}ریسک‌های {{ position.name }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
+<div class="px-4 py-6 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-7xl">
     <style>
-        .sticky-table thead th { position: sticky; top: 0; background:#f8f9fa; z-index: 2; }
+        .sticky-table thead th { 
+            position: sticky; 
+            top: 0; 
+            background: #f9fafb; 
+            z-index: 10; 
+        }
+        @media (prefers-color-scheme: dark) {
+            .sticky-table thead th { 
+                background: #1f2937; 
+            }
+        }
+        .sticky-table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
     </style>
     <!-- Header -->
-    <div class="row mb-4 align-items-center">
-        <div class="col-md-8 mb-3 mb-md-0">
-            <h2 class="fw-bold mb-1">ارزیابی ریسک: {{ position.name }}</h2>
-            <p class="text-muted mb-0">ماتریس ریسک (احتمال × شدت) و وضعیت کنترلی</p>
+    <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div class="mb-3 lg:mb-0">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">ارزیابی ریسک: {{ position.name }}</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400">ماتریس ریسک (احتمال × شدت) و وضعیت کنترلی</p>
         </div>
-        <div class="col-md-4 text-md-end">
-            <a href="{% url 'risk_assessment:risk_dashboard' %}" class="btn btn-light btn-sm me-2">
-                <i class="ki-duotone ki-arrow-right fs-6"></i>
+        <div class="flex flex-wrap gap-3 justify-end">
+            <a href="{% url 'risk_assessment:risk_dashboard' %}" class="inline-flex items-center gap-2 rounded-2xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800">
+                <i class="ki-duotone ki-arrow-right text-lg"></i>
                 بازگشت
             </a>
-            <a href="{% url 'risk_assessment:risk_create_for_position' position.id %}" class="btn btn-success btn-sm">
-                <i class="ki-duotone ki-plus fs-6"></i>
+            <a href="{% url 'risk_assessment:risk_create_for_position' position.id %}" class="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500">
+                <i class="ki-duotone ki-plus text-lg"></i>
                 ریسک جدید
             </a>
         </div>
     </div>
 
     <!-- Summary Cards -->
-    <div class="row g-3 mb-2">
-        <div class="col-6 col-md-2">
-            <div class="card shadow-sm h-100">
-                <div class="card-body py-3 text-center">
-                    <div class="text-muted small">کل</div>
-                    <div class="h5 mb-0 text-primary">{{ total_count }}</div>
-                </div>
-            </div>
+    <div class="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+        <div class="rounded-2xl border border-gray-200 bg-white p-4 text-center shadow-sm dark:border-gray-700 dark:bg-gray-900">
+            <div class="text-xs font-semibold text-gray-500 dark:text-gray-400">کل</div>
+            <div class="mt-2 text-2xl font-bold text-indigo-600 dark:text-indigo-400">{{ total_count }}</div>
         </div>
-        <div class="col-6 col-md-2">
-            <div class="card shadow-sm h-100 border-danger">
-                <div class="card-body py-3 text-center">
-                    <div class="small text-danger">بالا</div>
-                    <div class="h5 mb-0 text-danger">{{ high_count }}</div>
-                </div>
-            </div>
+        <div class="rounded-2xl border border-red-200 bg-white p-4 text-center shadow-sm dark:border-red-800 dark:bg-gray-900">
+            <div class="text-xs font-semibold text-red-600 dark:text-red-400">بالا</div>
+            <div class="mt-2 text-2xl font-bold text-red-600 dark:text-red-400">{{ high_count }}</div>
         </div>
-        <div class="col-6 col-md-2">
-            <div class="card shadow-sm h-100 border-warning">
-                <div class="card-body py-3 text-center">
-                    <div class="small text-warning">متوسط</div>
-                    <div class="h5 mb-0 text-warning">{{ medium_count }}</div>
-                </div>
-            </div>
+        <div class="rounded-2xl border border-amber-200 bg-white p-4 text-center shadow-sm dark:border-amber-800 dark:bg-gray-900">
+            <div class="text-xs font-semibold text-amber-600 dark:text-amber-400">متوسط</div>
+            <div class="mt-2 text-2xl font-bold text-amber-600 dark:text-amber-400">{{ medium_count }}</div>
         </div>
-        <div class="col-6 col-md-2">
-            <div class="card shadow-sm h-100 border-success">
-                <div class="card-body py-3 text-center">
-                    <div class="small text-success">پایین</div>
-                    <div class="h5 mb-0 text-success">{{ low_count }}</div>
-                </div>
-            </div>
+        <div class="rounded-2xl border border-emerald-200 bg-white p-4 text-center shadow-sm dark:border-emerald-800 dark:bg-gray-900">
+            <div class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">پایین</div>
+            <div class="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ low_count }}</div>
         </div>
-        <div class="col-6 col-md-2">
-            <div class="card shadow-sm h-100 border-info">
-                <div class="card-body py-3 text-center">
-                    <div class="small text-info">اقدام اصلاحی</div>
-                    <div class="h5 mb-0 text-info">{{ corrective_open }}</div>
-                </div>
-            </div>
+        <div class="rounded-2xl border border-blue-200 bg-white p-4 text-center shadow-sm dark:border-blue-800 dark:bg-gray-900">
+            <div class="text-xs font-semibold text-blue-600 dark:text-blue-400">اقدام اصلاحی</div>
+            <div class="mt-2 text-2xl font-bold text-blue-600 dark:text-blue-400">{{ corrective_open }}</div>
         </div>
-        <div class="col-6 col-md-2">
-            <div class="card shadow-sm h-100 border-secondary">
-                <div class="card-body py-3 text-center">
-                    <div class="small text-secondary">ارزیابی مجدد</div>
-                    <div class="h5 mb-0 text-secondary">{{ reevaluated_count }}</div>
-                </div>
-            </div>
+        <div class="rounded-2xl border border-gray-300 bg-white p-4 text-center shadow-sm dark:border-gray-600 dark:bg-gray-900">
+            <div class="text-xs font-semibold text-gray-600 dark:text-gray-400">ارزیابی مجدد</div>
+            <div class="mt-2 text-2xl font-bold text-gray-700 dark:text-gray-300">{{ reevaluated_count }}</div>
         </div>
-        <div class="col-6 col-md-2">
-            <div class="card shadow-sm h-100 border-danger">
-                <div class="card-body py-3 text-center">
-                    <div class="small text-danger">Overdue</div>
-                    <div class="h5 mb-0 text-danger">{{ overdue_count }}</div>
-                </div>
-            </div>
+        <div class="rounded-2xl border border-red-200 bg-white p-4 text-center shadow-sm dark:border-red-800 dark:bg-gray-900">
+            <div class="text-xs font-semibold text-red-600 dark:text-red-400">Overdue</div>
+            <div class="mt-2 text-2xl font-bold text-red-600 dark:text-red-400">{{ overdue_count }}</div>
         </div>
-        <div class="col-6 col-md-2">
-            <div class="card shadow-sm h-100 border-success">
-                <div class="card-body py-3 text-center">
-                    <div class="small text-success">٪ کاهش میانگین</div>
-                    <div class="h5 mb-0 text-success">{{ reduction_percent }}%</div>
-                </div>
-            </div>
+        <div class="rounded-2xl border border-emerald-200 bg-white p-4 text-center shadow-sm dark:border-emerald-800 dark:bg-gray-900">
+            <div class="text-xs font-semibold text-emerald-600 dark:text-emerald-400">٪ کاهش میانگین</div>
+            <div class="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">{{ reduction_percent }}%</div>
         </div>
     </div>
 
     <!-- Distribution Chart & Quick Filters -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header bg-light py-2"><span class="small fw-semibold">نمودار توزیع سطوح ریسک</span></div>
-                <div class="card-body">
-                    <canvas id="riskLevelChart" height="160"></canvas>
-                </div>
+    <div class="mb-6 grid gap-4 md:grid-cols-3">
+        <div class="rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <div class="border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+                <span class="text-sm font-semibold text-gray-900 dark:text-white">نمودار توزیع سطوح ریسک</span>
+            </div>
+            <div class="p-4">
+                <canvas id="riskLevelChart" height="160"></canvas>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header bg-light py-2"><span class="small fw-semibold">روند ۶ ماهه ریسک‌ها</span></div>
-                <div class="card-body">
-                    <canvas id="riskTrendChart" height="160"></canvas>
-                </div>
+        <div class="rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <div class="border-b border-gray-100 px-4 py-3 dark:border-gray-800">
+                <span class="text-sm font-semibold text-gray-900 dark:text-white">روند ۶ ماهه ریسک‌ها</span>
+            </div>
+            <div class="p-4">
+                <canvas id="riskTrendChart" height="160"></canvas>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-header bg-light py-2 d-flex align-items-center justify-content-between">
-                    <span class="small fw-semibold">فیلترهای سریع</span>
-                    <small class="text-muted">کلیک برای اعمال</small>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex flex-wrap gap-2">
-                        <a href="?risk_level=High" class="btn btn-sm btn-outline-danger">ریسک‌های بالا</a>
-                        <a href="?risk_level=Medium" class="btn btn-sm btn-outline-warning">ریسک‌های متوسط</a>
-                        <a href="?risk_level=Low" class="btn btn-sm btn-outline-success">ریسک‌های پایین</a>
-                        <a href="?corrective_action_required=on" class="btn btn-sm btn-outline-info">نیازمند اقدام</a>
-                        <a href="?is_mue=on" class="btn btn-sm btn-outline-danger">MUE</a>
-                        <a href="?is_emergency=on" class="btn btn-sm btn-outline-dark">اضطراری</a>
-                        <a href="?" class="btn btn-sm btn-outline-secondary">حذف فیلترها</a>
-                    </div>
+        <div class="rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <div class="border-b border-gray-100 px-4 py-3 dark:border-gray-800 flex items-center justify-between">
+                <span class="text-sm font-semibold text-gray-900 dark:text-white">فیلترهای سریع</span>
+                <small class="text-xs text-gray-500 dark:text-gray-400">کلیک برای اعمال</small>
+            </div>
+            <div class="p-4">
+                <div class="flex flex-wrap gap-2">
+                    <a href="?risk_level=High" class="inline-flex items-center rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20">ریسک‌های بالا</a>
+                    <a href="?risk_level=Medium" class="inline-flex items-center rounded-lg border border-amber-200 px-3 py-1.5 text-xs font-medium text-amber-700 transition hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-900/20">ریسک‌های متوسط</a>
+                    <a href="?risk_level=Low" class="inline-flex items-center rounded-lg border border-emerald-200 px-3 py-1.5 text-xs font-medium text-emerald-700 transition hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-900/20">ریسک‌های پایین</a>
+                    <a href="?corrective_action_required=on" class="inline-flex items-center rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-900/20">نیازمند اقدام</a>
+                    <a href="?is_mue=on" class="inline-flex items-center rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20">MUE</a>
+                    <a href="?is_emergency=on" class="inline-flex items-center rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">اضطراری</a>
+                    <a href="?" class="inline-flex items-center rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">حذف فیلترها</a>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- فیلترها -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-body">
-            <form method="get" class="row g-3">
-                <div class="col-md-3">
-                    {{ filter_form.risk_level.label_tag }}
-                    {{ filter_form.risk_level }}
-                </div>
-                <div class="col-md-3">
-                    {{ filter_form.risk_source.label_tag }}
-                    {{ filter_form.risk_source }}
-                </div>
-                <div class="col-md-2">
-                    {{ filter_form.is_routine.label_tag }}
-                    {{ filter_form.is_routine }}
-                </div>
-                <div class="col-md-2">
-                    {{ filter_form.corrective_action_required.label_tag }}
-                    {{ filter_form.corrective_action_required }}
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="ki-duotone ki-filter fs-3"></i>
-                        فیلتر
-                    </button>
-                </div>
-            </form>
-        </div>
+    <div class="mb-6 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <form method="get" class="grid gap-4 md:grid-cols-5">
+            <div>
+                <label class="mb-2 block text-xs font-semibold text-gray-700 dark:text-gray-300">{{ filter_form.risk_level.label }}</label>
+                {{ filter_form.risk_level }}
+            </div>
+            <div>
+                <label class="mb-2 block text-xs font-semibold text-gray-700 dark:text-gray-300">{{ filter_form.risk_source.label }}</label>
+                {{ filter_form.risk_source }}
+            </div>
+            <div>
+                <label class="mb-2 block text-xs font-semibold text-gray-700 dark:text-gray-300">{{ filter_form.is_routine.label }}</label>
+                {{ filter_form.is_routine }}
+            </div>
+            <div>
+                <label class="mb-2 block text-xs font-semibold text-gray-700 dark:text-gray-300">{{ filter_form.corrective_action_required.label }}</label>
+                {{ filter_form.corrective_action_required }}
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500">
+                    <i class="ki-duotone ki-filter text-base"></i>
+                    فیلتر
+                </button>
+            </div>
+        </form>
     </div>
 
     <!-- جدول ریسک‌ها -->
-    <div class="card shadow-sm">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover align-middle mb-0 sticky-table" style="font-size: 0.85rem;">
-                    <thead class="table-light">
-                        <tr>
-                            <th style="width: 3%;">#</th>
-                            <th style="width: 12%;">فعالیت</th>
-                            <th style="width: 10%;">خطر</th>
-                            <th style="width: 10%;">رویداد محتمل</th>
-                            <th style="width: 10%;">پیامد</th>
-                            <th style="width: 5%;" class="text-center">P</th>
-                            <th style="width: 5%;" class="text-center">S</th>
-                            <th style="width: 5%;" class="text-center">RPN</th>
-                            <th style="width: 8%;" class="text-center">سطح</th>
-                            <th style="width: 6%;" class="text-center">MUE/اضطراری</th>
-                            <th style="width: 12%;">کنترل‌ها</th>
-                            <th style="width: 5%;" class="text-center">RPN باقی</th>
-                            <th style="width: 10%;" class="text-center">عملیات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for risk in risks %}
-                        <tr class="{% if risk.risk_level == 'High' %}table-danger{% elif risk.risk_level == 'Medium' %}table-warning{% else %}table-light{% endif %} {% if risk.corrective_action_required %}border-start border-4 border-info{% endif %}">
-                            <td class="text-center fw-bold">{{ forloop.counter }}</td>
-                            <td class="text-center">
+    <div class="mb-6 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <div class="overflow-x-auto">
+            <table class="sticky-table min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700" style="font-size: 0.85rem;">
+                <thead class="bg-gray-50 dark:bg-gray-800">
+                    <tr>
+                        <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300" style="width: 3%;">#</th>
+                        <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300" style="width: 6%;">MUE/اضطراری</th>
+                        <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300" style="width: 12%;">فعالیت</th>
+                        <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300" style="width: 10%;">خطر</th>
+                        <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300" style="width: 10%;">رویداد محتمل</th>
+                        <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300" style="width: 10%;">پیامد</th>
+                        <th class="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300" style="width: 5%;">P</th>
+                        <th class="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300" style="width: 5%;">S</th>
+                        <th class="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300" style="width: 5%;">RPN</th>
+                        <th class="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300" style="width: 8%;">سطح</th>
+                        <th class="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300" style="width: 12%;">کنترل‌ها</th>
+                        <th class="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300" style="width: 5%;">RPN باقی</th>
+                        <th class="px-3 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300" style="width: 10%;">عملیات</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
+                    {% for risk in risks %}
+                    <tr class="{% if risk.risk_level == 'High' %}bg-red-50/50 dark:bg-red-900/10{% elif risk.risk_level == 'Medium' %}bg-amber-50/50 dark:bg-amber-900/10{% else %}bg-white dark:bg-gray-900{% endif %} {% if risk.corrective_action_required %}border-r-4 border-r-blue-500{% endif %} hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                        <td class="whitespace-nowrap px-3 py-3 text-center text-sm font-bold text-gray-900 dark:text-white">{{ forloop.counter }}</td>
+                        <td class="whitespace-nowrap px-3 py-3 text-center">
+                            <div class="flex flex-col items-center gap-1">
                                 {% if risk.is_mue %}
-                                <span class="badge bg-danger text-white d-inline-flex align-items-center gap-1 mb-1" title="قابل تبدیل به MUE">
+                                <span class="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-400" title="قابل تبدیل به MUE">
                                     <i class="fa-solid fa-circle-exclamation"></i>
                                     MUE
                                 </span>
                                 {% endif %}
                                 {% if risk.is_emergency %}
-                                <span class="badge bg-warning text-dark d-inline-flex align-items-center gap-1" title="قابل تبدیل به شرایط اضطراری">
+                                <span class="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" title="قابل تبدیل به شرایط اضطراری">
                                     <i class="fa-solid fa-bolt"></i>
                                     اضطراری
                                 </span>
                                 {% endif %}
                                 {% if not risk.is_mue and not risk.is_emergency %}
-                                <span class="text-muted">-</span>
+                                <span class="text-xs text-gray-400 dark:text-gray-500">-</span>
                                 {% endif %}
-                            </td>
-                            <td>
-                                <small class="text-muted d-block">
+                            </div>
+                        </td>
+                        <td class="px-3 py-3">
+                            <div class="flex flex-col gap-1">
+                                <span class="inline-flex">
                                     {% if risk.is_routine %}
-                                    <span class="badge badge-primary">روتین</span>
+                                    <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">روتین</span>
                                     {% else %}
-                                    <span class="badge badge-secondary">غیر روتین</span>
+                                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">غیر روتین</span>
                                     {% endif %}
-                                </small>
-                                {{ risk.activity_component|truncatewords:5 }}
-                            </td>
-                            <td>
-                                <small>{{ risk.hazard.name }}</small>
-                            </td>
-                            <td>
-                                <small>{{ risk.potential_event|truncatewords:6 }}</small>
-                            </td>
-                            <td>
-                                <small>{{ risk.consequence.name }}</small>
-                            </td>
-                            <td class="text-center">
-                                <span class="badge badge-light">{{ risk.probability }}</span>
-                            </td>
-                            <td class="text-center">
-                                <span class="badge badge-light">{{ risk.severity }}</span>
-                            </td>
-                            <td class="text-center">
-                                <span class="badge badge-{{ risk.get_risk_color }} fs-6 fw-bold">
-                                    {{ risk.risk_number }}
                                 </span>
-                            </td>
-                            <td class="text-center">
-                                <span class="badge badge-{{ risk.get_risk_color }}">
-                                    {{ risk.get_risk_level_display_fa }}
-                                </span>
-                            </td>
-                            <td>
-                                <small>
-                                    {% if risk.control_engineering %}
-                                    <span class="badge badge-info badge-sm">مهندسی</span>
-                                    {% endif %}
-                                    {% if risk.control_admin %}
-                                    <span class="badge badge-secondary badge-sm">اداری</span>
-                                    {% endif %}
-                                    {% if risk.control_ppe %}
-                                    <span class="badge badge-warning badge-sm">PPE</span>
-                                    {% endif %}
-                                </small>
-                            </td>
-                            <td class="text-center">
-                                {% if risk.residual_risk_number %}
-                                <span class="badge badge-{{ risk.get_residual_risk_color }} fs-6">
-                                    {{ risk.residual_risk_number }}
-                                </span>
-                                {% else %}
-                                <span class="text-muted">-</span>
+                                <span class="text-sm text-gray-900 dark:text-white">{{ risk.activity_component|truncatewords:5 }}</span>
+                            </div>
+                        </td>
+                        <td class="px-3 py-3">
+                            <span class="text-sm text-gray-900 dark:text-white">{{ risk.hazard.name }}</span>
+                        </td>
+                        <td class="px-3 py-3">
+                            <span class="text-sm text-gray-900 dark:text-white">{{ risk.potential_event|truncatewords:6 }}</span>
+                        </td>
+                        <td class="px-3 py-3">
+                            <span class="text-sm text-gray-900 dark:text-white">{{ risk.consequence.name }}</span>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-3 text-center">
+                            <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200">{{ risk.probability }}</span>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-3 text-center">
+                            <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-800 dark:bg-gray-700 dark:text-gray-200">{{ risk.severity }}</span>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-3 text-center">
+                            <span class="inline-flex items-center rounded-full px-3 py-1 text-sm font-bold {% if risk.get_risk_color == 'danger' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400{% elif risk.get_risk_color == 'warning' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400{% else %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400{% endif %}">
+                                {{ risk.risk_number }}
+                            </span>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-3 text-center">
+                            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold {% if risk.get_risk_color == 'danger' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400{% elif risk.get_risk_color == 'warning' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400{% else %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400{% endif %}">
+                                {{ risk.get_risk_level_display_fa }}
+                            </span>
+                        </td>
+                        <td class="px-3 py-3">
+                            <div class="flex flex-wrap gap-1">
+                                {% if risk.control_engineering %}
+                                <span class="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">مهندسی</span>
                                 {% endif %}
-                            </td>
-                            <td class="text-center">
-                                <div class="btn-group btn-group-sm">
-                                    <a href="{% url 'risk_assessment:risk_detail' risk.id %}" class="btn btn-light" title="جزئیات"><i class="ki-duotone ki-eye fs-5"></i></a>
-                                    <a href="{% url 'risk_assessment:risk_update' risk.id %}" class="btn btn-light" title="ویرایش"><i class="ki-duotone ki-pencil fs-5"></i></a>
-                                    <a href="{% url 'risk_assessment:risk_re_evaluate' risk.id %}" class="btn btn-light" title="ارزیابی مجدد"><i class="ki-duotone ki-arrows-circle fs-5"></i></a>
+                                {% if risk.control_admin %}
+                                <span class="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300">اداری</span>
+                                {% endif %}
+                                {% if risk.control_ppe %}
+                                <span class="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">PPE</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-3 text-center">
+                            {% if risk.residual_risk_number %}
+                            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-sm font-semibold {% if risk.get_residual_risk_color == 'danger' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400{% elif risk.get_residual_risk_color == 'warning' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400{% else %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400{% endif %}">
+                                {{ risk.residual_risk_number }}
+                            </span>
+                            {% else %}
+                            <span class="text-sm text-gray-400 dark:text-gray-500">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-3 py-3 text-center">
+                            <div class="flex flex-col items-center gap-2">
+                                <div class="flex items-center gap-1">
+                                    <a href="{% url 'risk_assessment:risk_detail' risk.id %}" class="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700" title="جزئیات">
+                                        <i class="ki-duotone ki-eye text-base"></i>
+                                    </a>
+                                    <a href="{% url 'risk_assessment:risk_update' risk.id %}" class="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700" title="ویرایش">
+                                        <i class="ki-duotone ki-pencil text-base"></i>
+                                    </a>
+                                    <a href="{% url 'risk_assessment:risk_re_evaluate' risk.id %}" class="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700" title="ارزیابی مجدد">
+                                        <i class="ki-duotone ki-arrows-circle text-base"></i>
+                                    </a>
                                 </div>
                                 {% if risk.corrective_action_required %}
-                                <div class="mt-1"><span class="badge bg-info text-dark"><i class="fa-solid fa-wrench"></i> اقدام اصلاحی</span></div>
+                                <span class="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                                    <i class="fa-solid fa-wrench"></i>
+                                    اقدام اصلاحی
+                                </span>
                                 {% endif %}
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="13" class="text-center py-5">
-                                <i class="ki-duotone ki-file-deleted fs-5x text-muted mb-3"></i>
-                                <p class="text-muted">هیچ ریسکی برای این شغل ثبت نشده است</p>
-                                <a href="{% url 'risk_assessment:risk_create_for_position' position.id %}" class="btn btn-success mt-2">
-                                    <i class="ki-duotone ki-plus fs-3"></i>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="13" class="px-4 py-8 text-center">
+                            <div class="flex flex-col items-center gap-3">
+                                <i class="ki-duotone ki-file-deleted text-5xl text-gray-400 dark:text-gray-500"></i>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">هیچ ریسکی برای این شغل ثبت نشده است</p>
+                                <a href="{% url 'risk_assessment:risk_create_for_position' position.id %}" class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500">
+                                    <i class="ki-duotone ki-plus text-base"></i>
                                     افزودن اولین ریسک
                                 </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
 
         <!-- Pagination -->
         {% if risks.has_other_pages %}
-        <div class="card-footer">
-            <nav>
-                <ul class="pagination pagination-sm justify-content-center mb-0">
+        <div class="border-t border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-700 dark:bg-gray-800 sm:px-6">
+            <nav class="flex items-center justify-center">
+                <div class="flex items-center gap-2">
                     {% if risks.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page=1">اولین</a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ risks.previous_page_number }}">قبلی</a>
-                    </li>
+                    <a href="?page=1" class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">اولین</a>
+                    <a href="?page={{ risks.previous_page_number }}" class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">قبلی</a>
                     {% endif %}
 
-                    <li class="page-item active">
-                        <span class="page-link">
-                            صفحه {{ risks.number }} از {{ risks.paginator.num_pages }}
-                        </span>
-                    </li>
+                    <span class="inline-flex items-center rounded-lg border border-indigo-500 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
+                        صفحه {{ risks.number }} از {{ risks.paginator.num_pages }}
+                    </span>
 
                     {% if risks.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ risks.next_page_number }}">بعدی</a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ risks.paginator.num_pages }}">آخرین</a>
-                    </li>
+                    <a href="?page={{ risks.next_page_number }}" class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">بعدی</a>
+                    <a href="?page={{ risks.paginator.num_pages }}" class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600">آخرین</a>
                     {% endif %}
-                </ul>
+                </div>
             </nav>
         </div>
         {% endif %}
     </div>
 
     <!-- راهنما -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="alert alert-info d-flex align-items-center">
-                <i class="ki-duotone ki-information fs-2x me-3"></i>
-                <div>
-                    <strong>راهنما:</strong>
-                    <span class="badge badge-success ms-2">1-4 پایین (قابل پذیرش)</span>
-                    <span class="badge badge-warning ms-2">5,6,8,9,10,12 متوسط (نیاز به کاهش)</span>
-                    <span class="badge badge-danger ms-2">15-25 بالا (غیرقابل پذیرش)</span>
-                </div>
+    <div class="mt-6">
+        <div class="flex items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800 dark:bg-blue-900/20">
+            <i class="ki-duotone ki-information text-2xl text-blue-600 dark:text-blue-400"></i>
+            <div class="flex flex-wrap items-center gap-2">
+                <strong class="text-sm font-semibold text-blue-900 dark:text-blue-100">راهنما:</strong>
+                <span class="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">1-4 پایین (قابل پذیرش)</span>
+                <span class="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">5,6,8,9,10,12 متوسط (نیاز به کاهش)</span>
+                <span class="inline-flex items-center rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-400">15-25 بالا (غیرقابل پذیرش)</span>
             </div>
         </div>
+    </div>
     </div>
 </div>
 {% endblock %}
