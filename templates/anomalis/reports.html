@@ -138,18 +138,15 @@
   </div>
 
   <!-- Tab Contents -->
-  <template x-for="tab in ['unit','location','shift','user','description','type']" :key="tab">
-    <section x-show="activeTab===tab" class="space-y-4">
-      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:bg-gray-800 dark:border-gray-700">
-        <div class="h-72">
-          <canvas :id="`chart_${tab}`"></canvas>
-        </div>
+  <!-- Unit Tab -->
+  <section x-show="activeTab==='unit'" class="space-y-4">
+    <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:bg-gray-800 dark:border-gray-700">
+      <div class="h-72">
+        <canvas id="chart_unit"></canvas>
       </div>
+    </div>
 
-      <!-- Tables per tab -->
-      {% if tab == 'unit' %}{% endif %}
-      <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm overflow-x-auto dark:bg-gray-800 dark:border-gray-700">
-        {% if tab == 'unit' %}
+    <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm overflow-x-auto dark:bg-gray-800 dark:border-gray-700">
           <table class="min-w-full text-sm">
             <thead class="text-left text-gray-500">
               <tr>
@@ -203,8 +200,19 @@
             {% endif %}
           </div>
           {% endif %}
-        {% elif tab == 'location' %}
-          <table class="min-w-full text-sm">
+    </div>
+  </section>
+
+  <!-- Location Tab -->
+  <section x-show="activeTab==='location'" class="space-y-4">
+    <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:bg-gray-800 dark:border-gray-700">
+      <div class="h-72">
+        <canvas id="chart_location"></canvas>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm overflow-x-auto dark:bg-gray-800 dark:border-gray-700">
+      <table class="min-w-full text-sm">
             <thead class="text-left text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50">
               <tr>
 <th class="py-2 px-2"><a href="?tab=location&order_by_location=location__name&direction_location={% if order_direction_location == 'asc' %}desc{% else %}asc{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">موقعیت {% if ordering_location == 'location__name' %}{% if order_direction_location == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
@@ -257,8 +265,19 @@
             {% endif %}
           </div>
           {% endif %}
-        {% elif tab == 'shift' %}
-          <table class="min-w-full text-sm">
+    </div>
+  </section>
+
+  <!-- Shift Tab -->
+  <section x-show="activeTab==='shift'" class="space-y-4">
+    <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:bg-gray-800 dark:border-gray-700">
+      <div class="h-72">
+        <canvas id="chart_shift"></canvas>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm overflow-x-auto dark:bg-gray-800 dark:border-gray-700">
+      <table class="min-w-full text-sm">
             <thead class="text-left text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50">
               <tr>
 <th class="py-2 px-2"><a href="?tab=shift&order_by_shift=shift&direction_shift={% if order_direction_shift == 'asc' %}desc{% else %}asc{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">شیفت {% if ordering_shift == 'shift' %}{% if order_direction_shift == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
@@ -311,8 +330,19 @@
             {% endif %}
           </div>
           {% endif %}
-        {% elif tab == 'user' %}
-          <table class="min-w-full text-sm">
+    </div>
+  </section>
+
+  <!-- User Tab -->
+  <section x-show="activeTab==='user'" class="space-y-4">
+    <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:bg-gray-800 dark:border-gray-700">
+      <div class="h-72">
+        <canvas id="chart_user"></canvas>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm overflow-x-auto dark:bg-gray-800 dark:border-gray-700">
+      <table class="min-w-full text-sm">
             <thead class="text-left text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50">
               <tr>
 <th class="py-2 px-2"><a href="?tab=user&order_by_user=full_name&direction_user={% if order_direction_user == 'asc' %}desc{% else %}asc{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">کاربر {% if ordering_user == 'full_name' %}{% if order_direction_user == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
@@ -373,8 +403,19 @@
             {% endif %}
           </div>
           {% endif %}
-        {% elif tab == 'description' %}
-          <table class="min-w-full text-sm">
+    </div>
+  </section>
+
+  <!-- Description Tab -->
+  <section x-show="activeTab==='description'" class="space-y-4">
+    <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:bg-gray-800 dark:border-gray-700">
+      <div class="h-72">
+        <canvas id="chart_description"></canvas>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm overflow-x-auto dark:bg-gray-800 dark:border-gray-700">
+      <table class="min-w-full text-sm">
             <thead class="text-left text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50">
               <tr>
 <th class="py-2 px-2"><a href="?tab=description&order_by_description=anomalydescription__description&direction_description={% if order_direction_description == 'asc' %}desc{% else %}asc{% endif %}{% if request.GET.start_date %}&start_date={{ request.GET.start_date }}{% endif %}{% if request.GET.end_date %}&end_date={{ request.GET.end_date }}{% endif %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium">شرح {% if ordering_description == 'anomalydescription__description' %}{% if order_direction_description == 'asc' %}↑{% else %}↓{% endif %}{% endif %}</a></th>
@@ -433,8 +474,19 @@
             {% endif %}
           </div>
           {% endif %}
-        {% elif tab == 'type' %}
-          <table class="min-w-full text-sm">
+    </div>
+  </section>
+
+  <!-- Type Tab -->
+  <section x-show="activeTab==='type'" class="space-y-4">
+    <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:bg-gray-800 dark:border-gray-700">
+      <div class="h-72">
+        <canvas id="chart_type"></canvas>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm overflow-x-auto dark:bg-gray-800 dark:border-gray-700">
+      <table class="min-w-full text-sm">
             <thead class="text-left text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700/50">
               <tr>
                 <th class="py-2 px-2 font-medium">نوع</th>
@@ -458,10 +510,8 @@
               {% endfor %}
             </tbody>
           </table>
-        {% endif %}
-      </div>
-    </section>
-  </template>
+    </div>
+  </section>
 </div>
 {% endblock %}
 
