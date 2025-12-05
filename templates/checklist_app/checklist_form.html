@@ -159,6 +159,27 @@
     </div>
   </template>
 
+  <!-- Step 2.5: Machine broken - submit button -->
+  <div x-show="machine_broken && !questions.length" class="rounded-lg border bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 shadow-md">
+    <div class="p-4">
+      <div class="flex items-start gap-3 mb-4">
+        <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/>
+        </svg>
+        <div class="flex-1">
+          <h3 class="font-semibold text-yellow-900 dark:text-yellow-100 mb-1">ماشین در حال تعمیر است</h3>
+          <p class="text-sm text-yellow-700 dark:text-yellow-300">چک‌لیست با وضعیت "خراب" ثبت می‌شود.</p>
+        </div>
+      </div>
+      <div class="flex items-center justify-end pt-2">
+        <button @click="finalize()" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 shadow">
+          ثبت چک‌لیست با وضعیت خراب
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Step 3: Anomaly modal -->
   <div x-show="modal.open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/60" style="display: none;">
     <div class="w-full max-w-xl bg-white dark:bg-gray-800 rounded-lg shadow-md border border-red-200" @click.away="modal.open=false">

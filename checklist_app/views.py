@@ -264,16 +264,6 @@ def submit_general_checklist(request):
         if not data.get('shift'):
             return JsonResponse({'status': 'error', 'message': 'شیفت مشخص نشده است'}, status=400)
         
-        if not data.get('answers'):
-            return JsonResponse({'status': 'error', 'message': 'هیچ پاسخی ارسال نشده است'}, status=400)
-        
-        # همیشه از گروه کاری کاربر استفاده می‌کنیم
-        try:
-            user_profile = UserProfile.objects.get(user=request.user)
-            data['shift_group'] = user_profile.group
-        except UserProfile.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'پروفایل کاربری یافت نشد'}, status=400)
-        
         # تبدیل مقادیر خالی به None
         machine_id = data.get('machine_id')
         location_section_id = data.get('location_section_id')
@@ -287,6 +277,22 @@ def submit_general_checklist(request):
         vehicle_id = int(vehicle_id) if vehicle_id and vehicle_id != '' else None
         scheduled_instance_id = int(scheduled_instance_id) if scheduled_instance_id and scheduled_instance_id != '' else None
         
+        # برای چک‌لیست ماشین، وضعیت ماشین اجباری است
+        if data['checklist_type'] == 'machine' and not machine_status:
+            return JsonResponse({'status': 'error', 'message': 'وضعیت ماشین (سالم/خراب) باید مشخص شود'}, status=400)
+        
+        # اگر ماشین خراب است، نیازی به بررسی answers نیست
+        is_machine_broken = data['checklist_type'] == 'machine' and machine_status == 'broken'
+        if not is_machine_broken and not data.get('answers'):
+            return JsonResponse({'status': 'error', 'message': 'هیچ پاسخی ارسال نشده است'}, status=400)
+        
+        # همیشه از گروه کاری کاربر استفاده می‌کنیم
+        try:
+            user_profile = UserProfile.objects.get(user=request.user)
+            data['shift_group'] = user_profile.group
+        except UserProfile.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'پروفایل کاربری یافت نشد'}, status=400)
+        
         # اگر این چک‌لیست از یک برنامه زمان‌بندی شده است، باید آن را claim کنیم
         scheduled_instance = None
         if scheduled_instance_id:
@@ -294,10 +300,6 @@ def submit_general_checklist(request):
             if not success:
                 return JsonResponse({'status': 'error', 'message': error_msg or 'خطا در ادعای چک‌لیست برنامه‌ریزی شده'}, status=400)
             scheduled_instance = instance
-        
-        # برای چک‌لیست ماشین، وضعیت ماشین اجباری است
-        if data['checklist_type'] == 'machine' and not machine_status:
-            return JsonResponse({'status': 'error', 'message': 'وضعیت ماشین (سالم/خراب) باید مشخص شود'}, status=400)
         
         checklist = Checklist.objects.create(
             user=request.user,
