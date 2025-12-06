@@ -2242,7 +2242,9 @@ class RubPyIntegrationService:
     def send_text_message(self, chat_id: str, text: str) -> None:
         # Ensure client is initialized before sending
         self._ensure_client_initialized()
-        self._run_sync(self.client.send_message(chat_id=chat_id, text=text))
+        # Use engine's async method instead of client's sync wrapper
+        # The engine method properly handles the async call within our event loop
+        self._run_sync(self.engine._send_text_message(chat_id, text))
 
     def update_endpoints(self, webhook_url: str) -> Dict[str, Any]:
         # Ensure client is initialized before updating endpoints
