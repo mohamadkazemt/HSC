@@ -2226,7 +2226,14 @@ class RubPyIntegrationService:
             return {'ok': True, 'processed': 0}
         for update in updates:
             try:
-                self._run_sync(self.client.process_update(update))
+                # Call engine handlers directly instead of process_update
+                # process_update doesn't return a coroutine, so we call the async handlers directly
+                if isinstance(update, InlineMessage):
+                    self._run_sync(self.engine.handle_inline(update))
+                elif isinstance(update, Update):
+                    self._run_sync(self.engine.handle_update(update))
+                else:
+                    logger.warning("Unknown update type: %s", type(update))
             except Exception as exc:
                 logger.exception("Failed to process update: %s", exc)
                 WebhookLog.log_error('خطا در پردازش به‌روزرسانی', str(exc), {'payload': payload})
