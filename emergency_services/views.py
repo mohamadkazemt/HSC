@@ -842,9 +842,9 @@ def dashboard(request):
     equip_calibration_overdue = EmergencyEquipment.objects.filter(next_calibration_date__lt=timezone.now().date()).count()
     
     # خدمات پرمصرف
-    # For ManyToMany reverse relationship, use medicalvisit_set (lowercase model name + _set)
+    # For ManyToMany reverse relationship, use medicalvisit (lowercase model name)
     popular_services = MedicalService.objects.annotate(
-        usage_count=Count('medicalvisit_set')
+        usage_count=Count('medicalvisit')
     ).order_by('-usage_count')[:5]
     
     # داروهای پرمصرف
