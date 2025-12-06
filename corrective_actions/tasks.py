@@ -6,14 +6,24 @@ from celery import shared_task
 from django.utils import timezone
 from datetime import timedelta
 import logging
+import time
 
 logger = logging.getLogger(__name__)
+
+# Batch size for processing anomalies (to avoid API rate limits)
+BATCH_SIZE = 50
+# Rate limiting: sleep between AI requests (in seconds)
+RATE_LIMIT_DELAY = 10
 
 
 @shared_task(bind=True, max_retries=3)
 def check_unresolved_anomalies(self, days_threshold: int = 5):
     """
     بررسی آنومالی‌های رفع نشده و ایجاد اقدام اصلاحی
+    
+    این task به صورت batch کار می‌کند تا از rate limiting جلوگیری کند:
+    - فقط 50 رکورد در هر اجرا پردازش می‌شود
+    - بین هر درخواست AI، 10 ثانیه تاخیر وجود دارد
     
     Args:
         days_threshold: تعداد روزهای مجاز قبل از ایجاد اقدام اصلاحی (پیش‌فرض: 5)
@@ -39,16 +49,30 @@ def check_unresolved_anomalies(self, days_threshold: int = 5):
             related_anomaly__isnull=False
         ).values_list('related_anomaly_id', flat=True)
         
+        # IMPORTANT: Limit to first 50 records only (batching strategy)
+        # This prevents processing 5000+ records at once and causing 429 errors
         unresolved_anomalies = Anomaly.objects.filter(
             action=False,  # ناایمن (False = ناایمن)
             created_at__lte=threshold_date,  # بیشتر از 5 روز پیش
         ).exclude(
             id__in=existing_anomaly_ids  # آنومالی‌هایی که قبلاً اقدام اصلاحی دارند
-        ).select_related('location', 'section', 'created_by', 'followup', 'priority')
+        ).select_related('location', 'section', 'created_by', 'followup', 'priority')[:BATCH_SIZE]
         
         created_count = 0
-        for anomaly in unresolved_anomalies:
+        total_checked = len(unresolved_anomalies)
+        
+        logger.info(f"شروع پردازش {total_checked} آنومالی (batch size: {BATCH_SIZE})")
+        
+        for index, anomaly in enumerate(unresolved_anomalies, start=1):
             try:
+                # Rate limiting: Add delay between AI requests to avoid 429 errors
+                # Skip delay for the first request
+                if index > 1:
+                    logger.debug(f"Rate limiting: waiting {RATE_LIMIT_DELAY} seconds before next AI request...")
+                    time.sleep(RATE_LIMIT_DELAY)
+                
+                logger.info(f"پردازش آنومالی {anomaly.id} ({index}/{total_checked})")
+                
                 corrective_action = automation.create_corrective_action_from_anomaly(
                     anomaly=anomaly,
                     auto_generate=True
@@ -74,11 +98,13 @@ def check_unresolved_anomalies(self, days_threshold: int = 5):
                 logger.error(f"خطا در ایجاد اقدام اصلاحی برای آنومالی {anomaly.id}: {e}", exc_info=True)
                 continue
         
-        logger.info(f"بررسی آنومالی‌های رفع نشده: {created_count} اقدام اصلاحی ایجاد شد")
+        logger.info(f"بررسی آنومالی‌های رفع نشده: {created_count} اقدام اصلاحی ایجاد شد از {total_checked} آنومالی بررسی شده")
         return {
             'success': True,
             'created_count': created_count,
-            'checked_count': unresolved_anomalies.count()
+            'checked_count': total_checked,
+            'batch_size': BATCH_SIZE,
+            'message': f'پردازش {total_checked} آنومالی با batch size {BATCH_SIZE}'
         }
         
     except Exception as e:

@@ -350,7 +350,7 @@ if CELERY_AVAILABLE:
         # Corrective Actions Automation Tasks
         'check_unresolved_anomalies': {
             'task': 'corrective_actions.tasks.check_unresolved_anomalies',
-            'schedule': crontab(hour=6, minute=0),  # هر روز ساعت 6 صبح
+            'schedule': crontab(minute=0),  # هر ساعت (برای پردازش تدریجی 5000+ رکورد)
             'options': {'expires': 3600}
         },
         'check_high_risk_assessments': {

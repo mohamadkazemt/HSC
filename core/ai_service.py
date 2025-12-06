@@ -35,7 +35,12 @@ class AIService:
                 if ai_settings.is_active:
                     self.api_key = ai_settings.get_api_key_safe() or ''
                     self.api_base_url = ai_settings.api_base_url or ai_settings.get_default_api_base_url()
-                    self.model = ai_settings.model
+                    # Normalize model name: replace unstable gemini-2.0-flash with stable gemini-1.5-flash
+                    model_name = ai_settings.model
+                    if model_name == 'gemini-2.0-flash' or model_name == 'gemini-2.0-flash-exp':
+                        logger.warning(f"Model '{model_name}' is unstable. Changing to stable 'gemini-1.5-flash'")
+                        model_name = 'gemini-1.5-flash'
+                    self.model = model_name
                     self.provider = ai_settings.provider
                     self.timeout = ai_settings.timeout
                     self.max_retries = ai_settings.max_retries
@@ -49,6 +54,11 @@ class AIService:
                 self._load_from_env()
         else:
             self._load_from_env()
+        
+        # Apply model normalization even for env-based settings
+        if self.model == 'gemini-2.0-flash' or self.model == 'gemini-2.0-flash-exp':
+            logger.warning(f"Model '{self.model}' is unstable. Changing to stable 'gemini-1.5-flash'")
+            self.model = 'gemini-1.5-flash'
         
         # ایجاد session با retry strategy
         self.session = requests.Session()
@@ -66,7 +76,12 @@ class AIService:
         """بارگذاری تنظیمات از environment variables"""
         self.api_key = getattr(settings, 'AI_API_KEY', os.environ.get('AI_API_KEY', ''))
         self.api_base_url = getattr(settings, 'AI_API_BASE_URL', os.environ.get('AI_API_BASE_URL', 'https://api.openai.com/v1'))
-        self.model = getattr(settings, 'AI_MODEL', os.environ.get('AI_MODEL', 'gpt-4'))
+        model_name = getattr(settings, 'AI_MODEL', os.environ.get('AI_MODEL', 'gpt-4'))
+        # Normalize model name: replace unstable gemini-2.0-flash with stable gemini-1.5-flash
+        if model_name == 'gemini-2.0-flash' or model_name == 'gemini-2.0-flash-exp':
+            logger.warning(f"Model '{model_name}' is unstable. Changing to stable 'gemini-1.5-flash'")
+            model_name = 'gemini-1.5-flash'
+        self.model = model_name
         self.provider = getattr(settings, 'AI_PROVIDER', os.environ.get('AI_PROVIDER', 'openai'))
         self.timeout = getattr(settings, 'AI_TIMEOUT', 30)
         self.max_retries = getattr(settings, 'AI_MAX_RETRIES', 3)

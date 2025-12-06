@@ -8,7 +8,7 @@ import threading
 from concurrent.futures import Future
 from typing import Any, Awaitable, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
-from asgiref.sync import sync_to_async
+from asgiref.sync import sync_to_async, async_to_sync
 from django.conf import settings
 from django.db import close_old_connections
 from django.utils import timezone
@@ -2094,11 +2094,30 @@ class RubPyIntegrationService:
     _instance: Optional["RubPyIntegrationService"] = None
 
     def __init__(self) -> None:
+        """
+        Initialize RubPyIntegrationService with proper async/sync handling.
+        
+        This method safely creates an event loop even when called from Celery workers
+        that may or may not have an existing event loop. It uses a separate thread
+        to run the async event loop to avoid conflicts with Celery's sync context.
+        """
         settings_obj = RubikaBotSettings.get_solo()
         token = settings_obj.get_token_safe()
         if not token:
             raise ValueError("توکن ربات روبیکا در تنظیمات یافت نشد.")
 
+        # Check if we're in an async context (e.g., Celery worker might have a loop)
+        # We always create a new loop in a separate thread to avoid conflicts
+        try:
+            # Try to get the current event loop (might fail if no loop exists)
+            current_loop = asyncio.get_running_loop()
+            logger.debug("Existing event loop detected, creating new loop in separate thread")
+        except RuntimeError:
+            # No running loop, which is fine - we'll create one in a thread
+            logger.debug("No existing event loop, creating new loop in separate thread")
+        
+        # Always create a new event loop in a separate thread
+        # This ensures it works in both sync (Celery) and async contexts
         self._loop = asyncio.new_event_loop()
         self._loop_ready = threading.Event()
         self._loop_thread = threading.Thread(
@@ -2248,8 +2267,33 @@ class RubPyIntegrationService:
         self._loop.run_forever()
 
     def _run_sync(self, awaitable: Awaitable[Any]) -> Any:
-        future: Future = asyncio.run_coroutine_threadsafe(awaitable, self._loop)
-        return future.result()
+        """
+        Safely run an async coroutine from a sync context (e.g., Celery task).
+        
+        This method uses run_coroutine_threadsafe to execute the coroutine in
+        the service's dedicated event loop thread, making it safe to call from
+        synchronous Celery workers.
+        
+        Args:
+            awaitable: The coroutine to execute
+            
+        Returns:
+            The result of the coroutine
+            
+        Raises:
+            RuntimeError: If the event loop is not running or closed
+        """
+        # Ensure the loop is running and ready
+        if not self._loop.is_running():
+            raise RuntimeError("Event loop is not running. Service may not be initialized properly.")
+        
+        try:
+            future: Future = asyncio.run_coroutine_threadsafe(awaitable, self._loop)
+            return future.result(timeout=300)  # 5 minute timeout for safety
+        except RuntimeError as e:
+            # Handle case where loop might be closed or not accessible
+            logger.error(f"Error running coroutine in event loop: {e}", exc_info=True)
+            raise RuntimeError(f"Failed to execute async operation: {e}") from e
 
     def _shutdown_loop(self) -> None:
         if not hasattr(self, "_loop"):
