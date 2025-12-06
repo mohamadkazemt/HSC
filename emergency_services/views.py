@@ -844,13 +844,20 @@ def dashboard(request):
     # خدمات پرمصرف
     # For ManyToMany relationship, count through the reverse relation
     # Count MedicalVisit objects that have this service in their services ManyToMany field
-    popular_services = []
-    for service in MedicalService.objects.all():
-        count = MedicalVisit.objects.filter(services=service).count()
-        service.usage_count = count  # Add usage_count attribute to service object
-        popular_services.append(service)
-    popular_services.sort(key=lambda x: x.usage_count, reverse=True)
-    popular_services = popular_services[:5]
+    try:
+        popular_services = []
+        for service in MedicalService.objects.all():
+            count = MedicalVisit.objects.filter(services=service).count()
+            service.usage_count = count  # Add usage_count attribute to service object
+            popular_services.append(service)
+        popular_services.sort(key=lambda x: x.usage_count, reverse=True)
+        popular_services = popular_services[:5]
+    except Exception as e:
+        # در صورت خطا، لیست خالی برگردان
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error in popular_services: {str(e)}", exc_info=True)
+        popular_services = []
     
     # داروهای پرمصرف
     popular_medicines = Medicine.objects.annotate(
