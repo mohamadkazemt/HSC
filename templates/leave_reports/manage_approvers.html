@@ -144,20 +144,20 @@
                         </select>
                     </div>
 
-                    <!-- Specific User -->
+                    <!-- Specific Users -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            کاربر خاص
+                            کاربران خاص
                         </label>
                         <select 
-                            name="specific_user" 
-                            id="id_specific_user"
-                            class="select2-specific-user w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                            name="specific_users" 
+                            id="id_specific_users"
+                            multiple
+                            class="select2-specific-users w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                         >
-                            <option value="">--- انتخاب کنید ---</option>
                         </select>
                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            برای تعریف تأیید کننده خاص برای یک کاربر
+                            برای تعریف تأیید کننده خاص برای چند کاربر (می‌توانید چند نفر انتخاب کنید)
                         </p>
                     </div>
                 </div>
@@ -212,11 +212,13 @@
                         </td>
                         <td class="px-6 py-4">
                             <div class="flex flex-wrap gap-2">
-                                {% if hierarchy.specific_user %}
-                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200">
-                                    <i class="fas fa-user text-xs ml-1"></i>
-                                    کاربر: {{ hierarchy.specific_user.get_full_name }}
-                                </span>
+                                {% if hierarchy.specific_users.exists %}
+                                    {% for user in hierarchy.specific_users.all %}
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200">
+                                        <i class="fas fa-user text-xs ml-1"></i>
+                                        {{ user.get_full_name }}
+                                    </span>
+                                    {% endfor %}
                                 {% endif %}
                                 {% if hierarchy.work_group %}
                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200">
@@ -248,7 +250,7 @@
                                     بخش: {{ hierarchy.section.name }}
                                 </span>
                                 {% endif %}
-                                {% if not hierarchy.specific_user and not hierarchy.work_group and not hierarchy.position and not hierarchy.unit_group and not hierarchy.part and not hierarchy.section %}
+                                {% if not hierarchy.specific_users.exists and not hierarchy.work_group and not hierarchy.position and not hierarchy.unit_group and not hierarchy.part and not hierarchy.section %}
                                 <span class="text-gray-400 dark:text-gray-500 text-xs">عمومی</span>
                                 {% endif %}
                             </div>
@@ -398,7 +400,7 @@ function approversManager() {
             this.initSelect2Part();
             this.initSelect2UnitGroup();
             this.initSelect2Position();
-            this.initSelect2SpecificUser();
+            this.initSelect2SpecificUsers();
         },
 
         initSelect2Section() {
@@ -420,9 +422,14 @@ function approversManager() {
             }, 100);
         },
 
-        initSelect2SpecificUser() {
+        initSelect2SpecificUsers() {
             setTimeout(() => {
-                $('#id_specific_user').select2({
+                // Destroy existing Select2 if it exists
+                if ($('#id_specific_users').hasClass('select2-hidden-accessible')) {
+                    $('#id_specific_users').select2('destroy');
+                }
+                
+                $('#id_specific_users').select2({
                     ajax: {
                         url: '{% url "leave_reports:api_users_for_replacement" %}',
                         dataType: 'json',
@@ -435,17 +442,29 @@ function approversManager() {
                                 results: data.results,
                                 pagination: { more: data.pagination.more }
                             };
-                        }
+                        },
+                        cache: true
                     },
                     minimumInputLength: 0,
-                    placeholder: '--- انتخاب کنید ---',
+                    placeholder: 'انتخاب کاربران خاص (می‌توانید چند نفر انتخاب کنید)',
                     allowClear: true,
+                    multiple: true,
+                    dir: 'rtl',
                     language: {
                         inputTooShort: () => 'نام کاربر را وارد کنید',
                         searching: () => 'در حال جستجو...',
-                        noResults: () => 'کاربری یافت نشد'
+                        noResults: () => 'کاربری یافت نشد',
+                        removeAllItems: () => 'حذف همه',
+                        removeItem: () => 'حذف'
                     },
-                    width: '100%'
+                    width: '100%',
+                    closeOnSelect: false,
+                    theme: 'default'
+                });
+                
+                // Add RTL support for Select2 container
+                $('#id_specific_users').on('select2:open', function() {
+                    $('.select2-container--open').attr('dir', 'rtl');
                 });
             }, 100);
         },
@@ -730,14 +749,14 @@ function approversManager() {
             }
 
             // Check if at least one criteria is selected
-            const specificUserId = $('#id_specific_user').val();
+            const specificUserIds = $('#id_specific_users').val();
             const workGroup = $('#id_work_group').val();
             const positionId = $('#id_position').val();
             const unitGroupId = $('#id_unit_group').val();
             const sectionId = $('#id_section').val();
             const partId = $('#id_part').val();
 
-            const hasCriteria = specificUserId || workGroup || positionId || unitGroupId || sectionId || partId;
+            const hasCriteria = (specificUserIds && specificUserIds.length > 0) || workGroup || positionId || unitGroupId || sectionId || partId;
             
             if (!hasCriteria) {
                 alert('لطفاً حداقل یکی از معیارهای تطبیق را انتخاب کنید');
@@ -750,7 +769,11 @@ function approversManager() {
             
             // Make sure all Select2 values are in formData
             formData.set('approver', approverId);
-            if (specificUserId) formData.set('specific_user', specificUserId);
+            if (specificUserIds && specificUserIds.length > 0) {
+                specificUserIds.forEach(userId => {
+                    formData.append('specific_users', userId);
+                });
+            }
             if (workGroup) formData.set('work_group', workGroup);
             if (positionId) formData.set('position', positionId);
             if (unitGroupId) formData.set('unit_group', unitGroupId);

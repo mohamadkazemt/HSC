@@ -15,13 +15,11 @@ class ApprovalHierarchy(models.Model):
     approver = models.ForeignKey(UserProfile, on_delete=models.CASCADE, verbose_name="تأیید کننده")
     
     # فیلدهای معیار (همه اختیاری - برای ترکیب قوانین)
-    specific_user = models.ForeignKey(
+    specific_users = models.ManyToManyField(
         User, 
-        on_delete=models.CASCADE, 
-        null=True, 
         blank=True, 
-        verbose_name="کاربر خاص",
-        help_text="برای تعریف تأیید کننده خاص برای یک کاربر مشخص"
+        verbose_name="کاربران خاص",
+        help_text="برای تعریف تأیید کننده خاص برای چند کاربر مشخص"
     )
     work_group = models.CharField(
         max_length=2, 
@@ -68,7 +66,6 @@ class ApprovalHierarchy(models.Model):
         # حذف unique_together چون حالا می‌توان چند قانون برای یک بخش/قسمت داشت
         indexes = [
             models.Index(fields=['work_group', 'section', 'part']),
-            models.Index(fields=['specific_user']),
             models.Index(fields=['position', 'unit_group']),
         ]
 
@@ -79,8 +76,8 @@ class ApprovalHierarchy(models.Model):
         """
         weight = 0
         
-        if self.specific_user:
-            weight += 100  # بالاترین اولویت برای کاربر خاص
+        if self.specific_users.exists():
+            weight += 100  # بالاترین اولویت برای کاربران خاص
         
         if self.position:
             weight += 50
@@ -106,9 +103,9 @@ class ApprovalHierarchy(models.Model):
         - همه فیلدهای تعریف شده در قانون با پروفایل کاربر مطابقت داشته باشند
         - یا فیلد در قانون None باشد (یعنی نادیده گرفته شود)
         """
-        # بررسی specific_user
-        if self.specific_user:
-            if user_profile.user != self.specific_user:
+        # بررسی specific_users
+        if self.specific_users.exists():
+            if user_profile.user not in self.specific_users.all():
                 return False
         
         # بررسی work_group
@@ -140,8 +137,12 @@ class ApprovalHierarchy(models.Model):
 
     def __str__(self):
         parts = []
-        if self.specific_user:
-            parts.append(f"کاربر: {self.specific_user.get_full_name()}")
+        if self.specific_users.exists():
+            user_names = [user.get_full_name() for user in self.specific_users.all()]
+            if len(user_names) == 1:
+                parts.append(f"کاربر: {user_names[0]}")
+            else:
+                parts.append(f"کاربران: {', '.join(user_names[:3])}{' و ...' if len(user_names) > 3 else ''}")
         if self.work_group:
             parts.append(f"گروه: {self.get_work_group_display()}")
         if self.position:
@@ -299,8 +300,8 @@ class ShiftReport(models.Model):
         matching_rules = []
         
         for rule in ApprovalHierarchy.objects.select_related(
-            'approver', 'approver__user', 'section', 'part', 'unit_group', 'position', 'specific_user'
-        ).all():
+            'approver', 'approver__user', 'section', 'part', 'unit_group', 'position'
+        ).prefetch_related('specific_users').all():
             if rule.matches_user_profile(requester_profile):
                 weight = rule.get_weight()
                 matching_rules.append((weight, rule))

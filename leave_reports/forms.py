@@ -173,15 +173,15 @@ class ApprovalHierarchyForm(forms.ModelForm):
         help_text='تأیید کننده الزامی است'
     )
     
-    specific_user = forms.ModelChoiceField(
+    specific_users = forms.ModelMultipleChoiceField(
         queryset=User.objects.filter(is_active=True),
-        widget=forms.Select(attrs={
+        widget=forms.SelectMultiple(attrs={
             'class': 'form-control select2',
-            'data-placeholder': 'انتخاب کاربر خاص (اختیاری)'
+            'data-placeholder': 'انتخاب کاربران خاص (اختیاری)'
         }),
-        label='کاربر خاص',
+        label='کاربران خاص',
         required=False,
-        help_text='برای تعریف تأیید کننده خاص برای یک کاربر مشخص'
+        help_text='برای تعریف تأیید کننده خاص برای چند کاربر مشخص'
     )
     
     work_group = forms.ChoiceField(
@@ -237,7 +237,7 @@ class ApprovalHierarchyForm(forms.ModelForm):
     class Meta:
         model = ApprovalHierarchy
         fields = [
-            'approver', 'specific_user', 'work_group', 
+            'approver', 'specific_users', 'work_group', 
             'section', 'part', 'unit_group', 'position'
         ]
 
@@ -292,7 +292,7 @@ class ApprovalHierarchyForm(forms.ModelForm):
         
         # بررسی اینکه حداقل یک معیار (به جز approver) انتخاب شده باشد
         has_criteria = any([
-            cleaned_data.get('specific_user'),
+            cleaned_data.get('specific_users'),
             cleaned_data.get('work_group'),
             cleaned_data.get('section'),
             cleaned_data.get('part'),
@@ -302,7 +302,7 @@ class ApprovalHierarchyForm(forms.ModelForm):
         
         if not has_criteria:
             raise forms.ValidationError(
-                'باید حداقل یکی از فیلدهای معیار (کاربر خاص، گروه کاری، بخش، قسمت، گروه واحد، یا سمت) را انتخاب کنید.'
+                'باید حداقل یکی از فیلدهای معیار (کاربران خاص، گروه کاری، بخش، قسمت، گروه واحد، یا سمت) را انتخاب کنید.'
             )
         
         return cleaned_data

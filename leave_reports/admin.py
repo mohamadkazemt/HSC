@@ -44,8 +44,8 @@ class ApprovalHierarchyAdmin(admin.ModelAdmin):
         'approver__user__first_name', 
         'approver__user__last_name', 
         'approver__user__username',
-        'specific_user__first_name',
-        'specific_user__last_name',
+        'specific_users__first_name',
+        'specific_users__last_name',
         'section__name', 
         'part__name',
         'unit_group__name',
@@ -58,7 +58,7 @@ class ApprovalHierarchyAdmin(admin.ModelAdmin):
         }),
         ('معیارهای تطبیق', {
             'fields': (
-                'specific_user',
+                'specific_users',
                 'work_group',
                 'position',
                 'unit_group',
@@ -78,8 +78,12 @@ class ApprovalHierarchyAdmin(admin.ModelAdmin):
     def get_criteria_display(self, obj):
         """نمایش معیارهای انتخاب شده"""
         criteria = []
-        if obj.specific_user:
-            criteria.append(f"کاربر: {obj.specific_user.get_full_name()}")
+        if obj.specific_users.exists():
+            user_names = [user.get_full_name() for user in obj.specific_users.all()]
+            if len(user_names) == 1:
+                criteria.append(f"کاربر: {user_names[0]}")
+            else:
+                criteria.append(f"کاربران: {', '.join(user_names[:3])}{' و ...' if len(user_names) > 3 else ''}")
         if obj.work_group:
             criteria.append(f"گروه: {obj.get_work_group_display()}")
         if obj.position:

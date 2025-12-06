@@ -872,7 +872,7 @@ def manage_approvers(request):
     
     hierarchies = ApprovalHierarchy.objects.all().select_related(
         'section', 'part', 'approver', 'approver__user', 'approver__position'
-    ).order_by('section__name', 'part__name')
+    ).prefetch_related('specific_users').order_by('section__name', 'part__name')
     
     if request.method == 'POST':
         form = ApprovalHierarchyForm(request.POST)
@@ -998,7 +998,9 @@ def delete_approver(request, hierarchy_id):
 def api_get_users_for_replacement(request):
     """API برای دریافت لیست کاربران جهت انتخاب به عنوان جایگزین"""
     
-    search = request.GET.get('q', '')
+    search_term = request.GET.get('q', '')
+    page = int(request.GET.get('page', 1))
+    page_size = 20
     
     users = User.objects.filter(is_active=True).exclude(id=request.user.id)
     
@@ -1006,22 +1008,36 @@ def api_get_users_for_replacement(request):
     if hasattr(request.user, 'userprofile') and request.user.userprofile.section:
         users = users.filter(userprofile__section=request.user.userprofile.section)
     
-    # جستجو
-    if search:
+    # جستجو - شامل نام، نام خانوادگی، username و کد پرسنلی
+    if search_term:
         users = users.filter(
-            Q(first_name__icontains=search) |
-            Q(last_name__icontains=search) |
-            Q(userprofile__personnel_code__icontains=search)
+            Q(first_name__icontains=search_term) |
+            Q(last_name__icontains=search_term) |
+            Q(username__icontains=search_term) |
+            Q(userprofile__personnel_code__icontains=search_term)
         )
     
-    users = users.select_related('userprofile')[:20]
+    # Pagination
+    start = (page - 1) * page_size
+    end = start + page_size
+    total_count = users.count()
+    users_page = users.select_related('userprofile')[start:end]
     
     results = []
-    for user in users:
+    for user in users_page:
         profile = getattr(user, 'userprofile', None)
-        text = user.get_full_name() or user.username
-        if profile and profile.personnel_code:
-            text += f" ({profile.personnel_code})"
+        full_name = user.get_full_name() or user.username
+        personnel_code = profile.personnel_code if profile and profile.personnel_code else ''
+        position = profile.position.name if profile and profile.position else ''
+        
+        # ساخت متن نمایشی با نام، کد پرسنلی و سمت
+        text_parts = [full_name]
+        if personnel_code:
+            text_parts.append(f"کد: {personnel_code}")
+        if position:
+            text_parts.append(f"({position})")
+        
+        text = " - ".join(text_parts)
         
         results.append({
             'id': user.id,
@@ -1030,7 +1046,7 @@ def api_get_users_for_replacement(request):
     
     return JsonResponse({
         'results': results,
-        'pagination': {'more': False}
+        'pagination': {'more': end < total_count}
     })
 
 
@@ -1162,42 +1178,3 @@ def api_get_user_profiles(request):
     })
 
 
-@login_required
-def api_get_users_for_replacement(request):
-    """API برای جستجوی کاربران برای انتخاب جایگزین"""
-    
-    search_term = request.GET.get('q', '')
-    page = int(request.GET.get('page', 1))
-    page_size = 20
-    
-    # فیلتر کاربران همان بخش کاربر
-    users = User.objects.filter(is_active=True).exclude(id=request.user.id)
-    
-    if hasattr(request.user, 'userprofile') and request.user.userprofile.section:
-        users = users.filter(userprofile__section=request.user.userprofile.section)
-    
-    # جستجو
-    if search_term:
-        users = users.filter(
-            Q(first_name__icontains=search_term) | 
-            Q(last_name__icontains=search_term) |
-            Q(username__icontains=search_term)
-        )
-    
-    # Pagination
-    start = (page - 1) * page_size
-    end = start + page_size
-    total_count = users.count()
-    users_page = users.select_related('userprofile')[start:end]
-    
-    results = []
-    for user in users_page:
-        full_name = user.get_full_name() or user.username
-        position = user.userprofile.position.name if hasattr(user, 'userprofile') and user.userprofile.position else ''
-        text = f"{full_name} ({position})" if position else full_name
-        results.append({'id': user.id, 'text': text})
-    
-    return JsonResponse({
-        'results': results,
-        'pagination': {'more': end < total_count}
-    })
