@@ -2097,14 +2097,25 @@ class RubPyIntegrationService:
         """
         Initialize RubPyIntegrationService with proper async/sync handling.
         
-        This method safely creates an event loop even when called from Celery workers
-        that may or may not have an existing event loop. It uses a separate thread
-        to run the async event loop to avoid conflicts with Celery's sync context.
+        This method is purely synchronous and safe for Celery workers.
+        Client initialization is deferred to _get_or_create_client() which runs
+        in an async context when actually needed.
         """
         settings_obj = RubikaBotSettings.get_solo()
         token = settings_obj.get_token_safe()
         if not token:
             raise ValueError("توکن ربات روبیکا در تنظیمات یافت نشد.")
+
+        # Store basic attributes (synchronous, safe)
+        self._token = token
+        
+        # Get proxy URL (synchronous operation)
+        proxy_url = ''
+        if hasattr(settings_obj, 'build_proxy_url'):
+            proxy_url = settings_obj.build_proxy_url()
+        if not proxy_url and hasattr(settings, 'RUBIKA_BOT'):
+            proxy_url = settings.RUBIKA_BOT.get('PROXY_URL', '')
+        self._proxy_url = proxy_url
 
         # Check if we're in an async context (e.g., Celery worker might have a loop)
         # We always create a new loop in a separate thread to avoid conflicts
@@ -2126,36 +2137,67 @@ class RubPyIntegrationService:
         self._loop_thread.start()
         self._loop_ready.wait()
 
-        proxy_url = ''
-        if hasattr(settings_obj, 'build_proxy_url'):
-            proxy_url = settings_obj.build_proxy_url()
-        if not proxy_url and hasattr(settings, 'RUBIKA_BOT'):
-            proxy_url = settings.RUBIKA_BOT.get('PROXY_URL', '')
-        connector = None
-        if proxy_url:
-            if ProxyConnector is None:
-                logger.warning("Proxy URL defined but aiohttp_socks is not installed; continuing without proxy.")
-            else:
-                try:
-                    connector = ProxyConnector.from_url(proxy_url)
-                    logger.info("Using SOCKS proxy for Rubika client at %s", proxy_url)
-                except Exception as exc:
-                    logger.error("Failed to create proxy connector from %s: %s", proxy_url, exc, exc_info=True)
-
-        try:
+        # Client and engine will be initialized lazily via _get_or_create_client()
+        self.client: Optional[BotClient] = None
+        self.engine: Optional[RubikaBotEngine] = None
+        self._client_initialized = False
+        self._client_init_lock = threading.Lock()
+    
+    async def _get_or_create_client(self) -> BotClient:
+        """
+        Lazy initialization of the BotClient and ProxyConnector.
+        
+        This method must be called from an async context (within the event loop).
+        It creates the ProxyConnector and BotClient only when needed, avoiding
+        the "no running event loop" error in Celery workers.
+        
+        Returns:
+            The initialized BotClient instance
+        """
+        # Double-check locking pattern for thread safety
+        if self._client_initialized and self.client is not None:
+            return self.client
+        
+        with self._client_init_lock:
+            # Check again after acquiring lock
+            if self._client_initialized and self.client is not None:
+                return self.client
+            
+            # Now we're in async context, safe to create ProxyConnector
+            connector = None
+            if self._proxy_url:
+                if ProxyConnector is None:
+                    logger.warning("Proxy URL defined but aiohttp_socks is not installed; continuing without proxy.")
+                else:
+                    try:
+                        # This is now safe because we're in an async context
+                        connector = ProxyConnector.from_url(self._proxy_url)
+                        logger.info("Using SOCKS proxy for Rubika client at %s", self._proxy_url)
+                    except Exception as exc:
+                        logger.error("Failed to create proxy connector from %s: %s", self._proxy_url, exc, exc_info=True)
+            
+            # Create BotClient
             self.client = BotClient(
-                token=token,
+                token=self._token,
                 use_webhook=True,
                 timeout=BOT_REQUEST_TIMEOUT,
                 connector=connector,
             )
             self.engine = RubikaBotEngine(self.client)
             self._register_handlers()
-            self._run_sync(self.client.start())
-        except Exception as exc:
-            logger.exception("Unable to start RubPy client: %s", exc)
-            self._shutdown_loop()
-            raise
+            await self.client.start()
+            
+            self._client_initialized = True
+            logger.info("RubPy client initialized successfully")
+            return self.client
+    
+    def _ensure_client_initialized(self) -> None:
+        """
+        Ensure the client is initialized before use.
+        This is a synchronous wrapper that calls the async initialization.
+        """
+        if not self._client_initialized or self.client is None:
+            self._run_sync(self._get_or_create_client())
     
     # ... (متدهای get_instance, reset, handle_webhook_payload, و ... بدون تغییر باقی می‌مانند) ...
     @classmethod
@@ -2168,14 +2210,16 @@ class RubPyIntegrationService:
     def reset(cls) -> None:
         if cls._instance:
             try:
-                cls._instance._run_sync(cls._instance.client.stop())
+                if cls._instance.client is not None:
+                    cls._instance._run_sync(cls._instance.client.stop())
             except Exception:
                 logger.exception("Failed to stop RubPy client cleanly")
             cls._instance._shutdown_loop()
         cls._instance = None
 
     def handle_webhook_payload(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        # ... (این متد بدون تغییر باقی می‌ماند) ...
+        # Ensure client is initialized before processing
+        self._ensure_client_initialized()
         updates = list(self._coerce_updates(payload))
         if not updates:
             WebhookLog.log_warning('وبهوک بدون آپدیت', 'هیچ آپدیتی در payload نبود', payload)
@@ -2189,12 +2233,13 @@ class RubPyIntegrationService:
         return {'ok': True, 'processed': len(updates)}
 
     def send_text_message(self, chat_id: str, text: str) -> None:
-        # This is now async, but we can call it from a sync context (e.g., signals)
-        # by wrapping the call if needed. The engine's method is what we use internally.
+        # Ensure client is initialized before sending
+        self._ensure_client_initialized()
         self._run_sync(self.client.send_message(chat_id=chat_id, text=text))
 
     def update_endpoints(self, webhook_url: str) -> Dict[str, Any]:
-        # ... (این متد بدون تغییر باقی می‌ماند) ...
+        # Ensure client is initialized before updating endpoints
+        self._ensure_client_initialized()
         results = {}
         all_ok = True
         for update_type in ("ReceiveUpdate", "ReceiveInlineMessage", "ReceiveQuery"):
@@ -2209,7 +2254,8 @@ class RubPyIntegrationService:
         return {'ok': all_ok, 'results': results}
 
     def fetch_webhook_info(self) -> Dict[str, Any]:
-        # ... (این متد بدون تغییر باقی می‌ماند) ...
+        # Ensure client is initialized before fetching info
+        self._ensure_client_initialized()
         try:
             result = self._run_sync(self.client._make_request("getBotEndpoint", {}))
             return {'ok': True, 'data': result}
@@ -2220,6 +2266,9 @@ class RubPyIntegrationService:
 
     def _register_handlers(self) -> None:
         # THE HANDLER ITSELF MUST BE ASYNC
+        # Note: This method is called from _get_or_create_client() after client is created
+        if self.client is None:
+            raise RuntimeError("Cannot register handlers: client is not initialized")
         @self.client.on_update()
         async def _generic_handler(bot: BotClient, update: Union[Update, InlineMessage]) -> None:
             close_old_connections()
@@ -2235,7 +2284,9 @@ class RubPyIntegrationService:
                 close_old_connections()
 
     def _coerce_updates(self, payload: Dict[str, Any]) -> Iterable[Union[Update, InlineMessage]]:
-        # ... (این متد بدون تغییر باقی می‌ماند) ...
+        # Ensure client is initialized before parsing updates
+        if self.client is None:
+            self._ensure_client_initialized()
         if 'update' in payload:
             update = self.client._parse_update(payload['update'])
             if update: setattr(update, "_raw_payload", payload); yield update
@@ -2313,6 +2364,9 @@ class RubPyIntegrationService:
     
     # ... (متدهای _from_legacy_message و _from_legacy_query بدون تغییر باقی می‌مانند) ...
     def _from_legacy_message(self, payload: Dict[str, Any]) -> Optional[Update]:
+        # Ensure client is initialized before parsing
+        if self.client is None:
+            self._ensure_client_initialized()
         message_data = payload.get('message', {})
         chat_data = message_data.get('chat', {})
         chat_id = _safe_str(chat_data.get('chat_id') or chat_data.get('id'))
@@ -2323,6 +2377,9 @@ class RubPyIntegrationService:
         if parsed: setattr(parsed, "_raw_payload", payload)
         return parsed
     def _from_legacy_query(self, payload: Dict[str, Any]) -> Optional[Update]:
+        # Ensure client is initialized before parsing
+        if self.client is None:
+            self._ensure_client_initialized()
         query_data = payload.get('query', {})
         chat_id = _safe_str(query_data.get('chat_id'))
         if not chat_id: return None

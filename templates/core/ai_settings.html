@@ -288,6 +288,142 @@
       </div>
     </div>
 
+    <!-- Multi-Provider Fallback System -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+      <div class="bg-gradient-to-l from-blue-600 to-blue-500 px-6 py-4">
+        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+          <i class="fas fa-sitemap"></i>
+          سیستم Fallback چند-Provider
+        </h2>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+          <p class="text-sm text-blue-800 dark:text-blue-200 mb-3">
+            <i class="fas fa-info-circle ml-1"></i>
+            <strong>سیستم Fallback:</strong> در صورت محدودیت rate limit، به صورت خودکار به provider بعدی تغییر می‌کند.
+          </p>
+          <div class="text-xs text-blue-700 dark:text-blue-300 space-y-2">
+            <p><strong>ترتیب Fallback:</strong></p>
+            <ol class="list-decimal list-inside space-y-1 mr-4">
+              <li><strong>Google Gemini</strong> (با Key Rotation) - Primary</li>
+              <li><strong>Groq</strong> (Llama 3) - Secondary</li>
+              <li><strong>OpenRouter</strong> - Tertiary (Final Fallback)</li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- Provider Status -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- Google Gemini Status -->
+          <div class="border rounded-lg p-4 {% if google_keys_count > 0 %}border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20{% else %}border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50{% endif %}">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Google Gemini</h3>
+              {% if google_keys_count > 0 %}
+                <span class="text-xs px-2 py-1 bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-300 rounded">
+                  <i class="fas fa-check-circle"></i> فعال
+                </span>
+              {% else %}
+                <span class="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-400 rounded">
+                  <i class="fas fa-times-circle"></i> غیرفعال
+                </span>
+              {% endif %}
+            </div>
+            <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">
+              {% if google_keys_count > 0 %}
+                <strong>{{ google_keys_count }}</strong> کلید API تنظیم شده
+              {% else %}
+                کلید API تنظیم نشده
+              {% endif %}
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-500">
+              مدل: <code class="bg-white dark:bg-gray-800 px-1 rounded">{{ google_model }}</code>
+            </p>
+          </div>
+
+          <!-- Groq Status -->
+          <div class="border rounded-lg p-4 {% if groq_configured %}border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20{% else %}border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50{% endif %}">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-sm font-semibold text-gray-900 dark:text-white">Groq</h3>
+              {% if groq_configured %}
+                <span class="text-xs px-2 py-1 bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-300 rounded">
+                  <i class="fas fa-check-circle"></i> فعال
+                </span>
+              {% else %}
+                <span class="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-400 rounded">
+                  <i class="fas fa-times-circle"></i> غیرفعال
+                </span>
+              {% endif %}
+            </div>
+            <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">
+              {% if groq_configured %}
+                کلید API تنظیم شده
+              {% else %}
+                کلید API تنظیم نشده
+              {% endif %}
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-500">
+              مدل: <code class="bg-white dark:bg-gray-800 px-1 rounded">{{ groq_model }}</code>
+            </p>
+          </div>
+
+          <!-- OpenRouter Status -->
+          <div class="border rounded-lg p-4 {% if openrouter_configured %}border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20{% else %}border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50{% endif %}">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-sm font-semibold text-gray-900 dark:text-white">OpenRouter</h3>
+              {% if openrouter_configured %}
+                <span class="text-xs px-2 py-1 bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-300 rounded">
+                  <i class="fas fa-check-circle"></i> فعال
+                </span>
+              {% else %}
+                <span class="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-400 rounded">
+                  <i class="fas fa-times-circle"></i> غیرفعال
+                </span>
+              {% endif %}
+            </div>
+            <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">
+              {% if openrouter_configured %}
+                کلید API تنظیم شده
+              {% else %}
+                کلید API تنظیم نشده
+              {% endif %}
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-500">
+              مدل: <code class="bg-white dark:bg-gray-800 px-1 rounded">{{ openrouter_model }}</code>
+            </p>
+          </div>
+        </div>
+
+        <!-- Environment Variables Guide -->
+        <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+          <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+            <i class="fas fa-code ml-1"></i>
+            راهنمای تنظیم Environment Variables
+          </h4>
+          <div class="text-xs text-gray-700 dark:text-gray-300 space-y-2 font-mono">
+            <p><strong>برای فعال‌سازی Multi-Provider Fallback:</strong></p>
+            <div class="bg-gray-900 dark:bg-black rounded p-3 text-green-400 overflow-x-auto">
+              <div class="space-y-1">
+                <div># Google Gemini API Keys (comma-separated for key rotation)</div>
+                <div>GOOGLE_API_KEYS=key1,key2,key3</div>
+                <div class="mt-2"># Groq API Key</div>
+                <div>GROQ_API_KEY=your_groq_api_key</div>
+                <div class="mt-2"># OpenRouter API Key</div>
+                <div>OPENROUTER_API_KEY=your_openrouter_api_key</div>
+                <div class="mt-2"># Optional: Custom Models</div>
+                <div>GOOGLE_DEFAULT_MODEL=gemini-2.0-flash-lite</div>
+                <div>GROQ_MODEL=llama3-70b-8192</div>
+                <div>OPENROUTER_MODEL=google/gemini-2.0-flash-lite:free</div>
+              </div>
+            </div>
+            <p class="mt-3 text-gray-600 dark:text-gray-400">
+              <i class="fas fa-exclamation-triangle ml-1"></i>
+              این تنظیمات باید در فایل <code class="bg-gray-200 dark:bg-gray-800 px-1 rounded">.env</code> یا environment variables سرور تنظیم شوند.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Status -->
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
       <div class="bg-gradient-to-l from-green-600 to-green-500 px-6 py-4">

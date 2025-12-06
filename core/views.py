@@ -56,11 +56,28 @@ def ai_settings_view(request):
             'message': settings.last_test_message,
         }
     
+    # Get multi-provider configuration status
+    from django.conf import settings as django_settings
+    google_keys = getattr(django_settings, 'GOOGLE_API_KEYS', [])
+    google_keys_count = len(google_keys) if google_keys else 0
+    groq_configured = bool(getattr(django_settings, 'GROQ_API_KEY', ''))
+    openrouter_configured = bool(getattr(django_settings, 'OPENROUTER_API_KEY', ''))
+    google_model = getattr(django_settings, 'GOOGLE_DEFAULT_MODEL', 'gemini-2.0-flash-lite')
+    groq_model = getattr(django_settings, 'GROQ_MODEL', 'llama3-70b-8192')
+    openrouter_model = getattr(django_settings, 'OPENROUTER_MODEL', 'google/gemini-2.0-flash-lite:free')
+    
     context = {
         'form': form,
         'settings': settings,
         'test_info': test_info,
         'google_ai_studio_url': 'https://aistudio.google.com/',
+        # Multi-provider status
+        'google_keys_count': google_keys_count,
+        'groq_configured': groq_configured,
+        'openrouter_configured': openrouter_configured,
+        'google_model': google_model,
+        'groq_model': groq_model,
+        'openrouter_model': openrouter_model,
     }
     
     return render(request, 'core/ai_settings.html', context)

@@ -573,4 +573,32 @@ AI_MODEL = os.environ.get('AI_MODEL', 'gpt-4')
 AI_PROVIDER = os.environ.get('AI_PROVIDER', 'openai')  # openai, anthropic, local
 AI_TIMEOUT = int(os.environ.get('AI_TIMEOUT', '30'))
 AI_MAX_RETRIES = int(os.environ.get('AI_MAX_RETRIES', '3'))
-AI_CACHE_TIMEOUT = int(os.environ.get('AI_CACHE_TIMEOUT', '3600'))  # 1 hour 
+AI_CACHE_TIMEOUT = int(os.environ.get('AI_CACHE_TIMEOUT', '3600'))  # 1 hour
+
+# Multi-Provider AI Configuration with Fallback Support
+# Google Gemini API Keys (comma-separated for key rotation)
+GOOGLE_API_KEYS = [
+    key.strip() 
+    for key in os.environ.get('GOOGLE_API_KEYS', '').split(',') 
+    if key.strip()
+]
+
+# Groq API Key (Secondary Provider - Fast Llama 3)
+GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
+
+# OpenRouter API Key (Tertiary Provider - Final Fallback)
+OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '')
+
+# Provider API Base URLs (Default Endpoints)
+GOOGLE_API_BASE_URL = os.environ.get('GOOGLE_API_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta')
+GROQ_API_BASE_URL = os.environ.get('GROQ_API_BASE_URL', 'https://api.groq.com/openai/v1')
+OPENROUTER_API_BASE_URL = os.environ.get('OPENROUTER_API_BASE_URL', 'https://openrouter.ai/api/v1')
+
+# Default Google Model
+GOOGLE_DEFAULT_MODEL = os.environ.get('GOOGLE_DEFAULT_MODEL', 'gemini-2.0-flash-lite')
+
+# Groq Model
+GROQ_MODEL = os.environ.get('GROQ_MODEL', 'llama3-70b-8192')  # Alternative: 'mixtral-8x7b-32768'
+
+# OpenRouter Model
+OPENROUTER_MODEL = os.environ.get('OPENROUTER_MODEL', 'google/gemini-2.0-flash-lite:free')  # Alternative: 'meta-llama/llama-3-8b-instruct' 

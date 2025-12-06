@@ -35,11 +35,15 @@ class AIService:
                 if ai_settings.is_active:
                     self.api_key = ai_settings.get_api_key_safe() or ''
                     self.api_base_url = ai_settings.api_base_url or ai_settings.get_default_api_base_url()
-                    # Normalize model name: replace unstable gemini-2.0-flash with stable gemini-1.5-flash
+                    # Normalize model name: replace unstable gemini-2.0-flash with stable gemini-1.5-flash-latest
                     model_name = ai_settings.model
                     if model_name == 'gemini-2.0-flash' or model_name == 'gemini-2.0-flash-exp':
-                        logger.warning(f"Model '{model_name}' is unstable. Changing to stable 'gemini-1.5-flash'")
-                        model_name = 'gemini-1.5-flash'
+                        logger.warning(f"Model '{model_name}' is unstable. Changing to stable 'gemini-1.5-flash-latest'")
+                        model_name = 'gemini-1.5-flash-latest'
+                    # Also normalize gemini-1.5-flash to gemini-1.5-flash-latest for better reliability
+                    if model_name == 'gemini-1.5-flash':
+                        logger.info(f"Model '{model_name}' normalized to 'gemini-1.5-flash-latest' for better reliability")
+                        model_name = 'gemini-1.5-flash-latest'
                     self.model = model_name
                     self.provider = ai_settings.provider
                     self.timeout = ai_settings.timeout
@@ -55,10 +59,8 @@ class AIService:
         else:
             self._load_from_env()
         
-        # Apply model normalization even for env-based settings
-        if self.model == 'gemini-2.0-flash' or self.model == 'gemini-2.0-flash-exp':
-            logger.warning(f"Model '{self.model}' is unstable. Changing to stable 'gemini-1.5-flash'")
-            self.model = 'gemini-1.5-flash'
+        # Initialize multi-provider keys (always load from env for fallback system)
+        self._load_multi_provider_keys()
         
         # ایجاد session با retry strategy
         self.session = requests.Session()
@@ -72,15 +74,39 @@ class AIService:
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
     
+    def _load_multi_provider_keys(self):
+        """Load multi-provider API keys from settings"""
+        # Google Gemini API Keys (for key rotation)
+        self.google_keys = getattr(settings, 'GOOGLE_API_KEYS', [])
+        if not self.google_keys:
+            # Fallback: try to get from single API key if multi-provider keys not set
+            if hasattr(self, 'api_key') and self.api_key and (self.provider == 'google' if hasattr(self, 'provider') else False):
+                self.google_keys = [self.api_key]
+            else:
+                self.google_keys = []
+        
+        # Groq API Key (Secondary Provider)
+        self.groq_key = getattr(settings, 'GROQ_API_KEY', '')
+        
+        # OpenRouter API Key (Tertiary Provider)
+        self.openrouter_key = getattr(settings, 'OPENROUTER_API_KEY', '')
+        
+        # Provider-specific models
+        self.google_model = getattr(settings, 'GOOGLE_DEFAULT_MODEL', 'gemini-2.0-flash-lite')
+        self.groq_model = getattr(settings, 'GROQ_MODEL', 'llama3-70b-8192')
+        self.openrouter_model = getattr(settings, 'OPENROUTER_MODEL', 'google/gemini-2.0-flash-lite:free')
+        
+        # Provider API Base URLs (Default Endpoints)
+        self.google_api_base_url = getattr(settings, 'GOOGLE_API_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta')
+        self.groq_api_base_url = getattr(settings, 'GROQ_API_BASE_URL', 'https://api.groq.com/openai/v1')
+        self.openrouter_api_base_url = getattr(settings, 'OPENROUTER_API_BASE_URL', 'https://openrouter.ai/api/v1')
+    
     def _load_from_env(self):
         """بارگذاری تنظیمات از environment variables"""
+        # Legacy single API key support (for backward compatibility)
         self.api_key = getattr(settings, 'AI_API_KEY', os.environ.get('AI_API_KEY', ''))
         self.api_base_url = getattr(settings, 'AI_API_BASE_URL', os.environ.get('AI_API_BASE_URL', 'https://api.openai.com/v1'))
         model_name = getattr(settings, 'AI_MODEL', os.environ.get('AI_MODEL', 'gpt-4'))
-        # Normalize model name: replace unstable gemini-2.0-flash with stable gemini-1.5-flash
-        if model_name == 'gemini-2.0-flash' or model_name == 'gemini-2.0-flash-exp':
-            logger.warning(f"Model '{model_name}' is unstable. Changing to stable 'gemini-1.5-flash'")
-            model_name = 'gemini-1.5-flash'
         self.model = model_name
         self.provider = getattr(settings, 'AI_PROVIDER', os.environ.get('AI_PROVIDER', 'openai'))
         self.timeout = getattr(settings, 'AI_TIMEOUT', 30)
@@ -88,6 +114,32 @@ class AIService:
         self.cache_timeout = getattr(settings, 'AI_CACHE_TIMEOUT', 3600)
         self.temperature = getattr(settings, 'AI_TEMPERATURE', 0.7)
         
+        # Multi-provider configuration with fallback support
+        # Google Gemini API Keys (for key rotation)
+        self.google_keys = getattr(settings, 'GOOGLE_API_KEYS', [])
+        if not self.google_keys:
+            # Fallback: try to get from single API key if multi-provider keys not set
+            if self.api_key and self.provider == 'google':
+                self.google_keys = [self.api_key]
+            else:
+                self.google_keys = []
+        
+        # Groq API Key (Secondary Provider)
+        self.groq_key = getattr(settings, 'GROQ_API_KEY', '')
+        
+        # OpenRouter API Key (Tertiary Provider)
+        self.openrouter_key = getattr(settings, 'OPENROUTER_API_KEY', '')
+        
+        # Provider-specific models
+        self.google_model = getattr(settings, 'GOOGLE_DEFAULT_MODEL', 'gemini-2.0-flash-lite')
+        self.groq_model = getattr(settings, 'GROQ_MODEL', 'llama3-70b-8192')
+        self.openrouter_model = getattr(settings, 'OPENROUTER_MODEL', 'google/gemini-2.0-flash-lite:free')
+        
+        # Provider API Base URLs (Default Endpoints)
+        self.google_api_base_url = getattr(settings, 'GOOGLE_API_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta')
+        self.groq_api_base_url = getattr(settings, 'GROQ_API_BASE_URL', 'https://api.groq.com/openai/v1')
+        self.openrouter_api_base_url = getattr(settings, 'OPENROUTER_API_BASE_URL', 'https://openrouter.ai/api/v1')
+    
     def _get_cache_key(self, prompt: str, context: Dict = None) -> str:
         """ایجاد کلید کش برای درخواست"""
         import hashlib
@@ -215,14 +267,33 @@ class AIService:
                     logger.error(f"خطا در فراخوانی Anthropic API: {e}")
                     return None
     
-    def _call_google_api(self, messages: List[Dict], temperature: float = 0.7) -> Optional[str]:
-        """فراخوانی Google AI Studio (Gemini) API"""
+    def _call_google_api(self, messages: List[Dict], temperature: float = 0.7, api_key: str = None) -> Optional[str]:
+        """
+        فراخوانی Google AI Studio (Gemini) API با پشتیبانی از key rotation
+        
+        Args:
+            messages: لیست پیام‌ها
+            temperature: درجه حرارت
+            api_key: کلید API خاص (برای key rotation)
+        
+        Returns:
+            متن تولید شده یا None در صورت خطا
+        """
+        # Use provided API key or first available key
+        if api_key is None:
+            if self.google_keys:
+                api_key = self.google_keys[0]
+            elif hasattr(self, 'api_key') and self.api_key:
+                api_key = self.api_key
+            else:
+                logger.error("No Google API key available")
+                return None
+        
         headers = {
             'Content-Type': 'application/json'
         }
         
         # تبدیل پیام‌ها به فرمت Gemini
-        # ترکیب system prompt و user prompt در یک پیام (مطابق کد نمونه)
         system_instruction = None
         user_prompt = ""
         
@@ -235,8 +306,6 @@ class AIService:
                 else:
                     user_prompt = msg['content']
         
-        # ساخت درخواست مطابق با فرمت Google
-        # طبق کد نمونه، system prompt و user prompt را در یک parts قرار می‌دهیم
         combined_text = f"{system_instruction}\n\n{user_prompt}" if system_instruction else user_prompt
         
         data = {
@@ -251,13 +320,17 @@ class AIService:
             }
         }
         
-        # استفاده از مدل بدون prefix models/ در صورت وجود
-        model_name = self.model
+        # Use Google model from settings
+        model_name = self.google_model
         if not model_name.startswith('models/'):
             model_name = f'models/{model_name}'
         
-        # استفاده از query parameter برای API key (مطابق کد نمونه)
-        url = f'{self.api_base_url}/{model_name}:generateContent?key={self.api_key}'
+        # Build URL with API key
+        url = f'{self.google_api_base_url}/{model_name}:generateContent?key={api_key}'
+        
+        # Track if we've tried fallback model
+        fallback_attempted = False
+        original_model = model_name
         
         max_retries = self.max_retries
         for attempt in range(max_retries):
@@ -271,20 +344,38 @@ class AIService:
                 )
                 
                 # بررسی status code قبل از raise_for_status
-                if response.status_code == 429:
+                # Handle 404 Not Found - try fallback model
+                if response.status_code == 404:
                     error_detail = ""
                     try:
                         error_json = response.json()
                         error_detail = error_json.get('error', {}).get('message', '')
                     except:
                         error_detail = response.text[:200]
-                    error_msg = f"Too Many Requests (429) - {error_detail}"
-                    logger.error(f"خطا در فراخوانی Google AI API: {error_msg}")
-                    if attempt < max_retries - 1:
-                        time.sleep(2 ** attempt)  # Exponential backoff
+                    
+                    # Try fallback to gemini-pro if we haven't already and it's a gemini model
+                    if not fallback_attempted and 'gemini' in original_model.lower():
+                        logger.warning(f"Model '{original_model}' returned 404. Trying fallback 'gemini-pro'")
+                        fallback_attempted = True
+                        model_name = 'models/gemini-pro'
+                        url = f'{self.google_api_base_url}/{model_name}:generateContent?key={api_key}'
+                        # Retry with fallback model
                         continue
                     else:
-                        raise Exception(f"محدودیت quota/rate limit: {error_detail}")
+                        raise Exception(f"Model not found (404): {error_detail}")
+                
+                # Handle rate limiting (429) and forbidden (403) - these should trigger key rotation or fallback
+                if response.status_code == 429 or response.status_code == 403:
+                    error_detail = ""
+                    try:
+                        error_json = response.json()
+                        error_detail = error_json.get('error', {}).get('message', '')
+                    except:
+                        error_detail = response.text[:200]
+                    error_msg = f"Rate Limit/Forbidden ({response.status_code}) - {error_detail}"
+                    logger.warning(f"Google AI API rate limit/forbidden: {error_msg}")
+                    # Raise exception to trigger key rotation or fallback to next provider
+                    raise Exception(f"RATE_LIMIT_ERROR:{error_detail}")
                 
                 response.raise_for_status()
                 result = response.json()
@@ -324,6 +415,40 @@ class AIService:
                     logger.error(f"Timeout after {max_retries} attempts: {str(timeout_error)}")
                     raise Exception(f"خطا در timeout اتصال به Google AI: {str(timeout_error)}")
             except requests.exceptions.HTTPError as e:
+                # Handle rate limiting (429) and forbidden (403) - trigger fallback
+                if e.response and (e.response.status_code == 429 or e.response.status_code == 403):
+                    error_detail = ""
+                    try:
+                        error_json = e.response.json()
+                        error_detail = error_json.get('error', {}).get('message', '')
+                    except:
+                        error_detail = e.response.text[:200] if e.response else str(e)
+                    logger.warning(f"Google AI API rate limit/forbidden ({e.response.status_code}): {error_detail}")
+                    raise Exception(f"RATE_LIMIT_ERROR:{error_detail}")
+                
+                # Handle 404 Not Found with fallback
+                if e.response and e.response.status_code == 404:
+                    error_detail = ""
+                    try:
+                        error_json = e.response.json()
+                        error_detail = error_json.get('error', {}).get('message', '')
+                    except:
+                        error_detail = e.response.text[:200] if e.response else str(e)
+                    
+                    # Try fallback to gemini-pro if we haven't already and it's a gemini model
+                    if not fallback_attempted and 'gemini' in original_model.lower():
+                        logger.warning(f"Model '{original_model}' returned 404. Trying fallback 'gemini-pro'")
+                        fallback_attempted = True
+                        model_name = 'models/gemini-pro'
+                        url = f'{self.google_api_base_url}/{model_name}:generateContent?key={api_key}'
+                        # Retry with fallback model
+                        if attempt < max_retries - 1:
+                            continue
+                        else:
+                            raise Exception(f"Model not found (404) even with fallback: {error_detail}")
+                    else:
+                        raise Exception(f"Model not found (404): {error_detail}")
+                
                 if e.response and e.response.status_code == 400:
                     error_detail = ""
                     try:
@@ -353,8 +478,11 @@ class AIService:
                     logger.error(f"Request Error after {max_retries} attempts: {str(req_error)}")
                     raise Exception(f"خطا در درخواست به Google AI: {str(req_error)}")
             except Exception as e:
+                # Check if this is a rate limit error (should trigger fallback)
+                if 'RATE_LIMIT_ERROR' in str(e):
+                    raise  # Re-raise to trigger key rotation or provider fallback
                 # برای خطاهای دیگر که از خودمان raise کردیم
-                if attempt < max_retries - 1 and 'quota' not in str(e).lower() and '429' not in str(e):
+                if attempt < max_retries - 1 and 'quota' not in str(e).lower() and '429' not in str(e) and '403' not in str(e):
                     logger.warning(f"Error (attempt {attempt + 1}/{max_retries}): {str(e)}")
                     time.sleep(2 ** attempt)
                     continue
@@ -399,6 +527,256 @@ class AIService:
                     logger.error(f"خطا در فراخوانی Local API: {e}")
                     return None
     
+    def _call_groq_api(self, messages: List[Dict], temperature: float = 0.7) -> Optional[str]:
+        """
+        فراخوانی Groq API (Secondary Provider - Fast Llama 3)
+        
+        Args:
+            messages: لیست پیام‌ها
+            temperature: درجه حرارت
+        
+        Returns:
+            متن تولید شده یا None در صورت خطا
+        """
+        if not self.groq_key:
+            logger.warning("Groq API key not configured")
+            return None
+        
+        headers = {
+            'Authorization': f'Bearer {self.groq_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        data = {
+            'model': self.groq_model,
+            'messages': messages,
+            'temperature': temperature,
+            'max_tokens': 8192,
+        }
+        
+        url = f'{self.groq_api_base_url}/chat/completions'
+        
+        max_retries = self.max_retries
+        for attempt in range(max_retries):
+            try:
+                response = self.session.post(
+                    url,
+                    headers=headers,
+                    json=data,
+                    timeout=(15, self.timeout),
+                    verify=True
+                )
+                response.raise_for_status()
+                result = response.json()
+                return result.get('choices', [{}])[0].get('message', {}).get('content', '')
+            except requests.exceptions.HTTPError as e:
+                if e.response and (e.response.status_code == 429 or e.response.status_code == 403):
+                    error_detail = ""
+                    try:
+                        error_json = e.response.json()
+                        error_detail = error_json.get('error', {}).get('message', '')
+                    except:
+                        error_detail = e.response.text[:200] if e.response else str(e)
+                    logger.warning(f"Groq API rate limit/forbidden ({e.response.status_code}): {error_detail}")
+                    raise Exception(f"RATE_LIMIT_ERROR:{error_detail}")
+                if attempt < max_retries - 1:
+                    logger.warning(f"HTTP Error (attempt {attempt + 1}/{max_retries}): {str(e)}")
+                    time.sleep(2 ** attempt)
+                    continue
+                else:
+                    raise
+            except requests.exceptions.Timeout as timeout_error:
+                logger.warning(f"Timeout Error (attempt {attempt + 1}/{max_retries}): {str(timeout_error)}")
+                if attempt < max_retries - 1:
+                    time.sleep(2 ** attempt)
+                    continue
+                else:
+                    logger.error(f"Timeout after {max_retries} attempts: {str(timeout_error)}")
+                    return None
+            except requests.exceptions.RequestException as e:
+                if attempt < max_retries - 1:
+                    logger.warning(f"Request Error (attempt {attempt + 1}/{max_retries}): {str(e)}")
+                    time.sleep(2 ** attempt)
+                    continue
+                else:
+                    logger.error(f"خطا در فراخوانی Groq API: {e}")
+                    return None
+            except Exception as e:
+                if 'RATE_LIMIT_ERROR' in str(e):
+                    raise
+                if attempt < max_retries - 1:
+                    logger.warning(f"Error (attempt {attempt + 1}/{max_retries}): {str(e)}")
+                    time.sleep(2 ** attempt)
+                    continue
+                else:
+                    raise
+    
+    def _call_openrouter_api(self, messages: List[Dict], temperature: float = 0.7) -> Optional[str]:
+        """
+        فراخوانی OpenRouter API (Tertiary Provider - Final Fallback)
+        
+        Args:
+            messages: لیست پیام‌ها
+            temperature: درجه حرارت
+        
+        Returns:
+            متن تولید شده یا None در صورت خطا
+        """
+        if not self.openrouter_key:
+            logger.warning("OpenRouter API key not configured")
+            return None
+        
+        headers = {
+            'Authorization': f'Bearer {self.openrouter_key}',
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://github.com/your-org/your-repo',  # Optional but recommended
+            'X-Title': 'HSC AI Service'  # Optional but recommended
+        }
+        
+        data = {
+            'model': self.openrouter_model,
+            'messages': messages,
+            'temperature': temperature,
+            'max_tokens': 8192,
+        }
+        
+        url = f'{self.openrouter_api_base_url}/chat/completions'
+        
+        max_retries = self.max_retries
+        for attempt in range(max_retries):
+            try:
+                response = self.session.post(
+                    url,
+                    headers=headers,
+                    json=data,
+                    timeout=(15, self.timeout),
+                    verify=True
+                )
+                response.raise_for_status()
+                result = response.json()
+                return result.get('choices', [{}])[0].get('message', {}).get('content', '')
+            except requests.exceptions.HTTPError as e:
+                if e.response and (e.response.status_code == 429 or e.response.status_code == 403):
+                    error_detail = ""
+                    try:
+                        error_json = e.response.json()
+                        error_detail = error_json.get('error', {}).get('message', '')
+                    except:
+                        error_detail = e.response.text[:200] if e.response else str(e)
+                    logger.warning(f"OpenRouter API rate limit/forbidden ({e.response.status_code}): {error_detail}")
+                    raise Exception(f"RATE_LIMIT_ERROR:{error_detail}")
+                if attempt < max_retries - 1:
+                    logger.warning(f"HTTP Error (attempt {attempt + 1}/{max_retries}): {str(e)}")
+                    time.sleep(2 ** attempt)
+                    continue
+                else:
+                    raise
+            except requests.exceptions.Timeout as timeout_error:
+                logger.warning(f"Timeout Error (attempt {attempt + 1}/{max_retries}): {str(timeout_error)}")
+                if attempt < max_retries - 1:
+                    time.sleep(2 ** attempt)
+                    continue
+                else:
+                    logger.error(f"Timeout after {max_retries} attempts: {str(timeout_error)}")
+                    return None
+            except requests.exceptions.RequestException as e:
+                if attempt < max_retries - 1:
+                    logger.warning(f"Request Error (attempt {attempt + 1}/{max_retries}): {str(e)}")
+                    time.sleep(2 ** attempt)
+                    continue
+                else:
+                    logger.error(f"خطا در فراخوانی OpenRouter API: {e}")
+                    return None
+            except Exception as e:
+                if 'RATE_LIMIT_ERROR' in str(e):
+                    raise
+                if attempt < max_retries - 1:
+                    logger.warning(f"Error (attempt {attempt + 1}/{max_retries}): {str(e)}")
+                    time.sleep(2 ** attempt)
+                    continue
+                else:
+                    raise
+    
+    def _call_with_fallback(self, messages: List[Dict], temperature: float = 0.7) -> Optional[str]:
+        """
+        Master fallback method that tries providers in order:
+        1. Google Gemini (with key rotation)
+        2. Groq (Secondary)
+        3. OpenRouter (Tertiary)
+        
+        Args:
+            messages: لیست پیام‌ها
+            temperature: درجه حرارت
+        
+        Returns:
+            متن تولید شده یا None در صورت خطا
+        """
+        last_error = None
+        
+        # Step 1: Try Google Gemini with Key Rotation
+        if self.google_keys:
+            logger.info(f"Attempting Google Gemini API with {len(self.google_keys)} key(s)")
+            for key_index, api_key in enumerate(self.google_keys):
+                try:
+                    logger.debug(f"Trying Google API key {key_index + 1}/{len(self.google_keys)}")
+                    result = self._call_google_api(messages, temperature, api_key=api_key)
+                    if result:
+                        logger.info(f"Successfully used Google Gemini API (key {key_index + 1})")
+                        return result
+                except Exception as e:
+                    error_msg = str(e)
+                    if 'RATE_LIMIT_ERROR' in error_msg:
+                        logger.warning(f"Google API key {key_index + 1} rate limited, trying next key...")
+                        last_error = e
+                        continue  # Try next key
+                    else:
+                        logger.warning(f"Google API key {key_index + 1} failed: {error_msg}")
+                        last_error = e
+                        # Continue to next key for other errors too
+                        continue
+            
+            # All Google keys exhausted
+            logger.warning("All Google API keys exhausted, falling back to Groq")
+        else:
+            logger.warning("No Google API keys configured, skipping to Groq")
+        
+        # Step 2: Try Groq (Secondary Provider)
+        if self.groq_key:
+            logger.info("Attempting Groq API (Secondary Provider)")
+            try:
+                result = self._call_groq_api(messages, temperature)
+                if result:
+                    logger.info("Successfully used Groq API")
+                    return result
+            except Exception as e:
+                error_msg = str(e)
+                if 'RATE_LIMIT_ERROR' in error_msg:
+                    logger.warning("Groq API rate limited, falling back to OpenRouter")
+                else:
+                    logger.warning(f"Groq API failed: {error_msg}")
+                last_error = e
+        else:
+            logger.warning("Groq API key not configured, skipping to OpenRouter")
+        
+        # Step 3: Try OpenRouter (Tertiary Provider - Final Fallback)
+        if self.openrouter_key:
+            logger.info("Attempting OpenRouter API (Tertiary Provider - Final Fallback)")
+            try:
+                result = self._call_openrouter_api(messages, temperature)
+                if result:
+                    logger.info("Successfully used OpenRouter API")
+                    return result
+            except Exception as e:
+                error_msg = str(e)
+                logger.error(f"OpenRouter API failed: {error_msg}")
+                last_error = e
+        else:
+            logger.warning("OpenRouter API key not configured")
+        
+        # All providers failed
+        logger.error("All AI providers failed. Last error: %s", str(last_error) if last_error else "Unknown")
+        return None
+    
     def generate_text(
         self,
         prompt: str,
@@ -408,7 +786,7 @@ class AIService:
         use_cache: bool = True
     ) -> Optional[str]:
         """
-        تولید متن با استفاده از AI
+        تولید متن با استفاده از AI با سیستم Fallback چند-Provider
         
         Args:
             prompt: متن درخواست
@@ -420,10 +798,6 @@ class AIService:
         Returns:
             متن تولید شده یا None در صورت خطا
         """
-        if not self.api_key and self.provider != 'local':
-            logger.warning("API Key تنظیم نشده است")
-            return None
-        
         # بررسی کش
         if use_cache:
             cache_key = self._get_cache_key(prompt, context)
@@ -455,19 +829,28 @@ class AIService:
         if temperature is None:
             temperature = getattr(self, 'temperature', 0.7)
         
-        # فراخوانی API بر اساس provider
-        result = None
-        if self.provider == 'openai':
-            result = self._call_openai_api(messages, temperature)
-        elif self.provider == 'anthropic':
-            result = self._call_anthropic_api(messages, temperature)
-        elif self.provider == 'google':
-            result = self._call_google_api(messages, temperature)
-        elif self.provider == 'local':
-            result = self._call_local_api(messages, temperature)
+        # Use multi-provider fallback system if configured
+        if self.google_keys or self.groq_key or self.openrouter_key:
+            result = self._call_with_fallback(messages, temperature)
         else:
-            logger.error(f"Provider نامعتبر: {self.provider}")
-            return None
+            # Fallback to legacy single-provider mode
+            logger.warning("Multi-provider keys not configured, using legacy single-provider mode")
+            if not self.api_key and self.provider != 'local':
+                logger.warning("API Key تنظیم نشده است")
+                return None
+            
+            # فراخوانی API بر اساس provider
+            if self.provider == 'openai':
+                result = self._call_openai_api(messages, temperature)
+            elif self.provider == 'anthropic':
+                result = self._call_anthropic_api(messages, temperature)
+            elif self.provider == 'google':
+                result = self._call_google_api(messages, temperature)
+            elif self.provider == 'local':
+                result = self._call_local_api(messages, temperature)
+            else:
+                logger.error(f"Provider نامعتبر: {self.provider}")
+                return None
         
         # ذخیره در کش
         if result and use_cache:
