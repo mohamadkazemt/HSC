@@ -1051,6 +1051,69 @@ def api_get_users_for_replacement(request):
 
 
 @login_required
+def api_get_all_users(request):
+    """API برای دریافت همه کاربران (بدون فیلتر بخش) - مخصوص مدیریت تأیید کنندگان"""
+    
+    # فقط سوپریوزر
+    if not request.user.is_superuser:
+        return JsonResponse({
+            'results': [],
+            'pagination': {'more': False}
+        }, status=403)
+    
+    search_term = request.GET.get('q', '')
+    page = int(request.GET.get('page', 1))
+    page_size = 20
+    
+    # همه کاربران فعال (بدون فیلتر بخش)
+    users = User.objects.filter(is_active=True)
+    
+    # جستجو - شامل نام، نام خانوادگی، username و کد پرسنلی
+    if search_term:
+        users = users.filter(
+            Q(first_name__icontains=search_term) |
+            Q(last_name__icontains=search_term) |
+            Q(username__icontains=search_term) |
+            Q(userprofile__personnel_code__icontains=search_term)
+        )
+    
+    # Pagination
+    start = (page - 1) * page_size
+    end = start + page_size
+    total_count = users.count()
+    users_page = users.select_related('userprofile')[start:end]
+    
+    results = []
+    for user in users_page:
+        profile = getattr(user, 'userprofile', None)
+        full_name = user.get_full_name() or user.username
+        personnel_code = profile.personnel_code if profile and profile.personnel_code else ''
+        position = profile.position.name if profile and profile.position else ''
+        section = profile.section.name if profile and profile.section else ''
+        
+        # ساخت متن نمایشی با نام، کد پرسنلی، سمت و بخش
+        text_parts = [full_name]
+        if personnel_code:
+            text_parts.append(f"کد: {personnel_code}")
+        if position:
+            text_parts.append(f"({position})")
+        if section:
+            text_parts.append(f"[{section}]")
+        
+        text = " - ".join(text_parts)
+        
+        results.append({
+            'id': user.id,
+            'text': text
+        })
+    
+    return JsonResponse({
+        'results': results,
+        'pagination': {'more': end < total_count}
+    })
+
+
+@login_required
 def api_get_parts_by_section(request):
     """API برای دریافت قسمت‌ها بر اساس بخش"""
     

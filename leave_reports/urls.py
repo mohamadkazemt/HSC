@@ -92,6 +92,12 @@ URLS_WITH_LABELS = [
         "label": "مرخصی_API لیست پروفایل کاربران",
     },
     {
+        "path": "api/all-users/",
+        "view": views.api_get_all_users,
+        "name": "api_all_users",
+        "label": "مرخصی_API لیست همه کاربران",
+    },
+    {
         "path": "api/parts-by-section/",
         "view": views.api_get_parts_by_section,
         "name": "api_parts_by_section",

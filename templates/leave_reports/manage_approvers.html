@@ -431,7 +431,7 @@ function approversManager() {
                 
                 $('#id_specific_users').select2({
                     ajax: {
-                        url: '{% url "leave_reports:api_users_for_replacement" %}',
+                        url: '{% url "leave_reports:api_all_users" %}',
                         dataType: 'json',
                         delay: 250,
                         data: function (params) {
