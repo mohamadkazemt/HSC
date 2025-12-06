@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.http import HttpResponse, JsonResponse
 from django.core.paginator import Paginator
-from django.db.models import Q, Count, Sum, F
+from django.db.models import Q, Count, Sum, F, Subquery, OuterRef
 from django.utils import timezone
 from django.template.loader import render_to_string
 import json
@@ -842,10 +842,15 @@ def dashboard(request):
     equip_calibration_overdue = EmergencyEquipment.objects.filter(next_calibration_date__lt=timezone.now().date()).count()
     
     # خدمات پرمصرف
-    # For ManyToMany reverse relationship, use medicalvisit (lowercase model name)
-    popular_services = MedicalService.objects.annotate(
-        usage_count=Count('medicalvisit')
-    ).order_by('-usage_count')[:5]
+    # For ManyToMany relationship, count through the reverse relation
+    # Count MedicalVisit objects that have this service in their services ManyToMany field
+    popular_services = []
+    for service in MedicalService.objects.all():
+        count = MedicalVisit.objects.filter(services=service).count()
+        service.usage_count = count  # Add usage_count attribute to service object
+        popular_services.append(service)
+    popular_services.sort(key=lambda x: x.usage_count, reverse=True)
+    popular_services = popular_services[:5]
     
     # داروهای پرمصرف
     popular_medicines = Medicine.objects.annotate(
