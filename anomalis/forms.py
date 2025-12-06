@@ -76,8 +76,15 @@ class AnomalyForm(forms.ModelForm):
 
         # بررسی ارتباط بین anomalydescription و correctiveaction
         correctiveaction = cleaned_data.get('correctiveaction')
-        if anomalydescription and correctiveaction and correctiveaction.anomali_type != anomalydescription:
-            self.add_error('correctiveaction', 'اقدام اصلاحی باید مرتبط با شرح آنومالی باشد')
+        
+        # بررسی اینکه آیا correctiveaction انتخاب شده است
+        if not correctiveaction:
+            # اگر correctiveaction انتخاب نشده باشد، خطا نمایش داده می‌شود (required=True)
+            pass
+        elif anomalydescription:
+            # بررسی اینکه آیا correctiveaction متعلق به anomalydescription انتخاب شده است
+            if correctiveaction.anomali_type != anomalydescription:
+                self.add_error('correctiveaction', 'یک گزینه معتبر انتخاب کنید. آن گزینه از گزینه های موجود نیست.')
 
         return cleaned_data
 
@@ -214,8 +221,9 @@ class AnomalyForm(forms.ModelForm):
                 anomali_type=instance.anomalydescription
             )
         else:
-            # اگر instance وجود ندارد، queryset را خالی کن تا از طریق JavaScript پر شود
-            self.fields['correctiveaction'].queryset = CorrectiveAction.objects.none()
+            # اگر instance وجود ندارد، همه اقدامات اصلاحی را نمایش بده
+            # اعتبارسنجی در clean() بررسی می‌کند که آیا correctiveaction متعلق به anomalydescription است
+            self.fields['correctiveaction'].queryset = CorrectiveAction.objects.all()
 
         # تنظیم اجباری بودن فیلدها
         required_fields = ['location', 'anomalytype', 'followup', 'anomalydescription',

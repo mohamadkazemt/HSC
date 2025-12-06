@@ -144,17 +144,25 @@ class Anomaly(models.Model):
 
     def __str__(self):
         """نمایش اطلاعات آنومالی برای dropdown و نمایش"""
-        try:
-            import jdatetime
-            jalali_date = jdatetime.date.fromgregorian(date=self.created_at.date())
-            date_str = jalali_date.strftime('%Y/%m/%d')
-        except:
-            date_str = self.created_at.strftime('%Y-%m-%d')
+        # بررسی اینکه آیا created_at وجود دارد یا نه (برای instance های جدید که هنوز ذخیره نشده‌اند)
+        if self.created_at:
+            try:
+                import jdatetime
+                jalali_date = jdatetime.date.fromgregorian(date=self.created_at.date())
+                date_str = jalali_date.strftime('%Y/%m/%d')
+            except:
+                try:
+                    date_str = self.created_at.strftime('%Y-%m-%d')
+                except:
+                    date_str = 'تاریخ نامعتبر'
+        else:
+            date_str = 'در حال ثبت'
         
         location_str = f" - {self.location.name}" if self.location else ""
-        desc_short = self.description[:50] + '...' if len(self.description) > 50 else self.description
+        desc_short = self.description[:50] + '...' if self.description and len(self.description) > 50 else (self.description or 'بدون توضیحات')
         
-        return f"آنومالی #{self.id} - {date_str} - {desc_short}{location_str}"
+        anomaly_id = f"#{self.id}" if self.id else "جدید"
+        return f"آنومالی {anomaly_id} - {date_str} - {desc_short}{location_str}"
 
 
 
