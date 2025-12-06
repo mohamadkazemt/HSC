@@ -38,9 +38,8 @@ def ai_settings_view(request):
         if form.is_valid():
             form.save()
             # Reset singleton instance
-            from .ai_service import _ai_service_instance
-            global _ai_service_instance
-            _ai_service_instance = None
+            import core.ai_service as ai_service_module
+            ai_service_module._ai_service_instance = None
             
             messages.success(request, 'تنظیمات AI با موفقیت به‌روزرسانی شد!')
             return redirect('core:ai_settings')
@@ -58,6 +57,14 @@ def ai_settings_view(request):
     
     # Get multi-provider configuration status
     from django.conf import settings as django_settings
+    import os
+    
+    # Check environment variables directly (for debugging)
+    google_keys_env = os.environ.get('GOOGLE_API_KEYS', '')
+    groq_key_env = os.environ.get('GROQ_API_KEY', '')
+    openrouter_key_env = os.environ.get('OPENROUTER_API_KEY', '')
+    
+    # Get from Django settings (which should load from .env via decouple)
     google_keys = getattr(django_settings, 'GOOGLE_API_KEYS', [])
     google_keys_count = len(google_keys) if google_keys else 0
     groq_configured = bool(getattr(django_settings, 'GROQ_API_KEY', ''))
@@ -65,6 +72,17 @@ def ai_settings_view(request):
     google_model = getattr(django_settings, 'GOOGLE_DEFAULT_MODEL', 'gemini-2.0-flash-lite')
     groq_model = getattr(django_settings, 'GROQ_MODEL', 'llama3-70b-8192')
     openrouter_model = getattr(django_settings, 'OPENROUTER_MODEL', 'google/gemini-2.0-flash-lite:free')
+    
+    # Debug info (for troubleshooting)
+    env_debug = {
+        'google_keys_from_env': bool(google_keys_env),
+        'google_keys_from_settings': google_keys_count,
+        'groq_from_env': bool(groq_key_env),
+        'groq_from_settings': groq_configured,
+        'openrouter_from_env': bool(openrouter_key_env),
+        'openrouter_from_settings': openrouter_configured,
+        'using_decouple': hasattr(django_settings, 'USE_DECOUPLE') and getattr(django_settings, 'USE_DECOUPLE', False),
+    }
     
     context = {
         'form': form,
@@ -78,6 +96,8 @@ def ai_settings_view(request):
         'google_model': google_model,
         'groq_model': groq_model,
         'openrouter_model': openrouter_model,
+        # Debug info
+        'env_debug': env_debug,
     }
     
     return render(request, 'core/ai_settings.html', context)

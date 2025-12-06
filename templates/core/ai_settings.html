@@ -420,6 +420,48 @@
               این تنظیمات باید در فایل <code class="bg-gray-200 dark:bg-gray-800 px-1 rounded">.env</code> یا environment variables سرور تنظیم شوند.
             </p>
           </div>
+          
+          <!-- Debug Info -->
+          {% if env_debug %}
+          <div class="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+            <h5 class="text-xs font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+              <i class="fas fa-bug ml-1"></i>
+              اطلاعات دیباگ (برای عیب‌یابی)
+            </h5>
+            <div class="text-xs text-yellow-700 dark:text-yellow-300 space-y-1">
+              <p><strong>وضعیت خواندن Environment Variables:</strong></p>
+              <ul class="list-disc list-inside space-y-1 mr-4">
+                <li>Google Keys از Settings: <strong>{{ env_debug.google_keys_from_settings }}</strong> کلید</li>
+                <li>Groq از Settings: <strong>{% if env_debug.groq_from_settings %}✓ فعال{% else %}✗ غیرفعال{% endif %}</strong></li>
+                <li>OpenRouter از Settings: <strong>{% if env_debug.openrouter_from_settings %}✓ فعال{% else %}✗ غیرفعال{% endif %}</strong></li>
+                <li>استفاده از python-decouple: <strong>{% if env_debug.using_decouple %}✓ بله{% else %}✗ خیر (از os.environ استفاده می‌شود){% endif %}</strong></li>
+              </ul>
+              {% if not env_debug.using_decouple %}
+              <div class="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded border border-red-200 dark:border-red-800">
+                <p class="text-red-800 dark:text-red-200">
+                  <i class="fas fa-exclamation-circle ml-1"></i>
+                  <strong>هشدار:</strong> python-decouple نصب نشده است. برای خواندن فایل .env، باید آن را نصب کنید:
+                  <code class="block mt-1 bg-red-100 dark:bg-red-900 px-2 py-1 rounded">pip install python-decouple</code>
+                </p>
+              </div>
+              {% endif %}
+              {% if env_debug.google_keys_from_settings == 0 and env_debug.groq_from_settings == False and env_debug.openrouter_from_settings == False %}
+              <div class="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded border border-blue-200 dark:border-blue-800">
+                <p class="text-blue-800 dark:text-blue-200">
+                  <i class="fas fa-info-circle ml-1"></i>
+                  <strong>راهکار:</strong>
+                  <ol class="list-decimal list-inside space-y-1 mt-1 mr-4">
+                    <li>مطمئن شوید فایل <code>.env</code> در root directory پروژه (همان جایی که <code>manage.py</code> است) قرار دارد.</li>
+                    <li>مطمئن شوید که <code>python-decouple</code> نصب شده است: <code>pip install python-decouple</code></li>
+                    <li>سرور Django را restart کنید (تغییرات در .env نیاز به restart دارد).</li>
+                    <li>مطمئن شوید که در فایل .env هیچ space اضافی قبل یا بعد از = وجود ندارد.</li>
+                  </ol>
+                </p>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
         </div>
       </div>
     </div>

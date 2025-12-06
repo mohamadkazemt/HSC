@@ -15,6 +15,19 @@ from pathlib import Path
 from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime
 
+# Load environment variables from .env file using python-decouple
+try:
+    from decouple import config
+    USE_DECOUPLE = True
+except ImportError:
+    # Fallback to os.environ if decouple is not installed
+    USE_DECOUPLE = False
+    def config(key, default='', cast=None):
+        value = os.environ.get(key, default)
+        if cast and value:
+            return cast(value)
+        return value
+
 # Import celery schedules فقط اگر celery دسترسی داشته باشد
 try:
     from celery.schedules import crontab
@@ -577,28 +590,29 @@ AI_CACHE_TIMEOUT = int(os.environ.get('AI_CACHE_TIMEOUT', '3600'))  # 1 hour
 
 # Multi-Provider AI Configuration with Fallback Support
 # Google Gemini API Keys (comma-separated for key rotation)
+google_keys_str = config('GOOGLE_API_KEYS', default='')
 GOOGLE_API_KEYS = [
     key.strip() 
-    for key in os.environ.get('GOOGLE_API_KEYS', '').split(',') 
+    for key in google_keys_str.split(',') 
     if key.strip()
 ]
 
 # Groq API Key (Secondary Provider - Fast Llama 3)
-GROQ_API_KEY = os.environ.get('GROQ_API_KEY', '')
+GROQ_API_KEY = config('GROQ_API_KEY', default='')
 
 # OpenRouter API Key (Tertiary Provider - Final Fallback)
-OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '')
+OPENROUTER_API_KEY = config('OPENROUTER_API_KEY', default='')
 
 # Provider API Base URLs (Default Endpoints)
-GOOGLE_API_BASE_URL = os.environ.get('GOOGLE_API_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta')
-GROQ_API_BASE_URL = os.environ.get('GROQ_API_BASE_URL', 'https://api.groq.com/openai/v1')
-OPENROUTER_API_BASE_URL = os.environ.get('OPENROUTER_API_BASE_URL', 'https://openrouter.ai/api/v1')
+GOOGLE_API_BASE_URL = config('GOOGLE_API_BASE_URL', default='https://generativelanguage.googleapis.com/v1beta')
+GROQ_API_BASE_URL = config('GROQ_API_BASE_URL', default='https://api.groq.com/openai/v1')
+OPENROUTER_API_BASE_URL = config('OPENROUTER_API_BASE_URL', default='https://openrouter.ai/api/v1')
 
 # Default Google Model
-GOOGLE_DEFAULT_MODEL = os.environ.get('GOOGLE_DEFAULT_MODEL', 'gemini-2.0-flash-lite')
+GOOGLE_DEFAULT_MODEL = config('GOOGLE_DEFAULT_MODEL', default='gemini-2.0-flash-lite')
 
 # Groq Model
-GROQ_MODEL = os.environ.get('GROQ_MODEL', 'llama3-70b-8192')  # Alternative: 'mixtral-8x7b-32768'
+GROQ_MODEL = config('GROQ_MODEL', default='llama3-70b-8192')  # Alternative: 'mixtral-8x7b-32768'
 
 # OpenRouter Model
-OPENROUTER_MODEL = os.environ.get('OPENROUTER_MODEL', 'google/gemini-2.0-flash-lite:free')  # Alternative: 'meta-llama/llama-3-8b-instruct' 
+OPENROUTER_MODEL = config('OPENROUTER_MODEL', default='google/gemini-2.0-flash-lite:free')  # Alternative: 'meta-llama/llama-3-8b-instruct' 
