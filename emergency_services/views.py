@@ -821,9 +821,14 @@ def dashboard(request):
     # آمار خاص بر اساس نقش
     my_visits_count = 0
     my_recent_visits = []
-    if user_role in ['DOCTOR', 'NURSE', 'PARAMEDIC']:
-        my_visits_count = MedicalVisit.objects.filter(created_by=request.user).count()
-        my_recent_visits = MedicalVisit.objects.filter(created_by=request.user).order_by('-visit_time')[:5]
+    if user_role in ['EmergencyDoctor', 'EmergencyNurse']:
+        # created_by is ForeignKey to UserProfile, so we need to filter by userprofile__user
+        try:
+            user_profile = request.user.userprofile
+            my_visits_count = MedicalVisit.objects.filter(created_by=user_profile).count()
+            my_recent_visits = MedicalVisit.objects.filter(created_by=user_profile).order_by('-visit_time')[:5]
+        except:
+            pass
     
     # آمار داروها
     total_medicines = Medicine.objects.count()
@@ -837,8 +842,9 @@ def dashboard(request):
     equip_calibration_overdue = EmergencyEquipment.objects.filter(next_calibration_date__lt=timezone.now().date()).count()
     
     # خدمات پرمصرف
+    # For ManyToMany reverse relationship, use medicalvisit_set (lowercase model name + _set)
     popular_services = MedicalService.objects.annotate(
-        usage_count=Count('medicalvisit')
+        usage_count=Count('medicalvisit_set')
     ).order_by('-usage_count')[:5]
     
     # داروهای پرمصرف

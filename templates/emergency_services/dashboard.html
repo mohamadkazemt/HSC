@@ -11,7 +11,15 @@
       <h1 class="text-2xl font-bold">سلام {{ request.user.get_full_name|default:request.user.username }}</h1>
       <p class="text-rose-100 mt-1">
         {% if user_role %}
-          شما به عنوان <span class="font-semibold">{{ request.user.emergency_personnel.get_role_display }}</span> وارد پورتال اورژانس شده‌اید
+          {% if user_role == 'EmergencyManager' %}
+            شما به عنوان <span class="font-semibold">مدیر اورژانس</span> وارد پورتال اورژانس شده‌اید
+          {% elif user_role == 'EmergencyDoctor' %}
+            شما به عنوان <span class="font-semibold">پزشک اورژانس</span> وارد پورتال اورژانس شده‌اید
+          {% elif user_role == 'EmergencyNurse' %}
+            شما به عنوان <span class="font-semibold">پرستار اورژانس</span> وارد پورتال اورژانس شده‌اید
+          {% else %}
+            شما به عنوان <span class="font-semibold">{{ user_role }}</span> وارد پورتال اورژانس شده‌اید
+          {% endif %}
         {% else %}
           خوش آمدید به پورتال اورژانس
         {% endif %}

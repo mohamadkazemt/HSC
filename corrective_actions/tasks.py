@@ -21,7 +21,7 @@ def check_unresolved_anomalies(self, days_threshold: int = 5):
     try:
         from anomalis.models import Anomaly
         from corrective_actions.ai_automation import CorrectiveActionAutomation
-        from dashboard.utils import safe_notification
+        from dashboard.notification_utils import safe_notification
         
         if Anomaly is None:
             logger.warning("مدل Anomaly در دسترس نیست")
@@ -94,7 +94,7 @@ def check_high_risk_assessments(self):
     try:
         from risk_assessment.models import RiskAssessment
         from corrective_actions.ai_automation import CorrectiveActionAutomation
-        from dashboard.utils import safe_notification
+        from dashboard.notification_utils import safe_notification
         
         if RiskAssessment is None:
             logger.warning("مدل RiskAssessment در دسترس نیست")
