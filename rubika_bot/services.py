@@ -675,21 +675,14 @@ class RubikaBotEngine:
             
             # Send file using async method
             try:
-                # Use _run_sync from RubPyIntegrationService to run async method in the dedicated loop
-                def send_file_sync():
-                    from rubika_bot.services import RubPyIntegrationService
-                    service = RubPyIntegrationService.get_instance()
-                    return service._run_sync(
-                        service.client.send_file(
-                            chat_id=chat_id,
-                            file=file_path,
-                            file_name=filename,
-                            text=f'💰 فیش حقوقی {month_name} {year}',
-                            type='File'
-                        )
-                    )
-                
-                await sync_to_async(send_file_sync, thread_sensitive=True)()
+                # Use engine's async _send_file method which properly handles the async call
+                await self._send_file(
+                    chat_id=chat_id,
+                    file_path=file_path,
+                    file_name=filename,
+                    text=f'💰 فیش حقوقی {month_name} {year}',
+                    file_type='File'
+                )
                 logger.info(f"Sent payslip file to {chat_id}: {year}/{month}")
                 
                 # ارسال پیام با دکمه‌های بازگشت
@@ -755,6 +748,33 @@ class RubikaBotEngine:
         except Exception as exc:
             logger.exception("Failed to send message to chat %s", chat_id)
             await sync_to_async(WebhookLog.log_error, thread_sensitive=True)('ارسال پیام ناموفق', str(exc), {'chat_id': chat_id})
+
+    async def _send_file(self, chat_id: str, file_path: str, file_name: str, text: str = '', file_type: str = 'File') -> None:
+        """
+        ارسال فایل به کاربر به صورت async
+        این متد مشابه _send_text_message مستقیماً از await استفاده می‌کند
+        """
+        try:
+            await self.client.send_file(
+                chat_id=chat_id,
+                file=file_path,
+                file_name=file_name,
+                text=text,
+                type=file_type
+            )
+            await sync_to_async(WebhookLog.log_outgoing, thread_sensitive=True)(
+                'ارسال فایل', 
+                f'فایل به {chat_id} ارسال شد', 
+                {'file_name': file_name, 'file_type': file_type}
+            )
+        except Exception as exc:
+            logger.exception("Failed to send file to chat %s", chat_id)
+            await sync_to_async(WebhookLog.log_error, thread_sensitive=True)(
+                'ارسال فایل ناموفق', 
+                str(exc), 
+                {'chat_id': chat_id, 'file_name': file_name}
+            )
+            raise
 
     # ============= Leave Request Handlers =============
     
