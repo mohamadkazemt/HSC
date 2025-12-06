@@ -67,17 +67,15 @@ class UserProfile(models.Model):
         Only process the signature image when a NEW file is uploaded in the current request.
         This avoids FileNotFoundError when the previous file is missing and prevents nested paths.
         """
-        # Determine old and new names without touching the file on disk
-        old_name = ''
-        if self.pk:
-            old = type(self).objects.filter(pk=self.pk).only('signature').first()
-            old_name = old.signature.name if old and getattr(old, 'signature', None) else ''
-        new_name = self.signature.name if getattr(self, 'signature', None) else ''
+        # Check if signature is a new uploaded file
+        # In Django, when a new file is uploaded, the field contains an UploadedFile object with .file attribute
+        # When editing without uploading, it's a FieldFile object (existing file) without .file attribute
+        signature_is_new_upload = (
+            getattr(self, 'signature', None) and 
+            hasattr(self.signature, 'file')
+        )
 
-        # A new signature is considered uploaded if name is non-empty and changed (or it's a new instance)
-        signature_updated = bool(new_name) and (not self.pk or new_name != old_name)
-
-        if signature_updated:
+        if signature_is_new_upload:
             try:
                 # حذف پس‌زمینه تصویر امضا - work directly with in-memory uploaded file
                 img_no_bg = remove_background(self.signature.file)
@@ -85,9 +83,17 @@ class UserProfile(models.Model):
                     # ذخیره تصویر بدون پس‌زمینه با جلوگیری از مسیر تو در تو
                     buffer = BytesIO()
                     img_no_bg.save(buffer, format='PNG')
+                    new_name = self.signature.name if hasattr(self.signature, 'name') else 'signature.png'
                     base = os.path.splitext(os.path.basename(new_name))[0]
                     filename = f'{base}_no_bg.png'
-                    upload_dir = getattr(self.signature.field, 'upload_to', '') or ''
+                    # Get upload_to from the model field definition
+                    signature_field = self._meta.get_field('signature')
+                    upload_dir = 'signatures/'  # Default from field definition
+                    if hasattr(signature_field, 'upload_to'):
+                        upload_dir = signature_field.upload_to
+                        if callable(upload_dir):
+                            # If upload_to is a callable, use default directory
+                            upload_dir = 'signatures/'
                     # Ensure we save back into the original upload_to directory (e.g., 'signatures/')
                     final_name = os.path.join(upload_dir.strip('/'), filename) if upload_dir else filename
                     contentfile = ContentFile(buffer.getvalue())
