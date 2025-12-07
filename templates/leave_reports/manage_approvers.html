@@ -515,7 +515,6 @@
                                         x-model="editFormData.part"
                                         @change="onEditPartChange"
                                         class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white select2-edit-part"
-                                        :disabled="!editFormData.section"
                                     >
                                         <option value="">--- انتخاب کنید ---</option>
                                     </select>
@@ -532,7 +531,6 @@
                                         x-model="editFormData.unit_group"
                                         @change="onEditUnitGroupChange"
                                         class="select2-edit-unit-group w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                                        :disabled="!editFormData.part"
                                     >
                                         <option value="">--- انتخاب کنید ---</option>
                                     </select>
@@ -547,7 +545,6 @@
                                         name="position" 
                                         id="edit_id_position"
                                         class="select2-edit-position w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                                        :disabled="!editFormData.unit_group"
                                     >
                                         <option value="">--- انتخاب کنید ---</option>
                                     </select>
@@ -1369,6 +1366,8 @@ function approversManager() {
                 if ($('#edit_id_section').hasClass('select2-hidden-accessible')) {
                     $('#edit_id_section').select2('destroy');
                 }
+                // مطمئن شو که فیلد enable است
+                $('#edit_id_section').prop('disabled', false);
                 $('#edit_id_section').select2({
                     placeholder: '--- انتخاب کنید ---',
                     allowClear: true,
@@ -1377,9 +1376,12 @@ function approversManager() {
                     },
                     width: '100%'
                 });
-                $('#edit_id_section').on('select2:select select2:clear', (e) => {
-                    this.editFormData.section = e.target.value || '';
-                    this.onEditSectionChange();
+                $('#edit_id_section').off('select2:select select2:clear').on('select2:select select2:clear', (e) => {
+                    const selectedValue = $('#edit_id_section').val() || '';
+                    this.editFormData.section = selectedValue;
+                    this.$nextTick(() => {
+                        this.onEditSectionChange();
+                    });
                 });
             }, 100);
         },
@@ -1388,6 +1390,10 @@ function approversManager() {
             setTimeout(() => {
                 if ($('#edit_id_part').hasClass('select2-hidden-accessible')) {
                     $('#edit_id_part').select2('destroy');
+                }
+                // اگر section انتخاب شده، فیلد را enable کن (برای allowClear)
+                if (this.editFormData.section) {
+                    $('#edit_id_part').prop('disabled', false);
                 }
                 $('#edit_id_part').select2({
                     data: this.editParts,
@@ -1399,8 +1405,11 @@ function approversManager() {
                     width: '100%'
                 });
                 $('#edit_id_part').off('select2:select select2:clear').on('select2:select select2:clear', (e) => {
-                    this.editFormData.part = e.target.value || '';
-                    this.onEditPartChange();
+                    const selectedValue = $('#edit_id_part').val() || '';
+                    this.editFormData.part = selectedValue;
+                    this.$nextTick(() => {
+                        this.onEditPartChange();
+                    });
                 });
             }, 100);
         },
@@ -1409,6 +1418,10 @@ function approversManager() {
             setTimeout(() => {
                 if ($('#edit_id_unit_group').hasClass('select2-hidden-accessible')) {
                     $('#edit_id_unit_group').select2('destroy');
+                }
+                // اگر part انتخاب شده، فیلد را enable کن (برای allowClear)
+                if (this.editFormData.part) {
+                    $('#edit_id_unit_group').prop('disabled', false);
                 }
                 $('#edit_id_unit_group').select2({
                     data: this.editUnitGroups,
@@ -1420,8 +1433,11 @@ function approversManager() {
                     width: '100%'
                 });
                 $('#edit_id_unit_group').off('select2:select select2:clear').on('select2:select select2:clear', (e) => {
-                    this.editFormData.unit_group = e.target.value || '';
-                    this.onEditUnitGroupChange();
+                    const selectedValue = $('#edit_id_unit_group').val() || '';
+                    this.editFormData.unit_group = selectedValue;
+                    this.$nextTick(() => {
+                        this.onEditUnitGroupChange();
+                    });
                 });
             }, 100);
         },
@@ -1444,12 +1460,33 @@ function approversManager() {
         },
 
         onEditSectionChange() {
+            // Reset dependent fields
             this.editFormData.part = '';
             this.editFormData.unit_group = '';
             this.editParts = [{id: '', text: '--- انتخاب کنید ---'}];
             this.editUnitGroups = [{id: '', text: '--- انتخاب کنید ---'}];
             
+            // Clear part, unit_group and position values - قبل از disable کردن
+            if ($('#edit_id_part').hasClass('select2-hidden-accessible')) {
+                $('#edit_id_part').val('').trigger('change.select2');
+            } else {
+                $('#edit_id_part').val('');
+            }
+            
+            if ($('#edit_id_unit_group').hasClass('select2-hidden-accessible')) {
+                $('#edit_id_unit_group').val('').trigger('change.select2');
+            } else {
+                $('#edit_id_unit_group').val('');
+            }
+            
+            if ($('#edit_id_position').hasClass('select2-hidden-accessible')) {
+                $('#edit_id_position').val('').trigger('change.select2');
+            } else {
+                $('#edit_id_position').val('');
+            }
+            
             if (!this.editFormData.section) {
+                // اگر بخش خالی شد، فیلدهای وابسته را disable کن
                 $('#edit_id_part').prop('disabled', true);
                 this.initEditSelect2Part();
                 $('#edit_id_unit_group').prop('disabled', true);
@@ -1459,6 +1496,7 @@ function approversManager() {
                 return;
             }
             
+            // اگر بخش انتخاب شد، قسمت‌ها را بارگذاری کن
             fetch(`{% url "leave_reports:api_parts_by_section" %}?section_id=${this.editFormData.section}`)
                 .then(response => response.json())
                 .then(data => {
@@ -1479,10 +1517,25 @@ function approversManager() {
         },
 
         onEditPartChange() {
+            // Reset dependent fields
             this.editFormData.unit_group = '';
             this.editUnitGroups = [{id: '', text: '--- انتخاب کنید ---'}];
             
+            // Clear unit_group and position values - قبل از disable کردن
+            if ($('#edit_id_unit_group').hasClass('select2-hidden-accessible')) {
+                $('#edit_id_unit_group').val('').trigger('change.select2');
+            } else {
+                $('#edit_id_unit_group').val('');
+            }
+            
+            if ($('#edit_id_position').hasClass('select2-hidden-accessible')) {
+                $('#edit_id_position').val('').trigger('change.select2');
+            } else {
+                $('#edit_id_position').val('');
+            }
+            
             if (!this.editFormData.part) {
+                // اگر قسمت خالی شد، فیلدهای وابسته را disable کن
                 $('#edit_id_unit_group').prop('disabled', true);
                 this.initEditSelect2UnitGroup();
                 $('#edit_id_position').prop('disabled', true);
@@ -1490,6 +1543,7 @@ function approversManager() {
                 return;
             }
             
+            // اگر قسمت انتخاب شد، گروه‌های واحد را بارگذاری کن
             fetch(`{% url "leave_reports:api_unit_groups_by_part" %}?part_id=${this.editFormData.part}`)
                 .then(response => response.json())
                 .then(data => {
@@ -1508,12 +1562,21 @@ function approversManager() {
         },
 
         onEditUnitGroupChange() {
+            // Clear position value - قبل از disable کردن
+            if ($('#edit_id_position').hasClass('select2-hidden-accessible')) {
+                $('#edit_id_position').val('').trigger('change.select2');
+            } else {
+                $('#edit_id_position').val('');
+            }
+            
             if (!this.editFormData.unit_group) {
+                // اگر گروه واحد خالی شد، سمت را disable کن
                 $('#edit_id_position').prop('disabled', true);
                 this.initEditSelect2Position();
                 return;
             }
             
+            // اگر گروه واحد انتخاب شد، سمت‌ها را بارگذاری کن
             fetch(`{% url "leave_reports:api_positions_by_unit_group" %}?unit_group_id=${this.editFormData.unit_group}`)
                 .then(response => response.json())
                 .then(data => {
