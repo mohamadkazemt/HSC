@@ -1477,7 +1477,7 @@ class RubikaBotEngine:
         
         try:
             @sync_to_async(thread_sensitive=True)
-        def get_leave_state():
+            def get_leave_state():
             from rubika_bot.models import LeaveRequestState
             try:
                 state = LeaveRequestState.objects.get(rubika_user=user)
