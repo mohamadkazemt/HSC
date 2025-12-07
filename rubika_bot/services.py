@@ -102,6 +102,9 @@ class RubikaBotEngine:
         rubika_user = await self._ensure_profile(chat_id, message, raw_payload)
         button_id = _extract_button_id(message)
         text = (message.text or "").strip()
+        
+        # Log all incoming messages for debugging
+        print(f"[RUBIKA_BOT] handle_update: chat_id={chat_id}, has_button={bool(button_id)}, has_text={bool(text)}", flush=True)
 
         # Check if message contains photo/image
         has_photo = False
@@ -138,6 +141,9 @@ class RubikaBotEngine:
         if has_photo:
             logger.info(f"Photo detected for chat {chat_id}, file_inline_data: {file_inline_data}")
             print(f"[RUBIKA_BOT] Photo detected for chat {chat_id}", flush=True)
+            print(f"[RUBIKA_BOT] Message.file exists: {hasattr(message, 'file') and message.file is not None}", flush=True)
+            print(f"[RUBIKA_BOT] Message.file_inline exists: {hasattr(message, 'file_inline') and message.file_inline is not None}", flush=True)
+            print(f"[RUBIKA_BOT] Message.media exists: {hasattr(message, 'media') and message.media is not None}", flush=True)
 
         if button_id:
             await self._handle_button(chat_id, button_id, rubika_user)
@@ -1465,8 +1471,12 @@ class RubikaBotEngine:
         """پردازش پیام حاوی عکس در فرایند درخواست مرخصی"""
         logger.info(f"Handling photo message for chat {chat_id}, user: {user.chat_id}")
         print(f"[RUBIKA_BOT] Handling photo message for chat {chat_id}, user: {user.chat_id}", flush=True)
+        import sys
+        sys.stdout.flush()
+        sys.stderr.flush()
         
-        @sync_to_async(thread_sensitive=True)
+        try:
+            @sync_to_async(thread_sensitive=True)
         def get_leave_state():
             from rubika_bot.models import LeaveRequestState
             try:
@@ -1532,6 +1542,10 @@ class RubikaBotEngine:
             
         except Exception as e:
             logger.exception(f"Error handling photo message: {e}")
+            import sys
+            print(f"[RUBIKA_BOT] EXCEPTION in _handle_photo_message: {type(e).__name__}: {str(e)}", file=sys.stderr, flush=True)
+            import traceback
+            print(f"[RUBIKA_BOT] Traceback: {traceback.format_exc()}", file=sys.stderr, flush=True)
             error_msg = f'❌ خطا در پردازش عکس: {str(e)}\n\nلطفاً دوباره تلاش کنید.'
             await self._send_text_message(chat_id, error_msg)
     

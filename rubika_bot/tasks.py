@@ -98,16 +98,26 @@ def process_webhook_task(self, payload: Dict[str, Any]) -> None:
         "Task 'process_webhook_task' started for payload: %s",
         payload.get("update", {}).get("type"),
     )
+    # Log payload type for debugging
+    update_type = payload.get("update", {}).get("type")
+    print(f"[CELERY] process_webhook_task: update_type={update_type}", flush=True)
+    import sys
+    sys.stdout.flush()
+    
     try:
         service = RubPyIntegrationService.get_instance()
         service.handle_webhook_payload(payload)
         logger.info("Task 'process_webhook_task' succeeded.")
+        print(f"[CELERY] process_webhook_task: succeeded", flush=True)
     except Exception as exc:
         logger.error(
             "Error in 'process_webhook_task': %s",
             exc,
             exc_info=True,
         )
+        print(f"[CELERY] process_webhook_task: ERROR - {type(exc).__name__}: {str(exc)}", file=sys.stderr, flush=True)
+        import traceback
+        print(f"[CELERY] Traceback: {traceback.format_exc()}", file=sys.stderr, flush=True)
         raise self.retry(exc=exc)
 
 
