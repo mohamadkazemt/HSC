@@ -1475,9 +1475,8 @@ class RubikaBotEngine:
         sys.stdout.flush()
         sys.stderr.flush()
         
-        try:
-            @sync_to_async(thread_sensitive=True)
-            def get_leave_state():
+        @sync_to_async(thread_sensitive=True)
+        def get_leave_state():
             from rubika_bot.models import LeaveRequestState
             try:
                 state = LeaveRequestState.objects.get(rubika_user=user)
@@ -1487,25 +1486,25 @@ class RubikaBotEngine:
                 logger.info(f"No leave state found for user {user.chat_id}")
                 return None
         
-        leave_state = await get_leave_state()
-        
-        # Only process if in medical_document step
-        if not leave_state:
-            message_text = '⚠️ لطفاً ابتدا فرایند درخواست مرخصی را شروع کنید.\n\n💡 از منوی اصلی، گزینه "🏖️ درخواست مرخصی" را انتخاب کنید.'
-            await self._send_text_message(chat_id, message_text)
-            return
-        
-        if leave_state.step != 'medical_document':
-            logger.info(f"User not in medical_document step, current step: {leave_state.step}")
-            message_text = f'⚠️ در حال حاضر در مرحله "{leave_state.step}" هستید. لطفاً مراحل را به ترتیب طی کنید.'
-            await self._send_text_message(chat_id, message_text)
-            return
-        
-        # Send immediate acknowledgment
-        await self._send_text_message(chat_id, '📥 در حال دریافت عکس...')
-        
-        # Download and save the photo
         try:
+            leave_state = await get_leave_state()
+            
+            # Only process if in medical_document step
+            if not leave_state:
+                message_text = '⚠️ لطفاً ابتدا فرایند درخواست مرخصی را شروع کنید.\n\n💡 از منوی اصلی، گزینه "🏖️ درخواست مرخصی" را انتخاب کنید.'
+                await self._send_text_message(chat_id, message_text)
+                return
+            
+            if leave_state.step != 'medical_document':
+                logger.info(f"User not in medical_document step, current step: {leave_state.step}")
+                message_text = f'⚠️ در حال حاضر در مرحله "{leave_state.step}" هستید. لطفاً مراحل را به ترتیب طی کنید.'
+                await self._send_text_message(chat_id, message_text)
+                return
+            
+            # Send immediate acknowledgment
+            await self._send_text_message(chat_id, '📥 در حال دریافت عکس...')
+            
+            # Download and save the photo
             file_path = await self._download_photo(chat_id, message, raw_payload)
             
             if not file_path:
