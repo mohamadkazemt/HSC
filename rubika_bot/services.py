@@ -103,8 +103,22 @@ class RubikaBotEngine:
         button_id = _extract_button_id(message)
         text = (message.text or "").strip()
 
+        # Check if message contains photo/image
+        has_photo = False
+        if hasattr(message, 'file_inline') and message.file_inline:
+            has_photo = True
+        elif hasattr(message, 'media') and message.media:
+            has_photo = True
+        elif raw_payload:
+            msg_data = raw_payload.get('message', {})
+            if msg_data.get('file_inline') or msg_data.get('media'):
+                has_photo = True
+
         if button_id:
             await self._handle_button(chat_id, button_id, rubika_user)
+        elif has_photo:
+            # Handle photo/image in leave request flow
+            await self._handle_photo_message(chat_id, rubika_user, message, raw_payload)
         elif text.startswith("/"):
             await self._handle_command(chat_id, text, rubika_user)
         elif text:
@@ -937,6 +951,9 @@ class RubikaBotEngine:
         elif leave_type == 'hourly':
             # Need to enter hourly times
             await self._ask_for_hourly_times(chat_id, user)
+        elif leave_type == 'sick_leave':
+            # Need to upload medical document
+            await self._ask_for_medical_document(chat_id, user)
         else:
             # Ask for description
             await self._ask_for_description(chat_id, user)
@@ -1051,6 +1068,34 @@ class RubikaBotEngine:
         
         await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
     
+    async def _ask_for_medical_document(self, chat_id: str, user: RubikaUser) -> None:
+        """درخواست عکس نامه پزشک برای مرخصی استعلاجی"""
+        @sync_to_async(thread_sensitive=True)
+        def update_state():
+            from rubika_bot.models import LeaveRequestState
+            state = LeaveRequestState.get_or_create_for_user(user)
+            state.update_step('medical_document')
+        
+        await update_state()
+        
+        message_lines = [
+            '🏥 مدارک پزشکی',
+            '',
+            'لطفاً عکس نامه پزشک خود را ارسال کنید:',
+            '',
+            '📸 می‌توانید عکس را از طریق گالری یا دوربین ارسال کنید',
+            '',
+            '⚠️ توجه: برای مرخصی استعلاجی، ارسال عکس نامه پزشک الزامی است',
+            '',
+            '💡 یا از دکمه زیر برای انصراف استفاده کنید:',
+        ]
+        
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[self._button('cancel_leave', '❌ انصراف')])
+        ])
+        
+        await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
+    
     async def _ask_for_description(self, chat_id: str, user: RubikaUser) -> None:
         """درخواست توضیحات"""
         @sync_to_async(thread_sensitive=True)
@@ -1089,6 +1134,10 @@ class RubikaBotEngine:
             await self._process_hourly_times_input(chat_id, user, text, leave_state)
         elif step == 'description':
             await self._process_description_input(chat_id, user, text, leave_state)
+        elif step == 'medical_document':
+            # This should not happen for text input, but handle gracefully
+            message = '⚠️ لطفاً عکس نامه پزشک را ارسال کنید، نه متن.'
+            await self._send_text_message(chat_id, message)
     
     async def _process_replacement_code_input(self, chat_id: str, user: RubikaUser, text: str, leave_state) -> None:
         """پردازش ورودی کد پرسنلی جایگزین"""
@@ -1367,6 +1416,188 @@ class RubikaBotEngine:
         await update_state()
         await self._ask_for_description(chat_id, user)
     
+    async def _handle_photo_message(self, chat_id: str, user: RubikaUser, message: Message, raw_payload: Dict[str, Any]) -> None:
+        """پردازش پیام حاوی عکس در فرایند درخواست مرخصی"""
+        @sync_to_async(thread_sensitive=True)
+        def get_leave_state():
+            from rubika_bot.models import LeaveRequestState
+            try:
+                return LeaveRequestState.objects.get(rubika_user=user)
+            except LeaveRequestState.DoesNotExist:
+                return None
+        
+        leave_state = await get_leave_state()
+        
+        # Only process if in medical_document step
+        if not leave_state or leave_state.step != 'medical_document':
+            message_text = '⚠️ لطفاً ابتدا فرایند درخواست مرخصی را شروع کنید.'
+            await self._send_text_message(chat_id, message_text)
+            return
+        
+        # Download and save the photo
+        try:
+            file_path = await self._download_photo(chat_id, message, raw_payload)
+            
+            if not file_path:
+                error_msg = '❌ خطا در دریافت عکس. لطفاً دوباره تلاش کنید.'
+                await self._send_text_message(chat_id, error_msg)
+                return
+            
+            # Save file path to state
+            @sync_to_async(thread_sensitive=True)
+            def save_file_path():
+                from rubika_bot.models import LeaveRequestState
+                state = LeaveRequestState.objects.get(rubika_user=user)
+                state.data['medical_document_path'] = file_path
+                state.update_step('description')
+                return state.data
+            
+            data = await save_file_path()
+            
+            # Confirm receipt
+            confirm_msg = '✅ عکس نامه پزشک با موفقیت دریافت شد.\n\n📝 حالا لطفاً توضیحات خود را وارد کنید:'
+            keyboard = Keypad(rows=[
+                KeypadRow(buttons=[self._button('cancel_leave', '❌ انصراف')])
+            ])
+            await self._send_text_message(chat_id, confirm_msg, keyboard)
+            
+        except Exception as e:
+            logger.exception(f"Error handling photo message: {e}")
+            error_msg = f'❌ خطا در پردازش عکس: {str(e)}\n\nلطفاً دوباره تلاش کنید.'
+            await self._send_text_message(chat_id, error_msg)
+    
+    async def _download_photo(self, chat_id: str, message: Message, raw_payload: Dict[str, Any]) -> Optional[str]:
+        """دانلود عکس از پیام و ذخیره در فایل سیستم"""
+        import os
+        import uuid
+        from django.conf import settings
+        from pathlib import Path
+        
+        try:
+            # Extract file information from message or raw_payload
+            file_id = None
+            file_name = None
+            
+            # Try to get file info from message
+            if hasattr(message, 'file_inline') and message.file_inline:
+                file_id = getattr(message.file_inline, 'file_id', None) or getattr(message.file_inline, 'id', None)
+                file_name = getattr(message.file_inline, 'file_name', None)
+            elif hasattr(message, 'media') and message.media:
+                file_id = getattr(message.media, 'file_id', None) or getattr(message.media, 'id', None)
+                file_name = getattr(message.media, 'file_name', None)
+            
+            # Try from raw_payload
+            if not file_id and raw_payload:
+                msg_data = raw_payload.get('message', {})
+                file_inline = msg_data.get('file_inline') or msg_data.get('media')
+                if file_inline:
+                    file_id = file_inline.get('file_id') or file_inline.get('id')
+                    file_name = file_inline.get('file_name')
+            
+            if not file_id:
+                logger.warning(f"No file_id found in message for chat {chat_id}")
+                return None
+            
+            # Generate unique filename
+            if not file_name:
+                file_name = f"medical_doc_{uuid.uuid4().hex[:8]}.jpg"
+            else:
+                # Ensure unique filename
+                ext = os.path.splitext(file_name)[1] or '.jpg'
+                file_name = f"medical_doc_{uuid.uuid4().hex[:8]}{ext}"
+            
+            # Create directory if not exists
+            media_root = Path(settings.MEDIA_ROOT)
+            medical_docs_dir = media_root / 'leave_medical_docs'
+            medical_docs_dir.mkdir(parents=True, exist_ok=True)
+            
+            file_path = medical_docs_dir / file_name
+            
+            # Download file using rubpy client
+            async def download_file():
+                try:
+                    # Try to download file using rubpy client
+                    # First, try to get file using get_file method if available
+                    downloaded_content = None
+                    
+                    try:
+                        # Try different methods to download file
+                        if hasattr(self.client, 'get_file'):
+                            downloaded_content = await self.client.get_file(file_id=file_id)
+                        elif hasattr(self.client, 'download_file'):
+                            downloaded_content = await self.client.download_file(file_id=file_id)
+                        else:
+                            # Try to use message object to get file
+                            if hasattr(message, 'file_inline') and message.file_inline:
+                                # Try to get file from message
+                                file_obj = message.file_inline
+                                if hasattr(file_obj, 'download') or hasattr(file_obj, 'get'):
+                                    try:
+                                        downloaded_content = await file_obj.download() if hasattr(file_obj, 'download') else await file_obj.get()
+                                    except:
+                                        pass
+                    except Exception as e:
+                        logger.warning(f"Could not download file using client methods: {e}")
+                    
+                    # If download failed, try to get file URL and download manually
+                    if not downloaded_content:
+                        # Extract file URL from raw_payload if available
+                        file_url = None
+                        if raw_payload:
+                            msg_data = raw_payload.get('message', {})
+                            file_inline = msg_data.get('file_inline') or msg_data.get('media')
+                            if file_inline:
+                                file_url = file_inline.get('access_hash_rec') or file_inline.get('url')
+                        
+                        if file_url:
+                            # Download from URL using requests (sync) in async context
+                            import requests
+                            def download_from_url(url):
+                                try:
+                                    response = requests.get(url, timeout=30)
+                                    if response.status_code == 200:
+                                        return response.content
+                                except Exception as e:
+                                    logger.warning(f"Error downloading from URL: {e}")
+                                return None
+                            
+                            downloaded_content = await sync_to_async(download_from_url)(file_url)
+                    
+                    if downloaded_content:
+                        # Save to disk
+                        with open(file_path, 'wb') as f:
+                            if isinstance(downloaded_content, bytes):
+                                f.write(downloaded_content)
+                            elif hasattr(downloaded_content, 'read'):
+                                f.write(downloaded_content.read())
+                            else:
+                                # Try to get content attribute
+                                content = getattr(downloaded_content, 'content', None)
+                                if content:
+                                    if isinstance(content, bytes):
+                                        f.write(content)
+                                    elif hasattr(content, 'read'):
+                                        f.write(content.read())
+                                    else:
+                                        return None
+                                else:
+                                    return None
+                        
+                        # Return relative path for Django FileField
+                        return str(Path('leave_medical_docs') / file_name)
+                    
+                    logger.warning(f"Could not download file with file_id: {file_id}")
+                    return None
+                except Exception as e:
+                    logger.exception(f"Error downloading file: {e}")
+                    return None
+            
+            return await download_file()
+            
+        except Exception as e:
+            logger.exception(f"Error in _download_photo: {e}")
+            return None
+    
     async def _process_description_input(self, chat_id: str, user: RubikaUser, text: str, leave_state) -> None:
         """پردازش ورودی توضیحات و نمایش خلاصه"""
         # Check if user wants to skip
@@ -1431,6 +1662,10 @@ class RubikaBotEngine:
             
             rep_name = await get_replacement_name()
             message_lines.append(f'👤 جایگزین: {rep_name}')
+        
+        # Add medical document if exists
+        if data.get('medical_document_path'):
+            message_lines.append('🏥 مدارک پزشکی: ✅ ارسال شده')
         
         # Add description if exists
         if data.get('description'):
@@ -1498,6 +1733,16 @@ class RubikaBotEngine:
                     leave_request.end_time = dt_time.fromisoformat(data['end_time'])
                 if data.get('leave_hours'):
                     leave_request.leave_hours = data['leave_hours']
+                
+                # Add medical document if exists
+                if data.get('medical_document_path'):
+                    from django.core.files import File
+                    import os
+                    file_path = os.path.join(settings.MEDIA_ROOT, data['medical_document_path'])
+                    if os.path.exists(file_path):
+                        with open(file_path, 'rb') as f:
+                            file_name = os.path.basename(data['medical_document_path'])
+                            leave_request.medical_document.save(file_name, File(f), save=False)
                 
                 # Set status
                 if leave_request.leave_type in ['absence', 'sick_leave', 'hourly']:
