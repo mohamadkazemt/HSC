@@ -183,10 +183,50 @@
     <!-- Approvers List -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
         <div class="p-6 border-b border-gray-200 dark:border-gray-700">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <i class="fas fa-list text-indigo-600 dark:text-indigo-400"></i>
-                لیست تأیید کنندگان
-            </h2>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <i class="fas fa-list text-indigo-600 dark:text-indigo-400"></i>
+                    لیست تأیید کنندگان
+                </h2>
+                <div class="flex items-center gap-3">
+                    <form method="GET" action="{% url 'leave_reports:manage_approvers' %}" class="flex items-center gap-2">
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                name="search" 
+                                value="{{ search_query|default:'' }}"
+                                placeholder="جستجو در همه ستون‌ها..."
+                                class="w-64 pr-10 pl-4 py-2 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-indigo-500 focus:border-indigo-500"
+                            >
+                            <i class="fas fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        </div>
+                        <button 
+                            type="submit"
+                            class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors duration-200"
+                        >
+                            <i class="fas fa-search ml-2"></i>
+                            جستجو
+                        </button>
+                        {% if search_query %}
+                        <a 
+                            href="{% url 'leave_reports:manage_approvers' %}"
+                            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors duration-200"
+                        >
+                            <i class="fas fa-times ml-2"></i>
+                            پاک کردن
+                        </a>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+            {% if search_query %}
+            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                <p class="text-sm text-blue-800 dark:text-blue-200">
+                    <i class="fas fa-info-circle ml-2"></i>
+                    نتایج جستجو برای: <strong>{{ search_query }}</strong> ({{ hierarchies.paginator.count }} نتیجه)
+                </p>
+            </div>
+            {% endif %}
         </div>
 
         <div class="overflow-x-auto">
@@ -207,7 +247,11 @@
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150" data-id="{{ hierarchy.id }}">
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                             <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-bold">
-                                {{ forloop.counter }}
+                                {% if hierarchies.has_other_pages %}
+                                    {{ hierarchies.start_index|add:forloop.counter0 }}
+                                {% else %}
+                                    {{ forloop.counter }}
+                                {% endif %}
                             </span>
                         </td>
                         <td class="px-6 py-4">
@@ -288,13 +332,22 @@
                             {{ hierarchy.created_at|date:"Y/m/d" }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <button 
-                                @click="confirmDelete({{ hierarchy.id }})"
-                                class="inline-flex items-center gap-2 px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg transition-colors duration-200 font-medium"
-                            >
-                                <i class="fas fa-trash-alt"></i>
-                                حذف
-                            </button>
+                            <div class="flex items-center gap-2">
+                                <button 
+                                    @click="editApprover({{ hierarchy.id }})"
+                                    class="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 rounded-lg transition-colors duration-200 font-medium"
+                                >
+                                    <i class="fas fa-edit"></i>
+                                    ویرایش
+                                </button>
+                                <button 
+                                    @click="confirmDelete({{ hierarchy.id }})"
+                                    class="inline-flex items-center gap-2 px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg transition-colors duration-200 font-medium"
+                                >
+                                    <i class="fas fa-trash-alt"></i>
+                                    حذف
+                                </button>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
@@ -309,6 +362,257 @@
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if hierarchies.has_other_pages %}
+        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-700 dark:text-gray-300">
+                    نمایش 
+                    <span class="font-medium">{{ hierarchies.start_index }}</span>
+                    تا 
+                    <span class="font-medium">{{ hierarchies.end_index }}</span>
+                    از 
+                    <span class="font-medium">{{ hierarchies.paginator.count }}</span>
+                    نتیجه
+                </div>
+                <div class="flex items-center gap-2">
+                    {% if hierarchies.has_previous %}
+                    <a 
+                        href="?page={{ hierarchies.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}"
+                        class="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200"
+                    >
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                    {% else %}
+                    <span class="px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-600 rounded-lg cursor-not-allowed">
+                        <i class="fas fa-chevron-right"></i>
+                    </span>
+                    {% endif %}
+                    
+                    {% for num in hierarchies.paginator.page_range %}
+                        {% if hierarchies.number == num %}
+                        <span class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium">
+                            {{ num }}
+                        </span>
+                        {% elif num > hierarchies.number|add:'-3' and num < hierarchies.number|add:'3' %}
+                        <a 
+                            href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}"
+                            class="px-4 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200"
+                        >
+                            {{ num }}
+                        </a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if hierarchies.has_next %}
+                    <a 
+                        href="?page={{ hierarchies.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}"
+                        class="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200"
+                    >
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    {% else %}
+                    <span class="px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-600 rounded-lg cursor-not-allowed">
+                        <i class="fas fa-chevron-left"></i>
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Edit Modal -->
+    <div 
+        x-show="showEditModal" 
+        x-cloak
+        @keydown.escape.window="showEditModal = false"
+        class="fixed inset-0 z-50 overflow-y-auto"
+        style="display: none;"
+    >
+        <!-- Backdrop -->
+        <div 
+            x-show="showEditModal"
+            x-transition.opacity.duration.300ms
+            class="fixed inset-0 bg-black/50 backdrop-blur-sm"
+            @click="showEditModal = false"
+        ></div>
+
+        <!-- Modal -->
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div 
+                x-show="showEditModal"
+                x-transition.scale.origin.top.duration.300ms
+                class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full p-6"
+                @click.stop
+            >
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <i class="fas fa-edit text-blue-600 dark:text-blue-400"></i>
+                        ویرایش تأیید کننده
+                    </h3>
+                    <button 
+                        @click="showEditModal = false"
+                        class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                    >
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <form @submit.prevent="updateApprover" id="editApproverForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="hierarchy_id" x-model="editingId">
+                    
+                    <div class="space-y-6">
+                        <!-- Approver -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                تأیید کننده <span class="text-red-500">*</span>
+                            </label>
+                            <select 
+                                name="approver" 
+                                id="edit_id_approver"
+                                class="select2-edit-approver w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                required
+                            >
+                                <option value="">--- انتخاب کنید ---</option>
+                            </select>
+                        </div>
+
+                        <!-- Criteria Fields -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">معیارهای تطبیق (حداقل یکی الزامی است)</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <!-- Section -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        بخش
+                                    </label>
+                                    <select 
+                                        name="section" 
+                                        id="edit_id_section"
+                                        x-model="editFormData.section"
+                                        @change="onEditSectionChange"
+                                        class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white select2-edit-section"
+                                    >
+                                        <option value="">--- انتخاب کنید ---</option>
+                                        {% for section in sections %}
+                                        <option value="{{ section.id }}">{{ section.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <!-- Part -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        قسمت
+                                    </label>
+                                    <select 
+                                        name="part" 
+                                        id="edit_id_part"
+                                        x-model="editFormData.part"
+                                        @change="onEditPartChange"
+                                        class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white select2-edit-part"
+                                        :disabled="!editFormData.section"
+                                    >
+                                        <option value="">--- انتخاب کنید ---</option>
+                                    </select>
+                                </div>
+
+                                <!-- Unit Group -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        گروه واحد
+                                    </label>
+                                    <select 
+                                        name="unit_group" 
+                                        id="edit_id_unit_group"
+                                        x-model="editFormData.unit_group"
+                                        @change="onEditUnitGroupChange"
+                                        class="select2-edit-unit-group w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                        :disabled="!editFormData.part"
+                                    >
+                                        <option value="">--- انتخاب کنید ---</option>
+                                    </select>
+                                </div>
+
+                                <!-- Position -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        سمت
+                                    </label>
+                                    <select 
+                                        name="position" 
+                                        id="edit_id_position"
+                                        class="select2-edit-position w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                        :disabled="!editFormData.unit_group"
+                                    >
+                                        <option value="">--- انتخاب کنید ---</option>
+                                    </select>
+                                </div>
+
+                                <!-- Work Group -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        گروه کاری
+                                    </label>
+                                    <select 
+                                        name="work_group" 
+                                        id="edit_id_work_group"
+                                        class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                    >
+                                        <option value="">--- انتخاب کنید ---</option>
+                                        {% for value, label in form.work_group.field.choices %}
+                                            {% if value %}
+                                            <option value="{{ value }}">{{ label }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <!-- Specific Users -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        کاربران خاص
+                                    </label>
+                                    <select 
+                                        name="specific_users" 
+                                        id="edit_id_specific_users"
+                                        multiple
+                                        class="select2-edit-specific-users w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                                    >
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 mt-6">
+                        <button 
+                            type="submit"
+                            :disabled="isUpdating"
+                            class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <template x-if="!isUpdating">
+                                <span><i class="fas fa-save ml-2"></i> ذخیره تغییرات</span>
+                            </template>
+                            <template x-if="isUpdating">
+                                <span><i class="fas fa-spinner fa-spin ml-2"></i> در حال ذخیره...</span>
+                            </template>
+                        </button>
+                        <button 
+                            type="button"
+                            @click="showEditModal = false"
+                            :disabled="isUpdating"
+                            class="flex-1 px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors duration-200 font-medium disabled:opacity-50"
+                        >
+                            انصراف
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -390,9 +694,19 @@ function approversManager() {
         parts: [{id: '', text: '--- انتخاب کنید ---'}],
         unitGroups: [{id: '', text: '--- انتخاب کنید ---'}],
         isSubmitting: false,
+        isUpdating: false,
+        showEditModal: false,
         showDeleteModal: false,
+        editingId: null,
         deleteId: null,
         isDeleting: false,
+        editFormData: {
+            section: '',
+            part: '',
+            unit_group: '',
+        },
+        editParts: [{id: '', text: '--- انتخاب کنید ---'}],
+        editUnitGroups: [{id: '', text: '--- انتخاب کنید ---'}],
 
         init() {
             this.initSelect2Section();
@@ -801,6 +1115,428 @@ function approversManager() {
                 alert('خطا در ارسال درخواست');
                 this.isSubmitting = false;
             });
+        },
+
+        async editApprover(id) {
+            this.editingId = id;
+            this.showEditModal = true;
+            this.isUpdating = true;
+            
+            // Initialize Select2 for edit modal
+            this.initEditSelect2Section();
+            this.initEditSelect2Part();
+            this.initEditSelect2UnitGroup();
+            this.initEditSelect2Position();
+            
+            try {
+                const response = await fetch(`{% url "leave_reports:edit_approver" 0 %}`.replace('0', id), {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const h = data.hierarchy;
+                    
+                    // Set approver - برای Select2 با AJAX باید option را به صورت دستی اضافه کنیم
+                    if ($('#edit_id_approver').hasClass('select2-hidden-accessible')) {
+                        $('#edit_id_approver').select2('destroy');
+                    }
+                    
+                    // اضافه کردن option برای approver
+                    if (h.approver) {
+                        const approverOption = new Option(h.approver.text, h.approver.id, true, true);
+                        $('#edit_id_approver').append(approverOption);
+                    }
+                    
+                    this.initEditSelect2Approver();
+                    setTimeout(() => {
+                        if (h.approver) {
+                            $('#edit_id_approver').val(h.approver.id).trigger('change');
+                        }
+                    }, 300);
+                    
+                    // Set specific users - برای multiple select باید همه option ها را اضافه کنیم
+                    if ($('#edit_id_specific_users').hasClass('select2-hidden-accessible')) {
+                        $('#edit_id_specific_users').select2('destroy');
+                    }
+                    
+                    // پاک کردن option های قبلی
+                    $('#edit_id_specific_users').empty();
+                    
+                    // اضافه کردن option ها برای specific users
+                    if (h.specific_users && h.specific_users.length > 0) {
+                        h.specific_users.forEach(user => {
+                            const userOption = new Option(user.text, user.id, true, true);
+                            $('#edit_id_specific_users').append(userOption);
+                        });
+                    }
+                    
+                    this.initEditSelect2SpecificUsers();
+                    setTimeout(() => {
+                        if (h.specific_users && h.specific_users.length > 0) {
+                            const userIds = h.specific_users.map(u => u.id);
+                            $('#edit_id_specific_users').val(userIds).trigger('change');
+                        }
+                    }, 400);
+                    
+                    // Set work group
+                    $('#edit_id_work_group').val(h.work_group || '');
+                    
+                    // Set section and load dependent fields
+                    if (h.section) {
+                        this.editFormData.section = h.section.toString();
+                        $('#edit_id_section').val(h.section).trigger('change');
+                        setTimeout(() => {
+                            this.onEditSectionChange();
+                            setTimeout(() => {
+                                if (h.part) {
+                                    this.editFormData.part = h.part.toString();
+                                    $('#edit_id_part').val(h.part).trigger('change');
+                                    setTimeout(() => {
+                                        this.onEditPartChange();
+                                        setTimeout(() => {
+                                            if (h.unit_group) {
+                                                this.editFormData.unit_group = h.unit_group.toString();
+                                                $('#edit_id_unit_group').val(h.unit_group).trigger('change');
+                                                setTimeout(() => {
+                                                    this.onEditUnitGroupChange();
+                                                    setTimeout(() => {
+                                                        if (h.position) {
+                                                            $('#edit_id_position').val(h.position).trigger('change');
+                                                        }
+                                                    }, 300);
+                                                }, 300);
+                                            }
+                                        }, 300);
+                                    }, 300);
+                                }
+                            }, 300);
+                        }, 300);
+                    }
+                } else {
+                    alert(data.message || 'خطا در بارگذاری اطلاعات');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('خطا در بارگذاری اطلاعات');
+            } finally {
+                this.isUpdating = false;
+            }
+        },
+
+        async updateApprover() {
+            if (this.isUpdating) return;
+            
+            const approverId = $('#edit_id_approver').val();
+            if (!approverId) {
+                alert('لطفاً تأیید کننده را انتخاب کنید');
+                return;
+            }
+            
+            const specificUserIds = $('#edit_id_specific_users').val();
+            const workGroup = $('#edit_id_work_group').val();
+            const positionId = $('#edit_id_position').val();
+            const unitGroupId = $('#edit_id_unit_group').val();
+            const sectionId = $('#edit_id_section').val();
+            const partId = $('#edit_id_part').val();
+            
+            const hasCriteria = (specificUserIds && specificUserIds.length > 0) || workGroup || positionId || unitGroupId || sectionId || partId;
+            
+            if (!hasCriteria) {
+                alert('لطفاً حداقل یکی از معیارهای تطبیق را انتخاب کنید');
+                return;
+            }
+            
+            this.isUpdating = true;
+            const formElement = document.getElementById('editApproverForm');
+            const formData = new FormData(formElement);
+            
+            formData.set('approver', approverId);
+            if (specificUserIds && specificUserIds.length > 0) {
+                specificUserIds.forEach(userId => {
+                    formData.append('specific_users', userId);
+                });
+            }
+            if (workGroup) formData.set('work_group', workGroup);
+            if (positionId) formData.set('position', positionId);
+            if (unitGroupId) formData.set('unit_group', unitGroupId);
+            if (sectionId) formData.set('section', sectionId);
+            if (partId) formData.set('part', partId);
+            
+            try {
+                const response = await fetch(`{% url "leave_reports:edit_approver" 0 %}`.replace('0', this.editingId), {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    alert(data.message || 'تأیید کننده با موفقیت به‌روزرسانی شد');
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'خطا در به‌روزرسانی تأیید کننده');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('خطا در ارسال درخواست');
+            } finally {
+                this.isUpdating = false;
+            }
+        },
+
+        initEditSelect2Approver() {
+            setTimeout(() => {
+                $('#edit_id_approver').select2({
+                    ajax: {
+                        url: '{% url "leave_reports:api_user_profiles" %}',
+                        dataType: 'json',
+                        delay: 250,
+                        data: function (params) {
+                            return { q: params.term, page: params.page };
+                        },
+                        processResults: function (data) {
+                            return {
+                                results: data.results,
+                                pagination: { more: data.pagination.more }
+                            };
+                        }
+                    },
+                    minimumInputLength: 0,
+                    placeholder: '--- انتخاب کنید ---',
+                    language: {
+                        inputTooShort: () => 'نام، کد پرسنلی یا سمت را وارد کنید',
+                        searching: () => 'در حال جستجو...',
+                        noResults: () => 'نتیجه‌ای یافت نشد'
+                    },
+                    width: '100%'
+                });
+            }, 100);
+        },
+
+        initEditSelect2SpecificUsers() {
+            setTimeout(() => {
+                if ($('#edit_id_specific_users').hasClass('select2-hidden-accessible')) {
+                    $('#edit_id_specific_users').select2('destroy');
+                }
+                
+                $('#edit_id_specific_users').select2({
+                    ajax: {
+                        url: '{% url "leave_reports:api_all_users" %}',
+                        dataType: 'json',
+                        delay: 250,
+                        data: function (params) {
+                            return { q: params.term, page: params.page };
+                        },
+                        processResults: function (data) {
+                            return {
+                                results: data.results,
+                                pagination: { more: data.pagination.more }
+                            };
+                        },
+                        cache: true
+                    },
+                    minimumInputLength: 0,
+                    placeholder: 'انتخاب کاربران خاص (می‌توانید چند نفر انتخاب کنید)',
+                    allowClear: true,
+                    multiple: true,
+                    dir: 'rtl',
+                    language: {
+                        inputTooShort: () => 'نام کاربر را وارد کنید',
+                        searching: () => 'در حال جستجو...',
+                        noResults: () => 'کاربری یافت نشد',
+                        removeAllItems: () => 'حذف همه',
+                        removeItem: () => 'حذف'
+                    },
+                    width: '100%',
+                    closeOnSelect: false,
+                    theme: 'default'
+                });
+            }, 100);
+        },
+
+        initEditSelect2Section() {
+            setTimeout(() => {
+                if ($('#edit_id_section').hasClass('select2-hidden-accessible')) {
+                    $('#edit_id_section').select2('destroy');
+                }
+                $('#edit_id_section').select2({
+                    placeholder: '--- انتخاب کنید ---',
+                    allowClear: true,
+                    language: {
+                        noResults: () => 'بخشی یافت نشد'
+                    },
+                    width: '100%'
+                });
+                $('#edit_id_section').on('select2:select select2:clear', (e) => {
+                    this.editFormData.section = e.target.value || '';
+                    this.onEditSectionChange();
+                });
+            }, 100);
+        },
+
+        initEditSelect2Part() {
+            setTimeout(() => {
+                if ($('#edit_id_part').hasClass('select2-hidden-accessible')) {
+                    $('#edit_id_part').select2('destroy');
+                }
+                $('#edit_id_part').select2({
+                    data: this.editParts,
+                    placeholder: '--- انتخاب کنید ---',
+                    allowClear: true,
+                    language: {
+                        noResults: () => 'قسمتی یافت نشد'
+                    },
+                    width: '100%'
+                });
+                $('#edit_id_part').off('select2:select select2:clear').on('select2:select select2:clear', (e) => {
+                    this.editFormData.part = e.target.value || '';
+                    this.onEditPartChange();
+                });
+            }, 100);
+        },
+
+        initEditSelect2UnitGroup() {
+            setTimeout(() => {
+                if ($('#edit_id_unit_group').hasClass('select2-hidden-accessible')) {
+                    $('#edit_id_unit_group').select2('destroy');
+                }
+                $('#edit_id_unit_group').select2({
+                    data: this.editUnitGroups,
+                    placeholder: '--- انتخاب کنید ---',
+                    allowClear: true,
+                    language: {
+                        noResults: () => 'گروه واحدی یافت نشد'
+                    },
+                    width: '100%'
+                });
+                $('#edit_id_unit_group').off('select2:select select2:clear').on('select2:select select2:clear', (e) => {
+                    this.editFormData.unit_group = e.target.value || '';
+                    this.onEditUnitGroupChange();
+                });
+            }, 100);
+        },
+
+        initEditSelect2Position() {
+            setTimeout(() => {
+                if ($('#edit_id_position').hasClass('select2-hidden-accessible')) {
+                    $('#edit_id_position').select2('destroy');
+                }
+                $('#edit_id_position').select2({
+                    data: [],
+                    placeholder: '--- انتخاب کنید ---',
+                    allowClear: true,
+                    language: {
+                        noResults: () => 'سمتی یافت نشد'
+                    },
+                    width: '100%'
+                });
+            }, 100);
+        },
+
+        onEditSectionChange() {
+            this.editFormData.part = '';
+            this.editFormData.unit_group = '';
+            this.editParts = [{id: '', text: '--- انتخاب کنید ---'}];
+            this.editUnitGroups = [{id: '', text: '--- انتخاب کنید ---'}];
+            
+            if (!this.editFormData.section) {
+                $('#edit_id_part').prop('disabled', true);
+                this.initEditSelect2Part();
+                $('#edit_id_unit_group').prop('disabled', true);
+                this.initEditSelect2UnitGroup();
+                $('#edit_id_position').prop('disabled', true);
+                this.initEditSelect2Position();
+                return;
+            }
+            
+            fetch(`{% url "leave_reports:api_parts_by_section" %}?section_id=${this.editFormData.section}`)
+                .then(response => response.json())
+                .then(data => {
+                    this.editParts = [
+                        {id: '', text: '--- انتخاب کنید ---'},
+                        ...data.results.filter(p => p.id !== '' && p.id !== null)
+                    ];
+                    
+                    this.$nextTick(() => {
+                        $('#edit_id_part').prop('disabled', false);
+                        this.initEditSelect2Part();
+                        $('#edit_id_unit_group').prop('disabled', true);
+                        this.initEditSelect2UnitGroup();
+                        $('#edit_id_position').prop('disabled', true);
+                        this.initEditSelect2Position();
+                    });
+                });
+        },
+
+        onEditPartChange() {
+            this.editFormData.unit_group = '';
+            this.editUnitGroups = [{id: '', text: '--- انتخاب کنید ---'}];
+            
+            if (!this.editFormData.part) {
+                $('#edit_id_unit_group').prop('disabled', true);
+                this.initEditSelect2UnitGroup();
+                $('#edit_id_position').prop('disabled', true);
+                this.initEditSelect2Position();
+                return;
+            }
+            
+            fetch(`{% url "leave_reports:api_unit_groups_by_part" %}?part_id=${this.editFormData.part}`)
+                .then(response => response.json())
+                .then(data => {
+                    this.editUnitGroups = [
+                        {id: '', text: '--- انتخاب کنید ---'},
+                        ...data.results.filter(ug => ug.id !== '' && ug.id !== null)
+                    ];
+                    
+                    this.$nextTick(() => {
+                        $('#edit_id_unit_group').prop('disabled', false);
+                        this.initEditSelect2UnitGroup();
+                        $('#edit_id_position').prop('disabled', true);
+                        this.initEditSelect2Position();
+                    });
+                });
+        },
+
+        onEditUnitGroupChange() {
+            if (!this.editFormData.unit_group) {
+                $('#edit_id_position').prop('disabled', true);
+                this.initEditSelect2Position();
+                return;
+            }
+            
+            fetch(`{% url "leave_reports:api_positions_by_unit_group" %}?unit_group_id=${this.editFormData.unit_group}`)
+                .then(response => response.json())
+                .then(data => {
+                    const positions = [
+                        {id: '', text: '--- انتخاب کنید ---'},
+                        ...data.results.filter(p => p.id !== '' && p.id !== null)
+                    ];
+                    
+                    if ($('#edit_id_position').hasClass('select2-hidden-accessible')) {
+                        $('#edit_id_position').select2('destroy');
+                    }
+                    
+                    $('#edit_id_position').select2({
+                        data: positions,
+                        placeholder: '--- انتخاب کنید ---',
+                        allowClear: true,
+                        language: {
+                            noResults: () => 'سمتی یافت نشد'
+                        },
+                        width: '100%'
+                    });
+                    $('#edit_id_position').prop('disabled', false);
+                });
         },
 
         confirmDelete(id) {

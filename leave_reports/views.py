@@ -871,8 +871,39 @@ def manage_approvers(request):
         return redirect('dashboard:dashboard')
     
     hierarchies = ApprovalHierarchy.objects.all().select_related(
-        'section', 'part', 'approver', 'approver__user', 'approver__position'
-    ).prefetch_related('specific_users').order_by('section__name', 'part__name')
+        'section', 'part', 'approver', 'approver__user', 'approver__position', 'unit_group', 'position'
+    ).prefetch_related('specific_users')
+    
+    # جستجو در همه ستون‌ها
+    search_query = request.GET.get('search', '').strip()
+    if search_query:
+        hierarchies = hierarchies.filter(
+            Q(approver__user__first_name__icontains=search_query) |
+            Q(approver__user__last_name__icontains=search_query) |
+            Q(approver__user__username__icontains=search_query) |
+            Q(approver__personnel_code__icontains=search_query) |
+            Q(approver__position__name__icontains=search_query) |
+            Q(section__name__icontains=search_query) |
+            Q(part__name__icontains=search_query) |
+            Q(unit_group__name__icontains=search_query) |
+            Q(position__name__icontains=search_query) |
+            Q(specific_users__first_name__icontains=search_query) |
+            Q(specific_users__last_name__icontains=search_query) |
+            Q(specific_users__username__icontains=search_query) |
+            Q(work_group__icontains=search_query)
+        ).distinct()
+    
+    hierarchies = hierarchies.order_by('-created_at')
+    
+    # Pagination
+    page = request.GET.get('page', 1)
+    paginator = Paginator(hierarchies, 15)  # 15 آیتم در هر صفحه
+    try:
+        hierarchies_page = paginator.page(page)
+    except PageNotAnInteger:
+        hierarchies_page = paginator.page(1)
+    except EmptyPage:
+        hierarchies_page = paginator.page(paginator.num_pages)
     
     if request.method == 'POST':
         form = ApprovalHierarchyForm(request.POST)
@@ -940,10 +971,118 @@ def manage_approvers(request):
     
     return render(request, 'leave_reports/manage_approvers.html', {
         'form': form,
-        'hierarchies': hierarchies,
+        'hierarchies': hierarchies_page,
         'sections': sections,
         'page_title': 'مدیریت تأیید کنندگان',
+        'search_query': search_query,
     })
+
+
+@login_required
+def edit_approver(request, hierarchy_id):
+    """ویرایش یک تأیید کننده"""
+    
+    # فقط سوپریوزر
+    if not request.user.is_superuser:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'شما دسترسی به این عملیات را ندارید'
+        }, status=403)
+    
+    hierarchy = get_object_or_404(
+        ApprovalHierarchy.objects.select_related(
+            'section', 'part', 'approver', 'approver__user', 'approver__position', 'unit_group', 'position'
+        ).prefetch_related('specific_users'),
+        id=hierarchy_id
+    )
+    
+    if request.method == 'GET':
+        # برگرداندن اطلاعات برای ویرایش
+        approver_data = {
+            'id': hierarchy.approver.id,
+            'text': str(hierarchy.approver)
+        }
+        
+        specific_users_data = []
+        for user in hierarchy.specific_users.all():
+            profile = getattr(user, 'userprofile', None)
+            full_name = user.get_full_name() or user.username
+            personnel_code = profile.personnel_code if profile and profile.personnel_code else ''
+            position = profile.position.name if profile and profile.position else ''
+            section = profile.section.name if profile and profile.section else ''
+            
+            text_parts = [full_name]
+            if personnel_code:
+                text_parts.append(f"کد: {personnel_code}")
+            if position:
+                text_parts.append(f"({position})")
+            if section:
+                text_parts.append(f"[{section}]")
+            
+            text = " - ".join(text_parts)
+            specific_users_data.append({
+                'id': user.id,
+                'text': text
+            })
+        
+        return JsonResponse({
+            'status': 'success',
+            'hierarchy': {
+                'id': hierarchy.id,
+                'approver': approver_data,
+                'specific_users': specific_users_data,
+                'work_group': hierarchy.work_group or '',
+                'section': hierarchy.section.id if hierarchy.section else None,
+                'part': hierarchy.part.id if hierarchy.part else None,
+                'unit_group': hierarchy.unit_group.id if hierarchy.unit_group else None,
+                'position': hierarchy.position.id if hierarchy.position else None,
+            }
+        })
+    
+    elif request.method == 'POST':
+        # به‌روزرسانی تأیید کننده
+        form = ApprovalHierarchyForm(request.POST, instance=hierarchy)
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    hierarchy = form.save()
+                    
+                    # ثبت فعالیت
+                    log_user_activity(
+                        user=request.user,
+                        activity_type='update',
+                        description=f'ویرایش تأیید کننده: {hierarchy}',
+                        related_model='ApprovalHierarchy',
+                        related_object_id=hierarchy.id,
+                        url=None,
+                        request=request
+                    )
+                    
+                    return JsonResponse({
+                        'status': 'success',
+                        'message': 'تأیید کننده با موفقیت به‌روزرسانی شد',
+                        'hierarchy': {
+                            'id': hierarchy.id,
+                            'location': str(hierarchy),
+                            'approver': str(hierarchy.approver)
+                        }
+                    })
+            except Exception as e:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'خطا در به‌روزرسانی: {str(e)}'
+                }, status=500)
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'خطا در اعتبارسنجی فرم',
+                'errors': form.errors
+            }, status=400)
+    
+    return JsonResponse({
+        'status': 'error',
+        'message': 'متد درخواست نامعتبر است'
+    }, status=405)
 
 
 @login_required

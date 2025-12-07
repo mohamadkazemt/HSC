@@ -72,6 +72,12 @@ URLS_WITH_LABELS = [
         "label": "مرخصی_مدیریت تأیید کنندگان",
     },
     {
+        "path": "edit-approver/<int:hierarchy_id>/",
+        "view": views.edit_approver,
+        "name": "edit_approver",
+        "label": "مرخصی_ویرایش تأیید کننده",
+    },
+    {
         "path": "delete-approver/<int:hierarchy_id>/",
         "view": views.delete_approver,
         "name": "delete_approver",
