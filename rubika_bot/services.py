@@ -1619,101 +1619,53 @@ class RubikaBotEngine:
             
             file_path = medical_docs_dir / file_name
             
-            # Try to download file using message object directly (rubpy might have download method)
+            # Try to download file using rubpy's correct method: client.download_media(message.file)
             downloaded_content = None
             download_error = None
             
-            # Method 1: Try using message.download() - this is the most common method in rubpy
-            if hasattr(message, 'download'):
+            # Method 1: Use client.download_media(message.file) - this is the correct rubpy method according to docs
+            if hasattr(message, 'file') and message.file:
                 try:
-                    logger.info("Trying message.download()")
-                    downloaded_content = await message.download()
-                    logger.info(f"Successfully downloaded using message.download(), type: {type(downloaded_content)}")
+                    logger.info("Trying client.download_media(message.file)")
+                    print(f"[RUBIKA_BOT] Trying client.download_media(message.file)", flush=True)
+                    downloaded_content = await self.client.download_media(message.file)
+                    if downloaded_content:
+                        logger.info(f"Successfully downloaded using client.download_media(message.file)")
+                        print(f"[RUBIKA_BOT] Successfully downloaded using client.download_media(message.file)", flush=True)
                 except Exception as e:
                     download_error = str(e)
-                    logger.warning(f"Error downloading from message.download(): {e}")
+                    logger.warning(f"Error downloading using client.download_media(message.file): {e}")
+                    print(f"[RUBIKA_BOT] ERROR downloading using client.download_media(message.file): {e}", flush=True)
             
-            # Method 2: Try using message.file.download() if available (rubpy standard)
-            if not downloaded_content and hasattr(message, 'file') and message.file:
-                try:
-                    file_obj = message.file
-                    if hasattr(file_obj, 'download'):
-                        logger.info("Trying to download using file.download()")
-                        downloaded_content = await file_obj.download()
-                        logger.info(f"Successfully downloaded using file.download()")
-                    elif hasattr(file_obj, 'get'):
-                        logger.info("Trying to download using file.get()")
-                        downloaded_content = await file_obj.get()
-                        logger.info(f"Successfully downloaded using file.get()")
-                except Exception as e:
-                    if not download_error:
-                        download_error = str(e)
-                    logger.warning(f"Error downloading from file: {e}")
-            
-            # Method 2b: Try using message.file_inline.download() if available (fallback)
+            # Method 2: Try using message.file_inline if file doesn't exist
             if not downloaded_content and hasattr(message, 'file_inline') and message.file_inline:
                 try:
-                    file_inline_obj = message.file_inline
-                    if hasattr(file_inline_obj, 'download'):
-                        logger.info("Trying to download using file_inline.download()")
-                        downloaded_content = await file_inline_obj.download()
-                        logger.info(f"Successfully downloaded using file_inline.download()")
-                    elif hasattr(file_inline_obj, 'get'):
-                        logger.info("Trying to download using file_inline.get()")
-                        downloaded_content = await file_inline_obj.get()
-                        logger.info(f"Successfully downloaded using file_inline.get()")
+                    logger.info("Trying client.download_media(message.file_inline)")
+                    print(f"[RUBIKA_BOT] Trying client.download_media(message.file_inline)", flush=True)
+                    downloaded_content = await self.client.download_media(message.file_inline)
+                    if downloaded_content:
+                        logger.info(f"Successfully downloaded using client.download_media(message.file_inline)")
+                        print(f"[RUBIKA_BOT] Successfully downloaded using client.download_media(message.file_inline)", flush=True)
                 except Exception as e:
                     if not download_error:
                         download_error = str(e)
-                    logger.warning(f"Error downloading from file_inline: {e}")
+                    logger.warning(f"Error downloading using client.download_media(message.file_inline): {e}")
+                    print(f"[RUBIKA_BOT] ERROR downloading using client.download_media(message.file_inline): {e}", flush=True)
             
-            # Method 3: Try using client.download_media() - this is the correct rubpy method
-            if not downloaded_content and file_id:
+            # Method 3: Try using message.media if both file and file_inline don't exist
+            if not downloaded_content and hasattr(message, 'media') and message.media:
                 try:
-                    logger.info(f"Trying client.download_media with file_id: {file_id}")
-                    print(f"[RUBIKA_BOT] Trying client.download_media with file_id: {file_id}", flush=True)
-                    downloaded_content = await self.client.download_media(file_id=file_id)
+                    logger.info("Trying client.download_media(message.media)")
+                    print(f"[RUBIKA_BOT] Trying client.download_media(message.media)", flush=True)
+                    downloaded_content = await self.client.download_media(message.media)
                     if downloaded_content:
-                        logger.info(f"Successfully downloaded using client.download_media()")
-                        print(f"[RUBIKA_BOT] Successfully downloaded using client.download_media()", flush=True)
+                        logger.info(f"Successfully downloaded using client.download_media(message.media)")
+                        print(f"[RUBIKA_BOT] Successfully downloaded using client.download_media(message.media)", flush=True)
                 except Exception as e:
                     if not download_error:
                         download_error = str(e)
-                    logger.warning(f"Error downloading using client.download_media(): {e}")
-                    # Try alternative methods if download_media fails
-                    try:
-                        if hasattr(self.client, 'get_file'):
-                            logger.info(f"Trying client.get_file with file_id: {file_id}")
-                            downloaded_content = await self.client.get_file(file_id=file_id)
-                            if downloaded_content:
-                                logger.info(f"Successfully downloaded using client.get_file()")
-                    except Exception as e2:
-                        logger.warning(f"Error downloading using client.get_file(): {e2}")
-            
-            # Method 4: Try to extract URL and download manually
-            if not downloaded_content:
-                file_url = None
-                if raw_payload:
-                    msg_data = raw_payload.get('message', {})
-                    file_inline = msg_data.get('file') or msg_data.get('file_inline') or msg_data.get('media')
-                    if file_inline:
-                        file_url = file_inline.get('access_hash_rec') or file_inline.get('url') or file_inline.get('download_url')
-                
-                if file_url:
-                    logger.info(f"Trying to download from URL: {file_url}")
-                    import requests
-                    def download_from_url(url):
-                        try:
-                            response = requests.get(url, timeout=30, stream=True)
-                            if response.status_code == 200:
-                                return response.content
-                        except Exception as e:
-                            logger.warning(f"Error downloading from URL: {e}")
-                        return None
-                    
-                    downloaded_content = await sync_to_async(download_from_url)(file_url)
-                    if downloaded_content:
-                        logger.info(f"Successfully downloaded from URL")
+                    logger.warning(f"Error downloading using client.download_media(message.media): {e}")
+                    print(f"[RUBIKA_BOT] ERROR downloading using client.download_media(message.media): {e}", flush=True)
             
             # Log final status
             if not downloaded_content:
