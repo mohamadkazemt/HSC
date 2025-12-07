@@ -156,24 +156,25 @@ class RubikaBotEngine:
         elif text:
             await self._handle_plain_text(chat_id, text, rubika_user)
         else:
-            # If no text and no photo detected, but message exists, check if it might be a photo
-            # Try to handle as photo anyway if we're in medical_document step
-            @sync_to_async(thread_sensitive=True)
-            def check_medical_step():
-                from rubika_bot.models import LeaveRequestState
-                try:
-                    state = LeaveRequestState.objects.get(rubika_user=rubika_user)
-                    return state.step == 'medical_document'
-                except:
-                    return False
+            # If no text and no photo detected, but message exists, log it
+            # TODO: Temporarily disabled medical_document step check
+            logger.debug(f"Message with no text/photo/button for chat {chat_id}, raw_payload keys: {list(raw_payload.keys()) if raw_payload else 'None'}")
             
-            is_medical_step = await check_medical_step()
-            if is_medical_step:
-                logger.info(f"No photo detected but in medical_document step, trying to handle anyway for chat {chat_id}")
-                await self._handle_photo_message(chat_id, rubika_user, message, raw_payload)
-            else:
-                # If no text and no photo detected, but message exists, log it
-                logger.debug(f"Message with no text/photo/button for chat {chat_id}, raw_payload keys: {list(raw_payload.keys()) if raw_payload else 'None'}")
+            # OLD CODE - TEMPORARILY DISABLED:
+            # # Try to handle as photo anyway if we're in medical_document step
+            # @sync_to_async(thread_sensitive=True)
+            # def check_medical_step():
+            #     from rubika_bot.models import LeaveRequestState
+            #     try:
+            #         state = LeaveRequestState.objects.get(rubika_user=rubika_user)
+            #         return state.step == 'medical_document'
+            #     except:
+            #         return False
+            # 
+            # is_medical_step = await check_medical_step()
+            # if is_medical_step:
+            #     logger.info(f"No photo detected but in medical_document step, trying to handle anyway for chat {chat_id}")
+            #     await self._handle_photo_message(chat_id, rubika_user, message, raw_payload)
 
     async def handle_inline(self, inline_update: InlineMessage) -> None:
         chat_id = _safe_str(inline_update.chat_id)
@@ -1003,8 +1004,9 @@ class RubikaBotEngine:
             # Need to enter hourly times
             await self._ask_for_hourly_times(chat_id, user)
         elif leave_type == 'sick_leave':
-            # Need to upload medical document
-            await self._ask_for_medical_document(chat_id, user)
+            # TODO: Temporarily disabled medical document step - skip directly to description
+            # await self._ask_for_medical_document(chat_id, user)
+            await self._ask_for_description(chat_id, user)
         else:
             # Ask for description
             await self._ask_for_description(chat_id, user)
@@ -1186,9 +1188,10 @@ class RubikaBotEngine:
         elif step == 'description':
             await self._process_description_input(chat_id, user, text, leave_state)
         elif step == 'medical_document':
-            # This should not happen for text input, but handle gracefully
-            message = '⚠️ لطفاً عکس نامه پزشک را ارسال کنید، نه متن.'
-            await self._send_text_message(chat_id, message)
+            # TODO: Temporarily disabled - skip to description
+            # message = '⚠️ لطفاً عکس نامه پزشک را ارسال کنید، نه متن.'
+            # await self._send_text_message(chat_id, message)
+            await self._ask_for_description(chat_id, user)
     
     async def _process_replacement_code_input(self, chat_id: str, user: RubikaUser, text: str, leave_state) -> None:
         """پردازش ورودی کد پرسنلی جایگزین"""
@@ -1487,57 +1490,59 @@ class RubikaBotEngine:
                 return None
         
         try:
-            leave_state = await get_leave_state()
-            
-            # Only process if in medical_document step
-            if not leave_state:
-                message_text = '⚠️ لطفاً ابتدا فرایند درخواست مرخصی را شروع کنید.\n\n💡 از منوی اصلی، گزینه "🏖️ درخواست مرخصی" را انتخاب کنید.'
-                await self._send_text_message(chat_id, message_text)
-                return
-            
-            if leave_state.step != 'medical_document':
-                logger.info(f"User not in medical_document step, current step: {leave_state.step}")
-                message_text = f'⚠️ در حال حاضر در مرحله "{leave_state.step}" هستید. لطفاً مراحل را به ترتیب طی کنید.'
-                await self._send_text_message(chat_id, message_text)
-                return
+            # TODO: Temporarily disabled medical document photo processing
+            # Still allow photo to be downloaded and saved for logging/debugging
             
             # Send immediate acknowledgment
             await self._send_text_message(chat_id, '📥 در حال دریافت عکس...')
             
-            # Download and save the photo
+            # Download and save the photo (but don't process as medical document)
             file_path = await self._download_photo(chat_id, message, raw_payload)
             
             if not file_path:
-                error_msg = (
-                    '❌ خطا در دریافت عکس.\n\n'
-                    'لطفاً:\n'
-                    '1️⃣ مطمئن شوید که عکس را به درستی ارسال کرده‌اید\n'
-                    '2️⃣ دوباره عکس را ارسال کنید\n'
-                    '3️⃣ یا از دکمه انصراف استفاده کنید'
-                )
-                keyboard = Keypad(rows=[
-                    KeypadRow(buttons=[self._button('cancel_leave', '❌ انصراف')])
-                ])
-                await self._send_text_message(chat_id, error_msg, keyboard)
+                logger.warning(f"Photo download failed for chat {chat_id}")
+                # Don't show error to user, just log it
                 return
             
-            # Save file path to state
-            @sync_to_async(thread_sensitive=True)
-            def save_file_path():
-                from rubika_bot.models import LeaveRequestState
-                state = LeaveRequestState.objects.get(rubika_user=user)
-                state.data['medical_document_path'] = file_path
-                state.update_step('description')
-                return state.data
+            # Photo downloaded successfully - just log it, don't save to medical_document_path
+            logger.info(f"Photo successfully downloaded and saved: {file_path} for chat {chat_id}")
             
-            data = await save_file_path()
+            # Inform user that photo was received (but not processed as medical document)
+            confirm_msg = '✅ عکس با موفقیت دریافت و ذخیره شد.'
+            await self._send_text_message(chat_id, confirm_msg)
             
-            # Confirm receipt
-            confirm_msg = '✅ عکس نامه پزشک با موفقیت دریافت شد.\n\n📝 حالا لطفاً توضیحات خود را وارد کنید:'
-            keyboard = Keypad(rows=[
-                KeypadRow(buttons=[self._button('cancel_leave', '❌ انصراف')])
-            ])
-            await self._send_text_message(chat_id, confirm_msg, keyboard)
+            # OLD CODE - TEMPORARILY DISABLED:
+            # leave_state = await get_leave_state()
+            # 
+            # # Only process if in medical_document step
+            # if not leave_state:
+            #     message_text = '⚠️ لطفاً ابتدا فرایند درخواست مرخصی را شروع کنید.\n\n💡 از منوی اصلی، گزینه "🏖️ درخواست مرخصی" را انتخاب کنید.'
+            #     await self._send_text_message(chat_id, message_text)
+            #     return
+            # 
+            # if leave_state.step != 'medical_document':
+            #     logger.info(f"User not in medical_document step, current step: {leave_state.step}")
+            #     message_text = f'⚠️ در حال حاضر در مرحله "{leave_state.step}" هستید. لطفاً مراحل را به ترتیب طی کنید.'
+            #     await self._send_text_message(chat_id, message_text)
+            #     return
+            # 
+            # # Save file path to state
+            # @sync_to_async(thread_sensitive=True)
+            # def save_file_path():
+            #     from rubika_bot.models import LeaveRequestState
+            #     state = LeaveRequestState.objects.get(rubika_user=user)
+            #     state.data['medical_document_path'] = file_path
+            #     state.update_step('description')
+            #     return state.data
+            # 
+            # data = await save_file_path()
+            # 
+            # # Confirm receipt
+            # confirm_msg = '✅ عکس نامه پزشک با موفقیت دریافت شد.\n\n📝 حالا لطفاً توضیحات خود را وارد کنید:'
+            # keyboard = Keypad(rows=[
+            #     KeypadRow(buttons=[self._button('cancel_leave', '❌ انصراف')])
+            # ])
+            # await self._send_text_message(chat_id, confirm_msg, keyboard)
             
         except Exception as e:
             logger.exception(f"Error handling photo message: {e}")
