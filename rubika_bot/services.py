@@ -134,9 +134,10 @@ class RubikaBotEngine:
                 has_photo = True
                 file_inline_data = msg_data.get('file') or msg_data.get('file_inline') or msg_data.get('media') or msg_data
         
-        # Log for debugging
+        # Log for debugging (also print to stdout for journalctl)
         if has_photo:
             logger.info(f"Photo detected for chat {chat_id}, file_inline_data: {file_inline_data}")
+            print(f"[RUBIKA_BOT] Photo detected for chat {chat_id}", flush=True)
 
         if button_id:
             await self._handle_button(chat_id, button_id, rubika_user)
@@ -1463,6 +1464,7 @@ class RubikaBotEngine:
     async def _handle_photo_message(self, chat_id: str, user: RubikaUser, message: Message, raw_payload: Dict[str, Any]) -> None:
         """پردازش پیام حاوی عکس در فرایند درخواست مرخصی"""
         logger.info(f"Handling photo message for chat {chat_id}, user: {user.chat_id}")
+        print(f"[RUBIKA_BOT] Handling photo message for chat {chat_id}, user: {user.chat_id}", flush=True)
         
         @sync_to_async(thread_sensitive=True)
         def get_leave_state():
@@ -1542,8 +1544,10 @@ class RubikaBotEngine:
         
         try:
             logger.info(f"Attempting to download photo for chat {chat_id}")
+            print(f"[RUBIKA_BOT] Attempting to download photo for chat {chat_id}", flush=True)
             logger.debug(f"Message attributes: {dir(message)}")
             logger.debug(f"Raw payload keys: {list(raw_payload.keys()) if raw_payload else 'None'}")
+            print(f"[RUBIKA_BOT] Message has file: {hasattr(message, 'file')}, file_inline: {hasattr(message, 'file_inline')}, media: {hasattr(message, 'media')}", flush=True)
             
             # Extract file information from message or raw_payload
             file_id = None
@@ -1598,6 +1602,7 @@ class RubikaBotEngine:
                 return None
             
             logger.info(f"Found file_id: {file_id}, file_name: {file_name}, file_hash: {file_hash}")
+            print(f"[RUBIKA_BOT] Found file_id: {file_id}, file_name: {file_name}", flush=True)
             
             # Generate unique filename
             if not file_name:
@@ -1666,9 +1671,11 @@ class RubikaBotEngine:
             if not downloaded_content and file_id:
                 try:
                     logger.info(f"Trying client.download_media with file_id: {file_id}")
+                    print(f"[RUBIKA_BOT] Trying client.download_media with file_id: {file_id}", flush=True)
                     downloaded_content = await self.client.download_media(file_id=file_id)
                     if downloaded_content:
                         logger.info(f"Successfully downloaded using client.download_media()")
+                        print(f"[RUBIKA_BOT] Successfully downloaded using client.download_media()", flush=True)
                 except Exception as e:
                     if not download_error:
                         download_error = str(e)
@@ -1715,11 +1722,13 @@ class RubikaBotEngine:
                 if raw_payload:
                     logger.error(f"Raw payload message keys: {list(raw_payload.get('message', {}).keys())}")
                     # Log full raw_payload for debugging (be careful with sensitive data)
-                    logger.error(f"Raw payload message data: {raw_payload.get('message', {})}")
+                    msg_data = raw_payload.get('message', {})
+                    logger.error(f"Raw payload message data: {msg_data}")
+                    print(f"[RUBIKA_BOT] ERROR: Raw payload message keys: {list(msg_data.keys())}", flush=True)
                 # Also print to stderr for immediate visibility
                 import sys
-                print(f"ERROR: Failed to download photo for chat {chat_id}", file=sys.stderr)
-                print(f"ERROR: file_id={file_id}, file_hash={file_hash}, error={download_error}", file=sys.stderr)
+                print(f"[RUBIKA_BOT] ERROR: Failed to download photo for chat {chat_id}", file=sys.stderr, flush=True)
+                print(f"[RUBIKA_BOT] ERROR: file_id={file_id}, file_hash={file_hash}, error={download_error}", file=sys.stderr, flush=True)
             
             if downloaded_content:
                 # Save to disk
@@ -1747,6 +1756,7 @@ class RubikaBotEngine:
                 # Return relative path for Django FileField
                 relative_path = str(Path('leave_medical_docs') / file_name)
                 logger.info(f"File saved successfully: {relative_path}")
+                print(f"[RUBIKA_BOT] File saved successfully: {relative_path}", flush=True)
                 return relative_path
             
             logger.warning(f"Could not download file with file_id: {file_id}, file_hash: {file_hash}")

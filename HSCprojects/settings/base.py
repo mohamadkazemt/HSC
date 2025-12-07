@@ -544,6 +544,11 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
+        'rubika_bot': {
+            'handlers': ['app_file', 'error_file', 'console'],
+            'level': 'DEBUG',  # Use DEBUG to see all logs
+            'propagate': False,
+        },
         # Third-party loggers (reduce noise)
         'urllib3': {
             'level': 'WARNING',

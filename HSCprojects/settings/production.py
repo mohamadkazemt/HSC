@@ -74,6 +74,11 @@ LOGGING = {
             'backupCount': 10,
             'formatter': 'verbose',
         },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
     },
     'root': {
         'handlers': ['file'],
@@ -83,6 +88,11 @@ LOGGING = {
         'django': {
             'handlers': ['file'],
             'level': 'WARNING',
+            'propagate': False,
+        },
+        'rubika_bot': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',  # Use DEBUG to see all logs
             'propagate': False,
         },
     },
