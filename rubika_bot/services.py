@@ -105,24 +105,65 @@ class RubikaBotEngine:
 
         # Check if message contains photo/image
         has_photo = False
+        file_inline_data = None
+        
+        # Check message object attributes
         if hasattr(message, 'file_inline') and message.file_inline:
             has_photo = True
+            file_inline_data = message.file_inline
         elif hasattr(message, 'media') and message.media:
             has_photo = True
-        elif raw_payload:
+            file_inline_data = message.media
+        
+        # Check raw_payload
+        if not has_photo and raw_payload:
             msg_data = raw_payload.get('message', {})
-            if msg_data.get('file_inline') or msg_data.get('media'):
+            file_inline = msg_data.get('file_inline') or msg_data.get('media')
+            if file_inline:
                 has_photo = True
+                file_inline_data = file_inline
+        
+        # Also check for type field that might indicate image/photo
+        if not has_photo and raw_payload:
+            msg_data = raw_payload.get('message', {})
+            msg_type = msg_data.get('type')
+            if msg_type in ['Image', 'Photo', 'File', 'Video', 'Voice', 'Audio']:
+                has_photo = True
+                file_inline_data = msg_data.get('file_inline') or msg_data.get('media') or msg_data
+        
+        # Log for debugging
+        if has_photo:
+            logger.info(f"Photo detected for chat {chat_id}, file_inline_data: {file_inline_data}")
 
         if button_id:
             await self._handle_button(chat_id, button_id, rubika_user)
         elif has_photo:
             # Handle photo/image in leave request flow
+            logger.info(f"Photo detected, handling photo message for chat {chat_id}")
             await self._handle_photo_message(chat_id, rubika_user, message, raw_payload)
         elif text.startswith("/"):
             await self._handle_command(chat_id, text, rubika_user)
         elif text:
             await self._handle_plain_text(chat_id, text, rubika_user)
+        else:
+            # If no text and no photo detected, but message exists, check if it might be a photo
+            # Try to handle as photo anyway if we're in medical_document step
+            @sync_to_async(thread_sensitive=True)
+            def check_medical_step():
+                from rubika_bot.models import LeaveRequestState
+                try:
+                    state = LeaveRequestState.objects.get(rubika_user=rubika_user)
+                    return state.step == 'medical_document'
+                except:
+                    return False
+            
+            is_medical_step = await check_medical_step()
+            if is_medical_step:
+                logger.info(f"No photo detected but in medical_document step, trying to handle anyway for chat {chat_id}")
+                await self._handle_photo_message(chat_id, rubika_user, message, raw_payload)
+            else:
+                # If no text and no photo detected, but message exists, log it
+                logger.debug(f"Message with no text/photo/button for chat {chat_id}, raw_payload keys: {list(raw_payload.keys()) if raw_payload else 'None'}")
 
     async def handle_inline(self, inline_update: InlineMessage) -> None:
         chat_id = _safe_str(inline_update.chat_id)
@@ -1418,29 +1459,52 @@ class RubikaBotEngine:
     
     async def _handle_photo_message(self, chat_id: str, user: RubikaUser, message: Message, raw_payload: Dict[str, Any]) -> None:
         """پردازش پیام حاوی عکس در فرایند درخواست مرخصی"""
+        logger.info(f"Handling photo message for chat {chat_id}, user: {user.chat_id}")
+        
         @sync_to_async(thread_sensitive=True)
         def get_leave_state():
             from rubika_bot.models import LeaveRequestState
             try:
-                return LeaveRequestState.objects.get(rubika_user=user)
+                state = LeaveRequestState.objects.get(rubika_user=user)
+                logger.info(f"Leave state found: step={state.step}, data={state.data}")
+                return state
             except LeaveRequestState.DoesNotExist:
+                logger.info(f"No leave state found for user {user.chat_id}")
                 return None
         
         leave_state = await get_leave_state()
         
         # Only process if in medical_document step
-        if not leave_state or leave_state.step != 'medical_document':
-            message_text = '⚠️ لطفاً ابتدا فرایند درخواست مرخصی را شروع کنید.'
+        if not leave_state:
+            message_text = '⚠️ لطفاً ابتدا فرایند درخواست مرخصی را شروع کنید.\n\n💡 از منوی اصلی، گزینه "🏖️ درخواست مرخصی" را انتخاب کنید.'
             await self._send_text_message(chat_id, message_text)
             return
+        
+        if leave_state.step != 'medical_document':
+            logger.info(f"User not in medical_document step, current step: {leave_state.step}")
+            message_text = f'⚠️ در حال حاضر در مرحله "{leave_state.step}" هستید. لطفاً مراحل را به ترتیب طی کنید.'
+            await self._send_text_message(chat_id, message_text)
+            return
+        
+        # Send immediate acknowledgment
+        await self._send_text_message(chat_id, '📥 در حال دریافت عکس...')
         
         # Download and save the photo
         try:
             file_path = await self._download_photo(chat_id, message, raw_payload)
             
             if not file_path:
-                error_msg = '❌ خطا در دریافت عکس. لطفاً دوباره تلاش کنید.'
-                await self._send_text_message(chat_id, error_msg)
+                error_msg = (
+                    '❌ خطا در دریافت عکس.\n\n'
+                    'لطفاً:\n'
+                    '1️⃣ مطمئن شوید که عکس را به درستی ارسال کرده‌اید\n'
+                    '2️⃣ دوباره عکس را ارسال کنید\n'
+                    '3️⃣ یا از دکمه انصراف استفاده کنید'
+                )
+                keyboard = Keypad(rows=[
+                    KeypadRow(buttons=[self._button('cancel_leave', '❌ انصراف')])
+                ])
+                await self._send_text_message(chat_id, error_msg, keyboard)
                 return
             
             # Save file path to state
@@ -1474,29 +1538,56 @@ class RubikaBotEngine:
         from pathlib import Path
         
         try:
+            logger.info(f"Attempting to download photo for chat {chat_id}")
+            logger.debug(f"Message attributes: {dir(message)}")
+            logger.debug(f"Raw payload keys: {list(raw_payload.keys()) if raw_payload else 'None'}")
+            
             # Extract file information from message or raw_payload
             file_id = None
             file_name = None
+            file_hash = None
             
             # Try to get file info from message
             if hasattr(message, 'file_inline') and message.file_inline:
-                file_id = getattr(message.file_inline, 'file_id', None) or getattr(message.file_inline, 'id', None)
-                file_name = getattr(message.file_inline, 'file_name', None)
+                file_inline_obj = message.file_inline
+                file_id = getattr(file_inline_obj, 'file_id', None) or getattr(file_inline_obj, 'id', None) or getattr(file_inline_obj, 'file_id_inline', None)
+                file_name = getattr(file_inline_obj, 'file_name', None)
+                file_hash = getattr(file_inline_obj, 'access_hash_rec', None) or getattr(file_inline_obj, 'access_hash', None)
+                logger.debug(f"From message.file_inline: file_id={file_id}, file_name={file_name}, file_hash={file_hash}")
             elif hasattr(message, 'media') and message.media:
-                file_id = getattr(message.media, 'file_id', None) or getattr(message.media, 'id', None)
-                file_name = getattr(message.media, 'file_name', None)
+                media_obj = message.media
+                file_id = getattr(media_obj, 'file_id', None) or getattr(media_obj, 'id', None)
+                file_name = getattr(media_obj, 'file_name', None)
+                file_hash = getattr(media_obj, 'access_hash_rec', None) or getattr(media_obj, 'access_hash', None)
+                logger.debug(f"From message.media: file_id={file_id}, file_name={file_name}, file_hash={file_hash}")
             
             # Try from raw_payload
             if not file_id and raw_payload:
                 msg_data = raw_payload.get('message', {})
+                logger.debug(f"Message data keys: {list(msg_data.keys()) if isinstance(msg_data, dict) else 'Not a dict'}")
+                
                 file_inline = msg_data.get('file_inline') or msg_data.get('media')
                 if file_inline:
-                    file_id = file_inline.get('file_id') or file_inline.get('id')
+                    file_id = file_inline.get('file_id') or file_inline.get('id') or file_inline.get('file_id_inline')
                     file_name = file_inline.get('file_name')
+                    file_hash = file_inline.get('access_hash_rec') or file_inline.get('access_hash')
+                    logger.debug(f"From raw_payload file_inline: file_id={file_id}, file_name={file_name}, file_hash={file_hash}")
+                
+                # Also try direct fields in message
+                if not file_id:
+                    file_id = msg_data.get('file_id') or msg_data.get('id')
+                    file_name = msg_data.get('file_name')
+                    file_hash = msg_data.get('access_hash_rec') or msg_data.get('access_hash')
+                    logger.debug(f"From raw_payload message direct: file_id={file_id}, file_name={file_name}, file_hash={file_hash}")
             
             if not file_id:
-                logger.warning(f"No file_id found in message for chat {chat_id}")
+                logger.warning(f"No file_id found in message for chat {chat_id}. Raw payload: {raw_payload}")
+                # Try to use message object_id as fallback
+                if hasattr(message, 'object_guid'):
+                    logger.info(f"Trying to use message object_guid: {message.object_guid}")
                 return None
+            
+            logger.info(f"Found file_id: {file_id}, file_name: {file_name}, file_hash: {file_hash}")
             
             # Generate unique filename
             if not file_name:
@@ -1513,86 +1604,99 @@ class RubikaBotEngine:
             
             file_path = medical_docs_dir / file_name
             
-            # Download file using rubpy client
-            async def download_file():
-                try:
-                    # Try to download file using rubpy client
-                    # First, try to get file using get_file method if available
-                    downloaded_content = None
-                    
-                    try:
-                        # Try different methods to download file
-                        if hasattr(self.client, 'get_file'):
-                            downloaded_content = await self.client.get_file(file_id=file_id)
-                        elif hasattr(self.client, 'download_file'):
-                            downloaded_content = await self.client.download_file(file_id=file_id)
-                        else:
-                            # Try to use message object to get file
-                            if hasattr(message, 'file_inline') and message.file_inline:
-                                # Try to get file from message
-                                file_obj = message.file_inline
-                                if hasattr(file_obj, 'download') or hasattr(file_obj, 'get'):
-                                    try:
-                                        downloaded_content = await file_obj.download() if hasattr(file_obj, 'download') else await file_obj.get()
-                                    except:
-                                        pass
-                    except Exception as e:
-                        logger.warning(f"Could not download file using client methods: {e}")
-                    
-                    # If download failed, try to get file URL and download manually
-                    if not downloaded_content:
-                        # Extract file URL from raw_payload if available
-                        file_url = None
-                        if raw_payload:
-                            msg_data = raw_payload.get('message', {})
-                            file_inline = msg_data.get('file_inline') or msg_data.get('media')
-                            if file_inline:
-                                file_url = file_inline.get('access_hash_rec') or file_inline.get('url')
-                        
-                        if file_url:
-                            # Download from URL using requests (sync) in async context
-                            import requests
-                            def download_from_url(url):
-                                try:
-                                    response = requests.get(url, timeout=30)
-                                    if response.status_code == 200:
-                                        return response.content
-                                except Exception as e:
-                                    logger.warning(f"Error downloading from URL: {e}")
-                                return None
-                            
-                            downloaded_content = await sync_to_async(download_from_url)(file_url)
-                    
-                    if downloaded_content:
-                        # Save to disk
-                        with open(file_path, 'wb') as f:
-                            if isinstance(downloaded_content, bytes):
-                                f.write(downloaded_content)
-                            elif hasattr(downloaded_content, 'read'):
-                                f.write(downloaded_content.read())
-                            else:
-                                # Try to get content attribute
-                                content = getattr(downloaded_content, 'content', None)
-                                if content:
-                                    if isinstance(content, bytes):
-                                        f.write(content)
-                                    elif hasattr(content, 'read'):
-                                        f.write(content.read())
-                                    else:
-                                        return None
-                                else:
-                                    return None
-                        
-                        # Return relative path for Django FileField
-                        return str(Path('leave_medical_docs') / file_name)
-                    
-                    logger.warning(f"Could not download file with file_id: {file_id}")
-                    return None
-                except Exception as e:
-                    logger.exception(f"Error downloading file: {e}")
-                    return None
+            # Try to download file using message object directly (rubpy might have download method)
+            downloaded_content = None
             
-            return await download_file()
+            # Method 1: Try using message.file_inline.download() if available
+            if hasattr(message, 'file_inline') and message.file_inline:
+                try:
+                    file_inline_obj = message.file_inline
+                    if hasattr(file_inline_obj, 'download'):
+                        logger.info("Trying to download using file_inline.download()")
+                        downloaded_content = await file_inline_obj.download()
+                    elif hasattr(file_inline_obj, 'get'):
+                        logger.info("Trying to download using file_inline.get()")
+                        downloaded_content = await file_inline_obj.get()
+                except Exception as e:
+                    logger.warning(f"Error downloading from file_inline: {e}")
+            
+            # Method 2: Try using client methods
+            if not downloaded_content:
+                try:
+                    if hasattr(self.client, 'get_file'):
+                        logger.info(f"Trying client.get_file with file_id: {file_id}")
+                        downloaded_content = await self.client.get_file(file_id=file_id)
+                    elif hasattr(self.client, 'download_file'):
+                        logger.info(f"Trying client.download_file with file_id: {file_id}")
+                        downloaded_content = await self.client.download_file(file_id=file_id)
+                    elif hasattr(self.client, 'download'):
+                        logger.info(f"Trying client.download with file_id: {file_id}")
+                        downloaded_content = await self.client.download(file_id=file_id)
+                except Exception as e:
+                    logger.warning(f"Error downloading using client methods: {e}")
+            
+            # Method 3: Try to get file from message object directly
+            if not downloaded_content and hasattr(message, 'download'):
+                try:
+                    logger.info("Trying message.download()")
+                    downloaded_content = await message.download()
+                except Exception as e:
+                    logger.warning(f"Error downloading from message: {e}")
+            
+            # Method 4: Try to extract URL and download manually
+            if not downloaded_content:
+                file_url = None
+                if raw_payload:
+                    msg_data = raw_payload.get('message', {})
+                    file_inline = msg_data.get('file_inline') or msg_data.get('media')
+                    if file_inline:
+                        file_url = file_inline.get('access_hash_rec') or file_inline.get('url') or file_inline.get('download_url')
+                
+                if file_url:
+                    logger.info(f"Trying to download from URL: {file_url}")
+                    import requests
+                    def download_from_url(url):
+                        try:
+                            response = requests.get(url, timeout=30, stream=True)
+                            if response.status_code == 200:
+                                return response.content
+                        except Exception as e:
+                            logger.warning(f"Error downloading from URL: {e}")
+                        return None
+                    
+                    downloaded_content = await sync_to_async(download_from_url)(file_url)
+            
+            if downloaded_content:
+                # Save to disk
+                logger.info(f"Saving file to: {file_path}")
+                with open(file_path, 'wb') as f:
+                    if isinstance(downloaded_content, bytes):
+                        f.write(downloaded_content)
+                    elif hasattr(downloaded_content, 'read'):
+                        f.write(downloaded_content.read())
+                    else:
+                        # Try to get content attribute
+                        content = getattr(downloaded_content, 'content', None)
+                        if content:
+                            if isinstance(content, bytes):
+                                f.write(content)
+                            elif hasattr(content, 'read'):
+                                f.write(content.read())
+                            else:
+                                logger.warning("Could not extract content from downloaded file")
+                                return None
+                        else:
+                            logger.warning("No content found in downloaded file")
+                            return None
+                
+                # Return relative path for Django FileField
+                relative_path = str(Path('leave_medical_docs') / file_name)
+                logger.info(f"File saved successfully: {relative_path}")
+                return relative_path
+            
+            logger.warning(f"Could not download file with file_id: {file_id}, file_hash: {file_hash}")
+            # Return a placeholder path so the flow can continue (user can retry)
+            return None
             
         except Exception as e:
             logger.exception(f"Error in _download_photo: {e}")
