@@ -60,6 +60,37 @@ class ApprovalHierarchy(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="تاریخ بروزرسانی")
 
+    def clean(self):
+        """
+        اعتبارسنجی: حداقل یکی از فیلدهای معیار باید انتخاب شده باشد
+        """
+        if not self.has_any_criteria():
+            raise ValidationError(
+                'باید حداقل یکی از فیلدهای معیار (کاربران خاص، گروه کاری، بخش، قسمت، گروه واحد، یا سمت) را انتخاب کنید.'
+            )
+        
+        # بررسی اینکه اگر part انتخاب شده، باید section آن را هم داشته باشد
+        if self.part and self.section:
+            if self.part.section != self.section:
+                raise ValidationError('قسمت انتخاب شده متعلق به بخش انتخاب شده نیست.')
+        
+        # بررسی اینکه اگر unit_group انتخاب شده، باید part آن را هم داشته باشد
+        if self.unit_group and self.part:
+            if self.unit_group.part != self.part:
+                raise ValidationError('گروه واحد انتخاب شده متعلق به قسمت انتخاب شده نیست.')
+        
+        # بررسی اینکه اگر position انتخاب شده، باید unit_group آن را هم داشته باشد
+        if self.position and self.unit_group:
+            if self.position.unit_group != self.unit_group:
+                raise ValidationError('سمت انتخاب شده متعلق به گروه واحد انتخاب شده نیست.')
+
+    def save(self, *args, **kwargs):
+        """
+        اعتبارسنجی قبل از ذخیره
+        """
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     class Meta:
         verbose_name = "سلسله مراتب تأیید"
         verbose_name_plural = "سلسله مراتب تأیید"
@@ -96,13 +127,53 @@ class ApprovalHierarchy(models.Model):
         
         return weight
 
+    def has_any_criteria(self):
+        """
+        بررسی اینکه آیا این قانون حداقل یک معیار دارد
+        """
+        return any([
+            self.specific_users.exists(),
+            self.work_group,
+            self.section,
+            self.part,
+            self.unit_group,
+            self.position,
+        ])
+    
+    def get_criteria_count(self):
+        """
+        شمارش تعداد معیارهای انتخاب شده در این قانون
+        برای تعیین دقیق‌ترین تطبیق
+        """
+        count = 0
+        if self.specific_users.exists():
+            count += 1
+        if self.work_group:
+            count += 1
+        if self.section:
+            count += 1
+        if self.part:
+            count += 1
+        if self.unit_group:
+            count += 1
+        if self.position:
+            count += 1
+        return count
+    
     def matches_user_profile(self, user_profile):
         """
         بررسی اینکه آیا این قانون با پروفایل کاربر تطبیق دارد
         یک قانون تطبیق دارد اگر:
         - همه فیلدهای تعریف شده در قانون با پروفایل کاربر مطابقت داشته باشند
         - یا فیلد در قانون None باشد (یعنی نادیده گرفته شود)
+        
+        نکته: اگر قانون هیچ معیاری نداشته باشد (قانون عمومی)، False برمی‌گرداند
+        تا از اعمال قوانین عمومی جلوگیری شود
         """
+        # اگر قانون هیچ معیاری نداشته باشد، تطبیق ندارد
+        if not self.has_any_criteria():
+            return False
+        
         # بررسی specific_users
         if self.specific_users.exists():
             if user_profile.user not in self.specific_users.all():
@@ -281,7 +352,12 @@ class ShiftReport(models.Model):
     def get_required_approver(self):
         """
         پیدا کردن تأیید کننده مورد نیاز بر اساس بهترین تطبیق با قوانین ApprovalHierarchy
-        از قوانین با وزن بالاتر (مشخص‌تر) استفاده می‌کند
+        
+        منطق انتخاب:
+        1. ابتدا همه قوانین تطبیق‌دار را پیدا می‌کند
+        2. از بین آنها، قانونی که بیشترین تعداد معیار را دارد (دقیق‌ترین تطبیق) را انتخاب می‌کند
+        3. اگر چند قانون با همان تعداد معیار وجود داشت، آن‌ها را بر اساس وزن مرتب می‌کند
+        4. قانون با بیشترین معیار و در صورت تساوی، با بالاترین وزن انتخاب می‌شود
         """
         import logging
         logger = logging.getLogger(__name__)
@@ -303,22 +379,24 @@ class ShiftReport(models.Model):
             'approver', 'approver__user', 'section', 'part', 'unit_group', 'position'
         ).prefetch_related('specific_users').all():
             if rule.matches_user_profile(requester_profile):
+                criteria_count = rule.get_criteria_count()
                 weight = rule.get_weight()
-                matching_rules.append((weight, rule))
-                logger.info(f"   ✅ Rule matched: {rule} (weight: {weight})")
+                matching_rules.append((criteria_count, weight, rule))
+                logger.info(f"   ✅ Rule matched: {rule} (criteria_count: {criteria_count}, weight: {weight})")
         
         if not matching_rules:
             logger.warning(f"⚠️ No matching approval rule found for user {self.user.username}")
             return None
         
-        # مرتب‌سازی بر اساس وزن (نزولی) - قانون با وزن بالاتر اولویت دارد
-        matching_rules.sort(key=lambda x: x[0], reverse=True)
+        # مرتب‌سازی: اول بر اساس تعداد معیارها (نزولی)، سپس بر اساس وزن (نزولی)
+        # قانون با بیشترین معیار و در صورت تساوی، با بالاترین وزن اولویت دارد
+        matching_rules.sort(key=lambda x: (x[0], x[1]), reverse=True)
         
-        # برگرداندن تأیید کننده از قانون با بالاترین وزن
-        best_rule = matching_rules[0][1]
+        # برگرداندن تأیید کننده از قانون با بیشترین معیار و بالاترین وزن
+        best_rule = matching_rules[0][2]
         approver = best_rule.approver
         
-        logger.info(f"✅ Best matching rule: {best_rule} (weight: {matching_rules[0][0]})")
+        logger.info(f"✅ Best matching rule: {best_rule} (criteria_count: {matching_rules[0][0]}, weight: {matching_rules[0][1]})")
         logger.info(f"   Approver: {approver}")
         
         return approver
