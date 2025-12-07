@@ -1617,6 +1617,9 @@ class RubikaBotEngine:
             logger.info(f"Found file_id: {file_id}, file_name: {file_name}, file_hash: {file_hash}")
             print(f"[RUBIKA_BOT] Found file_id: {file_id}, file_name: {file_name}", flush=True)
             
+            # Check if access_hash is missing (this indicates we need to fetch full message)
+            access_hash_missing = (file_hash is None or file_hash == '') and file_id is not None
+            
             # Generate unique filename
             if not file_name:
                 file_name = f"medical_doc_{uuid.uuid4().hex[:8]}.jpg"
@@ -1679,6 +1682,80 @@ class RubikaBotEngine:
                         download_error = str(e)
                     logger.warning(f"Error downloading using client.download_media(message.media): {e}")
                     print(f"[RUBIKA_BOT] ERROR downloading using client.download_media(message.media): {e}", flush=True)
+            
+            # Fallback: If download failed or access_hash was missing, fetch full message from server
+            needs_fallback = not downloaded_content and (access_hash_missing or download_error)
+            
+            if needs_fallback:
+                try:
+                    # Get message_id from message object or raw_payload
+                    message_id = getattr(message, 'message_id', None)
+                    if not message_id and raw_payload:
+                        msg_data = raw_payload.get('message', {})
+                        message_id = msg_data.get('message_id')
+                    
+                    if message_id and chat_id:
+                        logger.info(f"access_hash missing or download failed. Fetching full message from server: chat_id={chat_id}, message_id={message_id}")
+                        print(f"[RUBIKA_BOT] Fetching full message from server: chat_id={chat_id}, message_id={message_id}", flush=True)
+                        
+                        # Fetch the full message object from the server
+                        full_messages = await self.client.get_messages(chat_id, [message_id])
+                        
+                        if full_messages and len(full_messages) > 0:
+                            full_message = full_messages[0]
+                            logger.info(f"Successfully fetched full message object from server")
+                            print(f"[RUBIKA_BOT] Successfully fetched full message object from server", flush=True)
+                            
+                            # Try downloading again with the full message object
+                            if hasattr(full_message, 'file') and full_message.file:
+                                try:
+                                    logger.info("Retrying download with full message.file")
+                                    print(f"[RUBIKA_BOT] Retrying download with full message.file", flush=True)
+                                    downloaded_content = await self.client.download_media(full_message.file)
+                                    if downloaded_content:
+                                        logger.info(f"Successfully downloaded using full message.file")
+                                        print(f"[RUBIKA_BOT] Successfully downloaded using full message.file", flush=True)
+                                except Exception as e:
+                                    logger.warning(f"Error downloading with full message.file: {e}")
+                                    print(f"[RUBIKA_BOT] ERROR downloading with full message.file: {e}", flush=True)
+                            
+                            # Try file_inline if file didn't work
+                            if not downloaded_content and hasattr(full_message, 'file_inline') and full_message.file_inline:
+                                try:
+                                    logger.info("Retrying download with full message.file_inline")
+                                    print(f"[RUBIKA_BOT] Retrying download with full message.file_inline", flush=True)
+                                    downloaded_content = await self.client.download_media(full_message.file_inline)
+                                    if downloaded_content:
+                                        logger.info(f"Successfully downloaded using full message.file_inline")
+                                        print(f"[RUBIKA_BOT] Successfully downloaded using full message.file_inline", flush=True)
+                                except Exception as e:
+                                    logger.warning(f"Error downloading with full message.file_inline: {e}")
+                                    print(f"[RUBIKA_BOT] ERROR downloading with full message.file_inline: {e}", flush=True)
+                            
+                            # Try media if both didn't work
+                            if not downloaded_content and hasattr(full_message, 'media') and full_message.media:
+                                try:
+                                    logger.info("Retrying download with full message.media")
+                                    print(f"[RUBIKA_BOT] Retrying download with full message.media", flush=True)
+                                    downloaded_content = await self.client.download_media(full_message.media)
+                                    if downloaded_content:
+                                        logger.info(f"Successfully downloaded using full message.media")
+                                        print(f"[RUBIKA_BOT] Successfully downloaded using full message.media", flush=True)
+                                except Exception as e:
+                                    logger.warning(f"Error downloading with full message.media: {e}")
+                                    print(f"[RUBIKA_BOT] ERROR downloading with full message.media: {e}", flush=True)
+                        else:
+                            logger.warning(f"Failed to fetch full message from server: no messages returned")
+                            print(f"[RUBIKA_BOT] Failed to fetch full message from server: no messages returned", flush=True)
+                    else:
+                        logger.warning(f"Cannot fetch full message: missing message_id or chat_id. message_id={message_id}, chat_id={chat_id}")
+                        print(f"[RUBIKA_BOT] Cannot fetch full message: missing message_id or chat_id", flush=True)
+                except Exception as e:
+                    logger.exception(f"Error while fetching full message from server: {e}")
+                    print(f"[RUBIKA_BOT] ERROR while fetching full message from server: {e}", flush=True)
+                    # Don't overwrite download_error if we already have one
+                    if not download_error:
+                        download_error = f"Fallback failed: {str(e)}"
             
             # Log final status
             if not downloaded_content:
