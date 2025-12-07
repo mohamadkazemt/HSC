@@ -107,8 +107,11 @@ class RubikaBotEngine:
         has_photo = False
         file_inline_data = None
         
-        # Check message object attributes
-        if hasattr(message, 'file_inline') and message.file_inline:
+        # Check message object attributes (rubpy uses message.file)
+        if hasattr(message, 'file') and message.file:
+            has_photo = True
+            file_inline_data = message.file
+        elif hasattr(message, 'file_inline') and message.file_inline:
             has_photo = True
             file_inline_data = message.file_inline
         elif hasattr(message, 'media') and message.media:
@@ -118,7 +121,7 @@ class RubikaBotEngine:
         # Check raw_payload
         if not has_photo and raw_payload:
             msg_data = raw_payload.get('message', {})
-            file_inline = msg_data.get('file_inline') or msg_data.get('media')
+            file_inline = msg_data.get('file') or msg_data.get('file_inline') or msg_data.get('media')
             if file_inline:
                 has_photo = True
                 file_inline_data = file_inline
@@ -129,7 +132,7 @@ class RubikaBotEngine:
             msg_type = msg_data.get('type')
             if msg_type in ['Image', 'Photo', 'File', 'Video', 'Voice', 'Audio']:
                 has_photo = True
-                file_inline_data = msg_data.get('file_inline') or msg_data.get('media') or msg_data
+                file_inline_data = msg_data.get('file') or msg_data.get('file_inline') or msg_data.get('media') or msg_data
         
         # Log for debugging
         if has_photo:
@@ -1547,8 +1550,14 @@ class RubikaBotEngine:
             file_name = None
             file_hash = None
             
-            # Try to get file info from message
-            if hasattr(message, 'file_inline') and message.file_inline:
+            # Try to get file info from message (rubpy uses message.file)
+            if hasattr(message, 'file') and message.file:
+                file_obj = message.file
+                file_id = getattr(file_obj, 'file_id', None) or getattr(file_obj, 'id', None)
+                file_name = getattr(file_obj, 'file_name', None)
+                file_hash = getattr(file_obj, 'access_hash_rec', None) or getattr(file_obj, 'access_hash', None)
+                logger.debug(f"From message.file: file_id={file_id}, file_name={file_name}, file_hash={file_hash}")
+            elif hasattr(message, 'file_inline') and message.file_inline:
                 file_inline_obj = message.file_inline
                 file_id = getattr(file_inline_obj, 'file_id', None) or getattr(file_inline_obj, 'id', None) or getattr(file_inline_obj, 'file_id_inline', None)
                 file_name = getattr(file_inline_obj, 'file_name', None)
@@ -1566,12 +1575,13 @@ class RubikaBotEngine:
                 msg_data = raw_payload.get('message', {})
                 logger.debug(f"Message data keys: {list(msg_data.keys()) if isinstance(msg_data, dict) else 'Not a dict'}")
                 
-                file_inline = msg_data.get('file_inline') or msg_data.get('media')
+                # Try file, file_inline, or media
+                file_inline = msg_data.get('file') or msg_data.get('file_inline') or msg_data.get('media')
                 if file_inline:
                     file_id = file_inline.get('file_id') or file_inline.get('id') or file_inline.get('file_id_inline')
                     file_name = file_inline.get('file_name')
                     file_hash = file_inline.get('access_hash_rec') or file_inline.get('access_hash')
-                    logger.debug(f"From raw_payload file_inline: file_id={file_id}, file_name={file_name}, file_hash={file_hash}")
+                    logger.debug(f"From raw_payload file: file_id={file_id}, file_name={file_name}, file_hash={file_hash}")
                 
                 # Also try direct fields in message
                 if not file_id:
@@ -1606,49 +1616,79 @@ class RubikaBotEngine:
             
             # Try to download file using message object directly (rubpy might have download method)
             downloaded_content = None
+            download_error = None
             
-            # Method 1: Try using message.file_inline.download() if available
-            if hasattr(message, 'file_inline') and message.file_inline:
+            # Method 1: Try using message.download() - this is the most common method in rubpy
+            if hasattr(message, 'download'):
+                try:
+                    logger.info("Trying message.download()")
+                    downloaded_content = await message.download()
+                    logger.info(f"Successfully downloaded using message.download(), type: {type(downloaded_content)}")
+                except Exception as e:
+                    download_error = str(e)
+                    logger.warning(f"Error downloading from message.download(): {e}")
+            
+            # Method 2: Try using message.file.download() if available (rubpy standard)
+            if not downloaded_content and hasattr(message, 'file') and message.file:
+                try:
+                    file_obj = message.file
+                    if hasattr(file_obj, 'download'):
+                        logger.info("Trying to download using file.download()")
+                        downloaded_content = await file_obj.download()
+                        logger.info(f"Successfully downloaded using file.download()")
+                    elif hasattr(file_obj, 'get'):
+                        logger.info("Trying to download using file.get()")
+                        downloaded_content = await file_obj.get()
+                        logger.info(f"Successfully downloaded using file.get()")
+                except Exception as e:
+                    if not download_error:
+                        download_error = str(e)
+                    logger.warning(f"Error downloading from file: {e}")
+            
+            # Method 2b: Try using message.file_inline.download() if available (fallback)
+            if not downloaded_content and hasattr(message, 'file_inline') and message.file_inline:
                 try:
                     file_inline_obj = message.file_inline
                     if hasattr(file_inline_obj, 'download'):
                         logger.info("Trying to download using file_inline.download()")
                         downloaded_content = await file_inline_obj.download()
+                        logger.info(f"Successfully downloaded using file_inline.download()")
                     elif hasattr(file_inline_obj, 'get'):
                         logger.info("Trying to download using file_inline.get()")
                         downloaded_content = await file_inline_obj.get()
+                        logger.info(f"Successfully downloaded using file_inline.get()")
                 except Exception as e:
+                    if not download_error:
+                        download_error = str(e)
                     logger.warning(f"Error downloading from file_inline: {e}")
             
-            # Method 2: Try using client methods
-            if not downloaded_content:
+            # Method 3: Try using client.download_media() - this is the correct rubpy method
+            if not downloaded_content and file_id:
                 try:
-                    if hasattr(self.client, 'get_file'):
-                        logger.info(f"Trying client.get_file with file_id: {file_id}")
-                        downloaded_content = await self.client.get_file(file_id=file_id)
-                    elif hasattr(self.client, 'download_file'):
-                        logger.info(f"Trying client.download_file with file_id: {file_id}")
-                        downloaded_content = await self.client.download_file(file_id=file_id)
-                    elif hasattr(self.client, 'download'):
-                        logger.info(f"Trying client.download with file_id: {file_id}")
-                        downloaded_content = await self.client.download(file_id=file_id)
+                    logger.info(f"Trying client.download_media with file_id: {file_id}")
+                    downloaded_content = await self.client.download_media(file_id=file_id)
+                    if downloaded_content:
+                        logger.info(f"Successfully downloaded using client.download_media()")
                 except Exception as e:
-                    logger.warning(f"Error downloading using client methods: {e}")
-            
-            # Method 3: Try to get file from message object directly
-            if not downloaded_content and hasattr(message, 'download'):
-                try:
-                    logger.info("Trying message.download()")
-                    downloaded_content = await message.download()
-                except Exception as e:
-                    logger.warning(f"Error downloading from message: {e}")
+                    if not download_error:
+                        download_error = str(e)
+                    logger.warning(f"Error downloading using client.download_media(): {e}")
+                    # Try alternative methods if download_media fails
+                    try:
+                        if hasattr(self.client, 'get_file'):
+                            logger.info(f"Trying client.get_file with file_id: {file_id}")
+                            downloaded_content = await self.client.get_file(file_id=file_id)
+                            if downloaded_content:
+                                logger.info(f"Successfully downloaded using client.get_file()")
+                    except Exception as e2:
+                        logger.warning(f"Error downloading using client.get_file(): {e2}")
             
             # Method 4: Try to extract URL and download manually
             if not downloaded_content:
                 file_url = None
                 if raw_payload:
                     msg_data = raw_payload.get('message', {})
-                    file_inline = msg_data.get('file_inline') or msg_data.get('media')
+                    file_inline = msg_data.get('file') or msg_data.get('file_inline') or msg_data.get('media')
                     if file_inline:
                         file_url = file_inline.get('access_hash_rec') or file_inline.get('url') or file_inline.get('download_url')
                 
@@ -1665,6 +1705,21 @@ class RubikaBotEngine:
                         return None
                     
                     downloaded_content = await sync_to_async(download_from_url)(file_url)
+                    if downloaded_content:
+                        logger.info(f"Successfully downloaded from URL")
+            
+            # Log final status
+            if not downloaded_content:
+                logger.error(f"Failed to download file. file_id: {file_id}, file_hash: {file_hash}, error: {download_error}")
+                logger.error(f"Message object attributes: {[attr for attr in dir(message) if not attr.startswith('_')]}")
+                if raw_payload:
+                    logger.error(f"Raw payload message keys: {list(raw_payload.get('message', {}).keys())}")
+                    # Log full raw_payload for debugging (be careful with sensitive data)
+                    logger.error(f"Raw payload message data: {raw_payload.get('message', {})}")
+                # Also print to stderr for immediate visibility
+                import sys
+                print(f"ERROR: Failed to download photo for chat {chat_id}", file=sys.stderr)
+                print(f"ERROR: file_id={file_id}, file_hash={file_hash}, error={download_error}", file=sys.stderr)
             
             if downloaded_content:
                 # Save to disk
