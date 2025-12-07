@@ -1632,10 +1632,95 @@ class RubikaBotEngine:
             
             file_path = medical_docs_dir / file_name
             
-            # Try direct download first
             downloaded_content = None
             download_error = None
             
+            # ========== STEP 2: Smart Fetch ==========
+            # If access_hash is missing, SKIP immediate download and fetch full message first
+            if access_hash_missing:
+                logger.info("access_hash is missing. Skipping immediate download and fetching full message first.")
+                print(f"[RUBIKA_BOT] access_hash missing - will fetch full message first", flush=True)
+                
+                # Extract message_id and sender_id
+                message_id = getattr(message, 'message_id', None)
+                if not message_id and raw_payload:
+                    msg_data = raw_payload.get('message', {})
+                    message_id = msg_data.get('message_id')
+                
+                # Extract sender_id from raw_payload or message object
+                sender_id = None
+                if raw_payload:
+                    msg_data = raw_payload.get('message', {})
+                    sender_id = msg_data.get('sender_id')
+                    # Also try from user.guid if sender_id is not available
+                    if not sender_id:
+                        user_data = msg_data.get('user', {})
+                        if isinstance(user_data, dict):
+                            sender_id = user_data.get('guid')
+                
+                # Try from message object
+                if not sender_id:
+                    sender_id = getattr(message, 'sender_id', None) or getattr(message, 'author_guid', None)
+                
+                logger.info(f"Fetching full message. chat_id={chat_id}, sender_id={sender_id}, message_id={message_id}")
+                print(f"[RUBIKA_BOT] Fetching full message. chat_id={chat_id}, sender_id={sender_id}, message_id={message_id}", flush=True)
+                
+                if not message_id:
+                    logger.error("Cannot fetch full message: missing message_id")
+                    print(f"[RUBIKA_BOT] ERROR: Cannot fetch full message - missing message_id", flush=True)
+                    return None
+                
+                full_message = None
+                fetched_with = None
+                
+                # Determine which ID to use for get_messages
+                # If chat_id starts with "b0", it's a bot GUID - MUST use sender_id
+                use_id_for_fetch = None
+                if chat_id and str(chat_id).startswith('b0'):
+                    # Bot GUID detected - MUST use sender_id
+                    if sender_id:
+                        use_id_for_fetch = sender_id
+                        fetched_with = 'sender_id'
+                        logger.info(f"chat_id starts with 'b0' (bot GUID). Using sender_id: {sender_id}")
+                        print(f"[RUBIKA_BOT] chat_id starts with 'b0' - using sender_id: {sender_id}", flush=True)
+                    else:
+                        logger.error("chat_id is bot GUID but sender_id is missing")
+                        print(f"[RUBIKA_BOT] ERROR: chat_id is bot GUID but sender_id is missing", flush=True)
+                        return None
+                else:
+                    # Not a bot GUID - use chat_id
+                    use_id_for_fetch = chat_id
+                    fetched_with = 'chat_id'
+                    logger.info(f"chat_id does not start with 'b0'. Using chat_id: {chat_id}")
+                    print(f"[RUBIKA_BOT] Using chat_id: {chat_id}", flush=True)
+                
+                # Fetch the full message
+                if use_id_for_fetch:
+                    try:
+                        logger.info(f"Fetching message with {fetched_with}: {use_id_for_fetch}")
+                        print(f"[RUBIKA_BOT] Fetching message with {fetched_with}: {use_id_for_fetch}", flush=True)
+                        full_messages = await self.client.get_messages(use_id_for_fetch, [message_id])
+                        if full_messages and len(full_messages) > 0:
+                            full_message = full_messages[0]
+                            logger.info(f"Successfully fetched full message using {fetched_with}: {use_id_for_fetch}")
+                            print(f"[RUBIKA_BOT] Successfully fetched full message using {fetched_with}: {use_id_for_fetch}", flush=True)
+                        else:
+                            logger.error(f"Failed to fetch message - empty result from get_messages")
+                            print(f"[RUBIKA_BOT] ERROR: Failed to fetch message - empty result", flush=True)
+                            return None
+                    except Exception as e:
+                        logger.exception(f"Error fetching message with {fetched_with}: {e}")
+                        print(f"[RUBIKA_BOT] ERROR fetching message with {fetched_with}: {e}", flush=True)
+                        return None
+                
+                # Use the fetched full message for download
+                if full_message:
+                    message = full_message  # Replace message with full message for download
+                    logger.info(f"Using fetched full message for download (fetched with {fetched_with})")
+                    print(f"[RUBIKA_BOT] Using fetched full message for download", flush=True)
+            
+            # ========== STEP 3: Download ==========
+            # Now try to download (either with original message if hash exists, or with fetched full message)
             # Method 1: Use client.download_media(message.file)
             if hasattr(message, 'file') and message.file:
                 try:
@@ -1679,128 +1764,6 @@ class RubikaBotEngine:
                         download_error = str(e)
                     logger.warning(f"Error downloading using client.download_media(message.media): {e}")
                     print(f"[RUBIKA_BOT] ERROR downloading using client.download_media(message.media): {e}", flush=True)
-            
-            # ========== STEP 2: Fallback Logic ==========
-            # If download failed or access_hash is missing, fetch full message from server
-            needs_fallback = not downloaded_content and (access_hash_missing or download_error)
-            
-            if needs_fallback:
-                try:
-                    # Extract message_id
-                    message_id = getattr(message, 'message_id', None)
-                    if not message_id and raw_payload:
-                        msg_data = raw_payload.get('message', {})
-                        message_id = msg_data.get('message_id')
-                    
-                    # Extract sender_id from raw_payload or message object
-                    sender_id = None
-                    if raw_payload:
-                        msg_data = raw_payload.get('message', {})
-                        sender_id = msg_data.get('sender_id')
-                        # Also try from user.guid if sender_id is not available
-                        if not sender_id:
-                            user_data = msg_data.get('user', {})
-                            if isinstance(user_data, dict):
-                                sender_id = user_data.get('guid')
-                    
-                    # Try from message object
-                    if not sender_id:
-                        sender_id = getattr(message, 'sender_id', None) or getattr(message, 'author_guid', None)
-                    
-                    logger.info(f"Fallback triggered. chat_id={chat_id}, sender_id={sender_id}, message_id={message_id}")
-                    print(f"[RUBIKA_BOT] Fallback triggered. chat_id={chat_id}, sender_id={sender_id}, message_id={message_id}", flush=True)
-                    
-                    if not message_id:
-                        logger.warning(f"Cannot fetch full message: missing message_id")
-                        print(f"[RUBIKA_BOT] Cannot fetch full message: missing message_id", flush=True)
-                    else:
-                        full_message = None
-                        fetched_with = None
-                        
-                        # Step 2a: First try with chat_id
-                        if chat_id:
-                            try:
-                                logger.info(f"Trying to fetch message with chat_id: {chat_id}")
-                                print(f"[RUBIKA_BOT] Trying to fetch message with chat_id: {chat_id}", flush=True)
-                                full_messages = await self.client.get_messages(chat_id, [message_id])
-                                if full_messages and len(full_messages) > 0:
-                                    full_message = full_messages[0]
-                                    fetched_with = 'chat_id'
-                                    logger.info(f"Successfully fetched full message using chat_id: {chat_id}")
-                                    print(f"[RUBIKA_BOT] Successfully fetched full message using chat_id: {chat_id}", flush=True)
-                            except Exception as e:
-                                logger.warning(f"Failed to fetch with chat_id: {e}")
-                                print(f"[RUBIKA_BOT] Failed to fetch with chat_id: {e}", flush=True)
-                        
-                        # Step 2c: If chat_id failed, try with sender_id
-                        if not full_message and sender_id:
-                            try:
-                                logger.info(f"Trying to fetch message with sender_id: {sender_id}")
-                                print(f"[RUBIKA_BOT] Trying to fetch message with sender_id: {sender_id}", flush=True)
-                                full_messages = await self.client.get_messages(sender_id, [message_id])
-                                if full_messages and len(full_messages) > 0:
-                                    full_message = full_messages[0]
-                                    fetched_with = 'sender_id'
-                                    logger.info(f"Successfully fetched full message using sender_id: {sender_id}")
-                                    print(f"[RUBIKA_BOT] Successfully fetched full message using sender_id: {sender_id}", flush=True)
-                            except Exception as e:
-                                logger.warning(f"Failed to fetch with sender_id: {e}")
-                                print(f"[RUBIKA_BOT] Failed to fetch with sender_id: {e}", flush=True)
-                        
-                        # Step 3: Download using the fetched full message
-                        if full_message:
-                            logger.info(f"Attempting download with full message (fetched with {fetched_with})")
-                            print(f"[RUBIKA_BOT] Attempting download with full message (fetched with {fetched_with})", flush=True)
-                            
-                            # Try downloading with full message.file
-                            if hasattr(full_message, 'file') and full_message.file:
-                                try:
-                                    logger.info("Retrying download with full message.file")
-                                    print(f"[RUBIKA_BOT] Retrying download with full message.file", flush=True)
-                                    downloaded_content = await self.client.download_media(full_message.file)
-                                    if downloaded_content:
-                                        logger.info(f"Successfully downloaded using full message.file (fetched with {fetched_with})")
-                                        print(f"[RUBIKA_BOT] Successfully downloaded using full message.file (fetched with {fetched_with})", flush=True)
-                                except Exception as e:
-                                    logger.warning(f"Error downloading with full message.file: {e}")
-                                    print(f"[RUBIKA_BOT] ERROR downloading with full message.file: {e}", flush=True)
-                            
-                            # Try file_inline if file didn't work
-                            if not downloaded_content and hasattr(full_message, 'file_inline') and full_message.file_inline:
-                                try:
-                                    logger.info("Retrying download with full message.file_inline")
-                                    print(f"[RUBIKA_BOT] Retrying download with full message.file_inline", flush=True)
-                                    downloaded_content = await self.client.download_media(full_message.file_inline)
-                                    if downloaded_content:
-                                        logger.info(f"Successfully downloaded using full message.file_inline (fetched with {fetched_with})")
-                                        print(f"[RUBIKA_BOT] Successfully downloaded using full message.file_inline (fetched with {fetched_with})", flush=True)
-                                except Exception as e:
-                                    logger.warning(f"Error downloading with full message.file_inline: {e}")
-                                    print(f"[RUBIKA_BOT] ERROR downloading with full message.file_inline: {e}", flush=True)
-                            
-                            # Try media if both didn't work
-                            if not downloaded_content and hasattr(full_message, 'media') and full_message.media:
-                                try:
-                                    logger.info("Retrying download with full message.media")
-                                    print(f"[RUBIKA_BOT] Retrying download with full message.media", flush=True)
-                                    downloaded_content = await self.client.download_media(full_message.media)
-                                    if downloaded_content:
-                                        logger.info(f"Successfully downloaded using full message.media (fetched with {fetched_with})")
-                                        print(f"[RUBIKA_BOT] Successfully downloaded using full message.media (fetched with {fetched_with})", flush=True)
-                                except Exception as e:
-                                    logger.warning(f"Error downloading with full message.media: {e}")
-                                    print(f"[RUBIKA_BOT] ERROR downloading with full message.media: {e}", flush=True)
-                        else:
-                            logger.error(f"Failed to fetch full message from server with both chat_id and sender_id")
-                            print(f"[RUBIKA_BOT] Failed to fetch full message from server with both chat_id and sender_id", flush=True)
-                            if not download_error:
-                                download_error = "Failed to fetch full message with both chat_id and sender_id"
-                            
-                except Exception as e:
-                    logger.exception(f"Error while fetching full message from server: {e}")
-                    print(f"[RUBIKA_BOT] ERROR while fetching full message from server: {e}", flush=True)
-                    if not download_error:
-                        download_error = f"Fallback failed: {str(e)}"
             
             # ========== STEP 4: Save file ==========
             if downloaded_content:
