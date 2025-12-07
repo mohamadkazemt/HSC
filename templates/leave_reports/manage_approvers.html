@@ -3,6 +3,83 @@
 
 {% block title %}مدیریت تأیید کنندگان{% endblock %}
 
+{% block styles %}
+{{ block.super }}
+<style>
+    /* Fix Select2 clear button positioning in RTL */
+    .select2-container--default[dir="rtl"] .select2-selection--single .select2-selection__clear {
+        float: left;
+        margin-right: 25px;
+        margin-top: 0;
+        cursor: pointer !important;
+        z-index: 15;
+        position: absolute;
+        left: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: auto !important;
+    }
+    
+    .select2-container--default .select2-selection--single .select2-selection__clear {
+        float: right;
+        margin-left: 25px;
+        margin-top: 0;
+        cursor: pointer !important;
+        z-index: 15;
+        position: absolute;
+        right: 5px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: auto !important;
+    }
+    
+    /* Ensure clear button is clickable and visible */
+    .select2-container .select2-selection--single .select2-selection__clear {
+        font-size: 1.2em;
+        line-height: 1;
+        padding: 0;
+        opacity: 0.5;
+        transition: opacity 0.2s;
+    }
+    
+    .select2-container .select2-selection--single:hover .select2-selection__clear {
+        opacity: 1;
+    }
+    
+    /* Make sure clear button doesn't overlap with arrow */
+    .select2-container--default[dir="rtl"] .select2-selection--single .select2-selection__arrow {
+        left: 8px;
+        right: auto;
+    }
+    
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        right: 8px;
+        left: auto;
+    }
+    
+    /* Ensure proper spacing for RTL - clear button on left, arrow on right */
+    .select2-container--default[dir="rtl"] .select2-selection--single .select2-selection__rendered {
+        padding-right: 30px;
+        padding-left: 30px;
+    }
+    
+    /* Make sure selection container has relative positioning */
+    .select2-container--default .select2-selection--single {
+        position: relative;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="max-w-7xl mx-auto" x-data="approversManager()">
     <!-- Page Header -->
@@ -719,6 +796,7 @@ function approversManager() {
                 $('#id_section').select2({
                     placeholder: '--- انتخاب کنید ---',
                     allowClear: true,
+                    dir: 'rtl',
                     language: {
                         noResults: () => 'بخشی یافت نشد'
                     },
@@ -791,6 +869,7 @@ function approversManager() {
                     data: this.unitGroups,
                     placeholder: '--- انتخاب کنید ---',
                     allowClear: true,
+                    dir: 'rtl',
                     language: {
                         noResults: () => 'گروه واحدی یافت نشد'
                     },
@@ -815,6 +894,7 @@ function approversManager() {
                     data: [],
                     placeholder: '--- انتخاب کنید ---',
                     allowClear: true,
+                    dir: 'rtl',
                     language: {
                         noResults: () => 'سمتی یافت نشد'
                     },
@@ -869,6 +949,7 @@ function approversManager() {
                     data: this.parts,
                     placeholder: '--- انتخاب کنید ---',
                     allowClear: true,
+                    dir: 'rtl',
                     language: {
                         noResults: () => 'قسمتی یافت نشد'
                     },
@@ -998,6 +1079,7 @@ function approversManager() {
                     data: [],
                     placeholder: '--- انتخاب کنید ---',
                     allowClear: true,
+                    dir: 'rtl',
                     language: {
                         noResults: () => 'سمتی یافت نشد'
                     },
@@ -1371,6 +1453,7 @@ function approversManager() {
                 $('#edit_id_section').select2({
                     placeholder: '--- انتخاب کنید ---',
                     allowClear: true,
+                    dir: 'rtl',
                     language: {
                         noResults: () => 'بخشی یافت نشد'
                     },
@@ -1399,6 +1482,7 @@ function approversManager() {
                     data: this.editParts,
                     placeholder: '--- انتخاب کنید ---',
                     allowClear: true,
+                    dir: 'rtl',
                     language: {
                         noResults: () => 'قسمتی یافت نشد'
                     },
@@ -1427,6 +1511,7 @@ function approversManager() {
                     data: this.editUnitGroups,
                     placeholder: '--- انتخاب کنید ---',
                     allowClear: true,
+                    dir: 'rtl',
                     language: {
                         noResults: () => 'گروه واحدی یافت نشد'
                     },
@@ -1451,6 +1536,7 @@ function approversManager() {
                     data: [],
                     placeholder: '--- انتخاب کنید ---',
                     allowClear: true,
+                    dir: 'rtl',
                     language: {
                         noResults: () => 'سمتی یافت نشد'
                     },
