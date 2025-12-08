@@ -4,6 +4,7 @@ from django.utils.timezone import now
 from django.db.models import Q
 from accounts.models import UserProfile, Section, Part, UnitGroup, Position
 from django.core.exceptions import ValidationError
+import threading
 
 
 class ApprovalHierarchy(models.Model):
@@ -11,6 +12,9 @@ class ApprovalHierarchy(models.Model):
     تعریف سلسله مراتب تأیید برای درخواست‌های مرخصی با قابلیت ترکیب چند شرط
     از قوانین با وزن بالاتر (مشخص‌تر) برای تطبیق استفاده می‌شود
     """
+    # Thread-local storage برای جلوگیری از recursion در __str__
+    _str_lock = threading.local()
+    
     # تأیید کننده (الزامی)
     approver = models.ForeignKey(UserProfile, on_delete=models.CASCADE, verbose_name="تأیید کننده")
     
@@ -91,6 +95,19 @@ class ApprovalHierarchy(models.Model):
         self.full_clean()
         super().save(*args, **kwargs)
 
+    def _has_specific_users(self):
+        """
+        بررسی امن وجود کاربران خاص بدون ایجاد خطای ValueError برای instance های ذخیره‌نشده
+        """
+        # اگر instance هنوز ذخیره نشده باشد، دسترسی مستقیم به m2m خطا می‌دهد
+        if not self.pk:
+            cached = getattr(self, '_specific_users_cache', None)
+            return bool(cached) if cached is not None else False
+        try:
+            return self.specific_users.exists()
+        except ValueError:
+            return False
+
     class Meta:
         verbose_name = "سلسله مراتب تأیید"
         verbose_name_plural = "سلسله مراتب تأیید"
@@ -107,7 +124,7 @@ class ApprovalHierarchy(models.Model):
         """
         weight = 0
         
-        if self.specific_users.exists():
+        if self._has_specific_users():
             weight += 100  # بالاترین اولویت برای کاربران خاص
         
         if self.position:
@@ -132,7 +149,7 @@ class ApprovalHierarchy(models.Model):
         بررسی اینکه آیا این قانون حداقل یک معیار دارد
         """
         return any([
-            self.specific_users.exists(),
+            self._has_specific_users(),
             self.work_group,
             self.section,
             self.part,
@@ -146,7 +163,7 @@ class ApprovalHierarchy(models.Model):
         برای تعیین دقیق‌ترین تطبیق
         """
         count = 0
-        if self.specific_users.exists():
+        if self._has_specific_users():
             count += 1
         if self.work_group:
             count += 1
@@ -175,7 +192,7 @@ class ApprovalHierarchy(models.Model):
             return False
         
         # بررسی specific_users
-        if self.specific_users.exists():
+        if self._has_specific_users():
             if user_profile.user not in self.specific_users.all():
                 return False
         
@@ -207,26 +224,60 @@ class ApprovalHierarchy(models.Model):
         return True
 
     def __str__(self):
-        parts = []
-        if self.specific_users.exists():
-            user_names = [user.get_full_name() for user in self.specific_users.all()]
-            if len(user_names) == 1:
-                parts.append(f"کاربر: {user_names[0]}")
-            else:
-                parts.append(f"کاربران: {', '.join(user_names[:3])}{' و ...' if len(user_names) > 3 else ''}")
-        if self.work_group:
-            parts.append(f"گروه: {self.get_work_group_display()}")
-        if self.position:
-            parts.append(f"سمت: {self.position.name}")
-        if self.unit_group:
-            parts.append(f"گروه واحد: {self.unit_group.name}")
-        if self.part:
-            parts.append(f"قسمت: {self.part.name}")
-        if self.section:
-            parts.append(f"بخش: {self.section.name}")
+        # جلوگیری از recursion با استفاده از thread-local storage
+        if not hasattr(ApprovalHierarchy._str_lock, 'active_ids'):
+            ApprovalHierarchy._str_lock.active_ids = set()
         
-        criteria = " + ".join(parts) if parts else "عمومی"
-        return f"{self.approver} ({criteria})"
+        # اگر این instance در حال stringify شدن است، از نمایش ساده استفاده کن
+        if self.pk and self.pk in ApprovalHierarchy._str_lock.active_ids:
+            return f"{self.__class__.__name__}(id={self.pk})"
+        
+        # اضافه کردن id به set برای جلوگیری از recursion
+        if self.pk:
+            ApprovalHierarchy._str_lock.active_ids.add(self.pk)
+        
+        try:
+            parts = []
+            
+            # فقط اگر instance ذخیره شده باشد، به related fields دسترسی پیدا کن
+            if self.pk:
+                try:
+                    # استفاده از count() به جای exists() برای جلوگیری از recursion
+                    count = self.specific_users.count()
+                    if count > 0:
+                        user_names = [user.get_full_name() or user.username for user in self.specific_users.all()[:3]]
+                        if count == 1:
+                            parts.append(f"کاربر: {user_names[0]}")
+                        else:
+                            parts.append(f"کاربران: {', '.join(user_names)}{' و ...' if count > 3 else ''}")
+                except (AttributeError, ValueError, TypeError, RecursionError):
+                    # در صورت بروز خطا (مثلاً instance هنوز ذخیره نشده یا recursion)، از این بخش صرف نظر کن
+                    pass
+            
+            if self.work_group:
+                parts.append(f"گروه: {self.get_work_group_display()}")
+            if self.position:
+                parts.append(f"سمت: {self.position.name}")
+            if self.unit_group:
+                parts.append(f"گروه واحد: {self.unit_group.name}")
+            if self.part:
+                parts.append(f"قسمت: {self.part.name}")
+            if self.section:
+                parts.append(f"بخش: {self.section.name}")
+            
+            criteria = " + ".join(parts) if parts else "عمومی"
+            # استفاده از getattr برای جلوگیری از recursion در approver
+            approver_name = getattr(self.approver, 'user', None)
+            if approver_name:
+                approver_str = approver_name.get_full_name() or approver_name.username
+            else:
+                approver_str = "بدون تأیید کننده"
+            
+            return f"{approver_str} ({criteria})"
+        finally:
+            # حذف id از set بعد از اتمام
+            if self.pk and hasattr(ApprovalHierarchy._str_lock, 'active_ids'):
+                ApprovalHierarchy._str_lock.active_ids.discard(self.pk)
 
 
 class ShiftReport(models.Model):
