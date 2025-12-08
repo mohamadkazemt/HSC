@@ -304,6 +304,9 @@ class ApprovalHierarchyForm(forms.ModelForm):
             raise forms.ValidationError(
                 'باید حداقل یکی از فیلدهای معیار (کاربران خاص، گروه کاری، بخش، قسمت، گروه واحد، یا سمت) را انتخاب کنید.'
             )
+
+        # ذخیره کاربران خاص در instance برای استفاده در clean مدل قبل از ذخیره
+        self.instance._specific_users_cache = cleaned_data.get('specific_users')
         
         return cleaned_data
 
