@@ -1,122 +1,639 @@
 {% extends 'emergency_services/emergency_base.html' %}
 {% load emergency_jalali %}
-{% block title %}لیست مراجعات{% endblock %}
+
+{% block title %}آرشیو مراجعات پزشکی{% endblock %}
+
+{% block extra_css %}
+<style>
+  .stat-card {
+    @apply bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow;
+  }
+  .filter-badge {
+    @apply inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300;
+  }
+  .visit-row {
+    @apply hover:bg-blue-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer;
+  }
+  .status-badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold;
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="rounded-lg shadow-lg bg-white dark:bg-gray-800">
-  <div class="p-4 rounded-t-lg bg-gradient-to-l from-blue-50 to-white dark:from-gray-800 dark:to-gray-800 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-    <div class="flex items-center gap-2">
-      <i class="fa-solid fa-notes-medical text-blue-600"></i>
-      <h3 class="font-semibold">لیست مراجعات</h3>
+<div class="container mx-auto px-4 py-6 space-y-6">
+
+  <!-- ==================== HEADER + ACTIONS ==================== -->
+  <div class="flex items-center justify-between flex-wrap gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+        <i class="fa-solid fa-notes-medical text-indigo-600 dark:text-indigo-400"></i>
+        آرشیو مراجعات پزشکی
+      </h1>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+        مدیریت و بررسی مراجعات پرسنل به اورژانس
+      </p>
     </div>
-    <a href="{% url 'emergency_services:create_visit' %}" class="px-3 py-1.5 rounded-md bg-indigo-600 text-white hover:bg-indigo-700 text-sm">ثبت مراجعه جدید</a>
+    
+    <div class="flex items-center gap-2 flex-wrap">
+      <!-- دکمه خروجی CSV -->
+      <a href="{% url 'emergency_services:export_visits_csv' %}?{{ request.GET.urlencode }}" 
+         class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-sm transition-colors text-sm font-medium">
+        <i class="fa-solid fa-file-csv"></i>
+        <span>خروجی CSV</span>
+      </a>
+      
+      <!-- دکمه ثبت مراجعه جدید -->
+      <a href="{% url 'emergency_services:create_visit' %}" 
+         class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-colors text-sm font-medium">
+        <i class="fa-solid fa-plus"></i>
+        <span>ثبت مراجعه جدید</span>
+      </a>
+    </div>
   </div>
 
-  <!-- Filters -->
-  <div class="p-4 border-b border-gray-100 dark:border-gray-700">
-    <form id="visitFilters" method="get" class="grid grid-cols-1 md:grid-cols-5 gap-3">
-      <div>
-        <label class="block text-sm mb-1">از تاریخ</label>
-        <input id="j_date_from" type="text" class="form-input jalali-date w-full" placeholder="YYYY/MM/DD">
-        <input type="hidden" name="date_from" id="date_from" value="{{ filters.date_from|default:'' }}">
+  <!-- ==================== STATISTICS CARDS ==================== -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="stat-card">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs text-gray-600 dark:text-gray-400 font-medium">مجموع مراجعات</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ visits.paginator.count|default:0 }}</p>
+        </div>
+        <div class="w-12 h-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+          <i class="fa-solid fa-notes-medical text-indigo-600 dark:text-indigo-400 text-xl"></i>
+        </div>
       </div>
-      <div>
-        <label class="block text-sm mb-1">تا تاریخ</label>
-        <input id="j_date_to" type="text" class="form-input jalali-date w-full" placeholder="YYYY/MM/DD">
-        <input type="hidden" name="date_to" id="date_to" value="{{ filters.date_to|default:'' }}">
+    </div>
+    
+    <div class="stat-card">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs text-gray-600 dark:text-gray-400 font-medium">این صفحه</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ visits|length }}</p>
+        </div>
+        <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+          <i class="fa-solid fa-list text-blue-600 dark:text-blue-400 text-xl"></i>
+        </div>
       </div>
-      <div>
-        <label class="block text-sm mb-1">نوع پرسنل</label>
-        <select name="personnel_type" class="select2 w-full">
-          <option value="">همه</option>
-          <option value="company" {% if filters.personnel_type == 'company' %}selected{% endif %}>پرسنل شرکت</option>
-          <option value="contractor" {% if filters.personnel_type == 'contractor' %}selected{% endif %}>پرسنل پیمانکار</option>
-        </select>
+    </div>
+    
+    <div class="stat-card">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs text-gray-600 dark:text-gray-400 font-medium">فیلترهای فعال</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+            {% if filters.date_from or filters.date_to or filters.personnel_type or filters.service_type %}
+              {{ filters.date_from|yesno:"1,0"|add:filters.date_to|yesno:"1,0"|add:filters.personnel_type|yesno:"1,0"|add:filters.service_type|yesno:"1,0" }}
+            {% else %}
+              0
+            {% endif %}
+          </p>
+        </div>
+        <div class="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+          <i class="fa-solid fa-filter text-amber-600 dark:text-amber-400 text-xl"></i>
+        </div>
       </div>
-      <div>
-        <label class="block text-sm mb-1">خدمت درمانی</label>
-        <select name="service_type" class="select2 w-full">
-          <option value="">همه</option>
-          {% for s in services %}
-            <option value="{{ s.id }}" {% if filters.service_type|stringformat:'s' == s.id|stringformat:'s' %}selected{% endif %}>{{ s.name }}</option>
-          {% endfor %}
-        </select>
+    </div>
+    
+    <div class="stat-card">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs text-gray-600 dark:text-gray-400 font-medium">صفحه فعلی</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ visits.number|default:1 }}/{{ visits.paginator.num_pages|default:1 }}</p>
+        </div>
+        <div class="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+          <i class="fa-solid fa-file-lines text-purple-600 dark:text-purple-400 text-xl"></i>
+        </div>
       </div>
-      <div class="flex items-end justify-end gap-2">
-        <a href="?" class="px-3 py-1.5 rounded-md bg-gray-100 text-gray-700">حذف فیلتر</a>
-        <button type="submit" class="px-3 py-1.5 rounded-md bg-indigo-600 text-white">جستجو</button>
+    </div>
+  </div>
+
+  <!-- ==================== FILTERS SECTION ==================== -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+    <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-filter text-indigo-600 dark:text-indigo-400"></i>
+        <h3 class="font-semibold text-gray-900 dark:text-white">فیلترهای جستجو</h3>
+      </div>
+      
+      {% if filters.date_from or filters.date_to or filters.personnel_type or filters.service_type %}
+      <a href="?" class="text-sm text-red-600 hover:text-red-700 dark:text-red-400 flex items-center gap-1">
+        <i class="fa-solid fa-times"></i>
+        <span>پاک کردن فیلترها</span>
+      </a>
+      {% endif %}
+    </div>
+    
+    <form id="visitFilters" method="get" class="p-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- از تاریخ -->
+        <div>
+          <label for="j_date_from" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <i class="fa-regular fa-calendar text-indigo-600"></i>
+            از تاریخ
+            <span class="text-xs text-gray-500 dark:text-gray-400 font-normal">(اختیاری)</span>
+          </label>
+          <input 
+            id="j_date_from" 
+            type="text" 
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white text-sm cursor-pointer" 
+            placeholder="کلیک کنید برای انتخاب تاریخ..."
+            autocomplete="off">
+          <input type="hidden" name="date_from" id="date_from" value="{{ filters.date_from|default:'' }}">
+        </div>
+        
+        <!-- تا تاریخ -->
+        <div>
+          <label for="j_date_to" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <i class="fa-regular fa-calendar text-indigo-600"></i>
+            تا تاریخ
+            <span class="text-xs text-gray-500 dark:text-gray-400 font-normal">(اختیاری)</span>
+          </label>
+          <input 
+            id="j_date_to" 
+            type="text" 
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white text-sm cursor-pointer" 
+            placeholder="کلیک کنید برای انتخاب تاریخ..."
+            autocomplete="off">
+          <input type="hidden" name="date_to" id="date_to" value="{{ filters.date_to|default:'' }}">
+        </div>
+        
+        <!-- نوع پرسنل -->
+        <div>
+          <label for="personnel_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <i class="fa-solid fa-users text-indigo-600"></i>
+            نوع پرسنل
+          </label>
+          <select 
+            name="personnel_type" 
+            id="personnel_type"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white text-sm">
+            <option value="">همه</option>
+            <option value="company" {% if filters.personnel_type == 'company' %}selected{% endif %}>پرسنل شرکت</option>
+            <option value="contractor" {% if filters.personnel_type == 'contractor' %}selected{% endif %}>پرسنل پیمانکار</option>
+          </select>
+        </div>
+        
+        <!-- خدمت درمانی -->
+        <div>
+          <label for="service_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <i class="fa-solid fa-stethoscope text-indigo-600"></i>
+            خدمت درمانی
+          </label>
+          <select 
+            name="service_type" 
+            id="service_type"
+            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white text-sm">
+            <option value="">همه</option>
+            {% for s in services %}
+              <option value="{{ s.id }}" {% if filters.service_type|stringformat:'s' == s.id|stringformat:'s' %}selected{% endif %}>
+                {{ s.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      
+      <!-- دکمه‌های عملیات -->
+      <div class="mt-4 flex items-center justify-between flex-wrap gap-3">
+        <div class="text-xs text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-lg">
+          <i class="fa-solid fa-circle-info text-blue-600"></i>
+          <strong>راهنما:</strong> برای مشاهده همه مراجعات، فیلترها را خالی بگذارید.
+          {% if date_range.min_date and date_range.max_date %}
+          <span class="mr-2 text-blue-700 dark:text-blue-300">
+            | <strong>بازه موجود:</strong> 
+            از <code class="px-1 bg-white dark:bg-gray-800 rounded">{{ date_range.min_date|to_jalali:'%Y/%m/%d' }}</code>
+            تا <code class="px-1 bg-white dark:bg-gray-800 rounded">{{ date_range.max_date|to_jalali:'%Y/%m/%d' }}</code>
+          </span>
+          {% endif %}
+        </div>
+        
+        <button 
+          type="submit" 
+          class="inline-flex items-center gap-2 px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-colors font-medium">
+          <i class="fa-solid fa-search"></i>
+          <span>اعمال فیلتر</span>
+        </button>
       </div>
     </form>
   </div>
 
-  <!-- Table -->
-  <div class="overflow-x-auto">
-    <table class="min-w-full text-sm">
-      <thead class="bg-gray-50 dark:bg-gray-700/50">
-        <tr class="text-right">
-          <th class="px-4 py-2">تاریخ مراجعه</th>
-          <th class="px-4 py-2">مراجع</th>
-          <th class="px-4 py-2">نوع</th>
-          <th class="px-4 py-2">خدمات</th>
-          <th class="px-4 py-2">بیمارستان</th>
-          <th class="px-4 py-2">عملیات</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-        {% for v in visits %}
-          <tr>
-            <td class="px-4 py-2">{{ v.visit_time|to_jalali:'%Y/%m/%d %H:%M' }}</td>
-            <td class="px-4 py-2">{% if v.personnel_type == 'company' %}{{ v.company_personnel }}{% else %}{{ v.contractor_personnel }}{% endif %}</td>
-            <td class="px-4 py-2">{{ v.get_personnel_type_display }}</td>
-            <td class="px-4 py-2">{{ v.services.all|join:', ' }}</td>
-            <td class="px-4 py-2">{% if v.hospital %}<span class="px-2 py-1 rounded text-xs bg-rose-100 text-rose-700">ارجاع</span>{% else %}-{% endif %}</td>
-            <td class="px-4 py-2">
-              <a href="{% url 'emergency_services:visit_detail' v.id %}" class="text-indigo-600 hover:underline">جزئیات</a>
-            </td>
-          </tr>
-        {% empty %}
-          <tr><td colspan="6" class="px-4 py-6 text-center text-gray-500">رکوردی یافت نشد</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Pagination -->
-  <div class="p-4">
-    {% if visits.has_other_pages %}
-      <div class="flex items-center justify-center gap-1">
-        {% if visits.has_previous %}
-          <a class="px-3 py-1 rounded bg-gray-100" href="?page={{ visits.previous_page_number }}">قبلی</a>
-        {% endif %}
-        <span class="px-3 py-1">صفحه {{ visits.number }} از {{ visits.paginator.num_pages }}</span>
-        {% if visits.has_next %}
-          <a class="px-3 py-1 rounded bg-gray-100" href="?page={{ visits.next_page_number }}">بعدی</a>
-        {% endif %}
-      </div>
+  <!-- ==================== ACTIVE FILTERS BADGES ==================== -->
+  {% if filters.date_from or filters.date_to or filters.personnel_type or filters.service_type %}
+  <div class="flex items-center gap-2 flex-wrap">
+    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">فیلترهای فعال:</span>
+    
+    {% if filters.date_from %}
+    <span class="filter-badge">
+      <i class="fa-regular fa-calendar"></i>
+      از تاریخ: {{ filters.date_from }}
+    </span>
+    {% endif %}
+    
+    {% if filters.date_to %}
+    <span class="filter-badge">
+      <i class="fa-regular fa-calendar"></i>
+      تا تاریخ: {{ filters.date_to }}
+    </span>
+    {% endif %}
+    
+    {% if filters.personnel_type %}
+    <span class="filter-badge">
+      <i class="fa-solid fa-users"></i>
+      {% if filters.personnel_type == 'company' %}پرسنل شرکت{% else %}پرسنل پیمانکار{% endif %}
+    </span>
+    {% endif %}
+    
+    {% if filters.service_type %}
+    <span class="filter-badge">
+      <i class="fa-solid fa-stethoscope"></i>
+      خدمت: {{ filters.service_type }}
+    </span>
     {% endif %}
   </div>
+  {% endif %}
+
+  <!-- ==================== VISITS TABLE ==================== -->
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-gray-50 dark:bg-gray-700/50">
+          <tr>
+            <th scope="col" class="px-4 py-3 text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              <i class="fa-regular fa-calendar text-indigo-600"></i>
+              تاریخ و ساعت
+            </th>
+            <th scope="col" class="px-4 py-3 text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              <i class="fa-solid fa-user text-indigo-600"></i>
+              نام مراجع
+            </th>
+            <th scope="col" class="px-4 py-3 text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              <i class="fa-solid fa-id-badge text-indigo-600"></i>
+              نوع پرسنل
+            </th>
+            <th scope="col" class="px-4 py-3 text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              <i class="fa-solid fa-file-medical text-indigo-600"></i>
+              علت مراجعه
+            </th>
+            <th scope="col" class="px-4 py-3 text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              <i class="fa-solid fa-stethoscope text-indigo-600"></i>
+              خدمات
+            </th>
+            <th scope="col" class="px-4 py-3 text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              <i class="fa-solid fa-hospital text-indigo-600"></i>
+              وضعیت
+            </th>
+            <th scope="col" class="px-4 py-3 text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              <i class="fa-solid fa-cog text-indigo-600"></i>
+              عملیات
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          {% for v in visits %}
+          <tr class="visit-row" onclick="window.location='{% url 'emergency_services:visit_detail' v.id %}'">
+            <td class="px-4 py-3 whitespace-nowrap text-sm">
+              <div class="flex flex-col">
+                <span class="font-medium text-gray-900 dark:text-white">
+                  {{ v.visit_time|to_jalali:'%Y/%m/%d' }}
+                </span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ v.visit_time|to_jalali:'%H:%M' }}
+                </span>
+              </div>
+            </td>
+            <td class="px-4 py-3 text-sm">
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0">
+                  <i class="fa-solid fa-user text-indigo-600 dark:text-indigo-400 text-xs"></i>
+                </div>
+                <span class="font-medium text-gray-900 dark:text-white">
+                  {% if v.personnel_type == 'company' %}
+                    {{ v.company_personnel|default:'-' }}
+                  {% else %}
+                    {{ v.contractor_personnel|default:'-' }}
+                  {% endif %}
+                </span>
+              </div>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm">
+              {% if v.personnel_type == 'company' %}
+                <span class="status-badge bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                  <i class="fa-solid fa-building"></i>
+                  شرکت
+                </span>
+              {% else %}
+                <span class="status-badge bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+                  <i class="fa-solid fa-handshake"></i>
+                  پیمانکار
+                </span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 max-w-xs truncate" title="{{ v.visit_reason }}">
+              {{ v.visit_reason|truncatewords:10|default:'-' }}
+            </td>
+            <td class="px-4 py-3 text-sm">
+              {% if v.services.all %}
+                <div class="flex flex-wrap gap-1">
+                  {% for service in v.services.all|slice:":2" %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                      {{ service.name }}
+                    </span>
+                  {% endfor %}
+                  {% if v.services.all|length > 2 %}
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                      +{{ v.services.all|length|add:"-2" }}
+                    </span>
+                  {% endif %}
+                </div>
+              {% else %}
+                <span class="text-gray-400 dark:text-gray-500 text-xs">-</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm">
+              {% if v.hospital %}
+                <span class="status-badge bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300">
+                  <i class="fa-solid fa-hospital"></i>
+                  ارجاع شده
+                </span>
+              {% else %}
+                <span class="status-badge bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                  <i class="fa-solid fa-check-circle"></i>
+                  درمان شده
+                </span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap text-sm" onclick="event.stopPropagation()">
+              <div class="flex items-center gap-2">
+                <a href="{% url 'emergency_services:visit_detail' v.id %}" 
+                   class="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300"
+                   title="مشاهده جزئیات">
+                  <i class="fa-solid fa-eye"></i>
+                </a>
+                <a href="{% url 'emergency_services:edit_visit' v.id %}" 
+                   class="text-amber-600 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300"
+                   title="ویرایش">
+                  <i class="fa-solid fa-edit"></i>
+                </a>
+                <a href="{% url 'emergency_services:print_visit' v.id %}" 
+                   class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-300"
+                   target="_blank"
+                   title="چاپ">
+                  <i class="fa-solid fa-print"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="px-4 py-12 text-center">
+              <div class="flex flex-col items-center justify-center space-y-3">
+                <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                  <i class="fa-solid fa-inbox text-gray-400 dark:text-gray-500 text-3xl"></i>
+                </div>
+                <p class="text-lg font-medium text-gray-900 dark:text-white">هیچ مراجعه‌ای یافت نشد</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                  {% if filters.date_from or filters.date_to or filters.personnel_type or filters.service_type %}
+                    لطفاً فیلترهای خود را تغییر دهید یا آن‌ها را پاک کنید.
+                  {% else %}
+                    هنوز هیچ مراجعه‌ای در سیستم ثبت نشده است.
+                  {% endif %}
+                </p>
+                <a href="{% url 'emergency_services:create_visit' %}" 
+                   class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-colors text-sm font-medium mt-2">
+                  <i class="fa-solid fa-plus"></i>
+                  <span>ثبت اولین مراجعه</span>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ==================== PAGINATION ==================== -->
+  {% if visits.has_other_pages %}
+  <div class="flex items-center justify-center gap-2">
+    {% if visits.has_previous %}
+      <a href="?page=1{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}" 
+         class="px-3 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm">
+        <i class="fa-solid fa-angles-right"></i>
+      </a>
+      <a href="?page={{ visits.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}" 
+         class="px-3 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm">
+        <i class="fa-solid fa-angle-right"></i>
+      </a>
+    {% endif %}
+    
+    <span class="px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium text-sm">
+      صفحه {{ visits.number }} از {{ visits.paginator.num_pages }}
+    </span>
+    
+    {% if visits.has_next %}
+      <a href="?page={{ visits.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}" 
+         class="px-3 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm">
+        <i class="fa-solid fa-angle-left"></i>
+      </a>
+      <a href="?page={{ visits.paginator.num_pages }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}" 
+         class="px-3 py-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm">
+        <i class="fa-solid fa-angles-left"></i>
+      </a>
+    {% endif %}
+  </div>
+  {% endif %}
+
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-  // تبدیل تاریخ جلالی به پارامترهای میلادی قبل از ارسال
-  (function(){
-    const form = document.getElementById('visitFilters');
-    if (!form) return;
-    form.addEventListener('submit', function(e){
-      try {
-        const jf = document.getElementById('j_date_from').value;
-        const jt = document.getElementById('j_date_to').value;
-        if (jf) {
-          const g1 = new persianDate(jf).toCalendar('gregorian').format('YYYY-MM-DD');
-          document.getElementById('date_from').value = g1;
+/**
+ * =============================================================================
+ * VISIT LIST FILTERS - اسکریپت فیلترهای لیست مراجعات
+ * =============================================================================
+ * این اسکریپت مسئول مدیریت فیلترها و تبدیل تاریخ‌های جلالی به میلادی است
+ */
+
+// صبر می‌کنیم تا jQuery و کتابخانه‌های لازم لود شوند
+$(document).ready(function() {
+  'use strict';
+  
+  console.log('🔧 Initializing visit list filters...');
+  console.log('📦 jQuery version:', $.fn.jquery);
+  console.log('📦 persianDate available:', typeof persianDate !== 'undefined');
+  console.log('📦 persianDatepicker available:', typeof $.fn.persianDatepicker !== 'undefined');
+  console.log('📦 select2 available:', typeof $.fn.select2 !== 'undefined');
+  
+  const form = document.getElementById('visitFilters');
+  if (!form) {
+    console.warn('⚠️ Form #visitFilters not found');
+    return;
+  }
+  
+  // ==========================================================================
+  // فعال‌سازی دیتاپیکر جلالی
+  // ==========================================================================
+  function initDatePickers() {
+    if (typeof $.fn.persianDatepicker === 'undefined') {
+      console.error('❌ Persian Datepicker not loaded');
+      return;
+    }
+    
+    // دیتاپیکر "از تاریخ"
+    $('#j_date_from').persianDatepicker({
+      format: 'YYYY/MM/DD',
+      autoClose: true,
+      calendar: {
+        persian: {
+          locale: 'fa',
+          leapYearMode: 'astronomical'
         }
-        if (jt) {
-          const g2 = new persianDate(jt).toCalendar('gregorian').format('YYYY-MM-DD');
-          document.getElementById('date_to').value = g2;
+      },
+      initialValue: false,
+      observer: true,
+      onSelect: function(unix) {
+        try {
+          const pd = new persianDate(unix);
+          const jalaliFormatted = pd.toCalendar('persian').format('YYYY/MM/DD');
+          $('#j_date_from').val(jalaliFormatted);
+          console.log('📅 از تاریخ انتخاب شد:', jalaliFormatted);
+        } catch (e) {
+          console.error('Error formatting date:', e);
         }
-      } catch(err) { console.warn(err); }
+      }
     });
-  })();
+    
+    // دیتاپیکر "تا تاریخ"
+    $('#j_date_to').persianDatepicker({
+      format: 'YYYY/MM/DD',
+      autoClose: true,
+      calendar: {
+        persian: {
+          locale: 'fa',
+          leapYearMode: 'astronomical'
+        }
+      },
+      initialValue: false,
+      observer: true,
+      onSelect: function(unix) {
+        try {
+          const pd = new persianDate(unix);
+          const jalaliFormatted = pd.toCalendar('persian').format('YYYY/MM/DD');
+          $('#j_date_to').val(jalaliFormatted);
+          console.log('📅 تا تاریخ انتخاب شد:', jalaliFormatted);
+        } catch (e) {
+          console.error('Error formatting date:', e);
+        }
+      }
+    });
+    
+    console.log('✅ Datepickers initialized');
+  }
+  
+  // ==========================================================================
+  // تابع تبدیل ارقام فارسی به انگلیسی
+  // ==========================================================================
+  function persianToEnglish(str) {
+    if (!str) return '';
+    const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+    const englishDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+    
+    return str.split('').map(char => {
+      const idx = persianDigits.indexOf(char);
+      return idx !== -1 ? englishDigits[idx] : char;
+    }).join('');
+  }
+  
+  // ==========================================================================
+  // بارگذاری مقادیر اولیه از URL parameters
+  // (تاریخ‌ها به صورت جلالی در URL هستند)
+  // ==========================================================================
+  function loadInitialValues() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const dateFromParam = urlParams.get('date_from');
+    const dateToParam = urlParams.get('date_to');
+    
+    // بارگذاری "از تاریخ"
+    if (dateFromParam) {
+      const normalized = persianToEnglish(dateFromParam.trim());
+      $('#date_from').val(normalized);
+      $('#j_date_from').val(normalized); // مستقیم نمایش همان تاریخ جلالی
+      console.log('📥 Loaded date_from:', normalized);
+    }
+    
+    // بارگذاری "تا تاریخ"
+    if (dateToParam) {
+      const normalized = persianToEnglish(dateToParam.trim());
+      $('#date_to').val(normalized);
+      $('#j_date_to').val(normalized); // مستقیم نمایش همان تاریخ جلالی
+      console.log('📥 Loaded date_to:', normalized);
+    }
+  }
+  
+  // ==========================================================================
+  // انتقال تاریخ جلالی به hidden input بدون تبدیل
+  // (Backend خودش تبدیل میلادی را انجام می‌دهد)
+  // ==========================================================================
+  function handleFormSubmit(e) {
+    try {
+      const jDateFrom = $('#j_date_from').val().trim();
+      const jDateTo = $('#j_date_to').val().trim();
+      
+      // انتقال مستقیم تاریخ جلالی (بدون تبدیل)
+      if (jDateFrom) {
+        const normalized = persianToEnglish(jDateFrom);
+        $('#date_from').val(normalized);
+        console.log('📤 از تاریخ:', normalized);
+      } else {
+        $('#date_from').val('');
+      }
+      
+      if (jDateTo) {
+        const normalized = persianToEnglish(jDateTo);
+        $('#date_to').val(normalized);
+        console.log('📤 تا تاریخ:', normalized);
+      } else {
+        $('#date_to').val('');
+      }
+      
+    } catch (err) {
+      console.error('❌ Error processing dates on submit:', err);
+      // در صورت خطا، فرم را با مقادیر خالی ارسال می‌کنیم
+      $('#date_from').val('');
+      $('#date_to').val('');
+    }
+  }
+  
+  // ==========================================================================
+  // اجرای توابع اولیه
+  // ==========================================================================
+  
+  // 1. فعال‌سازی دیتاپیکرها
+  initDatePickers();
+  
+  // 2. بارگذاری مقادیر اولیه
+  setTimeout(function() {
+    loadInitialValues();
+  }, 100);
+  
+  // 3. هندلر submit
+  $(form).on('submit', handleFormSubmit);
+  
+  // 4. فعال‌سازی Select2 برای selectها
+  if (typeof $.fn.select2 !== 'undefined') {
+    $('#personnel_type, #service_type').select2({
+      dir: 'rtl',
+      language: 'fa',
+      width: '100%',
+      placeholder: 'انتخاب کنید'
+    });
+  }
+  
+  console.log('✅ Visit list filters initialized successfully');
+});
 </script>
 {% endblock %}
