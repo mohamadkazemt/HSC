@@ -100,6 +100,18 @@ URLS_WITH_LABELS = [
         "name": "update_dashboard_start_date",
         "label": "حوادث HSE_به‌روزرسانی تاریخ شروع (AJAX)",
     },
+    {
+        "path": "import/template/",
+        "view": views.download_import_template,
+        "name": "download_import_template",
+        "label": "حوادث HSE_دانلود الگوی ایمپورت اکسل",
+    },
+    {
+        "path": "import/upload/",
+        "view": views.import_incidents_from_excel,
+        "name": "import_incidents",
+        "label": "حوادث HSE_ایمپورت حوادث از اکسل",
+    },
 ]
 
 urlpatterns = [

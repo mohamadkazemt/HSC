@@ -1184,3 +1184,601 @@ def update_dashboard_start_date_ajax(request):
     except Exception as e:
         logger.error(f"خطا در به‌روزرسانی تاریخ شروع: {e}")
         return JsonResponse({'status': 'error', 'message': f'خطا: {str(e)}'}, status=500)
+
+
+@login_required
+@permission_required('hse_incidents:download_import_template')
+def download_import_template(request):
+    """دانلود فایل الگوی اکسل برای ایمپورت حوادث"""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    
+    try:
+        # ایجاد workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "الگوی ثبت حوادث"
+        
+        # تعریف استایل‌ها
+        header_fill = PatternFill(start_color="FFA500", end_color="FFA500", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF", size=11)
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        center_aligned = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        
+        # تعریف هدرها (فارسی) - دقت: فاصله‌ها مهم هستند!
+        headers = [
+            "تاریخ حادثه (1403/09/15)",
+            "ساعت حادثه (14:30)",
+            "نوع حادثه (human/equipment/environmental)",
+            "نام سایت",
+            "نام محل دقیق (اختیاری)",
+            "کد پرسنلی اشخاص درگیر (جدا با کاما)",
+            "تجهیزات مرتبط",
+            "انواع جراحت (جدا با کاما)",
+            "عضو آسیب دیده",
+            "شرح آسیب",
+            "نوع ارتباط",
+            "نام شرکت پیمانکار (اختیاری)",
+            "کد ملی پرسنل پیمانکار (جدا با کاما)",
+            "آتش‌نشانی اعزام شد؟ (بله/خیر)",
+            "ساعت رسیدن آتش‌نشانی",
+            "آمبولانس اعزام شد؟ (بله/خیر)",
+            "ساعت رسیدن آمبولانس",
+            "به بیمارستان اعزام شد؟ (بله/خیر)",
+            "ساعت اعزام به بیمارستان",
+            "نوع وسیله نقلیه",
+            "شرح کامل حادثه",
+            "علت اولیه حادثه",
+            "حادثه شدید توقف تولید؟ (بله/خیر)",
+        ]
+        
+        # اضافه کردن هدرها به ردیف اول
+        for col_num, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col_num)
+            cell.value = header
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = center_aligned
+            cell.border = border
+            
+        # تنظیم عرض ستون‌ها
+        for col_num in range(1, len(headers) + 1):
+            ws.column_dimensions[get_column_letter(col_num)].width = 18
+        
+        # اضافه کردن یک ردیف نمونه با داده‌های واقعی
+        # دریافت اولین سایت موجود
+        first_location = Location.objects.first()
+        location_name = first_location.name if first_location else "نام سایت خود را از Sheet لیست سایت‌ها کپی کنید"
+        
+        # دریافت اولین جراحت موجود
+        first_injury = InjuryType.objects.first()
+        injury_name = first_injury.name if first_injury else "نام جراحت از Sheet لیست جراحات"
+        
+        # دریافت اولین کد پرسنلی موجود
+        first_person = UserProfile.objects.filter(personnel_code__isnull=False).exclude(personnel_code='').first()
+        personnel_code_sample = first_person.personnel_code if first_person else "کد پرسنلی از Sheet لیست پرسنل"
+        
+        sample_data = [
+            "1403/09/15",
+            "14:30",
+            "human",
+            location_name,
+            "محل دقیق (اختیاری)",
+            personnel_code_sample,
+            "دستگاه برش فلز",
+            injury_name,
+            "دست راست",
+            "بریدگی عمیق در انگشت اشاره",
+            "پرسنل شرکت",
+            "",
+            "",
+            "خیر",
+            "",
+            "بله",
+            "14:45",
+            "بله",
+            "15:00",
+            "آمبولانس",
+            "فرد هنگام کار با دستگاه برش فلز به دلیل عدم رعایت احتیاط دچار بریدگی شدید شد",
+            "عدم استفاده از دستکش ایمنی و عدم توجه کافی",
+            "خیر",
+        ]
+        
+        for col_num, value in enumerate(sample_data, 1):
+            cell = ws.cell(row=2, column=col_num)
+            cell.value = value
+            cell.border = border
+            cell.alignment = Alignment(horizontal="right", vertical="center", wrap_text=True)
+        
+        # تنظیم ارتفاع ردیف‌ها
+        ws.row_dimensions[1].height = 40
+        ws.row_dimensions[2].height = 30
+        
+        # اضافه کردن لیست سایت‌های موجود در sheet دوم
+        ws_locations = wb.create_sheet("لیست سایت‌ها")
+        ws_locations.cell(row=1, column=1).value = "سایت‌های موجود در سیستم:"
+        ws_locations.cell(row=1, column=1).font = Font(bold=True, size=12, color="0000FF")
+        
+        locations = Location.objects.all()
+        for idx, location in enumerate(locations, start=2):
+            ws_locations.cell(row=idx, column=1).value = location.name
+            ws_locations.cell(row=idx, column=1).alignment = Alignment(horizontal="right")
+        
+        ws_locations.column_dimensions['A'].width = 40
+        
+        # اضافه کردن لیست جراحات در sheet سوم
+        ws_injuries = wb.create_sheet("لیست جراحات")
+        ws_injuries.cell(row=1, column=1).value = "انواع جراحات موجود در سیستم:"
+        ws_injuries.cell(row=1, column=1).font = Font(bold=True, size=12, color="0000FF")
+        
+        injury_types = InjuryType.objects.all()
+        for idx, injury in enumerate(injury_types, start=2):
+            ws_injuries.cell(row=idx, column=1).value = injury.name
+            ws_injuries.cell(row=idx, column=1).alignment = Alignment(horizontal="right")
+        
+        ws_injuries.column_dimensions['A'].width = 40
+        
+        # اضافه کردن لیست پرسنل (کد پرسنلی و نام)
+        ws_personnel = wb.create_sheet("لیست پرسنل")
+        ws_personnel.cell(row=1, column=1).value = "کد پرسنلی"
+        ws_personnel.cell(row=1, column=1).font = Font(bold=True, size=12, color="0000FF")
+        ws_personnel.cell(row=1, column=2).value = "نام و نام خانوادگی"
+        ws_personnel.cell(row=1, column=2).font = Font(bold=True, size=12, color="0000FF")
+        
+        personnel = UserProfile.objects.select_related('user').filter(personnel_code__isnull=False).exclude(personnel_code='')
+        for idx, person in enumerate(personnel, start=2):
+            ws_personnel.cell(row=idx, column=1).value = person.personnel_code
+            ws_personnel.cell(row=idx, column=1).alignment = Alignment(horizontal="center")
+            ws_personnel.cell(row=idx, column=2).value = person.user.get_full_name()
+            ws_personnel.cell(row=idx, column=2).alignment = Alignment(horizontal="right")
+        
+        ws_personnel.column_dimensions['A'].width = 20
+        ws_personnel.column_dimensions['B'].width = 30
+        
+        # اضافه کردن لیست پیمانکاران و پرسنل آنها
+        ws_contractors = wb.create_sheet("لیست پیمانکاران")
+        ws_contractors.cell(row=1, column=1).value = "نام شرکت پیمانکار"
+        ws_contractors.cell(row=1, column=1).font = Font(bold=True, size=12, color="FF0000")
+        ws_contractors.cell(row=1, column=2).value = "کد ملی پرسنل"
+        ws_contractors.cell(row=1, column=2).font = Font(bold=True, size=12, color="FF0000")
+        ws_contractors.cell(row=1, column=3).value = "نام و نام خانوادگی"
+        ws_contractors.cell(row=1, column=3).font = Font(bold=True, size=12, color="FF0000")
+        
+        contractors = Contractor.objects.prefetch_related('employees').all()
+        row_idx = 2
+        for contractor in contractors:
+            employees = contractor.employees.filter(national_id__isnull=False).exclude(national_id='')
+            if employees.exists():
+                for employee in employees:
+                    ws_contractors.cell(row=row_idx, column=1).value = contractor.company_name
+                    ws_contractors.cell(row=row_idx, column=1).alignment = Alignment(horizontal="right")
+                    ws_contractors.cell(row=row_idx, column=2).value = employee.national_id
+                    ws_contractors.cell(row=row_idx, column=2).alignment = Alignment(horizontal="center")
+                    ws_contractors.cell(row=row_idx, column=3).value = f"{employee.first_name} {employee.last_name}"
+                    ws_contractors.cell(row=row_idx, column=3).alignment = Alignment(horizontal="right")
+                    row_idx += 1
+            else:
+                # اگر پیمانکار پرسنلی ندارد، فقط نام شرکت را نمایش بده
+                ws_contractors.cell(row=row_idx, column=1).value = contractor.company_name
+                ws_contractors.cell(row=row_idx, column=1).alignment = Alignment(horizontal="right")
+                ws_contractors.cell(row=row_idx, column=2).value = "بدون پرسنل ثبت شده"
+                ws_contractors.cell(row=row_idx, column=2).alignment = Alignment(horizontal="center")
+                ws_contractors.cell(row=row_idx, column=3).value = "-"
+                ws_contractors.cell(row=row_idx, column=3).alignment = Alignment(horizontal="center")
+                row_idx += 1
+        
+        ws_contractors.column_dimensions['A'].width = 30
+        ws_contractors.column_dimensions['B'].width = 20
+        ws_contractors.column_dimensions['C'].width = 30
+        
+        # اضافه کردن راهنما در sheet ششم
+        ws_guide = wb.create_sheet("راهنما")
+        guide_text = [
+            ["راهنمای استفاده از فایل الگو"],
+            [""],
+            ["📋 فیلدهای الزامی:"],
+            ["1. تاریخ حادثه: به فرمت شمسی مثل 1403/09/15 یا 1403-09-15 (هر دو فرمت قابل قبول است)"],
+            ["2. ساعت حادثه: به فرمت 24 ساعته مثل 14:30"],
+            ["3. نوع حادثه: فقط یکی از این سه مقدار:"],
+            ["   • human = حوادث انسانی (فردی)"],
+            ["   • equipment = حوادث تجهیزاتی"],
+            ["   • environmental = حوادث محیط زیستی"],
+            ["4. نام سایت: از Sheet 'لیست سایت‌ها' کپی کنید (دقیقاً همان نام را بنویسید)"],
+            [""],
+            ["📝 فیلدهای اختیاری:"],
+            ["5. نام محل دقیق: نام دقیق بخش یا قسمت (می‌توانید خالی بگذارید)"],
+            ["6. کد پرسنلی اشخاص درگیر: از Sheet 'لیست پرسنل شرکت' کد پرسنلی را کپی کنید"],
+            ["   • برای چند نفر با کاما جدا کنید (مثل: 123,456,789)"],
+            ["7. انواع جراحت: از Sheet 'لیست جراحات' کپی کنید، برای چند مورد با کاما جدا کنید"],
+            ["8. نام شرکت پیمانکار: از Sheet 'لیست پیمانکاران' نام دقیق شرکت را کپی کنید"],
+            ["9. کد ملی پرسنل پیمانکار: از Sheet 'لیست پیمانکاران' کد ملی را کپی کنید"],
+            ["   • ابتدا نام پیمانکار را وارد کنید، سپس کد ملی پرسنل آن پیمانکار"],
+            ["   • برای چند نفر با کاما جدا کنید (مثل: 1234567890,0987654321)"],
+            [""],
+            ["✅ مقادیر بله/خیر:"],
+            ["- فقط یکی از دو مقدار 'بله' یا 'خیر' را وارد کنید"],
+            ["- اگر خالی بگذارید، به صورت پیش‌فرض 'خیر' در نظر گرفته می‌شود"],
+            [""],
+            ["⚠️ نکات مهم:"],
+            ["- نام سایت و جراحات باید دقیقاً مطابق لیست‌های موجود باشند"],
+            ["- کد پرسنلی (شرکت) و کد ملی (پیمانکار) باید دقیقاً مطابق Sheets مربوطه باشند"],
+            ["- برای جداسازی چند مورد از کاما (,) استفاده کنید نه نقطه‌ویرگول"],
+            ["- مثال صحیح: 123,456,789 یا 1234567890,0987654321 یا بریدگی,سوختگی"],
+            ["- اگر سایت، جراحت، کد پرسنلی یا کد ملی پیدا نشد، آن بخش نادیده گرفته می‌شود"],
+            ["- ردیف نمونه را می‌توانید حذف کنید یا روی آن بنویسید"],
+            ["- می‌توانید چندین ردیف (حادثه) را همزمان وارد کنید"],
+            [""],
+            ["💡 راهنمای Sheets:"],
+            ["• Sheet 1: الگوی ثبت حوادث - فرم اصلی برای ورود داده"],
+            ["• Sheet 2: لیست سایت‌ها - سایت‌های قابل انتخاب"],
+            ["• Sheet 3: لیست جراحات - جراحات قابل انتخاب"],
+            ["• Sheet 4: لیست پرسنل شرکت - کد پرسنلی و نام پرسنل شرکت"],
+            ["• Sheet 5: لیست پیمانکاران - نام پیمانکار، کد ملی و نام پرسنل پیمانکار"],
+            ["• Sheet 6: راهنما - این صفحه"],
+        ]
+        
+        for row_num, row_data in enumerate(guide_text, 1):
+            cell = ws_guide.cell(row=row_num, column=1)
+            cell.value = row_data[0]
+            if row_num == 1:
+                cell.font = Font(bold=True, size=14, color="FF0000")
+            elif "⚠️" in str(row_data[0]):
+                cell.font = Font(bold=True, size=12, color="FF6600")
+            cell.alignment = Alignment(horizontal="right", vertical="center", wrap_text=True)
+        
+        ws_guide.column_dimensions['A'].width = 100
+        
+        # ذخیره در حافظه و ارسال
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        response = HttpResponse(
+            output.read(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename="incident_import_template.xlsx"'
+        
+        log_user_activity(
+            request.user,
+            'hse_incidents',
+            'download_template',
+            f'دانلود الگوی ایمپورت حوادث'
+        )
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"خطا در ایجاد الگوی اکسل: {e}")
+        messages.error(request, f'خطا در ایجاد فایل الگو: {str(e)}')
+        return redirect('hse_incidents:list_reports')
+
+
+@login_required
+@permission_required('hse_incidents:import_incidents')
+def import_incidents_from_excel(request):
+    """ایمپورت حوادث از فایل اکسل"""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'فقط متد POST مجاز است'}, status=405)
+    
+    if 'excel_file' not in request.FILES:
+        return JsonResponse({'status': 'error', 'message': 'فایل اکسل ارسال نشده است'}, status=400)
+    
+    excel_file = request.FILES['excel_file']
+    
+    # بررسی پسوند فایل
+    if not excel_file.name.endswith(('.xlsx', '.xls')):
+        return JsonResponse({'status': 'error', 'message': 'فرمت فایل باید اکسل (.xlsx یا .xls) باشد'}, status=400)
+    
+    try:
+        # خواندن فایل اکسل
+        df = pd.read_excel(excel_file, sheet_name=0)
+        
+        # چاپ تمام ستون‌ها برای دیباگ
+        logger.info(f"ستون‌های موجود در فایل: {list(df.columns)}")
+        print(f"📋 ستون‌های فایل اکسل: {list(df.columns)}")
+        
+        # بررسی وجود ستون‌های لازم
+        required_columns = [
+            'تاریخ حادثه (1403/09/15)',
+            'ساعت حادثه (14:30)',
+            'نوع حادثه (human/equipment/environmental)',
+            'نام سایت',
+        ]
+        
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            print(f"❌ ستون‌های گمشده: {missing_columns}")
+            return JsonResponse({
+                'status': 'error',
+                'message': f'ستون‌های الزامی در فایل وجود ندارند: {", ".join(missing_columns)}',
+                'available_columns': list(df.columns),
+                'missing_columns': missing_columns
+            }, status=400)
+        
+        # دریافت پروفایل کاربر
+        try:
+            user_profile = UserProfile.objects.get(user=request.user)
+        except UserProfile.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'پروفایل کاربری یافت نشد'}, status=400)
+        
+        # متغیرهای شمارش
+        success_count = 0
+        error_count = 0
+        errors = []
+        
+        # پردازش هر ردیف
+        for index, row in df.iterrows():
+            row_number = index + 2  # +2 برای header و شروع از 1
+            
+            try:
+                # بررسی خالی بودن ردیف
+                if pd.isna(row['تاریخ حادثه (1403/09/15)']) or pd.isna(row['ساعت حادثه (14:30)']):
+                    logger.debug(f"ردیف {row_number} خالی است، رد شد")
+                    continue
+                
+                logger.info(f"شروع پردازش ردیف {row_number}")
+                
+                # پردازش تاریخ
+                date_str = str(row['تاریخ حادثه (1403/09/15)']).strip()
+                date_str = persian_to_english_numbers(date_str)
+                # پشتیبانی از هر دو فرمت / و -
+                separator = '/' if '/' in date_str else '-'
+                date_parts = date_str.split(separator)
+                incident_date = jdatetime.date(
+                    int(date_parts[0]),
+                    int(date_parts[1]),
+                    int(date_parts[2])
+                ).togregorian()
+                
+                # پردازش ساعت
+                time_str = str(row['ساعت حادثه (14:30)']).strip()
+                if ':' in time_str:
+                    time_parts = time_str.split(':')
+                    incident_time = f"{time_parts[0].zfill(2)}:{time_parts[1].zfill(2)}:00"
+                else:
+                    incident_time = "00:00:00"
+                
+                # نوع حادثه
+                incident_type = str(row['نوع حادثه (human/equipment/environmental)']).strip().lower()
+                if incident_type not in ['human', 'equipment', 'environmental']:
+                    errors.append(f"ردیف {row_number}: نوع حادثه نامعتبر است")
+                    error_count += 1
+                    continue
+                
+                # سایت
+                location_name = str(row['نام سایت']).strip()
+                try:
+                    location = Location.objects.get(name=location_name)
+                except Location.DoesNotExist:
+                    errors.append(f"ردیف {row_number}: سایت '{location_name}' یافت نشد")
+                    error_count += 1
+                    continue
+                
+                # محل دقیق (اختیاری)
+                section = None
+                if not pd.isna(row.get('نام محل دقیق (اختیاری)')):
+                    section_name = str(row['نام محل دقیق (اختیاری)']).strip()
+                    if section_name:
+                        try:
+                            section = LocationSection.objects.get(location=location, section=section_name)
+                        except LocationSection.DoesNotExist:
+                            pass  # اگر نباشد، None می‌ماند
+                
+                # بررسی فیلدهای الزامی
+                involved_equipment = str(row.get('تجهیزات مرتبط', '')).strip()
+                if not involved_equipment or involved_equipment == 'nan':
+                    involved_equipment = 'نامشخص'
+                
+                affected_body_part = str(row.get('عضو آسیب دیده', '')).strip()
+                if not affected_body_part or affected_body_part == 'nan':
+                    affected_body_part = 'نامشخص'
+                
+                damage_description = str(row.get('شرح آسیب', '')).strip()
+                if not damage_description or damage_description == 'nan':
+                    damage_description = 'نامشخص'
+                
+                related_entity = str(row.get('نوع ارتباط', '')).strip()
+                if not related_entity or related_entity == 'nan':
+                    related_entity = 'نامشخص'
+                
+                full_description = str(row.get('شرح کامل حادثه', '')).strip()
+                if not full_description or full_description == 'nan':
+                    full_description = 'نامشخص'
+                
+                initial_cause = str(row.get('علت اولیه حادثه', '')).strip()
+                if not initial_cause or initial_cause == 'nan':
+                    initial_cause = 'در حال بررسی'
+                
+                logger.debug(f"ردیف {row_number}: تاریخ={incident_date}, نوع={incident_type}, سایت={location.name}")
+                
+                # ایجاد گزارش حادثه
+                incident = IncidentReport.objects.create(
+                    incident_date=incident_date,
+                    incident_time=incident_time,
+                    incident_type=incident_type,
+                    location=location,
+                    section=section,
+                    involved_equipment=involved_equipment,
+                    affected_body_part=affected_body_part,
+                    damage_description=damage_description,
+                    related_entity=related_entity,
+                    full_description=full_description,
+                    initial_cause=initial_cause,
+                    report_author=user_profile,
+                    is_severe_production_stoppage=str(row.get('حادثه شدید توقف تولید؟ (بله/خیر)', 'خیر')).strip() == 'بله',
+                    fire_truck_needed=str(row.get('آتش‌نشانی اعزام شد؟ (بله/خیر)', 'خیر')).strip() == 'بله',
+                    ambulance_needed=str(row.get('آمبولانس اعزام شد؟ (بله/خیر)', 'خیر')).strip() == 'بله',
+                    hospitalized=str(row.get('به بیمارستان اعزام شد؟ (بله/خیر)', 'خیر')).strip() == 'بله',
+                )
+                
+                logger.info(f"ردیف {row_number}: حادثه با ID {incident.id} ایجاد شد")
+                
+                # پردازش اشخاص درگیر (M2M)
+                # بررسی با نام ستون جدید (کد پرسنلی)
+                personnel_codes_col = None
+                for col_name in ['کد پرسنلی اشخاص درگیر (جدا با کاما)', 'کد پرسنلی  اشخاص درگیر (جدا با کاما)']:
+                    if col_name in df.columns and not pd.isna(row.get(col_name)):
+                        personnel_codes_col = col_name
+                        break
+                
+                if personnel_codes_col:
+                    personnel_codes_str = str(row[personnel_codes_col]).strip()
+                    logger.info(f"ردیف {row_number}: کد پرسنلی اشخاص = '{personnel_codes_str}'")
+                    print(f"👤 ردیف {row_number}: پردازش کد پرسنلی اشخاص: {personnel_codes_str}")
+                    
+                    if personnel_codes_str and personnel_codes_str != 'nan':
+                        # جداسازی با کاما (,)
+                        personnel_codes = personnel_codes_str.split(',')
+                        for pc in personnel_codes:
+                            pc = pc.strip()
+                            if pc and pc != 'nan':
+                                try:
+                                    profile = UserProfile.objects.get(personnel_code=pc)
+                                    incident.involved_person.add(profile)
+                                    logger.info(f"✅ شخص با کد پرسنلی {pc} اضافه شد: {profile.user.get_full_name()}")
+                                    print(f"   ✅ افزوده شد: {profile.user.get_full_name()} (کد پرسنلی: {pc})")
+                                except UserProfile.DoesNotExist:
+                                    logger.warning(f"❌ شخصی با کد پرسنلی {pc} یافت نشد")
+                                    print(f"   ❌ کد پرسنلی {pc} در سیستم یافت نشد")
+                else:
+                    logger.debug(f"ردیف {row_number}: کد پرسنلی اشخاص خالی است یا وجود ندارد")
+                
+                # پردازش انواع جراحت (M2M)
+                injury_col = 'انواع جراحت (جدا با کاما)'
+                if injury_col in df.columns and not pd.isna(row.get(injury_col)):
+                    injury_names_str = str(row[injury_col]).strip()
+                    logger.info(f"ردیف {row_number}: انواع جراحت = '{injury_names_str}'")
+                    print(f"🩹 ردیف {row_number}: پردازش انواع جراحت: {injury_names_str}")
+                    
+                    if injury_names_str and injury_names_str != 'nan':
+                        # جداسازی با کاما (,)
+                        injury_names = injury_names_str.split(',')
+                        for injury_name in injury_names:
+                            injury_name = injury_name.strip()
+                            if injury_name and injury_name != 'nan':
+                                injury_type, created = InjuryType.objects.get_or_create(name=injury_name)
+                                incident.injury_type.add(injury_type)
+                                action = "ایجاد و افزوده شد" if created else "افزوده شد"
+                                logger.info(f"✅ جراحت '{injury_name}' {action}")
+                                print(f"   ✅ {injury_name} ({action})")
+                
+                # پیمانکار (اختیاری)
+                contractor_col = 'نام شرکت پیمانکار (اختیاری)'
+                contractor_obj = None
+                if contractor_col in df.columns and not pd.isna(row.get(contractor_col)):
+                    contractor_name = str(row[contractor_col]).strip()
+                    if contractor_name and contractor_name != 'nan':
+                        try:
+                            contractor_obj = Contractor.objects.get(company_name=contractor_name)
+                            incident.related_contractor = contractor_obj
+                            incident.save()
+                            logger.info(f"✅ پیمانکار '{contractor_name}' اضافه شد")
+                            print(f"🏢 پیمانکار افزوده شد: {contractor_name}")
+                        except Contractor.DoesNotExist:
+                            logger.warning(f"❌ پیمانکار '{contractor_name}' در سیستم یافت نشد")
+                            print(f"   ❌ پیمانکار '{contractor_name}' یافت نشد")
+                
+                # پرسنل پیمانکار (اختیاری)
+                contractor_personnel_col = 'کد ملی پرسنل پیمانکار (جدا با کاما)'
+                if contractor_personnel_col in df.columns and not pd.isna(row.get(contractor_personnel_col)):
+                    contractor_personnel_str = str(row[contractor_personnel_col]).strip()
+                    logger.info(f"ردیف {row_number}: کد ملی پرسنل پیمانکار = '{contractor_personnel_str}'")
+                    print(f"👷 ردیف {row_number}: پردازش پرسنل پیمانکار: {contractor_personnel_str}")
+                    
+                    if contractor_personnel_str and contractor_personnel_str != 'nan':
+                        if not contractor_obj:
+                            logger.warning(f"⚠️ برای افزودن پرسنل پیمانکار، ابتدا باید نام پیمانکار را وارد کنید")
+                            print(f"   ⚠️ نام پیمانکار مشخص نیست، پرسنل اضافه نمی‌شود")
+                        else:
+                            contractor_personnel_codes = contractor_personnel_str.split(',')
+                            for national_id in contractor_personnel_codes:
+                                national_id = national_id.strip()
+                                if national_id and national_id != 'nan':
+                                    try:
+                                        employee = Employee.objects.get(
+                                            contractor=contractor_obj,
+                                            national_id=national_id
+                                        )
+                                        incident.related_contractor_employees.add(employee)
+                                        employee_name = f"{employee.first_name} {employee.last_name}"
+                                        logger.info(f"✅ پرسنل پیمانکار با کد ملی {national_id} اضافه شد: {employee_name}")
+                                        print(f"   ✅ افزوده شد: {employee_name} (کد ملی: {national_id})")
+                                    except Employee.DoesNotExist:
+                                        logger.warning(f"❌ پرسنل پیمانکار با کد ملی {national_id} در پیمانکار '{contractor_obj.company_name}' یافت نشد")
+                                        print(f"   ❌ کد ملی {national_id} در پیمانکار یافت نشد")
+                
+                # زمان‌های اضطراری
+                if incident.fire_truck_needed and not pd.isna(row.get('ساعت رسیدن آتش‌نشانی')):
+                    time_str = str(row['ساعت رسیدن آتش‌نشانی']).strip()
+                    if ':' in time_str:
+                        time_parts = time_str.split(':')
+                        incident.fire_truck_arrival_time = f"{time_parts[0].zfill(2)}:{time_parts[1].zfill(2)}:00"
+                
+                if incident.ambulance_needed and not pd.isna(row.get('ساعت رسیدن آمبولانس')):
+                    time_str = str(row['ساعت رسیدن آمبولانس']).strip()
+                    if ':' in time_str:
+                        time_parts = time_str.split(':')
+                        incident.ambulance_arrival_time = f"{time_parts[0].zfill(2)}:{time_parts[1].zfill(2)}:00"
+                
+                if incident.hospitalized:
+                    if not pd.isna(row.get('ساعت اعزام به بیمارستان')):
+                        time_str = str(row['ساعت اعزام به بیمارستان']).strip()
+                        if ':' in time_str:
+                            time_parts = time_str.split(':')
+                            incident.hospitalized_time = f"{time_parts[0].zfill(2)}:{time_parts[1].zfill(2)}:00"
+                    
+                    if not pd.isna(row.get('نوع وسیله نقلیه')):
+                        incident.transportation_type = str(row['نوع وسیله نقلیه']).strip()
+                
+                incident.save()
+                success_count += 1
+                
+                # ارسال نوتیفیکیشن
+                try:
+                    notify_incident_report_created(incident)
+                except Exception as notif_error:
+                    logger.warning(f"خطا در ارسال نوتیفیکیشن برای حادثه {incident.id}: {notif_error}")
+                
+            except Exception as e:
+                error_count += 1
+                error_msg = f"ردیف {row_number}: {str(e)}"
+                errors.append(error_msg)
+                logger.error(f"خطا در پردازش ردیف {row_number}: {e}", exc_info=True)
+                # چاپ در کنسول برای دیباگ
+                print(f"❌ {error_msg}")
+        
+        # لاگ فعالیت
+        log_user_activity(
+            request.user,
+            'hse_incidents',
+            'import_excel',
+            f'ایمپورت {success_count} حادثه از اکسل - {error_count} خطا'
+        )
+        
+        # پاسخ
+        response_data = {
+            'status': 'success' if success_count > 0 else 'error',
+            'message': f'تعداد {success_count} حادثه با موفقیت ایمپورت شد.',
+            'success_count': success_count,
+            'error_count': error_count,
+            'errors': errors[:10] if errors else [],  # فقط 10 خطای اول
+        }
+        
+        if error_count > 0:
+            response_data['message'] += f' تعداد {error_count} ردیف با خطا مواجه شد.'
+        
+        return JsonResponse(response_data)
+        
+    except Exception as e:
+        logger.error(f"خطا در ایمپورت اکسل: {e}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'خطا در پردازش فایل: {str(e)}'
+        }, status=500)
