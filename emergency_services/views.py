@@ -2382,10 +2382,10 @@ def emergency_login_view(request):
                 logger.info(f"Emergency login successful: {username}")
                 messages.success(request, f'خوش آمدید {user.get_full_name() or user.username}')
                 return redirect('emergency_services:dashboard')
-        else:
+            else:
                 logger.warning(f"Unauthorized emergency login attempt: {username}")
                 messages.error(request, 'شما مجاز به ورود به پورتال اورژانس نیستید.')
-    else:
+        else:
             logger.warning(f"Failed emergency login attempt: {username}")
             messages.error(request, 'نام کاربری یا رمز عبور اشتباه است.')
     
