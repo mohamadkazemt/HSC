@@ -53,7 +53,7 @@
   </div>
 
   <!-- ==================== STATISTICS CARDS ==================== -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
     <div class="stat-card">
       <div class="flex items-center justify-between">
         <div>
@@ -69,11 +69,35 @@
     <div class="stat-card">
       <div class="flex items-center justify-between">
         <div>
+          <p class="text-xs text-gray-600 dark:text-gray-400 font-medium">پرسنل شرکت</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ company_visits_count|default:0 }}</p>
+        </div>
+        <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+          <i class="fa-solid fa-building text-blue-600 dark:text-blue-400 text-xl"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs text-gray-600 dark:text-gray-400 font-medium">پرسنل پیمانکار</p>
+          <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ contractor_visits_count|default:0 }}</p>
+        </div>
+        <div class="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+          <i class="fa-solid fa-handshake text-purple-600 dark:text-purple-400 text-xl"></i>
+        </div>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="flex items-center justify-between">
+        <div>
           <p class="text-xs text-gray-600 dark:text-gray-400 font-medium">این صفحه</p>
           <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ visits|length }}</p>
         </div>
-        <div class="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-          <i class="fa-solid fa-list text-blue-600 dark:text-blue-400 text-xl"></i>
+        <div class="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+          <i class="fa-solid fa-list text-green-600 dark:text-green-400 text-xl"></i>
         </div>
       </div>
     </div>
@@ -102,8 +126,8 @@
           <p class="text-xs text-gray-600 dark:text-gray-400 font-medium">صفحه فعلی</p>
           <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ visits.number|default:1 }}/{{ visits.paginator.num_pages|default:1 }}</p>
         </div>
-        <div class="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-          <i class="fa-solid fa-file-lines text-purple-600 dark:text-purple-400 text-xl"></i>
+        <div class="w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
+          <i class="fa-solid fa-file-lines text-rose-600 dark:text-rose-400 text-xl"></i>
         </div>
       </div>
     </div>

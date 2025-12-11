@@ -358,6 +358,8 @@ def visit_list(request):
         - services: لیست خدمات درمانی
         - medicine_categories: لیست دسته‌بندی داروها
         - date_range: بازه تاریخ‌های موجود
+        - company_visits_count: تعداد مراجعات پرسنل شرکت (بر اساس فیلترها)
+        - contractor_visits_count: تعداد مراجعات پرسنل پیمانکار (بر اساس فیلترها)
         - filters: مقادیر فیلترهای اعمال شده
     """
     # دریافت تمام مراجعات به ترتیب نزولی تاریخ
@@ -444,6 +446,12 @@ def visit_list(request):
     )
     
     # ==========================================================================
+    # محاسبه آمار پرسنل شرکت و پیمانکار (بر اساس فیلترهای اعمال شده)
+    # ==========================================================================
+    company_visits_count = visits.filter(personnel_type='company').count()
+    contractor_visits_count = visits.filter(personnel_type='contractor').count()
+    
+    # ==========================================================================
     # صفحه‌بندی (25 آیتم در هر صفحه)
     # ==========================================================================
     paginator = Paginator(visits, 25)
@@ -452,7 +460,8 @@ def visit_list(request):
     
     # لاگ نتیجه نهایی
     logger.info(f"Visit list returned {visits_page.paginator.count} results "
-                f"(page {visits_page.number}/{visits_page.paginator.num_pages})")
+                f"(page {visits_page.number}/{visits_page.paginator.num_pages}), "
+                f"company: {company_visits_count}, contractor: {contractor_visits_count}")
     
     # ==========================================================================
     # آماده‌سازی داده‌های مورد نیاز برای فیلترها
@@ -468,6 +477,8 @@ def visit_list(request):
         'services': services,
         'medicine_categories': medicine_categories,
         'date_range': date_range,
+        'company_visits_count': company_visits_count,
+        'contractor_visits_count': contractor_visits_count,
         'filters': {
             'date_from': date_from_raw,
             'date_to': date_to_raw,
