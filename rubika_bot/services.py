@@ -233,6 +233,7 @@ class RubikaBotEngine:
             'disconnect': self._disconnect_user, 'account': self._send_account_status,
             'payslip': self._handle_payslip_request,
             'leave_request': self._start_leave_request,
+            'leave_inbox': self._show_leave_inbox,
             'cancel_leave': self._cancel_leave_request,
             'cancel_rejection': self._cancel_rejection,
             'sms_connect': self._start_sms_connection,
@@ -923,6 +924,131 @@ class RubikaBotEngine:
         ])
         await self._send_text_message(chat_id, message, keyboard)
 
+    async def _show_leave_inbox(self, chat_id: str, user: RubikaUser) -> None:
+        """نمایش کارتابل مرخصی - لیست درخواست‌های منتظر تایید"""
+        if not user.user:
+            message = '⚠️ برای مشاهده کارتابل مرخصی، ابتدا باید به حساب کاربری خود متصل شوید.'
+            buttons = self._build_command_keyboard(connected=False)
+            await self._send_text_message(chat_id, message, buttons)
+            return
+        
+        # دریافت لیست درخواست‌های منتظر تایید
+        @sync_to_async(thread_sensitive=True)
+        def get_pending_leaves():
+            from leave_reports.models import ShiftReport
+            
+            pending_leaves = []
+            
+            # 1. درخواست‌هایی که من جایگزین آن‌ها هستم
+            pending_as_replacement = list(ShiftReport.objects.filter(
+                replacement_person=user.user,
+                status='pending_replacement',
+                replacement_approved=False
+            ).select_related('user', 'user__userprofile').order_by('-created_at')[:10])
+            
+            for leave in pending_as_replacement:
+                pending_leaves.append({
+                    'id': leave.id,
+                    'type': 'replacement',
+                    'requester': leave.user.get_full_name() or leave.user.username,
+                    'requester_code': getattr(leave.user.userprofile, 'personnel_code', None) if hasattr(leave.user, 'userprofile') else None,
+                    'leave_type': leave.get_leave_type_display(),
+                    'date': leave.shift_date,
+                    'shift': leave.get_shift_type_display(),
+                })
+            
+            # 2. درخواست‌هایی که باید به عنوان مدیر تأیید کنم
+            user_profile = getattr(user.user, 'userprofile', None)
+            if user_profile:
+                all_pending = ShiftReport.objects.filter(
+                    status='pending_approval',
+                    replacement_approved=True
+                ).select_related('user', 'user__userprofile', 'replacement_person').order_by('-created_at')[:20]
+                
+                for leave in all_pending:
+                    approver = leave.get_required_approver()
+                    if approver and approver == user_profile:
+                        pending_leaves.append({
+                            'id': leave.id,
+                            'type': 'manager',
+                            'requester': leave.user.get_full_name() or leave.user.username,
+                            'requester_code': getattr(leave.user.userprofile, 'personnel_code', None) if hasattr(leave.user, 'userprofile') else None,
+                            'leave_type': leave.get_leave_type_display(),
+                            'date': leave.shift_date,
+                            'shift': leave.get_shift_type_display(),
+                            'replacement': leave.replacement_person.get_full_name() if leave.replacement_person else None,
+                        })
+            
+            return pending_leaves
+        
+        pending_leaves = await get_pending_leaves()
+        
+        if not pending_leaves:
+            message = '📭 شما هیچ درخواست مرخصی منتظر تایید ندارید.'
+            keyboard = Keypad(rows=[
+                KeypadRow(buttons=[self._button('start', '🏠 بازگشت به منوی اصلی')])
+            ])
+            await self._send_text_message(chat_id, message, keyboard)
+            return
+        
+        # ارسال هر درخواست به صورت جداگانه با دکمه‌های تایید/رد
+        message_header = f'📋 کارتابل مرخصی\n\n✅ شما {len(pending_leaves)} درخواست منتظر تایید دارید:\n'
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[self._button('start', '🏠 بازگشت به منوی اصلی')])
+        ])
+        await self._send_text_message(chat_id, message_header, keyboard)
+        
+        # ارسال هر درخواست با دکمه‌های تایید/رد
+        for leave in pending_leaves:
+            # ساخت متن درخواست
+            message_lines = []
+            
+            if leave['type'] == 'replacement':
+                message_lines.append('🔔 درخواست جایگزینی')
+            else:
+                message_lines.append('🔔 درخواست تایید مدیر')
+            
+            message_lines.append('')
+            
+            # اطلاعات درخواست‌دهنده
+            requester_info = f'👤 {leave["requester"]}'
+            if leave['requester_code']:
+                requester_info += f' (کد: {leave["requester_code"]})'
+            message_lines.append(requester_info)
+            
+            message_lines.extend([
+                f'📌 نوع: {leave["leave_type"]}',
+                f'📅 تاریخ: {leave["date"]}',
+                f'🕐 شیفت: {leave["shift"]}',
+            ])
+            
+            # اگر مدیر است و جایگزین دارد
+            if leave['type'] == 'manager' and leave.get('replacement'):
+                message_lines.append(f'👥 جایگزین: {leave["replacement"]}')
+            
+            message_lines.extend([
+                '',
+                '❓ لطفاً تصمیم خود را اعلام کنید:',
+            ])
+            
+            message = '\n'.join(message_lines)
+            
+            # ساخت دکمه‌های تایید و رد
+            approve_button_id = f'approve_leave_{leave["type"]}_{leave["id"]}'
+            reject_button_id = f'reject_leave_{leave["type"]}_{leave["id"]}'
+            
+            keyboard = Keypad(rows=[
+                KeypadRow(buttons=[
+                    self._button(approve_button_id, '✅ تایید'),
+                    self._button(reject_button_id, '❌ رد')
+                ])
+            ])
+            
+            await self._send_text_message(chat_id, message, keyboard)
+            
+            # تاخیر کوچک بین ارسال پیام‌ها (برای جلوگیری از rate limiting)
+            import asyncio
+            await asyncio.sleep(0.5)
     
     async def _handle_leave_type_selection(self, chat_id: str, user: RubikaUser, button_id: str) -> None:
         """پردازش انتخاب نوع مرخصی"""
@@ -2299,14 +2425,18 @@ class RubikaBotEngine:
         
         if connected:
             # کیبورد برای کاربران متصل
-            second_row = [('payslip', '💰 فیش حقوقی'), ('leave_request', '🏖️ مرخصی')]
-            third_row = [('help', '❓ راهنما'), ('disconnect', '🔓 قطع اتصال')]
+            second_row = [('payslip', '💰 فیش حقوقی'), ('leave_request', '🏖️ درخواست مرخصی')]
+            third_row = [('leave_inbox', '📋 کارتابل مرخصی'), ('help', '❓ راهنما')]
+            fourth_row = [('disconnect', '🔓 قطع اتصال')]
         else:
             # کیبورد برای کاربران غیر متصل
             second_row = [('connect', '🔗 اتصال با کد'), ('sms_connect', '📱 اتصال با پیامک')]
             third_row = [('help', '❓ راهنما')]
+            fourth_row = []
         
         rows = [first_row, second_row, third_row]
+        if fourth_row:
+            rows.append(fourth_row)
         keypad_rows = [KeypadRow(buttons=[self._button(button_id, label) for button_id, label in row]) for row in rows]
         return Keypad(rows=keypad_rows)
 
