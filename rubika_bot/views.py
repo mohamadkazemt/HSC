@@ -129,12 +129,19 @@ def settings_view(request: HttpRequest) -> HttpResponse:
         return redirect('rubika_bot:settings')
 
     # Get user statistics for the summary card
-    total_users = RubikaUser.objects.count()
-    connected_users = RubikaUser.objects.filter(user__isnull=False).count()
-    unconnected_users = total_users - connected_users
-    
-    # Get recent users for quick preview
-    recent_users = RubikaUser.objects.select_related('user', 'user__userprofile').order_by('-updated_at')[:5]
+    try:
+        total_users = RubikaUser.objects.count()
+        connected_users = RubikaUser.objects.filter(user__isnull=False).count()
+        unconnected_users = total_users - connected_users
+        
+        # Get recent users for quick preview - with error handling
+        recent_users = list(RubikaUser.objects.select_related('user').order_by('-updated_at')[:5])
+    except Exception as e:
+        logger.error(f"Error fetching user statistics: {e}")
+        total_users = 0
+        connected_users = 0
+        unconnected_users = 0
+        recent_users = []
 
     sample_code = 'SAMPLECODE123'
     deeplink_example = None

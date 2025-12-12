@@ -3,7 +3,7 @@
 
 {% block title %}تنظیمات ربات روبیکا{% endblock %}
 
-{% block extra_css %}
+{% block content %}
 <style>
   .card-hover {
     transition: all 0.3s ease;
@@ -38,9 +38,6 @@
     transform: scale(1.1) rotate(5deg);
   }
 </style>
-{% endblock %}
-
-{% block content %}
 <div class="max-w-7xl mx-auto">
   <!-- Hero Header -->
   <div class="mb-8">
@@ -341,21 +338,26 @@
           </a>
         </div>
         <div class="space-y-3">
-          {% for u in recent_users|slice:":4" %}
+          {% for u in recent_users %}
+          {% if forloop.counter <= 4 %}
           <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
             <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg">
-              {% if u.user %}
-                {{ u.user.first_name|first|default:"?" }}
+              {% if u.user and u.user.first_name %}
+                {{ u.user.first_name|first|upper }}
+              {% elif u.first_name %}
+                {{ u.first_name|first|upper }}
               {% else %}
-                {{ u.first_name|first|default:"?" }}
+                ?
               {% endif %}
             </div>
             <div class="flex-1 min-w-0">
               <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
                 {% if u.user %}
-                  {{ u.user.first_name }} {{ u.user.last_name }}
+                  {{ u.user.first_name|default:"کاربر" }} {{ u.user.last_name|default:"" }}
+                {% elif u.first_name %}
+                  {{ u.first_name }} {{ u.last_name|default:"" }}
                 {% else %}
-                  {{ u.first_name|default:"بدون نام" }}
+                  بدون نام
                 {% endif %}
               </p>
               <p class="text-xs text-gray-500">
@@ -370,6 +372,7 @@
               <div class="w-2 h-2 bg-green-500 rounded-full"></div>
             {% endif %}
           </div>
+          {% endif %}
           {% empty %}
           <div class="text-center py-8 text-gray-500">
             <svg class="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
