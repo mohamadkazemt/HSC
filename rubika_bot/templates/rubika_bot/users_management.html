@@ -148,10 +148,12 @@
               <div class="flex items-center">
                 <div class="flex-shrink-0 h-10 w-10">
                   <div class="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold">
-                    {% if u.user %}
-                      {{ u.user.first_name|first|default:"?" }}
+                    {% if u.user and u.user.first_name %}
+                      {{ u.user.first_name|first|upper }}
+                    {% elif u.first_name %}
+                      {{ u.first_name|first|upper }}
                     {% else %}
-                      {{ u.first_name|first|default:"?" }}
+                      ?
                     {% endif %}
                   </div>
                 </div>
@@ -168,7 +170,7 @@
                     {% endif %}
                   </div>
                   <div class="text-sm text-gray-500 dark:text-gray-400">
-                    {{ u.user.username|default:"-" }}
+                    {% if u.user %}{{ u.user.username|default:"-" }}{% else %}-{% endif %}
                   </div>
                 </div>
               </div>
