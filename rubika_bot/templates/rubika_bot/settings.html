@@ -3,247 +3,399 @@
 
 {% block title %}تنظیمات ربات روبیکا{% endblock %}
 
+{% block extra_css %}
+<style>
+  .card-hover {
+    transition: all 0.3s ease;
+  }
+  
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+  
+  .gradient-blue {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+  
+  .gradient-purple {
+    background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+  }
+  
+  .gradient-green {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  }
+  
+  .gradient-orange {
+    background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+  }
+  
+  .feature-icon {
+    transition: transform 0.3s ease;
+  }
+  
+  .card-hover:hover .feature-icon {
+    transform: scale(1.1) rotate(5deg);
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<!-- Force refresh: v2.1 -->
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-<div class="grid grid-cols-1 gap-6">
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-    <h2 class="text-lg font-semibold mb-4">مشخصات ربات</h2>
-    <form method="post" action="{% url 'rubika_bot:settings' %}">
-      {% csrf_token %}
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+<div class="max-w-7xl mx-auto">
+  <!-- Hero Header -->
+  <div class="mb-8">
+    <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl shadow-2xl p-8 text-white">
+      <div class="flex items-center justify-between">
         <div>
-          <label class="block text-sm mb-1">توکن</label>
-          <input type="text" name="token" value="{{ settings.token|default:'' }}" class="w-full rounded border p-2" placeholder="Bot Token">
+          <div class="flex items-center gap-4 mb-4">
+            <div class="bg-white/20 backdrop-blur-lg rounded-2xl p-4">
+              <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+            </div>
+            <div>
+              <h1 class="text-3xl font-bold">مدیریت ربات روبیکا</h1>
+              <p class="text-white/80 mt-1">پنل کنترل و تنظیمات کامل ربات</p>
+            </div>
+          </div>
         </div>
-        <div>
-          <label class="block text-sm mb-1">نام کاربری ربات</label>
-          <input type="text" name="bot_username" value="{{ settings.bot_username|default:'' }}" class="w-full rounded border p-2" placeholder="مثال: my_bot">
+        <div class="hidden lg:block">
+          <div class="bg-white/10 backdrop-blur-lg rounded-xl p-4 text-center">
+            <div class="text-3xl font-bold">{{ total_users }}</div>
+            <div class="text-sm text-white/80">کاربر فعال</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <a href="{% url 'rubika_bot:users_management' %}" class="card-hover bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white group">
+      <div class="flex items-center justify-between mb-4">
+        <div class="feature-icon bg-white/20 rounded-lg p-3">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+        </div>
+        <svg class="w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+        </svg>
+      </div>
+      <h3 class="text-xl font-bold mb-2">کاربران</h3>
+      <p class="text-blue-100 text-sm">مدیریت {{ total_users }} کاربر</p>
+    </a>
+
+    <a href="{% url 'rubika_bot:broadcast' %}" class="card-hover bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white group">
+      <div class="flex items-center justify-between mb-4">
+        <div class="feature-icon bg-white/20 rounded-lg p-3">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
+          </svg>
+        </div>
+        <svg class="w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+        </svg>
+      </div>
+      <h3 class="text-xl font-bold mb-2">پیام همگانی</h3>
+      <p class="text-purple-100 text-sm">ارسال اطلاعیه</p>
+    </a>
+
+    <a href="{% url 'rubika_bot:webhook_logs' %}" class="card-hover bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white group">
+      <div class="flex items-center justify-between mb-4">
+        <div class="feature-icon bg-white/20 rounded-lg p-3">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+        </div>
+        <svg class="w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+        </svg>
+      </div>
+      <h3 class="text-xl font-bold mb-2">لاگ‌ها</h3>
+      <p class="text-green-100 text-sm">مانیتورینگ زنده</p>
+    </a>
+
+    <a href="{% url 'rubika_bot:connect_page' %}" class="card-hover bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-lg p-6 text-white group">
+      <div class="flex items-center justify-between mb-4">
+        <div class="feature-icon bg-white/20 rounded-lg p-3">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+          </svg>
+        </div>
+        <svg class="w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+        </svg>
+      </div>
+      <h3 class="text-xl font-bold mb-2">اتصال سریع</h3>
+      <p class="text-orange-100 text-sm">لینک اتصال</p>
+    </a>
+  </div>
+
+  <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+    <!-- Main Settings Column -->
+    <div class="xl:col-span-2 space-y-6">
+      <!-- Bot Configuration -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4">
+          <h2 class="text-xl font-bold text-white flex items-center gap-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            پیکربندی ربات
+          </h2>
+        </div>
+        
+        <div class="p-6">
+          <form method="post" action="{% url 'rubika_bot:settings' %}">
+            {% csrf_token %}
+            <div class="space-y-6">
+              <!-- Token and Username -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                    </svg>
+                    توکن ربات
+                  </label>
+                  <input type="text" name="token" value="{{ settings.token|default:'' }}" 
+                         class="w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 p-3 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all" 
+                         placeholder="Bot Token...">
+                </div>
+                <div>
+                  <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    <svg class="w-4 h-4 inline ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    نام کاربری ربات
+                  </label>
+                  <input type="text" name="bot_username" value="{{ settings.bot_username|default:'' }}" 
+                         class="w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 p-3 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all" 
+                         placeholder="my_bot">
+                </div>
+              </div>
+
+              <!-- Proxy Settings -->
+              <div class="border-t-2 border-gray-100 dark:border-gray-700 pt-6">
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                    تنظیمات پراکسی
+                  </h3>
+                  {% if proxy_preview %}
+                    <span class="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-xs font-medium">
+                      فعال: {{ proxy_preview }}
+                    </span>
+                  {% endif %}
+                </div>
+                
+                <label class="inline-flex items-center gap-3 p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl cursor-pointer mb-4">
+                  <input type="checkbox" id="proxy-enabled" name="proxy_enabled" class="w-5 h-5 rounded text-indigo-600" {% if settings.proxy_enabled %}checked{% endif %}>
+                  <span class="font-medium text-gray-900 dark:text-white">فعال‌سازی پراکسی برای ارتباط با API روبیکا</span>
+                </label>
+
+                <div id="proxy-fields-wrapper" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">پروتکل</label>
+                    <select id="proxy-scheme" name="proxy_scheme" class="w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 p-3" data-proxy-field>
+                      {% for value,label in proxy_choices %}
+                        <option value="{{ value }}" {% if settings.proxy_scheme == value %}selected{% endif %}>{{ label }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">آدرس سرور</label>
+                    <input id="proxy-host" type="text" name="proxy_host" value="{{ settings.proxy_host|default:'' }}" 
+                           class="w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 p-3" data-proxy-field 
+                           placeholder="srv2.example.com">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">پورت</label>
+                    <input id="proxy-port" type="number" name="proxy_port" value="{{ settings.proxy_port|default_if_none:'' }}" 
+                           class="w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 p-3" data-proxy-field 
+                           placeholder="26863">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">نام کاربری (اختیاری)</label>
+                    <input id="proxy-username" type="text" name="proxy_username" value="{{ settings.proxy_username|default:'' }}" 
+                           class="w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 p-3" data-proxy-field>
+                  </div>
+                  <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">رمز عبور</label>
+                    <input id="proxy-password" type="password" name="proxy_password" value="" 
+                           class="w-full rounded-xl border-2 border-gray-200 dark:border-gray-700 dark:bg-gray-900 p-3" data-proxy-field 
+                           placeholder="{% if proxy_password_saved %}برای تغییر مقدار جدید را وارد کنید{% else %}Password{% endif %}">
+                    {% if proxy_password_saved %}
+                      <label class="inline-flex items-center gap-2 text-sm mt-2">
+                        <input type="checkbox" id="clear-proxy-password" name="clear_proxy_password" value="1" class="rounded" data-proxy-field>
+                        <span>حذف رمز ذخیره شده</span>
+                      </label>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <div class="mt-4 flex items-center gap-3 flex-wrap">
+                  <button type="button" id="btn-test-proxy" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-all shadow-lg hover:shadow-xl">
+                    تست پراکسی
+                  </button>
+                  <span id="proxy-test-result" class="text-sm font-medium"></span>
+                </div>
+              </div>
+
+              <div class="flex gap-3">
+                <button type="submit" class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold transition-all shadow-lg hover:shadow-xl">
+                  💾 ذخیره تنظیمات
+                </button>
+              </div>
+            </div>
+          </form>
         </div>
       </div>
 
-      <div class="mt-6 border-t pt-4">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-md font-semibold">تنظیمات پراکسی</h3>
-          {% if proxy_preview %}
-            <span class="text-xs text-gray-500">فعال: {{ proxy_preview }}</span>
-          {% endif %}
+      <!-- Webhook Configuration -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+        <div class="bg-gradient-to-r from-green-600 to-teal-600 px-6 py-4">
+          <h2 class="text-xl font-bold text-white flex items-center gap-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            تنظیمات Webhook
+          </h2>
         </div>
-        <label class="inline-flex items-center gap-2 text-sm mb-4">
-          <input type="checkbox" id="proxy-enabled" name="proxy_enabled" class="rounded" {% if settings.proxy_enabled %}checked{% endif %}>
-          <span>فعال‌سازی پراکسی برای ارتباط با API روبیکا</span>
-        </label>
-        <div id="proxy-fields-wrapper" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div>
-            <label class="block text-sm mb-1">پروتکل پراکسی</label>
-            <select id="proxy-scheme" name="proxy_scheme" class="w-full rounded border p-2" data-proxy-field>
-              {% for value,label in proxy_choices %}
-                <option value="{{ value }}" {% if settings.proxy_scheme == value %}selected{% endif %}>{{ label }}</option>
-              {% endfor %}
-            </select>
+        
+        <div class="p-6 space-y-4">
+          <div class="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Webhook URL</label>
+            <div class="font-mono text-sm bg-white dark:bg-gray-800 p-3 rounded-lg border-2 border-gray-200 dark:border-gray-700 select-all break-all">
+              {{ webhook_url }}
+            </div>
           </div>
-          <div>
-            <label class="block text-sm mb-1">آدرس سرور</label>
-            <input id="proxy-host" type="text" name="proxy_host" value="{{ settings.proxy_host|default:'' }}" class="w-full rounded border p-2" data-proxy-field placeholder="مثال: srv2.example.com">
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <button id="btn-register" type="button" class="px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-all shadow hover:shadow-lg flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              ثبت وبهوک
+            </button>
+            <button id="btn-info" type="button" class="px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium transition-all shadow hover:shadow-lg flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              وضعیت
+            </button>
+            <a href="{% url 'rubika_bot:quick_connect' %}" class="px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-all shadow hover:shadow-lg flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+              </svg>
+              تست سریع
+            </a>
           </div>
-          <div>
-            <label class="block text-sm mb-1">پورت</label>
-            <input id="proxy-port" type="number" name="proxy_port" value="{{ settings.proxy_port|default_if_none:'' }}" class="w-full rounded border p-2" data-proxy-field placeholder="مثال: 26863">
+
+          <pre id="webhook-result" class="mt-4 text-xs bg-gray-900 text-green-400 p-4 rounded-xl overflow-auto max-h-64 font-mono" style="display: none;"></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="xl:col-span-1 space-y-6">
+      <!-- Stats Overview -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+          <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+          </svg>
+          آمار کلی
+        </h3>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">کل کاربران</span>
+            <span class="text-lg font-bold text-blue-600 dark:text-blue-400">{{ total_users }}</span>
           </div>
-          <div>
-            <label class="block text-sm mb-1">نام کاربری (اختیاری)</label>
-            <input id="proxy-username" type="text" name="proxy_username" value="{{ settings.proxy_username|default:'' }}" class="w-full rounded border p-2" data-proxy-field placeholder="Username">
+          <div class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-xl">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">متصل شده</span>
+            <span class="text-lg font-bold text-green-600 dark:text-green-400">{{ connected_users }}</span>
           </div>
-          <div>
-            <label class="block text-sm mb-1">رمز عبور (در صورت تغییر)</label>
-            <input id="proxy-password" type="password" name="proxy_password" value="" class="w-full rounded border p-2" data-proxy-field placeholder="{% if proxy_password_saved %}برای تغییر مقدار جدید را وارد کنید{% else %}Password{% endif %}">
-            {% if proxy_password_saved %}
-              <label class="inline-flex items-center gap-2 text-xs mt-2">
-                <input type="checkbox" id="clear-proxy-password" name="clear_proxy_password" value="1" class="rounded" data-proxy-field>
-                <span>حذف رمز ذخیره شده</span>
-              </label>
-              <p class="text-xs text-gray-500 mt-1">رمز فعلی به صورت امن ذخیره شده است. برای نگه داشتن رمز فعلی، فیلد را خالی بگذارید.</p>
+          <div class="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">در انتظار</span>
+            <span class="text-lg font-bold text-yellow-600 dark:text-yellow-400">{{ unconnected_users }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Users -->
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            آخرین کاربران
+          </h3>
+          <a href="{% url 'rubika_bot:users_management' %}" class="text-xs text-indigo-600 hover:text-indigo-700 font-medium">
+            مشاهده همه →
+          </a>
+        </div>
+        <div class="space-y-3">
+          {% for u in recent_users|slice:":4" %}
+          <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-900 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg">
+              {% if u.user %}
+                {{ u.user.first_name|first|default:"?" }}
+              {% else %}
+                {{ u.first_name|first|default:"?" }}
+              {% endif %}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                {% if u.user %}
+                  {{ u.user.first_name }} {{ u.user.last_name }}
+                {% else %}
+                  {{ u.first_name|default:"بدون نام" }}
+                {% endif %}
+              </p>
+              <p class="text-xs text-gray-500">
+                {% if u.last_seen %}
+                  {{ u.last_seen|date:"Y/m/d" }}
+                {% else %}
+                  جدید
+                {% endif %}
+              </p>
+            </div>
+            {% if u.user %}
+              <div class="w-2 h-2 bg-green-500 rounded-full"></div>
             {% endif %}
           </div>
-        </div>
-        <div class="mt-4 flex items-center gap-3 flex-wrap">
-          <button type="button" id="btn-test-proxy" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors">تست پراکسی</button>
-          <span id="proxy-test-result" class="text-sm text-gray-500"></span>
-        </div>
-      </div>
-
-      <div class="mt-3">
-        <button class="btn btn-primary px-4 py-2 bg-indigo-600 text-white rounded">ذخیره</button>
-      </div>
-    </form>
-  </div>
-
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-    <h2 class="text-lg font-semibold mb-2">پیش‌نمایش دیپلینک</h2>
-    <div class="text-sm text-gray-700 dark:text-gray-200">
-      {% if settings.bot_username and deeplink_example %}
-        <code class="bg-gray-100 dark:bg-gray-700 rounded px-2 py-1">{{ deeplink_template }}</code>
-        <div class="mt-1 text-xs">نمونه: {{ deeplink_example }}</div>
-      {% else %}
-        <div class="text-xs text-gray-500">ابتدا نام کاربری ربات را ذخیره کنید.</div>
-      {% endif %}
-    </div>
-  </div>
-
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-    <h2 class="text-lg font-semibold mb-4">Webhook</h2>
-    <div class="mb-4">
-      <label class="text-sm text-gray-500">Webhook URL</label>
-      <div class="mt-1 p-2 bg-gray-100 rounded select-all">{{ webhook_url }}</div>
-    </div>
-    <div class="flex gap-2 flex-wrap">
-      <button id="btn-register" type="button" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition-colors">
-        ثبت/بروزرسانی وبهوک
-      </button>
-      <button id="btn-info" type="button" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors">
-        وضعیت وبهوک
-      </button>
-      <a href="{% url 'rubika_bot:quick_connect' %}" class="inline-block px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded transition-colors text-center" title="تست اتصال سریع">
-        تست اتصال سریع
-      </a>
-    </div>
-    <pre id="webhook-result" class="mt-4 text-xs bg-gray-900 text-green-200 p-3 rounded overflow-auto min-h-[100px]" style="display: none;"></pre>
-  </div>
-
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-    <h2 class="text-lg font-semibold mb-4">کاربران ربات</h2>
-    <!-- v2.0 - Updated with connection status -->
-    <form method="get" class="mb-3">
-      <input type="text" name="q" value="{{ search_query }}" placeholder="جستجو" class="rounded border p-2 w-full" />
-    </form>
-    <div class="overflow-x-auto">
-      <table class="min-w-full text-sm">
-        <thead>
-          <tr class="text-left">
-            <th class="p-2">Chat ID</th>
-            <th class="p-2">نام کاربر</th>
-            <th class="p-2">اکانت متصل شده</th>
-            <th class="p-2">آخرین بازدید</th>
-            <th class="p-2">عملیات</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for u in users_page %}
-          <tr class="border-t">
-            <td class="p-2 font-mono text-xs">{{ u.chat_id|truncatechars:20 }}</td>
-            <td class="p-2">
-              {% if u.first_name %}
-                {{ u.first_name }} {{ u.last_name|default:"" }}
-              {% else %}
-                <span class="text-gray-400">بدون نام</span>
-              {% endif %}
-            </td>
-            <td class="p-2">
-              {% if u.user %}
-                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  ✓ {{ u.user.username }}
-                </span>
-              {% else %}
-                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                  ✗ متصل نشده
-                </span>
-              {% endif %}
-            </td>
-            <td class="p-2 text-xs text-gray-500">
-              {% if u.last_seen %}
-                {{ u.last_seen|date:"Y/m/d H:i" }}
-              {% else %}
-                -
-              {% endif %}
-            </td>
-            <td class="p-2">
-              {% if u.user %}
-                <button 
-                  onclick="disconnectUser('{{ u.chat_id }}')" 
-                  class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors"
-                  title="قطع اتصال">
-                  قطع اتصال
-                </button>
-              {% else %}
-                <span class="text-xs text-gray-400">-</span>
-              {% endif %}
-            </td>
-          </tr>
           {% empty %}
-          <tr><td class="p-2" colspan="5">کاربری یافت نشد.</td></tr>
+          <div class="text-center py-8 text-gray-500">
+            <svg class="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+            </svg>
+            <p class="text-sm">کاربری یافت نشد</p>
+          </div>
           {% endfor %}
-        </tbody>
-      </table>
-      <div class="mt-3 flex items-center justify-between text-xs text-gray-500">
-        <div>
-          صفحه {{ users_page.number }} از {{ users_page.paginator.num_pages }}
-        </div>
-        <div class="space-x-2">
-          {% if users_page.has_previous %}
-            <a href="?page={{ users_page.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" class="px-2 py-1 border rounded">قبلی</a>
-          {% endif %}
-          {% if users_page.has_next %}
-            <a href="?page={{ users_page.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}" class="px-2 py-1 border rounded">بعدی</a>
-          {% endif %}
         </div>
       </div>
-    </div>
-  </div>
 
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-    <h2 class="text-lg font-semibold mb-4">ارسال پیام همگانی</h2>
-    <div class="flex gap-2">
-      <textarea id="broadcast-text" class="flex-1 border rounded p-2" rows="3" placeholder="متن پیام..."></textarea>
-      <button id="btn-broadcast" class="px-4 py-2 bg-indigo-600 text-white rounded">ارسال</button>
-    </div>
-    <div id="broadcast-result" class="text-sm mt-2"></div>
-  </div>
-
-  <!-- Webhook Logs Section -->
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-lg font-semibold">لاگ‌های Webhook</h2>
-      <div class="flex gap-2 flex-wrap">
-        <button id="btn-refresh-logs" class="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded transition-colors">
-          🔄 بروزرسانی
-        </button>
-        <button id="btn-copy-logs" class="px-3 py-1 bg-indigo-500 hover:bg-indigo-600 text-white text-sm rounded transition-colors" title="کپی لاگ‌ها">
-          📋 کپی
-        </button>
-        <a id="btn-export-json" href="#" class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded transition-colors text-center" title="دانلود JSON">
-          💾 JSON
-        </a>
-        <a id="btn-export-text" href="#" class="px-3 py-1 bg-yellow-500 hover:bg-yellow-600 text-white text-sm rounded transition-colors text-center" title="دانلود Text">
-          📄 Text
-        </a>
-        <button id="btn-toggle-auto-refresh" class="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded transition-colors" title="تغییر وضعیت auto-refresh">
-          ⏸️ توقف
-        </button>
-        <button id="btn-clear-logs" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded transition-colors">
-          🗑️ پاک کردن
-        </button>
+      <!-- Deeplink Info -->
+      {% if settings.bot_username and deeplink_example %}
+      <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white">
+        <h3 class="text-lg font-bold mb-3 flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+          </svg>
+          دیپلینک
+        </h3>
+        <div class="bg-white/20 backdrop-blur-lg rounded-xl p-3">
+          <code class="text-xs font-mono break-all">{{ deeplink_template }}</code>
+        </div>
+        <p class="text-xs mt-2 text-white/80">نمونه: {{ deeplink_example|truncatechars:30 }}</p>
       </div>
-    </div>
-    
-    <!-- Filter -->
-    <div class="mb-3 flex gap-2">
-      <select id="log-filter" class="border rounded px-3 py-1 text-sm">
-        <option value="all">همه لاگ‌ها</option>
-        <option value="incoming">دریافتی</option>
-        <option value="outgoing">ارسالی</option>
-        <option value="error">خطاها</option>
-        <option value="info">اطلاعات</option>
-      </select>
-      <span id="log-count" class="text-sm text-gray-500 self-center"></span>
-    </div>
-    
-    <!-- Logs Container -->
-    <div id="logs-container" class="space-y-2 max-h-96 overflow-y-auto border rounded p-3 bg-gray-50 dark:bg-gray-900">
-      <div class="text-center text-gray-500 text-sm py-4">
-        در حال بارگذاری لاگ‌ها...
-      </div>
+      {% endif %}
     </div>
   </div>
 </div>
@@ -264,7 +416,7 @@
     const enabled = proxyEnabledInput ? proxyEnabledInput.checked : false;
     proxyFields.forEach(field => {
       field.disabled = !enabled;
-      field.classList.toggle('bg-gray-100', !enabled);
+      field.classList.toggle('opacity-50', !enabled);
       field.classList.toggle('cursor-not-allowed', !enabled);
     });
     if (proxyFieldsWrapper) {
@@ -284,8 +436,8 @@
     proxyTestButton.addEventListener('click', () => {
       if (!proxyEnabledInput || !proxyEnabledInput.checked) {
         if (proxyTestResultEl) {
-          proxyTestResultEl.textContent = 'ابتدا گزینه‌ی فعال‌سازی پراکسی را روشن کنید.';
-          proxyTestResultEl.style.color = '#f97316';
+          proxyTestResultEl.textContent = '⚠️ ابتدا پراکسی را فعال کنید';
+          proxyTestResultEl.className = 'text-sm font-medium text-orange-600';
         }
         return;
       }
@@ -300,8 +452,8 @@
 
       if (!payload.host || !payload.port) {
         if (proxyTestResultEl) {
-          proxyTestResultEl.textContent = 'لطفاً آدرس و پورت پراکسی را وارد کنید.';
-          proxyTestResultEl.style.color = '#f97316';
+          proxyTestResultEl.textContent = '⚠️ آدرس و پورت را وارد کنید';
+          proxyTestResultEl.className = 'text-sm font-medium text-orange-600';
         }
         return;
       }
@@ -311,8 +463,8 @@
       }
 
       if (proxyTestResultEl) {
-        proxyTestResultEl.textContent = 'در حال تست اتصال...';
-        proxyTestResultEl.style.color = '#6b7280';
+        proxyTestResultEl.textContent = '⏳ در حال تست...';
+        proxyTestResultEl.className = 'text-sm font-medium text-gray-600';
       }
 
       const originalText = proxyTestButton.textContent;
@@ -336,14 +488,14 @@
 
           if (status >= 400 || !data.ok) {
             if (proxyTestResultEl) {
-              proxyTestResultEl.textContent = '❌ ' + (data.error || 'خطا در تست پراکسی');
-              proxyTestResultEl.style.color = '#ef4444';
+              proxyTestResultEl.textContent = '❌ ' + (data.error || 'خطا در تست');
+              proxyTestResultEl.className = 'text-sm font-medium text-red-600';
             }
           } else {
             if (proxyTestResultEl) {
-              const latency = data.latency_ms !== undefined ? ` | تاخیر: ${data.latency_ms}ms` : '';
-              proxyTestResultEl.textContent = `✅ اتصال موفق (Status: ${data.status})${latency}`;
-              proxyTestResultEl.style.color = '#10b981';
+              const latency = data.latency_ms !== undefined ? ` | ${data.latency_ms}ms` : '';
+              proxyTestResultEl.textContent = `✅ اتصال موفق${latency}`;
+              proxyTestResultEl.className = 'text-sm font-medium text-green-600';
             }
           }
         })
@@ -353,36 +505,30 @@
           proxyTestButton.classList.remove('opacity-70');
           if (proxyTestResultEl) {
             proxyTestResultEl.textContent = '❌ خطا: ' + error.message;
-            proxyTestResultEl.style.color = '#ef4444';
+            proxyTestResultEl.className = 'text-sm font-medium text-red-600';
           }
           console.error('Proxy test error:', error);
         });
     });
   }
   
-  // Helper function to show result
   function showResult(data, isError = false) {
     webhookResult.textContent = JSON.stringify(data, null, 2);
     webhookResult.style.display = 'block';
-    webhookResult.style.color = isError ? '#fca5a5' : '#86efac';
-    // Scroll to result
     webhookResult.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
   
-  // Helper function to show loading state
   function setButtonLoading(buttonId, loading) {
     const btn = document.getElementById(buttonId);
     if (loading) {
       btn.disabled = true;
       btn.style.opacity = '0.6';
-      btn.style.cursor = 'not-allowed';
       const originalText = btn.textContent;
       btn.dataset.originalText = originalText;
       btn.textContent = 'در حال بارگذاری...';
     } else {
       btn.disabled = false;
       btn.style.opacity = '1';
-      btn.style.cursor = 'pointer';
       if (btn.dataset.originalText) {
         btn.textContent = btn.dataset.originalText;
         delete btn.dataset.originalText;
@@ -390,57 +536,8 @@
     }
   }
   
-  // Disconnect user function
-  window.disconnectUser = function(chatId) {
-    console.log('Disconnect clicked for:', chatId);
-    
-    if (!confirm('آیا از قطع اتصال این کاربر اطمینان دارید؟')) {
-      return;
-    }
-    
-    try {
-      const disconnectUrl = '{% url "rubika_bot:disconnect_user" "CHAT_ID_PLACEHOLDER" %}'.replace('CHAT_ID_PLACEHOLDER', encodeURIComponent(chatId));
-      console.log('Disconnect URL:', disconnectUrl);
-      
-      fetch(disconnectUrl, {
-        method: 'POST',
-        headers: {
-          'X-CSRFToken': csrftoken,
-          'Content-Type': 'application/json'
-        }
-      })
-      .then(response => {
-        console.log('Disconnect response status:', response.status);
-        if (!response.ok) {
-          return response.text().then(text => {
-            throw new Error(`HTTP ${response.status}: ${text}`);
-          });
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log('Disconnect response:', data);
-        if (data.ok) {
-          alert('✅ اتصال کاربر با موفقیت قطع شد.');
-          location.reload();
-        } else {
-          alert('❌ خطا: ' + (data.error || 'خطای نامشخص'));
-        }
-      })
-      .catch(error => {
-        console.error('Disconnect error:', error);
-        alert('❌ خطا در قطع اتصال: ' + error.message);
-      });
-    } catch (e) {
-      console.error('Exception in disconnectUser:', e);
-      alert('❌ خطا: ' + e.message);
-    }
-  }
-  
-  // Register webhook button - با استفاده از addEventListener برای جلوگیری از تداخل
   const btnRegister = document.getElementById('btn-register');
   if (btnRegister) {
-    // حذف event listener های قبلی
     btnRegister.replaceWith(btnRegister.cloneNode(true));
     const newBtnRegister = document.getElementById('btn-register');
     
@@ -448,7 +545,6 @@
       e.preventDefault();
       e.stopPropagation();
       
-      console.log('Register webhook clicked');
       setButtonLoading('btn-register', true);
       showResult({message: 'در حال ثبت وب‌هوک...'}, false);
       
@@ -483,10 +579,8 @@
     });
   }
   
-  // Get webhook info button - با استفاده از addEventListener برای جلوگیری از تداخل
   const btnInfo = document.getElementById('btn-info');
   if (btnInfo) {
-    // حذف event listener های قبلی
     btnInfo.replaceWith(btnInfo.cloneNode(true));
     const newBtnInfo = document.getElementById('btn-info');
     
@@ -494,9 +588,8 @@
       e.preventDefault();
       e.stopPropagation();
       
-      console.log('Get webhook info clicked');
       setButtonLoading('btn-info', true);
-      showResult({message: 'در حال دریافت وضعیت وب‌هوک...'}, false);
+      showResult({message: 'در حال دریافت وضعیت...'}, false);
       
       fetch('{% url 'rubika_bot:webhook_info' %}', {
         method: 'GET',
@@ -527,287 +620,5 @@
       });
     });
   }
-  
-  // Broadcast button
-  const btnBroadcast = document.getElementById('btn-broadcast');
-  if (btnBroadcast) {
-    btnBroadcast.addEventListener('click', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      const text = document.getElementById('broadcast-text').value.trim();
-      if (!text) {
-        document.getElementById('broadcast-result').textContent = 'لطفا متن پیام را وارد کنید.';
-        document.getElementById('broadcast-result').style.color = '#ef4444';
-        return;
-      }
-      
-      const broadcastResult = document.getElementById('broadcast-result');
-      const btn = document.getElementById('btn-broadcast');
-      const originalText = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = 'در حال ارسال...';
-      broadcastResult.textContent = 'در حال ارسال پیام...';
-      broadcastResult.style.color = '#6b7280';
-      
-      fetch('{% url 'rubika_bot:broadcast' %}', {
-        method: 'POST',
-        headers: {
-          'X-CSRFToken': csrftoken,
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: new URLSearchParams({text: text})
-      })
-      .then(response => {
-        btn.disabled = false;
-        btn.textContent = originalText;
-        if (!response.ok) {
-          return response.text().then(text => {
-            throw new Error(`HTTP ${response.status}: ${text}`);
-          });
-        }
-        return response.json();
-      })
-      .then(data => {
-        if (data.ok) {
-          broadcastResult.textContent = '✅ پیام با موفقیت ارسال شد.';
-          broadcastResult.style.color = '#10b981';
-          document.getElementById('broadcast-text').value = '';
-        } else {
-          broadcastResult.textContent = '❌ خطا: ' + (data.error || 'خطای نامشخص');
-          broadcastResult.style.color = '#ef4444';
-        }
-      })
-      .catch(error => {
-        btn.disabled = false;
-        btn.textContent = originalText;
-        broadcastResult.textContent = '❌ خطا در ارسال: ' + error.message;
-        broadcastResult.style.color = '#ef4444';
-        console.error('Broadcast error:', error);
-      });
-    });
-  }
-  
-  // ==================== WEBHOOK LOGS ====================
-  
-  let currentLogType = 'all';
-  let autoRefreshEnabled = true;
-  let autoRefreshInterval = null;
-  let currentLogs = [];
-  
-  // Load logs
-  function loadLogs() {
-    const logsContainer = document.getElementById('logs-container');
-    logsContainer.innerHTML = '<div class="text-center text-gray-500 text-sm py-4">در حال بارگذاری...</div>';
-    
-    fetch(`{% url 'rubika_bot:get_logs' %}?type=${currentLogType}&limit=100`)
-      .then(response => response.json())
-      .then(data => {
-        if (data.ok && data.logs.length > 0) {
-          currentLogs = data.logs; // ذخیره لاگ‌ها برای کپی
-          displayLogs(data.logs);
-          document.getElementById('log-count').textContent = `${data.count} لاگ`;
-        } else {
-          currentLogs = [];
-          logsContainer.innerHTML = '<div class="text-center text-gray-500 text-sm py-4">لاگی وجود ندارد</div>';
-          document.getElementById('log-count').textContent = '0 لاگ';
-        }
-      })
-      .catch(error => {
-        console.error('Load logs error:', error);
-        logsContainer.innerHTML = '<div class="text-center text-red-500 text-sm py-4">خطا در بارگذاری لاگ‌ها</div>';
-      });
-  }
-  
-  // Display logs
-  function displayLogs(logs) {
-    const logsContainer = document.getElementById('logs-container');
-    logsContainer.innerHTML = '';
-    
-    logs.forEach(log => {
-      const logDiv = document.createElement('div');
-      logDiv.className = 'border rounded p-3 bg-white dark:bg-gray-800 text-sm';
-      
-      // Log type badge color
-      let badgeColor = 'bg-gray-500';
-      let badgeText = log.log_type;
-      if (log.log_type === 'incoming') {
-        badgeColor = 'bg-blue-500';
-        badgeText = 'دریافتی';
-      } else if (log.log_type === 'outgoing') {
-        badgeColor = 'bg-green-500';
-        badgeText = 'ارسالی';
-      } else if (log.log_type === 'error') {
-        badgeColor = 'bg-red-500';
-        badgeText = 'خطا';
-      } else if (log.log_type === 'info') {
-        badgeColor = 'bg-purple-500';
-        badgeText = 'اطلاعات';
-      }
-      
-      // Format time
-      const time = new Date(log.created_at).toLocaleString('fa-IR', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      });
-      
-      logDiv.innerHTML = `
-        <div class="flex items-start justify-between mb-2">
-          <div class="flex items-center gap-2">
-            <span class="${badgeColor} text-white px-2 py-1 rounded text-xs font-medium">${badgeText}</span>
-            <span class="font-semibold">${escapeHtml(log.title)}</span>
-          </div>
-          <span class="text-xs text-gray-500">${time}</span>
-        </div>
-        <div class="text-gray-700 dark:text-gray-300 mb-2">${escapeHtml(log.message)}</div>
-        ${log.data ? `
-          <details class="mt-2">
-            <summary class="cursor-pointer text-xs text-gray-500 hover:text-gray-700">جزئیات بیشتر</summary>
-            <pre class="mt-2 text-xs bg-gray-100 dark:bg-gray-900 p-2 rounded overflow-auto max-h-40">${JSON.stringify(log.data, null, 2)}</pre>
-          </details>
-        ` : ''}
-      `;
-      
-      logsContainer.appendChild(logDiv);
-    });
-  }
-  
-  // HTML escape function
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-  
-  // Clear logs
-  document.getElementById('btn-clear-logs').onclick = () => {
-    if (!confirm('آیا از پاک کردن تمام لاگ‌ها اطمینان دارید؟')) {
-      return;
-    }
-    
-    fetch('{% url 'rubika_bot:clear_logs' %}', {
-      method: 'POST',
-      headers: {
-        'X-CSRFToken': csrftoken
-      }
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.ok) {
-        alert(`✅ ${data.message}`);
-        loadLogs();
-      } else {
-        alert('❌ خطا: ' + (data.error || 'خطای نامشخص'));
-      }
-    })
-    .catch(error => {
-      console.error('Clear logs error:', error);
-      alert('❌ خطا در پاک کردن لاگ‌ها');
-    });
-  };
-  
-  // Refresh logs
-  document.getElementById('btn-refresh-logs').onclick = () => {
-    loadLogs();
-  };
-  
-  // Filter change
-  document.getElementById('log-filter').onchange = (e) => {
-    currentLogType = e.target.value;
-    loadLogs();
-  };
-  
-  // Copy logs to clipboard
-  document.getElementById('btn-copy-logs').onclick = () => {
-    if (currentLogs.length === 0) {
-      alert('لاگی برای کپی وجود ندارد');
-      return;
-    }
-    
-    const logText = currentLogs.map(log => {
-      const time = new Date(log.created_at).toLocaleString('fa-IR');
-      let text = `[${time}] ${log.log_type.toUpperCase()}\n`;
-      text += `عنوان: ${log.title}\n`;
-      text += `پیام: ${log.message}\n`;
-      if (log.data) {
-        text += `داده‌ها: ${JSON.stringify(log.data, null, 2)}\n`;
-      }
-      text += '─'.repeat(60) + '\n';
-      return text;
-    }).join('\n');
-    
-    navigator.clipboard.writeText(logText).then(() => {
-      alert(`✅ ${currentLogs.length} لاگ با موفقیت کپی شد`);
-    }).catch(err => {
-      console.error('Copy failed:', err);
-      // Fallback: select text
-      const textarea = document.createElement('textarea');
-      textarea.value = logText;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-      alert(`✅ ${currentLogs.length} لاگ با موفقیت کپی شد`);
-    });
-  };
-  
-  // Export buttons
-  document.getElementById('btn-export-json').onclick = (e) => {
-    e.preventDefault();
-    const url = `{% url 'rubika_bot:export_logs' %}?type=${currentLogType}&format=json&limit=1000`;
-    window.open(url, '_blank');
-  };
-  
-  document.getElementById('btn-export-text').onclick = (e) => {
-    e.preventDefault();
-    const url = `{% url 'rubika_bot:export_logs' %}?type=${currentLogType}&format=text&limit=1000`;
-    window.open(url, '_blank');
-  };
-  
-  // Toggle auto-refresh
-  function toggleAutoRefresh() {
-    autoRefreshEnabled = !autoRefreshEnabled;
-    const btn = document.getElementById('btn-toggle-auto-refresh');
-    
-    if (autoRefreshEnabled) {
-      btn.textContent = '⏸️ توقف';
-      btn.className = 'px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded transition-colors';
-      startAutoRefresh();
-    } else {
-      btn.textContent = '▶️ شروع';
-      btn.className = 'px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded transition-colors';
-      stopAutoRefresh();
-    }
-  }
-  
-  function startAutoRefresh() {
-    if (autoRefreshInterval) {
-      clearInterval(autoRefreshInterval);
-    }
-    autoRefreshInterval = setInterval(loadLogs, 10000);
-  }
-  
-  function stopAutoRefresh() {
-    if (autoRefreshInterval) {
-      clearInterval(autoRefreshInterval);
-      autoRefreshInterval = null;
-    }
-  }
-  
-  document.getElementById('btn-toggle-auto-refresh').onclick = toggleAutoRefresh;
-  
-  // Load logs on page load
-  document.addEventListener('DOMContentLoaded', () => {
-    loadLogs();
-    // Auto-refresh every 10 seconds (قابل توقف)
-    startAutoRefresh();
-  });
-  
-  // Console log for debugging disconnect button
-  console.log('Settings page loaded. Disconnect function available:', typeof window.disconnectUser);
 </script>
 {% endblock %}

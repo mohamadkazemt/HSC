@@ -128,15 +128,13 @@ def settings_view(request: HttpRequest) -> HttpResponse:
         RubPyIntegrationService.reset() # Reset service to use new token
         return redirect('rubika_bot:settings')
 
-    users_qs = RubikaUser.objects.select_related('user').order_by('-updated_at')
-    search = request.GET.get('q')
-    if search:
-        users_qs = users_qs.filter(
-            Q(chat_id__icontains=search) | Q(first_name__icontains=search) |
-            Q(last_name__icontains=search) | Q(user__username__icontains=search)
-        )
-    paginator = Paginator(users_qs, MAX_USERS_PER_PAGE)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    # Get user statistics for the summary card
+    total_users = RubikaUser.objects.count()
+    connected_users = RubikaUser.objects.filter(user__isnull=False).count()
+    unconnected_users = total_users - connected_users
+    
+    # Get recent users for quick preview
+    recent_users = RubikaUser.objects.select_related('user', 'user__userprofile').order_by('-updated_at')[:5]
 
     sample_code = 'SAMPLECODE123'
     deeplink_example = None
@@ -152,9 +150,11 @@ def settings_view(request: HttpRequest) -> HttpResponse:
 
     context = {
         'settings': settings_obj,
-        'users_page': page_obj,
+        'total_users': total_users,
+        'connected_users': connected_users,
+        'unconnected_users': unconnected_users,
+        'recent_users': recent_users,
         'webhook_url': request.build_absolute_uri(reverse('rubika_bot:webhook')),
-        'search_query': search or '',
         'deeplink_template': DEEPLINK_TEMPLATE,
         'deeplink_example': deeplink_example,
         'proxy_password_saved': proxy_password_saved,
@@ -162,6 +162,61 @@ def settings_view(request: HttpRequest) -> HttpResponse:
         'proxy_choices': RubikaBotSettings._meta.get_field('proxy_scheme').choices,
     }
     return render(request, 'rubika_bot/settings.html', context)
+
+
+@superuser_required
+def users_management_view(request: HttpRequest) -> HttpResponse:
+    """View for managing Rubika bot users with detailed information."""
+    from datetime import timedelta
+    
+    # Get filter parameters
+    search = request.GET.get('q', '').strip()
+    status_filter = request.GET.get('status', 'all')
+    
+    # Base queryset with optimized queries
+    users_qs = RubikaUser.objects.select_related('user', 'user__userprofile').order_by('-updated_at')
+    
+    # Apply status filter
+    if status_filter == 'connected':
+        users_qs = users_qs.filter(user__isnull=False)
+    elif status_filter == 'unconnected':
+        users_qs = users_qs.filter(user__isnull=True)
+    
+    # Apply search filter
+    if search:
+        users_qs = users_qs.filter(
+            Q(chat_id__icontains=search) |
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search) |
+            Q(user__username__icontains=search) |
+            Q(user__first_name__icontains=search) |
+            Q(user__last_name__icontains=search) |
+            Q(user__userprofile__personnel_code__icontains=search) |
+            Q(user__userprofile__national_code__icontains=search)
+        )
+    
+    # Calculate statistics
+    total_users = RubikaUser.objects.count()
+    connected_users = RubikaUser.objects.filter(user__isnull=False).count()
+    unconnected_users = total_users - connected_users
+    today = timezone.now().date()
+    active_today = RubikaUser.objects.filter(last_seen__date=today).count()
+    
+    # Pagination
+    paginator = Paginator(users_qs, MAX_USERS_PER_PAGE)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    
+    context = {
+        'users_page': page_obj,
+        'search_query': search,
+        'status_filter': status_filter,
+        'total_users': total_users,
+        'connected_users': connected_users,
+        'unconnected_users': unconnected_users,
+        'active_today': active_today,
+    }
+    
+    return render(request, 'rubika_bot/users_management.html', context)
 
 
 @superuser_required
@@ -280,6 +335,39 @@ def action_test_proxy(request: HttpRequest) -> JsonResponse:
 
 
 @superuser_required
+def broadcast_view(request: HttpRequest) -> HttpResponse:
+    """View for broadcast message page."""
+    from datetime import timedelta
+    
+    # Get statistics
+    total_users = RubikaUser.objects.count()
+    connected_users = RubikaUser.objects.filter(user__isnull=False).count()
+    unconnected_users = total_users - connected_users
+    
+    # Get all users data for search functionality
+    users = RubikaUser.objects.select_related('user', 'user__userprofile').all()
+    users_data = []
+    for u in users:
+        users_data.append({
+            'chat_id': u.chat_id,
+            'full_name': f"{u.user.first_name} {u.user.last_name}".strip() if u.user else (f"{u.first_name} {u.last_name or ''}".strip() or None),
+            'username': u.user.username if u.user else None,
+            'personnel_code': u.user.userprofile.personnel_code if u.user and hasattr(u.user, 'userprofile') else None,
+            'national_code': u.user.userprofile.national_code if u.user and hasattr(u.user, 'userprofile') else None,
+            'connected': bool(u.user),
+        })
+    
+    context = {
+        'total_users': total_users,
+        'connected_users': connected_users,
+        'unconnected_users': unconnected_users,
+        'users_json': json.dumps(users_data),
+    }
+    
+    return render(request, 'rubika_bot/broadcast.html', context)
+
+
+@superuser_required
 @require_http_methods(["POST"])
 def action_broadcast(request: HttpRequest) -> JsonResponse:
     """Enqueue a broadcast message to all Rubika users."""
@@ -297,6 +385,50 @@ def action_broadcast(request: HttpRequest) -> JsonResponse:
 
 @superuser_required
 @require_http_methods(["POST"])
+def action_broadcast_send(request: HttpRequest) -> JsonResponse:
+    """Send broadcast message with advanced options."""
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'ok': False, 'error': 'داده ارسال شده نامعتبر است.'}, status=400)
+    
+    text = (payload.get('text') or '').strip()
+    if not text:
+        return JsonResponse({'ok': False, 'error': 'متن پیام خالی است'}, status=400)
+    
+    recipient_type = payload.get('recipient_type', 'all')
+    custom_recipients = payload.get('custom_recipients', [])
+    
+    # Determine target users
+    if recipient_type == 'all':
+        chat_ids = list(RubikaUser.objects.values_list('chat_id', flat=True))
+    elif recipient_type == 'connected':
+        chat_ids = list(RubikaUser.objects.filter(user__isnull=False).values_list('chat_id', flat=True))
+    elif recipient_type == 'unconnected':
+        chat_ids = list(RubikaUser.objects.filter(user__isnull=True).values_list('chat_id', flat=True))
+    elif recipient_type == 'custom':
+        if not custom_recipients:
+            return JsonResponse({'ok': False, 'error': 'هیچ کاربری انتخاب نشده است'}, status=400)
+        chat_ids = custom_recipients
+    else:
+        return JsonResponse({'ok': False, 'error': 'نوع مخاطب نامعتبر است'}, status=400)
+    
+    # Enqueue messages
+    for chat_id in chat_ids:
+        send_rubika_message.delay(str(chat_id), text)
+    
+    # Log the action
+    WebhookLog.log_info(
+        'ارسال همگانی',
+        f'پیام به {len(chat_ids)} کاربر ({recipient_type}) در صف قرار گرفت.',
+        {'recipient_type': recipient_type, 'count': len(chat_ids)}
+    )
+    
+    return JsonResponse({'ok': True, 'count': len(chat_ids)})
+
+
+@superuser_required
+@require_http_methods(["POST"])
 def action_disconnect_user(request: HttpRequest, chat_id: str) -> JsonResponse:
     """Disconnect a user from their linked Rubika account via admin panel."""
     try:
@@ -308,6 +440,12 @@ def action_disconnect_user(request: HttpRequest, chat_id: str) -> JsonResponse:
         return JsonResponse({'ok': True})
     except RubikaUser.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'کاربر یافت نشد'}, status=404)
+
+
+@superuser_required
+def webhook_logs_view(request: HttpRequest) -> HttpResponse:
+    """View for webhook logs management page."""
+    return render(request, 'rubika_bot/webhook_logs.html')
 
 
 @superuser_required

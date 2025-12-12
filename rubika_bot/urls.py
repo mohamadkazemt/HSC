@@ -5,10 +5,13 @@ app_name = 'rubika_bot'
 
 urlpatterns = [
     path('settings/', views.settings_view, name='settings'),
+    path('settings/users/', views.users_management_view, name='users_management'),
+    path('settings/broadcast/', views.broadcast_view, name='broadcast'),
+    path('settings/broadcast/send/', views.action_broadcast_send, name='broadcast_send'),
+    path('settings/webhook-logs/', views.webhook_logs_view, name='webhook_logs'),
     path('settings/register-webhook/', views.action_register_webhook, name='register_webhook'),
     path('settings/webhook-info/', views.action_get_webhook_info, name='webhook_info'),
     path('settings/test-proxy/', views.action_test_proxy, name='test_proxy'),
-    path('settings/broadcast/', views.action_broadcast, name='broadcast'),
     path('settings/disconnect/<str:chat_id>/', views.action_disconnect_user, name='disconnect_user'),
     path('settings/logs/', views.get_webhook_logs, name='get_logs'),
     path('settings/logs/clear/', views.clear_webhook_logs, name='clear_logs'),

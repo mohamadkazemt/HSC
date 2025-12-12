@@ -1,0 +1,348 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}مدیریت کاربران ربات{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+  <!-- Header Section -->
+  <div class="mb-6 flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">مدیریت کاربران ربات روبیکا</h1>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        مشاهده و مدیریت کاربران متصل به ربات
+      </p>
+    </div>
+    <a href="{% url 'rubika_bot:settings' %}" class="inline-flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
+      <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+      </svg>
+      بازگشت به تنظیمات
+    </a>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+      <div class="flex items-center">
+        <div class="flex-shrink-0 bg-blue-500 rounded-lg p-3">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+          </svg>
+        </div>
+        <div class="mr-4">
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">کل کاربران</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ total_users }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+      <div class="flex items-center">
+        <div class="flex-shrink-0 bg-green-500 rounded-lg p-3">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <div class="mr-4">
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">متصل شده</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ connected_users }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+      <div class="flex items-center">
+        <div class="flex-shrink-0 bg-yellow-500 rounded-lg p-3">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <div class="mr-4">
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">در انتظار اتصال</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ unconnected_users }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+      <div class="flex items-center">
+        <div class="flex-shrink-0 bg-purple-500 rounded-lg p-3">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+          </svg>
+        </div>
+        <div class="mr-4">
+          <p class="text-sm font-medium text-gray-600 dark:text-gray-400">فعال امروز</p>
+          <p class="text-2xl font-semibold text-gray-900 dark:text-white">{{ active_today }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters and Search -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6 mb-6">
+    <form method="get" class="flex flex-col md:flex-row gap-3">
+      <div class="flex-1">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">جستجو</label>
+        <input 
+          type="text" 
+          name="q" 
+          value="{{ search_query }}" 
+          placeholder="نام، کد پرسنلی، کد ملی، Chat ID..." 
+          class="w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white p-2.5 focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+      <div class="md:w-48">
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">وضعیت اتصال</label>
+        <select name="status" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white p-2.5">
+          <option value="all" {% if status_filter == 'all' %}selected{% endif %}>همه</option>
+          <option value="connected" {% if status_filter == 'connected' %}selected{% endif %}>متصل شده</option>
+          <option value="unconnected" {% if status_filter == 'unconnected' %}selected{% endif %}>متصل نشده</option>
+        </select>
+      </div>
+      <div class="md:w-32 flex items-end">
+        <button type="submit" class="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium">
+          جستجو
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Users Table -->
+  <div class="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead class="bg-gray-50 dark:bg-gray-900">
+          <tr>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              نام و نام خانوادگی
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              کد پرسنلی
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              کد ملی
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Chat ID
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              نام کاربری ربات
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              وضعیت
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              آخرین بازدید
+            </th>
+            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              عملیات
+            </th>
+          </tr>
+        </thead>
+        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          {% for u in users_page %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div class="flex-shrink-0 h-10 w-10">
+                  <div class="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold">
+                    {% if u.user %}
+                      {{ u.user.first_name|first|default:"?" }}
+                    {% else %}
+                      {{ u.first_name|first|default:"?" }}
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="mr-4">
+                  <div class="text-sm font-medium text-gray-900 dark:text-white">
+                    {% if u.user %}
+                      {{ u.user.first_name }} {{ u.user.last_name }}
+                    {% else %}
+                      {% if u.first_name %}
+                        {{ u.first_name }} {{ u.last_name|default:"" }}
+                      {% else %}
+                        <span class="text-gray-400 italic">بدون نام</span>
+                      {% endif %}
+                    {% endif %}
+                  </div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ u.user.username|default:"-" }}
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900 dark:text-white font-mono">
+                {% if u.user and u.user.userprofile %}
+                  {{ u.user.userprofile.personnel_code|default:"-" }}
+                {% else %}
+                  <span class="text-gray-400">-</span>
+                {% endif %}
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900 dark:text-white font-mono">
+                {% if u.user and u.user.userprofile %}
+                  {{ u.user.userprofile.national_code|default:"-" }}
+                {% else %}
+                  <span class="text-gray-400">-</span>
+                {% endif %}
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-xs font-mono text-gray-500 dark:text-gray-400">
+                {{ u.chat_id|truncatechars:15 }}
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900 dark:text-white">
+                {% if u.first_name %}
+                  {{ u.first_name }} {{ u.last_name|default:"" }}
+                {% else %}
+                  <span class="text-gray-400">-</span>
+                {% endif %}
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              {% if u.user %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                  <svg class="ml-1.5 w-2 h-2" fill="currentColor" viewBox="0 0 8 8">
+                    <circle cx="4" cy="4" r="3" />
+                  </svg>
+                  متصل شده
+                </span>
+              {% else %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                  <svg class="ml-1.5 w-2 h-2" fill="currentColor" viewBox="0 0 8 8">
+                    <circle cx="4" cy="4" r="3" />
+                  </svg>
+                  متصل نشده
+                </span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+              {% if u.last_seen %}
+                <div class="flex flex-col">
+                  <span>{{ u.last_seen|date:"Y/m/d" }}</span>
+                  <span class="text-xs">{{ u.last_seen|date:"H:i" }}</span>
+                </div>
+              {% else %}
+                <span class="text-gray-400">-</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              {% if u.user %}
+                <button 
+                  onclick="disconnectUser('{{ u.chat_id }}')" 
+                  class="inline-flex items-center px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white text-xs rounded-lg transition-colors"
+                  title="قطع اتصال">
+                  <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                  قطع اتصال
+                </button>
+              {% else %}
+                <span class="text-xs text-gray-400">-</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="8" class="px-6 py-12 text-center">
+              <div class="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+                <svg class="w-12 h-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                </svg>
+                <p class="text-lg font-medium">کاربری یافت نشد</p>
+                <p class="text-sm mt-1">هنوز هیچ کاربری به ربات متصل نشده است</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if users_page.paginator.num_pages > 1 %}
+    <div class="bg-gray-50 dark:bg-gray-900 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+      <div class="flex items-center justify-between">
+        <div class="text-sm text-gray-700 dark:text-gray-300">
+          نمایش 
+          <span class="font-medium">{{ users_page.start_index }}</span>
+          تا 
+          <span class="font-medium">{{ users_page.end_index }}</span>
+          از 
+          <span class="font-medium">{{ users_page.paginator.count }}</span>
+          کاربر
+        </div>
+        <div class="flex gap-2">
+          {% if users_page.has_previous %}
+            <a href="?page=1{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" 
+               class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm">
+              اول
+            </a>
+            <a href="?page={{ users_page.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" 
+               class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm">
+              قبلی
+            </a>
+          {% endif %}
+          
+          <span class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">
+            {{ users_page.number }}
+          </span>
+          
+          {% if users_page.has_next %}
+            <a href="?page={{ users_page.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" 
+               class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm">
+              بعدی
+            </a>
+            <a href="?page={{ users_page.paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}{% if status_filter != 'all' %}&status={{ status_filter }}{% endif %}" 
+               class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm">
+              آخر
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  const csrftoken = (document.cookie.match(/csrftoken=([^;]+)/)||[])[1];
+
+  // Disconnect user function
+  window.disconnectUser = function(chatId) {
+    if (!confirm('آیا از قطع اتصال این کاربر اطمینان دارید؟')) {
+      return;
+    }
+    
+    const disconnectUrl = '{% url "rubika_bot:disconnect_user" "CHAT_ID_PLACEHOLDER" %}'.replace('CHAT_ID_PLACEHOLDER', encodeURIComponent(chatId));
+    
+    fetch(disconnectUrl, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': csrftoken,
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.ok) {
+        alert('✅ اتصال کاربر با موفقیت قطع شد.');
+        location.reload();
+      } else {
+        alert('❌ خطا: ' + (data.error || 'خطای نامشخص'));
+      }
+    })
+    .catch(error => {
+      console.error('Disconnect error:', error);
+      alert('❌ خطا در قطع اتصال: ' + error.message);
+    });
+  }
+</script>
+{% endblock %}
+
