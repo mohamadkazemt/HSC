@@ -45,6 +45,8 @@ systemctl daemon-reload
 
 # Enable services
 echo "Enabling services..."
+systemctl enable celery-worker.service
+systemctl enable celery-beat.service
 systemctl enable rubika-bot.service
 
 # Stop services if running (to restart with new config)
@@ -57,22 +59,29 @@ systemctl stop rubika-bot.service 2>/dev/null || true
 echo "Starting services..."
 systemctl start celery-worker.service
 systemctl start celery-beat.service
-systemctl start rubika-bo"
-systemctl start celery-worker.service
-systemctl start celery-beat.service
+systemctl start rubika-bot.service
 
 # Check status
 echo ""
 echo "========================================="
 echo "Service Status:"
+echo "========================================="
+systemctl status celery-worker.service --no-pager
+echo ""
 echo "----------------------------------------"
 echo ""
 systemctl status celery-beat.service --no-pager
 echo ""
 echo "----------------------------------------"
 echo ""
-systemctl status rubika-bo===================="
-systemctl status celery-worker.service --no-pager
+systemctl status rubika-bot.service --no-pager
+
+echo ""
+echo "========================================="
+echo "Installation Complete!"
+echo "========================================="
+echo ""
+echo "Useful commands:"
 echo ""
 echo "Check Status:"
 echo "  - Worker:      sudo systemctl status celery-worker"
@@ -96,14 +105,5 @@ echo "  - Rubika Bot:  sudo systemctl stop rubika-bot"
 echo ""
 echo "Start All:       sudo systemctl start celery-worker celery-beat rubika-bot"
 echo "Stop All:        sudo systemctl stop celery-worker celery-beat rubika-bot"
-echo "Restart All:     sudo systemctl restart celery-worker celery-beat rubika-bo
-echo "Useful commands:"
-echo "  - Check worker status:  sudo systemctl status celery-worker"
-echo "  - Check beat status:    sudo systemctl status celery-beat"
-echo "  - View worker logs:     sudo journalctl -u celery-worker -f"
-echo "  - View beat logs:       sudo journalctl -u celery-beat -f"
-echo "  - Restart worker:       sudo systemctl restart celery-worker"
-echo "  - Restart beat:         sudo systemctl restart celery-beat"
-echo "  - Stop worker:          sudo systemctl stop celery-worker"
-echo "  - Stop beat:            sudo systemctl stop celery-beat"
+echo "Restart All:     sudo systemctl restart celery-worker celery-beat rubika-bot"
 echo ""
