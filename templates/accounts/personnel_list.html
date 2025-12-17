@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load custom_tags %}
 
 {% block title %}مدیریت پرسنل{% endblock %}
 
@@ -367,6 +368,12 @@
                 <span>سمت</span>
               </div>
             </th>
+            <th class="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-user-check text-gray-400"></i>
+                <span>تأییدکننده مرخصی</span>
+              </div>
+            </th>
             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
               <span>عملیات</span>
             </th>
@@ -431,6 +438,24 @@
                 <span class="text-gray-400">-</span>
               {% endif %}
             </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+              {% with approver=approvers_dict|get_item:p.id %}
+                {% if approver %}
+                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300">
+                    <i class="fa-solid fa-user-check text-xs"></i>
+                    <span>{{ approver.user.get_full_name|default:approver.user.username }}</span>
+                    {% if approver.personnel_code %}
+                      <span class="text-xs text-green-600 dark:text-green-400">({{ approver.personnel_code }})</span>
+                    {% endif %}
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                    <i class="fa-solid fa-exclamation-circle text-xs"></i>
+                    <span>تعریف نشده</span>
+                  </span>
+                {% endif %}
+              {% endwith %}
+            </td>
             <td class="px-6 py-4 whitespace-nowrap text-left">
               <div class="flex items-center gap-2">
                 <a href="{% url 'accounts:personnel_edit' p.user.id %}" 
@@ -452,7 +477,7 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="7" class="px-6 py-12 text-center">
+            <td colspan="8" class="px-6 py-12 text-center">
               <div class="flex flex-col items-center gap-3">
                 <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                   <i class="fa-solid fa-inbox text-gray-400 text-2xl"></i>

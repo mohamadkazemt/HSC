@@ -572,9 +572,21 @@ def personnel_list(request):
     except Exception:
         pass
     
+    # پیدا کردن تأییدکننده مرخصی برای هر پرسنل (به صورت dictionary برای دسترسی سریع)
+    approvers_dict = {}
+    try:
+        from leave_reports.utils import get_approver_for_user_profile
+        for profile in page_obj:
+            approver = get_approver_for_user_profile(profile)
+            approvers_dict[profile.id] = approver
+    except Exception:
+        # در صورت بروز خطا، بدون تأییدکننده نمایش بده
+        pass
+    
     context = {
         'page_obj': page_obj,
         'personnel': page_obj,  # backward compatibility
+        'approvers_dict': approvers_dict,  # dictionary برای دسترسی سریع به تأییدکننده هر پرسنل
         'paginator': paginator,
         'is_paginated': paginator.num_pages > 1,
         'sections': Section.objects.all(),

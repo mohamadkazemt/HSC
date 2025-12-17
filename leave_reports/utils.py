@@ -2,6 +2,7 @@ import datetime
 from django.utils import timezone
 from django.urls import reverse
 from shift_manager.utils import get_shift_for_date
+from .models import ApprovalHierarchy
 
 def get_shift_for_date_and_time(date, time, work_group):
     """
@@ -16,6 +17,42 @@ def get_shift_for_date_and_time(date, time, work_group):
         # For other shifts, use the default logic
         shift_info = get_shift_for_date(date)
         return shift_info.get(work_group)
+
+
+def get_approver_for_user_profile(user_profile):
+    """
+    پیدا کردن تأیید کننده مرخصی برای یک UserProfile بر اساس بهترین تطبیق با قوانین ApprovalHierarchy
+    
+    Parameters:
+    - user_profile: UserProfile که می‌خواهیم تأییدکننده آن را پیدا کنیم
+    
+    Returns:
+    - UserProfile: تأییدکننده مرخصی یا None اگر تأییدکننده‌ای پیدا نشد
+    """
+    if not user_profile:
+        return None
+    
+    # پیدا کردن همه قوانینی که با پروفایل کاربر تطبیق دارند
+    matching_rules = []
+    
+    for rule in ApprovalHierarchy.objects.select_related(
+        'approver', 'approver__user', 'section', 'part', 'unit_group', 'position'
+    ).prefetch_related('specific_users').all():
+        if rule.matches_user_profile(user_profile):
+            criteria_count = rule.get_criteria_count()
+            weight = rule.get_weight()
+            matching_rules.append((criteria_count, weight, rule))
+    
+    if not matching_rules:
+        return None
+    
+    # مرتب‌سازی: اول بر اساس تعداد معیارها (نزولی)، سپس بر اساس وزن (نزولی)
+    # قانون با بیشترین معیار و در صورت تساوی، با بالاترین وزن اولویت دارد
+    matching_rules.sort(key=lambda x: (x[0], x[1]), reverse=True)
+    
+    # برگرداندن تأیید کننده از قانون با بیشترین معیار و بالاترین وزن
+    best_rule = matching_rules[0][2]
+    return best_rule.approver
 
 
 # ============= توابع کمکی نوتیفیکیشن =============
