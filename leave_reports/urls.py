@@ -36,6 +36,14 @@ URLS_WITH_LABELS = [
         "label": "مرخصی_جزئیات",
     },
     
+    # حذف درخواست مرخصی
+    {
+        "path": "delete/<int:leave_id>/",
+        "view": views.delete_leave,
+        "name": "delete_leave",
+        "label": "مرخصی_حذف",
+    },
+    
     # تأیید/رد توسط جایگزین
     {
         "path": "approve-replacement/<int:leave_id>/",

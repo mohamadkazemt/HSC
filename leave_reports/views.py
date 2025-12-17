@@ -1141,6 +1141,71 @@ def delete_approver(request, hierarchy_id):
     }, status=405)
 
 
+# ============= حذف درخواست مرخصی =============
+
+@login_required
+def delete_leave(request, leave_id):
+    """حذف یک درخواست مرخصی - فقط سوپر یوزر"""
+    
+    # فقط سوپریوزر
+    if not request.user.is_superuser:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'شما دسترسی به این عملیات را ندارید'
+        }, status=403)
+    
+    leave_request = get_object_or_404(
+        ShiftReport.objects.select_related('user', 'replacement_person', 'final_approver'),
+        id=leave_id
+    )
+    
+    if request.method == 'POST':
+        try:
+            with transaction.atomic():
+                # ذخیره اطلاعات برای لاگ
+                leave_user_name = leave_request.user.get_full_name() if leave_request.user else 'نامشخص'
+                leave_date = leave_request.shift_date
+                leave_type = leave_request.get_leave_type_display()
+                leave_id_value = leave_request.id
+                
+                # حذف فایل مدارک پزشکی اگر وجود داشته باشد
+                if leave_request.medical_document:
+                    try:
+                        leave_request.medical_document.delete(save=False)
+                    except:
+                        pass
+                
+                # حذف درخواست
+                leave_request.delete()
+                
+                # ثبت فعالیت
+                log_user_activity(
+                    user=request.user,
+                    activity_type='delete',
+                    description=f'حذف درخواست مرخصی {leave_type} کاربر {leave_user_name} برای تاریخ {leave_date}',
+                    related_model='ShiftReport',
+                    related_object_id=leave_id_value,
+                    url=None,
+                    request=request
+                )
+                
+                return JsonResponse({
+                    'status': 'success',
+                    'message': 'درخواست مرخصی با موفقیت حذف شد'
+                })
+                
+        except Exception as e:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'خطا در حذف: {str(e)}'
+            }, status=500)
+    
+    return JsonResponse({
+        'status': 'error',
+        'message': 'متد درخواست نامعتبر است'
+    }, status=405)
+
+
 # ============= API برای Select2 =============
 
 @login_required

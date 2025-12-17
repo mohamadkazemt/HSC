@@ -292,13 +292,24 @@
                             {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            <a 
-                                href="{% url 'leave_reports:leave_detail' request.id %}"
-                                class="inline-flex items-center gap-2 px-3 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 rounded-lg transition-colors duration-200 font-medium"
-                            >
-                                <i class="fas fa-eye"></i>
-                                جزئیات
-                            </a>
+                            <div class="flex items-center gap-2">
+                                <a 
+                                    href="{% url 'leave_reports:leave_detail' request.id %}"
+                                    class="inline-flex items-center gap-2 px-3 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 rounded-lg transition-colors duration-200 font-medium"
+                                >
+                                    <i class="fas fa-eye"></i>
+                                    جزئیات
+                                </a>
+                                {% if user.is_superuser %}
+                                <button 
+                                    @click="deleteLeave({{ request.id }}, '{{ request.user.get_full_name }}', '{{ request.get_leave_type_display }}')"
+                                    class="inline-flex items-center gap-2 px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg transition-colors duration-200 font-medium"
+                                    title="حذف درخواست"
+                                >
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
@@ -373,13 +384,24 @@
                         </div>
                     </div>
 
-                    <a 
-                        href="{% url 'leave_reports:leave_detail' request.id %}"
-                        class="w-full px-4 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 rounded-lg transition-colors duration-200 text-sm font-medium text-center block"
-                    >
-                        <i class="fas fa-eye"></i>
-                        مشاهده جزئیات
-                    </a>
+                    <div class="flex gap-2">
+                        <a 
+                            href="{% url 'leave_reports:leave_detail' request.id %}"
+                            class="flex-1 px-4 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-900/50 rounded-lg transition-colors duration-200 text-sm font-medium text-center"
+                        >
+                            <i class="fas fa-eye"></i>
+                            مشاهده جزئیات
+                        </a>
+                        {% if user.is_superuser %}
+                        <button 
+                            @click="deleteLeave({{ request.id }}, '{{ request.user.get_full_name }}', '{{ request.get_leave_type_display }}')"
+                            class="px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg transition-colors duration-200 text-sm font-medium"
+                            title="حذف درخواست"
+                        >
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        {% endif %}
+                    </div>
                 </div>
                 {% empty %}
                 <div class="col-span-full text-center py-12">
@@ -451,6 +473,64 @@ function archiveManager() {
             
             // Create temporary link and trigger download
             window.location.href = '{% url "leave_reports:leave_archive" %}?' + params.toString();
+        },
+
+        async deleteLeave(leaveId, userName, leaveType) {
+            // تأیید حذف
+            if (!confirm(`آیا از حذف درخواست مرخصی ${leaveType} کاربر ${userName} اطمینان دارید؟\n\nاین عمل غیرقابل بازگشت است.`)) {
+                return;
+            }
+
+            try {
+                // دریافت CSRF token
+                let csrfToken = '{{ csrf_token }}';
+                const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+                if (csrfInput) {
+                    csrfToken = csrfInput.value;
+                } else {
+                    // اگر input وجود نداشت، از cookie بخوان
+                    csrfToken = this.getCookie('csrftoken');
+                }
+
+                // ساخت URL به صورت مستقیم
+                const deleteUrl = `/leave_reports/delete/${leaveId}/`;
+                const response = await fetch(deleteUrl, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    // نمایش پیام موفقیت
+                    alert('درخواست مرخصی با موفقیت حذف شد.');
+                    // رفرش صفحه
+                    window.location.reload();
+                } else {
+                    alert('خطا در حذف: ' + (data.message || 'خطای نامشخص'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.');
+            }
+        },
+
+        getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
         }
     };
 }
