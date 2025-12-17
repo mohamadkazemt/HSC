@@ -947,6 +947,16 @@ class RubikaBotEngine:
             ).select_related('user', 'user__userprofile').order_by('-created_at')[:10])
             
             for leave in pending_as_replacement:
+                # پیدا کردن تأییدکننده مرخصی
+                approver = leave.get_required_approver()
+                approver_info = None
+                if approver and approver.user:
+                    approver_name = approver.user.get_full_name() or approver.user.username
+                    approver_code = approver.personnel_code if approver.personnel_code else None
+                    approver_info = approver_name
+                    if approver_code:
+                        approver_info += f' (کد: {approver_code})'
+                
                 pending_leaves.append({
                     'id': leave.id,
                     'type': 'replacement',
@@ -955,6 +965,7 @@ class RubikaBotEngine:
                     'leave_type': leave.get_leave_type_display(),
                     'date': leave.shift_date,
                     'shift': leave.get_shift_type_display(),
+                    'approver': approver_info,
                 })
             
             # 2. درخواست‌هایی که باید به عنوان مدیر تأیید کنم
@@ -968,6 +979,15 @@ class RubikaBotEngine:
                 for leave in all_pending:
                     approver = leave.get_required_approver()
                     if approver and approver == user_profile:
+                        # اطلاعات تأییدکننده (که خود کاربر است)
+                        approver_info = None
+                        if approver and approver.user:
+                            approver_name = approver.user.get_full_name() or approver.user.username
+                            approver_code = approver.personnel_code if approver.personnel_code else None
+                            approver_info = approver_name
+                            if approver_code:
+                                approver_info += f' (کد: {approver_code})'
+                        
                         pending_leaves.append({
                             'id': leave.id,
                             'type': 'manager',
@@ -977,6 +997,7 @@ class RubikaBotEngine:
                             'date': leave.shift_date,
                             'shift': leave.get_shift_type_display(),
                             'replacement': leave.replacement_person.get_full_name() if leave.replacement_person else None,
+                            'approver': approver_info,
                         })
             
             return pending_leaves
@@ -1021,6 +1042,10 @@ class RubikaBotEngine:
                 f'📅 تاریخ: {leave["date"]}',
                 f'🕐 شیفت: {leave["shift"]}',
             ])
+            
+            # نمایش تأییدکننده مرخصی
+            if leave.get('approver'):
+                message_lines.append(f'✅ تأییدکننده: {leave["approver"]}')
             
             # اگر مدیر است و جایگزین دارد
             if leave['type'] == 'manager' and leave.get('replacement'):
