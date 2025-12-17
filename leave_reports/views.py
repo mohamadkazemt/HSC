@@ -852,10 +852,20 @@ def leave_detail(request, leave_id):
     # بررسی اینکه آیا کاربر می‌تواند این درخواست را تأیید کند
     can_approve = leave_request.can_be_approved_by(request.user)
     
+    # پیدا کردن تأییدکننده مورد نیاز (حتی اگر هنوز تأیید نشده باشد)
+    required_approver = None
+    try:
+        required_approver = leave_request.get_required_approver()
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Error getting required approver for leave {leave_id}: {str(e)}")
+    
     return render(request, 'leave_reports/leave_detail.html', {
         'leave': leave_request,
         'page_title': 'جزئیات درخواست مرخصی',
         'can_approve': can_approve,
+        'required_approver': required_approver,  # تأییدکننده مورد نیاز
     })
 
 

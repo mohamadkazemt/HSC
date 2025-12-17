@@ -270,9 +270,17 @@
                                 {% endif %}
                                 <div class="flex-1 pt-1">
                                     <h4 class="text-sm font-bold text-gray-900 dark:text-white">تأیید مدیر</h4>
-                                    {% if leave.final_approver %}
+                                    {% if leave.status == 'approved' and leave.final_approver %}
                                     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                        توسط: {{ leave.final_approver.get_full_name }}
+                                        توسط: {{ leave.final_approver.user.get_full_name|default:leave.final_approver.user.username }}
+                                    </p>
+                                    {% elif required_approver %}
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                        باید تأیید شود توسط: <span class="font-semibold text-indigo-600 dark:text-indigo-400">{{ required_approver.user.get_full_name|default:required_approver.user.username }}</span>
+                                    </p>
+                                    {% elif leave.final_approver %}
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                        توسط: {{ leave.final_approver.user.get_full_name|default:leave.final_approver.user.username }}
                                     </p>
                                     {% endif %}
                                     {% if leave.status == 'approved' %}
