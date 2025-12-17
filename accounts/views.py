@@ -1177,7 +1177,11 @@ def personnel_export(request):
 @superuser_required
 def api_parts_by_section(request):
     section_id = request.GET.get('section')
-    parts = Part.objects.filter(section_id=section_id).values('id', 'name') if section_id else []
+    if section_id:
+        parts = Part.objects.filter(section_id=section_id).values('id', 'name').order_by('name')
+    else:
+        # اگر بخشی انتخاب نشده، همه قسمت‌ها را برگردان
+        parts = Part.objects.all().values('id', 'name').order_by('name')
     return JsonResponse(list(parts), safe=False)
 
 

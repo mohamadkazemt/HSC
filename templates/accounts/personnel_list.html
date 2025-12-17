@@ -603,10 +603,9 @@
 
     function loadParts(sectionId, selectedPartId, selectedUnitGroupId, selectedPositionId){
       resetSelect($part, 'همه قسمت‌ها');
-      if (!sectionId){
-        return;
-      }
-      $.getJSON('{% url "accounts:personnel_api_parts" %}', { section: sectionId })
+      // اگر sectionId خالی است، همه قسمت‌ها را لود کن
+      const params = sectionId ? { section: sectionId } : {};
+      $.getJSON('{% url "accounts:personnel_api_parts" %}', params)
         .done(function(items){
           items.forEach(function(it){
             $part.append(new Option(it.name, it.id, false, false));
@@ -664,12 +663,10 @@
     $section.on('change', function(){
       const sectionId = $(this).val();
       $part.removeData('preselected-unit-group preselected-position');
-      resetSelect($part, 'همه قسمت‌ها', true);
       resetSelect($unitGroup, 'همه گروه‌ها', true);
       resetSelect($position, 'همه سمت‌ها', true);
-      if (sectionId){
-        loadParts(sectionId, null, null, null);
-      }
+      // همیشه قسمت‌ها را لود کن (چه بخش انتخاب شده باشد یا نه)
+      loadParts(sectionId, null, null, null);
     });
 
     $section.on('select2:clear', function(){
@@ -715,10 +712,9 @@
     initSelect($unitGroup, 'همه گروه‌ها');
     initSelect($position, 'همه سمت‌ها');
 
-    if (initialSection){
-      loadParts(initialSection, initialPart || null, initialUnitGroup || null, initialPosition || null);
-    } else {
-      resetSelect($part, 'همه قسمت‌ها');
+    // همیشه قسمت‌ها را لود کن (چه بخش انتخاب شده باشد یا نه)
+    loadParts(initialSection || null, initialPart || null, initialUnitGroup || null, initialPosition || null);
+    if (!initialSection){
       resetSelect($unitGroup, 'همه گروه‌ها');
       resetSelect($position, 'همه سمت‌ها');
     }
