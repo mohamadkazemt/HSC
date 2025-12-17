@@ -193,7 +193,10 @@ class ApprovalHierarchy(models.Model):
         
         # بررسی specific_users
         if self._has_specific_users():
-            if user_profile.user not in self.specific_users.all():
+            # استفاده از all() که از prefetch cache استفاده می‌کند اگر موجود باشد
+            # و در غیر این صورت query جدید اجرا می‌کند
+            specific_user_ids = set(self.specific_users.values_list('id', flat=True))
+            if user_profile.user.id not in specific_user_ids:
                 return False
         
         # بررسی work_group

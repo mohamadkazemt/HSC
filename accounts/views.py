@@ -43,6 +43,7 @@ from .notifications import notify_profile_updated, notify_organizational_updated
 
 
 name = 'accounts'
+logger = logging.getLogger(__name__)
 
 
 def superuser_required(view_func):
@@ -577,11 +578,16 @@ def personnel_list(request):
     try:
         from leave_reports.utils import get_approver_for_user_profile
         for profile in page_obj:
-            approver = get_approver_for_user_profile(profile)
-            approvers_dict[profile.id] = approver
-    except Exception:
-        # در صورت بروز خطا، بدون تأییدکننده نمایش بده
-        pass
+            try:
+                approver = get_approver_for_user_profile(profile)
+                approvers_dict[profile.id] = approver
+            except Exception as e:
+                # در صورت بروز خطا برای یک پرسنل خاص، None قرار بده و ادامه بده
+                logger.error(f"Error finding approver for profile {profile.id}: {str(e)}", exc_info=True)
+                approvers_dict[profile.id] = None
+    except Exception as e:
+        # در صورت بروز خطا کلی، لاگ کن
+        logger.error(f"Error in get_approver_for_user_profile: {str(e)}", exc_info=True)
     
     context = {
         'page_obj': page_obj,

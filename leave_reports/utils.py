@@ -29,21 +29,55 @@ def get_approver_for_user_profile(user_profile):
     Returns:
     - UserProfile: تأییدکننده مرخصی یا None اگر تأییدکننده‌ای پیدا نشد
     """
+    import logging
+    logger = logging.getLogger(__name__)
+    
     if not user_profile:
         return None
+    
+    user = user_profile.user
+    logger.info(f"🔍 Finding approver for user: {user.username} (ID: {user.id})")
+    logger.info(f"   Profile: group={user_profile.group}, section={user_profile.section}, "
+               f"part={user_profile.part}, unit_group={user_profile.unit_group}, "
+               f"position={user_profile.position}")
     
     # پیدا کردن همه قوانینی که با پروفایل کاربر تطبیق دارند
     matching_rules = []
     
-    for rule in ApprovalHierarchy.objects.select_related(
+    all_rules = ApprovalHierarchy.objects.select_related(
         'approver', 'approver__user', 'section', 'part', 'unit_group', 'position'
-    ).prefetch_related('specific_users').all():
-        if rule.matches_user_profile(user_profile):
+    ).prefetch_related('specific_users').all()
+    
+    logger.info(f"   Total rules to check: {all_rules.count()}")
+    
+    for rule in all_rules:
+        # بررسی تطبیق
+        matches = rule.matches_user_profile(user_profile)
+        logger.info(f"   Rule {rule.id}: matches={matches}, approver={rule.approver}")
+        
+        if matches:
             criteria_count = rule.get_criteria_count()
             weight = rule.get_weight()
             matching_rules.append((criteria_count, weight, rule))
+            logger.info(f"   ✅ Rule {rule.id} matched! (criteria_count: {criteria_count}, weight: {weight})")
+        else:
+            # بررسی جزئی‌تر چرا تطبیق نکرد
+            if rule._has_specific_users():
+                specific_user_ids = list(rule.specific_users.values_list('id', flat=True))
+                logger.info(f"   ❌ Rule {rule.id} didn't match - specific_users: {specific_user_ids}, user_id: {user.id}, user in list: {user.id in specific_user_ids}")
+            if rule.work_group:
+                logger.info(f"   ❌ Rule {rule.id} - work_group check: rule={rule.work_group}, profile={user_profile.group}")
+            if rule.section:
+                logger.info(f"   ❌ Rule {rule.id} - section check: rule={rule.section.id if rule.section else None}, profile={user_profile.section.id if user_profile.section else None}")
+            if rule.part:
+                logger.info(f"   ❌ Rule {rule.id} - part check: rule={rule.part.id if rule.part else None}, profile={user_profile.part.id if user_profile.part else None}")
+            if rule.unit_group:
+                logger.info(f"   ❌ Rule {rule.id} - unit_group check: rule={rule.unit_group.id if rule.unit_group else None}, profile={user_profile.unit_group.id if user_profile.unit_group else None}")
+            if rule.position:
+                logger.info(f"   ❌ Rule {rule.id} - position check: rule={rule.position.id if rule.position else None}, profile={user_profile.position.id if user_profile.position else None}")
     
     if not matching_rules:
+        logger.warning(f"⚠️ No matching approval rule found for user {user.username}")
         return None
     
     # مرتب‌سازی: اول بر اساس تعداد معیارها (نزولی)، سپس بر اساس وزن (نزولی)
@@ -52,6 +86,9 @@ def get_approver_for_user_profile(user_profile):
     
     # برگرداندن تأیید کننده از قانون با بیشترین معیار و بالاترین وزن
     best_rule = matching_rules[0][2]
+    logger.info(f"✅ Best matching rule: {best_rule.id} (criteria_count: {matching_rules[0][0]}, weight: {matching_rules[0][1]})")
+    logger.info(f"   Approver: {best_rule.approver}")
+    
     return best_rule.approver
 
 
