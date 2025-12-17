@@ -445,7 +445,35 @@ def personnel_list(request):
         search_conditions = name_conditions | personnel_code_conditions
         queryset = queryset.filter(search_conditions)
 
-    # Stats based on filtered queryset
+    # فیلتر برای پرسنل بدون تأییدکننده (قبل از محاسبه stats)
+    no_approver_filter = request.GET.get('no_approver', '').lower() == 'true'
+    
+    if no_approver_filter:
+        # پیدا کردن تأییدکننده مرخصی برای همه پرسنل در queryset
+        all_approvers_dict = {}
+        try:
+            from leave_reports.utils import get_approver_for_user_profile
+            # برای فیلتر، باید همه پرسنل را بررسی کنیم
+            all_profiles = list(queryset.all())
+            for profile in all_profiles:
+                try:
+                    approver = get_approver_for_user_profile(profile)
+                    all_approvers_dict[profile.id] = approver
+                except Exception as e:
+                    logger.error(f"Error finding approver for profile {profile.id}: {str(e)}", exc_info=True)
+                    all_approvers_dict[profile.id] = None
+            
+            # فیلتر کردن: فقط پرسنلی که تأییدکننده ندارند
+            profiles_without_approver = [pid for pid, approver in all_approvers_dict.items() if approver is None]
+            if profiles_without_approver:
+                queryset = queryset.filter(id__in=profiles_without_approver)
+            else:
+                # اگر هیچ پرسنلی بدون تأییدکننده نبود، queryset خالی می‌کنیم
+                queryset = queryset.none()
+        except Exception as e:
+            logger.error(f"Error in filtering by no_approver: {str(e)}", exc_info=True)
+
+    # Stats based on filtered queryset (بعد از همه فیلترها)
     total_count = queryset.count()
     
     # Helper function to normalize name (remove extra spaces, trim)
@@ -547,6 +575,12 @@ def personnel_list(request):
         sanitized_params['q'] = q_clean
     else:
         sanitized_params.pop('q', None)
+    
+    # اضافه کردن فیلتر بدون تأییدکننده
+    if no_approver_filter:
+        sanitized_params['no_approver'] = 'true'
+    else:
+        sanitized_params.pop('no_approver', None)
 
     sanitized_params['per_page'] = str(per_page)
 
@@ -573,7 +607,7 @@ def personnel_list(request):
     except Exception:
         pass
     
-    # پیدا کردن تأییدکننده مرخصی برای هر پرسنل (به صورت dictionary برای دسترسی سریع)
+    # پیدا کردن تأییدکننده مرخصی برای هر پرسنل در صفحه فعلی (به صورت dictionary برای دسترسی سریع)
     approvers_dict = {}
     try:
         from leave_reports.utils import get_approver_for_user_profile
@@ -607,6 +641,7 @@ def personnel_list(request):
             'position': position_id or '',
             'q': q_clean or '',
             'per_page': str(per_page),
+            'no_approver': 'true' if no_approver_filter else '',
         },
         'per_page_options': [10, 25, 50, 100, 200],
         'query_string': query_string,
