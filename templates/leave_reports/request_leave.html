@@ -441,6 +441,14 @@ function leaveRequestWizard() {
                         todayJalali = new persianDate();
                     }
                     
+                    // محاسبه حداکثر تاریخ مجاز: 3 روز بعد از امروز
+                    let maxAllowedDate = null;
+                    if (todayJalali && typeof persianDate !== 'undefined') {
+                        // اضافه کردن 3 روز به تاریخ امروز
+                        maxAllowedDate = new persianDate(todayJalali);
+                        maxAllowedDate.add('day', 3);
+                    }
+                    
                     const pickerConfig = {
                         format: 'YYYY/MM/DD',
                         autoClose: true,
@@ -452,7 +460,7 @@ function leaveRequestWizard() {
                         },
                         onSelect: (unix) => {
                             try {
-                                if (typeof persianDate !== 'undefined') {
+                                if (typeof persianDate !== 'undefined' && todayJalali) {
                                     const dateObj = new Date(unix);
                                     const utcDate = new Date(Date.UTC(
                                         dateObj.getUTCFullYear(),
@@ -461,7 +469,38 @@ function leaveRequestWizard() {
                                         12, 0, 0, 0
                                     ));
                                     const pd = new persianDate(utcDate);
-                                    const formatted = pd.toCalendar('persian').format('YYYY/MM/DD');
+                                    const selectedDate = pd.toCalendar('persian');
+                                    const formatted = selectedDate.format('YYYY/MM/DD');
+                                    
+                                    // بررسی: آیا امروز بیشتر از 3 روز بعد از تاریخ انتخاب شده است؟
+                                    const maxRegistrationDate = new persianDate(selectedDate);
+                                    maxRegistrationDate.add('day', 3);
+                                    
+                                    if (todayJalali > maxRegistrationDate) {
+                                        // مهلت ثبت گذشته است
+                                        const maxRegDateStr = maxRegistrationDate.format('YYYY/MM/DD');
+                                        alert(`⚠️ مهلت ثبت این درخواست به پایان رسیده است.\n\n📅 تاریخ مرخصی: ${formatted}\n⏳ آخرین مهلت ثبت: ${maxRegDateStr}`);
+                                        // پاک کردن مقدار انتخاب شده
+                                        setTimeout(() => {
+                                            $('#id_shift_date').val('');
+                                            this.formData.shift_date = '';
+                                        }, 10);
+                                        return;
+                                    }
+                                    
+                                    // بررسی: آیا تاریخ بیشتر از 3 روز بعد از امروز است؟
+                                    if (maxAllowedDate && selectedDate > maxAllowedDate) {
+                                        const maxDateStr = maxAllowedDate.format('YYYY/MM/DD');
+                                        alert(`⚠️ شما می‌توانید فقط تا 3 روز بعد از تاریخ مرخصی، درخواست ثبت کنید.\n\n📅 حداکثر تاریخ مجاز: ${maxDateStr}`);
+                                        // پاک کردن مقدار انتخاب شده
+                                        setTimeout(() => {
+                                            $('#id_shift_date').val('');
+                                            this.formData.shift_date = '';
+                                        }, 10);
+                                        return;
+                                    }
+                                    
+                                    // تاریخ معتبر است
                                     setTimeout(() => {
                                         $('#id_shift_date').val(formatted);
                                         this.formData.shift_date = formatted;
@@ -473,9 +512,15 @@ function leaveRequestWizard() {
                         }
                     };
                     
-                    // Add minDate to prevent past dates (future dates are allowed)
+                    // تنظیم محدودیت‌های تاریخ
                     if (todayJalali) {
-                        pickerConfig.minDate = todayJalali;
+                        // حذف minDate - چون می‌تواند تاریخ گذشته را انتخاب کند (تا 3 روز بعد)
+                        // pickerConfig.minDate = todayJalali;
+                    }
+                    
+                    // تنظیم maxDate: 3 روز بعد از امروز
+                    if (maxAllowedDate) {
+                        pickerConfig.maxDate = maxAllowedDate;
                     }
                     
                     $('#id_shift_date').persianDatepicker(pickerConfig);

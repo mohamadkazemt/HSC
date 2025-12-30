@@ -2090,10 +2090,32 @@ class RubikaBotEngine:
             from accounts.models import UserProfile
             from django.contrib.auth.models import User
             from datetime import datetime
+            from django.utils import timezone
+            from datetime import timedelta
+            import jdatetime
             
             try:
                 state = LeaveRequestState.objects.select_related('rubika_user', 'rubika_user__user').get(rubika_user=user)
                 data = state.data
+                
+                # بررسی تاریخ قبل از ایجاد درخواست (بررسی مجدد برای اطمینان)
+                shift_date = datetime.fromisoformat(data['date']).date()
+                today = timezone.now().date()
+                
+                # محاسبه آخرین مهلت ثبت: 3 روز بعد از تاریخ مرخصی
+                max_registration_date = shift_date + timedelta(days=3)
+                
+                # بررسی: آیا امروز بیشتر از 3 روز بعد از تاریخ مرخصی است؟
+                if today > max_registration_date:
+                    jalali_shift_date = jdatetime.date.fromgregorian(date=shift_date)
+                    jalali_max_registration = jdatetime.date.fromgregorian(date=max_registration_date)
+                    return False, f'⚠️ مهلت ثبت این درخواست به پایان رسیده است.\n\n📅 تاریخ مرخصی: {jalali_shift_date.strftime("%Y/%m/%d")}\n⏳ آخرین مهلت ثبت: {jalali_max_registration.strftime("%Y/%m/%d")}'
+                
+                # بررسی: تاریخ مرخصی نباید بیشتر از 3 روز بعد از امروز باشد
+                max_future_date = today + timedelta(days=3)
+                if shift_date > max_future_date:
+                    jalali_max_date = jdatetime.date.fromgregorian(date=max_future_date)
+                    return False, f'⚠️ شما می‌توانید فقط تا 3 روز بعد از تاریخ مرخصی، درخواست ثبت کنید.\n\n📅 حداکثر تاریخ مجاز: {jalali_max_date.strftime("%Y/%m/%d")}'
                 
                 # Get user profile (optimized with select_related)
                 profile = UserProfile.objects.select_related('position', 'section', 'user').get(user=user.user)
@@ -2102,7 +2124,7 @@ class RubikaBotEngine:
                 leave_request = ShiftReport()
                 leave_request.user = user.user
                 leave_request.leave_type = data['leave_type']
-                leave_request.shift_date = datetime.fromisoformat(data['date']).date()
+                leave_request.shift_date = shift_date
                 leave_request.shift_type = data['shift_type']
                 leave_request.work_group = profile.group or 'نامشخص'
                 leave_request.crate_by = profile
