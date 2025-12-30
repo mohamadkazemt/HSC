@@ -191,15 +191,20 @@ if [ -d "$VENV_DIR" ]; then
     # Check Celery inspect (requires running worker)
     if systemctl is-active --quiet celery-worker; then
         # Get active tasks
-        active_tasks=$(sudo -u hsc_admin "$VENV_DIR/bin/celery" -A HSCprojects inspect active 2>/dev/null | grep -c "task" || echo "0")
-        if [ "$active_tasks" -gt 0 ]; then
-            log_pass "$active_tasks تسک فعال در حال اجرا است"
-        else
+        active_tasks_output=$(sudo -u hsc_admin "$VENV_DIR/bin/celery" -A HSCprojects inspect active 2>/dev/null || echo "")
+        active_tasks=$(echo "$active_tasks_output" | grep -c "task" 2>/dev/null || echo "0")
+        # Remove newlines and convert to number
+        active_tasks=$(echo "$active_tasks" | tr -d '\n' | grep -oE '[0-9]+' | head -1 || echo "0")
+        if [ -z "$active_tasks" ] || [ "$active_tasks" = "0" ]; then
             log_pass "هیچ تسک فعالی در حال اجرا نیست (طبیعی است)"
+        else
+            log_pass "$active_tasks تسک فعال در حال اجرا است"
         fi
         
         # Get registered tasks
-        registered_tasks=$(sudo -u hsc_admin "$VENV_DIR/bin/celery" -A HSCprojects inspect registered 2>/dev/null | grep -c "\.tasks\." || echo "0")
+        registered_tasks_output=$(sudo -u hsc_admin "$VENV_DIR/bin/celery" -A HSCprojects inspect registered 2>/dev/null || echo "")
+        registered_tasks=$(echo "$registered_tasks_output" | grep -c "\.tasks\." 2>/dev/null || echo "0")
+        registered_tasks=$(echo "$registered_tasks" | tr -d '\n' | grep -oE '[0-9]+' | head -1 || echo "0")
         if [ "$registered_tasks" -gt 0 ]; then
             log_pass "$registered_tasks تسک ثبت شده در Worker"
         else
