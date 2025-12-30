@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # به‌روزرسانی service file برای اضافه کردن hostname
-# Usage: sudo bash update_service_file.sh
+# Usage: sudo bash update_service_file.sh [service-name]
+# service-name می‌تواند باشد: celery-worker, celery-beat, rubika-bot, یا all
 
 # Colors
 GREEN='\033[0;32m'
@@ -10,8 +11,34 @@ RED='\033[0;31m'
 NC='\033[0m'
 
 PROJECT_DIR="/var/www/HSC"
-SERVICE_FILE="/etc/systemd/system/celery-worker.service"
-SOURCE_FILE="$PROJECT_DIR/documentation/celery-worker.service"
+SERVICE_NAME=${1:-celery-worker}
+
+# Map service names to files
+case "$SERVICE_NAME" in
+    celery-worker)
+        SERVICE_FILE="/etc/systemd/system/celery-worker.service"
+        SOURCE_FILE="$PROJECT_DIR/celery-worker.service"
+        ;;
+    celery-beat)
+        SERVICE_FILE="/etc/systemd/system/celery-beat.service"
+        SOURCE_FILE="$PROJECT_DIR/celery-beat.service"
+        ;;
+    rubika-bot)
+        SERVICE_FILE="/etc/systemd/system/rubika-bot.service"
+        SOURCE_FILE="$PROJECT_DIR/rubika-bot.service"
+        ;;
+    all)
+        # Update all services
+        bash "$0" celery-worker
+        bash "$0" celery-beat
+        bash "$0" rubika-bot
+        exit 0
+        ;;
+    *)
+        echo "Usage: $0 [celery-worker|celery-beat|rubika-bot|all]"
+        exit 1
+        ;;
+esac
 
 echo "========================================="
 echo "به‌روزرسانی Service File"
@@ -19,10 +46,17 @@ echo "========================================="
 echo ""
 
 # بررسی وجود فایل منبع
-if [ ! -f "$SOURCE_FILE" ]; then
-    echo -e "${RED}✗ فایل منبع یافت نشد: $SOURCE_FILE${NC}"
+if [ -z "$SOURCE_FILE" ] || [ ! -f "$SOURCE_FILE" ]; then
+    echo -e "${RED}✗ فایل منبع یافت نشد${NC}"
+    echo "   جستجو در:"
+    echo "   - $PROJECT_DIR/celery-worker.service"
+    echo "   - $PROJECT_DIR/documentation/celery-worker.service"
+    echo ""
+    echo "   لطفاً فایل celery-worker.service را در root directory پروژه قرار دهید"
     exit 1
 fi
+
+echo "   استفاده از: $SOURCE_FILE"
 
 # بررسی hostname در فایل منبع
 if ! grep -q "hostname" "$SOURCE_FILE" 2>/dev/null; then

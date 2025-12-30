@@ -39,6 +39,7 @@ check() {
 echo "1. بررسی سرویس‌ها:"
 check "Celery Worker" "systemctl is-active celery-worker"
 check "Celery Beat" "systemctl is-active celery-beat"
+check "Rubika Bot" "systemctl is-active rubika-bot"
 echo ""
 
 # 2. Check Redis

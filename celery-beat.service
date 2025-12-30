@@ -1,0 +1,52 @@
+[Unit]
+Description=Celery Beat Scheduler Service for HSC Project
+After=network.target redis-server.service
+Wants=redis-server.service
+
+[Service]
+Type=simple
+User=hsc_admin
+Group=hsc_admin
+WorkingDirectory=/var/www/HSC
+
+# Environment Variables
+Environment="DJANGO_SETTINGS_MODULE=HSCprojects.settings.production"
+Environment="PATH=/var/www/HSC/venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="LANG=en_US.UTF-8"
+Environment="LC_ALL=en_US.UTF-8"
+
+# Celery Beat Command
+ExecStart=/var/www/HSC/venv/bin/celery -A HSCprojects beat \
+    --loglevel=info \
+    --logfile=/var/www/HSC/logs/celery-beat.log \
+    --pidfile=/var/www/HSC/logs/celerybeat.pid \
+    --schedule=/var/www/HSC/logs/celerybeat-schedule.db
+
+# Graceful shutdown
+ExecStop=/bin/kill -s TERM $MAINPID
+ExecReload=/bin/kill -s HUP $MAINPID
+
+# Restart policy
+Restart=always
+RestartSec=10s
+
+# Process management
+KillMode=mixed
+TimeoutStopSec=30
+TimeoutStartSec=60
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=celery-beat
+
+# Security
+PrivateTmp=true
+NoNewPrivileges=true
+
+# Resource limits
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
+
