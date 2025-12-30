@@ -375,6 +375,36 @@ class ShiftReport(models.Model):
                 raise ValidationError(
                     f'برای کاربر {self.user.get_full_name()} در تاریخ {jalali_date_str} قبلاً گزارش ثبت شده است.')
         
+        # بررسی مهلت 3 روزه برای ثبت (فقط برای ثبت جدید، نه ویرایش)
+        if self.shift_date and not self.pk:  # فقط برای ثبت جدید
+            from django.utils import timezone
+            from datetime import timedelta
+            import jdatetime
+            
+            today = timezone.now().date()
+            
+            # محاسبه آخرین مهلت ثبت: 3 روز بعد از تاریخ مرخصی
+            max_registration_date = self.shift_date + timedelta(days=3)
+            
+            # بررسی: آیا امروز بیشتر از 3 روز بعد از تاریخ مرخصی است؟
+            if today > max_registration_date:
+                jalali_shift_date = jdatetime.date.fromgregorian(date=self.shift_date)
+                jalali_max_registration = jdatetime.date.fromgregorian(date=max_registration_date)
+                raise ValidationError(
+                    f'مهلت ثبت این درخواست به پایان رسیده است. '
+                    f'تاریخ مرخصی: {jalali_shift_date.strftime("%Y/%m/%d")}، '
+                    f'آخرین مهلت ثبت: {jalali_max_registration.strftime("%Y/%m/%d")}'
+                )
+            
+            # بررسی: تاریخ مرخصی نباید بیشتر از 3 روز بعد از امروز باشد
+            max_future_date = today + timedelta(days=3)
+            if self.shift_date > max_future_date:
+                jalali_max_date = jdatetime.date.fromgregorian(date=max_future_date)
+                raise ValidationError(
+                    f'شما می‌توانید فقط تا 3 روز بعد از تاریخ مرخصی، درخواست ثبت کنید. '
+                    f'حداکثر تاریخ مجاز: {jalali_max_date.strftime("%Y/%m/%d")}'
+                )
+        
         # اعتبارسنجی برای مرخصی ساعتی
         if self.leave_type == 'hourly' and (not self.start_time or not self.end_time):
             raise ValidationError('برای مرخصی ساعتی باید ساعت شروع و پایان وارد شود.')

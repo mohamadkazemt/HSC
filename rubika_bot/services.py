@@ -1517,18 +1517,29 @@ class RubikaBotEngine:
             gregorian_date = jalali_date.togregorian()
             
             # بررسی محدودیت تاریخ: می‌تواند تا 3 روز بعد از تاریخ مرخصی ثبت شود
-            # یعنی تاریخ مرخصی می‌تواند از 3 روز قبل تا 3 روز بعد از امروز باشد
             today = jdatetime.date.today()
             from datetime import timedelta
             
             # تبدیل به میلادی برای محاسبه
             today_gregorian = today.togregorian()
-            max_allowed_date_gregorian = today_gregorian + timedelta(days=3)
-            max_allowed_date_jalali = jdatetime.date.fromgregorian(date=max_allowed_date_gregorian)
+            jalali_date_gregorian = gregorian_date
             
-            # بررسی: تاریخ مرخصی نباید بیشتر از 3 روز بعد از امروز باشد
-            if jalali_date > max_allowed_date_jalali:
-                message = f'⚠️ شما می‌توانید فقط تا 3 روز بعد از تاریخ مرخصی، درخواست ثبت کنید.\n\n📅 حداکثر تاریخ مجاز: {max_allowed_date_jalali.strftime("%Y/%m/%d")}'
+            # محاسبه آخرین مهلت ثبت: 3 روز بعد از تاریخ مرخصی
+            max_registration_date_gregorian = jalali_date_gregorian + timedelta(days=3)
+            max_registration_date_jalali = jdatetime.date.fromgregorian(date=max_registration_date_gregorian)
+            
+            # بررسی: آیا امروز بیشتر از 3 روز بعد از تاریخ مرخصی است؟
+            if today_gregorian > max_registration_date_gregorian:
+                message = f'⚠️ مهلت ثبت این درخواست به پایان رسیده است.\n\n📅 تاریخ مرخصی: {jalali_date.strftime("%Y/%m/%d")}\n⏳ آخرین مهلت ثبت: {max_registration_date_jalali.strftime("%Y/%m/%d")}'
+                await self._send_text_message(chat_id, message)
+                return
+            
+            # بررسی: تاریخ مرخصی نباید بیشتر از 3 روز بعد از امروز باشد (برای ثبت)
+            max_future_date_gregorian = today_gregorian + timedelta(days=3)
+            max_future_date_jalali = jdatetime.date.fromgregorian(date=max_future_date_gregorian)
+            
+            if jalali_date > max_future_date_jalali:
+                message = f'⚠️ شما می‌توانید فقط تا 3 روز بعد از تاریخ مرخصی، درخواست ثبت کنید.\n\n📅 حداکثر تاریخ مجاز: {max_future_date_jalali.strftime("%Y/%m/%d")}'
                 await self._send_text_message(chat_id, message)
                 return
             
