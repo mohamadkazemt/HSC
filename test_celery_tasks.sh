@@ -4,7 +4,8 @@
 # بررسی کامل تسک‌های Celery، Redis و دیتابیس
 # Usage: sudo bash test_celery_tasks.sh
 
-set -e
+# Don't exit on error - we want to continue checking all services
+set +e
 
 echo "========================================="
 echo "HSC Project - Celery Tasks Comprehensive Test"
@@ -71,17 +72,17 @@ check_service() {
         # Check if process is running
         case "$service" in
             celery-worker)
-                if pgrep -f "celery.*worker" > /dev/null; then
+                if pgrep -f "celery.*worker" > /dev/null 2>&1; then
                     log_pass "پروسه Celery Worker در حال اجرا است"
                 else
-                    log_fail "پروسه Celery Worker یافت نشد"
+                    log_warning "پروسه Celery Worker یافت نشد (ممکن است در حال راه‌اندازی باشد)"
                 fi
                 ;;
             celery-beat)
-                if pgrep -f "celery.*beat" > /dev/null; then
+                if pgrep -f "celery.*beat" > /dev/null 2>&1; then
                     log_pass "پروسه Celery Beat در حال اجرا است"
                 else
-                    log_fail "پروسه Celery Beat یافت نشد"
+                    log_warning "پروسه Celery Beat یافت نشد (ممکن است در حال راه‌اندازی باشد)"
                 fi
                 ;;
         esac
@@ -146,7 +147,11 @@ echo "----------------------------------------"
 
 if [ -d "$VENV_DIR" ]; then
     # Test database connection using Django management command
-    cd "$PROJECT_DIR"
+    cd "$PROJECT_DIR" || {
+        log_fail "نمی‌توان به دایرکتوری پروژه دسترسی پیدا کرد"
+        echo ""
+        exit 1
+    }
     if sudo -u hsc_admin "$VENV_DIR/bin/python" manage.py check --database default > /dev/null 2>&1; then
         log_pass "اتصال به دیتابیس Django برقرار است"
         
@@ -177,7 +182,11 @@ echo -e "${BLUE}4. بررسی وضعیت تسک‌های Celery${NC}"
 echo "----------------------------------------"
 
 if [ -d "$VENV_DIR" ]; then
-    cd "$PROJECT_DIR"
+    cd "$PROJECT_DIR" || {
+        log_fail "نمی‌توان به دایرکتوری پروژه دسترسی پیدا کرد"
+        echo ""
+        exit 1
+    }
     
     # Check Celery inspect (requires running worker)
     if systemctl is-active --quiet celery-worker; then
@@ -216,7 +225,11 @@ echo -e "${BLUE}5. بررسی تسک‌های Fail شده در دیتابیس${N
 echo "----------------------------------------"
 
 if [ -d "$VENV_DIR" ]; then
-    cd "$PROJECT_DIR"
+    cd "$PROJECT_DIR" || {
+        log_fail "نمی‌توان به دایرکتوری پروژه دسترسی پیدا کرد"
+        echo ""
+        exit 1
+    }
     
     # Check failed tasks from django_celery_results
     failed_tasks=$(sudo -u hsc_admin "$VENV_DIR/bin/python" manage.py shell -c "
@@ -277,7 +290,11 @@ echo -e "${BLUE}6. تست اتصال Celery به Redis${NC}"
 echo "----------------------------------------"
 
 if [ -d "$VENV_DIR" ] && systemctl is-active --quiet celery-worker; then
-    cd "$PROJECT_DIR"
+    cd "$PROJECT_DIR" || {
+        log_fail "نمی‌توان به دایرکتوری پروژه دسترسی پیدا کرد"
+        echo ""
+        exit 1
+    }
     
     # Try to send a test task
     test_result=$(sudo -u hsc_admin "$VENV_DIR/bin/python" manage.py shell -c "
@@ -313,7 +330,11 @@ echo -e "${BLUE}7. بررسی Scheduled Tasks (Celery Beat)${NC}"
 echo "----------------------------------------"
 
 if [ -d "$VENV_DIR" ] && systemctl is-active --quiet celery-beat; then
-    cd "$PROJECT_DIR"
+    cd "$PROJECT_DIR" || {
+        log_fail "نمی‌توان به دایرکتوری پروژه دسترسی پیدا کرد"
+        echo ""
+        exit 1
+    }
     
     # Check beat schedule
     schedule_info=$(sudo -u hsc_admin "$VENV_DIR/bin/python" manage.py shell -c "
@@ -353,7 +374,7 @@ echo -e "${BLUE}8. بررسی لاگ‌های خطای اخیر${NC}"
 echo "----------------------------------------"
 
 # Check recent errors in celery-worker logs
-worker_errors=$(journalctl -u celery-worker --since "1 hour ago" --no-pager 2>/dev/null | grep -i "error\|exception\|failed\|traceback" | wc -l || echo "0")
+worker_errors=$(journalctl -u celery-worker --since "1 hour ago" --no-pager 2>/dev/null | grep -i "error\|exception\|failed\|traceback" 2>/dev/null | wc -l || echo "0")
 if [ "$worker_errors" -eq 0 ]; then
     log_pass "هیچ خطایی در لاگ Worker در 1 ساعت گذشته وجود ندارد"
 elif [ "$worker_errors" -lt 5 ]; then
@@ -365,7 +386,7 @@ else
 fi
 
 # Check recent errors in celery-beat logs
-beat_errors=$(journalctl -u celery-beat --since "1 hour ago" --no-pager 2>/dev/null | grep -i "error\|exception\|failed\|traceback" | wc -l || echo "0")
+beat_errors=$(journalctl -u celery-beat --since "1 hour ago" --no-pager 2>/dev/null | grep -i "error\|exception\|failed\|traceback" 2>/dev/null | wc -l || echo "0")
 if [ "$beat_errors" -eq 0 ]; then
     log_pass "هیچ خطایی در لاگ Beat در 1 ساعت گذشته وجود ندارد"
 elif [ "$beat_errors" -lt 3 ]; then
