@@ -22,9 +22,8 @@ cd "$PROJECT_DIR"
 
 echo "1. بررسی تنظیمات Celery از Django:"
 echo "----------------------------------------"
-sudo -u hsc_admin "$VENV_DIR/bin/python" manage.py shell -c "
+sudo -u hsc_admin env DJANGO_SETTINGS_MODULE=HSCprojects.settings.production "$VENV_DIR/bin/python" manage.py shell -c "
 import os
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'HSCprojects.settings.production')
 import django
 django.setup()
 
