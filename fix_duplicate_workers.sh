@@ -65,13 +65,37 @@ else
 fi
 
 echo ""
-echo "4. بررسی service file:"
+echo "4. بررسی و به‌روزرسانی service file:"
 echo "----------------------------------------"
 if grep -q "hostname" /etc/systemd/system/celery-worker.service 2>/dev/null; then
     echo -e "${GREEN}✓ hostname در service file تنظیم شده است${NC}"
 else
     echo -e "${YELLOW}⚠ hostname در service file تنظیم نشده است${NC}"
-    echo "   باید اضافه کنید: --hostname=worker@%h"
+    
+    # بررسی وجود فایل در documentation
+    if [ -f "$PROJECT_DIR/documentation/celery-worker.service" ]; then
+        echo "   پیدا کردن فایل به‌روز در documentation..."
+        if grep -q "hostname" "$PROJECT_DIR/documentation/celery-worker.service" 2>/dev/null; then
+            echo -e "${BLUE}   فایل به‌روز یافت شد. کپی کردن...${NC}"
+            read -p "   آیا می‌خواهید service file را به‌روزرسانی کنید? (y/n) " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                sudo cp "$PROJECT_DIR/documentation/celery-worker.service" /etc/systemd/system/celery-worker.service
+                echo -e "${GREEN}   ✓ Service file به‌روزرسانی شد${NC}"
+                echo "   Reloading systemd..."
+                sudo systemctl daemon-reload
+                echo -e "${GREEN}   ✓ Systemd reload شد${NC}"
+            fi
+        else
+            echo "   فایل در documentation هم hostname ندارد"
+        fi
+    else
+        echo "   فایل در documentation یافت نشد"
+    fi
+    echo ""
+    echo "   اگر به صورت دستی می‌خواهید اضافه کنید:"
+    echo "   sudo nano /etc/systemd/system/celery-worker.service"
+    echo "   و این خط را اضافه کنید: --hostname=worker@%h"
 fi
 
 echo ""
