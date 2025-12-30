@@ -2177,6 +2177,9 @@ class RubikaBotEngine:
         @sync_to_async(thread_sensitive=True)
         def get_leave_info():
             from leave_reports.models import ShiftReport
+            from datetime import timedelta
+            import jdatetime
+            
             try:
                 leave = ShiftReport.objects.select_related(
                     'user', 'replacement_person', 'final_approver'
@@ -2195,6 +2198,14 @@ class RubikaBotEngine:
                         return None, 'invalid_status'
                 else:
                     return None, 'invalid_type'
+                
+                # بررسی مهلت 3 روزه برای تأیید
+                today = timezone.now().date()
+                max_allowed_date = leave.shift_date + timedelta(days=3)
+                if today > max_allowed_date:
+                    jalali_shift_date = jdatetime.date.fromgregorian(date=leave.shift_date)
+                    jalali_max_date = jdatetime.date.fromgregorian(date=max_allowed_date)
+                    return None, f'expired|{jalali_shift_date.strftime("%Y/%m/%d")}|{jalali_max_date.strftime("%Y/%m/%d")}'
                 
                 return leave, 'ok'
                 
@@ -2216,6 +2227,17 @@ class RubikaBotEngine:
             return
         elif status == 'invalid_status':
             await self._send_text_message(chat_id, '⚠️ این درخواست قابل پردازش نیست (احتمالاً قبلاً پردازش شده است).', keyboard)
+            return
+        elif status.startswith('expired|'):
+            # استخراج اطلاعات تاریخ از status
+            parts = status.split('|')
+            if len(parts) >= 3:
+                shift_date_str = parts[1]
+                max_date_str = parts[2]
+                message = f'⏰ مهلت تأیید این درخواست به پایان رسیده است.\n\n📅 تاریخ مرخصی: {shift_date_str}\n⏳ آخرین مهلت تأیید: {max_date_str}'
+            else:
+                message = '⏰ مهلت تأیید این درخواست به پایان رسیده است.'
+            await self._send_text_message(chat_id, message, keyboard)
             return
         elif status != 'ok':
             await self._send_text_message(chat_id, '❌ خطای نامشخص در بررسی دسترسی.', keyboard)
@@ -2265,6 +2287,8 @@ class RubikaBotEngine:
         @sync_to_async(thread_sensitive=True)
         def approve_leave():
             from django.utils import timezone
+            from datetime import timedelta
+            import jdatetime
             from leave_reports.utils import (
                 send_notification_to_manager, 
                 send_notification_to_requester_approved
@@ -2272,6 +2296,14 @@ class RubikaBotEngine:
             from rubika_bot.models import WebhookLog
             
             try:
+                # بررسی مهلت 3 روزه برای تأیید (بررسی مجدد برای اطمینان)
+                today = timezone.now().date()
+                max_allowed_date = leave_request.shift_date + timedelta(days=3)
+                if today > max_allowed_date:
+                    jalali_shift_date = jdatetime.date.fromgregorian(date=leave_request.shift_date)
+                    jalali_max_date = jdatetime.date.fromgregorian(date=max_allowed_date)
+                    return False, f'⏰ مهلت تأیید این درخواست به پایان رسیده است.\n\n📅 تاریخ مرخصی: {jalali_shift_date.strftime("%Y/%m/%d")}\n⏳ آخرین مهلت تأیید: {jalali_max_date.strftime("%Y/%m/%d")}'
+                
                 requester_name = leave_request.user.get_full_name() or leave_request.user.username
                 leave_type = leave_request.get_leave_type_display()
                 
@@ -2370,6 +2402,8 @@ class RubikaBotEngine:
         def reject_leave():
             from leave_reports.models import ShiftReport
             from django.utils import timezone
+            from datetime import timedelta
+            import jdatetime
             from leave_reports.utils import send_notification_to_requester_rejected
             from rubika_bot.models import WebhookLog
             
@@ -2391,6 +2425,14 @@ class RubikaBotEngine:
                         return False, 'invalid_status'
                 else:
                     return False, 'invalid_type'
+                
+                # بررسی مهلت 3 روزه برای رد (همان محدودیت تأیید)
+                today = timezone.now().date()
+                max_allowed_date = leave_request.shift_date + timedelta(days=3)
+                if today > max_allowed_date:
+                    jalali_shift_date = jdatetime.date.fromgregorian(date=leave_request.shift_date)
+                    jalali_max_date = jdatetime.date.fromgregorian(date=max_allowed_date)
+                    return False, f'expired|{jalali_shift_date.strftime("%Y/%m/%d")}|{jalali_max_date.strftime("%Y/%m/%d")}'
                 
                 requester_name = leave_request.user.get_full_name() or leave_request.user.username
                 leave_type = leave_request.get_leave_type_display()
@@ -2439,6 +2481,16 @@ class RubikaBotEngine:
             await self._send_text_message(chat_id, '⚠️ این درخواست قابل رد نیست (احتمالاً قبلاً پردازش شده است).')
         elif message == 'not_found':
             await self._send_text_message(chat_id, '❌ درخواست مرخصی یافت نشد.')
+        elif message.startswith('expired|'):
+            # استخراج اطلاعات تاریخ از message
+            parts = message.split('|')
+            if len(parts) >= 3:
+                shift_date_str = parts[1]
+                max_date_str = parts[2]
+                error_message = f'⏰ مهلت رد این درخواست به پایان رسیده است.\n\n📅 تاریخ مرخصی: {shift_date_str}\n⏳ آخرین مهلت: {max_date_str}'
+            else:
+                error_message = '⏰ مهلت رد این درخواست به پایان رسیده است.'
+            await self._send_text_message(chat_id, error_message)
         else:
             await self._send_text_message(chat_id, f'❌ {message}')
 

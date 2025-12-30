@@ -368,8 +368,12 @@ class ShiftReport(models.Model):
             ).exclude(pk=self.pk).first()
 
             if existing_report:
+                # تبدیل تاریخ میلادی به شمسی برای نمایش بهتر
+                import jdatetime
+                jalali_date = jdatetime.date.fromgregorian(date=self.shift_date)
+                jalali_date_str = jalali_date.strftime('%Y/%m/%d')
                 raise ValidationError(
-                    f'برای کاربر {self.user.get_full_name()} در تاریخ {self.shift_date} قبلاً گزارش ثبت شده است.')
+                    f'برای کاربر {self.user.get_full_name()} در تاریخ {jalali_date_str} قبلاً گزارش ثبت شده است.')
         
         # اعتبارسنجی برای مرخصی ساعتی
         if self.leave_type == 'hourly' and (not self.start_time or not self.end_time):

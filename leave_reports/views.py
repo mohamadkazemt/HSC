@@ -14,6 +14,8 @@ from django.utils import timezone
 from django.urls import reverse
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.core.exceptions import ValidationError
+from datetime import timedelta
 
 from .models import ShiftReport, ApprovalHierarchy
 from .forms import LeaveRequestForm, RejectLeaveForm, ApprovalHierarchyForm, LeaveSearchForm
@@ -88,6 +90,57 @@ def request_leave(request):
                     
                     return redirect('leave_reports:my_inbox')
                     
+            except ValidationError as e:
+                # تبدیل خطای ValidationError به پیام قابل فهم
+                error_message = str(e)
+                
+                # اگر خطا به صورت dictionary است (از clean مدل)
+                if hasattr(e, 'message_dict') and e.message_dict:
+                    # اگر خطا در __all__ است
+                    if '__all__' in e.message_dict:
+                        error_messages = e.message_dict['__all__']
+                        if isinstance(error_messages, list):
+                            error_message = error_messages[0] if error_messages else 'خطا در ثبت درخواست'
+                        else:
+                            error_message = str(error_messages)
+                    else:
+                        # اگر خطا در فیلد خاصی است
+                        all_messages = []
+                        for field, msgs in e.message_dict.items():
+                            if isinstance(msgs, list):
+                                all_messages.extend([str(msg) for msg in msgs])
+                            else:
+                                all_messages.append(str(msgs))
+                        error_message = ' '.join(all_messages) if all_messages else 'خطا در ثبت درخواست'
+                
+                # اگر خطا به صورت list است
+                elif hasattr(e, 'messages') and e.messages:
+                    if isinstance(e.messages, list):
+                        error_message = e.messages[0] if e.messages else 'خطا در ثبت درخواست'
+                    else:
+                        error_message = str(e.messages)
+                
+                # تبدیل تاریخ میلادی به شمسی در پیام خطا (اگر هنوز میلادی است)
+                import re
+                date_pattern = r'(\d{4}-\d{2}-\d{2})'
+                def replace_date(match):
+                    gregorian_date_str = match.group(1)
+                    try:
+                        year, month, day = map(int, gregorian_date_str.split('-'))
+                        gregorian_date = datetime.date(year, month, day)
+                        jalali_date = jdatetime.date.fromgregorian(date=gregorian_date)
+                        return jalali_date.strftime('%Y/%m/%d')
+                    except:
+                        return gregorian_date_str
+                
+                error_message = re.sub(date_pattern, replace_date, error_message)
+                
+                messages.error(request, error_message)
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': error_message
+                    }, status=400)
             except Exception as e:
                 messages.error(request, f'خطا در ثبت درخواست: {str(e)}')
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -263,6 +316,18 @@ def approve_as_replacement(request, leave_id):
             'message': 'این درخواست قابل تأیید نیست'
         }, status=400)
     
+    # بررسی اینکه آیا هنوز 3 روز از تاریخ مرخصی گذشته یا نه
+    today = timezone.now().date()
+    max_allowed_date = leave_request.shift_date + timedelta(days=3)
+    if today > max_allowed_date:
+        logger.warning(f"❌ Too late to approve - shift_date: {leave_request.shift_date}, today: {today}, max_allowed: {max_allowed_date}")
+        jalali_shift_date = jdatetime.date.fromgregorian(date=leave_request.shift_date)
+        jalali_max_date = jdatetime.date.fromgregorian(date=max_allowed_date)
+        return JsonResponse({
+            'status': 'error',
+            'message': f'مهلت تأیید این درخواست به پایان رسیده است. تاریخ مرخصی: {jalali_shift_date.strftime("%Y/%m/%d")}، آخرین مهلت تأیید: {jalali_max_date.strftime("%Y/%m/%d")}'
+        }, status=400)
+    
     try:
         logger.info(f"✅ Proceeding with approval...")
         with transaction.atomic():
@@ -400,6 +465,18 @@ def approve_as_manager(request, leave_id):
         return JsonResponse({
             'status': 'error',
             'message': 'این درخواست قابل تأیید نیست'
+        }, status=400)
+    
+    # بررسی اینکه آیا هنوز 3 روز از تاریخ مرخصی گذشته یا نه
+    today = timezone.now().date()
+    max_allowed_date = leave_request.shift_date + timedelta(days=3)
+    if today > max_allowed_date:
+        logger.warning(f"❌ Too late to approve - shift_date: {leave_request.shift_date}, today: {today}, max_allowed: {max_allowed_date}")
+        jalali_shift_date = jdatetime.date.fromgregorian(date=leave_request.shift_date)
+        jalali_max_date = jdatetime.date.fromgregorian(date=max_allowed_date)
+        return JsonResponse({
+            'status': 'error',
+            'message': f'مهلت تأیید این درخواست به پایان رسیده است. تاریخ مرخصی: {jalali_shift_date.strftime("%Y/%m/%d")}، آخرین مهلت تأیید: {jalali_max_date.strftime("%Y/%m/%d")}'
         }, status=400)
     
     try:

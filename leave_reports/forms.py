@@ -2,6 +2,8 @@ from django import forms
 from .models import ShiftReport, ApprovalHierarchy
 from accounts.models import UserProfile, Section, Part, UnitGroup, Position
 from django.contrib.auth.models import User
+from django.utils import timezone
+from datetime import timedelta
 import jdatetime
 
 
@@ -104,7 +106,20 @@ class LeaveRequestForm(forms.ModelForm):
                         raise ValueError("فرمت تاریخ نامعتبر است")
                     
                     jalali_date = jdatetime.date(year, month, day)
-                    return jalali_date.togregorian()
+                    gregorian_date = jalali_date.togregorian()
+                    
+                    # بررسی اینکه تاریخ مرخصی نباید بیشتر از 3 روز بعد از امروز باشد
+                    today = timezone.now().date()
+                    max_allowed_date = today + timedelta(days=3)
+                    
+                    if gregorian_date > max_allowed_date:
+                        jalali_max_date = jdatetime.date.fromgregorian(date=max_allowed_date)
+                        raise forms.ValidationError(
+                            f'شما می‌توانید فقط تا 3 روز بعد از تاریخ مرخصی، درخواست ثبت کنید. '
+                            f'حداکثر تاریخ مجاز: {jalali_max_date.strftime("%Y/%m/%d")}'
+                        )
+                    
+                    return gregorian_date
             except (ValueError, TypeError) as e:
                 raise forms.ValidationError(f'تاریخ نامعتبر است: {str(e)}')
         return shift_date
