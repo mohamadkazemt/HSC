@@ -230,7 +230,7 @@ class RubikaBotEngine:
     async def _handle_button(self, chat_id: str, button_id: str, user: RubikaUser) -> None:
         mapping = {
             'start': self._send_welcome, 'help': self._send_help, 'connect': self._handle_connect_button,
-            'disconnect': self._disconnect_user, 'account': self._send_account_status,
+            'account': self._send_account_status,
             'payslip': self._handle_payslip_request,
             'leave_request': self._start_leave_request,
             'leave_inbox': self._show_leave_inbox,
@@ -274,7 +274,6 @@ class RubikaBotEngine:
 
         if command in {'help', 'راهنما'}: await self._send_help(chat_id, user)
         elif command in {'account', 'status'}: await self._send_account_status(chat_id, user)
-        elif command == 'disconnect': await self._disconnect_user(chat_id, user)
         elif command == 'connect': await self._process_connection_code(chat_id, user, args)
         elif command == 'start':
             await self._process_connection_code(chat_id, user, args) if args else await self._send_welcome(chat_id, user)
@@ -440,7 +439,6 @@ class RubikaBotEngine:
             '🔹 `/start` - بازگشت به منوی اصلی\n'
             '🔹 `/connect [کد]` - اتصال با کد\n'
             '🔹 `/account` - مشاهده وضعیت حساب\n'
-            '🔹 `/disconnect` - قطع اتصال\n'
             '🔹 `/help` - نمایش راهنما\n\n'
             '💡 می‌توانید از دکمه‌های زیر نیز استفاده کنید:'
         )
@@ -667,8 +665,9 @@ class RubikaBotEngine:
         # Parse button_id to extract year and month (format: payslip_YYYY_MM)
         try:
             parts = button_id.split('_')
-            year = int(parts[1])
-            month = int(parts[2])
+            # تبدیل اعداد فارسی و عربی به انگلیسی
+            year = int(normalize_digits(parts[1]))
+            month = int(normalize_digits(parts[2]))
         except (IndexError, ValueError):
             message = '❌ خطا در شناسایی فیش حقوقی.'
             await self._send_text_message(chat_id, message)
@@ -778,7 +777,8 @@ class RubikaBotEngine:
         if not args:
             await self._handle_connect_button(chat_id, user)
             return
-        code_value = args[0]
+        # تبدیل اعداد فارسی و عربی به انگلیسی در کد اتصال
+        code_value = normalize_digits(args[0])
         
         @sync_to_async(thread_sensitive=True)
         def get_code():
@@ -2170,7 +2170,8 @@ class RubikaBotEngine:
         action = parts[0]  # approve or reject
         # parts[1] is 'leave'
         approval_type = parts[2]  # replacement or manager
-        leave_id = parts[3]  # درخواست ID
+        # تبدیل اعداد فارسی و عربی به انگلیسی در leave_id
+        leave_id = normalize_digits(parts[3])  # درخواست ID
         
         # دریافت اطلاعات درخواست مرخصی
         @sync_to_async(thread_sensitive=True)
@@ -2452,16 +2453,12 @@ class RubikaBotEngine:
             # کیبورد برای کاربران متصل
             second_row = [('payslip', '💰 فیش حقوقی'), ('leave_request', '🏖️ درخواست مرخصی')]
             third_row = [('leave_inbox', '📋 کارتابل مرخصی'), ('help', '❓ راهنما')]
-            fourth_row = [('disconnect', '🔓 قطع اتصال')]
         else:
             # کیبورد برای کاربران غیر متصل
             second_row = [('connect', '🔗 اتصال با کد'), ('sms_connect', '📱 اتصال با پیامک')]
             third_row = [('help', '❓ راهنما')]
-            fourth_row = []
         
         rows = [first_row, second_row, third_row]
-        if fourth_row:
-            rows.append(fourth_row)
         keypad_rows = [KeypadRow(buttons=[self._button(button_id, label) for button_id, label in row]) for row in rows]
         return Keypad(rows=keypad_rows)
 
@@ -2622,34 +2619,61 @@ class RubikaBotEngine:
                 
                 # جستجوی کاربر: اول با کد پرسنلی، سپس بررسی کد ملی
                 # (برخی سیستم‌ها کد ملی را در national_code، برخی در username ذخیره می‌کنند)
+                # توجه: کد ملی و کد پرسنلی در دیتابیس ممکن است به صورت فارسی یا انگلیسی ذخیره شده باشند
+                from django.db.models import Q
                 
-                # جستجو با national_code
+                # جستجو با national_code و personnel_code (normalize شده)
+                # باید با هر دو فرمت (فارسی و انگلیسی) جستجو کنیم
                 profile = UserProfile.objects.filter(
-                    national_code=national_code,
-                    personnel_code=personnel_code
+                    Q(national_code=national_code) | Q(national_code=normalize_digits(national_code)),
+                    Q(personnel_code=personnel_code) | Q(personnel_code=normalize_digits(personnel_code))
                 ).select_related('user').first()
                 
                 # اگر با national_code پیدا نشد، با username (که ممکن است کد ملی باشد) جستجو کن
                 if not profile:
                     logger.info(f"🔄 جستجو با username به عنوان کد ملی...")
                     profile = UserProfile.objects.filter(
-                        user__username=national_code,
-                        personnel_code=personnel_code
+                        Q(user__username=national_code) | Q(user__username=normalize_digits(national_code)),
+                        Q(personnel_code=personnel_code) | Q(personnel_code=normalize_digits(personnel_code))
                     ).select_related('user').first()
                 
                 if not profile:
                     # Debug: جستجوی جداگانه برای یافتن مشکل
-                    by_personnel = UserProfile.objects.filter(personnel_code=personnel_code).select_related('user').first()
+                    # جستجو فقط با کد پرسنلی (normalize شده)
+                    by_personnel_normalized = UserProfile.objects.filter(
+                        Q(personnel_code=personnel_code) | Q(personnel_code=normalize_digits(personnel_code))
+                    ).select_related('user').first()
                     
-                    if by_personnel:
+                    if by_personnel_normalized:
                         logger.warning(
-                            f"⚠️ کاربر با کد پرسنلی {personnel_code} یافت شد:\n"
-                            f"   - Username: {by_personnel.user.username}\n"
-                            f"   - National code field: {by_personnel.national_code}\n"
-                            f"   - Input national code: {national_code}"
+                            f"⚠️ کاربر با کد پرسنلی {personnel_code} (normalize شده) یافت شد:\n"
+                            f"   - Username: {by_personnel_normalized.user.username}\n"
+                            f"   - National code field: {by_personnel_normalized.national_code}\n"
+                            f"   - Personnel code in DB: {by_personnel_normalized.personnel_code}\n"
+                            f"   - Input national code: {national_code}\n"
+                            f"   - Input personnel code: {personnel_code}"
                         )
                     
-                    logger.error(f"❌ کاربری با کد ملی {national_code} و کد پرسنلی {personnel_code} یافت نشد")
+                    # جستجو فقط با کد ملی (normalize شده)
+                    by_national = UserProfile.objects.filter(
+                        Q(national_code=national_code) | Q(national_code=normalize_digits(national_code)) |
+                        Q(user__username=national_code) | Q(user__username=normalize_digits(national_code))
+                    ).select_related('user').first()
+                    
+                    if by_national:
+                        logger.warning(
+                            f"⚠️ کاربر با کد ملی {national_code} یافت شد:\n"
+                            f"   - Username: {by_national.user.username}\n"
+                            f"   - National code field: {by_national.national_code}\n"
+                            f"   - Personnel code in DB: {by_national.personnel_code}\n"
+                            f"   - Input personnel code: {personnel_code}"
+                        )
+                    
+                    logger.error(
+                        f"❌ کاربری با کد ملی {national_code} و کد پرسنلی {personnel_code} یافت نشد.\n"
+                        f"   - کد ملی normalize شده: {normalize_digits(national_code) if national_code else 'None'}\n"
+                        f"   - کد پرسنلی normalize شده: {personnel_code}"
+                    )
                     return None, 'کاربری با این کد ملی و کد پرسنلی یافت نشد.'
                 
                 logger.info(f"✅ کاربر یافت شد: {profile.user.username}, موبایل: {profile.mobile}")
@@ -2658,37 +2682,67 @@ class RubikaBotEngine:
                     logger.error(f"❌ شماره موبایل برای کاربر {profile.user.username} خالی است")
                     return None, 'شماره موبایل برای این کاربر ثبت نشده است.'
                 
+                # Normalize mobile number (تبدیل اعداد فارسی به انگلیسی)
+                mobile_normalized = normalize_digits(profile.mobile.strip())
+                
+                # Ensure mobile starts with 0 if it doesn't
+                if mobile_normalized and not mobile_normalized.startswith('0'):
+                    if mobile_normalized.startswith('98'):
+                        mobile_normalized = '0' + mobile_normalized[2:]
+                    elif mobile_normalized.startswith('+98'):
+                        mobile_normalized = '0' + mobile_normalized[3:]
+                    elif len(mobile_normalized) == 10:
+                        mobile_normalized = '0' + mobile_normalized
+                
+                logger.info(f"📱 شماره موبایل normalize شده: {mobile_normalized} (اصلی: {profile.mobile})")
+                
                 # Generate connection code
                 RubikaConnectionCode.objects.filter(user=profile.user, used=False).delete()
                 code = RubikaConnectionCode.generate_for_user(profile.user)
                 logger.info(f"🔑 کد اتصال تولید شد: {code.code}")
                 
                 # Send SMS
-                logger.info(f"📤 شروع ارسال SMS به {profile.mobile}")
+                logger.info(f"📤 شروع ارسال SMS به {mobile_normalized}")
                 
                 WebhookLog.log_info(
                     'ارسال کد اتصال SMS',
-                    f'ارسال کد به شماره {profile.mobile} برای کاربر {profile.user.username}',
-                    {'mobile': profile.mobile, 'username': profile.user.username, 'code': code.code[:10] + '...'}
+                    f'ارسال کد به شماره {mobile_normalized} برای کاربر {profile.user.username}',
+                    {'mobile': mobile_normalized, 'mobile_original': profile.mobile, 'username': profile.user.username, 'code': code.code[:10] + '...'}
                 )
                 
-                sms_sent = send_connection_code_sms(profile.mobile, code.code)
+                sms_sent = send_connection_code_sms(mobile_normalized, code.code)
                 
                 if sms_sent:
-                    logger.info(f"✅ SMS با موفقیت ارسال شد به {profile.mobile}")
+                    logger.info(f"✅ SMS با موفقیت ارسال شد به {mobile_normalized}")
                     WebhookLog.log_outgoing(
                         'SMS ارسال شد',
-                        f'کد اتصال با موفقیت به {profile.mobile} ارسال شد',
-                        {'mobile': profile.mobile, 'username': profile.user.username}
+                        f'کد اتصال با موفقیت به {mobile_normalized} ارسال شد',
+                        {'mobile': mobile_normalized, 'username': profile.user.username}
                     )
                     return code.code, None
                 else:
-                    logger.error(f"❌ خطا در ارسال SMS به {profile.mobile}")
-                    WebhookLog.log_error(
-                        'خطا در ارسال SMS',
-                        f'ارسال کد اتصال به {profile.mobile} ناموفق بود',
-                        {'mobile': profile.mobile, 'username': profile.user.username}
-                    )
+                    logger.error(f"❌ خطا در ارسال SMS به {mobile_normalized} (شماره اصلی: {profile.mobile})")
+                    # بررسی لاگ‌های SMS برای یافتن دلیل خطا
+                    try:
+                        from dashboard.models_sms import SMSLog
+                        last_sms = SMSLog.objects.filter(mobile_number=mobile_normalized).order_by('-created_at').first()
+                        if last_sms:
+                            error_detail = f"وضعیت: {last_sms.status}, خطا: {last_sms.error_message or 'نامشخص'}"
+                            logger.error(f"📋 جزئیات آخرین SMS: {error_detail}")
+                            WebhookLog.log_error(
+                                'خطا در ارسال SMS',
+                                f'ارسال کد اتصال به {mobile_normalized} ناموفق بود - {error_detail}',
+                                {'mobile': mobile_normalized, 'username': profile.user.username, 'sms_log_id': last_sms.id}
+                            )
+                        else:
+                            WebhookLog.log_error(
+                                'خطا در ارسال SMS',
+                                f'ارسال کد اتصال به {mobile_normalized} ناموفق بود',
+                                {'mobile': mobile_normalized, 'username': profile.user.username}
+                            )
+                    except Exception as log_err:
+                        logger.warning(f"⚠️ خطا در بررسی لاگ SMS: {log_err}")
+                    
                     return None, 'خطا در ارسال پیامک. لطفاً دوباره تلاش کنید.'
                 
             except Exception as e:
