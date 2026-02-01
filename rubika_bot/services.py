@@ -2902,6 +2902,13 @@ class RubPyIntegrationService:
         if not proxy_url and hasattr(settings, 'RUBIKA_BOT'):
             proxy_url = settings.RUBIKA_BOT.get('PROXY_URL', '')
         self._proxy_url = proxy_url
+        
+        # Log proxy settings (masked)
+        if proxy_url:
+            masked_url = settings_obj.get_masked_proxy_url() if hasattr(settings_obj, 'get_masked_proxy_url') else 'configured'
+            logger.info(f"Proxy enabled: {masked_url}")
+        else:
+            logger.info("No proxy configured")
 
         # Check if we're in an async context (e.g., Celery worker might have a loop)
         # We always create a new loop in a separate thread to avoid conflicts
@@ -2958,14 +2965,19 @@ class RubPyIntegrationService:
                     try:
                         # This is now safe because we're in an async context
                         connector = ProxyConnector.from_url(self._proxy_url)
-                        logger.info("Using SOCKS proxy for Rubika client at %s", self._proxy_url)
+                        # Get settings for masked logging
+                        settings_obj = RubikaBotSettings.get_solo()
+                        masked_url = settings_obj.get_masked_proxy_url()
+                        logger.info(f"Proxy connector created successfully: {masked_url}")
+                        print(f"[RUBIKA_BOT] Proxy connector created: {masked_url}", flush=True)
                     except Exception as exc:
-                        logger.error("Failed to create proxy connector from %s: %s", self._proxy_url, exc, exc_info=True)
+                        logger.error("Failed to create proxy connector: %s", exc, exc_info=True)
+                        print(f"[RUBIKA_BOT] ERROR: Failed to create proxy connector: {exc}", flush=True)
             
             # Create BotClient
             self.client = BotClient(
                 token=self._token,
-                use_webhook=True,
+                use_webhook=True,  # استفاده از webhook mode برای سرعت بالاتر
                 timeout=BOT_REQUEST_TIMEOUT,
                 connector=connector,
             )

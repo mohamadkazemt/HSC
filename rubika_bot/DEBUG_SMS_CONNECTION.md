@@ -207,3 +207,8 @@ python manage.py debug_sms_connection --last 50
 python manage.py debug_sms_connection --last 20 --hours 12
 ```
 
+
+
+
+
+

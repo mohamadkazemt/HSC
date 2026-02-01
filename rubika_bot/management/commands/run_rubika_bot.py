@@ -30,6 +30,12 @@ class Command(BaseCommand):
         # Get the service instance
         service = RubPyIntegrationService.get_instance()
         
+        # Initialize the client (this will start the bot and register handlers)
+        self.stdout.write(self.style.SUCCESS('🔄 Initializing bot client...'))
+        logger.info("Initializing bot client")
+        service._ensure_client_initialized()
+        self.stdout.write(self.style.SUCCESS('✅ Bot client initialized successfully'))
+        
         # Setup signal handlers for graceful shutdown
         def signal_handler(signum, frame):
             self.stdout.write(self.style.WARNING(f'\n⚠️  Received signal {signum}, shutting down...'))
@@ -40,11 +46,12 @@ class Command(BaseCommand):
         signal.signal(signal.SIGTERM, signal_handler)
         
         try:
-            self.stdout.write(self.style.SUCCESS('✅ Rubika Bot is running!'))
+            self.stdout.write(self.style.SUCCESS('✅ Rubika Bot is running in webhook mode!'))
+            self.stdout.write(self.style.SUCCESS('   Waiting for webhook requests...'))
             self.stdout.write(self.style.SUCCESS('   Press Ctrl+C to stop'))
-            logger.info("Rubika Bot service started successfully")
+            logger.info("Rubika Bot service started successfully in webhook mode")
             
-            # Keep the service running
+            # Keep the service running - the bot is polling in background via event loop
             while True:
                 time.sleep(1)
                 
