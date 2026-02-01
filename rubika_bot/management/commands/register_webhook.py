@@ -61,29 +61,39 @@ class Command(BaseCommand):
     
     async def register_webhook(self, token: str, webhook_url: str):
         """Register webhook using RubPy client"""
-        client = BotClient(token=token, use_webhook=True)
+        import aiohttp
         
-        try:
-            await client.start()
-            self.stdout.write('📡 Bot client connected...')
+        # Create client with proper timeout configuration
+        timeout = aiohttp.ClientTimeout(total=30)
+        connector = aiohttp.TCPConnector(limit=10)
+        
+        async with aiohttp.ClientSession(timeout=timeout, connector=connector) as session:
+            client = BotClient(token=token, use_webhook=True)
+            # Inject session if client supports it
+            if hasattr(client, '_session'):
+                client._session = session
             
-            # Register for all update types
-            results = {}
-            for update_type in ["ReceiveUpdate", "ReceiveInlineMessage", "ReceiveQuery"]:
-                try:
-                    self.stdout.write(f'  Registering {update_type}...')
-                    response = await client.update_bot_endpoints(webhook_url, update_type)
-                    results[update_type] = response
-                    self.stdout.write(self.style.SUCCESS(f'    ✅ {update_type}: OK'))
-                except Exception as e:
-                    results[update_type] = {'error': str(e)}
-                    self.stdout.write(self.style.WARNING(f'    ⚠️  {update_type}: {e}'))
-            
-            return results
-            
-        finally:
             try:
-                await client.stop()
-            except:
-                pass
+                await client.start()
+                self.stdout.write('📡 Bot client connected...')
+                
+                # Register for all update types
+                results = {}
+                for update_type in ["ReceiveUpdate", "ReceiveInlineMessage", "ReceiveQuery"]:
+                    try:
+                        self.stdout.write(f'  Registering {update_type}...')
+                        response = await client.update_bot_endpoints(webhook_url, update_type)
+                        results[update_type] = response
+                        self.stdout.write(self.style.SUCCESS(f'    ✅ {update_type}: OK'))
+                    except Exception as e:
+                        results[update_type] = {'error': str(e)}
+                        self.stdout.write(self.style.WARNING(f'    ⚠️  {update_type}: {e}'))
+                
+                return results
+                
+            finally:
+                try:
+                    await client.stop()
+                except:
+                    pass
 
