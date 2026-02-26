@@ -1,0 +1,41 @@
+﻿{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}ثبت فعالیت ماشین{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-6 sm:px-6">
+  <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm p-4 sm:p-6">
+    <div class="mb-4">
+      <h1 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">ثبت فعالیت ماشین</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">برای هر ماشین یک رکورد ثبت کنید. بعد از ذخیره فرم برای رکورد بعدی آماده می ماند.</p>
+    </div>
+
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div class="sm:col-span-2">{{ form.machine|as_crispy_field }}</div>
+        <div>{{ form.date|as_crispy_field }}</div>
+        <div>{{ form.shift|as_crispy_field }}</div>
+        <div class="sm:col-span-2">{{ form.operator_name|as_crispy_field }}</div>
+        <div>{{ form.start_hour|as_crispy_field }}</div>
+        <div>{{ form.end_hour|as_crispy_field }}</div>
+        <div>{{ form.ready_hours|as_crispy_field }}</div>
+        <div>{{ form.work_hours|as_crispy_field }}</div>
+        <div>{{ form.stop_hours|as_crispy_field }}</div>
+        <div>{{ form.stop_reason|as_crispy_field }}</div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-3 pt-2">
+        <button type="submit" class="w-full sm:w-auto rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-6 py-3 text-base">
+          ثبت و آماده سازی فرم بعدی
+        </button>
+        <a href="{% url 'mining_operations:machine_activity_export_excel' %}?date={{ form.date.value|default:'' }}&shift={{ form.shift.value|default:'' }}"
+           class="w-full sm:w-auto text-center rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-semibold px-6 py-3 text-base">
+          خروجی اکسل
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

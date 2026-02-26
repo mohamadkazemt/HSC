@@ -2,6 +2,8 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+import weakref
+from types import ModuleType
 
 
 def main():
@@ -21,16 +23,25 @@ def main():
             یک نسخه امن از تابع جنگو که قبل از اجرا، لیست فایل‌های خطا
             (_error_files) را از هر آبجکت غیرقابل هشی پاکسازی می‌کند.
             """
-            # بررسی می‌کنیم که آیا لیستی به نام _error_files وجود دارد
-            if hasattr(autoreload, '_error_files'):
-                # یک لیست جدید فقط با آیتم‌های امن (رشته‌ها و بایت‌ها) می‌سازیم
-                autoreload._error_files = [
-                    item for item in autoreload._error_files
-                    if isinstance(item, (str, bytes))
-                ]
+            # نسخه بازنویسی‌شده iter_all_python_module_files:
+            # 1) ماژول‌ها را مثل خود جنگو جمع می‌کند
+            # 2) _error_files را قبل از frozenset از آیتم‌های غیرقابل hash پاک می‌کند
+            keys = sorted(sys.modules)
+            modules = tuple(
+                m
+                for m in map(sys.modules.__getitem__, keys)
+                if not isinstance(m, weakref.ProxyTypes) and isinstance(m, ModuleType)
+            )
 
-            # حالا تابع اصلی و امن‌شده جنگو را فراخوانی می‌کنیم
-            return original_iter()
+            safe_error_files = []
+            for item in getattr(autoreload, '_error_files', []):
+                try:
+                    hash(item)
+                except TypeError:
+                    continue
+                safe_error_files.append(item)
+
+            return autoreload.iter_modules_and_files(modules, frozenset(safe_error_files))
 
         # تابع امن خود را جایگزین تابع اصلی جنگو می‌کنیم
         autoreload.iter_all_python_module_files = safe_iter_all_python_module_files

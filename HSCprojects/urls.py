@@ -1,4 +1,4 @@
-"""
+﻿"""
 URL configuration for HSCprojects project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
@@ -55,12 +55,13 @@ urlpatterns = [
     path('fire_extinguisher_management/', include('fire_extinguisher_management.urls', namespace='fire_extinguisher_management')),
     path('baseinfo/', include('BaseInfo.urls', namespace='baseinfo')),
     path('core/', include('core.urls', namespace='core')),
-    # Rubika bot URLs (both dash and underscore versions for webhook compatibility)
+    # Rubika bot URLs (dash version for web panel, underscore version for webhook API)
     path('rubika-bot/', include(('rubika_bot.urls', 'rubika_bot'), namespace='rubika_bot')),
-    path('rubika_bot/', include('rubika_bot.urls')),  # Alias with underscore for Rubika API
+    path('rubika_bot/', include('rubika_bot.urls')),  # Alias without namespace for Rubika webhook API
     path('risk/', include(('risk_assessment.urls', 'risk_assessment'), namespace='risk_assessment')),
     path('hse-docs/', include(('hse_docs.urls', 'hse_docs'), namespace='hse_docs')),
     path('corrective-actions/', include(('corrective_actions.urls', 'corrective_actions'), namespace='corrective_actions')),
+    path('mining-operations/', include(('mining_operations.urls', 'mining_operations'), namespace='mining_operations')),
 ]
 
 # اضافه کردن مسیرهای media و static در حالت debug
@@ -73,3 +74,4 @@ if getattr(settings, 'DEBUG', False):
 urlpatterns += [
     path('favicon.ico', RedirectView.as_view(url=static_url('assets/media/logos/favicon.ico'), permanent=True)),
 ]
+

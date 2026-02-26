@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}لیست گزارش حمل و بارگیری{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6 sm:px-6">
+  <div class="rounded-3xl border border-gray-200/70 dark:border-gray-700 bg-white/90 dark:bg-gray-900 shadow-lg shadow-gray-200/50 dark:shadow-black/30 backdrop-blur p-4 sm:p-6">
+    <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <div class="inline-flex items-center gap-2 text-xs font-semibold text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-300 rounded-full px-3 py-1">
+          گزارش عملکرد
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-gray-100 mt-2">لیست گزارش حمل و بارگیری</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">خروجی هر شیفت از مسیر «خروجی اکسل» دریافت می‌شود.</p>
+      </div>
+      <div class="flex gap-2">
+        <a href="{% url 'mining_operations:loading_hauling_export_excel' %}?date={{ filter_date }}&shift={{ filter_shift }}"
+           class="inline-flex items-center justify-center rounded-xl border border-gray-300/80 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-semibold px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
+          <i class="fa-solid fa-file-excel ml-2 text-emerald-500"></i>
+          خروجی اکسل
+        </a>
+      </div>
+    </div>
+
+    <form method="get" class="grid grid-cols-1 gap-4 sm:grid-cols-4 mb-6">
+      <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/70 px-4 py-3">
+        <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">تاریخ (جلالی)</label>
+        <input type="text" name="date" value="{{ filter_date }}" placeholder="YYYY/MM/DD"
+               class="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40">
+      </div>
+      <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/70 px-4 py-3">
+        <label class="block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2">شیفت</label>
+        <select name="shift"
+                class="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40">
+          <option value="">همه</option>
+          <option value="A" {% if filter_shift == 'A' %}selected{% endif %}>A</option>
+          <option value="B" {% if filter_shift == 'B' %}selected{% endif %}>B</option>
+          <option value="C" {% if filter_shift == 'C' %}selected{% endif %}>C</option>
+          <option value="D" {% if filter_shift == 'D' %}selected{% endif %}>D</option>
+        </select>
+      </div>
+      <div class="sm:col-span-2 flex flex-col sm:flex-row gap-2 items-end">
+        <button type="submit"
+                class="w-full sm:w-auto rounded-xl bg-gray-900 hover:bg-gray-800 text-white font-semibold px-5 py-2.5 text-sm shadow-sm">
+          اعمال فیلتر
+        </button>
+        <a href="{% url 'mining_operations:loading_hauling_export_excel' %}?date={{ filter_date }}&shift={{ filter_shift }}"
+           class="w-full sm:w-auto text-center rounded-xl border border-gray-300/80 dark:border-gray-600 text-gray-700 dark:text-gray-200 font-semibold px-5 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800">
+          خروجی اکسل
+        </a>
+      </div>
+    </form>
+
+    <div class="overflow-x-auto rounded-2xl border border-gray-200 dark:border-gray-700">
+      <table class="min-w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-gray-800/60">
+          <tr class="text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
+            <th class="text-right py-3 px-4 font-semibold">تاریخ</th>
+            <th class="text-right py-3 px-4 font-semibold">شیفت</th>
+            <th class="text-right py-3 px-4 font-semibold">تعداد شیفت</th>
+            <th class="text-right py-3 px-4 font-semibold">تعداد سرویس</th>
+            <th class="text-right py-3 px-4 font-semibold">جزئیات</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+          {% for r in reports %}
+            <tr class="hover:bg-gray-50/70 dark:hover:bg-gray-800/40 transition">
+              <td class="py-3 px-4">{{ r.date|to_jalali:'%Y/%m/%d' }}</td>
+              <td class="py-3 px-4"><span class="inline-flex items-center rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 px-2.5 py-1 text-xs font-semibold">{{ r.shift }}</span></td>
+              <td class="py-3 px-4">{{ r.total_sessions }}</td>
+              <td class="py-3 px-4">{{ r.total_loads }}</td>
+              <td class="py-3 px-4">
+                <a href="{% url 'mining_operations:loading_hauling_detail' %}?date={{ r.date|to_jalali:'%Y/%m/%d' }}&shift={{ r.shift }}"
+                   class="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-500 font-semibold">
+                  نمایش جزئیات
+                  <i class="fa-solid fa-arrow-left-long text-xs"></i>
+                </a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="5" class="py-8 text-center text-gray-500">رکوردی یافت نشد.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

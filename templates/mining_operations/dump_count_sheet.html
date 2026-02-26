@@ -1,0 +1,307 @@
+﻿{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}فرم شمارش دامپ کنترچی{% endblock %}
+
+{% block content %}
+<style>
+  .select2-container { width: 100% !important; }
+  .select2-container--default .select2-selection--single {
+    height: 52px;
+    border-radius: 0.75rem;
+    border: 1px solid #d1d5db;
+    background: #fff;
+  }
+  .select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 50px;
+    padding-right: 1rem;
+    padding-left: 1rem;
+    color: #111827;
+    font-size: 1rem;
+  }
+  .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 50px;
+  }
+  .select2-search--dropdown .select2-search__field {
+    border-radius: 0.75rem;
+    border: 1px solid #d1d5db;
+  }
+  .dark .select2-container--default .select2-selection--single {
+    border-color: #4b5563;
+    background: #111827;
+  }
+  .dark .select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #f9fafb;
+  }
+  .dark .select2-search--dropdown .select2-search__field {
+    background: #111827;
+    border-color: #4b5563;
+    color: #f9fafb;
+  }
+</style>
+<div class="max-w-6xl mx-auto px-4 py-6 sm:px-6">
+  {% if messages %}
+    <div class="space-y-2 mb-4">
+      {% for message in messages %}
+        <div class="px-4 py-3 rounded-lg border text-sm {{ message.tags|default:'' }}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="mb-6">
+    <div class="inline-flex items-center gap-2 text-xs font-semibold text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-300 rounded-full px-3 py-1">
+      فرم عملیاتی
+    </div>
+    <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-gray-100 mt-2">فرم شمارش دامپ کنترچی</h1>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">ثبت و مدیریت شیفت‌های شمارش و سرویس‌های ثبت‌شده.</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+    <div class="lg:col-span-1 space-y-5">
+      <div class="rounded-3xl border border-gray-200/70 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg shadow-gray-200/40 dark:shadow-black/20 p-4">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">شروع شیفت شمارش</h2>
+          <button type="button"
+                  class="sm:hidden inline-flex items-center gap-2 rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  onclick="document.getElementById('session-form-card').classList.toggle('hidden')">
+            نمایش/پنهان
+          </button>
+        </div>
+        <form id="session-form-card" method="post" class="space-y-3 hidden sm:block mt-3">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create_session">
+          {% if session_form.non_field_errors %}
+            <div class="rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm p-3">
+              {{ session_form.non_field_errors }}
+            </div>
+          {% endif %}
+          {% if session_form.errors %}
+            <div class="rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm p-3">
+              {{ session_form.errors }}
+            </div>
+          {% endif %}
+          <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-sm text-gray-700 dark:text-gray-200 flex flex-wrap gap-3">
+            <span>تاریخ: {{ session_form.date.value|default:'-' }}</span>
+            <span>ساعت شروع: {{ session_form.start_time.value|default:'-' }}</span>
+            <span>شیفت: {{ session_form.shift.value|default:'-' }}</span>
+          </div>
+          <div class="hidden">
+            {{ session_form.date|as_crispy_field }}
+            {{ session_form.start_time|as_crispy_field }}
+            {{ session_form.shift|as_crispy_field }}
+          </div>
+          {{ session_form.block|as_crispy_field }}
+          {{ session_form.mineral_type|as_crispy_field }}
+          {{ session_form.dump|as_crispy_field }}
+          {{ session_form.loader_machine|as_crispy_field }}
+          {{ session_form.counter_name|as_crispy_field }}
+          {{ session_form.loader_operator_name|as_crispy_field }}
+          {{ session_form.notes|as_crispy_field }}
+          <button type="submit" class="w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 text-base shadow-sm">
+            ثبت شروع شیفت
+          </button>
+        </form>
+      </div>
+
+      <div class="rounded-3xl border border-gray-200/70 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg shadow-gray-200/40 dark:shadow-black/20 p-4">
+        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">راهنما</h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400">برای انتخاب شیفت، از زبانه‌های بالای فرم ثبت سرویس استفاده کنید.</p>
+      </div>
+    </div>
+
+    <div id="dump-right" class="lg:col-span-2 space-y-5">
+      <div class="rounded-3xl border border-gray-200/70 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg shadow-gray-200/40 dark:shadow-black/20 p-4">
+        <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">زبانه‌های شیفت فعال</h3>
+        <div class="flex gap-2 overflow-x-auto pb-2">
+          {% for s in sessions %}
+            <a href="?session_id={{ s.id }}"
+               data-session-id="{{ s.id }}"
+               class="dump-session-item shrink-0 rounded-2xl border px-3 py-2 text-xs sm:text-sm hover:bg-gray-50/70 dark:hover:bg-gray-800/40 transition {% if selected_session and selected_session.id == s.id %}border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30{% else %}border-gray-200 dark:border-gray-700{% endif %}">
+              <div class="font-semibold text-gray-900 dark:text-gray-100">
+                {{ s.date|to_jalali:'%Y/%m/%d' }} | شیفت {{ s.shift }}
+              </div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">بلوک {{ s.block|default:'-' }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">بارکننده: {{ s.loader_machine|default:'-' }}</div>
+              <div class="text-[11px] text-gray-500 dark:text-gray-400">سرویس: {{ s.total_loads }}</div>
+            </a>
+          {% empty %}
+            <p class="text-sm text-gray-500">شیفتی ثبت نشده است.</p>
+          {% endfor %}
+        </div>
+      </div>
+      <div id="dump-right-content" class="space-y-5">
+        {% include 'mining_operations/_dump_count_right.html' %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function() {
+    const personnelUrl = "{% url 'mining_operations:shift_personnel_options' %}";
+    const initialUserLabel = "{{ current_user_label|escapejs }}";
+
+    function getEls() {
+      return {
+        $shift: jQuery('#id_shift'),
+        $counter: jQuery('#id_counter_name'),
+        $loader: jQuery('#id_loader_operator_name'),
+        $driver: jQuery('#id_driver_name'),
+        $block: jQuery('#id_block'),
+        $dump: jQuery('#id_dump'),
+        $loaderMachine: jQuery('#id_loader_machine'),
+        $dumperMachine: jQuery('#id_dumper_machine'),
+      };
+    }
+
+    const select2Options = (placeholder) => ({
+      width: '100%',
+      dir: 'rtl',
+      allowClear: true,
+      placeholder: placeholder || 'انتخاب کنید...',
+      dropdownParent: jQuery(document.body)
+    });
+
+    function initSelect2($el) {
+      if (!$el || !$el.length || !window.jQuery || !jQuery.fn.select2) {
+        return;
+      }
+      if ($el.hasClass('select2-hidden-accessible')) {
+        $el.select2('destroy');
+      }
+      const placeholder = $el.data('placeholder');
+      $el.select2(select2Options(placeholder));
+    }
+
+    function renderOptions($el, items, selectedValue) {
+      if (!$el || !$el.length) {
+        return;
+      }
+      $el.empty();
+      $el.append(new Option('انتخاب کنید...', '', true, false));
+      items.forEach(item => {
+        $el.append(new Option(item.text, item.id, false, false));
+      });
+      if (selectedValue && items.find(i => i.id === selectedValue)) {
+        $el.val(selectedValue);
+      }
+      initSelect2($el);
+      $el.trigger('change');
+    }
+
+    function loadPersonnel(shiftValue, keepSelections) {
+      const { $counter, $loader, $driver } = getEls();
+      const counterValue = keepSelections && $counter.length ? $counter.val() : '';
+      const loaderValue = keepSelections && $loader.length ? $loader.val() : '';
+      const driverValue = keepSelections && $driver.length ? $driver.val() : '';
+
+      const counterReq = jQuery.getJSON(personnelUrl, { shift: shiftValue, role: 'counter' });
+      const loaderReq = jQuery.getJSON(personnelUrl, { shift: shiftValue, role: 'loader_operator' });
+      const driverReq = jQuery.getJSON(personnelUrl, { shift: shiftValue, role: 'driver' });
+
+      jQuery.when(counterReq, loaderReq, driverReq)
+        .done((counterRes, loaderRes, driverRes) => {
+          const counterData = counterRes[0] || {};
+          const loaderData = loaderRes[0] || {};
+          const driverData = driverRes[0] || {};
+          const counterItems = counterData.results || [];
+          const loaderItems = loaderData.results || [];
+          const driverItems = driverData.results || [];
+          const currentUser = counterData.current_user || initialUserLabel;
+
+          const counterSelected = counterValue && counterItems.find(i => i.id === counterValue) ? counterValue : '';
+          const loaderSelected = loaderValue && loaderItems.find(i => i.id === loaderValue) ? loaderValue : '';
+          const driverSelected = driverValue && driverItems.find(i => i.id === driverValue) ? driverValue : '';
+
+          renderOptions($counter, counterItems, counterSelected || currentUser);
+          renderOptions($loader, loaderItems, loaderSelected);
+          renderOptions($driver, driverItems, driverSelected);
+        })
+        .fail(() => {
+          initSelect2($counter);
+          initSelect2($loader);
+          initSelect2($driver);
+        });
+    }
+
+    window.initDumpCountSelect2 = function() {
+      if (!window.jQuery || !jQuery.fn.select2) {
+        return;
+      }
+      const { $shift, $counter, $loader, $driver, $block, $dump, $loaderMachine, $dumperMachine } = getEls();
+      initSelect2($counter);
+      initSelect2($loader);
+      initSelect2($driver);
+      initSelect2($block);
+      initSelect2($dump);
+      initSelect2($loaderMachine);
+      initSelect2($dumperMachine);
+      if ($shift.length) {
+        loadPersonnel($shift.val(), true);
+        $shift.off('change.dumpcount').on('change.dumpcount', function() {
+          loadPersonnel(jQuery(this).val(), false);
+        });
+      }
+    };
+
+    window.updateDumpCountRight = function(sessionId) {
+      const target = document.getElementById('dump-right-content');
+      if (!target) {
+        return;
+      }
+      fetch(`?session_id=${sessionId}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+        .then(resp => resp.json())
+        .then(data => {
+          if (data && data.html) {
+            target.innerHTML = data.html;
+            if (window.initDumpCountSelect2) {
+              window.initDumpCountSelect2();
+            }
+            const el = document.getElementById('quick-add-event');
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }
+        });
+    };
+
+    window.initDumpCountSelect2();
+
+    function setActiveSession(sessionId) {
+      document.querySelectorAll('.dump-session-item').forEach((item) => {
+        if (item.getAttribute('data-session-id') === String(sessionId)) {
+          item.classList.add('border-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/30');
+          item.classList.remove('border-gray-200', 'dark:border-gray-700');
+        } else {
+          item.classList.remove('border-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/30');
+          item.classList.add('border-gray-200', 'dark:border-gray-700');
+        }
+      });
+    }
+
+    document.querySelectorAll('[data-session-id]').forEach((link) => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const sessionId = link.getAttribute('data-session-id');
+        if (sessionId) {
+          window.history.replaceState({}, '', `?session_id=${sessionId}`);
+          window.updateDumpCountRight(sessionId);
+          setActiveSession(sessionId);
+        }
+      });
+    });
+
+    const params = new URLSearchParams(window.location.search);
+    const currentSessionId = params.get('session_id');
+    if (currentSessionId) {
+      setActiveSession(currentSessionId);
+    }
+  })();
+</script>
+{% endblock %}
