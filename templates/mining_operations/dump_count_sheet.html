@@ -151,6 +151,7 @@
         $counter: jQuery('#id_counter_name'),
         $loader: jQuery('#id_loader_operator_name'),
         $driver: jQuery('#id_driver_name'),
+        $operator: jQuery('#id_operator_name'),
         $block: jQuery('#id_block'),
         $dump: jQuery('#id_dump'),
         $loaderMachine: jQuery('#id_loader_machine'),
@@ -193,6 +194,101 @@
       $el.trigger('change');
     }
 
+    function normalizeDigits(value) {
+      if (!value) return value;
+      const map = {
+        '۰': '0','۱': '1','۲': '2','۳': '3','۴': '4','۵': '5','۶': '6','۷': '7','۸': '8','۹': '9',
+        '٠': '0','١': '1','٢': '2','٣': '3','٤': '4','٥': '5','٦': '6','٧': '7','٨': '8','٩': '9'
+      };
+      return String(value).replace(/[۰-۹٠-٩]/g, (d) => map[d] || d);
+    }
+
+    function parseTimeToMinutes(value) {
+      if (!value) return null;
+      const normalized = normalizeDigits(value);
+      const parts = String(normalized).split(':');
+      if (parts.length < 2) return null;
+      const h = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      if (Number.isNaN(h) || Number.isNaN(m)) return null;
+      return h * 60 + m;
+    }
+
+    function formatHours(minutes) {
+      const hours = minutes / 60;
+      return Math.max(0, hours).toFixed(2);
+    }
+
+    function initActivityAutoCalc() {
+      const $start = jQuery('#id_start_hour');
+      const $end = jQuery('#id_end_hour');
+      const $ready = jQuery('#id_ready_hours');
+      const $stop = jQuery('#id_stop_hours');
+      const $work = jQuery('#id_work_hours');
+      if (!$start.length || !$end.length || !$ready.length || !$stop.length || !$work.length) {
+        return;
+      }
+
+      const SHIFT_MINUTES = 8 * 60;
+
+      function calcStopHours() {
+        const startMin = parseTimeToMinutes($start.val());
+        const endMin = parseTimeToMinutes($end.val());
+        if (startMin === null || endMin === null) {
+          return;
+        }
+        let diff = endMin - startMin;
+        if (diff < 0) {
+          diff += 24 * 60;
+        }
+        $stop.val(formatHours(diff)).trigger('change');
+      }
+
+      function calcWorkHours() {
+        const ready = parseFloat($ready.val());
+        const stop = parseFloat($stop.val());
+        if (Number.isNaN(ready) || Number.isNaN(stop)) {
+          return;
+        }
+        const remaining = SHIFT_MINUTES - Math.round((ready + stop) * 60);
+        $work.val(formatHours(remaining)).trigger('change');
+      }
+
+      const onTimeChange = () => {
+        calcStopHours();
+        calcWorkHours();
+      };
+
+      $start.off('input.activitycalc change.activitycalc blur.activitycalc keyup.activitycalc')
+        .on('input.activitycalc change.activitycalc blur.activitycalc keyup.activitycalc', onTimeChange);
+      $end.off('input.activitycalc change.activitycalc blur.activitycalc keyup.activitycalc')
+        .on('input.activitycalc change.activitycalc blur.activitycalc keyup.activitycalc', onTimeChange);
+      $ready.off('input.activitycalc change.activitycalc blur.activitycalc keyup.activitycalc')
+        .on('input.activitycalc change.activitycalc blur.activitycalc keyup.activitycalc', calcWorkHours);
+      $stop.off('input.activitycalc change.activitycalc blur.activitycalc keyup.activitycalc')
+        .on('input.activitycalc change.activitycalc blur.activitycalc keyup.activitycalc', calcWorkHours);
+
+      const existingTimer = $start.data('activityTimer');
+      if (existingTimer) {
+        clearInterval(existingTimer);
+      }
+      let lastStart = $start.val();
+      let lastEnd = $end.val();
+      const timer = setInterval(() => {
+        const currentStart = $start.val();
+        const currentEnd = $end.val();
+        if (currentStart !== lastStart || currentEnd !== lastEnd) {
+          lastStart = currentStart;
+          lastEnd = currentEnd;
+          onTimeChange();
+        }
+      }, 500);
+      $start.data('activityTimer', timer);
+
+      calcStopHours();
+      calcWorkHours();
+    }
+
     function loadPersonnel(shiftValue, keepSelections) {
       const { $counter, $loader, $driver } = getEls();
       const counterValue = keepSelections && $counter.length ? $counter.val() : '';
@@ -232,14 +328,16 @@
       if (!window.jQuery || !jQuery.fn.select2) {
         return;
       }
-      const { $shift, $counter, $loader, $driver, $block, $dump, $loaderMachine, $dumperMachine } = getEls();
+      const { $shift, $counter, $loader, $driver, $operator, $block, $dump, $loaderMachine, $dumperMachine } = getEls();
       initSelect2($counter);
       initSelect2($loader);
       initSelect2($driver);
+      initSelect2($operator);
       initSelect2($block);
       initSelect2($dump);
       initSelect2($loaderMachine);
       initSelect2($dumperMachine);
+      initActivityAutoCalc();
       if ($shift.length) {
         loadPersonnel($shift.val(), true);
         $shift.off('change.dumpcount').on('change.dumpcount', function() {
@@ -263,6 +361,9 @@
             if (window.initDumpCountSelect2) {
               window.initDumpCountSelect2();
             }
+            if (window.initActivityAutoCalc) {
+              window.initActivityAutoCalc();
+            }
             const el = document.getElementById('quick-add-event');
             if (el) {
               el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -272,6 +373,7 @@
     };
 
     window.initDumpCountSelect2();
+    window.initActivityAutoCalc = initActivityAutoCalc;
 
     function setActiveSession(sessionId) {
       document.querySelectorAll('.dump-session-item').forEach((item) => {

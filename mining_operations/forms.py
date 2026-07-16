@@ -1,7 +1,8 @@
 ﻿from django import forms
 from django.db.models import Q
 from django.utils import timezone
-from datetime import date as date_type
+from datetime import date as date_type, datetime
+import logging
 import jdatetime
 from crispy_forms.helper import FormHelper
 
@@ -17,12 +18,34 @@ from BaseInfo.models import MiningBlock, Dump, MineralType
 from accounts.models import UserProfile
 from shift_manager.utils import get_current_shift_and_group
 
+logger = logging.getLogger(__name__)
 
 INPUT_CLASS = (
     'w-full rounded-xl border border-gray-300 dark:border-gray-600 '
     'bg-white dark:bg-gray-900 px-4 py-3.5 text-base shadow-sm '
     'focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition'
 )
+
+
+def build_time_choices(step_minutes=15):
+    choices = [('', '---')]
+    for hour in range(24):
+        for minute in range(0, 60, step_minutes):
+            label = f'{hour:02d}:{minute:02d}'
+            choices.append((label, label))
+    return choices
+
+
+def normalize_digits(value):
+    if not value:
+        return value
+    map_digits = {
+        '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
+        '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9',
+        '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4',
+        '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9',
+    }
+    return str(value).replace('٫', ':').replace('،', ':').replace('٫', ':').translate(str.maketrans(map_digits))
 
 
 def get_default_shift():
@@ -78,6 +101,17 @@ def format_jalali_date(value):
 
 class MachineActivityForm(forms.ModelForm):
     date = forms.CharField()
+    operator_name = forms.ChoiceField(label='نام اپراتور')
+    start_hour = forms.CharField(
+        label='ساعت شروع',
+        required=False,
+        widget=forms.TextInput(attrs={'class': f'{INPUT_CLASS} ptimepicker', 'placeholder': 'HH:mm'}),
+    )
+    end_hour = forms.CharField(
+        label='ساعت پایان',
+        required=False,
+        widget=forms.TextInput(attrs={'class': f'{INPUT_CLASS} ptimepicker', 'placeholder': 'HH:mm'}),
+    )
     class Meta:
         model = MachineActivity
         fields = [
@@ -97,9 +131,7 @@ class MachineActivityForm(forms.ModelForm):
             'machine': forms.Select(attrs={'class': INPUT_CLASS}),
             'date': forms.DateInput(attrs={'class': f'{INPUT_CLASS} jalali-date', 'placeholder': 'YYYY/MM/DD'}),
             'shift': forms.Select(attrs={'class': INPUT_CLASS}),
-            'operator_name': forms.TextInput(attrs={'class': INPUT_CLASS, 'placeholder': 'نام اپراتور'}),
-            'start_hour': forms.TimeInput(attrs={'class': INPUT_CLASS, 'type': 'time'}),
-            'end_hour': forms.TimeInput(attrs={'class': INPUT_CLASS, 'type': 'time'}),
+            'operator_name': forms.Select(attrs={'class': f'{INPUT_CLASS} select2-personnel', 'data-placeholder': 'انتخاب اپراتور'}),
             'ready_hours': forms.NumberInput(attrs={'class': INPUT_CLASS, 'step': '0.25', 'min': '0'}),
             'work_hours': forms.NumberInput(attrs={'class': INPUT_CLASS, 'step': '0.25', 'min': '0'}),
             'stop_hours': forms.NumberInput(attrs={'class': INPUT_CLASS, 'step': '0.25', 'min': '0'}),
@@ -108,6 +140,8 @@ class MachineActivityForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        shift = kwargs.pop('shift', None)
         super().__init__(*args, **kwargs)
         self.helper = FormHelper()
         self.helper.form_tag = False
@@ -128,6 +162,18 @@ class MachineActivityForm(forms.ModelForm):
         self.fields['stop_reason'].required = False
         self.fields['stop_description'].required = False
 
+        if not shift:
+            shift = self.data.get('shift') or self.initial.get('shift')
+        operator_choices = DumpCountSessionForm._get_personnel_choices(shift, user, role=None)
+        self.fields['operator_name'].choices = operator_choices
+
+        if user and hasattr(user, 'userprofile'):
+            profile = user.userprofile
+            default_label = DumpCountSessionForm._format_personnel_label(profile)
+            available_values = {value for value, _ in operator_choices}
+            if default_label in available_values:
+                self.fields['operator_name'].initial = default_label
+
     def clean(self):
         cleaned_data = super().clean()
         cleaned_data['date'] = parse_jalali_date(cleaned_data.get('date'))
@@ -142,6 +188,36 @@ class MachineActivityForm(forms.ModelForm):
             raise forms.ValidationError('برای ثبت توقف، تعیین علت توقف الزامی است.')
 
         return cleaned_data
+
+    def clean_start_hour(self):
+        raw_value = self.cleaned_data.get('start_hour')
+        value = normalize_digits(raw_value)
+        if not value:
+            return None
+        value = value.strip()
+        try:
+            return datetime.strptime(value, '%H:%M').time()
+        except ValueError:
+            try:
+                return datetime.strptime(value, '%H:%M:%S').time()
+            except ValueError:
+                logger.warning("Invalid start_hour format. raw=%r normalized=%r", raw_value, value)
+                raise forms.ValidationError('یک زمان معتبر وارد کنید.')
+
+    def clean_end_hour(self):
+        raw_value = self.cleaned_data.get('end_hour')
+        value = normalize_digits(raw_value)
+        if not value:
+            return None
+        value = value.strip()
+        try:
+            return datetime.strptime(value, '%H:%M').time()
+        except ValueError:
+            try:
+                return datetime.strptime(value, '%H:%M:%S').time()
+            except ValueError:
+                logger.warning("Invalid end_hour format. raw=%r normalized=%r", raw_value, value)
+                raise forms.ValidationError('یک زمان معتبر وارد کنید.')
 
 
 class LoadingHaulingReportForm(forms.ModelForm):

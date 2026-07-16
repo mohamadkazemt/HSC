@@ -95,6 +95,7 @@
               <th class="text-right py-3 px-4 font-semibold">کارکرد مفید</th>
               <th class="text-right py-3 px-4 font-semibold">توقف</th>
               <th class="text-right py-3 px-4 font-semibold">علت توقف</th>
+              <th class="text-right py-3 px-4 font-semibold">تعداد سرویس</th>
               <th class="text-right py-3 px-4 font-semibold">تاریخ</th>
             </tr>
           </thead>
@@ -111,11 +112,12 @@
                 <td class="py-3 px-4">{{ a.work_hours }}</td>
                 <td class="py-3 px-4">{{ a.stop_hours }}</td>
                 <td class="py-3 px-4">{{ a.stop_reason|default:'-' }}</td>
+                <td class="py-3 px-4">{{ a.service_count }}</td>
                 <td class="py-3 px-4">{{ a.date }}</td>
               </tr>
             {% empty %}
               <tr>
-                <td colspan="11" class="py-8 text-center text-gray-500">رکوردی یافت نشد.</td>
+                <td colspan="12" class="py-8 text-center text-gray-500">رکوردی یافت نشد.</td>
               </tr>
             {% endfor %}
           </tbody>

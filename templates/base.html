@@ -276,13 +276,13 @@
               $el.data('hasJalali', true);
             }
           });
-          $('.jalali-datetime').each(function(){
-            const $el = $(this); try { $el.prop('type','text'); } catch(e) {}
-            if (!$el.data('hasJalali')) {
-              const pickerConfig = { 
-                format:'YYYY/MM/DD HH:mm:ss', 
-                timePicker:{ enabled:true, second:true }, 
-                autoClose:true,
+            $('.jalali-datetime').each(function(){
+              const $el = $(this); try { $el.prop('type','text'); } catch(e) {}
+              if (!$el.data('hasJalali')) {
+                const pickerConfig = { 
+                  format:'YYYY/MM/DD HH:mm:ss', 
+                  timePicker:{ enabled:true, second:true }, 
+                  autoClose:true,
                 calendar: { 
                   persian: { 
                     locale: 'fa',
@@ -333,11 +333,26 @@
                 };
               }
               
-              $el.data('hasJalali', true);
-            }
-          });
-        }
-      });
+                $el.data('hasJalali', true);
+              }
+            });
+
+            $('.ptimepicker').each(function(){
+              const $el = $(this); try { $el.prop('type','text'); } catch(e) {}
+              if (!$el.data('hasJalaliTime')) {
+                const pickerConfig = {
+                  format:'HH:mm',
+                  onlyTimePicker: true,
+                  timePicker:{ enabled:true, second:false, meridiem:{ enabled:false } },
+                  autoClose:true,
+                  calendar: { enabled: false, persian: { locale: 'fa' } }
+                };
+                $el.persianDatepicker(pickerConfig);
+                $el.data('hasJalaliTime', true);
+              }
+            });
+          }
+        });
     </script>
 
     <!-- App JS -->

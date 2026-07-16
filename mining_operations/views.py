@@ -51,7 +51,7 @@ class MachineActivityCreateView(LoginRequiredMixin, TemplateView):
         return render(request, self.template_name, {'form': form})
 
     def post(self, request, *args, **kwargs):
-        form = MachineActivityForm(request.POST)
+        form = MachineActivityForm(request.POST, user=request.user)
         if form.is_valid():
             instance = form.save(commit=False)
             instance.created_by = request.user
@@ -220,10 +220,16 @@ class LoadingHaulingDetailView(LoginRequiredMixin, TemplateView):
         )
 
         loader_rows = []
+        loader_service_counts = (
+            event_qs.values('session__loader_machine_id')
+            .annotate(total=Count('id'))
+        )
+        loader_service_map = {row['session__loader_machine_id']: row['total'] for row in loader_service_counts}
         for item in loader_activities:
             name, code = _split_personnel_label(item.operator_name)
             loader_rows.append({
                 'machine_code': item.machine.workshop_code,
+                'machine_id': item.machine_id,
                 'operator_name': name,
                 'operator_code': code,
                 'start_hour': item.start_hour,
@@ -233,6 +239,7 @@ class LoadingHaulingDetailView(LoginRequiredMixin, TemplateView):
                 'stop_hours': item.stop_hours,
                 'stop_reason': item.stop_description or (item.get_stop_reason_display() if item.stop_reason else ''),
                 'date': item.date,
+                'service_count': loader_service_map.get(item.machine_id, 0),
             })
 
         context = {
@@ -279,7 +286,7 @@ class DumpCountSheetView(LoginRequiredMixin, TemplateView):
             session=selected_session,
             user=request.user,
         )
-        context = self._build_context(selected_session, session_form, event_form)
+        context = self._build_context(request, selected_session, session_form, event_form)
         context['current_user_label'] = self._get_current_user_label(request.user)
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             html = render_to_string(
@@ -318,7 +325,7 @@ class DumpCountSheetView(LoginRequiredMixin, TemplateView):
 
         if not session_form.is_valid():
             messages.error(request, f"خطای فرم: {session_form.errors.as_text()}")
-            context = self._build_context(None, session_form, event_form)
+            context = self._build_context(request, None, session_form, event_form)
             context['current_user_label'] = self._get_current_user_label(request.user)
             return render(request, self.template_name, context)
 
@@ -350,7 +357,7 @@ class DumpCountSheetView(LoginRequiredMixin, TemplateView):
 
         if not event_form.is_valid():
             messages.error(request, f"خطای فرم: {event_form.errors.as_text()}")
-            context = self._build_context(session, session_form, event_form)
+            context = self._build_context(request, session, session_form, event_form)
             context['current_user_label'] = self._get_current_user_label(request.user)
             return render(request, self.template_name, context)
 
@@ -462,12 +469,12 @@ class DumpCountSheetView(LoginRequiredMixin, TemplateView):
 
     def _add_activity(self, request):
         session = get_object_or_404(DumpCountSession, pk=request.POST.get('session_id'))
-        form = MachineActivityForm(request.POST)
+        form = MachineActivityForm(request.POST, user=request.user, shift=session.shift)
         if not form.is_valid():
             messages.error(request, f"خطای فرم توقفات: {form.errors.as_text()}")
             session_form = DumpCountSessionForm(instance=session, user=request.user, shift=session.shift)
             event_form = DumpCountEventForm(session=session, user=request.user)
-            context = self._build_context(session, session_form, event_form)
+            context = self._build_context(request, session, session_form, event_form)
             context['activity_form'] = form
             context['current_user_label'] = self._get_current_user_label(request.user)
             return render(request, self.template_name, context)
@@ -489,14 +496,14 @@ class DumpCountSheetView(LoginRequiredMixin, TemplateView):
                 return None
         return DumpCountSession.objects.filter(end_time__isnull=True).order_by('-created_at').first()
 
-    def _build_context(self, selected_session, session_form, event_form):
+    def _build_context(self, request, selected_session, session_form, event_form):
         events = DumpCountEvent.objects.none()
         if selected_session:
             events = selected_session.dump_events.select_related('dumper_machine').all()
 
         sessions = DumpCountSession.objects.filter(end_time__isnull=True).order_by('-created_at')[:20]
         activities = MachineActivity.objects.none()
-        activity_form = MachineActivityForm()
+        activity_form = MachineActivityForm(user=request.user)
         if selected_session:
             activities = (
                 MachineActivity.objects
@@ -504,7 +511,7 @@ class DumpCountSheetView(LoginRequiredMixin, TemplateView):
                 .filter(date=selected_session.date, shift=selected_session.shift)
                 .order_by('machine__workshop_code')
             )
-            activity_form = MachineActivityForm(initial={
+            activity_form = MachineActivityForm(user=request.user, shift=selected_session.shift, initial={
                 'date': format_jalali_date(selected_session.date),
                 'shift': selected_session.shift,
             })
@@ -801,6 +808,7 @@ def export_loading_hauling_excel(request):
         'کارکرد مفید',
         'توقف',
         'علت توقف',
+        'تعداد سرویس',
         'تاریخ',
     ]
 
@@ -829,6 +837,12 @@ def export_loading_hauling_excel(request):
     if shift in {'A', 'B', 'C', 'D'}:
         loader_qs = loader_qs.filter(shift=shift)
 
+    loader_service_counts = (
+        event_qs.values('session__loader_machine_id')
+        .annotate(total=Count('id'))
+    )
+    loader_service_map = {row['session__loader_machine_id']: row['total'] for row in loader_service_counts}
+
     data_row = header_row + 1
     for i, item in enumerate(loader_qs, start=1):
         name, code = _split_personnel_label(item.operator_name)
@@ -846,7 +860,8 @@ def export_loading_hauling_excel(request):
             column=10,
             value=item.stop_description or (item.get_stop_reason_display() if item.stop_reason else ''),
         )
-        ws_loader.cell(row=data_row, column=11, value=str(item.date))
+        ws_loader.cell(row=data_row, column=11, value=loader_service_map.get(item.machine_id, 0))
+        ws_loader.cell(row=data_row, column=12, value=str(item.date))
         data_row += 1
 
     for col in range(1, len(loader_headers) + 1):
