@@ -93,10 +93,25 @@
                         {% endfor %}
                     {% endif %}
 
+                    <div class="grid grid-cols-2 gap-2 mb-6 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                        <button type="button" id="passwordModeBtn"
+                                class="login-mode py-2 px-3 rounded-md text-sm font-medium bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 shadow-sm">
+                            <i class="fas fa-key ml-1"></i> ورود با رمز
+                        </button>
+                        <button type="button" id="otpModeBtn"
+                                class="login-mode py-2 px-3 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300">
+                            <i class="fas fa-comment-sms ml-1"></i> رمز یک‌بارمصرف
+                        </button>
+                    </div>
+
+                    <div id="successMessage" class="hidden mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                        <span id="successText" class="text-sm text-green-800 dark:text-green-300"></span>
+                    </div>
+
                     <!-- Username Field -->
                     <div class="mb-6">
-                        <label for="id_username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            نام کاربری یا کد ملی
+                        <label id="identifierLabel" for="id_username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            نام کاربری، کد ملی یا شماره موبایل
                         </label>
                         <div class="relative">
                             <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none z-10">
@@ -112,12 +127,13 @@
                                           dark:bg-gray-700 dark:text-white dark:placeholder-gray-400
                                           transition duration-200"
                                    style="padding-right: 4rem;"
-                                   placeholder="نام کاربری یا کد ملی">
+                                   inputmode="text"
+                                   placeholder="نام کاربری، کد ملی یا شماره موبایل">
                         </div>
                     </div>
 
                     <!-- Password Field -->
-                    <div class="mb-6">
+                    <div id="passwordFieldGroup" class="mb-6">
                         <label for="id_password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             رمز عبور
                         </label>
@@ -139,8 +155,26 @@
                         </div>
                     </div>
 
+                    <div id="otpFieldGroup" class="hidden mb-6">
+                        <label for="id_otp" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            کد یک‌بارمصرف
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none z-10">
+                                <i class="fas fa-shield-halved text-gray-400"></i>
+                            </div>
+                            <input type="text" id="id_otp" name="otp" inputmode="numeric"
+                                   autocomplete="one-time-code" maxlength="6" pattern="[0-9۰-۹٠-٩]{6}"
+                                   class="block w-full pr-12 pl-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white text-center tracking-widest text-lg"
+                                   placeholder="کد ۶ رقمی">
+                        </div>
+                        <button type="button" id="resendOtpBtn" class="hidden mt-3 text-sm text-indigo-600 dark:text-indigo-400 disabled:text-gray-400 disabled:cursor-not-allowed">
+                            ارسال مجدد کد <span id="resendTimer"></span>
+                        </button>
+                    </div>
+
                     <!-- Forgot Password Link -->
-                    <div class="mb-6 text-left">
+                    <div id="forgotPasswordGroup" class="mb-6 text-left">
                         <a href="{% url 'accounts:send_reset_code' %}" 
                            class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium transition duration-200">
                             <i class="fas fa-key ml-1"></i>
@@ -157,7 +191,7 @@
                                    disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
                         <span id="btnText">
                             <i class="fas fa-sign-in-alt ml-2"></i>
-                            ورود به سیستم
+                            <span id="btnLabel">ورود به سیستم</span>
                         </span>
                         <span id="btnSpinner" class="hidden">
                             <i class="fas fa-spinner fa-spin ml-2"></i>
@@ -245,58 +279,136 @@
 
     <!-- Login Script with AJAX -->
     <script>
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const form = e.target;
-            const submitBtn = document.getElementById('submitBtn');
-            const btnText = document.getElementById('btnText');
-            const btnSpinner = document.getElementById('btnSpinner');
-            const errorMessage = document.getElementById('errorMessage');
-            const errorText = document.getElementById('errorText');
-            
-            // Disable button and show spinner
-            submitBtn.disabled = true;
-            btnText.classList.add('hidden');
-            btnSpinner.classList.remove('hidden');
+        const form = document.getElementById('loginForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const btnSpinner = document.getElementById('btnSpinner');
+        const btnLabel = document.getElementById('btnLabel');
+        const identifier = document.getElementById('id_username');
+        const password = document.getElementById('id_password');
+        const otpInput = document.getElementById('id_otp');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const successMessage = document.getElementById('successMessage');
+        const successText = document.getElementById('successText');
+        const resendBtn = document.getElementById('resendOtpBtn');
+        let mode = 'password';
+        let otpSent = false;
+        let timerId = null;
+
+        function setLoading(loading) {
+            submitBtn.disabled = loading;
+            btnText.classList.toggle('hidden', loading);
+            btnSpinner.classList.toggle('hidden', !loading);
+        }
+
+        function showMessage(message, success = false) {
+            errorMessage.classList.toggle('hidden', success);
+            successMessage.classList.toggle('hidden', !success);
+            (success ? successText : errorText).textContent = message;
+        }
+
+        function startResendTimer(seconds) {
+            clearInterval(timerId);
+            resendBtn.classList.remove('hidden');
+            resendBtn.disabled = true;
+            let remaining = Number(seconds || 60);
+            const render = () => {
+                document.getElementById('resendTimer').textContent = remaining > 0 ? `(${remaining})` : '';
+                resendBtn.disabled = remaining > 0;
+                if (remaining <= 0) clearInterval(timerId);
+                remaining -= 1;
+            };
+            render();
+            timerId = setInterval(render, 1000);
+        }
+
+        function setMode(nextMode) {
+            mode = nextMode;
+            otpSent = false;
+            clearInterval(timerId);
             errorMessage.classList.add('hidden');
-            
-            // Prepare form data
-            const formData = new FormData(form);
-            
+            successMessage.classList.add('hidden');
+            document.getElementById('passwordFieldGroup').classList.toggle('hidden', mode === 'otp');
+            document.getElementById('forgotPasswordGroup').classList.toggle('hidden', mode === 'otp');
+            document.getElementById('otpFieldGroup').classList.add('hidden');
+            password.required = mode === 'password';
+            otpInput.required = false;
+            resendBtn.classList.add('hidden');
+            document.getElementById('identifierLabel').textContent = mode === 'otp' ? 'شماره موبایل' : 'نام کاربری، کد ملی یا شماره موبایل';
+            identifier.placeholder = mode === 'otp' ? 'مثلاً 09123456789' : 'نام کاربری، کد ملی یا شماره موبایل';
+            identifier.inputMode = mode === 'otp' ? 'tel' : 'text';
+            btnLabel.textContent = mode === 'otp' ? 'ارسال کد یک‌بارمصرف' : 'ورود به سیستم';
+            const active = ['bg-white', 'dark:bg-gray-800', 'text-indigo-600', 'dark:text-indigo-400', 'shadow-sm'];
+            const inactive = ['text-gray-600', 'dark:text-gray-300'];
+            const passwordBtn = document.getElementById('passwordModeBtn');
+            const otpBtn = document.getElementById('otpModeBtn');
+            passwordBtn.classList.remove(...active, ...inactive);
+            otpBtn.classList.remove(...active, ...inactive);
+            (mode === 'password' ? passwordBtn : otpBtn).classList.add(...active);
+            (mode === 'password' ? otpBtn : passwordBtn).classList.add(...inactive);
+        }
+
+        async function postForm(url, payload) {
             try {
-                const response = await fetch(form.action, {
+                const response = await fetch(url, {
                     method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                    }
+                    body: payload,
+                    headers: {'X-Requested-With': 'XMLHttpRequest'}
                 });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    // Redirect to dashboard on success
-                    window.location.href = "{% url 'dashboard:dashboard' %}";
-                } else {
-                    // Show error message
-                    errorText.textContent = data.message || 'نام کاربری یا رمز عبور اشتباه است';
-                    errorMessage.classList.remove('hidden');
-                    
-                    // Re-enable button
-                    submitBtn.disabled = false;
-                    btnText.classList.remove('hidden');
-                    btnSpinner.classList.add('hidden');
-                }
+                const responseData = await response.json();
+                return {response, data: responseData};
             } catch (error) {
                 console.error('Error:', error);
-                errorText.textContent = 'خطایی در اتصال به سرور رخ داده است';
-                errorMessage.classList.remove('hidden');
-                
-                // Re-enable button
-                submitBtn.disabled = false;
-                btnText.classList.remove('hidden');
-                btnSpinner.classList.add('hidden');
+                return {response: null, data: {success: false, message: 'خطایی در اتصال به سرور رخ داده است'}};
+            }
+        }
+
+        async function sendOtp() {
+            const data = new FormData();
+            data.append('csrfmiddlewaretoken', form.elements.csrfmiddlewaretoken.value);
+            data.append('mobile', identifier.value);
+            setLoading(true);
+            const result = await postForm("{% url 'accounts:send_login_otp' %}", data);
+            setLoading(false);
+            if (!result.data.success || !result.data.code_sent) {
+                showMessage(result.data.message, Boolean(result.data.success));
+                if (result.data.retry_after) startResendTimer(result.data.retry_after);
+                return;
+            }
+            otpSent = true;
+            document.getElementById('otpFieldGroup').classList.remove('hidden');
+            otpInput.required = true;
+            identifier.readOnly = true;
+            btnLabel.textContent = 'تأیید و ورود';
+            showMessage(result.data.message, true);
+            startResendTimer(result.data.retry_after);
+            otpInput.focus();
+        }
+
+        document.getElementById('passwordModeBtn').addEventListener('click', () => { identifier.readOnly = false; setMode('password'); });
+        document.getElementById('otpModeBtn').addEventListener('click', () => { identifier.readOnly = false; setMode('otp'); });
+        resendBtn.addEventListener('click', sendOtp);
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            errorMessage.classList.add('hidden');
+            successMessage.classList.add('hidden');
+            if (mode === 'otp' && !otpSent) {
+                await sendOtp();
+                return;
+            }
+
+            setLoading(true);
+            const data = new FormData(form);
+            const url = mode === 'otp' ? "{% url 'accounts:verify_login_otp' %}" : form.action;
+            if (mode === 'otp') data.set('code', otpInput.value);
+            const result = await postForm(url, data);
+            setLoading(false);
+            if (result.data.success) {
+                window.location.href = "{% url 'dashboard:dashboard' %}";
+            } else {
+                showMessage(result.data.message || 'اطلاعات ورود صحیح نیست.');
             }
         });
     </script>

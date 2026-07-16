@@ -1,4 +1,6 @@
 from django.test import TestCase, override_settings
+from django.contrib.auth import authenticate
+from django.core.cache import cache
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -6,9 +8,125 @@ from io import BytesIO
 from PIL import Image
 import tempfile
 import os
+from unittest.mock import patch
 
 from .models import UserProfile, Section, Part, UnitGroup, Position, DriverLicense
 from core.validators import validate_signature_image, validate_image_file
+
+
+class UsernameOrMobileBackendTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='0012345678',
+            password='testpass123',
+        )
+        UserProfile.objects.create(user=self.user, mobile='09123456789')
+
+    def test_authenticates_by_username(self):
+        self.assertEqual(
+            authenticate(username='0012345678', password='testpass123'),
+            self.user,
+        )
+
+    def test_authenticates_by_local_mobile(self):
+        self.assertEqual(
+            authenticate(username='09123456789', password='testpass123'),
+            self.user,
+        )
+
+    def test_authenticates_by_international_mobile(self):
+        self.assertEqual(
+            authenticate(username='+989123456789', password='testpass123'),
+            self.user,
+        )
+
+    def test_rejects_wrong_password(self):
+        self.assertIsNone(
+            authenticate(username='09123456789', password='wrong-password')
+        )
+
+    def test_rejects_duplicate_mobile(self):
+        other = User.objects.create_user(username='other', password='testpass123')
+        UserProfile.objects.create(user=other, mobile='09123456789')
+
+        self.assertIsNone(
+            authenticate(username='09123456789', password='testpass123')
+        )
+
+
+@override_settings(CACHES={
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'login-otp-tests',
+    },
+    'sessions': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'login-otp-test-sessions',
+    },
+})
+class LoginOTPTest(TestCase):
+    def setUp(self):
+        cache.clear()
+        self.user = User.objects.create_user(
+            username='otp-user',
+            password='unused-password',
+        )
+        UserProfile.objects.create(user=self.user, mobile='09121112233')
+
+    def test_login_page_offers_password_and_otp_modes(self):
+        response = self.client.get('/accounts/login/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'ورود با رمز')
+        self.assertContains(response, 'رمز یک‌بارمصرف')
+
+    @patch('accounts.views.secrets.randbelow', return_value=12345)
+    @patch('accounts.views.send_template_sms', return_value=True)
+    def test_send_and_verify_otp(self, send_sms, _randbelow):
+        send_response = self.client.post(
+            '/accounts/login/otp/send/',
+            {'mobile': '+989121112233'},
+        )
+
+        self.assertEqual(send_response.status_code, 200)
+        self.assertTrue(send_response.json()['code_sent'])
+        send_sms.assert_called_once()
+        self.assertEqual(send_sms.call_args.args[0], '09121112233')
+
+        verify_response = self.client.post(
+            '/accounts/login/otp/verify/',
+            {'code': '۰۱۲۳۴۵'},
+        )
+
+        self.assertEqual(verify_response.status_code, 200)
+        self.assertTrue(verify_response.json()['success'])
+        self.assertEqual(int(self.client.session['_auth_user_id']), self.user.id)
+        self.assertNotIn('accounts_login_otp', self.client.session)
+
+    @override_settings(LOGIN_OTP_MAX_ATTEMPTS=2)
+    @patch('accounts.views.secrets.randbelow', return_value=12345)
+    @patch('accounts.views.send_template_sms', return_value=True)
+    def test_otp_is_removed_after_max_attempts(self, _send_sms, _randbelow):
+        self.client.post('/accounts/login/otp/send/', {'mobile': '09121112233'})
+
+        first = self.client.post('/accounts/login/otp/verify/', {'code': '999999'})
+        second = self.client.post('/accounts/login/otp/verify/', {'code': '999999'})
+
+        self.assertEqual(first.status_code, 400)
+        self.assertEqual(second.status_code, 400)
+        self.assertNotIn('accounts_login_otp', self.client.session)
+
+    @patch('accounts.views.send_template_sms')
+    def test_unknown_mobile_does_not_reveal_account_or_send_sms(self, send_sms):
+        response = self.client.post(
+            '/accounts/login/otp/send/',
+            {'mobile': '09129999999'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['success'])
+        self.assertTrue(response.json()['code_sent'])
+        send_sms.assert_not_called()
 
 
 class UserProfileModelTest(TestCase):

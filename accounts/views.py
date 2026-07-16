@@ -4,6 +4,10 @@ from django.contrib.auth.models import User
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.http import JsonResponse, HttpResponse
+from django.views.decorators.http import require_POST
+from django.conf import settings
+from django.core.cache import cache
+from django.utils.crypto import constant_time_compare, salted_hmac
 from django.core.exceptions import PermissionDenied
 from dashboard.views import dashboard
 from .forms import LoginForm
@@ -33,6 +37,9 @@ from functools import wraps
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 import os
+import hashlib
+import secrets
+import time
 from django.urls import reverse_lazy
 from django.http import JsonResponse
 from django.contrib.auth.mixins import UserPassesTestMixin
@@ -40,10 +47,28 @@ from dashboard.utils import log_user_activity
 from django.urls import reverse
 from core.models import SiteSettings
 from .notifications import notify_profile_updated, notify_organizational_updated, notify_password_reset
+from .backends import get_unique_profile_by_mobile, normalize_iranian_mobile
 
 
 name = 'accounts'
 logger = logging.getLogger(__name__)
+
+LOGIN_OTP_SESSION_KEY = 'accounts_login_otp'
+
+
+def _main_portal_denial(user):
+    if hasattr(user, 'contractor_profile') or hasattr(user, 'employee_profile'):
+        return 'لطفاً از صفحه ورود پیمانکاران وارد شوید.'
+    if user.groups.filter(name__in=['EmergencyManager', 'EmergencyDoctor', 'EmergencyNurse']).exists():
+        return 'لطفاً از پورتال اورژانس وارد شوید.'
+    return None
+
+
+def _otp_digest(nonce, user_id, code):
+    return salted_hmac(
+        'accounts.login.otp',
+        f'{nonce}:{user_id}:{code}',
+    ).hexdigest()
 
 
 def superuser_required(view_func):
@@ -61,27 +86,145 @@ def user_login(request):
         return redirect('dashboard:dashboard')  # یا هر آدرس دیگری که برای داشبورد تعریف کرده‌اید
 
     if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
         user = authenticate(request, username=username, password=password)
 
 
 
         if user is not None:
-            # جلوگیری از ورود پیمانکاران/پرسنل از مسیر عمومی
-            if hasattr(user, 'contractor_profile') or hasattr(user, 'employee_profile'):
-                return JsonResponse({'success': False, 'message': 'لطفاً از صفحه ورود پیمانکاران وارد شوید.'}, status=400)
-            
-            # جلوگیری از ورود پرسنل اورژانس از مسیر عمومی
-            if user.groups.filter(name__in=['EmergencyManager', 'EmergencyDoctor', 'EmergencyNurse']).exists():
-                return JsonResponse({'success': False, 'message': 'لطفاً از پورتال اورژانس وارد شوید.'}, status=400)
+            denial = _main_portal_denial(user)
+            if denial:
+                return JsonResponse({'success': False, 'message': denial}, status=400)
             
             login(request, user)
             return JsonResponse({'success': True})  # لاگین موفق
         else:
-            return JsonResponse({'success': False, 'message': 'Invalid login credentials'}, status=400)  # لاگین ناموفق
+            return JsonResponse({'success': False, 'message': 'نام کاربری، شماره موبایل یا رمز عبور اشتباه است.'}, status=400)
 
     return render(request, 'accounts/login.html', {'form': LoginForm()})
+
+
+@require_POST
+def send_login_otp(request):
+    mobile = normalize_iranian_mobile(request.POST.get('mobile'))
+    if not mobile:
+        return JsonResponse({
+            'success': False,
+            'message': 'شماره موبایل معتبر وارد کنید.',
+        }, status=400)
+
+    # Limit repeated sends for the same number before calling the SMS provider.
+    cooldown = int(getattr(settings, 'LOGIN_OTP_RESEND_SECONDS', 60))
+    ttl = int(getattr(settings, 'LOGIN_OTP_TTL_SECONDS', 300))
+    mobile_key = hashlib.sha256(mobile.encode()).hexdigest()
+    cache_key = f'login-otp-send:{mobile_key}'
+    if not cache.add(cache_key, True, cooldown):
+        return JsonResponse({
+            'success': False,
+            'message': f'برای ارسال مجدد کد {cooldown} ثانیه صبر کنید.',
+            'retry_after': cooldown,
+        }, status=429)
+
+    profile = get_unique_profile_by_mobile(mobile)
+    user = profile.user if profile else None
+    if user is None or not user.is_active or _main_portal_denial(user):
+        # Avoid revealing whether a mobile number belongs to an account.
+        request.session.pop(LOGIN_OTP_SESSION_KEY, None)
+        return JsonResponse({
+            'success': True,
+            'message': 'اگر شماره در سامانه مجاز باشد، کد ورود برای آن ارسال شده است.',
+            'code_sent': True,
+            'expires_in': ttl,
+            'retry_after': cooldown,
+        })
+
+    code = f'{secrets.randbelow(1_000_000):06d}'
+    nonce = secrets.token_hex(16)
+    template_id = int(getattr(settings, 'LOGIN_OTP_TEMPLATE_ID', 857178))
+    sent = send_template_sms(
+        mobile,
+        template_id,
+        [
+            {'Name': 'code', 'Value': code},
+            {'Name': 'username', 'Value': user.username},
+        ],
+        user_id=user.id,
+        request=request,
+    )
+    if not sent:
+        cache.delete(cache_key)
+        request.session.pop(LOGIN_OTP_SESSION_KEY, None)
+        return JsonResponse({
+            'success': False,
+            'message': 'ارسال پیامک انجام نشد؛ لطفاً دوباره تلاش کنید.',
+        }, status=503)
+
+    request.session[LOGIN_OTP_SESSION_KEY] = {
+        'user_id': user.id,
+        'mobile': mobile,
+        'nonce': nonce,
+        'code_digest': _otp_digest(nonce, user.id, code),
+        'expires_at': int(time.time()) + ttl,
+        'attempts': 0,
+    }
+    return JsonResponse({
+        'success': True,
+        'code_sent': True,
+        'message': 'کد یک‌بارمصرف ارسال شد.',
+        'expires_in': ttl,
+        'retry_after': cooldown,
+    })
+
+
+@require_POST
+def verify_login_otp(request):
+    code = str(request.POST.get('code', '')).translate(
+        str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩', '01234567890123456789')
+    ).strip()
+    state = request.session.get(LOGIN_OTP_SESSION_KEY)
+    if not state or not code.isdigit() or len(code) != 6:
+        return JsonResponse({
+            'success': False,
+            'message': 'کد یک‌بارمصرف نامعتبر است.',
+        }, status=400)
+
+    if int(state.get('expires_at', 0)) < int(time.time()):
+        request.session.pop(LOGIN_OTP_SESSION_KEY, None)
+        return JsonResponse({
+            'success': False,
+            'message': 'کد منقضی شده است؛ کد جدید دریافت کنید.',
+        }, status=400)
+
+    max_attempts = int(getattr(settings, 'LOGIN_OTP_MAX_ATTEMPTS', 5))
+    expected = _otp_digest(state.get('nonce', ''), state.get('user_id'), code)
+    if not constant_time_compare(expected, state.get('code_digest', '')):
+        state['attempts'] = int(state.get('attempts', 0)) + 1
+        if state['attempts'] >= max_attempts:
+            request.session.pop(LOGIN_OTP_SESSION_KEY, None)
+            message = 'تعداد تلاش‌ها بیش از حد مجاز بود؛ کد جدید دریافت کنید.'
+        else:
+            request.session[LOGIN_OTP_SESSION_KEY] = state
+            message = 'کد یک‌بارمصرف اشتباه است.'
+        return JsonResponse({'success': False, 'message': message}, status=400)
+
+    try:
+        user = User.objects.get(pk=state['user_id'], is_active=True)
+        profile = get_unique_profile_by_mobile(state.get('mobile'))
+    except (User.DoesNotExist, KeyError):
+        user = None
+        profile = None
+
+    if user is None or profile is None or profile.user_id != user.id or _main_portal_denial(user):
+        request.session.pop(LOGIN_OTP_SESSION_KEY, None)
+        return JsonResponse({
+            'success': False,
+            'message': 'امکان ورود با این حساب وجود ندارد.',
+        }, status=400)
+
+    request.session.pop(LOGIN_OTP_SESSION_KEY, None)
+    login(request, user, backend='accounts.backends.UsernameOrMobileBackend')
+    return JsonResponse({'success': True})
 
 
 

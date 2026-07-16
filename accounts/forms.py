@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 class LoginForm(AuthenticationForm):
     username = forms.CharField(widget=forms.TextInput(attrs={
         'class': 'form-control',
-        'placeholder': 'ایمیل یا نام کاربری'
+        'placeholder': 'نام کاربری، کد ملی یا شماره موبایل'
     }))
     password = forms.CharField(widget=forms.PasswordInput(attrs={
         'class': 'form-control',

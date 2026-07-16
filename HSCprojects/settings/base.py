@@ -174,6 +174,17 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Main web login accepts either the Django username or UserProfile.mobile.
+AUTHENTICATION_BACKENDS = [
+    'accounts.backends.UsernameOrMobileBackend',
+]
+
+# Passwordless login by SMS. The template must accept `code` and `username`.
+LOGIN_OTP_TEMPLATE_ID = 857178
+LOGIN_OTP_TTL_SECONDS = 300
+LOGIN_OTP_RESEND_SECONDS = 60
+LOGIN_OTP_MAX_ATTEMPTS = 5
+
 # Internationalization
 LANGUAGE_CODE = 'fa-ir'
 TIME_ZONE = 'Asia/Tehran'
