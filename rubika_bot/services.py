@@ -27,6 +27,21 @@ from .models import RubikaBotSettings, RubikaConnectionCode, RubikaUser, Webhook
 
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Undo rubpy.sync's wrapping of BotClient methods.
+#
+# rubpy.sync.wrap_methods() replaces every public coroutine on BotClient with
+# a sync wrapper that captures the event-loop reference at import time.  The
+# wrapper redirects coroutines to that captured loop, but our async helpers
+# run on a dedicated event-loop thread — so the coroutine ends up on the
+# wrong loop, causing aiohttp to see a mismatched session/running loop.
+# ---------------------------------------------------------------------------
+from rubpy.bot.bot import BotClient as _BotClient
+for _attr_name in dir(_BotClient):
+    _method = getattr(_BotClient, _attr_name, None)
+    if callable(_method) and hasattr(_method, "__wrapped__"):
+        setattr(_BotClient, _attr_name, _method.__wrapped__)
+
 # Helper functions remain the same
 def _safe_str(value: Any) -> str:
     return "" if value is None else str(value)
@@ -808,7 +823,6 @@ class RubikaBotEngine:
         await self._send_text_message(chat_id, welcome, buttons)
 
     async def _send_text_message(self, chat_id: str, text: str, inline_keyboard: Optional[Keypad] = None) -> None:
-        # This method now needs to be async, but the client call is already handled by rubpy.sync
         try:
             await self.client.send_message(chat_id=chat_id, text=text, inline_keypad=inline_keyboard)
             await sync_to_async(WebhookLog.log_outgoing, thread_sensitive=True)('پیام ارسالی', f'پیام به {chat_id} ارسال شد', {'text': text[:120]})

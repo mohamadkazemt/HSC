@@ -4,7 +4,7 @@
 {% block title %}گزارش‌ها و تحلیل آنومالی{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css" />
+<link rel="stylesheet" href="{% static "vendor/css/persian-datepicker.min.css" %}" />
 <style>
   .loading-spinner {
     display: inline-block;
@@ -516,10 +516,10 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static "vendor/js/jquery.min.js" %}"></script>
+<script src="{% static "vendor/js/persian-date.min.js" %}"></script>
+<script src="{% static "vendor/js/persian-datepicker.min.js" %}"></script>
+<script src="{% static "vendor/js/chart.umd.min.js" %}"></script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     // Initialize Persian Datepicker

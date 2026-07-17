@@ -1,3 +1,4 @@
+{% load static %}
 {% extends 'emergency_services/emergency_base.html' %}
 {% block title %}افزودن دارو به مراجعه{% endblock %}
 {% block content %}
@@ -34,8 +35,8 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static "vendor/js/jquery.min.js" %}"></script>
+<script src="{% static "vendor/js/select2.min.js" %}"></script>
 <script>
   $(function(){
     // Initialize Select2

@@ -294,10 +294,10 @@
 {% endblock %}
 
 {% block scripts %}
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+  <script src="{% static "vendor/js/jquery.min.js" %}"></script>
+  <script src="{% static "vendor/js/select2.min.js" %}"></script>
+  <script src="{% static "vendor/js/persian-date.min.js" %}"></script>
+  <script src="{% static "vendor/js/persian-datepicker.min.js" %}"></script>
 
   <script>
     function reportWizard() {

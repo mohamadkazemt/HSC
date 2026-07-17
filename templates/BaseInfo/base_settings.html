@@ -3,9 +3,9 @@
 {% block title %}تنظیمات پایه{% endblock %}
 
 {% block styles %}
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/css/autoComplete.min.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@majidh1/jalalidatepicker/dist/jalalidatepicker.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="{% static "vendor/css/autoComplete.min.css" %}">
+  <link rel="stylesheet" href="{% static "vendor/css/jalalidatepicker.min.css" %}">
+  <link rel="stylesheet" href="{% static "vendor/css/font-awesome.min.css" %}">
 {% endblock %}
 
 {% block content %}
@@ -504,7 +504,7 @@
 {% endblock %}
 
 {% block scripts %}
-  <script src="https://cdn.jsdelivr.net/npm/@majidh1/jalalidatepicker/dist/jalalidatepicker.min.js"></script>
+  <script src="{% static "vendor/js/jalalidatepicker.min.js" %}"></script>
   <script>
     function coreSettings() {
       return {

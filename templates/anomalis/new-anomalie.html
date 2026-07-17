@@ -223,7 +223,7 @@
 
 {% block styles %}
   <!-- Choices CSS (replaces Select2) -->
-  <link href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" rel="stylesheet" />
+  <link href="{% static "vendor/css/choices.min.css" %}" rel="stylesheet" />
   <style>
     /* Tailwind-like look for Choices */
 .choices { width: 100%; }
@@ -245,8 +245,8 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+<script src="{% static "vendor/js/choices.min.js" %}"></script>
+<script src="{% static "vendor/js/browser-image-compression.js" %}"></script>
 <script>
   document.addEventListener('alpine:init', () => {})
 

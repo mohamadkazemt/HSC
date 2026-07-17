@@ -4,8 +4,8 @@
 {% block title %}تقویم جلسات{% endblock %}
 
 {% block extra_css %}
-<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css' rel='stylesheet' />
-<link href='https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.15/locales/fa.js' rel='preload' as='script' />
+<link href='{% static "vendor/css/fullcalendar.min.css" %}' rel='stylesheet' />
+<link href='{% static "vendor/js/fullcalendar-locale-fa.js" %}' rel='preload' as='script' />
 <style>
   .fc {
     direction: rtl;
@@ -289,8 +289,8 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
-<script src='https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.15/locales/fa.js'></script>
+<script src='{% static "vendor/js/fullcalendar.global.min.js" %}'></script>
+<script src='{% static "vendor/js/fullcalendar-locale-fa.js" %}'></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   const calendarEl = document.getElementById('calendar');

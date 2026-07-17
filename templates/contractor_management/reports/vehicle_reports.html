@@ -6,7 +6,7 @@
 
 {% block styles %}
 <!-- Persian Date Picker CSS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@latest/dist/css/persian-datepicker.min.css">
+<link rel="stylesheet" href="{% static "vendor/css/persian-datepicker.min.css" %}">
 <style>
   @media print {
     .no-print {
@@ -326,10 +326,10 @@
 
 {% block scripts %}
 <!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="{% static "vendor/js/jquery.min.js" %}"></script>
 <!-- Persian Date -->
-<script src="https://cdn.jsdelivr.net/npm/persian-date@latest/dist/persian-date.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/persian-datepicker@latest/dist/js/persian-datepicker.min.js"></script>
+<script src="{% static "vendor/js/persian-date.min.js" %}"></script>
+<script src="{% static "vendor/js/persian-datepicker.min.js" %}"></script>
 <script>
   function filterForm() {
     return {

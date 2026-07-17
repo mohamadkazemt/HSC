@@ -4,7 +4,7 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block styles %}
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="{% static "vendor/css/select2.min.css" %}" rel="stylesheet" />
 <style>
   .select2-container .select2-selection--single { height: 40px; }
   .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 38px; }
@@ -445,8 +445,8 @@
 </div>
 
 {% block scripts %}
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static "vendor/js/jquery.min.js" %}"></script>
+<script src="{% static "vendor/js/select2.min.js" %}"></script>
 <script>
   let mergeState = { source: null, target: null };
   let currentEditId = null;

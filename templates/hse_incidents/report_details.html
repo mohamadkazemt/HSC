@@ -5,7 +5,7 @@
 {% block title %}جزئیات گزارش حادثه #{{ report.id }}{% endblock %}
 
 {% block extra_css %}
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="{% static "vendor/css/select2.min.css" %}" rel="stylesheet" />
 <style>
   .info-card {
     transition: all 0.3s ease;
@@ -570,7 +570,7 @@
   {% endif %}
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="{% static "vendor/js/jquery.min.js" %}"></script>
 <script>
 function completionForm() {
   return {

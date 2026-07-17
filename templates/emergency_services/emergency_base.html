@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 
     <!-- Tailwind CSS - استفاده از CDN برای اطمینان از لود شدن در سرور -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{% static "vendor/js/tailwind.js" %}"></script>
     <script>
       window.tailwind = window.tailwind || {};
       window.tailwind.config = {
@@ -34,12 +34,12 @@
       };
     </script>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static "vendor/css/font-awesome.min.css" %}">
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 
     <!-- Global vendor styles -->
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css" />
+    <link href="{% static "vendor/css/select2.min.css" %}" rel="stylesheet" />
+    <link rel="stylesheet" href="{% static "vendor/css/persian-datepicker.min.css" %}" />
 
     {% block styles %}{% endblock %}
     
@@ -48,18 +48,18 @@
     </style>
 
     <!-- Core vendor scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="{% static "vendor/js/jquery.min.js" %}"></script>
+    <script src="{% static "vendor/js/persian-date.min.js" %}"></script>
+    <script src="{% static "vendor/js/persian-datepicker.min.js" %}"></script>
+    <script src="{% static "vendor/js/select2.min.js" %}"></script>
     
     <!-- App JS - باید قبل از Alpine.js لود شود -->
     <script src="{% static 'js/main.js' %}"></script>
     
     <!-- Alpine Plugins -->
-    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="{% static "vendor/js/alpine-collapse.min.js" %}"></script>
     <!-- Alpine.js -->
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="{% static "vendor/js/alpine.min.js" %}"></script>
   </head>
   <body class="h-full font-sans antialiased bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100" x-data="layout()" x-init="initTheme()">
     <!-- Emergency Portal Sidebar -->
@@ -82,9 +82,9 @@
     </div>
 
     <!-- Alpine Plugins -->
-    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="{% static "vendor/js/alpine-collapse.min.js" %}"></script>
     <!-- Alpine.js -->
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="{% static "vendor/js/alpine.min.js" %}"></script>
 
     <!-- Global Jalali picker initializer -->
     <script>

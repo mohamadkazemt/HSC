@@ -14,7 +14,7 @@
     {% endif %}
 
     <!-- Tailwind CSS (CDN in debug, compiled CSS in production) -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="{% static "vendor/js/tailwind.js" %}"></script>
     <script>
       window.tailwind = window.tailwind || {};
       window.tailwind.config = {
@@ -30,7 +30,7 @@
       };
     </script>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static "vendor/css/font-awesome.min.css" %}">
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 
     {% block styles %}{% endblock %}
@@ -42,9 +42,9 @@
     </style>
 
     <!-- Core vendor scripts loaded EARLY so Alpine x-init can use them -->
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/persian-date@1.1.0/dist/persian-date.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+    <script src="{% static "vendor/js/jquery.min.js" %}"></script>
+    <script src="{% static "vendor/js/persian-date.min.js" %}"></script>
+    <script src="{% static "vendor/js/persian-datepicker.min.js" %}"></script>
   </head>
   <body class="h-full font-sans antialiased bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100">
     <!-- Simple Public Header -->
@@ -147,9 +147,9 @@
     </footer>
 
     <!-- Alpine Plugins (must be before core) -->
-    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="{% static "vendor/js/alpine-collapse.min.js" %}"></script>
     <!-- Alpine.js -->
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="{% static "vendor/js/alpine.min.js" %}"></script>
 
     <!-- Simplified public layout function (no sidebar) -->
     <script>

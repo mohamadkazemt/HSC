@@ -6,8 +6,8 @@
 {% block title %}گزارش‌های کارکرد خودروها{% endblock %}
 
 {% block styles %}
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@latest/dist/css/persian-datepicker.min.css">
+<link href="{% static "vendor/css/select2.min.css" %}" rel="stylesheet" />
+<link rel="stylesheet" href="{% static "vendor/css/persian-datepicker.min.css" %}">
 <style>
   .status-badge-active {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
@@ -358,10 +358,10 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/persian-date@latest/dist/persian-date.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/persian-datepicker@latest/dist/js/persian-datepicker.min.js"></script>
+<script src="{% static "vendor/js/jquery.min.js" %}"></script>
+<script src="{% static "vendor/js/select2.min.js" %}"></script>
+<script src="{% static "vendor/js/persian-date.min.js" %}"></script>
+<script src="{% static "vendor/js/persian-datepicker.min.js" %}"></script>
 
 <script>
   $(document).ready(function() {

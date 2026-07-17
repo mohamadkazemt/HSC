@@ -5,8 +5,8 @@
 {% block title %}{% if object %}ویرایش جلسه{% else %}ایجاد جلسه جدید{% endif %}{% endblock %}
 
 {% block extra_css %}
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/css/persian-datepicker.min.css" />
+<link href="{% static "vendor/css/select2.min.css" %}" rel="stylesheet" />
+<link rel="stylesheet" href="{% static "vendor/css/persian-datepicker.min.css" %}" />
 <style>
   .form-control {
     @apply w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3;
@@ -193,9 +193,9 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
+<script src="{% static "vendor/js/jquery.min.js" %}"></script>
+<script src="{% static "vendor/js/select2.min.js" %}"></script>
+<script src="{% static "vendor/js/persian-datepicker.min.js" %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   // Initialize Select2 for participants

@@ -297,7 +297,7 @@
 
 {% block scripts %}
 {{ weekly_visits|json_script:"weekly-data" }}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="{% static "vendor/js/chart.umd.min.js" %}"></script>
 <script>
   try {
     const weeklyDataElement = document.getElementById('weekly-data');

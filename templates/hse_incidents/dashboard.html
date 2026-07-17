@@ -521,7 +521,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="{% static "vendor/js/chart.umd.min.js" %}"></script>
 <script>
   // تنظیمات کلی Chart.js برای RTL
   Chart.defaults.rtl = true;
