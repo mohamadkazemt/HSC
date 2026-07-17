@@ -4,7 +4,7 @@
 {% block title %}تنظیمات پروفایل{% endblock %}
 
 {% block content %}
-<div x-data="{ currentTab: 'settings', imagePreview: '{{ userprofile.image.url|default:'' }}' }">
+<div x-data="{ currentTab: 'settings', imagePreview: '{% if userprofile.image %}{{ userprofile.image.url }}{% endif %}' }">
     <!-- Profile Header -->
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm mb-6 overflow-hidden">
         <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-32"></div>
@@ -92,6 +92,25 @@
                     </div>
                 </div>
             {% endfor %}
+        </div>
+    {% endif %}
+
+    {% if not userprofile.image %}
+        <div class="mb-6 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700" role="alert">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div class="flex items-start">
+                    <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 ml-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.72-1.36 3.485 0l5.58 9.92c.75 1.334-.213 2.981-1.742 2.981H4.42c-1.53 0-2.493-1.647-1.743-2.98l5.58-9.921zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-2a1 1 0 01-1-1V7a1 1 0 112 0v3a1 1 0 01-1 1z" clip-rule="evenodd"/>
+                    </svg>
+                    <div>
+                        <p class="text-sm font-semibold text-amber-900 dark:text-amber-200">تصویر پروفایل شما ثبت نشده است.</p>
+                        <p class="mt-1 text-xs text-amber-800 dark:text-amber-300">لطفاً یک تصویر معتبر با فرمت JPG یا PNG و حداکثر حجم ۲ مگابایت انتخاب کنید.</p>
+                    </div>
+                </div>
+                <a href="#profile-image-card" class="inline-flex justify-center items-center px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium transition">
+                    انتخاب تصویر
+                </a>
+            </div>
         </div>
     {% endif %}
 
@@ -184,7 +203,7 @@
 
             <!-- Profile Picture Card -->
             <div class="lg:col-span-1">
-                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 sticky top-6">
+                <div id="profile-image-card" class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 sticky top-6 scroll-mt-6">
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
                         تصویر پروفایل
                     </h2>

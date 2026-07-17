@@ -170,6 +170,84 @@ class UserProfileModelTest(TestCase):
         self.assertEqual(len(profile.verification_code), 6)
         self.assertTrue(profile.verification_code.isdigit())
         self.assertIsNotNone(profile.code_generated_at)
+
+    def test_settings_page_handles_profile_without_image(self):
+        UserProfile.objects.create(user=self.user)
+        self.client.force_login(self.user)
+
+        response = self.client.get('/accounts/settings/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'تصویر پروفایل شما ثبت نشده است.')
+
+    def test_profile_page_displays_extended_personnel_information(self):
+        from datetime import date
+
+        UserProfile.objects.create(
+            user=self.user,
+            personnel_code='12345',
+            national_code='0012345678',
+            workshop_job_title='اپراتور کارگاه',
+            position=self.position,
+            section=self.section,
+            part=self.part,
+            unit_group=self.unit_group,
+            group='A',
+            birth_date=date(1991, 4, 4),
+            marital_status='متاهل',
+            father_name='حسن',
+            children_count=2,
+            hire_date=date(2016, 8, 22),
+            education_level='کارشناسی',
+            field_of_study='مهندسی معدن',
+            work_experience_days=3650,
+            mobile='09123456789',
+        )
+        self.client.force_login(self.user)
+
+        response = self.client.get('/accounts/profile/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'اپراتور کارگاه')
+        self.assertContains(response, '1370/01/15')
+        self.assertContains(response, '1395/06/01')
+        self.assertContains(response, 'مهندسی معدن')
+        self.assertContains(response, '3650')
+
+    def test_personnel_excel_imports_new_columns_and_jalali_dates(self):
+        from .personnel_excel import import_personnel_dataframe, sample_dataframe
+
+        dataframe = sample_dataframe().iloc[[0]]
+        created, updated, errors, missing = import_personnel_dataframe(dataframe)
+
+        self.assertEqual((created, updated), (1, 0))
+        self.assertEqual(errors, [])
+        self.assertEqual(missing, [])
+        profile = UserProfile.objects.get(personnel_code='12345')
+        self.assertEqual(profile.workshop_job_title, 'اپراتور کارگاه')
+        self.assertEqual(profile.position.name, 'اپراتور')
+        self.assertEqual(profile.group, 'A')
+        self.assertEqual(str(profile.birth_date), '1991-04-04')
+        self.assertEqual(str(profile.hire_date), '2016-08-22')
+        self.assertEqual(profile.children_count, 2)
+        self.assertEqual(profile.work_experience_days, 3650)
+        self.assertEqual(profile.mobile, '09123456789')
+
+    def test_personnel_excel_updates_existing_profile(self):
+        from .personnel_excel import import_personnel_dataframe, sample_dataframe
+
+        profile = UserProfile.objects.create(user=self.user, personnel_code='12345')
+        dataframe = sample_dataframe().iloc[[0]].copy()
+        dataframe.loc[dataframe.index[0], 'نام پدر'] = 'اکبر'
+
+        created, updated, errors, missing = import_personnel_dataframe(dataframe)
+
+        self.assertEqual((created, updated), (0, 1))
+        self.assertEqual(errors, [])
+        self.assertEqual(missing, [])
+        profile.refresh_from_db()
+        self.assertEqual(profile.father_name, 'اکبر')
+        self.assertEqual(profile.national_code, '0012345678')
     
     def create_test_image(self, width=200, height=100, format='PNG'):
         """ایجاد تصویر تست"""

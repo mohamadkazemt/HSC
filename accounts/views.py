@@ -878,21 +878,11 @@ def personnel_edit(request, user_id):
 @login_required
 @superuser_required
 def personnel_import(request):
+    from .personnel_excel import import_personnel_dataframe, sample_dataframe
+
     # Download sample template
     if request.method == 'GET' and request.GET.get('download') == 'sample':
-        sample_data = {
-            "کد پرسنلی": ["12345", "67890"],
-            "نام": ["علی", "زهرا"],
-            "نام خانوادگی": ["رضایی", "کاظمی"],
-            "بخش": ["بخش 1", "بخش 2"],
-            "قسمت": ["قسمت 1", "قسمت 2"],
-            "گروه": ["گروه 1", "گروه 2"],
-            "سمت": ["مدیر", "کارمند"],
-            "موبایل": ["09123456789", "09387654321"],
-            "کد ملی": ["1111111111", "2222222222"],
-            "گروه کاری": ["A", "B"],
-        }
-        df = pd.DataFrame(sample_data)
+        df = sample_dataframe()
         buffer = BytesIO()
         with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
             df.to_excel(writer, index=False, sheet_name='نمونه')
@@ -905,169 +895,18 @@ def personnel_import(request):
         excel_file = request.FILES['excel_file']
         try:
             df = pd.read_excel(excel_file)
-            errors = []
-
-            required_columns = [
-                'کد پرسنلی', 'نام', 'نام خانوادگی', 'بخش', 'قسمت',
-                'گروه', 'سمت', 'موبایل', 'کد ملی',  'گروه کاری'
-            ]
-            missing_columns = [col for col in required_columns if col not in df.columns]
+            created_count, updated_count, errors, missing_columns = import_personnel_dataframe(df)
             if missing_columns:
                 messages.error(request, f"فایل بارگذاری شده دارای ستون‌های ناقص است: {', '.join(missing_columns)}")
                 return redirect('accounts:personnel_import')
-
-            for index, row in df.iterrows():
-                try:
-                    mobile = str(row['موبایل']).strip()
-                    if mobile and not mobile.startswith('0'):
-                        mobile = '0' + mobile
-
-                    section_name = str(row['بخش']).strip()
-                    part_name = str(row['قسمت']).strip()
-                    unit_group_name = str(row['گروه']).strip()
-                    position_name = str(row['سمت']).strip()
-                    work_group = str(row['گروه کاری']).strip().upper()
-                    personnel_code = str(row['کد پرسنلی']).strip()
-                    national_id = str(row['کد ملی']).strip()
-                    first_name = str(row['نام']).strip()
-                    last_name = str(row['نام خانوادگی']).strip()
-
-                    if not national_id:
-                        errors.append(f"ردیف {index + 1}: کد ملی خالی است")
-                        continue
-
-                    # Normalize names: strip and normalize whitespace to prevent duplicates
-                    def normalize_name(name):
-                        if not name:
-                            return ''
-                        # Remove extra whitespace and normalize (strip and collapse multiple spaces)
-                        return ' '.join(str(name).strip().split())
-                    
-                    # Helper function to find existing item by normalized name
-                    def find_existing_by_normalized_name(queryset, name):
-                        normalized = normalize_name(name)
-                        for item in queryset:
-                            if normalize_name(item.name) == normalized:
-                                return item
-                        return None
-                    
-                    section_name = normalize_name(row.get('بخش', ''))
-                    part_name = normalize_name(row.get('قسمت', ''))
-                    unit_group_name = normalize_name(row.get('گروه', ''))
-                    position_name = normalize_name(row.get('سمت', ''))
-                    
-                    # Get or create hierarchy with normalized names (prevent duplicates)
-                    section = None
-                    if section_name:
-                        existing = find_existing_by_normalized_name(Section.objects.all(), section_name)
-                        if existing:
-                            section = existing
-                        else:
-                            section, _ = Section.objects.get_or_create(name=section_name)
-                    
-                    part = None
-                    if part_name:
-                        if section:
-                            existing = find_existing_by_normalized_name(Part.objects.filter(section=section), part_name)
-                            if existing:
-                                part = existing
-                            else:
-                                part, _ = Part.objects.get_or_create(name=part_name, section=section)
-                        else:
-                            existing = find_existing_by_normalized_name(Part.objects.all(), part_name)
-                            if existing:
-                                part = existing
-                            else:
-                                part, _ = Part.objects.get_or_create(name=part_name, section=section)
-                    
-                    unit_group = None
-                    if unit_group_name:
-                        if part:
-                            existing = find_existing_by_normalized_name(UnitGroup.objects.filter(part=part), unit_group_name)
-                            if existing:
-                                unit_group = existing
-                            else:
-                                unit_group, _ = UnitGroup.objects.get_or_create(name=unit_group_name, part=part)
-                    
-                    position = None
-                    if position_name:
-                        if unit_group:
-                            existing = find_existing_by_normalized_name(Position.objects.filter(unit_group=unit_group), position_name)
-                            if existing:
-                                position = existing
-                            else:
-                                position, _ = Position.objects.get_or_create(name=position_name, unit_group=unit_group)
-
-                    # Check if personnel_code already exists - UPDATE only
-                    if personnel_code:
-                        user_profile = UserProfile.objects.filter(personnel_code=personnel_code).select_related('user').first()
-                        if user_profile:
-                            # Update existing user profile
-                            updates = []
-                            if first_name and user_profile.user.first_name != first_name:
-                                user_profile.user.first_name = first_name
-                                updates.append("نام")
-                            if last_name and user_profile.user.last_name != last_name:
-                                user_profile.user.last_name = last_name
-                                updates.append("نام خانوادگی")
-                            if mobile and user_profile.mobile != mobile:
-                                user_profile.mobile = mobile
-                                updates.append("شماره موبایل")
-                            if section and user_profile.section != section:
-                                user_profile.section = section
-                                updates.append("بخش")
-                            if part and user_profile.part != part:
-                                user_profile.part = part
-                                updates.append("قسمت")
-                            if unit_group and user_profile.unit_group != unit_group:
-                                user_profile.unit_group = unit_group
-                                updates.append("گروه")
-                            if position and user_profile.position != position:
-                                user_profile.position = position
-                                updates.append("سمت")
-                            if work_group and user_profile.group != work_group:
-                                user_profile.group = work_group
-                                updates.append("گروه کاری")
-                            
-                            # Always save (even if no visible updates, to ensure data consistency)
-                            user_profile.user.save()
-                            user_profile.save()
-                            
-                            if updates:
-                                messages.success(request, f"ردیف {index + 1} ({personnel_code}): {', '.join(updates)} به‌روزرسانی شد")
-                            continue
-
-                    # Create or update user by national_id
-                    user, created = User.objects.update_or_create(
-                        username=national_id,
-                        defaults={
-                            'first_name': first_name,
-                            'last_name': last_name,
-                            'email': f"{national_id}@example.com",
-                        }
-                    )
-
-                    # Create profile if needed
-                    UserProfile.objects.update_or_create(
-                        user=user,
-                        defaults={
-                            'personnel_code': personnel_code,
-                            'mobile': mobile,
-                            'unit_group': unit_group,
-                            'section': section,
-                            'part': part,
-                            'position': position,
-                            'group': work_group,
-                        }
-                    )
-                except Exception as e:
-                    errors.append(f"ردیف {index + 1}: خطا در ذخیره‌سازی کاربر - {str(e)}")
-
             if errors:
                 for err in errors:
-                    messages.info(request, err)
-            else:
-                messages.success(request, 'کاربران با موفقیت وارد شدند.')
+                    messages.error(request, err)
+            if created_count or updated_count:
+                messages.success(
+                    request,
+                    f'{created_count} پرسنل ایجاد و {updated_count} پرسنل به‌روزرسانی شد.'
+                )
         except Exception as e:
             messages.error(request, f"خطا در پردازش فایل: {str(e)}")
         return redirect('accounts:personnel_import')

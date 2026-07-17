@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static jalali_tags %}
 
 {% block title %}پروفایل کاربر{% endblock %}
 
@@ -143,7 +143,31 @@
                         
                         <div>
                             <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">کد ملی</label>
-                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ user.username }}</p>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ user.userprofile.national_code|default:user.username }}</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">تاریخ تولد</label>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                {% if user.userprofile.birth_date %}{{ user.userprofile.birth_date|to_jalali:"%Y/%m/%d" }}{% else %}-{% endif %}
+                            </p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">نام پدر</label>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ user.userprofile.father_name|default:"-" }}</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">وضعیت تاهل</label>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ user.userprofile.marital_status|default:"-" }}</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">تعداد فرزندان</label>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                {% if user.userprofile.children_count != None %}{{ user.userprofile.children_count }}{% else %}-{% endif %}
+                            </p>
                         </div>
                         
                         <div>
@@ -160,6 +184,11 @@
                     <!-- Organizational Information -->
                     <div class="space-y-4">
                         <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider pb-2 border-b border-gray-200 dark:border-gray-700">اطلاعات سازمانی</h3>
+
+                        <div>
+                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">عنوان شغل کارگاه</label>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ user.userprofile.workshop_job_title|default:"-" }}</p>
+                        </div>
                         
                         <div>
                             <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">بخش</label>
@@ -195,7 +224,7 @@
                         </div>
                         
                         <div>
-                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">سمت</label>
+                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">عنوان شغل</label>
                             <p class="text-sm font-medium text-gray-900 dark:text-white">
                                 {% if user.userprofile.position %}
                                     {{ user.userprofile.position.name }}
@@ -203,6 +232,43 @@
                                     -
                                 {% endif %}
                             </p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">گروه کاری (شیفت)</label>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                {% if user.userprofile.group %}{{ user.userprofile.get_group_display }}{% else %}-{% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Employment and Education Information -->
+                    <div class="md:col-span-2 mt-2">
+                        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider pb-2 mb-4 border-b border-gray-200 dark:border-gray-700">اطلاعات استخدامی و تحصیلی</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">تاریخ استخدام</label>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                    {% if user.userprofile.hire_date %}{{ user.userprofile.hire_date|to_jalali:"%Y/%m/%d" }}{% else %}-{% endif %}
+                                </p>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">سابقه کار (روز)</label>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                    {% if user.userprofile.work_experience_days != None %}{{ user.userprofile.work_experience_days }} روز{% else %}-{% endif %}
+                                </p>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">مقطع تحصیلی</label>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ user.userprofile.education_level|default:"-" }}</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">رشته تحصیلی</label>
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ user.userprofile.field_of_study|default:"-" }}</p>
+                            </div>
                         </div>
                     </div>
                 </div>
