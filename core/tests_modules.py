@@ -86,3 +86,24 @@ class ModuleSwitchTests(TestCase):
 
         list_response = self.client.get("/admin/core/modulesetting/")
         self.assertContains(list_response, "module-status-toggle")
+
+    def test_disabled_modules_are_removed_from_dashboard_and_permission_choices(self):
+        ModuleSetting.objects.filter(
+            module_key__in=("anomalis", "checklist_app", "hse_incidents")
+        ).update(is_active=False)
+        self.client.force_login(self.user)
+
+        response = self.client.get("/dashboard/")
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "مدیریت آنومالی")
+        self.assertNotContains(response, "مدیریت چک‌لیست")
+        self.assertNotContains(response, "حوادث HSE")
+
+        from permissions.utils import get_all_views_with_labels
+
+        visible_apps = {
+            view.get("app_label") for view in get_all_views_with_labels()
+        }
+        self.assertNotIn("anomalis", visible_apps)
+        self.assertNotIn("checklist_app", visible_apps)
+        self.assertNotIn("hse_incidents", visible_apps)

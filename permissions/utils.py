@@ -29,17 +29,25 @@ def get_all_views():
     return views
 
 
-def get_all_views_with_labels():
+def get_all_views_with_labels(include_disabled=False):
     """
     استخراج تمام ویوهای تعریف‌شده در پروژه همراه با لیبل‌ها.
     """
     views_with_labels = []
 
+    from core.module_registry import get_module_states
+
+    module_states = get_module_states()
     for app_name in apps.get_app_configs():
+        if not include_disabled and not module_states.get(app_name.label, True):
+            continue
         try:
             module = __import__(f"{app_name.name}.urls", fromlist=["URLS_WITH_LABELS"])
             if hasattr(module, "URLS_WITH_LABELS"):
-                views_with_labels.extend(module.URLS_WITH_LABELS)
+                views_with_labels.extend(
+                    {**view, "app_label": app_name.label}
+                    for view in module.URLS_WITH_LABELS
+                )
         except ModuleNotFoundError:
             continue
 

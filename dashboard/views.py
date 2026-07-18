@@ -59,15 +59,17 @@ def dashboard(request):
     from leave_reports.models import ShiftReport, ApprovalHierarchy
     from django.db.models import Q
     
-    # درخواست‌های منتظر تأیید جایگزین
-    pending_replacement_approvals = ShiftReport.objects.filter(
-        replacement_person=request.user,
-        status='pending_replacement'
-    ).select_related('user', 'user__userprofile').order_by('-created_at')[:5]
-    
-    # درخواست‌های منتظر تأیید مدیر
+    pending_replacement_approvals = []
     pending_manager_approvals = []
-    if hasattr(request.user, 'userprofile'):
+    if module_states.get('leave_reports', True):
+        # درخواست‌های منتظر تأیید جایگزین
+        pending_replacement_approvals = ShiftReport.objects.filter(
+            replacement_person=request.user,
+            status='pending_replacement'
+        ).select_related('user', 'user__userprofile').order_by('-created_at')[:5]
+
+    # درخواست‌های منتظر تأیید مدیر
+    if module_states.get('leave_reports', True) and hasattr(request.user, 'userprofile'):
         managed_sections = ApprovalHierarchy.objects.filter(
             approver=request.user.userprofile
         ).values_list('section_id', flat=True)
@@ -182,8 +184,9 @@ def dashboard(request):
             unit_group_permissions = []
     
     # دریافت لیبل‌های ویوها
-    views_with_labels = get_all_views_with_labels()
+    views_with_labels = get_all_views_with_labels(include_disabled=True)
     view_labels = {view['name']: view['label'] for view in views_with_labels}
+    view_modules = {view['name']: view.get('app_label') for view in views_with_labels}
     
     # ترکیب همه دسترسی‌ها
     all_permissions = []
@@ -252,6 +255,9 @@ def dashboard(request):
     unique_permissions = {}
     for perm in all_permissions:
         view_name = perm['view_name']
+        app_label = view_modules.get(view_name)
+        if app_label and not module_states.get(app_label, True):
+            continue
         if view_name not in unique_permissions:
             unique_permissions[view_name] = perm
     

@@ -44,6 +44,7 @@
     <nav class="flex flex-1 flex-col">
       <ul role="list" class="flex flex-1 flex-col gap-y-7">
         {% if request.user.contractor_profile %}
+          {% if active_modules.contractor_management %}
           <!-- Contractor-specific menu -->
           <li>
             <ul role="list" class="space-y-1">
@@ -67,7 +68,9 @@
               </li>
             </ul>
           </li>
+          {% endif %}
         {% elif request.user.employee_profile %}
+          {% if active_modules.contractor_management %}
           <!-- Employee-specific menu -->
           <li>
             <ul role="list" class="space-y-1">
@@ -85,6 +88,7 @@
               </li>
             </ul>
           </li>
+          {% endif %}
         {% else %}
         <!-- Main navigation for internal users -->
         <li>
@@ -102,6 +106,7 @@
             </li>
 
         <!-- Contractor Management -->
+        {% if active_modules.contractor_management %}
         <li>
           <div x-data="{ openContractors: false }" class="space-y-1">
             <button @click="openContractors = !openContractors" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-semibold text-gray-700 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
@@ -176,6 +181,7 @@
             </ul>
           </div>
         </li>
+        {% endif %}
 
         {% endif %}
 
@@ -223,6 +229,7 @@
               {% endif %}
               
               <!-- Leave Management (nested) -->
+              {% if active_modules.leave_reports %}
               <li>
                 <div x-data="{ openLeave: false }" class="space-y-1">
                   <button @click="openLeave = !openLeave" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-medium text-gray-600 hover:text-purple-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
@@ -287,6 +294,7 @@
                   </ul>
                 </div>
               </li>
+              {% endif %}
             </ul>
           </div>
         </li>
@@ -294,6 +302,7 @@
 
         <!-- Safety Unit (HSEC) -->
         {% if not request.user.contractor_profile and not request.user.employee_profile %}
+        {% if active_modules.fire_extinguisher_management or active_modules.fire_reports or active_modules.anomalis or active_modules.checklist_app or active_modules.dailyreport_hse or active_modules.hse_incidents or active_modules.emergency_services or active_modules.risk_assessment or active_modules.corrective_actions or active_modules.hse_docs %}
         <li>
           <div x-data="{ open: false }" class="space-y-1">
             <button @click="open = !open" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-semibold text-gray-700 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
@@ -311,6 +320,7 @@
             </button>
             <ul x-show="open" x-collapse class="pl-9 space-y-2">
               <!-- Fire Safety Management (nested) -->
+              {% if active_modules.fire_extinguisher_management %}
               <li>
                 <div x-data="{ openFireSafety: false }" class="space-y-1">
                   <button @click="openFireSafety = !openFireSafety" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
@@ -350,7 +360,9 @@
                   </ul>
                 </div>
               </li>
+              {% endif %}
               <!-- Fire Reports (nested) -->
+              {% if active_modules.fire_reports %}
               <li>
                 <div x-data="{ openFireReports: false }" class="space-y-1">
                   <button @click="openFireReports = !openFireReports" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-medium text-gray-600 hover:text-orange-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
@@ -386,6 +398,7 @@
                   </ul>
                 </div>
               </li>
+              {% endif %}
               <!-- Anomaly Management (nested) -->
               {% if active_modules.anomalis %}
               <li>
@@ -429,6 +442,7 @@
               </li>
               {% endif %}
               <!-- Checklist Management (nested) -->
+              {% if active_modules.checklist_app %}
               <li>
                 <div x-data="{ openSubC: false }" class="space-y-1">
                   <button @click="openSubC = !openSubC" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-medium text-gray-600 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
@@ -511,7 +525,9 @@
                   </ul>
                 </div>
               </li>
+              {% endif %}
               <!-- Daily HSE Report (new) -->
+              {% if active_modules.dailyreport_hse %}
               <li>
                 <div x-data="{ openDaily: false }" class="space-y-1">
                   <button @click="openDaily = !openDaily" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-medium text-gray-600 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
@@ -543,7 +559,9 @@
                   </ul>
                 </div>
               </li>
+              {% endif %}
               <!-- HSE Incidents Reporting -->
+              {% if active_modules.hse_incidents %}
               <li>
                 <div x-data="{ openIncidents: false }" class="space-y-1">
                   <button @click="openIncidents = !openIncidents" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
@@ -603,7 +621,9 @@
                   </ul>
                 </div>
               </li>
+              {% endif %}
               <!-- Emergency Services (nested) -->
+              {% if active_modules.emergency_services %}
               <li>
                 <div x-data="{ openEmergency: false }" class="space-y-1">
                   <button @click="openEmergency = !openEmergency" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-medium text-gray-600 hover:text-rose-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
@@ -692,7 +712,9 @@
                 </div>
               </li>
               
+              {% endif %}
               <!-- Risk Assessment (nested) -->
+              {% if active_modules.risk_assessment %}
               <li>
                 <div x-data="{ openRisk: false }" class="space-y-1">
                   <button @click="openRisk = !openRisk" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-medium text-gray-600 hover:text-purple-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
@@ -743,7 +765,9 @@
                 </div>
               </li>
               
+              {% endif %}
               <!-- Corrective Actions (nested) -->
+              {% if active_modules.corrective_actions %}
               <li>
                 <div x-data="{ openCorrectiveActions: false }" class="space-y-1">
                   <button @click="openCorrectiveActions = !openCorrectiveActions" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-medium text-gray-600 hover:text-emerald-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
@@ -782,7 +806,9 @@
                 </div>
               </li>
               
+              {% endif %}
               <!-- HSE Documents & QR Management (nested) -->
+              {% if active_modules.hse_docs %}
               <li>
                 <div x-data="{ openHSEDocs: false }" class="space-y-1">
                   <button @click="openHSEDocs = !openHSEDocs" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-medium text-gray-600 hover:text-indigo-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
@@ -835,9 +861,11 @@
           </div>
         </li>
         {% endif %}
+        {% endif %}
 
         <!-- Workshop Unit (واحد تعمیرگاه) -->
         {% if not request.user.contractor_profile and not request.user.employee_profile %}
+        {% if active_modules.machine_checklist %}
         <li>
           <div x-data="{ openWorkshop: {% if 'machine-checklist' in request.path %}true{% else %}false{% endif %} }" class="space-y-1">
             <button @click="openWorkshop = !openWorkshop" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-semibold text-gray-700 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
@@ -878,8 +906,10 @@
           </div>
         </li>
         {% endif %}
+        {% endif %}
 
         <!-- Mining Operations Unit (عملیات معدنی) -->
+        {% if active_modules.mining_operations %}
         <li>
           <div x-data="{ openMiningOps: {% if 'mining-operations' in request.path %}true{% else %}false{% endif %} }" class="space-y-1">
             <button @click="openMiningOps = !openMiningOps" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-semibold text-gray-700 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
@@ -944,13 +974,16 @@
                 </a>
               </li>
               {% endif %}
+              {% endif %}
             </ul>
           </div>
         </li>
+        {% endif %}
 
 
         <!-- Meetings Management -->
         {% if not request.user.contractor_profile and not request.user.employee_profile %}
+        {% if active_modules.meetings %}
         <li>
           <div x-data="{ openMeetings: false }" class="space-y-1">
             <button @click="openMeetings = !openMeetings" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-semibold text-gray-700 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
@@ -998,6 +1031,7 @@
             </ul>
           </div>
         </li>
+        {% endif %}
         {% endif %}
 
       </ul>
