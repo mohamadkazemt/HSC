@@ -1,9 +1,116 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}داشبورد{% endblock %}
 
+{% block extra_css %}
+<style>
+  .dashboard-shell {
+    --dash-primary: #5b4cf0;
+    --dash-primary-dark: #4235c7;
+    --dash-coral: #ff7657;
+    --dash-ink: #172033;
+    --dash-muted: #71809b;
+    --dash-line: #e8eaf4;
+    --dash-surface: #ffffff;
+  }
+  .dashboard-shell .executive-hero {
+    background:
+      radial-gradient(circle at 8% 10%, rgba(255,255,255,.18), transparent 24%),
+      linear-gradient(125deg, #4032c4 0%, #6657f5 55%, #7666ff 100%);
+    box-shadow: 0 20px 50px -28px rgba(68, 52, 201, .75);
+  }
+  .dashboard-shell .executive-card,
+  .dashboard-shell .dashboard-panel {
+    background: var(--dash-surface);
+    border: 1px solid var(--dash-line);
+    box-shadow: 0 12px 35px -28px rgba(32, 40, 72, .45);
+  }
+  .dashboard-shell .executive-card { transition: transform .2s ease, box-shadow .2s ease; }
+  .dashboard-shell .executive-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 38px -27px rgba(48, 42, 128, .5);
+  }
+  .dashboard-shell .metric-ring {
+    background: conic-gradient(var(--ring-color) calc(var(--ring-value) * 1%), #eceefa 0);
+  }
+  .dashboard-shell .metric-ring::after {
+    content: '';
+    position: absolute;
+    inset: 5px;
+    border-radius: 9999px;
+    background: white;
+  }
+  .dark .dashboard-shell {
+    --dash-surface: #171b2b;
+    --dash-line: #292e43;
+    --dash-ink: #f5f6fb;
+    --dash-muted: #a9b0c3;
+  }
+  .dark .dashboard-shell .metric-ring::after { background: #171b2b; }
+  .dashboard-shell .dashboard-module {
+    background: var(--dash-surface) !important;
+    border: 1px solid var(--dash-line) !important;
+    border-radius: 1rem;
+  }
+  .dashboard-shell .module-header {
+    background: transparent !important;
+    color: var(--dash-ink) !important;
+    border-bottom: 1px solid var(--dash-line);
+  }
+  .dashboard-shell .module-header::before,
+  .dashboard-shell .module-header > .absolute { display: none; }
+  .dashboard-shell .module-header .module-icon {
+    background: rgba(91, 76, 240, .1) !important;
+    color: var(--dash-primary) !important;
+  }
+  .dashboard-shell .module-header p { color: var(--dash-muted) !important; }
+  .dashboard-shell .module-header a { color: var(--dash-primary) !important; }
+  .dashboard-shell .quick-action-card {
+    background: var(--dash-surface) !important;
+    color: var(--dash-ink) !important;
+    border: 1px solid var(--dash-line);
+    box-shadow: none !important;
+  }
+  .dashboard-shell .quick-action-card:hover {
+    border-color: rgba(91, 76, 240, .35);
+    box-shadow: 0 16px 30px -26px rgba(68, 52, 201, .55) !important;
+  }
+  .dashboard-shell .quick-action-card > div > div {
+    background: rgba(91, 76, 240, .1) !important;
+    color: var(--dash-primary) !important;
+  }
+  .dashboard-shell .quick-action-card span {
+    background: #f4f3ff !important;
+    color: #7568c9 !important;
+  }
+  .dark .dashboard-shell .quick-action-card span { background: #25223d !important; color: #b9b0ff !important; }
+  .dashboard-shell .stats-category {
+    background: #fafbff;
+    border: 1px solid var(--dash-line);
+  }
+  .dark .dashboard-shell .stats-category { background: #131725; }
+  .dashboard-shell .stat-row {
+    background: var(--dash-surface);
+    border: 1px solid var(--dash-line);
+    transition: border-color .2s ease, transform .2s ease, box-shadow .2s ease;
+  }
+  .dashboard-shell .stat-row:hover {
+    border-color: rgba(91, 76, 240, .35);
+    transform: translateY(-2px);
+    box-shadow: 0 14px 28px -24px rgba(68, 52, 201, .6);
+  }
+  .dashboard-shell > div:not(.executive-overview) {
+    box-shadow: 0 12px 35px -28px rgba(32, 40, 72, .45) !important;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dashboard-shell .executive-card { transition: none; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="space-y-6">
+<div class="dashboard-shell space-y-6">
   {% if license_warning %}
   <div x-data="{show:true}" x-show="show" class="rounded-lg border border-yellow-300 bg-yellow-50 text-yellow-900 dark:bg-yellow-900/20 dark:text-yellow-200 p-4 flex items-start gap-3">
     <svg class="h-6 w-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -20,13 +127,118 @@
   </div>
   {% endif %}
 
+  <section class="executive-overview space-y-5" aria-labelledby="dashboard-overview-title">
+    <div class="executive-hero relative overflow-hidden rounded-3xl px-5 py-6 text-white sm:px-8 sm:py-8">
+      <div class="absolute -left-16 -top-20 h-56 w-56 rounded-full border-[36px] border-white/5"></div>
+      <div class="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <div class="mb-3 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium backdrop-blur-sm">
+            <span class="h-2 w-2 rounded-full bg-emerald-300"></span>
+            نمای زنده سازمان
+          </div>
+          <h1 id="dashboard-overview-title" class="text-2xl font-bold tracking-tight sm:text-3xl">
+            سلام {{ request.user.get_full_name|default:request.user.username }}، خوش آمدید
+          </h1>
+          <p class="mt-2 max-w-2xl text-sm leading-7 text-indigo-100 sm:text-base">
+            نمای یکپارچه منابع انسانی، عملیات و رویدادهای مهم مجموعه
+          </p>
+        </div>
+        <div class="flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 px-4 py-3 backdrop-blur-md">
+          <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-white/15">
+            <i class="fa-solid fa-calendar-day text-lg"></i>
+          </span>
+          <div>
+            <p class="text-xs text-indigo-100">امروز</p>
+            <p class="mt-0.5 text-sm font-semibold">{{ today_jalali|default:"تاریخ روز" }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <article class="executive-card rounded-2xl p-5">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">تعداد پرسنل فعال</p>
+            <p class="mt-3 text-3xl font-bold text-slate-900 dark:text-white">{{ personnel_summary.total|default:0 }}</p>
+            <p class="mt-2 text-xs text-slate-400">پروفایل فعال سازمانی</p>
+          </div>
+          <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300">
+            <i class="fa-solid fa-users text-lg"></i>
+          </span>
+        </div>
+      </article>
+      <article class="executive-card rounded-2xl p-5">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">میانگین سن</p>
+            <p class="mt-3 text-3xl font-bold text-slate-900 dark:text-white">
+              {{ personnel_summary.average_age|default:"—" }} <span class="text-sm font-medium text-slate-400">سال</span>
+            </p>
+            <p class="mt-2 text-xs text-slate-400">بر اساس تاریخ تولد ثبت‌شده</p>
+          </div>
+          <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">
+            <i class="fa-solid fa-chart-line text-lg"></i>
+          </span>
+        </div>
+      </article>
+      <article class="executive-card rounded-2xl p-5">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">میانگین سابقه</p>
+            <p class="mt-3 text-3xl font-bold text-slate-900 dark:text-white">
+              {{ personnel_summary.average_tenure|default:"—" }} <span class="text-sm font-medium text-slate-400">سال</span>
+            </p>
+            <p class="mt-2 text-xs text-slate-400">بر اساس تاریخ استخدام</p>
+          </div>
+          <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-rose-500 dark:bg-rose-500/15 dark:text-rose-300">
+            <i class="fa-solid fa-briefcase text-lg"></i>
+          </span>
+        </div>
+      </article>
+      <article class="executive-card rounded-2xl p-5">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">تکمیل اطلاعات</p>
+            <p class="mt-3 text-3xl font-bold text-slate-900 dark:text-white">{{ personnel_summary.profile_completion|default:0 }}٪</p>
+            <p class="mt-2 text-xs text-slate-400">{{ personnel_summary.active_sections|default:0 }} بخش فعال</p>
+          </div>
+          <div class="metric-ring relative flex h-16 w-16 items-center justify-center rounded-full" style="--ring-value: {{ personnel_summary.profile_completion|default:0 }}; --ring-color: #5b4cf0;">
+            <i class="fa-solid fa-check relative z-10 text-violet-600 dark:text-violet-300"></i>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <div class="grid grid-cols-1 gap-5 xl:grid-cols-5">
+      <article class="dashboard-panel rounded-2xl p-5 sm:p-6 xl:col-span-3">
+        <div class="mb-6 flex items-center justify-between gap-4">
+          <div>
+            <h2 class="font-bold text-slate-900 dark:text-white">توزیع پرسنل در بخش‌ها</h2>
+            <p class="mt-1 text-xs text-slate-400">شش بخش با بیشترین نیروی فعال</p>
+          </div>
+          <span class="rounded-lg bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-600 dark:bg-violet-500/10 dark:text-violet-300">منابع انسانی</span>
+        </div>
+        <div class="h-64"><canvas id="personnelSectionChart" aria-label="نمودار توزیع پرسنل در بخش‌ها"></canvas></div>
+      </article>
+      <article class="dashboard-panel rounded-2xl p-5 sm:p-6 xl:col-span-2">
+        <div class="mb-6">
+          <h2 class="font-bold text-slate-900 dark:text-white">ترکیب گروه‌های کاری</h2>
+          <p class="mt-1 text-xs text-slate-400">سهم هر گروه از پرسنل فعال</p>
+        </div>
+        <div class="mx-auto h-64 max-w-sm"><canvas id="personnelGroupChart" aria-label="نمودار گروه‌های کاری"></canvas></div>
+      </article>
+    </div>
+    {{ personnel_charts|json_script:"personnel-chart-data" }}
+  </section>
+
   <!-- Leave Inbox Widget (کارتابل مرخصی‌ها) -->
   {% if pending_replacement_approvals or pending_manager_approvals %}
-  <div class="rounded-2xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-800 shadow-xl overflow-hidden">
-    <div class="px-6 py-5 bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-500 text-white flex items-center gap-4 relative overflow-hidden">
+  <div class="dashboard-module rounded-2xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border border-purple-200 dark:border-purple-800 shadow-xl overflow-hidden">
+    <div class="module-header px-6 py-5 bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-500 text-white flex items-center gap-4 relative overflow-hidden">
       <div class="absolute inset-0 bg-gradient-to-r from-purple-600/90 to-indigo-600/90"></div>
       <div class="relative z-10 flex items-center gap-4 flex-1">
-        <div class="p-3 rounded-xl bg-white/20 backdrop-blur-sm">
+        <div class="module-icon p-3 rounded-xl bg-white/20 backdrop-blur-sm">
           <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 9v.906a2.25 2.25 0 0 1-1.183 1.981l-6.478 3.488M2.25 9v.906a2.25 2.25 0 0 0 1.183 1.981l6.478 3.488m8.839 2.51-4.66-2.51m0 0-1.023-.55a2.25 2.25 0 0 0-2.134 0l-1.022.55m0 0-4.661 2.51m16.5 1.615a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V8.844a2.25 2.25 0 0 1 1.183-1.981l7.5-4.039a2.25 2.25 0 0 1 2.134 0l7.5 4.039a2.25 2.25 0 0 1 1.183 1.98V19.5Z"/>
           </svg>
@@ -242,8 +454,8 @@
 
   <!-- Quick Access Forms - بلوک‌های دسترسی سریع (دسته‌بندی شده و هوشمند) -->
   {% if quick_access_forms_by_category %}
-  <div class="rounded-xl bg-white dark:bg-gray-800 shadow-lg overflow-hidden mb-6">
-    <div class="px-6 py-4 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white">
+  <div class="dashboard-module rounded-xl bg-white dark:bg-gray-800 shadow-lg overflow-hidden mb-6">
+    <div class="module-header px-6 py-4 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white">
       <div class="flex items-center gap-3">
         <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"/>
@@ -258,7 +470,7 @@
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
         {% for category_name, category_data in quick_access_forms_by_category.items %}
           {% for form in category_data.forms %}
-          <a href="{% url form.url %}" class="group relative overflow-hidden rounded-xl bg-gradient-to-br {{ form.bg_gradient }} {{ form.hover }} text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+          <a href="{% url form.url %}" class="quick-action-card group relative overflow-hidden rounded-xl bg-gradient-to-br {{ form.bg_gradient }} {{ form.hover }} text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
             <div class="p-4 sm:p-5 flex flex-col items-center justify-center text-center min-h-[120px] sm:min-h-[140px]">
               <div class="mb-2 sm:mb-3 p-2 sm:p-3 rounded-xl bg-white/20 backdrop-blur-sm group-hover:bg-white/30 transition-all">
                 <svg class="h-6 w-6 sm:h-8 sm:w-8" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
@@ -279,58 +491,88 @@
   </div>
   {% endif %}
 
-  <!-- Stat cards - آمار کلی (دسته‌بندی شده و هوشمند) -->
+  <!-- آمار کلی -->
   {% if stats_by_category %}
-  <div class="mb-6">
-    <div class="mb-4 flex items-center gap-3">
-      <div class="p-2 rounded-lg bg-indigo-100 dark:bg-indigo-900/30">
-        <svg class="h-6 w-6 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+  <section class="dashboard-panel overflow-hidden rounded-2xl" aria-labelledby="general-stats-title">
+    <div class="flex flex-col gap-3 border-b border-slate-100 px-5 py-5 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <div class="flex items-center gap-3">
+        <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300">
+          <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/>
-        </svg>
+          </svg>
+        </div>
+        <div>
+          <h2 id="general-stats-title" class="font-bold text-slate-900 dark:text-white">آمار کلی عملیات</h2>
+          <p class="mt-1 text-xs text-slate-400">خلاصه وضعیت ماژول‌ها بر اساس سطح دسترسی شما</p>
+        </div>
       </div>
-      <h3 class="text-lg font-bold text-gray-900 dark:text-white">آمار کلی</h3>
+      <span class="inline-flex w-fit items-center gap-2 rounded-lg bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+        اطلاعات به‌روز
+      </span>
     </div>
-    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+
+    <div class="grid grid-cols-1 gap-4 p-4 md:grid-cols-2 sm:p-6 xl:grid-cols-3">
       {% for category_name, category_data in stats_by_category.items %}
+      <article class="stats-category rounded-2xl p-4">
+        <div class="mb-4 flex items-center gap-3">
+          <span class="flex h-9 w-9 items-center justify-center rounded-xl
+            {% if category_data.color == 'green' %}bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300
+            {% elif category_data.color == 'red' %}bg-rose-100 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300
+            {% elif category_data.color == 'amber' %}bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300
+            {% elif category_data.color == 'blue' %}bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300
+            {% elif category_data.color == 'teal' %}bg-teal-100 text-teal-600 dark:bg-teal-500/10 dark:text-teal-300
+            {% else %}bg-violet-100 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300{% endif %}">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="{{ category_data.icon }}"/>
+            </svg>
+          </span>
+          <div class="min-w-0">
+            <h3 class="truncate text-sm font-bold text-slate-800 dark:text-slate-100">{{ category_name }}</h3>
+            <p class="mt-0.5 text-[11px] text-slate-400">شاخص‌های ثبت‌شده</p>
+          </div>
+        </div>
+
+        <div class="space-y-2.5">
         {% for stat in category_data.stats %}
-        <a href="{% url stat.url %}" class="group rounded-2xl bg-gradient-to-br {{ stat.gradient }} text-white shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 hover:scale-105 overflow-hidden relative">
-          <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          <div class="relative p-4 sm:p-6">
-            <div class="flex items-center justify-between mb-3 sm:mb-4">
-              <div class="p-2 sm:p-3 rounded-xl bg-white/20 backdrop-blur-sm group-hover:bg-white/30 transition-all group-hover:rotate-12">
-                <svg class="h-5 w-5 sm:h-7 sm:w-7" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+        <a href="{% url stat.url %}" class="stat-row group flex min-h-[86px] items-center gap-3 rounded-xl p-3.5">
+          <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-violet-600 shadow-sm ring-1 ring-slate-100 dark:bg-slate-800 dark:text-violet-300 dark:ring-slate-700">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" d="{{ stat.icon }}"/>
                 </svg>
-              </div>
-              <svg class="h-4 w-4 sm:h-5 sm:w-5 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/>
-              </svg>
-            </div>
-            <p class="text-[10px] sm:text-xs {% if category_data.color == 'indigo' %}text-purple-100{% elif category_data.color == 'green' %}text-orange-100{% elif category_data.color == 'blue' %}text-blue-100{% elif category_data.color == 'red' %}text-red-100{% elif category_data.color == 'amber' %}text-amber-100{% elif category_data.color == 'teal' %}text-teal-100{% endif %} mb-1 sm:mb-2 font-medium">{{ stat.label }}</p>
-            <p class="text-2xl sm:text-3xl font-bold {% if stat.sub_value is not None %}mb-1{% endif %}">{{ stat.value|default:0 }}</p>
+          </span>
+          <div class="min-w-0 flex-1">
+            <p class="truncate text-xs font-medium text-slate-500 dark:text-slate-400">{{ stat.label }}</p>
+            <div class="mt-1 flex items-baseline gap-2">
+              <strong class="text-xl font-bold text-slate-900 dark:text-white">{{ stat.value|default:0 }}</strong>
             {% if stat.sub_value is not None and stat.sub_value > 0 %}
-            <p class="text-[10px] sm:text-xs {% if category_data.color == 'indigo' %}text-purple-200{% elif category_data.color == 'green' %}text-orange-200{% elif category_data.color == 'blue' %}text-blue-200{% elif category_data.color == 'red' %}text-red-200{% elif category_data.color == 'amber' %}text-amber-200{% elif category_data.color == 'teal' %}text-teal-200{% endif %}">{{ stat.sub_label }}: {{ stat.sub_value }}</p>
+              <span class="rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+                {{ stat.sub_value }} {{ stat.sub_label }}
+              </span>
             {% endif %}
-            <span class="mt-2 inline-block px-2 py-0.5 rounded-md text-[9px] sm:text-[10px] font-medium bg-white/20 backdrop-blur-sm {% if category_data.color == 'indigo' %}text-indigo-100{% elif category_data.color == 'green' %}text-green-100{% elif category_data.color == 'blue' %}text-blue-100{% elif category_data.color == 'red' %}text-red-100{% elif category_data.color == 'amber' %}text-amber-100{% elif category_data.color == 'teal' %}text-teal-100{% endif %}">
-              {{ category_name }}
-            </span>
+            </div>
           </div>
+          <svg class="h-4 w-4 shrink-0 text-slate-300 transition-transform group-hover:-translate-x-1 group-hover:text-violet-500 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/>
+          </svg>
         </a>
         {% endfor %}
+        </div>
+      </article>
       {% endfor %}
     </div>
-  </div>
+  </section>
   {% endif %}
 
   <!-- Main grid - اعلان‌ها و فعالیت‌ها -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Recent notifications -->
     <div class="lg:col-span-1">
-      <div class="rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border border-blue-200 dark:border-blue-800 shadow-xl overflow-hidden">
-        <div class="px-6 py-5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white flex items-center justify-between relative overflow-hidden">
+      <div class="dashboard-module rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border border-blue-200 dark:border-blue-800 shadow-xl overflow-hidden">
+        <div class="module-header px-6 py-5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white flex items-center justify-between relative overflow-hidden">
           <div class="absolute inset-0 bg-gradient-to-r from-blue-600/90 to-cyan-600/90"></div>
           <div class="relative z-10 flex items-center gap-3 flex-1">
-            <div class="p-2.5 rounded-xl bg-white/20 backdrop-blur-sm">
+            <div class="module-icon p-2.5 rounded-xl bg-white/20 backdrop-blur-sm">
               <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/>
               </svg>
@@ -373,11 +615,11 @@
 
     <!-- Recent activities -->
     <div class="lg:col-span-2">
-      <div class="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800 shadow-xl overflow-hidden">
-        <div class="px-6 py-5 bg-gradient-to-r from-emerald-600 to-teal-500 text-white flex items-center justify-between relative overflow-hidden">
+      <div class="dashboard-module rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800 shadow-xl overflow-hidden">
+        <div class="module-header px-6 py-5 bg-gradient-to-r from-emerald-600 to-teal-500 text-white flex items-center justify-between relative overflow-hidden">
           <div class="absolute inset-0 bg-gradient-to-r from-emerald-600/90 to-teal-600/90"></div>
           <div class="relative z-10 flex items-center gap-3 flex-1">
-            <div class="p-2.5 rounded-xl bg-white/20 backdrop-blur-sm">
+            <div class="module-icon p-2.5 rounded-xl bg-white/20 backdrop-blur-sm">
               <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
               </svg>
@@ -420,11 +662,11 @@
   </div>
 
   <!-- Permissions table -->
-  <div class="rounded-2xl bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-900/20 dark:to-gray-900/20 border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
-    <div class="px-6 py-5 bg-gradient-to-r from-slate-600 to-gray-600 text-white flex items-center gap-3 relative overflow-hidden">
+  <div class="dashboard-module rounded-2xl bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-900/20 dark:to-gray-900/20 border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
+    <div class="module-header px-6 py-5 bg-gradient-to-r from-slate-600 to-gray-600 text-white flex items-center gap-3 relative overflow-hidden">
       <div class="absolute inset-0 bg-gradient-to-r from-slate-600/90 to-gray-600/90"></div>
       <div class="relative z-10 flex items-center gap-3 flex-1">
-        <div class="p-2.5 rounded-xl bg-white/20 backdrop-blur-sm">
+        <div class="module-icon p-2.5 rounded-xl bg-white/20 backdrop-blur-sm">
           <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"/>
           </svg>
@@ -549,7 +791,67 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'vendor/js/chart.umd.min.js' %}"></script>
 <script>
+const personnelChartNode = document.getElementById('personnel-chart-data');
+if (personnelChartNode && window.Chart) {
+    const personnelCharts = JSON.parse(personnelChartNode.textContent);
+    const textColor = document.documentElement.classList.contains('dark') ? '#a9b0c3' : '#71809b';
+    const gridColor = document.documentElement.classList.contains('dark') ? 'rgba(255,255,255,.07)' : 'rgba(74,85,125,.08)';
+    Chart.defaults.font.family = 'Vazirmatn';
+    Chart.defaults.color = textColor;
+
+    const sectionCanvas = document.getElementById('personnelSectionChart');
+    if (sectionCanvas && personnelCharts.sections.labels.length) {
+        new Chart(sectionCanvas, {
+            type: 'bar',
+            data: {
+                labels: personnelCharts.sections.labels,
+                datasets: [{
+                    data: personnelCharts.sections.values,
+                    backgroundColor: ['#5b4cf0', '#7164f5', '#8b80f8', '#ff7657', '#ff967f', '#56c7a5'],
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    maxBarThickness: 42
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, border: { display: false } },
+                    y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: gridColor }, border: { display: false } }
+                }
+            }
+        });
+    }
+
+    const groupCanvas = document.getElementById('personnelGroupChart');
+    if (groupCanvas && personnelCharts.groups.labels.length) {
+        new Chart(groupCanvas, {
+            type: 'doughnut',
+            data: {
+                labels: personnelCharts.groups.labels,
+                datasets: [{
+                    data: personnelCharts.groups.values,
+                    backgroundColor: ['#5b4cf0', '#ff7657', '#ffc857', '#56c7a5', '#61a8ff', '#9a85ff'],
+                    borderWidth: 0,
+                    spacing: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '68%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 16, boxWidth: 7 } }
+                }
+            }
+        });
+    }
+}
+
 // Leave Inbox AJAX functionality
 let currentLeaveId = null;
 let currentRejectType = null;

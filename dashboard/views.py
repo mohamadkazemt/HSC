@@ -27,6 +27,7 @@ name = 'dashboard'
 @login_required
 def dashboard(request):
     module_states = get_module_states()
+    today = timezone.localdate()
     # بررسی اینکه آیا کاربر پرسنل اورژانس است (پرستار یا پزشک - نه مدیر)
     is_emergency_nurse = request.user.groups.filter(name='EmergencyNurse').exists()
     is_emergency_doctor = request.user.groups.filter(name='EmergencyDoctor').exists()
@@ -86,6 +87,70 @@ def dashboard(request):
     
     # دریافت فعالیت‌های اخیر کاربر
     recent_activities = UserActivity.objects.filter(user=request.user).order_by('-created_at')[:5]
+
+    # Aggregate workforce indicators used by the executive dashboard.  Only
+    # summary data is exposed; no personnel details are sent to the template.
+    active_profiles = UserProfile.objects.filter(user__is_active=True)
+    personnel_total = active_profiles.count()
+
+    def completed_years(start_date):
+        if not start_date:
+            return None
+        return today.year - start_date.year - (
+            (today.month, today.day) < (start_date.month, start_date.day)
+        )
+
+    ages = [
+        age for age in (
+            completed_years(birth_date)
+            for birth_date in active_profiles.values_list('birth_date', flat=True)
+        )
+        if age is not None and 15 <= age <= 100
+    ]
+    tenures = [
+        tenure for tenure in (
+            completed_years(hire_date)
+            for hire_date in active_profiles.values_list('hire_date', flat=True)
+        )
+        if tenure is not None and tenure >= 0
+    ]
+
+    personnel_summary = {
+        'total': personnel_total,
+        'average_age': round(sum(ages) / len(ages), 1) if ages else None,
+        'average_tenure': round(sum(tenures) / len(tenures), 1) if tenures else None,
+        'active_sections': active_profiles.exclude(section=None)
+        .values('section_id').distinct().count(),
+        'profile_completion': round(
+            active_profiles.exclude(personnel_code='')
+            .filter(birth_date__isnull=False, hire_date__isnull=False).count()
+            * 100 / personnel_total
+        ) if personnel_total else 0,
+    }
+
+    section_rows = list(
+        active_profiles.exclude(section=None)
+        .values('section__name')
+        .annotate(total=Count('id'))
+        .order_by('-total', 'section__name')[:6]
+    )
+    group_labels = dict(UserProfile.GROUP_CHOICES)
+    group_rows = list(
+        active_profiles.exclude(group='')
+        .values('group')
+        .annotate(total=Count('id'))
+        .order_by('group')
+    )
+    personnel_charts = {
+        'sections': {
+            'labels': [row['section__name'] for row in section_rows],
+            'values': [row['total'] for row in section_rows],
+        },
+        'groups': {
+            'labels': [group_labels.get(row['group'], row['group']) for row in group_rows],
+            'values': [row['total'] for row in group_rows],
+        },
+    }
     
     # دریافت دسترسی‌های مستقیم کاربر
     user_permissions = UserPermission.objects.filter(user=request.user)
@@ -585,6 +650,8 @@ def dashboard(request):
         'pending_manager_approvals': pending_manager_approvals,
         # فرم‌های دسترسی سریع (دسته‌بندی شده)
         'quick_access_forms_by_category': accessible_forms_by_category,
+        'personnel_summary': personnel_summary,
+        'personnel_charts': personnel_charts,
     }
 
     return render(request, 'dashboard/dashboard.html', context)
