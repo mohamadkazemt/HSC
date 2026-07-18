@@ -2,6 +2,14 @@ from .utils import get_anomaly_stats_all_users
 from .views import get_anomaly_stats
 
 def anomaly_stats_context(request):
+    from core.module_registry import is_module_enabled
+
+    if not is_module_enabled('anomalis'):
+        return {
+            'user_anomaly_stats': {},
+            'all_users_anomaly_stats': {},
+        }
+
     # چک می‌کنیم که آیا کاربر لاگین کرده است یا خیر
     if request.user.is_authenticated:
         # اگر کاربر لاگین کرده باشد، آمار برای کاربر خاص را می‌گیریم

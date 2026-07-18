@@ -19,12 +19,14 @@ from django.http import HttpResponseForbidden
 from django.db.models import Count, Q
 from datetime import timedelta
 from .models_sms import SMSLog, SMSTemplate
+from core.module_registry import get_module_states
 
 name = 'dashboard'
 
 
 @login_required
 def dashboard(request):
+    module_states = get_module_states()
     # بررسی اینکه آیا کاربر پرسنل اورژانس است (پرستار یا پزشک - نه مدیر)
     is_emergency_nurse = request.user.groups.filter(name='EmergencyNurse').exists()
     is_emergency_doctor = request.user.groups.filter(name='EmergencyDoctor').exists()
@@ -360,7 +362,7 @@ def dashboard(request):
             }
     
     # ناهنجاری‌ها
-    if stats.get('total_anomalies') is not None:
+    if module_states.get('anomalis', True) and stats.get('total_anomalies') is not None:
         if request.user.is_superuser or check_permission(request.user, 'anomalis').get('can_view', False):
             anomaly_stat = {'label': 'ناهنجاری‌ها', 'value': stats.get('total_anomalies', 0), 'url': 'anomalis:list', 'icon': 'M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z', 'gradient': 'from-red-500 via-red-600 to-red-700', 'sub_value': stats.get('completed_anomalies', 0), 'sub_label': 'تکمیل شده'}
             stats_by_category['ناهنجاری‌ها'] = {
@@ -538,6 +540,8 @@ def dashboard(request):
     for category_name, category_data in quick_access_forms_by_category.items():
         accessible_forms = []
         for form in category_data['forms']:
+            if not module_states.get(form['app'], True):
+                continue
             # بررسی دسترسی - اگر سوپریوزر است یا دسترسی دارد
             if request.user.is_superuser:
                 accessible_forms.append(form)
@@ -555,6 +559,17 @@ def dashboard(request):
                 'forms': accessible_forms
             }
     
+    # Remove cards belonging to globally disabled modules. The URL namespace
+    # used by every card is the corresponding Django app label.
+    for category_name in list(stats_by_category):
+        category = stats_by_category[category_name]
+        category['stats'] = [
+            stat for stat in category['stats']
+            if module_states.get(stat.get('url', '').split(':', 1)[0], True)
+        ]
+        if not category['stats']:
+            del stats_by_category[category_name]
+
     context = {
         'unread_notifications_count': unread_notifications_count,
         'recent_notifications': recent_notifications,

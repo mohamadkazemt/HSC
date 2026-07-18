@@ -159,6 +159,11 @@
                         </div>
 
                         <div>
+                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">محل تولد</label>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ user.userprofile.place_of_birth|default:"-" }}</p>
+                        </div>
+
+                        <div>
                             <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">وضعیت تاهل</label>
                             <p class="text-sm font-medium text-gray-900 dark:text-white">{{ user.userprofile.marital_status|default:"-" }}</p>
                         </div>
@@ -168,6 +173,11 @@
                             <p class="text-sm font-medium text-gray-900 dark:text-white">
                                 {% if user.userprofile.children_count != None %}{{ user.userprofile.children_count }}{% else %}-{% endif %}
                             </p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">وضعیت خدمت سربازی</label>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ user.userprofile.military_service_status|default:"-" }}</p>
                         </div>
                         
                         <div>
@@ -188,6 +198,11 @@
                         <div>
                             <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">عنوان شغل کارگاه</label>
                             <p class="text-sm font-medium text-gray-900 dark:text-white">{{ user.userprofile.workshop_job_title|default:"-" }}</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">واحد</label>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ user.userprofile.unit|default:"-" }}</p>
                         </div>
                         
                         <div>
@@ -235,7 +250,7 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">گروه کاری (شیفت)</label>
+                            <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">گروه کاری</label>
                             <p class="text-sm font-medium text-gray-900 dark:text-white">
                                 {% if user.userprofile.group %}{{ user.userprofile.get_group_display }}{% else %}-{% endif %}
                             </p>

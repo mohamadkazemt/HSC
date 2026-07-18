@@ -13,6 +13,7 @@ class UserImportAdmin(admin.ModelAdmin):
         'last_name',
         'personnel_code',
         'national_id',
+        'unit',
         'position',
         'unit_group',
         'part',

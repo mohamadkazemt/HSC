@@ -20,3 +20,10 @@ def today_jalali(request):
         return {"today_jalali": today.strftime('%Y/%m/%d')}
     except Exception:
         return {"today_jalali": None}
+
+
+def active_modules(request):
+    """Expose global module switches to every template."""
+    from .module_registry import get_module_states
+
+    return {"active_modules": get_module_states()}

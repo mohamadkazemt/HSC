@@ -188,6 +188,7 @@ class UserProfileModelTest(TestCase):
             personnel_code='12345',
             national_code='0012345678',
             workshop_job_title='اپراتور کارگاه',
+            unit='عملیات معدن',
             position=self.position,
             section=self.section,
             part=self.part,
@@ -200,6 +201,8 @@ class UserProfileModelTest(TestCase):
             hire_date=date(2016, 8, 22),
             education_level='کارشناسی',
             field_of_study='مهندسی معدن',
+            place_of_birth='کرمان',
+            military_service_status='پایان خدمت',
             work_experience_days=3650,
             mobile='09123456789',
         )
@@ -209,9 +212,11 @@ class UserProfileModelTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'اپراتور کارگاه')
+        self.assertContains(response, 'عملیات معدن')
         self.assertContains(response, '1370/01/15')
         self.assertContains(response, '1395/06/01')
         self.assertContains(response, 'مهندسی معدن')
+        self.assertContains(response, 'پایان خدمت')
         self.assertContains(response, '3650')
 
     def test_personnel_excel_imports_new_columns_and_jalali_dates(self):
@@ -225,12 +230,15 @@ class UserProfileModelTest(TestCase):
         self.assertEqual(missing, [])
         profile = UserProfile.objects.get(personnel_code='12345')
         self.assertEqual(profile.workshop_job_title, 'اپراتور کارگاه')
+        self.assertEqual(profile.unit, 'عملیات معدن')
         self.assertEqual(profile.position.name, 'اپراتور')
         self.assertEqual(profile.group, 'A')
         self.assertEqual(str(profile.birth_date), '1991-04-04')
         self.assertEqual(str(profile.hire_date), '2016-08-22')
         self.assertEqual(profile.children_count, 2)
         self.assertEqual(profile.work_experience_days, 3650)
+        self.assertEqual(profile.place_of_birth, 'کرمان')
+        self.assertEqual(profile.military_service_status, 'پایان خدمت')
         self.assertEqual(profile.mobile, '09123456789')
 
     def test_personnel_excel_updates_existing_profile(self):

@@ -113,6 +113,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'core.middleware.ActiveModuleMiddleware',
     'emergency_services.middleware.EmergencyPersonnelAccessMiddleware',  # محدود کردن دسترسی پرسنل اورژانس
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -141,6 +142,7 @@ TEMPLATES = [
                 'permissions.context_processors.permission_context',
                 'core.context_processors.site_settings',
                 'core.context_processors.today_jalali',
+                'core.context_processors.active_modules',
             ],
             'builtins': [
                 # Make project's Jalali template filters available globally

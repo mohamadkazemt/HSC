@@ -15,10 +15,11 @@ EXCEL_COLUMNS = [
     'نام خانوادگی',
     'عنوان شغل کارگاه',
     'عنوان شغل',
+    'واحد',
     'بخش',
     'قسمت',
     'گروه',
-    'شیفت',
+    'گروه کاری',
     'کد ملی',
     'تاریخ تولد',
     'وضعیت تاهل',
@@ -27,6 +28,8 @@ EXCEL_COLUMNS = [
     'تاریخ استخدام',
     'مقطع تحصیلی',
     'رشته تحصیلی',
+    'محل تولد',
+    'وضعیت خدمت سربازی',
     'سابقه کار (روز)',
     'شماره تماس',
 ]
@@ -117,12 +120,14 @@ def validate_columns(dataframe):
 
 def sample_dataframe():
     rows = [
-        [1, '12345', 'علی', 'رضایی', 'اپراتور کارگاه', 'اپراتور', 'تولید',
-         'عملیات', 'گروه 1', 'A', '0012345678', '1370/01/15', 'متاهل',
-         'حسن', 2, '1395/06/01', 'کارشناسی', 'مهندسی معدن', 3650, '09123456789'],
+        [1, '12345', 'علی', 'رضایی', 'اپراتور کارگاه', 'اپراتور', 'عملیات معدن',
+         'تولید', 'عملیات', 'گروه 1', 'A', '0012345678', '1370/01/15', 'متاهل',
+         'حسن', 2, '1395/06/01', 'کارشناسی', 'مهندسی معدن', 'کرمان',
+         'پایان خدمت', 3650, '09123456789'],
         [2, '67890', 'زهرا', 'کاظمی', 'کارشناس کارگاه', 'کارشناس', 'HSE',
-         'ایمنی', 'گروه 2', 'روزکار', '0023456789', '1375/08/20', 'مجرد',
-         'محمد', 0, '1400/02/10', 'کارشناسی ارشد', 'مهندسی ایمنی', 1825, '09387654321'],
+         'HSE', 'ایمنی', 'گروه 2', 'B', '0023456789', '1375/08/20', 'مجرد',
+         'محمد', 0, '1400/02/10', 'کارشناسی ارشد', 'مهندسی ایمنی', 'یزد',
+         'معاف', 1825, '09387654321'],
     ]
     return pd.DataFrame(rows, columns=EXCEL_COLUMNS)
 
@@ -173,12 +178,13 @@ def import_personnel_row(row):
     values = {
         'personnel_code': personnel_code,
         'national_code': national_code,
+        'unit': clean_value(row.get('واحد')),
         'workshop_job_title': clean_value(row.get('عنوان شغل کارگاه')),
         'section': section,
         'part': part,
         'unit_group': unit_group,
         'position': position,
-        'group': clean_value(row.get('شیفت')).upper(),
+        'group': clean_value(row.get('گروه کاری')).upper(),
         'birth_date': parse_excel_date(row.get('تاریخ تولد'), 'تاریخ تولد'),
         'marital_status': clean_value(row.get('وضعیت تاهل')),
         'father_name': clean_value(row.get('نام پدر')),
@@ -186,6 +192,8 @@ def import_personnel_row(row):
         'hire_date': parse_excel_date(row.get('تاریخ استخدام'), 'تاریخ استخدام'),
         'education_level': clean_value(row.get('مقطع تحصیلی')),
         'field_of_study': clean_value(row.get('رشته تحصیلی')),
+        'place_of_birth': clean_value(row.get('محل تولد')),
+        'military_service_status': clean_value(row.get('وضعیت خدمت سربازی')),
         'work_experience_days': clean_non_negative_integer(
             row.get('سابقه کار (روز)'), 'سابقه کار (روز)'
         ),
