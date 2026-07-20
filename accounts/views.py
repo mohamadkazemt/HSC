@@ -105,10 +105,16 @@ def user_login(request):
     return render(request, 'accounts/login.html', {'form': LoginForm()})
 
 
+import logging as _otp_logging
+_otp_log = _otp_logging.getLogger('accounts.otp_debug')
+
 @require_POST
 def send_login_otp(request):
-    mobile = normalize_iranian_mobile(request.POST.get('mobile'))
+    raw_mobile = request.POST.get('mobile')
+    mobile = normalize_iranian_mobile(raw_mobile)
+    _otp_log.warning('send_login_otp raw=%r normalized=%r POST_keys=%s', raw_mobile, mobile, list(request.POST.keys()))
     if not mobile:
+        _otp_log.warning('send_login_otp REJECT: mobile is None/empty')
         return JsonResponse({
             'success': False,
             'message': 'شماره موبایل معتبر وارد کنید.',
@@ -120,6 +126,7 @@ def send_login_otp(request):
     mobile_key = hashlib.sha256(mobile.encode()).hexdigest()
     cache_key = f'login-otp-send:{mobile_key}'
     if not cache.add(cache_key, True, cooldown):
+        _otp_log.warning('send_login_otp REJECT: cooldown active for %s', mobile)
         return JsonResponse({
             'success': False,
             'message': f'برای ارسال مجدد کد {cooldown} ثانیه صبر کنید.',
@@ -128,6 +135,7 @@ def send_login_otp(request):
 
     profile = get_unique_profile_by_mobile(mobile)
     user = profile.user if profile else None
+    _otp_log.warning('send_login_otp profile=%s user=%s is_active=%s denial=%s', profile, user, user.is_active if user else None, _main_portal_denial(user) if user else None)
     if user is None or not user.is_active or _main_portal_denial(user):
         # Avoid revealing whether a mobile number belongs to an account.
         request.session.pop(LOGIN_OTP_SESSION_KEY, None)
