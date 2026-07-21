@@ -441,9 +441,8 @@ def action_disconnect_user(request: HttpRequest, chat_id: str) -> JsonResponse:
     try:
         rubika_user = RubikaUser.objects.select_related('user').get(chat_id=chat_id)
         if rubika_user.user:
-            service = RubPyIntegrationService.get_instance()
-            # We can't await here, so we call the sync wrapper
-            service.engine._disconnect_user(chat_id, rubika_user) 
+            rubika_user.user = None
+            rubika_user.save(update_fields=['user'])
         return JsonResponse({'ok': True})
     except RubikaUser.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'کاربر یافت نشد'}, status=404)

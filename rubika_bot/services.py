@@ -810,8 +810,28 @@ class RubikaBotEngine:
             return
 
         previous_username = user.user.username if user.user and user.user != code.user else None
-        user.user = code.user
-        await sync_to_async(user.save, thread_sensitive=True)(update_fields=['user'])
+
+        @sync_to_async(thread_sensitive=True)
+        def link_user():
+            from django.db import transaction
+            with transaction.atomic():
+                existing = RubikaUser.objects.filter(user=code.user).exclude(pk=user.pk).first()
+                if existing:
+                    existing.user = None
+                    existing.save(update_fields=['user'])
+                user.user = code.user
+                user.save(update_fields=['user'])
+
+        try:
+            await link_user()
+        except Exception as exc:
+            logger.exception("Failed to link user %s to code user %s", user, code.user)
+            buttons = Keypad(rows=[
+                KeypadRow(buttons=[self._button('connect', '🔗 راهنمای اتصال'), self._button('start', '🏠 منوی اصلی')])
+            ])
+            await self._send_text_message(chat_id, '❌ خطا در اتصال حساب. لطفاً دوباره تلاش کنید.', buttons)
+            return
+
         await sync_to_async(code.mark_used, thread_sensitive=True)(chat_id=chat_id)
 
         if previous_username:
