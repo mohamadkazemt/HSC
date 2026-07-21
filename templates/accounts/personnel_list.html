@@ -67,6 +67,29 @@
   .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #6b7280;
   }
+  .personnel-scroll-proxy {
+    overflow-x: auto;
+    overflow-y: hidden;
+    direction: ltr;
+    height: 14px;
+    border-bottom: 1px solid rgb(229 231 235);
+  }
+  .personnel-table-scroll {
+    max-height: min(68vh, 720px);
+    overflow: auto;
+    direction: ltr;
+    scrollbar-gutter: stable;
+  }
+  .personnel-table-scroll table { direction: rtl; }
+  .personnel-table-scroll thead {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  .dark .personnel-scroll-proxy { border-color: rgb(55 65 81); }
+  @media (max-width: 640px) {
+    .personnel-table-scroll { max-height: 62vh; }
+  }
 </style>
 {% endblock %}
 
@@ -353,8 +376,9 @@
         {% endif %}
       </div>
     </div>
-    <div class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+    <div id="personnel-scroll-proxy" class="personnel-scroll-proxy" aria-label="اسکرول افقی بالای جدول"><div id="personnel-scroll-proxy-content" style="height:1px"></div></div>
+    <div id="personnel-table-scroll" class="personnel-table-scroll">
+      <table id="personnel-table" class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
         <thead class="bg-gray-50 dark:bg-gray-800/70">
           <tr>
             <th class="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
@@ -575,6 +599,39 @@
 <script src="{% static "vendor/js/select2.min.js" %}"></script>
 <script>
   $(function(){
+    const tableScroll = document.getElementById('personnel-table-scroll');
+    const scrollProxy = document.getElementById('personnel-scroll-proxy');
+    const proxyContent = document.getElementById('personnel-scroll-proxy-content');
+    const personnelTable = document.getElementById('personnel-table');
+
+    if (tableScroll && scrollProxy && proxyContent && personnelTable) {
+      let syncingScroll = false;
+
+      function updateProxyWidth() {
+        proxyContent.style.width = personnelTable.scrollWidth + 'px';
+        scrollProxy.style.display = personnelTable.scrollWidth > tableScroll.clientWidth ? 'block' : 'none';
+      }
+
+      scrollProxy.addEventListener('scroll', function() {
+        if (syncingScroll) return;
+        syncingScroll = true;
+        tableScroll.scrollLeft = scrollProxy.scrollLeft;
+        syncingScroll = false;
+      });
+
+      tableScroll.addEventListener('scroll', function() {
+        if (syncingScroll) return;
+        syncingScroll = true;
+        scrollProxy.scrollLeft = tableScroll.scrollLeft;
+        syncingScroll = false;
+      });
+
+      updateProxyWidth();
+      window.addEventListener('resize', updateProxyWidth);
+      if (window.ResizeObserver) {
+        new ResizeObserver(updateProxyWidth).observe(personnelTable);
+      }
+    }
     function initSelect($el, placeholder){
       $el.select2({
         placeholder: placeholder,
