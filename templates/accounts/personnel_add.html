@@ -61,7 +61,7 @@
           <h2 class="text-lg font-semibold text-gray-900 dark:text-white">اطلاعات شخصی</h2>
         </div>
         
-        <form method="post" class="space-y-5">
+        <form method="post" id="personnel-add-form" class="space-y-5">
           {% csrf_token %}
           
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -123,6 +123,18 @@
                      class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200"
                      placeholder="09123456789">
             </div>
+<div><label for="father_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">نام پدر</label><input type="text" name="father_name" id="father_name" value="{{ request.POST.father_name }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm"></div>
+            <div><label for="birth_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">تاریخ تولد</label><input type="date" name="birth_date" id="birth_date" value="{{ request.POST.birth_date }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm"></div>
+            <div><label for="place_of_birth" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">محل تولد</label><input type="text" name="place_of_birth" id="place_of_birth" value="{{ request.POST.place_of_birth }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm"></div>
+            <div><label for="marital_status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">وضعیت تأهل</label><input type="text" name="marital_status" id="marital_status" value="{{ request.POST.marital_status }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm"></div>
+            <div><label for="children_count" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">تعداد فرزندان</label><input type="number" min="0" name="children_count" id="children_count" value="{{ request.POST.children_count }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm"></div>
+            <div><label for="education_level" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">مقطع تحصیلی</label><input type="text" name="education_level" id="education_level" value="{{ request.POST.education_level }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm"></div>
+            <div><label for="field_of_study" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">رشته تحصیلی</label><input type="text" name="field_of_study" id="field_of_study" value="{{ request.POST.field_of_study }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm"></div>
+            <div><label for="military_service_status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">وضعیت خدمت سربازی</label><input type="text" name="military_service_status" id="military_service_status" value="{{ request.POST.military_service_status }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm"></div>
+            <div><label for="hire_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">تاریخ استخدام</label><input type="date" name="hire_date" id="hire_date" value="{{ request.POST.hire_date }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm"></div>
+            <div><label for="work_experience_days" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">سابقه کار (روز)</label><input type="number" min="0" name="work_experience_days" id="work_experience_days" value="{{ request.POST.work_experience_days }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm"></div>
+            <div><label for="unit" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">واحد</label><input type="text" name="unit" id="unit" value="{{ request.POST.unit }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm"></div>
+            <div><label for="workshop_job_title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">عنوان شغل کارگاه</label><input type="text" name="workshop_job_title" id="workshop_job_title" value="{{ request.POST.workshop_job_title }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm"></div>
           </div>
 
           <div class="flex items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -156,7 +168,7 @@
                 <i class="fa-solid fa-building text-gray-400 text-xs ml-1"></i>
                 بخش
               </label>
-              <select name="section" id="section" class="select2 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
+              <select form="personnel-add-form" name="section" id="section" class="select2 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
                 <option value="">انتخاب بخش</option>
                 {% for s in sections %}
                   <option value="{{ s.id }}">{{ s.name }}</option>
@@ -168,7 +180,7 @@
                 <i class="fa-solid fa-sitemap text-gray-400 text-xs ml-1"></i>
                 قسمت
               </label>
-              <select name="part" id="part" class="select2 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
+              <select form="personnel-add-form" name="part" id="part" class="select2 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
                 <option value="">انتخاب قسمت</option>
                 {% for p in parts %}
                   <option value="{{ p.id }}">{{ p.name }}</option>
@@ -180,7 +192,7 @@
                 <i class="fa-solid fa-layer-group text-gray-400 text-xs ml-1"></i>
                 گروه
               </label>
-              <select name="unit_group" id="unit_group" class="select2 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
+              <select form="personnel-add-form" name="unit_group" id="unit_group" class="select2 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
                 <option value="">انتخاب گروه</option>
                 {% for g in unit_groups %}
                   <option value="{{ g.id }}">{{ g.name }}</option>
@@ -192,7 +204,7 @@
                 <i class="fa-solid fa-user-tie text-gray-400 text-xs ml-1"></i>
                 سمت
               </label>
-              <select name="position" id="position" class="select2 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
+              <select form="personnel-add-form" name="position" id="position" class="select2 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
                 <option value="">انتخاب سمت</option>
                 {% for pos in positions %}
                   <option value="{{ pos.id }}">{{ pos.name }}</option>
@@ -204,7 +216,7 @@
                 <i class="fa-solid fa-users text-gray-400 text-xs ml-1"></i>
                 گروه کاری
               </label>
-              <select name="group" id="group" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
+              <select form="personnel-add-form" name="group" id="group" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
                 <option value="">انتخاب گروه کاری</option>
                 <option value="A">گروه A</option>
                 <option value="B">گروه B</option>

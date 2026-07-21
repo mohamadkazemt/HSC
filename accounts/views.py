@@ -960,6 +960,15 @@ def personnel_add(request):
         unit_group_id = request.POST.get('unit_group')
         position_id = request.POST.get('position')
         work_group = request.POST.get('group', '').strip().upper()
+        extra_fields = (
+            'father_name', 'place_of_birth', 'marital_status', 'education_level',
+            'field_of_study', 'military_service_status', 'unit', 'workshop_job_title',
+        )
+        extra_values = {name: request.POST.get(name, '').strip() for name in extra_fields}
+        birth_date = request.POST.get('birth_date') or None
+        hire_date = request.POST.get('hire_date') or None
+        children_count = request.POST.get('children_count', '').strip()
+        work_experience_days = request.POST.get('work_experience_days', '').strip()
         
         # Validation
         if not first_name or not last_name:
@@ -1003,7 +1012,13 @@ def personnel_add(request):
                 profile = UserProfile.objects.create(
                     user=user,
                     personnel_code=personnel_code,
+                    national_code=national_id,
                     mobile=mobile,
+                    birth_date=birth_date,
+                    hire_date=hire_date,
+                    children_count=int(children_count) if children_count.isdigit() else None,
+                    work_experience_days=int(work_experience_days) if work_experience_days.isdigit() else None,
+                    **extra_values,
                     section=section,
                     part=part,
                     unit_group=unit_group,
