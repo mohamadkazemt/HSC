@@ -255,7 +255,7 @@
             بخش
           </label>
           <select id="filter_section" name="section" class="select2 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-700 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
-            <option value="">همه بخش‌ها</option>
+            <option value=""></option>
             {% for s in sections %}
               <option value="{{ s.id }}" {% if current_filters.section|add:'' == s.id|add:'' %}selected{% endif %}>{{ s.name }}</option>
             {% endfor %}
@@ -267,7 +267,7 @@
             قسمت
           </label>
           <select id="filter_part" name="part" class="select2 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-700 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
-            <option value="">همه قسمت‌ها</option>
+            <option value=""></option>
           </select>
         </div>
         <div>
@@ -276,7 +276,7 @@
             گروه
           </label>
           <select id="filter_unit_group" name="unit_group" class="select2 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-700 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
-            <option value="">همه گروه‌ها</option>
+            <option value=""></option>
           </select>
         </div>
         <div>
@@ -285,13 +285,13 @@
             سمت
           </label>
           <select id="filter_position" name="position" class="select2 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-700 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
-            <option value="">همه سمت‌ها</option>
+            <option value=""></option>
           </select>
         </div>
         <div>
           <label for="filter_group" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">گروه کاری</label>
           <select id="filter_group" name="group" class="select2 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-700 px-3 py-2.5 text-sm">
-            <option value="">همه گروه‌های کاری</option>
+            <option value=""></option>
             {% for value, label in work_group_choices %}<option value="{{ value }}" {% if current_filters.group == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
           </select>
         </div>
@@ -611,7 +611,7 @@
     }
 
     function loadParts(sectionId, selectedPartId, selectedUnitGroupId, selectedPositionId){
-      resetSelect($part, 'همه قسمت‌ها');
+      resetSelect($part, '');
       // اگر sectionId خالی است، همه قسمت‌ها را لود کن
       const params = sectionId ? { section: sectionId } : {};
       $.getJSON('{% url "accounts:personnel_api_parts" %}', params)
@@ -631,7 +631,7 @@
     }
 
     function loadUnitGroups(partId, selectedUnitGroupId, selectedPositionId){
-      resetSelect($unitGroup, 'همه گروه‌ها');
+      resetSelect($unitGroup, '');
       if (!partId){
         return;
       }
@@ -651,7 +651,7 @@
     }
 
     function loadPositions(unitGroupId, selectedPositionId){
-      resetSelect($position, 'همه سمت‌ها');
+      resetSelect($position, '');
       if (!unitGroupId){
         return;
       }
@@ -672,8 +672,8 @@
     $section.on('change', function(){
       const sectionId = $(this).val();
       $part.removeData('preselected-unit-group preselected-position');
-      resetSelect($unitGroup, 'همه گروه‌ها', true);
-      resetSelect($position, 'همه سمت‌ها', true);
+      resetSelect($unitGroup, '', true);
+      resetSelect($position, '', true);
       // همیشه قسمت‌ها را لود کن (چه بخش انتخاب شده باشد یا نه)
       loadParts(sectionId, null, null, null);
     });
@@ -687,8 +687,8 @@
       const preselectedUnitGroup = $(this).data('preselected-unit-group') || null;
       const preselectedPosition = $(this).data('preselected-position') || null;
       $(this).removeData('preselected-unit-group preselected-position');
-      resetSelect($unitGroup, 'همه گروه‌ها', true);
-      resetSelect($position, 'همه سمت‌ها', true);
+      resetSelect($unitGroup, '', true);
+      resetSelect($position, '', true);
       if (partId){
         loadUnitGroups(partId, preselectedUnitGroup, preselectedPosition);
       }
@@ -702,7 +702,7 @@
       const unitGroupId = $(this).val();
       const preselectedPosition = $(this).data('preselected-position') || null;
       $(this).removeData('preselected-position');
-      resetSelect($position, 'همه سمت‌ها', true);
+      resetSelect($position, '', true);
       if (unitGroupId){
         loadPositions(unitGroupId, preselectedPosition);
       }
@@ -716,17 +716,17 @@
       $(this).val('').trigger('change');
     });
 
-    initSelect($section, 'همه بخش‌ها');
-    initSelect($part, 'همه قسمت‌ها');
-    initSelect($unitGroup, 'همه گروه‌ها');
-    initSelect($position, 'همه سمت‌ها');
-    initSelect($('#filter_group'), 'همه گروه‌های کاری');
+    initSelect($section, '');
+    initSelect($part, '');
+    initSelect($unitGroup, '');
+    initSelect($position, '');
+    initSelect($('#filter_group'), '');
 
     // همیشه قسمت‌ها را لود کن (چه بخش انتخاب شده باشد یا نه)
     loadParts(initialSection || null, initialPart || null, initialUnitGroup || null, initialPosition || null);
     if (!initialSection){
-      resetSelect($unitGroup, 'همه گروه‌ها');
-      resetSelect($position, 'همه سمت‌ها');
+      resetSelect($unitGroup, '');
+      resetSelect($position, '');
     }
   });
 
