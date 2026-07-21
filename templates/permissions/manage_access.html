@@ -294,6 +294,10 @@
           user: {{ users|safe }}
         },
         init(){
+          const listContainer = document.getElementById('permissionsListContainer');
+          if(listContainer){
+            listContainer.addEventListener('click', (event)=>this.togglePermission(event));
+          }
           // Initialize select2 for entity selects lazily when entityType changes
           this.$watch('entityType', (type)=>{
             this.selectedEntityId = '';
@@ -423,6 +427,46 @@
         toggleAllPermissions(){
           const allOn = this.perm.view && this.perm.add && this.perm.edit && this.perm.delete;
           this.perm.view = this.perm.add = this.perm.edit = this.perm.delete = !allOn;
+        },
+        renderPermissionToggle(button, value){
+          button.setAttribute('aria-pressed', String(value));
+          button.classList.toggle('bg-green-100', value);
+          button.classList.toggle('dark:bg-green-900/30', value);
+          button.classList.toggle('bg-red-100', !value);
+          button.classList.toggle('dark:bg-red-900/30', !value);
+          button.innerHTML = value
+            ? '<svg class="h-4 w-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>'
+            : '<svg class="h-4 w-4 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>';
+        },
+        async togglePermission(event){
+          const button = event.target.closest('.js-permission-toggle');
+          if(!button || button.disabled) return;
+
+          button.disabled = true;
+          try{
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            const body = new URLSearchParams({
+              type: button.dataset.type,
+              field: button.dataset.field
+            });
+            const response = await fetch(button.dataset.url, {
+              method: 'POST',
+              headers: {
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+              },
+              body
+            });
+            const data = await response.json();
+            if(!response.ok || !data.success){
+              throw new Error(data.message || 'ذخیره وضعیت انجام نشد.');
+            }
+            this.renderPermissionToggle(button, data.value);
+          }catch(error){
+            alert(error.message || 'خطا در ارتباط با سرور.');
+          }finally{
+            button.disabled = false;
+          }
         },
         ensureEntityId(){
           if(!this.entityType || !this.selectedEntityId){
