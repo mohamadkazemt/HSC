@@ -161,64 +161,16 @@
             <td class="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">{{ item.name }}</td>
             <td class="px-4 py-3 text-gray-600 dark:text-gray-400">{{ item.view_label }}</td>
             <td class="px-4 py-3 text-center">
-              {% if item.can_view %}
-                <div class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-green-100 dark:bg-green-900/30">
-                  <svg class="h-4 w-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                  </svg>
-                </div>
-              {% else %}
-                <div class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-100 dark:bg-red-900/30">
-                  <svg class="h-4 w-4 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                  </svg>
-                </div>
-              {% endif %}
+              {% include 'permissions/partials/permission_toggle.html' with field='can_view' value=item.can_view %}
             </td>
             <td class="px-4 py-3 text-center">
-              {% if item.can_add %}
-                <div class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-green-100 dark:bg-green-900/30">
-                  <svg class="h-4 w-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                  </svg>
-                </div>
-              {% else %}
-                <div class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-100 dark:bg-red-900/30">
-                  <svg class="h-4 w-4 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                  </svg>
-                </div>
-              {% endif %}
+              {% include 'permissions/partials/permission_toggle.html' with field='can_add' value=item.can_add %}
             </td>
             <td class="px-4 py-3 text-center">
-              {% if item.can_edit %}
-                <div class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-green-100 dark:bg-green-900/30">
-                  <svg class="h-4 w-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                  </svg>
-                </div>
-              {% else %}
-                <div class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-100 dark:bg-red-900/30">
-                  <svg class="h-4 w-4 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                  </svg>
-                </div>
-              {% endif %}
+              {% include 'permissions/partials/permission_toggle.html' with field='can_edit' value=item.can_edit %}
             </td>
             <td class="px-4 py-3 text-center">
-              {% if item.can_delete %}
-                <div class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-green-100 dark:bg-green-900/30">
-                  <svg class="h-4 w-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                  </svg>
-                </div>
-              {% else %}
-                <div class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-100 dark:bg-red-900/30">
-                  <svg class="h-4 w-4 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                  </svg>
-                </div>
-              {% endif %}
+              {% include 'permissions/partials/permission_toggle.html' with field='can_delete' value=item.can_delete %}
             </td>
             <td class="px-4 py-3 text-center">
               <div class="flex items-center justify-center gap-2">
@@ -322,6 +274,42 @@
       // Clear filters navigates to base URL
       const clear = form.querySelector('.js-clear-filters');
       if(clear){ clear.addEventListener('click', function(e){ /* allow navigation when standalone */ }); }
+    })();
+
+    (function(){
+      const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+      function renderToggle(button, value) {
+        button.setAttribute('aria-pressed', String(value));
+        button.classList.toggle('bg-green-100', value);
+        button.classList.toggle('dark:bg-green-900/30', value);
+        button.classList.toggle('bg-red-100', !value);
+        button.classList.toggle('dark:bg-red-900/30', !value);
+        button.innerHTML = value
+          ? '<svg class="h-4 w-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>'
+          : '<svg class="h-4 w-4 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" /></svg>';
+      }
+
+      document.addEventListener('click', async function(event) {
+        const button = event.target.closest('.js-permission-toggle');
+        if (!button || button.disabled) return;
+        button.disabled = true;
+        try {
+          const body = new URLSearchParams({type: button.dataset.type, field: button.dataset.field});
+          const response = await fetch(button.dataset.url, {
+            method: 'POST',
+            headers: {'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest'},
+            body
+          });
+          const data = await response.json();
+          if (!response.ok || !data.success) throw new Error(data.message || 'ذخیره وضعیت انجام نشد.');
+          renderToggle(button, data.value);
+        } catch (error) {
+          alert(error.message || 'خطا در ارتباط با سرور.');
+        } finally {
+          button.disabled = false;
+        }
+      });
     })();
   </script>
 {% endblock %}

@@ -1,0 +1,15 @@
+<button type="button"
+        class="js-permission-toggle inline-flex items-center justify-center w-7 h-7 rounded-full transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-wait disabled:opacity-50 {% if value %}bg-green-100 dark:bg-green-900/30{% else %}bg-red-100 dark:bg-red-900/30{% endif %}"
+        data-url="{% url 'permissions:toggle_permission' item.id %}"
+        data-type="{{ item.model_key }}"
+        data-field="{{ field }}"
+        aria-pressed="{% if value %}true{% else %}false{% endif %}"
+        title="برای تغییر وضعیت کلیک کنید">
+  <svg class="h-4 w-4 {% if value %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+    {% if value %}
+      <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+    {% else %}
+      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+    {% endif %}
+  </svg>
+</button>

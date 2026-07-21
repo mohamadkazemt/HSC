@@ -12,6 +12,7 @@ from django.contrib import messages
 from django.contrib.auth.models import User
 from dashboard.utils import log_user_activity
 from django.urls import reverse
+from django.views.decorators.http import require_POST
 
 logger = logging.getLogger(__name__)
 
@@ -283,6 +284,13 @@ def list_permissions(request):
     permissions = []
 
     def add_permission(permission, entity_type, entity_name):
+        model_key = {
+            PartPermission: 'part',
+            SectionPermission: 'section',
+            PositionPermission: 'position',
+            UnitGroupPermission: 'unit_group',
+            UserPermission: 'user',
+        }[type(permission)]
         permissions.append({
             'type': entity_type,
             'name': entity_name,
@@ -293,7 +301,8 @@ def list_permissions(request):
             'can_add': permission.can_add,
             'can_edit': permission.can_edit,
             'can_delete': permission.can_delete,
-            'id': permission.id
+            'id': permission.id,
+            'model_key': model_key,
         })
 
     if part_filter:
@@ -368,6 +377,31 @@ def list_permissions(request):
     }
 
     return render(request, 'permissions/list_permissions.html', context)
+
+
+@require_POST
+@user_passes_test(is_staff_user)
+def toggle_permission(request, permission_id):
+    # Toggle one permission flag from the list without opening edit.
+    permission_models = {
+        'part': PartPermission,
+        'section': SectionPermission,
+        'position': PositionPermission,
+        'unit_group': UnitGroupPermission,
+        'user': UserPermission,
+    }
+    allowed_fields = {'can_view', 'can_add', 'can_edit', 'can_delete'}
+    model = permission_models.get(request.POST.get('type'))
+    field = request.POST.get('field')
+
+    if model is None or field not in allowed_fields:
+        return JsonResponse({'success': False, 'message': 'Invalid request.'}, status=400)
+
+    permission = get_object_or_404(model, id=permission_id)
+    new_value = not getattr(permission, field)
+    setattr(permission, field, new_value)
+    permission.save(update_fields=[field])
+    return JsonResponse({'success': True, 'value': new_value})
 
 
 @user_passes_test(is_staff_user)
