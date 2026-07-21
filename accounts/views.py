@@ -518,6 +518,9 @@ def personnel_list(request):
     part_id = clean_id(request.GET.get('part'))
     unit_group_id = clean_id(request.GET.get('unit_group'))
     position_id = clean_id(request.GET.get('position'))
+    work_group = request.GET.get('group', '').strip().upper()
+    if work_group not in dict(UserProfile.GROUP_CHOICES):
+        work_group = ''
     q_raw = request.GET.get('q', '')
     q_clean = ' '.join(q_raw.split())
 
@@ -548,6 +551,8 @@ def personnel_list(request):
             )
         if position_id:
             queryset = queryset.filter(position_id=position_id)
+        if work_group:
+            queryset = queryset.filter(group=work_group)
 
     if q_clean:
         # آماده‌سازی مقادیر جستجو
@@ -721,6 +726,7 @@ def personnel_list(request):
     sync_param('part', part_id)
     sync_param('unit_group', unit_group_id)
     sync_param('position', position_id)
+    sync_param('group', work_group)
 
     if q_clean:
         sanitized_params['q'] = q_clean
@@ -784,12 +790,14 @@ def personnel_list(request):
         'parts': Part.objects.all(),
         'unit_groups': UnitGroup.objects.all(),
         'positions': Position.objects.all(),
+        'work_group_choices': UserProfile.GROUP_CHOICES,
         'stats': stats,
         'current_filters': {
             'section': section_id or '',
             'part': part_id or '',
             'unit_group': unit_group_id or '',
             'position': position_id or '',
+            'group': work_group,
             'q': q_clean or '',
             'per_page': str(per_page),
             'no_approver': 'true' if no_approver_filter else '',
@@ -839,6 +847,7 @@ def personnel_edit(request, user_id):
             last_name = request.POST.get('last_name', '').strip()
             personnel_code = request.POST.get('personnel_code', '').strip()
             mobile = request.POST.get('mobile', '').strip()
+            extra_fields = ('national_code', 'father_name', 'place_of_birth', 'marital_status', 'education_level', 'field_of_study', 'military_service_status', 'unit', 'workshop_job_title')
             
             user.first_name = first_name
             user.last_name = last_name
@@ -846,6 +855,14 @@ def personnel_edit(request, user_id):
             
             profile.personnel_code = personnel_code
             profile.mobile = mobile
+            for field_name in extra_fields:
+                setattr(profile, field_name, request.POST.get(field_name, '').strip())
+            profile.birth_date = request.POST.get('birth_date') or None
+            profile.hire_date = request.POST.get('hire_date') or None
+            children_count = request.POST.get('children_count', '').strip()
+            experience_days = request.POST.get('work_experience_days', '').strip()
+            profile.children_count = int(children_count) if children_count.isdigit() else None
+            profile.work_experience_days = int(experience_days) if experience_days.isdigit() else None
             profile.save()
             
             notify_profile_updated(user, actor=request.user)
@@ -866,7 +883,7 @@ def personnel_edit(request, user_id):
             profile.part_id = part_id if part_id else None
             profile.unit_group_id = unit_group_id if unit_group_id else None
             profile.position_id = position_id if position_id else None
-            profile.group_id = group_id if group_id else None
+            profile.group = group_id if group_id in dict(UserProfile.GROUP_CHOICES) else ''
             profile.save()
             
             notify_organizational_updated(user, actor=request.user)
@@ -1022,6 +1039,7 @@ def personnel_export(request):
     part_id = request.GET.get('part')
     unit_group_id = request.GET.get('unit_group')
     position_id = request.GET.get('position')
+    work_group = request.GET.get('group', '').strip().upper()
     q_raw = request.GET.get('q', '')
     q_clean = ' '.join(q_raw.split())
 
@@ -1052,6 +1070,8 @@ def personnel_export(request):
             )
         if position_id:
             queryset = queryset.filter(position_id=position_id)
+        if work_group:
+            queryset = queryset.filter(group=work_group)
 
     if q_clean:
         tokens = [token for token in q_clean.split(' ') if token]

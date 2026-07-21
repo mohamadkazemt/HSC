@@ -9,7 +9,9 @@
 <style>
   .select2-container .select2-selection--single { height: 40px; }
   .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 38px; }
-  .select2-container--default .select2-selection--single .select2-selection__arrow { height: 38px; }
+  .select2-container--default .select2-selection--single .select2-selection__arrow { height: 38px; left: 6px; right: auto; }
+  .filter-section, .filter-section label, .filter-section input, .filter-section select,
+  .filter-section .select2-container, .select2-dropdown, .select2-results, .select2-search__field { direction: rtl; text-align: right; }
   
   /* Smooth transitions */
   .transition-all { transition: all 0.3s ease-in-out; }
@@ -235,7 +237,7 @@
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white">فیلتر و جستجو</h3>
     </div>
     <form method="get" class="space-y-4">
-      <div class="grid grid-cols-1 md:grid-cols-7 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         <div class="md:col-span-2">
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             <i class="fa-solid fa-magnifying-glass text-gray-400 text-xs ml-1"></i>
@@ -284,6 +286,13 @@
           </label>
           <select id="filter_position" name="position" class="select2 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-700 px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-800 transition-all duration-200">
             <option value="">همه سمت‌ها</option>
+          </select>
+        </div>
+        <div>
+          <label for="filter_group" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">گروه کاری</label>
+          <select id="filter_group" name="group" class="select2 w-full rounded-lg border border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-700 px-3 py-2.5 text-sm">
+            <option value="">همه گروه‌های کاری</option>
+            {% for value, label in work_group_choices %}<option value="{{ value }}" {% if current_filters.group == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
           </select>
         </div>
         <div>
@@ -397,7 +406,7 @@
         </thead>
         <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
           {% for p in personnel %}
-          <tr class="table-row-hover transition-all duration-200">
+          <tr class="table-row-hover transition-all duration-200 cursor-pointer" onclick="window.location.href='{% url 'accounts:personnel_edit' p.user.id %}'" tabindex="0">
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm shadow-md">
@@ -474,14 +483,14 @@
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-left">
               <div class="flex items-center gap-2">
-                <a href="{% url 'accounts:personnel_edit' p.user.id %}" 
+                <a href="{% url 'accounts:personnel_edit' p.user.id %}" onclick="event.stopPropagation()"
                    class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md">
                   <i class="fa-solid fa-pen-to-square text-xs"></i>
                   <span>ویرایش</span>
                 </a>
                 {% if user.is_superuser and rubika_bot_token %}
                 <button type="button" 
-                        onclick="copyRubikaToken('{{ rubika_bot_token|escapejs }}', this)"
+                        onclick="event.stopPropagation(); copyRubikaToken('{{ rubika_bot_token|escapejs }}', this)"
                         class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md"
                         title="کپی توکن ربات روبیکا">
                   <i class="fa-solid fa-copy text-xs"></i>
@@ -711,6 +720,7 @@
     initSelect($part, 'همه قسمت‌ها');
     initSelect($unitGroup, 'همه گروه‌ها');
     initSelect($position, 'همه سمت‌ها');
+    initSelect($('#filter_group'), 'همه گروه‌های کاری');
 
     // همیشه قسمت‌ها را لود کن (چه بخش انتخاب شده باشد یا نه)
     loadParts(initialSection || null, initialPart || null, initialUnitGroup || null, initialPosition || null);

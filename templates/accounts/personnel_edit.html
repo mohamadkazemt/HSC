@@ -246,12 +246,24 @@
                 <i class="fa-solid fa-id-card text-gray-400 text-xs ml-1"></i>
                 کد ملی
               </label>
-              <input type="text" 
-                     value="{{ profile.national_code|default:'' }}" 
-                     readonly
-                     class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 text-sm shadow-sm text-gray-600 dark:text-gray-400 cursor-not-allowed">
-              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">این فیلد قابل ویرایش نیست</p>
+              <input type="text" name="national_code" value="{{ profile.national_code }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm shadow-sm">
+
+
+
+
             </div>
+<div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">نام پدر</label><input type="text" name="father_name" value="{{ profile.father_name }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm"></div>
+            <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">تاریخ تولد</label><input type="date" name="birth_date" value="{{ profile.birth_date }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm"></div>
+            <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">محل تولد</label><input type="text" name="place_of_birth" value="{{ profile.place_of_birth }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm"></div>
+            <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">وضعیت تأهل</label><input type="text" name="marital_status" value="{{ profile.marital_status }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm"></div>
+            <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">تعداد فرزندان</label><input type="number" min="0" name="children_count" value="{{ profile.children_count }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm"></div>
+            <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">مقطع تحصیلی</label><input type="text" name="education_level" value="{{ profile.education_level }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm"></div>
+            <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">رشته تحصیلی</label><input type="text" name="field_of_study" value="{{ profile.field_of_study }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm"></div>
+            <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">وضعیت خدمت سربازی</label><input type="text" name="military_service_status" value="{{ profile.military_service_status }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm"></div>
+            <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">تاریخ استخدام</label><input type="date" name="hire_date" value="{{ profile.hire_date }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm"></div>
+            <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">سابقه کار (روز)</label><input type="number" min="0" name="work_experience_days" value="{{ profile.work_experience_days }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm"></div>
+            <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">واحد</label><input type="text" name="unit" value="{{ profile.unit }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm"></div>
+            <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">عنوان شغل کارگاه</label><input type="text" name="workshop_job_title" value="{{ profile.workshop_job_title }}" class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm"></div>
           </div>
 
           <div class="flex items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
