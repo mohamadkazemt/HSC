@@ -121,47 +121,68 @@ class RubikaBotEngine:
         # Log all incoming messages for debugging
         print(f"[RUBIKA_BOT] handle_update: chat_id={chat_id}, has_button={bool(button_id)}, has_text={bool(text)}", flush=True)
 
-        # Check if message contains photo/image
+        # --- تشخیص نوع پیام: صوتی، عکس/فایل، یا متن ---
+        has_voice = False
         has_photo = False
         file_inline_data = None
-        
-        # Check message object attributes (rubpy uses message.file)
-        if hasattr(message, 'file') and message.file:
-            has_photo = True
-            file_inline_data = message.file
-        elif hasattr(message, 'file_inline') and message.file_inline:
-            has_photo = True
-            file_inline_data = message.file_inline
-        elif hasattr(message, 'media') and message.media:
-            has_photo = True
-            file_inline_data = message.media
-        
-        # Check raw_payload
-        if not has_photo and raw_payload:
-            msg_data = raw_payload.get('message', {})
-            file_inline = msg_data.get('file') or msg_data.get('file_inline') or msg_data.get('media')
-            if file_inline:
-                has_photo = True
-                file_inline_data = file_inline
-        
-        # Also check for type field that might indicate image/photo
-        if not has_photo and raw_payload:
+
+        # تشخیص نوع پیام از raw_payload
+        msg_type = None
+        if raw_payload:
             msg_data = raw_payload.get('message', {})
             msg_type = msg_data.get('type')
-            if msg_type in ['Image', 'Photo', 'File', 'Video', 'Voice', 'Audio']:
+
+        # بررسی پیام صوتی
+        if msg_type in ['Voice', 'Audio']:
+            has_voice = True
+            file_inline_data = raw_payload.get('message', {}).get('file') or raw_payload.get('message', {}).get('file_inline') or raw_payload.get('message', {}).get('media')
+        elif hasattr(message, 'file_inline') and message.file_inline:
+            file_type = getattr(message.file_inline, 'type', None)
+            if file_type in ['Voice', 'Audio']:
+                has_voice = True
+                file_inline_data = message.file_inline
+
+        # بررسی پیام تصویری/فایل (فقط اگر صوتی نیست)
+        if not has_voice:
+            if hasattr(message, 'file') and message.file:
                 has_photo = True
-                file_inline_data = msg_data.get('file') or msg_data.get('file_inline') or msg_data.get('media') or msg_data
-        
-        # Log for debugging (also print to stdout for journalctl)
-        if has_photo:
+                file_inline_data = message.file
+            elif hasattr(message, 'file_inline') and message.file_inline:
+                has_photo = True
+                file_inline_data = message.file_inline
+            elif hasattr(message, 'media') and message.media:
+                has_photo = True
+                file_inline_data = message.media
+            
+            if not has_photo and raw_payload:
+                msg_data = raw_payload.get('message', {})
+                file_inline = msg_data.get('file') or msg_data.get('file_inline') or msg_data.get('media')
+                if file_inline:
+                    has_photo = True
+                    file_inline_data = file_inline
+            
+            if not has_photo and raw_payload:
+                msg_data = raw_payload.get('message', {})
+                msg_type_check = msg_data.get('type')
+                if msg_type_check in ['Image', 'Photo', 'File', 'Video']:
+                    has_photo = True
+                    file_inline_data = msg_data.get('file') or msg_data.get('file_inline') or msg_data.get('media') or msg_data
+
+        # Log for debugging
+        if has_voice:
+            logger.info(f"Voice message detected for chat {chat_id}")
+            print(f"[RUBIKA_BOT] Voice detected for chat {chat_id}", flush=True)
+        elif has_photo:
             logger.info(f"Photo detected for chat {chat_id}, file_inline_data: {file_inline_data}")
             print(f"[RUBIKA_BOT] Photo detected for chat {chat_id}", flush=True)
-            print(f"[RUBIKA_BOT] Message.file exists: {hasattr(message, 'file') and message.file is not None}", flush=True)
-            print(f"[RUBIKA_BOT] Message.file_inline exists: {hasattr(message, 'file_inline') and message.file_inline is not None}", flush=True)
-            print(f"[RUBIKA_BOT] Message.media exists: {hasattr(message, 'media') and message.media is not None}", flush=True)
 
+        # مسیردهی پیام‌ها
         if button_id:
             await self._handle_button(chat_id, button_id, rubika_user)
+        elif has_voice:
+            # پردازش پیام صوتی (مرخصی صوتی با Gemini)
+            logger.info(f"Voice detected, handling voice message for chat {chat_id}")
+            await self._handle_voice_message(chat_id, rubika_user, message, raw_payload)
         elif has_photo:
             # Handle photo/image in leave request flow
             logger.info(f"Photo detected, handling photo message for chat {chat_id}")
@@ -248,6 +269,9 @@ class RubikaBotEngine:
             'account': self._send_account_status,
             'payslip': self._handle_payslip_request,
             'leave_request': self._start_leave_request,
+            'voice_leave': self._start_voice_leave,
+            'voice_confirm_leave': self._handle_voice_leave_confirm,
+            'voice_edit_leave': self._start_voice_leave,
             'leave_inbox': self._show_leave_inbox,
             'cancel_leave': self._cancel_leave_request,
             'cancel_rejection': self._cancel_rejection,
@@ -924,6 +948,132 @@ class RubikaBotEngine:
         
         await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
     
+    async def _start_voice_leave(self, chat_id: str, user: RubikaUser) -> None:
+        """شروع فرایند درخواست مرخصی صوتی"""
+        if not user.user:
+            message = '⚠️ برای ثبت درخواست مرخصی، ابتدا باید به حساب کاربری خود متصل شوید.\n\n🔗 از دکمه‌های زیر برای اتصال استفاده کنید:'
+            buttons = self._build_command_keyboard(connected=False)
+            await self._send_text_message(chat_id, message, buttons)
+            return
+
+        @sync_to_async(thread_sensitive=True)
+        def init_voice_state():
+            from rubika_bot.models import LeaveRequestState
+            state, created = LeaveRequestState.objects.get_or_create(rubika_user=user)
+            state.reset()
+            state.update_step('voice_pending')
+            return state
+
+        await init_voice_state()
+
+        message_lines = [
+            '🎙️ درخواست مرخصی صوتی',
+            '',
+            'لطفاً پیام صوتی خود را ارسال کنید.',
+            '',
+            'در پیام صوتی خود بگویید:',
+            '• نوع مرخصی (استحقاقی/غیبت/ساعتی/استعلاجی)',
+            '• تاریخ مرخصی (مثلاً ۲۵ تیر)',
+            '• نوع شیفت (روزکار/عصرکار/شبکار)',
+            '• ساعت شروع و پایان (برای مرخصی ساعتی)',
+            '• توضیحات (اختیاری)',
+            '',
+            '💡 مثال:',
+            '«مرخصی استحقاقی برای فردا روزکار اول»',
+            '',
+            '❌ برای انصراف دکمه زیر را فشار دهید:',
+        ]
+
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[self._button('cancel_leave', '❌ انصراف')])
+        ])
+
+        await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
+
+    async def _handle_voice_leave_confirm(self, chat_id: str, user: RubikaUser) -> None:
+        """تایید نهایی درخواست مرخصی صوتی"""
+        @sync_to_async(thread_sensitive=True)
+        def get_state_and_save():
+            from rubika_bot.models import LeaveRequestState
+            from leave_reports.models import ShiftReport
+            from accounts.models import UserProfile
+            from django.contrib.auth.models import User
+            from datetime import datetime, timedelta
+            from django.utils import timezone
+            import jdatetime
+
+            try:
+                state = LeaveRequestState.objects.select_related(
+                    'rubika_user', 'rubika_user__user'
+                ).get(rubika_user=user)
+            except LeaveRequestState.DoesNotExist:
+                return False, 'وضعیت درخواست یافت نشد.'
+
+            data = state.data
+
+            try:
+                shift_date = datetime.fromisoformat(data['date']).date()
+                today = timezone.now().date()
+                max_registration_date = shift_date + timedelta(days=3)
+
+                if today > max_registration_date:
+                    jalali_shift = jdatetime.date.fromgregorian(date=shift_date)
+                    jalali_max = jdatetime.date.fromgregorian(date=max_registration_date)
+                    return False, f'⚠️ مهلت ثبت به پایان رسیده.\n\n📅 تاریخ: {jalali_shift.strftime("%Y/%m/%d")}\n⏳ مهلت: {jalali_max.strftime("%Y/%m/%d")}'
+
+                max_future = today + timedelta(days=3)
+                if shift_date > max_future:
+                    jalali_max = jdatetime.date.fromgregorian(date=max_future)
+                    return False, f'⚠️ حداکثر تاریخ مجاز: {jalali_max.strftime("%Y/%m/%d")}'
+
+                profile = UserProfile.objects.select_related(
+                    'position', 'section', 'user'
+                ).get(user=user.user)
+
+                leave_request = ShiftReport()
+                leave_request.user = user.user
+                leave_request.leave_type = data['leave_type']
+                leave_request.shift_date = shift_date
+                leave_request.shift_type = data.get('shift_type', 'day')
+                leave_request.work_group = profile.group or 'نامشخص'
+                leave_request.crate_by = profile
+
+                if data.get('description'):
+                    leave_request.description = data['description']
+
+                if data.get('start_time'):
+                    from datetime import time as dt_time
+                    leave_request.start_time = dt_time.fromisoformat(data['start_time'])
+                if data.get('end_time'):
+                    from datetime import time as dt_time
+                    leave_request.end_time = dt_time.fromisoformat(data['end_time'])
+                if data.get('leave_hours'):
+                    leave_request.leave_hours = data['leave_hours']
+
+                if leave_request.leave_type in ['absence', 'sick_leave', 'hourly']:
+                    leave_request.status = 'pending_approval'
+                    leave_request.replacement_approved = True
+                else:
+                    leave_request.status = 'pending_replacement'
+
+                leave_request.save()
+                state.reset()
+                return True, leave_request.id
+
+            except Exception as e:
+                logger.exception(f"Error saving voice leave request: {e}")
+                return False, str(e)
+
+        success, result = await get_state_and_save()
+
+        if success:
+            message = f'✅ درخواست مرخصی شما با موفقیت ثبت شد!\n\n🎫 شماره درخواست: {result}\n\n📱 وضعیت درخواست را از پنل وب سایت پیگیری کنید.'
+        else:
+            message = f'❌ خطا در ثبت درخواست:\n{result}\n\nلطفاً دوباره تلاش کنید.'
+
+        buttons = self._build_command_keyboard(connected=True)
+        await self._send_text_message(chat_id, message, buttons)
+
     async def _cancel_leave_request(self, chat_id: str, user: RubikaUser) -> None:
         """لغو فرایند درخواست مرخصی"""
         @sync_to_async(thread_sensitive=True)
@@ -2020,7 +2170,497 @@ class RubikaBotEngine:
             logger.exception(f"Error in _download_photo: {e}")
             print(f"[RUBIKA_BOT] EXCEPTION in _download_photo: {e}", flush=True)
             return None
-    
+
+    # =====================================================================
+    # پردازش پیام صوتی - درخواست مرخصی صوتی با Gemini AI
+    # =====================================================================
+
+    async def _handle_voice_message(self, chat_id: str, user: RubikaUser, message: Message, raw_payload: Dict[str, Any]) -> None:
+        """پردازش پیام صوتی - تبدیل گفتار به متن با Whisper و استخراج JSON با Gemini"""
+        logger.info(f"Handling voice message for chat {chat_id}, user: {user.chat_id}")
+        print(f"[RUBIKA_BOT] Handling voice message for chat {chat_id}", flush=True)
+
+        @sync_to_async(thread_sensitive=True)
+        def get_leave_state():
+            from rubika_bot.models import LeaveRequestState
+            try:
+                return LeaveRequestState.objects.get(rubika_user=user)
+            except LeaveRequestState.DoesNotExist:
+                return None
+
+        leave_state = await get_leave_state()
+
+        # بررسی آیا کاربر در فلوی مرخصی صوتی است
+        if not leave_state or leave_state.step not in ('voice_pending', 'voice_confirm'):
+            if user.user:
+                await self._send_text_message(
+                    chat_id,
+                    '🎙️ برای ارسال درخواست مرخصی صوتی، ابتدا دکمه «درخواست مرخصی صوتی» را فشار دهید.'
+                )
+            else:
+                await self._send_text_message(
+                    chat_id,
+                    '⚠️ برای استفاده از این قابلیت، ابتدا باید به حساب کاربری خود متصل شوید.'
+                )
+            return
+
+        # اگر در مرحله voice_confirm است و صوت جدید فرستاده، به voice_pending برگرد
+        if leave_state.step == 'voice_confirm':
+            @sync_to_async(thread_sensitive=True)
+            def reset_to_pending():
+                from rubika_bot.models import LeaveRequestState
+                state = LeaveRequestState.objects.get(rubika_user=user)
+                state.update_step('voice_pending')
+            await reset_to_pending()
+
+        await self._send_text_message(chat_id, '⏳ در حال پردازش پیام صوتی...')
+
+        # مرحله ۱: دانلود فایل صوتی
+        voice_path = await self._download_voice(chat_id, message, raw_payload)
+        if not voice_path:
+            await self._send_text_message(
+                chat_id,
+                '❌ خطا در دانلود فایل صوتی.\n\nلطفاً دوباره پیام صوتی خود را ارسال کنید.'
+            )
+            return
+
+        # مرحله ۲: تبدیل گفتار به متن با faster-whisper
+        try:
+            import os
+            from django.conf import settings
+
+            full_path = os.path.join(settings.MEDIA_ROOT, voice_path)
+
+            await self._send_text_message(chat_id, '🎤 در حال تبدیل گفتار به متن...')
+
+            from core.stt_service import transcribe_audio, LEAVE_PROMPT_FA
+
+            transcribed_text = await sync_to_async(thread_sensitive=True)(lambda: transcribe_audio(
+                audio_path=full_path,
+                language='fa',
+                initial_prompt=LEAVE_PROMPT_FA,
+            ))()
+
+            if not transcribed_text:
+                await self._send_text_message(
+                    chat_id,
+                    '❌ نتوانستم متن پیام صوتی را تشخیص دهم.\n\nلطفاً واضح‌تر صحبت کنید یا دوباره ارسال کنید.'
+                )
+                return
+
+            logger.info(f"Voice transcribed for chat {chat_id}: {transcribed_text[:100]}...")
+            print(f"[RUBIKA_BOT] Transcribed: {transcribed_text[:150]}", flush=True)
+
+            # نمایش متن تشخیص داده شده به کاربر
+            await self._send_text_message(
+                chat_id,
+                f'📝 متن تشخیص داده شده:\n«{transcribed_text}»\n\n⏳ در حال استخراج اطلاعات مرخصی...'
+            )
+
+        except ImportError:
+            await self._send_text_message(
+                chat_id,
+                '❌ سرویس تبدیل گفتار در دسترس نیست.\n\nلطفاً از درخواست متنی استفاده کنید.'
+            )
+            return
+        except Exception as e:
+            logger.exception(f"STT error: {e}")
+            print(f"[RUBIKA_BOT] STT Error: {e}", flush=True)
+            await self._send_text_message(
+                chat_id,
+                '❌ خطا در تبدیل گفتار به متن.\n\nلطفاً دوباره تلاش کنید.'
+            )
+            return
+
+        # مرحله ۳: استخراج اطلاعات مرخصی با Gemini (فقط متن)
+        try:
+            today_jalali = ''
+            try:
+                import jdatetime
+                today_jalali = jdatetime.date.today().strftime('%Y/%m/%d')
+            except Exception:
+                pass
+
+            extraction_prompt = f"""شما یک دستیار هوش مصنوعی هستید که اطلاعات درخواست مرخصی را از متن استخراج می‌کنید.
+
+متن زیر را بخوانید و اطلاعات مرخصی را استخراج کنید:
+
+«{transcribed_text}»
+
+تاریخ امروز: {today_jalali}
+
+اطلاعات قابل استخراج:
+- نوع مرخصی:
+  - regular = مرخصی استحقاقی
+  - absence = غیبت
+  - hourly = مرخصی ساعتی
+  - sick_leave = مرخصی استعلاجی
+- تاریخ مرخصی (به فرمت شمسی YYYY/MM/DD)
+- نوع شیفت:
+  - day = روزکار اول
+  - day2 = روزکار دوم
+  - evening = عصرکار اول
+  - evening2 = عصرکار دوم
+  - night = شبکار اول
+  - night2 = شبکار دوم
+- ساعت شروع (فقط برای مرخصی ساعتی، فرمت HH:MM)
+- ساعت پایان (فقط برای مرخصی ساعتی، فرمت HH:MM)
+- توضیحات (اختیاری)
+
+قوانین مهم:
+1. اگر کاربر تاریخ نگفت، امروز ({today_jalali}) را قرار دهید
+2. اگر کاربر شیفت نگفت، مقدار null قرار دهید
+3. اگر نوع مرخصی مشخص نبود، regular قرار دهید
+4. تاریخ حتماً باید به فرمت شمسی YYYY/MM/DD باشد
+5. فقط و فقط خروجی JSON معتبر برگردانید
+
+خروجی JSON:
+{{"leave_type": "regular", "shift_date": "{today_jalali}", "shift_type": null, "start_time": null, "end_time": null, "description": ""}}
+
+اگر هیچ اطلاعات مرخصی قابل استخراج نبود:
+{{"error": "متن تشخیص داده شده شامل اطلاعات مرخصی نیست"}}"""
+
+            from core.ai_service import get_ai_service
+            ai_service = get_ai_service()
+
+            result = ai_service.generate_json(
+                prompt=extraction_prompt,
+                system_prompt="شما یک دستیار هوشمند هستید که فقط JSON معتبر برمی‌گردانید.",
+                temperature=0.1
+            )
+
+            if not result:
+                await self._send_text_message(
+                    chat_id,
+                    '❌ خطا در استخراج اطلاعات مرخصی.\n\nمتن تشخیص داده شده:\n'
+                    f'«{transcribed_text}»\n\n'
+                    'لطفاً دوباره پیام صوتی ارسال کنید.'
+                )
+                return
+
+            if 'error' in result:
+                await self._send_text_message(
+                    chat_id,
+                    f'❌ {result["error"]}\n\n'
+                    f'متن تشخیص داده شده:\n«{transcribed_text}»\n\n'
+                    'لطفاً پیام صوتی جدیدی با اطلاعات مرخصی ارسال کنید.'
+                )
+                return
+
+            # اعتبارسنجی و ذخیره اطلاعات
+            await self._process_voice_leave_data(chat_id, user, result)
+
+        except Exception as e:
+            logger.exception(f"Error extracting leave data: {e}")
+            print(f"[RUBIKA_BOT] Extraction Error: {e}", flush=True)
+            await self._send_text_message(
+                chat_id,
+                '❌ خطا در پردازش پیام صوتی.\n\nلطفاً دوباره تلاش کنید.'
+            )
+
+    async def _download_voice(self, chat_id: str, message: Message, raw_payload: Dict[str, Any]) -> Optional[str]:
+        """دانلود فایل صوتی از پیام"""
+        import os
+        import uuid
+        from django.conf import settings
+        from pathlib import Path
+
+        try:
+            logger.info(f"Attempting to download voice for chat {chat_id}")
+            print(f"[RUBIKA_BOT] Attempting to download voice for chat {chat_id}", flush=True)
+
+            # استخراج اطلاعات فایل
+            file_obj = None
+            if hasattr(message, 'file_inline') and message.file_inline:
+                file_obj = message.file_inline
+            elif hasattr(message, 'file') and message.file:
+                file_obj = message.file
+            elif hasattr(message, 'media') and message.media:
+                file_obj = message.media
+
+            # تلاش از raw_payload
+            if not file_obj and raw_payload:
+                msg_data = raw_payload.get('message', {})
+                file_obj = msg_data.get('file_inline') or msg_data.get('file') or msg_data.get('media')
+
+            if not file_obj:
+                logger.warning(f"No file object found for voice message in chat {chat_id}")
+                return None
+
+            # استخراج file_id و access_hash
+            file_id = getattr(file_obj, 'file_id', None) or getattr(file_obj, 'id', None)
+            access_hash = getattr(file_obj, 'access_hash_rec', None) or getattr(file_obj, 'access_hash', None)
+
+            if not file_id and isinstance(file_obj, dict):
+                file_id = file_obj.get('file_id') or file_obj.get('id')
+                access_hash = file_obj.get('access_hash_rec') or file_obj.get('access_hash')
+
+            if not file_id:
+                logger.warning(f"No file_id found for voice in chat {chat_id}")
+                return None
+
+            # تعیین پسوند فایل
+            mime = getattr(file_obj, 'mime', None) or (file_obj.get('mime') if isinstance(file_obj, dict) else None)
+            ext = '.ogg'
+            if mime:
+                mime_to_ext = {'mp3': '.mp3', 'wav': '.wav', 'm4a': '.m4a', 'aac': '.aac', 'opus': '.ogg', 'ogg': '.ogg'}
+                ext = mime_to_ext.get(mime, '.ogg')
+
+            file_name = f"voice_{uuid.uuid4().hex[:8]}{ext}"
+
+            # ساخت دایرکتوری
+            media_root = Path(settings.MEDIA_ROOT)
+            voice_dir = media_root / 'voice_messages'
+            voice_dir.mkdir(parents=True, exist_ok=True)
+            file_path = voice_dir / file_name
+
+            # اگر access_hash موجود نیست، پیام کامل رو بگیر
+            if access_hash is None or access_hash == '':
+                message_id = getattr(message, 'message_id', None)
+                if not message_id and raw_payload:
+                    message_id = raw_payload.get('message', {}).get('message_id')
+
+                if message_id:
+                    sender_id = None
+                    if raw_payload:
+                        msg_data = raw_payload.get('message', {})
+                        sender_id = msg_data.get('sender_id')
+                        if not sender_id:
+                            user_data = msg_data.get('user', {})
+                            if isinstance(user_data, dict):
+                                sender_id = user_data.get('guid')
+
+                    if not sender_id:
+                        sender_id = getattr(message, 'sender_id', None) or getattr(message, 'author_guid', None)
+
+                    use_id = chat_id
+                    if str(chat_id).startswith('b0') and sender_id:
+                        use_id = sender_id
+
+                    if use_id:
+                        try:
+                            full_messages = await self.client.get_messages(use_id, [message_id])
+                            if full_messages and len(full_messages) > 0:
+                                message = full_messages[0]
+                                # بروزرسانی file_obj
+                                if hasattr(message, 'file_inline') and message.file_inline:
+                                    file_obj = message.file_inline
+                                elif hasattr(message, 'file') and message.file:
+                                    file_obj = message.file
+                        except Exception as e:
+                            logger.warning(f"Failed to fetch full message: {e}")
+
+            # دانلود فایل
+            downloaded_content = None
+
+            # روش 1: استفاده از client.download (متد اصلی rubpy)
+            try:
+                if hasattr(self.client, 'download'):
+                    downloaded_content = await self.client.download(file_obj, save_as=str(file_path))
+                    if downloaded_content and not os.path.exists(file_path):
+                        # اگر save_as کار نکرد، دستی ذخیره کن
+                        with open(file_path, 'wb') as f:
+                            if isinstance(downloaded_content, bytes):
+                                f.write(downloaded_content)
+                        downloaded_content = True
+                    elif downloaded_content:
+                        downloaded_content = True
+            except Exception as e:
+                logger.warning(f"Download method 1 failed: {e}")
+
+            # روش 2: download_media
+            if not downloaded_content:
+                try:
+                    if hasattr(message, 'file_inline') and message.file_inline:
+                        downloaded_content = await self.client.download_media(message.file_inline)
+                    elif hasattr(message, 'file') and message.file:
+                        downloaded_content = await self.client.download_media(message.file)
+                    elif hasattr(message, 'media') and message.media:
+                        downloaded_content = await self.client.download_media(message.media)
+
+                    if downloaded_content:
+                        with open(file_path, 'wb') as f:
+                            if isinstance(downloaded_content, bytes):
+                                f.write(downloaded_content)
+                            elif hasattr(downloaded_content, 'read'):
+                                f.write(downloaded_content.read())
+                        downloaded_content = True
+                except Exception as e:
+                    logger.warning(f"Download method 2 failed: {e}")
+
+            if downloaded_content and os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+                relative_path = str(Path('voice_messages') / file_name)
+                logger.info(f"Voice file saved: {relative_path}")
+                print(f"[RUBIKA_BOT] Voice saved: {relative_path}", flush=True)
+                return relative_path
+
+            logger.error(f"Failed to download voice for chat {chat_id}")
+            return None
+
+        except Exception as e:
+            logger.exception(f"Error in _download_voice: {e}")
+            print(f"[RUBIKA_BOT] Error downloading voice: {e}", flush=True)
+            return None
+
+    async def _process_voice_leave_data(self, chat_id: str, user: RubikaUser, data: dict) -> None:
+        """پردازش و اعتبارسنجی اطلاعات استخراج شده از پیام صوتی"""
+        import jdatetime
+        from datetime import timedelta
+
+        leave_type = data.get('leave_type', 'regular')
+        shift_date_str = data.get('shift_date', '')
+        shift_type = data.get('shift_type')
+        start_time = data.get('start_time')
+        end_time = data.get('end_time')
+        description = data.get('description', '')
+
+        # اعتبارسنجی نوع مرخصی
+        valid_leave_types = ['regular', 'absence', 'hourly', 'sick_leave']
+        if leave_type not in valid_leave_types:
+            leave_type = 'regular'
+
+        # اعتبارسنجی تاریخ شمسی
+        try:
+            date_parts = shift_date_str.replace('-', '/').split('/')
+            if len(date_parts) == 3:
+                year, month, day = int(date_parts[0]), int(date_parts[1]), int(date_parts[2])
+                jalali_date = jdatetime.date(year, month, day)
+                gregorian_date = jalali_date.togregorian()
+
+                # بررسی مهلت ثبت (3 روز)
+                today = jdatetime.date.today()
+                today_gregorian = today.togregorian()
+                max_registration = gregorian_date + timedelta(days=3)
+
+                if today_gregorian > max_registration:
+                    max_reg_jalali = jdatetime.date.fromgregorian(date=max_registration)
+                    await self._send_text_message(
+                        chat_id,
+                        f'⚠️ مهلت ثبت این درخواست به پایان رسیده است.\n\n'
+                        f'📅 تاریخ مرخصی: {jalali_date.strftime("%Y/%m/%d")}\n'
+                        f'⏳ آخرین مهلت ثبت: {max_reg_jalali.strftime("%Y/%m/%d")}\n\n'
+                        f'لطفاً پیام صوتی جدیدی با تاریخ مناسب ارسال کنید.'
+                    )
+                    return
+
+                # بررسی تاریخ آینده (حداکثر 3 روز)
+                max_future = today_gregorian + timedelta(days=3)
+                if gregorian_date > max_future:
+                    max_future_jalali = jdatetime.date.fromgregorian(date=max_future)
+                    await self._send_text_message(
+                        chat_id,
+                        f'⚠️ شما فقط تا 3 روز آینده می‌توانید درخواست ثبت کنید.\n\n'
+                        f'📅 حداکثر تاریخ مجاز: {max_future_jalali.strftime("%Y/%m/%d")}'
+                    )
+                    return
+
+                date_jalali = f'{year}/{month:02d}/{day:02d}'
+                date_gregorian = gregorian_date.isoformat()
+            else:
+                raise ValueError("فرمت تاریخ نامعتبر")
+        except Exception as e:
+            await self._send_text_message(
+                chat_id,
+                f'❌ تاریخ استخراج شده نامعتبر است: «{shift_date_str}»\n\n'
+                f'لطفاً پیام صوتی جدیدی با تاریخ صحیح ارسال کنید.'
+            )
+            return
+
+        # اعتبارسنجی نوع شیفت
+        valid_shift_types = ['day', 'day2', 'evening', 'evening2', 'night', 'night2']
+        if shift_type and shift_type not in valid_shift_types:
+            shift_type = None
+
+        # ذخیره در state
+        leave_data = {
+            'leave_type': leave_type,
+            'date': date_gregorian,
+            'date_jalali': date_jalali,
+            'shift_type': shift_type,
+            'start_time': start_time,
+            'end_time': end_time,
+            'description': description or '',
+        }
+
+        # محاسبه ساعات برای مرخصی ساعتی
+        if leave_type == 'hourly' and start_time and end_time:
+            try:
+                from datetime import time as dt_time, datetime
+                st = dt_time.fromisoformat(start_time)
+                et = dt_time.fromisoformat(end_time)
+                if st >= et:
+                    await self._send_text_message(
+                        chat_id,
+                        '⚠️ ساعت پایان باید بعد از ساعت شروع باشد.\n\nلطفاً پیام صوتی جدیدی ارسال کنید.'
+                    )
+                    return
+                start_dt = datetime.combine(datetime.today(), st)
+                end_dt = datetime.combine(datetime.today(), et)
+                leave_hours = int((end_dt - start_dt).total_seconds() / 3600)
+                leave_data['leave_hours'] = leave_hours
+            except Exception:
+                pass
+
+        @sync_to_async(thread_sensitive=True)
+        def save_state():
+            from rubika_bot.models import LeaveRequestState
+            state = LeaveRequestState.objects.get(rubika_user=user)
+            state.update_step('voice_confirm', leave_data)
+            return state.data
+
+        saved_data = await save_state()
+
+        # نمایش خلاصه و درخواست تایید
+        await self._show_voice_leave_summary(chat_id, user, saved_data)
+
+    async def _show_voice_leave_summary(self, chat_id: str, user: RubikaUser, data: dict) -> None:
+        """نمایش خلاصه درخواست مرخصی صوتی"""
+        leave_type_labels = {
+            'regular': 'مرخصی استحقاقی',
+            'absence': 'غیبت',
+            'hourly': 'مرخصی ساعتی',
+            'sick_leave': 'مرخصی استعلاجی',
+        }
+        shift_type_labels = {
+            'day': 'روزکار اول',
+            'day2': 'روزکار دوم',
+            'evening': 'عصرکار اول',
+            'evening2': 'عصرکار دوم',
+            'night': 'شبکار اول',
+            'night2': 'شبکار دوم',
+        }
+
+        message_lines = [
+            '📋 خلاصه درخواست مرخصی (استخراج شده از پیام صوتی)',
+            '',
+            f'📌 نوع: {leave_type_labels.get(data.get("leave_type"), "نامشخص")}',
+            f'📅 تاریخ: {data.get("date_jalali", "نامشخص")}',
+        ]
+
+        if data.get('shift_type'):
+            message_lines.append(f'🕐 شیفت: {shift_type_labels.get(data.get("shift_type"), "نامشخص")}')
+
+        if data.get('leave_type') == 'hourly' and data.get('start_time') and data.get('end_time'):
+            message_lines.append(f'⏰ ساعات: {data.get("start_time")} تا {data.get("end_time")} ({data.get("leave_hours", 0)} ساعت)')
+
+        if data.get('description'):
+            message_lines.append(f'📝 توضیحات: {data.get("description")}')
+
+        message_lines.extend([
+            '',
+            '✅ آیا اطلاعات صحیح است؟',
+        ])
+
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[
+                self._button('voice_confirm_leave', '✅ تایید و ثبت'),
+                self._button('voice_edit_leave', '✏️ ارسال مجدد صوتی'),
+                self._button('cancel_leave', '❌ انصراف')
+            ])
+        ])
+
+        await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
+
     async def _process_description_input(self, chat_id: str, user: RubikaUser, text: str, leave_state) -> None:
         """پردازش ورودی توضیحات و نمایش خلاصه"""
         # Check if user wants to skip
@@ -2580,13 +3220,17 @@ class RubikaBotEngine:
         if connected:
             # کیبورد برای کاربران متصل
             second_row = [('payslip', '💰 فیش حقوقی'), ('leave_request', '🏖️ درخواست مرخصی')]
-            third_row = [('leave_inbox', '📋 کارتابل مرخصی'), ('help', '❓ راهنما')]
+            third_row = [('voice_leave', '🎙️ مرخصی صوتی'), ('leave_inbox', '📋 کارتابل مرخصی')]
+            fourth_row = [('help', '❓ راهنما')]
         else:
             # کیبورد برای کاربران غیر متصل
             second_row = [('connect', '🔗 اتصال با کد'), ('sms_connect', '📱 اتصال با پیامک')]
             third_row = [('help', '❓ راهنما')]
+            fourth_row = []
         
         rows = [first_row, second_row, third_row]
+        if fourth_row:
+            rows.append(fourth_row)
         keypad_rows = [KeypadRow(buttons=[self._button(button_id, label) for button_id, label in row]) for row in rows]
         return Keypad(rows=keypad_rows)
 
