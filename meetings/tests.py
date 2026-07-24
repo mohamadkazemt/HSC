@@ -366,3 +366,35 @@ class MeetingViewRegressionTests(TestCase):
         )
         mock_sms.assert_not_called()
         mock_rubika.assert_not_called()
+    @patch('meetings.sms_utils.send_template_sms', return_value=True)
+    def test_meeting_sms_sends_jalali_date_and_short_time(self, mock_send):
+        from .sms_utils import MEETING_TEMPLATE, send_meeting_reminder_sms
+
+        result = send_meeting_reminder_sms(
+            '09121234567',
+            self.meeting.pk,
+            self.meeting.title,
+            date(2026, 7, 24),
+            time(9, 5),
+        )
+
+        self.assertTrue(result)
+        mobile, template_id, parameters = mock_send.call_args.args
+        self.assertEqual(mobile, '09121234567')
+        self.assertEqual(template_id, MEETING_TEMPLATE)
+        values = {item['Name']: item['Value'] for item in parameters}
+        self.assertEqual(values['MEETING_DATE'], '1405/05/02')
+        self.assertEqual(values['MEETING_TIME'], '09:05')
+
+    @patch('meetings.sms_utils.send_template_sms', return_value=True)
+    def test_meeting_sms_converts_gregorian_string_date(self, mock_send):
+        from .sms_utils import send_meeting_created_sms
+
+        send_meeting_created_sms(
+            '09121234567', self.meeting.pk, self.meeting.title, '2026-07-24', '09:05:00'
+        )
+
+        parameters = mock_send.call_args.args[2]
+        values = {item['Name']: item['Value'] for item in parameters}
+        self.assertEqual(values['MEETING_DATE'], '1405/05/02')
+        self.assertEqual(values['MEETING_TIME'], '09:05')

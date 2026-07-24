@@ -201,6 +201,26 @@ class MeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
             return redirect('meetings:meeting_list')
         return super().dispatch(request, *args, **kwargs)
 
+    def get_queryset(self):
+        return Meeting.objects.select_related(
+            'creator', 'approved_by', 'cancelled_by'
+        ).prefetch_related('participants__userprofile')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        context.update({
+            'can_edit_meeting': (
+                _has_named_access(user, 'meeting_edit')
+                and user.has_perm('meetings.change_meeting')
+            ),
+            'can_cancel_meeting': _has_named_access(user, 'meeting_cancel'),
+            'can_delete_meeting': (
+                _has_named_access(user, 'meeting_delete')
+                and user.has_perm('meetings.delete_meeting')
+            ),
+        })
+        return context
     def test_func(self):
         meeting = self.get_object()
         return _can_view_meeting(self.request.user, meeting)
