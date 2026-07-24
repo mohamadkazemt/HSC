@@ -21,6 +21,7 @@ def get_whisper_model(model_size: str = 'small'):
     Args:
         model_size: اندازه مدل (tiny, base, small, medium, large-v3)
                     پیش‌فرض: small (تعادل سرعت و دقت)
+                    همچنین مسیر کامل مدل local پشتیبانی می‌شود
     """
     global _whisper_model
     if _whisper_model is None:
@@ -32,12 +33,23 @@ def get_whisper_model(model_size: str = 'small'):
             device = 'cpu'
             compute_type = 'int8'  # بهینه برای CPU
             
-            logger.info(f"بارگذاری مدل faster-whisper ({model_size}) روی {device}...")
+            # مسیرهای local برای مدل‌های از پیش دانلود شده
+            local_model_paths = {
+                'tiny': '/var/www/HSC/.cache/huggingface/hub/models--Systran--faster-whisper-tiny/snapshots/main',
+                'small': '/var/www/HSC/.cache/huggingface/hub/models--Systran--faster-whisper-small/snapshots/main',
+            }
+            import os
+            model_path = local_model_paths.get(model_size, model_size)
+            if not os.path.exists(model_path):
+                # اگر مسیر local وجود نداشت، از نام مدل استفاده کن (HuggingFace download)
+                model_path = model_size
+            
+            logger.info(f"بارگذاری مدل faster-whisper ({model_path}) روی {device}...")
             _whisper_model = WhisperModel(
-                model_size,
+                model_path,
                 device=device,
                 compute_type=compute_type,
-                cpu_threads=4,
+                cpu_threads=2,  # Match actual CPU cores
             )
             logger.info("مدل faster-whisper با موفقیت بارگذاری شد")
         except ImportError:
@@ -80,13 +92,12 @@ def transcribe_audio(
         
         model = get_whisper_model()
         
-        # تنظیمات transcription
+        # تنظیمات transcription (accuracy-optimized for small model)
         kwargs = {
-            'beam_size': 5,
-            'best_of': 3,
+            'beam_size': 3,  # balance between speed and accuracy
             'patience': 1.0,
             'condition_on_previous_text': True,
-            'vad_filter': True,  # فیلتر سکوت
+            'vad_filter': True,
             'vad_parameters': {
                 'min_silence_duration_ms': 500,
             },

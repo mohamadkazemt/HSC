@@ -38,12 +38,12 @@ class AIService:
                     # Normalize model name: replace unstable gemini-2.0-flash with stable gemini-1.5-flash-latest
                     model_name = ai_settings.model
                     if model_name == 'gemini-2.0-flash' or model_name == 'gemini-2.0-flash-exp':
-                        logger.warning(f"Model '{model_name}' is unstable. Changing to stable 'gemini-1.5-flash-latest'")
-                        model_name = 'gemini-1.5-flash-latest'
-                    # Also normalize gemini-1.5-flash to gemini-1.5-flash-latest for better reliability
-                    if model_name == 'gemini-1.5-flash':
-                        logger.info(f"Model '{model_name}' normalized to 'gemini-1.5-flash-latest' for better reliability")
-                        model_name = 'gemini-1.5-flash-latest'
+                        logger.warning(f"Model '{model_name}' is unstable. Changing to stable 'gemini-2.5-flash'")
+                        model_name = 'gemini-2.5-flash'
+                    # Also normalize gemini-1.5-flash to gemini-2.5-flash for better reliability
+                    if model_name == 'gemini-1.5-flash' or model_name == 'gemini-1.5-flash-latest':
+                        logger.info(f"Model '{model_name}' normalized to 'gemini-2.5-flash' for better reliability")
+                        model_name = 'gemini-2.5-flash'
                     self.model = model_name
                     self.provider = ai_settings.provider
                     self.timeout = ai_settings.timeout
@@ -73,6 +73,23 @@ class AIService:
         adapter = HTTPAdapter(max_retries=retry_strategy)
         self.session.mount("http://", adapter)
         self.session.mount("https://", adapter)
+        
+        # ایجاد proxy session برای Google API (محدودیت تحریم ایران)
+        self.google_proxy = None
+        self.google_session = None
+        proxy_url = getattr(settings, 'GOOGLE_PROXY_URL', '') or os.environ.get('GOOGLE_PROXY_URL', '')
+        if not proxy_url:
+            # استفاده از v2rayA local proxy
+            proxy_url = 'socks5h://127.0.0.1:20170'
+        try:
+            self.google_session = requests.Session()
+            self.google_session.proxies = {'https': proxy_url, 'http': proxy_url}
+            self.google_session.mount("https://", HTTPAdapter(max_retries=retry_strategy))
+            self.google_proxy = proxy_url
+            logger.info(f"Google API proxy configured: {proxy_url}")
+        except Exception as e:
+            logger.warning(f"Failed to configure Google API proxy: {e}")
+            self.google_session = None
     
     def _load_multi_provider_keys(self):
         """Load multi-provider API keys from settings"""
@@ -92,7 +109,7 @@ class AIService:
         self.openrouter_key = getattr(settings, 'OPENROUTER_API_KEY', '')
         
         # Provider-specific models
-        self.google_model = getattr(settings, 'GOOGLE_DEFAULT_MODEL', 'gemini-2.0-flash-lite')
+        self.google_model = getattr(settings, 'GOOGLE_DEFAULT_MODEL', 'gemini-2.5-flash-lite')
         self.groq_model = getattr(settings, 'GROQ_MODEL', 'llama3-70b-8192')
         self.openrouter_model = getattr(settings, 'OPENROUTER_MODEL', 'google/gemini-2.0-flash-lite:free')
         
@@ -131,7 +148,7 @@ class AIService:
         self.openrouter_key = getattr(settings, 'OPENROUTER_API_KEY', '')
         
         # Provider-specific models
-        self.google_model = getattr(settings, 'GOOGLE_DEFAULT_MODEL', 'gemini-2.0-flash-lite')
+        self.google_model = getattr(settings, 'GOOGLE_DEFAULT_MODEL', 'gemini-2.5-flash-lite')
         self.groq_model = getattr(settings, 'GROQ_MODEL', 'llama3-70b-8192')
         self.openrouter_model = getattr(settings, 'OPENROUTER_MODEL', 'google/gemini-2.0-flash-lite:free')
         
@@ -335,7 +352,9 @@ class AIService:
         max_retries = self.max_retries
         for attempt in range(max_retries):
             try:
-                response = self.session.post(
+                # استفاده از proxy session برای Google API (دور زدن تحریم)
+                google_session = getattr(self, 'google_session', None) or self.session
+                response = google_session.post(
                     url,
                     headers=headers,
                     json=data,

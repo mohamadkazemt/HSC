@@ -627,8 +627,11 @@ GOOGLE_API_BASE_URL = config('GOOGLE_API_BASE_URL', default='https://generativel
 GROQ_API_BASE_URL = config('GROQ_API_BASE_URL', default='https://api.groq.com/openai/v1')
 OPENROUTER_API_BASE_URL = config('OPENROUTER_API_BASE_URL', default='https://openrouter.ai/api/v1')
 
+# Google API Proxy (for bypassing Iran sanctions)
+GOOGLE_PROXY_URL = config('GOOGLE_PROXY_URL', default='socks5h://127.0.0.1:20170')
+
 # Default Google Model
-GOOGLE_DEFAULT_MODEL = config('GOOGLE_DEFAULT_MODEL', default='gemini-2.0-flash-lite')
+GOOGLE_DEFAULT_MODEL = config('GOOGLE_DEFAULT_MODEL', default='gemini-2.5-flash')
 
 # Groq Model
 GROQ_MODEL = config('GROQ_MODEL', default='llama3-70b-8192')  # Alternative: 'mixtral-8x7b-32768'

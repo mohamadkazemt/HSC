@@ -13,7 +13,7 @@ from django.conf import settings
 from django.db import close_old_connections
 from django.utils import timezone
 from rubpy.bot.enums import ButtonTypeEnum
-from rubpy.bot.models import InlineMessage, Keypad, KeypadRow, Message, Update
+from rubpy.bot.models import InlineMessage, Keypad, KeypadRow, Message, MessageId, Update
 from rubpy.bot.bot import BotClient
 from rubpy.exceptions import APIException
 
@@ -119,28 +119,88 @@ class RubikaBotEngine:
         text = (message.text or "").strip()
         
         # Log all incoming messages for debugging
-        print(f"[RUBIKA_BOT] handle_update: chat_id={chat_id}, has_button={bool(button_id)}, has_text={bool(text)}", flush=True)
 
         # --- تشخیص نوع پیام: صوتی، عکس/فایل، یا متن ---
         has_voice = False
         has_photo = False
         file_inline_data = None
 
-        # تشخیص نوع پیام از raw_payload
-        msg_type = None
+        # استخراج اطلاعات پیام از raw_payload
+        # ساختار واقعی webhook روبیکا:
+        # raw_payload = {"update": {"type": "NewMessage", "chat_id": "...", "new_message": {type: "FileInline", ...}}}
+        # سطح پیام: type = "FileInline" (برای فایل‌ها) / "Text" (برای متن)
+        # سطح file_inline: type = "Voice" / "Image" / "Video" / "Music" / ...
+        raw_msg_data = {}
         if raw_payload:
-            msg_data = raw_payload.get('message', {})
-            msg_type = msg_data.get('type')
+            # اولویت: update > new_message (ساختار اصلی webhook)
+            update_data = raw_payload.get('update', {})
+            raw_msg_data = update_data.get('new_message', {})
+            # fallback: ساختار قدیمی (legacy)
+            if not raw_msg_data:
+                raw_msg_data = raw_payload.get('message', {})
+
+        raw_msg_type = raw_msg_data.get('type') if isinstance(raw_msg_data, dict) else None
+
+        # تشخیص file_inline از raw_payload (چون rubpy DictLike کلیدهای ناشناخته را حذف می‌کند)
+        raw_file_inline = None
+        if isinstance(raw_msg_data, dict):
+            raw_file_inline = (
+                raw_msg_data.get('file_inline')
+                or raw_msg_data.get('file')
+                or raw_msg_data.get('media')
+            )
+
+        # سطح file_inline.type مقدار دقیق نوع فایل را مشخص می‌کند
+        raw_file_type = None
+        if isinstance(raw_file_inline, dict):
+            raw_file_type = raw_file_inline.get('type')
+        elif hasattr(raw_file_inline, 'type'):
+            raw_file_type = raw_file_inline.type
+
+        logger.debug(
+            "Raw payload analysis for chat %s: raw_msg_type=%s, raw_file_type=%s, "
+            "has_file_inline=%s, message.file=%s",
+            chat_id, raw_msg_type, raw_file_type,
+            raw_file_inline is not None,
+            bool(getattr(message, 'file', None)),
+        )
+        print(f"[RUBIKA_BOT] handle_update: chat_id={chat_id}, has_button={bool(button_id)}, has_text={bool(text)}, raw_msg_type={raw_msg_type}, raw_file_type={raw_file_type}", flush=True)
+        # Debug: dump raw_payload structure to find the correct path to file_inline
+        if raw_payload:
+            _ru = raw_payload.get('update', {})
+            _nm = _ru.get('new_message', {})
+            _fi = _nm.get('file_inline') if isinstance(_nm, dict) else None
+            print(f"[RUBIKA_BOT] DEBUG raw_payload: update_keys={list(_ru.keys()) if isinstance(_ru, dict) else type(_ru)}, new_message_keys={list(_nm.keys()) if isinstance(_nm, dict) and _nm else type(_nm)}, file_inline={_fi is not None}, msg_keys={list(_nm.keys())[:15] if isinstance(_nm, dict) and _nm else 'N/A'}", flush=True)
+        else:
+            print(f"[RUBIKA_BOT] DEBUG raw_payload: EMPTY/None", flush=True)
 
         # بررسی پیام صوتی
-        if msg_type in ['Voice', 'Audio']:
+        # روش ۱: file_inline.type == 'Voice' در raw_payload (دقیق‌ترین روش)
+        if raw_file_type in ('Voice', 'Audio'):
             has_voice = True
-            file_inline_data = raw_payload.get('message', {}).get('file') or raw_payload.get('message', {}).get('file_inline') or raw_payload.get('message', {}).get('media')
+            file_inline_data = raw_file_inline
+        # روش ۲: بررسی از طریق rubpy Message (اگر file_inline به درستی parse شده باشد)
         elif hasattr(message, 'file_inline') and message.file_inline:
-            file_type = getattr(message.file_inline, 'type', None)
-            if file_type in ['Voice', 'Audio']:
+            if getattr(message.file_inline, 'type', None) in ('Voice', 'Audio'):
                 has_voice = True
                 file_inline_data = message.file_inline
+        # روش ۳: بررسی از طریق rubpy filter voice (تشخیص OGG)
+        elif raw_msg_type in ('FileInline', 'FileInlineCaption') and raw_file_inline:
+            file_name = None
+            if isinstance(raw_file_inline, dict):
+                file_name = raw_file_inline.get('file_name', '')
+            elif hasattr(raw_file_inline, 'file_name'):
+                file_name = raw_file_inline.file_name
+            if file_name and file_name.lower().endswith('.ogg'):
+                has_voice = True
+                file_inline_data = raw_file_inline
+        # روش ۴: بررسی message.file برای فایل‌های .ogg (وقتی raw_payload ساختار مورد انتظار ندارد)
+        elif hasattr(message, 'file') and message.file:
+            _fn = getattr(message.file, 'file_name', None) or ''
+            print(f"[RUBIKA_BOT] Method 4 check: file_name={_fn}", flush=True)
+            if _fn.lower().endswith('.ogg'):
+                has_voice = True
+                file_inline_data = message.file
 
         # بررسی پیام تصویری/فایل (فقط اگر صوتی نیست)
         if not has_voice:
@@ -150,30 +210,21 @@ class RubikaBotEngine:
             elif hasattr(message, 'file_inline') and message.file_inline:
                 has_photo = True
                 file_inline_data = message.file_inline
-            elif hasattr(message, 'media') and message.media:
+            
+            if not has_photo and raw_file_inline:
                 has_photo = True
-                file_inline_data = message.media
+                file_inline_data = raw_file_inline
             
-            if not has_photo and raw_payload:
-                msg_data = raw_payload.get('message', {})
-                file_inline = msg_data.get('file') or msg_data.get('file_inline') or msg_data.get('media')
-                if file_inline:
-                    has_photo = True
-                    file_inline_data = file_inline
-            
-            if not has_photo and raw_payload:
-                msg_data = raw_payload.get('message', {})
-                msg_type_check = msg_data.get('type')
-                if msg_type_check in ['Image', 'Photo', 'File', 'Video']:
-                    has_photo = True
-                    file_inline_data = msg_data.get('file') or msg_data.get('file_inline') or msg_data.get('media') or msg_data
+            if not has_photo and raw_msg_type in ('Image', 'Photo', 'File', 'Video'):
+                has_photo = True
+                file_inline_data = raw_file_inline or raw_msg_data
 
         # Log for debugging
         if has_voice:
-            logger.info(f"Voice message detected for chat {chat_id}")
-            print(f"[RUBIKA_BOT] Voice detected for chat {chat_id}", flush=True)
+            logger.info(f"Voice message detected for chat {chat_id}, file_type: {raw_file_type}")
+            print(f"[RUBIKA_BOT] Voice detected for chat {chat_id}, file_type: {raw_file_type}", flush=True)
         elif has_photo:
-            logger.info(f"Photo detected for chat {chat_id}, file_inline_data: {file_inline_data}")
+            logger.info(f"Photo detected for chat {chat_id}")
             print(f"[RUBIKA_BOT] Photo detected for chat {chat_id}", flush=True)
 
         # مسیردهی پیام‌ها
@@ -273,11 +324,20 @@ class RubikaBotEngine:
             'voice_confirm_leave': self._handle_voice_leave_confirm,
             'voice_edit_leave': self._start_voice_leave,
             'leave_inbox': self._show_leave_inbox,
+            'my_leaves': self._show_my_leaves,
             'cancel_leave': self._cancel_leave_request,
             'cancel_rejection': self._cancel_rejection,
             'sms_connect': self._start_sms_connection,
             'cancel_sms_connect': self._cancel_sms_connection,
             'paste_connection_code': self._prompt_paste_connection_code,
+            # Help sections
+            'help_connect': lambda cid, u: self._show_help_section(cid, u, 'help_connect'),
+            'help_leave': lambda cid, u: self._show_help_section(cid, u, 'help_leave'),
+            'help_voice': lambda cid, u: self._show_help_section(cid, u, 'help_voice'),
+            'help_status': lambda cid, u: self._show_help_section(cid, u, 'help_status'),
+            'help_payslip': lambda cid, u: self._show_help_section(cid, u, 'help_payslip'),
+            'help_inbox': lambda cid, u: self._show_help_section(cid, u, 'help_inbox'),
+            'help_faq': lambda cid, u: self._show_help_section(cid, u, 'help_faq'),
         }
         handler = mapping.get(button_id.lower())
         if handler:
@@ -338,12 +398,7 @@ class RubikaBotEngine:
         
         connection_state, leave_state = await get_states()
         
-        # If in SMS connection flow, handle accordingly
-        if connection_state and connection_state.step != 'idle':
-            await self._handle_sms_connection_input(chat_id, user, text, connection_state)
-            return
-        
-        # If in leave request flow, handle accordingly
+        # If in leave request flow, handle accordingly (prioritized over connection flow)
         if leave_state and leave_state.step != 'idle':
             # بررسی اینکه آیا در مرحله وارد کردن دلیل رد است
             if leave_state.step == 'rejection_reason':
@@ -351,6 +406,11 @@ class RubikaBotEngine:
                 return
             
             await self._handle_leave_request_input(chat_id, user, text, leave_state)
+            return
+        
+        # If in SMS connection flow, handle accordingly
+        if connection_state and connection_state.step != 'idle':
+            await self._handle_sms_connection_input(chat_id, user, text, connection_state)
             return
         
         # Normal text handling
@@ -473,16 +533,177 @@ class RubikaBotEngine:
         await self._send_text_message(chat_id, '\n'.join(message_lines), buttons)
 
     async def _send_help(self, chat_id: str, user: RubikaUser) -> None:
+        """نمایش منوی راهنما با دسته‌بندی"""
         message = (
-            '📖 راهنمای ربات:\n\n'
-            '🔹 `/start` - بازگشت به منوی اصلی\n'
-            '🔹 `/connect [کد]` - اتصال با کد\n'
-            '🔹 `/account` - مشاهده وضعیت حساب\n'
-            '🔹 `/help` - نمایش راهنما\n\n'
-            '💡 می‌توانید از دکمه‌های زیر نیز استفاده کنید:'
+            '📚 راهنمای جامع ربات HSC\n\n'
+            'سلام! 👋\n'
+            'من ربات هوشمند سیستم مدیریت مرخصی و فیش حقوقی هستم.\n\n'
+            'از دکمه‌های زیر بخش مورد نظر خود را انتخاب کنید:'
         )
-        buttons = self._build_command_keyboard(connected=bool(user.user))
-        await self._send_text_message(chat_id, message, buttons)
+        
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[
+                self._button('help_connect', '🔗 اتصال حساب'),
+                self._button('help_leave', '🏖️ درخواست مرخصی'),
+            ]),
+            KeypadRow(buttons=[
+                self._button('help_voice', '🎙️ مرخصی صوتی'),
+                self._button('help_status', '📊 وضعیت درخواست'),
+            ]),
+            KeypadRow(buttons=[
+                self._button('help_payslip', '💰 فیش حقوقی'),
+                self._button('help_inbox', '📋 کارتابل مرخصی'),
+            ]),
+            KeypadRow(buttons=[
+                self._button('help_faq', '❓ سوالات متداول'),
+                self._button('start', '🏠 منوی اصلی'),
+            ]),
+        ])
+        await self._send_text_message(chat_id, message, keyboard)
+    
+    async def _show_help_section(self, chat_id: str, user: RubikaUser, section: str) -> None:
+        """نمایش بخش‌های مختلف راهنما"""
+        
+        help_texts = {
+            'help_connect': (
+                '🔗 راهنمای اتصال حساب کاربری\n'
+                '━━━━━━━━━━━━━━━━━━━━━━━\n\n'
+                '📌 مرحله ۱: دریافت کد اتصال\n'
+                'به پنل مدیریت سیستم HSC مراجعه کنید.\n'
+                'از بخش "اتصال روبیکا" یک کد یکتا دریافت کنید.\n\n'
+                '📌 مرحله ۲: ارسال کد به ربات\n'
+                'کد دریافتی را به یکی از روش‌های زیر ارسال کنید:\n'
+                '• روش ۱: روی دکمه "اتصال با کد" کلیک کنید\n'
+                '• روش ۲: کد را مستقیماً تایپ کنید\n\n'
+                '📌 مرحله ۳: تکمیل اتصال\n'
+                'پس از ارسال کد، حساب شما به صورت خودکار متصل می‌شود.\n\n'
+                '⚠️ نکات مهم:\n'
+                '• هر کد فقط یک بار قابل استفاده است\n'
+                '• کد تا ۶۰ دقیقه معتبر است\n'
+                '• در صورت بروز مشکل، کد جدید دریافت کنید\n\n'
+                '📱 روش جایگزین (پیامک):\n'
+                'اگر کد ندارید، از "اتصال با پیامک" استفاده کنید.\n'
+                'کد ملی ۱۰ رقمی و کد پرسنلی خود را وارد کنید.'
+            ),
+            
+            'help_leave': (
+                '🏖️ راهنمای درخواست مرخصی\n'
+                '━━━━━━━━━━━━━━━━━━━━━━━\n\n'
+                '📌 مرحله ۱: انتخاب نوع مرخصی\n'
+                'از منوی اصلی روی "درخواست مرخصی" کلیک کنید.\n'
+                'سپس نوع مرخصی را انتخاب کنید:\n'
+                '• ☀️ مرخصی استحقاقی (روزانه)\n'
+                '• ⏰ مرخصی ساعتی\n'
+                '• 🏥 مرخصی استعلاجی (نیاز به مدرک پزشکی)\n'
+                '• ⚠️ غیبت\n\n'
+                '📌 مرحله ۲: وارد کردن تاریخ\n'
+                'تاریخ مرخصی را به فرمت شمسی وارد کنید:\n'
+                'مثال: ۱۴۰۳/۰۴/۱۵\n\n'
+                '📌 مرحله ۳: انتخاب جایگزین\n'
+                'کد پرسنلی فردی که جایگزین شما می‌شود را وارد کنید.\n'
+                '⚠️ جایگزین باید در همان شیفت کاری شما باشد.\n\n'
+                '📌 مرحله ۴: تأیید نهایی\n'
+                'اطلاعات را بررسی و تأیید کنید.\n'
+                'درخواست شما برای تأیید مدیر ارسال می‌شود.\n\n'
+                '💡 نکته: برای مرخصی استعلاجی، عکس نامه پزشک ارسال کنید.'
+            ),
+            
+            'help_voice': (
+                '🎙️ راهنمای مرخصی صوتی\n'
+                '━━━━━━━━━━━━━━━━━━━━━━━\n\n'
+                'با ارسال پیام صوتی، درخواست مرخصی شما خودکار ثبت می‌شود!\n\n'
+                '📌 نحوه استفاده:\n'
+                '۱. روی "مرخصی صوتی" کلیک کنید\n'
+                '۲. یک پیام صوتی ارسال کنید\n'
+                '۳. منتظر پردازش باشید\n\n'
+                '🎤 نمونه متن صوتی:\n'
+                '"مرخصی استحقاقی میخوام، پنجشنبه ۱۵ تیر، جایگزین آقای رضایی کد ۱۲۳۴"\n\n'
+                '📌 سیستم چه چیزی را تشخیص می‌دهد:\n'
+                '• نوع مرخصی (استحقاقی/ساعتی/استعلاجی)\n'
+                '• تاریخ درخواستی\n'
+                '• ساعت شروع و پایان (برای مرخصی ساعتی)\n'
+                '• کد پرسنلی جایگزین\n\n'
+                '⚠️ نکات:\n'
+                '• پیام صوتی را واضح و با صدای بلند ضبط کنید\n'
+                '• فقط زبان فارسی پشتیبانی می‌شود\n'
+                '• پس از پردازش، اطلاعات را تأیید کنید'
+            ),
+            
+            'help_status': (
+                '📊 راهنمای وضعیت درخواست‌ها\n'
+                '━━━━━━━━━━━━━━━━━━━━━━━\n\n'
+                'برای مشاهده وضعیت درخواست‌های مرخصی:\n'
+                'از منوی اصلی روی "وضعیت درخواست‌ها" کلیک کنید.\n\n'
+                '📌 نمادها:\n'
+                '⏳ در انتظار تأیید جایگزین\n'
+                '🔄 در انتظار تأیید مدیر\n'
+                '✅ تأیید شده\n'
+                '❌ رد شده\n\n'
+                '📈 روند پیشرفت:\n'
+                '• مرحله ۱: ثبت درخواست\n'
+                '• مرحله ۲: تأیید جایگزین\n'
+                '• مرحله ۳: تأیید مدیر\n\n'
+                '💡 نکته: ۱۰ درخواست اخیر نمایش داده می‌شود.'
+            ),
+            
+            'help_payslip': (
+                '💰 راهنمای فیش حقوقی\n'
+                '━━━━━━━━━━━━━━━━━━━━━━━\n\n'
+                'برای مشاهده فیش حقوقی:\n'
+                'از منوی اصلی روی "فیش حقوقی" کلیک کنید.\n\n'
+                '📌 اطلاعات نمایش داده شده:\n'
+                '• نام و نام خانوادگی\n'
+                '• کد پرسنلی\n'
+                '• سمت شغلی\n'
+                '• مبلغ حقوق خالص\n'
+                '• کسورات و مزایا\n\n'
+                '⚠️ نکته: فیش حقوقی ماه جاری نمایش داده می‌شود.'
+            ),
+            
+            'help_inbox': (
+                '📋 راهنمای کارتابل مرخصی\n'
+                '━━━━━━━━━━━━━━━━━━━━━━━\n\n'
+                'کارتابل مرخصی برای مدیران و جایگزین‌هاست.\n\n'
+                '📌 انواع درخواست‌ها:\n\n'
+                '۱. 🔔 درخواست جایگزینی:\n'
+                'کسی شما را به عنوان جایگزین معرفی کرده.\n'
+                'باید تأیید یا رد کنید.\n\n'
+                '۲. 🔔 درخواست تأیید مدیر:\n'
+                'درخواست مرخصی کارمند منتظر تأیید شماست.\n'
+                'اطلاعات را بررسی و تصمیم بگیرید.\n\n'
+                '📌 عملیات:\n'
+                '• ✅ تأیید: درخواست تأیید می‌شود\n'
+                '• ❌ رد: دلیل رد را وارد کنید\n\n'
+                '⚠️ نکته: درخواست‌های رد شده به اطلاع درخواست‌دهنده می‌رسد.'
+            ),
+            
+            'help_faq': (
+                '❓ سوالات متداول\n'
+                '━━━━━━━━━━━━━━━━━━━━━━━\n\n'
+                '۱. چگونه حساب خود را متصل کنم؟\n'
+                'از بخش "اتصال حساب" استفاده کنید.\n\n'
+                '۲. مرخصی چه زمانی تأیید می‌شود؟\n'
+                'پس از تأیید جایگزین و مدیر.\n\n'
+                '۳. آیا می‌توانم مرخصی رد شده را پیگیری کنم؟\n'
+                'بله، در "وضعیت درخواست‌ها" دلیل رد نمایش داده می‌شود.\n\n'
+                '۴. مرخصی استعلاجی چه تفاوتی دارد؟\n'
+                'نیاز به ارسال عکس نامه پزشک دارد.\n\n'
+                '۵. چگونه جایگزین انتخاب کنم؟\n'
+                'کد پرسنلی فرد مورد نظر را وارد کنید.\n\n'
+                '۶. آیا پیام صوتی ذخیره می‌شود؟\n'
+                'خیر، فقط متن استخراج شده ذخیره می‌شود.\n\n'
+                '۷. چگونه با پشتیبانی تماس بگیرم؟\n'
+                'از بخش "تماس با ما" در پنل وب استفاده کنید.'
+            ),
+        }
+        
+        message = help_texts.get(section, 'بخش مورد نظر یافت نشد.')
+        
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[self._button('help', '📚 بازگشت به راهنما')]),
+            KeypadRow(buttons=[self._button('start', '🏠 منوی اصلی')]),
+        ])
+        await self._send_text_message(chat_id, message, keyboard)
 
     async def _handle_connect_button(self, chat_id: str, user: RubikaUser) -> None:
         message = (
@@ -991,13 +1212,75 @@ class RubikaBotEngine:
         await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
 
     async def _handle_voice_leave_confirm(self, chat_id: str, user: RubikaUser) -> None:
-        """تایید نهایی درخواست مرخصی صوتی"""
+        """تایید نهایی درخواست مرخصی صوتی - ابتدا جایگزین را می‌پرسد"""
+        # چک کن آیا مرخصی regular هست (نیاز به جایگزین دارد)
+        @sync_to_async(thread_sensitive=True)
+        def get_leave_type():
+            from rubika_bot.models import LeaveRequestState
+            try:
+                state = LeaveRequestState.objects.get(rubika_user=user)
+                return state.data.get('leave_type', 'regular')
+            except LeaveRequestState.DoesNotExist:
+                return 'regular'
+
+        leave_type = await get_leave_type()
+
+        if leave_type == 'regular':
+            # مرخصی استحقاقی → نیاز به انتخاب جایگزین
+            # آپدیت state به مرحله انتخاب جایگزین
+            @sync_to_async(thread_sensitive=True)
+            def update_state_for_replacement():
+                from rubika_bot.models import LeaveRequestState
+                state = LeaveRequestState.objects.get(rubika_user=user)
+                state.update_step('voice_replacement_code')
+
+            await update_state_for_replacement()
+
+            # دریافت اطلاعات سمت کاربر
+            @sync_to_async(thread_sensitive=True)
+            def get_user_position():
+                from accounts.models import UserProfile
+                try:
+                    profile = UserProfile.objects.select_related('position').get(user=user.user)
+                    if profile.position:
+                        return profile.position.name
+                    return None
+                except UserProfile.DoesNotExist:
+                    return None
+
+            position_name = await get_user_position()
+
+            message_lines = [
+                '👤 انتخاب جایگزین',
+                '',
+            ]
+            if position_name:
+                message_lines.append(f'📌 سمت شما: {position_name}')
+                message_lines.append('')
+            message_lines.append('🔍 لطفاً کد پرسنلی جایگزین خود را وارد کنید:')
+            message_lines.extend([
+                '',
+                'مثال: 12345',
+                '',
+                '💡 یا از دکمه زیر برای انصراف استفاده کنید:',
+            ])
+
+            keyboard = Keypad(rows=[
+                KeypadRow(buttons=[self._button('cancel_leave', '❌ انصراف')])
+            ])
+
+            await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
+        else:
+            # مرخصی ساعتی/استعلاجی/غیبت → بدون جایگزین ثبت می‌شود
+            await self._save_voice_leave_request(chat_id, user)
+
+    async def _save_voice_leave_request(self, chat_id: str, user: RubikaUser, replacement_id=None) -> None:
+        """ذخیره درخواست مرخصی صوتی"""
         @sync_to_async(thread_sensitive=True)
         def get_state_and_save():
             from rubika_bot.models import LeaveRequestState
             from leave_reports.models import ShiftReport
             from accounts.models import UserProfile
-            from django.contrib.auth.models import User
             from datetime import datetime, timedelta
             from django.utils import timezone
             import jdatetime
@@ -1055,6 +1338,15 @@ class RubikaBotEngine:
                     leave_request.replacement_approved = True
                 else:
                     leave_request.status = 'pending_replacement'
+                    # اگر جایگزین مشخص شده باشد
+                    if replacement_id:
+                        from django.contrib.auth.models import User as DjangoUser
+                        try:
+                            replacement_user = DjangoUser.objects.get(id=replacement_id)
+                            leave_request.replacement_person = replacement_user
+                            leave_request.replacement_approved = False
+                        except DjangoUser.DoesNotExist:
+                            pass
 
                 leave_request.save()
                 state.reset()
@@ -1120,6 +1412,7 @@ class RubikaBotEngine:
         @sync_to_async(thread_sensitive=True)
         def get_pending_leaves():
             from leave_reports.models import ShiftReport
+            import jdatetime
             
             pending_leaves = []
             
@@ -1147,7 +1440,7 @@ class RubikaBotEngine:
                     'requester': leave.user.get_full_name() or leave.user.username,
                     'requester_code': getattr(leave.user.userprofile, 'personnel_code', None) if hasattr(leave.user, 'userprofile') else None,
                     'leave_type': leave.get_leave_type_display(),
-                    'date': leave.shift_date,
+                    'date': jdatetime.date.fromgregorian(date=leave.shift_date).strftime('%Y/%m/%d'),
                     'shift': leave.get_shift_type_display(),
                     'approver': approver_info,
                 })
@@ -1178,7 +1471,7 @@ class RubikaBotEngine:
                             'requester': leave.user.get_full_name() or leave.user.username,
                             'requester_code': getattr(leave.user.userprofile, 'personnel_code', None) if hasattr(leave.user, 'userprofile') else None,
                             'leave_type': leave.get_leave_type_display(),
-                            'date': leave.shift_date,
+                            'date': jdatetime.date.fromgregorian(date=leave.shift_date).strftime('%Y/%m/%d'),
                             'shift': leave.get_shift_type_display(),
                             'replacement': leave.replacement_person.get_full_name() if leave.replacement_person else None,
                             'approver': approver_info,
@@ -1258,6 +1551,135 @@ class RubikaBotEngine:
             # تاخیر کوچک بین ارسال پیام‌ها (برای جلوگیری از rate limiting)
             import asyncio
             await asyncio.sleep(0.5)
+    
+    async def _show_my_leaves(self, chat_id: str, user: RubikaUser) -> None:
+        """نمایش وضعیت درخواست‌های مرخصی خود کاربر"""
+        if not user.user:
+            message = '⚠️ برای مشاهده درخواست‌ها، ابتدا باید به حساب کاربری خود متصل شوید.'
+            buttons = self._build_command_keyboard(connected=False)
+            await self._send_text_message(chat_id, message, buttons)
+            return
+        
+        @sync_to_async(thread_sensitive=True)
+        def get_my_leaves():
+            from leave_reports.models import ShiftReport
+            import jdatetime
+            
+            leaves = ShiftReport.objects.filter(
+                user=user.user
+            ).select_related('replacement_person', 'final_approver', 'rejected_by').order_by('-created_at')[:10]
+            
+            result = []
+            for leave in leaves:
+                # تبدیل تاریخ به شمسی
+                import jdatetime
+                jalali_date = jdatetime.date.fromgregorian(date=leave.shift_date).strftime('%Y/%m/%d')
+                
+                # محاسبه روند
+                progress = self._get_leave_progress(leave)
+                result.append({
+                    'id': leave.id,
+                    'leave_type': leave.get_leave_type_display(),
+                    'date': jalali_date,
+                    'shift': leave.get_shift_type_display(),
+                    'status': leave.get_status_display(),
+                    'status_code': leave.status,
+                    'progress': progress,
+                    'replacement': leave.replacement_person.get_full_name() if leave.replacement_person else None,
+                    'replacement_approved': leave.replacement_approved,
+                    'approver': leave.final_approver.user.get_full_name() if leave.final_approver and leave.final_approver.user else None,
+                    'final_approved_at': leave.final_approved_at,
+                    'rejection_reason': leave.rejection_reason,
+                    'rejected_by': leave.rejected_by.get_full_name() if leave.rejected_by else None,
+                })
+            return result
+        
+        leaves = await get_my_leaves()
+        
+        if not leaves:
+            message = '📭 شما هیچ درخواست مرخصی ثبت شده ندارید.'
+            keyboard = Keypad(rows=[
+                KeypadRow(buttons=[self._button('start', '🏠 بازگشت به منوی اصلی')])
+            ])
+            await self._send_text_message(chat_id, message, keyboard)
+            return
+        
+        # Header
+        message_header = f'📊 وضعیت درخواست‌های مرخصی\n\n📋 {len(leaves)} درخواست اخیر:\n'
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[self._button('start', '🏠 بازگشت به منوی اصلی')])
+        ])
+        await self._send_text_message(chat_id, message_header, keyboard)
+        
+        # نمایش هر درخواست
+        for leave in leaves:
+            message_lines = []
+            
+            # عنوان با آیکون وضعیت
+            status_icons = {
+                'pending_replacement': '⏳',
+                'pending_approval': '🔄',
+                'approved': '✅',
+                'rejected': '❌',
+            }
+            icon = status_icons.get(leave['status_code'], '❓')
+            message_lines.append(f'{icon} {leave["leave_type"]}')
+            message_lines.append('')
+            
+            # اطلاعات درخواست
+            message_lines.extend([
+                f'📅 تاریخ: {leave["date"]}',
+                f'🕐 شیفت: {leave["shift"]}',
+                f'📌 وضعیت: {leave["status"]}',
+            ])
+            
+            # نمایش روند پیشرفت
+            message_lines.append('')
+            message_lines.append('📈 روند:')
+            message_lines.append(leave['progress'])
+            
+            # اطلاعات تکمیلی
+            if leave['replacement']:
+                rep_status = '✅' if leave['replacement_approved'] else '⏳'
+                message_lines.append(f'{rep_status} جایگزین: {leave["replacement"]}')
+            
+            if leave['approver']:
+                message_lines.append(f'👤 تأییدکننده: {leave["approver"]}')
+            
+            if leave['final_approved_at']:
+                message_lines.append(f'✅ تاریخ تأیید: {leave["final_approved_at"]}')
+            
+            if leave['status_code'] == 'rejected':
+                if leave['rejection_reason']:
+                    message_lines.append(f'❌ دلیل رد: {leave["rejection_reason"]}')
+                if leave['rejected_by']:
+                    message_lines.append(f'❌ رد شده توسط: {leave["rejected_by"]}')
+            
+            message = '\n'.join(message_lines)
+            
+            keyboard = Keypad(rows=[
+                KeypadRow(buttons=[self._button('start', '🏠 بازگشت')])
+            ])
+            
+            await self._send_text_message(chat_id, message, keyboard)
+            await asyncio.sleep(0.3)
+    
+    def _get_leave_progress(self, leave) -> str:
+        """ساخت متن روند پیشرفت مرخصی"""
+        steps = [
+            ('۱. ثبت درخواست', True),
+            ('۲. تأیید جایگزین', leave.replacement_approved),
+            ('۳. تأیید مدیر', leave.status == 'approved'),
+        ]
+        
+        progress_lines = []
+        for step_name, completed in steps:
+            if completed:
+                progress_lines.append(f'  ✅ {step_name}')
+            else:
+                progress_lines.append(f'  ⬜ {step_name}')
+        
+        return '\n'.join(progress_lines)
     
     async def _handle_leave_type_selection(self, chat_id: str, user: RubikaUser, button_id: str) -> None:
         """پردازش انتخاب نوع مرخصی"""
@@ -1518,6 +1940,8 @@ class RubikaBotEngine:
             await self._process_date_input(chat_id, user, text, leave_state)
         elif step == 'replacement_code':
             await self._process_replacement_code_input(chat_id, user, text, leave_state)
+        elif step == 'voice_replacement_code':
+            await self._process_voice_replacement_code_input(chat_id, user, text)
         elif step == 'hourly_times':
             await self._process_hourly_times_input(chat_id, user, text, leave_state)
         elif step == 'description':
@@ -1676,7 +2100,53 @@ class RubikaBotEngine:
             ])
             
             await self._send_text_message(chat_id, '\n'.join(message_lines), keyboard)
-    
+
+    async def _process_voice_replacement_code_input(self, chat_id: str, user: RubikaUser, text: str) -> None:
+        """پردازش ورودی کد پرسنلی جایگزین در فرآیند صوتی"""
+        personnel_code = normalize_digits(text.strip())
+
+        @sync_to_async(thread_sensitive=True)
+        def find_replacement():
+            from django.contrib.auth.models import User
+            from accounts.models import UserProfile
+            try:
+                requester_profile = UserProfile.objects.select_related('position').get(user=user.user)
+                replacement_profile = UserProfile.objects.select_related(
+                    'user', 'position', 'section'
+                ).get(personnel_code=personnel_code)
+                replacement_user = replacement_profile.user
+
+                if replacement_user.id == user.user.id:
+                    return None, 'self'
+                if not replacement_user.is_active:
+                    return None, 'inactive'
+
+                full_name = replacement_user.get_full_name() or replacement_user.username
+                position = replacement_profile.position.name if replacement_profile.position else 'نامشخص'
+                return {'id': replacement_user.id, 'name': full_name, 'position': position}, 'valid'
+            except UserProfile.DoesNotExist:
+                return None, 'not_found'
+            except Exception:
+                return None, 'error'
+
+        result, status = await find_replacement()
+
+        if status == 'self':
+            await self._send_text_message(chat_id, '❌ نمی‌توانید خودتان را به عنوان جایگزین انتخاب کنید.\n\nلطفاً کد پرسنلی فرد دیگری را وارد کنید:')
+            return
+        elif status == 'inactive':
+            await self._send_text_message(chat_id, '❌ این کاربر غیرفعال است.\n\nلطفاً کد پرسنلی فرد دیگری را وارد کنید:')
+            return
+        elif status == 'not_found':
+            await self._send_text_message(chat_id, f'❌ کد پرسنلی "{personnel_code}" یافت نشد.\n\nلطفاً کد صحیح را وارد کنید:')
+            return
+        elif status == 'error':
+            await self._send_text_message(chat_id, '❌ خطا در جستجو. لطفاً دوباره تلاش کنید.')
+            return
+
+        # جایگزین یافت شد → ذخیره درخواست با جایگزین
+        await self._save_voice_leave_request(chat_id, user, replacement_id=result['id'])
+
     async def _process_date_input(self, chat_id: str, user: RubikaUser, text: str, leave_state) -> None:
         """پردازش ورودی تاریخ"""
         import jdatetime
@@ -1947,13 +2417,18 @@ class RubikaBotEngine:
                 file_hash = getattr(media_obj, 'access_hash_rec', None) or getattr(media_obj, 'access_hash', None)
                 logger.debug(f"From message.media: file_id={file_id}, file_name={file_name}, file_hash={file_hash}")
             
-            # Try from raw_payload
+            # Try from raw_payload (correct structure: raw_payload["update"]["new_message"])
             if not file_id and raw_payload:
-                msg_data = raw_payload.get('message', {})
+                update_data = raw_payload.get('update', {})
+                msg_data = update_data.get('new_message', {})
+                if not msg_data:
+                    msg_data = raw_payload.get('message', {})
                 logger.debug(f"Message data keys: {list(msg_data.keys()) if isinstance(msg_data, dict) else 'Not a dict'}")
                 
                 # Try file, file_inline, or media
-                file_inline = msg_data.get('file') or msg_data.get('file_inline') or msg_data.get('media')
+                file_inline = None
+                if isinstance(msg_data, dict):
+                    file_inline = msg_data.get('file') or msg_data.get('file_inline') or msg_data.get('media')
                 if file_inline:
                     file_id = file_inline.get('file_id') or file_inline.get('id') or file_inline.get('file_id_inline')
                     file_name = file_inline.get('file_name')
@@ -1961,7 +2436,7 @@ class RubikaBotEngine:
                     logger.debug(f"From raw_payload file: file_id={file_id}, file_name={file_name}, file_hash={file_hash}")
                 
                 # Also try direct fields in message
-                if not file_id:
+                if not file_id and isinstance(msg_data, dict):
                     file_id = msg_data.get('file_id') or msg_data.get('id')
                     file_name = msg_data.get('file_name')
                     file_hash = msg_data.get('access_hash_rec') or msg_data.get('access_hash')
@@ -2030,100 +2505,54 @@ class RubikaBotEngine:
                     print(f"[RUBIKA_BOT] ERROR: Cannot fetch full message - missing message_id", flush=True)
                     return None
                 
-                full_message = None
-                fetched_with = None
-                
-                # Determine which ID to use for get_messages
-                # If chat_id starts with "b0", it's a bot GUID - MUST use sender_id
-                use_id_for_fetch = None
-                if chat_id and str(chat_id).startswith('b0'):
-                    # Bot GUID detected - MUST use sender_id
-                    if sender_id:
-                        use_id_for_fetch = sender_id
-                        fetched_with = 'sender_id'
-                        logger.info(f"chat_id starts with 'b0' (bot GUID). Using sender_id: {sender_id}")
-                        print(f"[RUBIKA_BOT] chat_id starts with 'b0' - using sender_id: {sender_id}", flush=True)
-                    else:
-                        logger.error("chat_id is bot GUID but sender_id is missing")
-                        print(f"[RUBIKA_BOT] ERROR: chat_id is bot GUID but sender_id is missing", flush=True)
-                        return None
-                else:
-                    # Not a bot GUID - use chat_id
-                    use_id_for_fetch = chat_id
-                    fetched_with = 'chat_id'
-                    logger.info(f"chat_id does not start with 'b0'. Using chat_id: {chat_id}")
-                    print(f"[RUBIKA_BOT] Using chat_id: {chat_id}", flush=True)
-                
-                # Fetch the full message
-                if use_id_for_fetch:
-                    try:
-                        logger.info(f"Fetching message with {fetched_with}: {use_id_for_fetch}")
-                        print(f"[RUBIKA_BOT] Fetching message with {fetched_with}: {use_id_for_fetch}", flush=True)
-                        full_messages = await self.client.get_messages(use_id_for_fetch, [message_id])
-                        if full_messages and len(full_messages) > 0:
-                            full_message = full_messages[0]
-                            logger.info(f"Successfully fetched full message using {fetched_with}: {use_id_for_fetch}")
-                            print(f"[RUBIKA_BOT] Successfully fetched full message using {fetched_with}: {use_id_for_fetch}", flush=True)
-                        else:
-                            logger.error(f"Failed to fetch message - empty result from get_messages")
-                            print(f"[RUBIKA_BOT] ERROR: Failed to fetch message - empty result", flush=True)
-                            return None
-                    except Exception as e:
-                        logger.exception(f"Error fetching message with {fetched_with}: {e}")
-                        print(f"[RUBIKA_BOT] ERROR fetching message with {fetched_with}: {e}", flush=True)
-                        return None
-                
-                # Use the fetched full message for download
-                if full_message:
-                    message = full_message  # Replace message with full message for download
-                    logger.info(f"Using fetched full message for download (fetched with {fetched_with})")
-                    print(f"[RUBIKA_BOT] Using fetched full message for download", flush=True)
+                # BotClient doesn't have get_messages - skip fetching and try download directly with file_id
+                logger.info(f"BotClient has no get_messages - attempting direct download with file_id={file_id}")
+                print(f"[RUBIKA_BOT] Skipping full message fetch (BotClient limitation) - using file_id directly", flush=True)
             
             # ========== STEP 3: Download ==========
-            # Now try to download (either with original message if hash exists, or with fetched full message)
-            # Method 1: Use client.download_media(message.file)
-            if hasattr(message, 'file') and message.file:
-                try:
-                    logger.info("Trying client.download_media(message.file)")
-                    print(f"[RUBIKA_BOT] Trying client.download_media(message.file)", flush=True)
-                    downloaded_content = await self.client.download_media(message.file)
-                    if downloaded_content:
-                        logger.info(f"Successfully downloaded using client.download_media(message.file)")
-                        print(f"[RUBIKA_BOT] Successfully downloaded using client.download_media(message.file)", flush=True)
-                except Exception as e:
-                    download_error = str(e)
-                    logger.warning(f"Error downloading using client.download_media(message.file): {e}")
-                    print(f"[RUBIKA_BOT] ERROR downloading using client.download_media(message.file): {e}", flush=True)
+            # BotClient: use download_file(file_id) or get_file(file_id) → URL download
             
-            # Method 2: Try using message.file_inline if file doesn't exist
-            if not downloaded_content and hasattr(message, 'file_inline') and message.file_inline:
+            # Method 1: BotClient.download_file(file_id, save_as=path)
+            try:
+                if hasattr(self.client, 'download_file'):
+                    logger.info(f"Trying client.download_file(file_id={file_id})")
+                    print(f"[RUBIKA_BOT] Trying download_file for {file_id}", flush=True)
+                    result = await self.client.download_file(file_id, save_as=str(file_path))
+                    if result:
+                        if isinstance(result, bytes):
+                            with open(file_path, 'wb') as f:
+                                f.write(result)
+                        downloaded_content = True
+                        logger.info("Successfully downloaded using download_file")
+                        print(f"[RUBIKA_BOT] Successfully downloaded using download_file", flush=True)
+            except Exception as e:
+                download_error = str(e)
+                logger.warning(f"Error with download_file: {e}")
+                print(f"[RUBIKA_BOT] ERROR with download_file: {e}", flush=True)
+            
+            # Method 2: BotClient.get_file(file_id) → URL → aiohttp download
+            if not downloaded_content:
                 try:
-                    logger.info("Trying client.download_media(message.file_inline)")
-                    print(f"[RUBIKA_BOT] Trying client.download_media(message.file_inline)", flush=True)
-                    downloaded_content = await self.client.download_media(message.file_inline)
-                    if downloaded_content:
-                        logger.info(f"Successfully downloaded using client.download_media(message.file_inline)")
-                        print(f"[RUBIKA_BOT] Successfully downloaded using client.download_media(message.file_inline)", flush=True)
+                    if hasattr(self.client, 'get_file'):
+                        logger.info(f"Trying get_file → URL download")
+                        print(f"[RUBIKA_BOT] Trying get_file for URL download", flush=True)
+                        download_url = await self.client.get_file(file_id)
+                        if download_url:
+                            import aiohttp
+                            async with aiohttp.ClientSession() as session:
+                                async with session.get(download_url, timeout=aiohttp.ClientTimeout(total=60)) as resp:
+                                    if resp.status == 200:
+                                        with open(file_path, 'wb') as f:
+                                            async for chunk in resp.content.iter_chunked(65536):
+                                                f.write(chunk)
+                                        downloaded_content = True
+                                        logger.info("Successfully downloaded using get_file → URL")
+                                        print(f"[RUBIKA_BOT] Successfully downloaded using get_file → URL", flush=True)
                 except Exception as e:
                     if not download_error:
                         download_error = str(e)
-                    logger.warning(f"Error downloading using client.download_media(message.file_inline): {e}")
-                    print(f"[RUBIKA_BOT] ERROR downloading using client.download_media(message.file_inline): {e}", flush=True)
-            
-            # Method 3: Try using message.media if both file and file_inline don't exist
-            if not downloaded_content and hasattr(message, 'media') and message.media:
-                try:
-                    logger.info("Trying client.download_media(message.media)")
-                    print(f"[RUBIKA_BOT] Trying client.download_media(message.media)", flush=True)
-                    downloaded_content = await self.client.download_media(message.media)
-                    if downloaded_content:
-                        logger.info(f"Successfully downloaded using client.download_media(message.media)")
-                        print(f"[RUBIKA_BOT] Successfully downloaded using client.download_media(message.media)", flush=True)
-                except Exception as e:
-                    if not download_error:
-                        download_error = str(e)
-                    logger.warning(f"Error downloading using client.download_media(message.media): {e}")
-                    print(f"[RUBIKA_BOT] ERROR downloading using client.download_media(message.media): {e}", flush=True)
+                    logger.warning(f"Error with get_file → URL: {e}")
+                    print(f"[RUBIKA_BOT] ERROR with get_file → URL: {e}", flush=True)
             
             # ========== STEP 4: Save file ==========
             if downloaded_content:
@@ -2359,7 +2788,11 @@ class RubikaBotEngine:
             )
 
     async def _download_voice(self, chat_id: str, message: Message, raw_payload: Dict[str, Any]) -> Optional[str]:
-        """دانلود فایل صوتی از پیام"""
+        """دانلود فایل صوتی از پیام
+
+        نکته مهم: rubpy DictLike کلیدهای ناشناخته (مثل file_inline) را از JSON اولیه حذف می‌کند،
+        بنابراین message.file_inline همیشه None است. اطلاعات فایل باید از raw_payload استخراج شود.
+        """
         import os
         import uuid
         from django.conf import settings
@@ -2369,42 +2802,75 @@ class RubikaBotEngine:
             logger.info(f"Attempting to download voice for chat {chat_id}")
             print(f"[RUBIKA_BOT] Attempting to download voice for chat {chat_id}", flush=True)
 
-            # استخراج اطلاعات فایل
-            file_obj = None
-            if hasattr(message, 'file_inline') and message.file_inline:
-                file_obj = message.file_inline
-            elif hasattr(message, 'file') and message.file:
-                file_obj = message.file
-            elif hasattr(message, 'media') and message.media:
-                file_obj = message.media
+            # استخراج اطلاعات فایل از raw_payload (ساختار صحیح)
+            # ساختار: raw_payload["update"]["new_message"]["file_inline"] = {"type": "Voice", "file_id": "...", ...}
+            raw_msg_data = {}
+            if raw_payload:
+                update_data = raw_payload.get('update', {})
+                raw_msg_data = update_data.get('new_message', {})
+                if not raw_msg_data:
+                    raw_msg_data = raw_payload.get('message', {})
 
-            # تلاش از raw_payload
-            if not file_obj and raw_payload:
-                msg_data = raw_payload.get('message', {})
-                file_obj = msg_data.get('file_inline') or msg_data.get('file') or msg_data.get('media')
+            # استخراج file_obj از منابع مختلف
+            file_obj = None
+
+            # روش ۱: از raw_payload (دقیق‌ترین)
+            if isinstance(raw_msg_data, dict):
+                file_obj = (
+                    raw_msg_data.get('file_inline')
+                    or raw_msg_data.get('file')
+                    or raw_msg_data.get('media')
+                )
+                if file_obj:
+                    logger.debug(f"File object from raw_payload: {file_obj}")
+
+            # روش ۲: از Message object (فقط field file وجود دارد)
+            if not file_obj and hasattr(message, 'file') and message.file:
+                file_obj = message.file
+                logger.debug("File object from message.file")
+
+            # روش ۳: از fetched full message (اگر get_messages قبلاً فراخوانی شده)
+            if not file_obj and hasattr(message, 'file') and message.file:
+                file_obj = message.file
 
             if not file_obj:
                 logger.warning(f"No file object found for voice message in chat {chat_id}")
+                print(f"[RUBIKA_BOT] WARNING: No file object for voice in chat {chat_id}", flush=True)
                 return None
 
             # استخراج file_id و access_hash
-            file_id = getattr(file_obj, 'file_id', None) or getattr(file_obj, 'id', None)
-            access_hash = getattr(file_obj, 'access_hash_rec', None) or getattr(file_obj, 'access_hash', None)
+            file_id = None
+            access_hash = None
+            file_name_from_raw = None
 
-            if not file_id and isinstance(file_obj, dict):
+            if isinstance(file_obj, dict):
                 file_id = file_obj.get('file_id') or file_obj.get('id')
                 access_hash = file_obj.get('access_hash_rec') or file_obj.get('access_hash')
+                file_name_from_raw = file_obj.get('file_name')
+            else:
+                file_id = getattr(file_obj, 'file_id', None) or getattr(file_obj, 'id', None)
+                access_hash = getattr(file_obj, 'access_hash_rec', None) or getattr(file_obj, 'access_hash', None)
+                file_name_from_raw = getattr(file_obj, 'file_name', None)
 
             if not file_id:
                 logger.warning(f"No file_id found for voice in chat {chat_id}")
                 return None
 
-            # تعیین پسوند فایل
-            mime = getattr(file_obj, 'mime', None) or (file_obj.get('mime') if isinstance(file_obj, dict) else None)
+            # تعیین پسوند فایل از file_name یا mime type
             ext = '.ogg'
-            if mime:
-                mime_to_ext = {'mp3': '.mp3', 'wav': '.wav', 'm4a': '.m4a', 'aac': '.aac', 'opus': '.ogg', 'ogg': '.ogg'}
-                ext = mime_to_ext.get(mime, '.ogg')
+            if file_name_from_raw:
+                ext_from_name = os.path.splitext(str(file_name_from_raw))[1]
+                if ext_from_name:
+                    ext = ext_from_name
+            else:
+                mime = None
+                if isinstance(file_obj, dict):
+                    mime = file_obj.get('mime')
+                else:
+                    mime = getattr(file_obj, 'mime', None)
+                if mime:
+                    mime_to_ext = {'mp3': '.mp3', 'wav': '.wav', 'm4a': '.m4a', 'aac': '.aac', 'opus': '.ogg', 'ogg': '.ogg'}
+                    ext = mime_to_ext.get(mime, '.ogg')
 
             file_name = f"voice_{uuid.uuid4().hex[:8]}{ext}"
 
@@ -2416,77 +2882,92 @@ class RubikaBotEngine:
 
             # اگر access_hash موجود نیست، پیام کامل رو بگیر
             if access_hash is None or access_hash == '':
-                message_id = getattr(message, 'message_id', None)
-                if not message_id and raw_payload:
-                    message_id = raw_payload.get('message', {}).get('message_id')
+                message_id = None
+                sender_id = None
+
+                # استخراج message_id
+                if isinstance(raw_msg_data, dict):
+                    message_id = raw_msg_data.get('message_id')
+                if not message_id:
+                    msg_id_obj = getattr(message, 'message_id', None)
+                    if isinstance(msg_id_obj, MessageId):
+                        message_id = msg_id_obj.message_id
+                    elif msg_id_obj:
+                        message_id = msg_id_obj
+
+                # استخراج sender_id
+                if isinstance(raw_msg_data, dict):
+                    sender_id = raw_msg_data.get('sender_id')
+                    if not sender_id:
+                        user_data = raw_msg_data.get('user', {})
+                        if isinstance(user_data, dict):
+                            sender_id = user_data.get('guid')
+                if not sender_id:
+                    sender_id = getattr(message, 'sender_id', None) or getattr(message, 'author_guid', None)
 
                 if message_id:
-                    sender_id = None
-                    if raw_payload:
-                        msg_data = raw_payload.get('message', {})
-                        sender_id = msg_data.get('sender_id')
-                        if not sender_id:
-                            user_data = msg_data.get('user', {})
-                            if isinstance(user_data, dict):
-                                sender_id = user_data.get('guid')
-
-                    if not sender_id:
-                        sender_id = getattr(message, 'sender_id', None) or getattr(message, 'author_guid', None)
-
                     use_id = chat_id
                     if str(chat_id).startswith('b0') and sender_id:
                         use_id = sender_id
 
-                    if use_id:
-                        try:
-                            full_messages = await self.client.get_messages(use_id, [message_id])
-                            if full_messages and len(full_messages) > 0:
-                                message = full_messages[0]
-                                # بروزرسانی file_obj
-                                if hasattr(message, 'file_inline') and message.file_inline:
-                                    file_obj = message.file_inline
-                                elif hasattr(message, 'file') and message.file:
-                                    file_obj = message.file
-                        except Exception as e:
-                            logger.warning(f"Failed to fetch full message: {e}")
+                    # BotClient doesn't have get_messages - skip fetching and try download directly
+                    logger.info(f"BotClient has no get_messages - using file_id={file_id} directly for download")
+                    print(f"[RUBIKA_BOT] Skipping full message fetch for voice (BotClient limitation) - using file_id directly", flush=True)
 
             # دانلود فایل
             downloaded_content = None
 
-            # روش 1: استفاده از client.download (متد اصلی rubpy)
+            # روش 1: BotClient.download_file(file_id, save_as=path) - متود اصلی Bot API
             try:
-                if hasattr(self.client, 'download'):
-                    downloaded_content = await self.client.download(file_obj, save_as=str(file_path))
-                    if downloaded_content and not os.path.exists(file_path):
-                        # اگر save_as کار نکرد، دستی ذخیره کن
-                        with open(file_path, 'wb') as f:
-                            if isinstance(downloaded_content, bytes):
-                                f.write(downloaded_content)
-                        downloaded_content = True
-                    elif downloaded_content:
+                if hasattr(self.client, 'download_file'):
+                    logger.info(f"Download method 1: download_file(file_id={file_id})")
+                    print(f"[RUBIKA_BOT] Download method 1: download_file for {file_id}", flush=True)
+                    result = await self.client.download_file(file_id, save_as=str(file_path))
+                    if result:
+                        if isinstance(result, bytes):
+                            with open(file_path, 'wb') as f:
+                                f.write(result)
+                        # result could be file path string
                         downloaded_content = True
             except Exception as e:
                 logger.warning(f"Download method 1 failed: {e}")
+                print(f"[RUBIKA_BOT] Download method 1 failed: {e}", flush=True)
 
-            # روش 2: download_media
+            # روش 2: BotClient.get_file(file_id) → URL → aiohttp download
             if not downloaded_content:
                 try:
-                    if hasattr(message, 'file_inline') and message.file_inline:
-                        downloaded_content = await self.client.download_media(message.file_inline)
-                    elif hasattr(message, 'file') and message.file:
-                        downloaded_content = await self.client.download_media(message.file)
-                    elif hasattr(message, 'media') and message.media:
-                        downloaded_content = await self.client.download_media(message.media)
-
-                    if downloaded_content:
-                        with open(file_path, 'wb') as f:
-                            if isinstance(downloaded_content, bytes):
-                                f.write(downloaded_content)
-                            elif hasattr(downloaded_content, 'read'):
-                                f.write(downloaded_content.read())
-                        downloaded_content = True
+                    if hasattr(self.client, 'get_file'):
+                        logger.info(f"Download method 2: get_file → URL download")
+                        print(f"[RUBIKA_BOT] Download method 2: get_file for {file_id}", flush=True)
+                        download_url = await self.client.get_file(file_id)
+                        if download_url:
+                            import aiohttp
+                            async with aiohttp.ClientSession() as session:
+                                async with session.get(download_url, timeout=aiohttp.ClientTimeout(total=60)) as resp:
+                                    if resp.status == 200:
+                                        with open(file_path, 'wb') as f:
+                                            async for chunk in resp.content.iter_chunked(65536):
+                                                f.write(chunk)
+                                        downloaded_content = True
                 except Exception as e:
                     logger.warning(f"Download method 2 failed: {e}")
+                    print(f"[RUBIKA_BOT] Download method 2 failed: {e}", flush=True)
+
+            # روش 3: client.download (User API style - for compatibility)
+            if not downloaded_content:
+                try:
+                    if hasattr(self.client, 'download'):
+                        downloaded_content = await self.client.download(file_obj, save_as=str(file_path))
+                        if downloaded_content and not os.path.exists(file_path):
+                            with open(file_path, 'wb') as f:
+                                if isinstance(downloaded_content, bytes):
+                                    f.write(downloaded_content)
+                            downloaded_content = True
+                        elif downloaded_content:
+                            downloaded_content = True
+                except Exception as e:
+                    logger.warning(f"Download method 3 failed: {e}")
+                    print(f"[RUBIKA_BOT] Download method 3 failed: {e}", flush=True)
 
             if downloaded_content and os.path.exists(file_path) and os.path.getsize(file_path) > 0:
                 relative_path = str(Path('voice_messages') / file_name)
@@ -2494,7 +2975,7 @@ class RubikaBotEngine:
                 print(f"[RUBIKA_BOT] Voice saved: {relative_path}", flush=True)
                 return relative_path
 
-            logger.error(f"Failed to download voice for chat {chat_id}")
+            logger.error(f"Failed to download voice for chat {chat_id}. file_id={file_id}")
             return None
 
         except Exception as e:
@@ -2571,12 +3052,45 @@ class RubikaBotEngine:
         if shift_type and shift_type not in valid_shift_types:
             shift_type = None
 
+        # تشخیص خودکار شیفت و گروه کاری از shift_manager
+        work_group = None
+        if not shift_type:
+            try:
+                from shift_manager.utils import get_shift_for_date
+                shift_name_to_code = {
+                    'روزکار اول': 'day', 'روزکار دوم': 'day2',
+                    'عصرکار اول': 'evening', 'عصرکار دوم': 'evening2',
+                    'شب کار اول': 'night', 'شب کار دوم': 'night2',
+                }
+
+                @sync_to_async(thread_sensitive=True)
+                def get_user_shift():
+                    django_user = user.user if hasattr(user, 'user') else None
+                    if django_user and hasattr(django_user, 'userprofile'):
+                        profile = django_user.userprofile
+                        result = get_shift_for_date(gregorian_date, profile)
+                        persian_shift = result.get('user_group_shift')
+                        detected_group = result.get('user_group')
+                        detected_code = shift_name_to_code.get(persian_shift) if persian_shift else None
+                        return detected_code, detected_group, persian_shift
+                    return None, None, None
+
+                shift_type, work_group, persian_shift = await get_user_shift()
+                if shift_type:
+                    logger.info(f"Auto-detected shift: {persian_shift} ({shift_type}), group: {work_group}")
+                    print(f"[RUBIKA_BOT] Auto-detected shift: {persian_shift} ({shift_type}), group: {work_group}", flush=True)
+                else:
+                    logger.warning(f"Could not auto-detect shift for user {user}")
+            except Exception as e:
+                logger.warning(f"Error auto-detecting shift: {e}")
+
         # ذخیره در state
         leave_data = {
             'leave_type': leave_type,
             'date': date_gregorian,
             'date_jalali': date_jalali,
             'shift_type': shift_type,
+            'work_group': work_group or '',
             'start_time': start_time,
             'end_time': end_time,
             'description': description or '',
@@ -2653,7 +3167,7 @@ class RubikaBotEngine:
 
         keyboard = Keypad(rows=[
             KeypadRow(buttons=[
-                self._button('voice_confirm_leave', '✅ تایید و ثبت'),
+                self._button('voice_confirm_leave', '✅ تایید و انتخاب جایگزین'),
                 self._button('voice_edit_leave', '✏️ ارسال مجدد صوتی'),
                 self._button('cancel_leave', '❌ انصراف')
             ])
@@ -3221,7 +3735,7 @@ class RubikaBotEngine:
             # کیبورد برای کاربران متصل
             second_row = [('payslip', '💰 فیش حقوقی'), ('leave_request', '🏖️ درخواست مرخصی')]
             third_row = [('voice_leave', '🎙️ مرخصی صوتی'), ('leave_inbox', '📋 کارتابل مرخصی')]
-            fourth_row = [('help', '❓ راهنما')]
+            fourth_row = [('my_leaves', '📊 وضعیت درخواست‌ها'), ('help', '❓ راهنما')]
         else:
             # کیبورد برای کاربران غیر متصل
             second_row = [('connect', '🔗 اتصال با کد'), ('sms_connect', '📱 اتصال با پیامک')]
