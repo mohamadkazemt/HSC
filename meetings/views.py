@@ -13,6 +13,7 @@ from dashboard.models import Notification
 from django.http import HttpResponse
 import csv
 from django.db.models import Q
+from django.db import transaction
 from django.conf import settings
 import logging
 # from jalalidate import JalaliDate as jdate  # امتحان import از jalalidate (بدون آندرلاین)
@@ -26,10 +27,88 @@ from .notifications import (
 )
 from permissions.utils import permission_required, check_permission
 from functools import wraps
+from datetime import date
 
 
 logger = logging.getLogger(__name__)
 logger.debug("Logging system is initialized in meetings/views.py")
+
+
+def _has_named_access(user, view_name):
+    if user.is_superuser:
+        return True
+    permissions = check_permission(user, view_name)
+    if isinstance(permissions, dict):
+        return any(permissions.values())
+    return bool(permissions)
+
+
+def _can_view_all_meetings(user):
+    return _has_named_access(user, 'meeting_view_all')
+
+
+def _can_approve_meetings(user):
+    return _has_named_access(user, 'meeting_approve')
+
+
+def _visible_meetings_for(user):
+    queryset = Meeting.objects.all()
+    if _can_view_all_meetings(user):
+        return queryset
+    return queryset.filter(
+        Q(creator=user) |
+        Q(approval_status='approved', participants=user)
+    ).distinct()
+
+
+def _can_view_meeting(user, meeting):
+    return (
+        _can_view_all_meetings(user)
+        or meeting.creator_id == user.id
+        or (
+            meeting.approval_status == 'approved'
+            and meeting.participants.filter(pk=user.pk).exists()
+        )
+    )
+
+
+def _meeting_recipient_mobiles(meeting):
+    mobiles = {
+        participant.userprofile.mobile
+        for participant in meeting.participants.select_related('userprofile')
+        if hasattr(participant, 'userprofile') and participant.userprofile.mobile
+    }
+    if meeting.manual_numbers:
+        mobiles.update(number.strip() for number in meeting.manual_numbers.splitlines() if number.strip())
+    if meeting.notify_transport_coordinator:
+        mobiles.update(
+            coordinator.userprofile.mobile
+            for coordinator in MeetingService.get_transport_coordinators().select_related('userprofile')
+            if hasattr(coordinator, 'userprofile') and coordinator.userprofile.mobile
+        )
+    return sorted(mobiles)
+
+
+def _queue_meeting_sms(meeting, action, *, reason=''):
+    from .tasks import send_meeting_event_sms_async
+
+    payload = {
+        'action': action,
+        'mobiles': _meeting_recipient_mobiles(meeting),
+        'meeting_id': meeting.pk,
+        'title': meeting.title,
+        'date': meeting.date.isoformat(),
+        'start_time': meeting.start_time.isoformat(),
+        'reason': reason,
+    }
+
+    def enqueue():
+        try:
+            send_meeting_event_sms_async.delay(**payload)
+        except Exception:
+            logger.exception("Could not enqueue %s SMS for meeting %s", action, meeting.pk)
+
+    transaction.on_commit(enqueue)
 
 class MeetingListView(LoginRequiredMixin, ListView):
     model = Meeting
@@ -94,9 +173,9 @@ class MeetingListView(LoginRequiredMixin, ListView):
         if status:
             queryset = queryset.filter(status=status)
 
-        # فیلتر دسترسی کاربر
-        if not self.request.user.is_superuser:
-            queryset = queryset.filter(participants=self.request.user)
+        queryset = queryset.filter(
+            pk__in=_visible_meetings_for(self.request.user).values('pk')
+        )
 
         return queryset.order_by('-date', '-start_time')
 
@@ -124,7 +203,7 @@ class MeetingDetailView(LoginRequiredMixin, UserPassesTestMixin, DetailView):
 
     def test_func(self):
         meeting = self.get_object()
-        return self.request.user.is_superuser or self.request.user in meeting.participants.all()
+        return _can_view_meeting(self.request.user, meeting)
 
 class MeetingCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Meeting
@@ -133,16 +212,16 @@ class MeetingCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     success_url = reverse_lazy('meetings:meeting_list')
 
     def dispatch(self, request, *args, **kwargs):
-        if not check_permission(request.user, "meeting_create"):
+        if not _has_named_access(request.user, "meeting_create"):
             messages.error(request, "شما دسترسی لازم برای ایجاد جلسه را ندارید.")
             return redirect('meetings:meeting_list')
         return super().dispatch(request, *args, **kwargs)
 
     def test_func(self):
-        return self.request.user.has_perm('meetings.add_meeting')
+        return _has_named_access(self.request.user, 'meeting_create')
 
     def form_valid(self, form):
-        print("\n=== شروع ایجاد جلسه در view ===")
+        logger.info("Creating meeting from standard form")
         try:
             meeting = MeetingService.create_meeting(
                 title=form.cleaned_data['title'],
@@ -152,14 +231,16 @@ class MeetingCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
                 creator=self.request.user,
                 participants=form.cleaned_data['participants'],
                 manual_numbers=form.cleaned_data.get('manual_numbers', ''),
-                notify_transport_coordinator=form.cleaned_data.get('notify_transport_coordinator', False)
+                notify_transport_coordinator=form.cleaned_data.get('notify_transport_coordinator', False),
+                location=form.cleaned_data.get('location', ''),
+                description=form.cleaned_data.get('description', ''),
             )
-            print(f"جلسه با شناسه {meeting.id} با موفقیت ایجاد شد")
+            logger.info("Meeting %s created successfully", meeting.id)
 
-            messages.success(self.request, 'جلسه با موفقیت ایجاد شد.')
+            messages.success(self.request, 'جلسه ثبت شد و در انتظار تأیید مدیر است.')
             return redirect('meetings:meeting_list')
         except Exception as e:
-            print(f"خطا در ایجاد جلسه: {str(e)}")
+            logger.exception("Error creating meeting")
             messages.error(self.request, f'خطا در ایجاد جلسه: {str(e)}')
             return self.form_invalid(form)
 
@@ -198,61 +279,18 @@ class MeetingUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
     def form_valid(self, form):
         try:
-            print("\n=== شروع بروزرسانی جلسه ===")
-            meeting = form.save()
-            print(f"جلسه با شناسه {meeting.id} با موفقیت بروزرسانی شد")
-            
-            # ارسال پیامک بروزرسانی به شرکت‌کنندگان
-            for participant in meeting.participants.all():
-                if hasattr(participant, 'userprofile') and participant.userprofile.mobile:
-                    print(f"ارسال پیامک بروزرسانی به شماره {participant.userprofile.mobile}")
-                    send_meeting_updated_sms(
-                        participant.userprofile.mobile,
-                        meeting.id,
-                        meeting.title,
-                        meeting.date,
-                        meeting.start_time
-                    )
-            
-            # ارسال پیامک بروزرسانی به شماره‌های دستی
-            if meeting.manual_numbers:
-                numbers = meeting.manual_numbers.split('\n')
-                for number in numbers:
-                    if number.strip():
-                        print(f"ارسال پیامک بروزرسانی به شماره دستی {number.strip()}")
-                        send_meeting_updated_sms(
-                            number.strip(),
-                            meeting.id,
-                            meeting.title,
-                            meeting.date,
-                            meeting.start_time
-                        )
-            
-            # ارسال پیامک بروزرسانی به هماهنگ‌کننده حمل و نقل
-            if meeting.notify_transport_coordinator:
-                coordinators = MeetingService.get_transport_coordinators()
-                for coordinator in coordinators:
-                    if hasattr(coordinator, 'userprofile') and coordinator.userprofile.mobile:
-                        print(f"ارسال پیامک بروزرسانی به هماهنگ‌کننده حمل و نقل {coordinator.userprofile.mobile}")
-                        send_meeting_updated_sms(
-                            coordinator.userprofile.mobile,
-                            meeting.id,
-                            meeting.title,
-                            meeting.date,
-                            meeting.start_time
-                        )
-            
-            notify_meeting_updated(meeting, actor=self.request.user)
-
+            with transaction.atomic():
+                meeting = form.save()
+                if meeting.approval_status == 'approved':
+                    notify_meeting_updated(meeting, actor=self.request.user)
+                    _queue_meeting_sms(meeting, 'updated')
             messages.success(self.request, 'جلسه با موفقیت بروزرسانی شد.')
-            return redirect('meetings:meeting_list')
-            
-        except Exception as e:
-            print(f"خطا در بروزرسانی جلسه: {str(e)}")
-            import traceback
-            print(f"جزئیات خطا: {traceback.format_exc()}")
+            return redirect(self.success_url)
+        except Exception:
+            logger.exception("Error updating meeting %s", self.object.pk)
             messages.error(self.request, 'خطا در بروزرسانی جلسه. لطفاً دوباره تلاش کنید.')
             return self.form_invalid(form)
+
 
 class MeetingDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Meeting
@@ -268,13 +306,15 @@ class MeetingDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     def test_func(self):
         return self.request.user.has_perm('meetings.delete_meeting')
 
-    def delete(self, request, *args, **kwargs):
-        meeting = self.get_object()
-        notify_meeting_deleted(meeting, actor=request.user)
-        response = super().delete(request, *args, **kwargs)
+    def form_valid(self, form):
+        meeting = self.object
+        with transaction.atomic():
+            if meeting.approval_status == 'approved':
+                notify_meeting_deleted(meeting, actor=self.request.user)
+                _queue_meeting_sms(meeting, 'deleted')
+            response = super().form_valid(form)
         messages.success(self.request, 'جلسه با موفقیت حذف شد.')
         return response
-
 @permission_required("meeting_report")
 @login_required
 def meeting_report(request):
@@ -315,85 +355,39 @@ def mark_notification_read(request, notification_id):
 @login_required
 def cancel_meeting(request, pk):
     meeting = get_object_or_404(Meeting, pk=pk)
-    
+
     if request.method == 'POST':
-        reason = request.POST.get('cancellation_reason')
+        reason = request.POST.get('cancellation_reason', '').strip()
         if not reason:
             messages.error(request, 'لطفاً دلیل لغو جلسه را وارد کنید.')
             return redirect('meetings:meeting_detail', pk=pk)
-            
-        try:
-            print("\n=== شروع لغو جلسه ===")
-            print(f"شناسه جلسه: {meeting.id}")
-            print(f"عنوان جلسه: {meeting.title}")
-            print(f"دلیل لغو: {reason}")
-            
-            # ارسال پیامک به شرکت‌کنندگان
-            for participant in meeting.participants.all():
-                if hasattr(participant, 'userprofile') and participant.userprofile.mobile:
-                    print(f"ارسال پیامک لغو به شماره {participant.userprofile.mobile}")
-                    send_meeting_cancelled_sms(
-                        participant.userprofile.mobile,
-                        meeting.id,
-                        meeting.title,
-                        meeting.date,
-                        meeting.start_time,
-                        reason
-                    )
-            
-            # ارسال پیامک به شماره‌های دستی
-            if meeting.manual_numbers:
-                numbers = meeting.manual_numbers.split('\n')
-                for number in numbers:
-                    if number.strip():
-                        print(f"ارسال پیامک لغو به شماره دستی {number.strip()}")
-                        send_meeting_cancelled_sms(
-                            number.strip(),
-                            meeting.id,
-                            meeting.title,
-                            meeting.date,
-                            meeting.start_time,
-                            reason
-                        )
-            
-            # ارسال پیامک به هماهنگ‌کننده حمل و نقل
-            if meeting.notify_transport_coordinator:
-                coordinators = MeetingService.get_transport_coordinators()
-                for coordinator in coordinators:
-                    if hasattr(coordinator, 'userprofile') and coordinator.userprofile.mobile:
-                        print(f"ارسال پیامک لغو به هماهنگ‌کننده حمل و نقل {coordinator.userprofile.mobile}")
-                        send_meeting_cancelled_sms(
-                            coordinator.userprofile.mobile,
-                            meeting.id,
-                            meeting.title,
-                            meeting.date,
-                            meeting.start_time,
-                            reason
-                        )
-            
-            # لغو جلسه
-            meeting.status = 'cancelled'
-            meeting.cancellation_reason = reason
-            meeting.cancelled_by = request.user
-            meeting.cancelled_at = timezone.now()
-            meeting.save()
-            
-            notify_meeting_cancelled(meeting, reason=reason, actor=request.user)
 
-            print("جلسه با موفقیت لغو شد")
+        try:
+            with transaction.atomic():
+                meeting.status = 'cancelled'
+                meeting.cancellation_reason = reason
+                meeting.cancelled_by = request.user
+                meeting.cancelled_at = timezone.now()
+                meeting.save(update_fields=[
+                    'status',
+                    'cancellation_reason',
+                    'cancelled_by',
+                    'cancelled_at',
+                    'updated_at',
+                ])
+                if meeting.approval_status == 'approved':
+                    notify_meeting_cancelled(meeting, reason=reason, actor=request.user)
+                    _queue_meeting_sms(meeting, 'cancelled', reason=reason)
             messages.success(request, 'جلسه با موفقیت لغو شد.')
             return redirect('meetings:meeting_list')
-            
-        except Exception as e:
-            print(f"خطا در لغو جلسه: {str(e)}")
-            import traceback
-            print(f"جزئیات خطا: {traceback.format_exc()}")
+        except Exception:
+            logger.exception("Error cancelling meeting %s", meeting.pk)
             messages.error(request, 'خطا در لغو جلسه. لطفاً دوباره تلاش کنید.')
             return redirect('meetings:meeting_detail', pk=pk)
-            
+
     return render(request, 'meetings/cancel_meeting.html', {
         'meeting': meeting,
-        'title': 'لغو جلسه'
+        'title': 'لغو جلسه',
     })
 
 @permission_required("meeting_delete")
@@ -402,6 +396,10 @@ def delete_meeting(request, pk):
     meeting = get_object_or_404(Meeting, pk=pk)
     
     if request.method == 'POST':
+        if meeting.approval_status != 'approved':
+            meeting.delete()
+            messages.success(request, 'جلسه حذف شد.')
+            return redirect('meetings:meeting_list')
         try:
             print("\n=== شروع حذف جلسه ===")
             print(f"شناسه جلسه: {meeting.id}")
@@ -545,30 +543,90 @@ def meeting_export(request):
 @login_required
 def meeting_calendar(request):
     from django.contrib.auth.models import User
-    users = User.objects.all().select_related('userprofile')
-    return render(request, 'meetings/meeting_calendar.html', {'users': users})
+
+    can_create_meeting = _has_named_access(request.user, 'meeting_create')
+    context = {
+        'users': (
+            User.objects.filter(is_active=True)
+            .select_related('userprofile')
+            .order_by('first_name', 'last_name', 'username')
+            if can_create_meeting else User.objects.none()
+        ),
+        'can_create_meeting': can_create_meeting,
+        'can_approve_meetings': _can_approve_meetings(request.user),
+        'can_view_all_meetings': _can_view_all_meetings(request.user),
+    }
+    return render(request, 'meetings/meeting_calendar.html', context)
+
+
+@login_required
+def meeting_view_all_access(request):
+    if not _can_view_all_meetings(request.user):
+        messages.error(request, 'دسترسی مشاهده همه جلسات را ندارید.')
+        return redirect('meetings:meeting_calendar')
+    return redirect('meetings:meeting_calendar')
+
+
+@login_required
+def meeting_approval_queue(request):
+    if not _can_approve_meetings(request.user):
+        messages.error(request, 'دسترسی تأیید جلسات را ندارید.')
+        return redirect('meetings:meeting_calendar')
+    pending_meetings = Meeting.objects.filter(
+        approval_status='pending'
+    ).select_related('creator').prefetch_related('participants').order_by('date', 'start_time')
+    return render(request, 'meetings/meeting_approval_queue.html', {
+        'meetings': pending_meetings,
+    })
+
+
+@login_required
+def approve_meeting(request, pk):
+    if not _can_approve_meetings(request.user):
+        messages.error(request, 'دسترسی تأیید جلسات را ندارید.')
+        return redirect('meetings:meeting_calendar')
+    if request.method != 'POST':
+        return redirect('meetings:meeting_approve')
+    try:
+        MeetingService.approve_meeting(pk, request.user)
+        messages.success(request, 'جلسه تأیید شد و اطلاع‌رسانی‌ها در صف ارسال قرار گرفت.')
+    except (Meeting.DoesNotExist, ValueError) as exc:
+        messages.error(request, str(exc))
+    return redirect('meetings:meeting_approve')
+
 
 @login_required
 def meeting_events_json(request):
-    """API endpoint برای دریافت لیست جلسات به صورت JSON برای FullCalendar"""
+    """Return only meetings visible to the current calendar user."""
     from django.http import JsonResponse
-    
-    meetings = Meeting.objects.all().order_by('date', 'start_time')
-    
-    # فیلتر دسترسی کاربر
-    if not request.user.is_superuser:
-        meetings = meetings.filter(participants=request.user)
-    
+
+    meetings = (
+        _visible_meetings_for(request.user)
+        .prefetch_related('participants')
+        .order_by('date', 'start_time')
+    )
+
+    # FullCalendar sends an ISO date range where end is exclusive.
+    try:
+        if request.GET.get('start'):
+            meetings = meetings.filter(date__gte=date.fromisoformat(request.GET['start'][:10]))
+        if request.GET.get('end'):
+            meetings = meetings.filter(date__lt=date.fromisoformat(request.GET['end'][:10]))
+    except ValueError:
+        return JsonResponse({'error': 'بازه تاریخ نامعتبر است.'}, status=400)
+
     events = []
     for meeting in meetings:
-        # تعیین رنگ بر اساس وضعیت
-        color_map = {
-            'scheduled': '#3b82f6',  # آبی
-            'cancelled': '#ef4444',   # قرمز
-            'completed': '#10b981',  # سبز
-        }
-        color = color_map.get(meeting.status, '#6b7280')
-        
+        if meeting.approval_status == 'pending':
+            color = '#d97706'
+        elif meeting.approval_status == 'rejected':
+            color = '#6b7280'
+        else:
+            color = {
+                'scheduled': '#3b82f6',
+                'cancelled': '#ef4444',
+                'completed': '#10b981',
+            }.get(meeting.status, '#6b7280')
         events.append({
             'id': meeting.pk,
             'title': meeting.title,
@@ -576,13 +634,12 @@ def meeting_events_json(request):
             'end': f"{meeting.date}T{meeting.end_time}",
             'color': color,
             'location': meeting.location or '',
-            'participants': [p.get_full_name() for p in meeting.participants.all()],
-            'description': meeting.description or '',
             'status': meeting.status,
             'status_display': meeting.get_status_display(),
+            'approval_status': meeting.approval_status,
+            'approval_status_display': meeting.get_approval_status_display(),
             'url': f'/meetings/{meeting.pk}/',
         })
-    
     return JsonResponse(events, safe=False)
 
 @login_required
@@ -593,7 +650,7 @@ def meeting_create_ajax(request):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
     
-    if not check_permission(request.user, "meeting_create"):
+    if not _has_named_access(request.user, "meeting_create"):
         return JsonResponse({'success': False, 'error': 'دسترسی لازم برای ایجاد جلسه را ندارید'}, status=403)
     
     form = MeetingForm(request.POST)
@@ -613,7 +670,7 @@ def meeting_create_ajax(request):
             )
             return JsonResponse({
                 'success': True,
-                'message': 'جلسه با موفقیت ایجاد شد.',
+                'message': 'جلسه ثبت شد و در انتظار تأیید مدیر است.',
                 'meeting_id': meeting.id
             })
         except Exception as e:
@@ -627,46 +684,37 @@ def meeting_create_ajax(request):
 
 @login_required
 def meeting_update_ajax(request, pk):
-    """ویو AJAX برای ویرایش جلسه"""
+    """AJAX endpoint for updating a meeting."""
     from django.http import JsonResponse
-    
+
     meeting = get_object_or_404(Meeting, pk=pk)
-    
-    if not check_permission(request.user, "meeting_edit"):
+    if (
+        not check_permission(request.user, "meeting_edit")
+        or not request.user.has_perm('meetings.change_meeting')
+    ):
         return JsonResponse({'success': False, 'error': 'دسترسی لازم برای ویرایش جلسه را ندارید'}, status=403)
-    
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Method not allowed'}, status=405)
-    
+
     form = MeetingForm(request.POST, instance=meeting)
-    if form.is_valid():
-        try:
-            meeting = form.save()
-            
-            # ارسال پیامک بروزرسانی
-            for participant in meeting.participants.all():
-                if hasattr(participant, 'userprofile') and participant.userprofile.mobile:
-                    send_meeting_updated_sms(
-                        participant.userprofile.mobile,
-                        meeting.id,
-                        meeting.title,
-                        meeting.date,
-                        meeting.start_time
-                    )
-            
-            return JsonResponse({
-                'success': True,
-                'message': 'جلسه با موفقیت بروزرسانی شد.',
-                'meeting_id': meeting.id
-            })
-        except Exception as e:
-            logger.error(f"Error updating meeting via AJAX: {str(e)}")
-            return JsonResponse({'success': False, 'error': f'خطا در بروزرسانی جلسه: {str(e)}'}, status=500)
-    else:
-        errors = {}
-        for field, field_errors in form.errors.items():
-            errors[field] = field_errors
+    if not form.is_valid():
+        errors = {field: field_errors for field, field_errors in form.errors.items()}
         return JsonResponse({'success': False, 'errors': errors}, status=400)
+
+    try:
+        with transaction.atomic():
+            meeting = form.save()
+            if meeting.approval_status == 'approved':
+                notify_meeting_updated(meeting, actor=request.user)
+                _queue_meeting_sms(meeting, 'updated')
+        return JsonResponse({
+            'success': True,
+            'message': 'جلسه با موفقیت بروزرسانی شد.',
+            'meeting_id': meeting.id,
+        })
+    except Exception as exc:
+        logger.exception("Error updating meeting %s via AJAX", meeting.pk)
+        return JsonResponse({'success': False, 'error': f'خطا در بروزرسانی جلسه: {exc}'}, status=500)
 
 @login_required
 def meeting_detail_ajax(request, pk):
@@ -674,7 +722,14 @@ def meeting_detail_ajax(request, pk):
     from django.http import JsonResponse
     import jdatetime
     
-    meeting = get_object_or_404(Meeting, pk=pk)
+    meeting = get_object_or_404(
+        Meeting.objects.select_related('creator').prefetch_related('participants__userprofile'),
+        pk=pk,
+    )
+    if not check_permission(request.user, "meeting_detail"):
+        return JsonResponse({'error': 'دسترسی لازم برای مشاهده جلسه را ندارید'}, status=403)
+    if not _can_view_meeting(request.user, meeting):
+        return JsonResponse({'error': 'دسترسی لازم برای مشاهده این جلسه را ندارید'}, status=403)
     
     # تبدیل تاریخ به شمسی
     j_date = jdatetime.date.fromgregorian(date=meeting.date)
@@ -711,11 +766,17 @@ def meeting_detail_ajax(request, pk):
         'description': meeting.description or '',
         'status': meeting.status,
         'status_display': meeting.get_status_display(),
+        'approval_status': meeting.approval_status,
+        'approval_status_display': meeting.get_approval_status_display(),
         'participants': participants,
         'manual_numbers': meeting.manual_numbers or '',
         'notify_transport_coordinator': meeting.notify_transport_coordinator,
         'creator': meeting.creator.get_full_name() or meeting.creator.username,
         'created_at': meeting.created_at.strftime('%Y-%m-%d %H:%M'),
+        'can_edit': (
+            check_permission(request.user, 'meeting_edit')
+            and request.user.has_perm('meetings.change_meeting')
+        ),
     })
 
 @login_required

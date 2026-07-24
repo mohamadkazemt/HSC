@@ -27,7 +27,7 @@ def _notify_participants(meeting, *, title: str, message: str, notification_type
             notification_type=notification_type,
             url=url,
             actor=actor,
-            context={'meeting_id': meeting.id, 'target': 'participant'},
+            extra_log_context={'meeting_id': meeting.id, 'target': 'participant'},
         )
 
 
@@ -44,7 +44,7 @@ def _notify_transport_coordinators(meeting, *, title: str, message: str, notific
             notification_type=notification_type,
             url=url,
             actor=actor,
-            context={'meeting_id': meeting.id, 'target': 'transport_coordinator'},
+            extra_log_context={'meeting_id': meeting.id, 'target': 'transport_coordinator'},
         )
 
 

@@ -89,6 +89,24 @@ URLS_WITH_LABELS = [
         "label": "جلسات_جزئیات AJAX"
     },
 
+    {
+        "path": "calendar/all/",
+        "view": views.meeting_view_all_access,
+        "name": "meeting_view_all",
+        "label": "جلسات_مشاهده همه جلسات"
+    },
+    {
+        "path": "approval/",
+        "view": views.meeting_approval_queue,
+        "name": "meeting_approve",
+        "label": "جلسات_تأیید جلسات"
+    },
+    {
+        "path": "<int:pk>/approve/",
+        "view": views.approve_meeting,
+        "name": "meeting_approve_action",
+        "label": "جلسات_عملیات تأیید جلسه"
+    },
 
 ]
 

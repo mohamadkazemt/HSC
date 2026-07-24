@@ -3,8 +3,8 @@ from .models import Meeting
 
 @admin.register(Meeting)
 class MeetingAdmin(admin.ModelAdmin):
-    list_display = ('title', 'date', 'start_time', 'end_time', 'location', 'participants_list', 'status')
-    list_filter = ('date', 'status', 'participants')
+    list_display = ('title', 'date', 'start_time', 'end_time', 'location', 'participants_list', 'status', 'approval_status', 'approved_by')
+    list_filter = ('date', 'status', 'approval_status', 'participants')
     search_fields = ('title', 'description', 'location')
     filter_horizontal = ('participants',)
     date_hierarchy = 'date'

@@ -1,104 +1,83 @@
+import logging
+
+from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+
 from dashboard.models import Notification
+
 from .tasks import send_rubika_message
-import logging
 
 logger = logging.getLogger(__name__)
 
+# These notifications are already delivered by the interactive Rubika task.
+INTERACTIVE_NOTIFICATION_TITLES = {
+    'درخواست جایگزینی مرخصی',
+    'درخواست تأیید مرخصی',
+}
 
-@receiver(post_save, sender=Notification)
-def send_notification_to_rubika(sender, instance: Notification, created, **kwargs):
-    """
-    ارسال نوتیفیکیشن به ربات روبیکا بعد از ایجاد
-    شامل آیکون‌های مناسب و فرمت بهتر
-    
-    نوتیفیکیشن‌های درخواست تایید مرخصی که دکمه دارند از این signal نادیده گرفته می‌شوند
-    چون آن‌ها با send_leave_approval_request task ارسال می‌شوند
-    """
-    logger.info(f"🔔 Signal triggered for notification {instance.id}, created={created}")
-    
-    if not created:
-        logger.info(f"  ⏭️ Skipping - notification was updated, not created")
-        return
-    
-    # نادیده گرفتن نوتیفیکیشن‌هایی که با دکمه ارسال می‌شوند
-    # فقط این دو عنوان دقیق با دکمه ارسال می‌شوند (از leave_reports/utils.py)
-    approval_titles_with_buttons = [
-        'درخواست جایگزینی مرخصی',  # به جایگزین با دکمه تایید/رد
-        'درخواست تأیید مرخصی',      # به مدیر با دکمه تایید/رد
-    ]
-    
-    if instance.title and instance.title in approval_titles_with_buttons:
-        logger.info(f"  ⏭️ Skipping - notification has approval buttons (title: {instance.title})")
-        # این نوتیفیکیشن‌ها با send_leave_approval_request ارسال می‌شوند
-        return
-    
-    user = instance.user
-    profile = getattr(user, 'rubika_profile', None)
-    
-    logger.info(f"  👤 User: {user.username}, Has rubika_profile: {profile is not None}")
-    
-    # بررسی اینکه کاربر پروفایل روبیکا دارد و chat_id دارد
+TYPE_ICONS = {
+    'info': 'ℹ️',
+    'success': '✅',
+    'warning': '⚠️',
+    'error': '❌',
+    'meeting': '📅',
+}
+
+
+def format_notification_message(notification: Notification) -> str:
+    """Build the plain-text representation sent to Rubika."""
+    lines = []
+    if notification.title:
+        icon = TYPE_ICONS.get(notification.notification_type, TYPE_ICONS['info'])
+        lines.extend([f'{icon} {notification.title}', ''])
+    lines.append(notification.message)
+    if notification.url:
+        lines.extend(['', 'برای مشاهده جزئیات به پنل وب مراجعه کنید.'])
+    return '\n'.join(lines)
+
+
+def queue_notification_to_rubika(notification: Notification) -> bool:
+    """Queue one persisted notification for its linked Rubika user."""
+    if notification.title in INTERACTIVE_NOTIFICATION_TITLES:
+        logger.debug(
+            "Notification %s uses the interactive Rubika delivery path",
+            notification.pk,
+        )
+        return False
+
+    profile = getattr(notification.user, 'rubika_profile', None)
     if not profile or not profile.chat_id:
-        logger.warning(f"  ❌ User {user.username} has no rubika profile or chat_id")
-        return
-    
-    logger.info(f"  ✅ User has chat_id: {profile.chat_id}")
-    
-    # انتخاب آیکون مناسب بر اساس نوع نوتیفیکیشن و عنوان
-    icons = {
-        'info': 'ℹ️',
-        'success': '✅',
-        'warning': '⚠️',
-        'error': '❌',
-        'meeting': '📅',
-    }
-    icon = icons.get(instance.notification_type, 'ℹ️')
-    
-    # آیکون خاص برای چک‌لیست‌های برنامه‌ریزی شده
-    if instance.title:
-        title_lower = instance.title.lower()
-        if 'چک‌لیست' in instance.title or 'checklist' in title_lower:
-            if 'برنامه‌ریزی شده' in instance.title or 'scheduled' in title_lower:
-                if instance.notification_type == 'warning':
-                    icon = '⚠️📋'  # هشدار چک‌لیست برنامه‌ریزی شده
-                else:
-                    icon = '📋'  # چک‌لیست برنامه‌ریزی شده
-            elif instance.notification_type == 'warning':
-                icon = '⚠️📋'  # هشدار چک‌لیست
-            elif instance.notification_type == 'success':
-                icon = '✅📋'  # موفقیت چک‌لیست
-            else:
-                icon = '📋'  # چک‌لیست عادی
-    
-    # ساختن متن پیام
-    message_lines = []
-    
-    # افزودن عنوان با آیکون
-    if instance.title:
-        message_lines.append(f'{icon} {instance.title}')
-        message_lines.append('')
-    
-    # افزودن متن پیام
-    message_lines.append(instance.message)
-    
-    # افزودن لینک در صورت وجود
-    if instance.url:
-        message_lines.append('')
-        # برای چک‌لیست‌های برنامه‌ریزی شده، پیام خاص
-        if instance.title and ('چک‌لیست برنامه‌ریزی شده' in instance.title or 'scheduled' in instance.title.lower()):
-            message_lines.append('🔗 برای تکمیل چک‌لیست به پنل وب مراجعه کنید.')
-        else:
-            message_lines.append('🔗 برای مشاهده جزئیات به پنل وب مراجعه کنید.')
-    
-    text = '\n'.join(message_lines)
-    
-    logger.info(f"  📤 Sending message to rubika (chat_id: {profile.chat_id})")
-    
-    # ارسال پیام به ربات (async task)
-    send_rubika_message.delay(profile.chat_id, text)
-    
-    logger.info(f"  ✅ Message queued successfully")
+        logger.debug(
+            "User %s has no linked Rubika chat; notification %s stays in-app only",
+            notification.user_id,
+            notification.pk,
+        )
+        return False
+
+    chat_id = str(profile.chat_id)
+    text = format_notification_message(notification)
+
+    def enqueue() -> None:
+        try:
+            send_rubika_message.delay(chat_id, text)
+        except Exception:
+            # Notification persistence must never depend on broker availability.
+            logger.exception(
+                "Could not enqueue Rubika delivery for notification %s",
+                notification.pk,
+            )
+
+    transaction.on_commit(enqueue)
+    return True
 
 
+@receiver(
+    post_save,
+    sender=Notification,
+    dispatch_uid='rubika_bot.notification_delivery',
+)
+def send_notification_to_rubika(sender, instance: Notification, created, **kwargs):
+    """Deliver every newly-created dashboard notification to its linked user."""
+    if created:
+        queue_notification_to_rubika(instance)

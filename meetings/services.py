@@ -31,126 +31,79 @@ class MeetingService:
     @staticmethod
     def send_notifications_to_all_users(meeting):
         """فقط آبجکت‌های Notification را در دیتابیس برای شرکت‌کنندگان جلسه ایجاد می‌کند."""
-        participants = meeting.participants.all()
-        notifications_to_create = []
+        participants = list(meeting.participants.all())
         for participant in participants:
-            notifications_to_create.append(
-                Notification(
-                    user=participant,
-                    message=f'جلسه جدید: {meeting.title}',
-                    url=f'/meetings/{meeting.pk}/', # استفاده از pk
-                    meeting=meeting
-                )
+            Notification.objects.create(
+                user=participant,
+                title='جلسه جدید',
+                message=f'جلسه جدید: {meeting.title}',
+                notification_type='meeting',
+                url=f'/meetings/{meeting.pk}/',
+                meeting=meeting,
             )
-        if notifications_to_create:
-             Notification.objects.bulk_create(notifications_to_create)
-             logger.info(f"Created {len(notifications_to_create)} Notification objects in DB via send_notifications_to_all_users for meeting {meeting.pk}")
+        if participants:
+            logger.info(
+                "Created %s notifications for meeting %s",
+                len(participants),
+                meeting.pk,
+            )
         else:
-             logger.info(f"No participants found to create notifications for meeting {meeting.pk}")
+            logger.info("No participants found for meeting %s", meeting.pk)
 
 
     @staticmethod
     def create_meeting(title, date, start_time, end_time, creator, participants, manual_numbers, notify_transport_coordinator, location=None, description=None):
-        logger.info("Starting create_meeting...")
-        meeting_instance = None
-        try:
-            if not creator.has_perm('meetings.add_meeting'):
-                logger.warning(f"User {creator.username} does not have permission to create meetings.")
-                raise PermissionError("شما مجاز به ایجاد جلسه نیستید")
+        """Create a pending meeting without notifying participants."""
+        with transaction.atomic():
+            meeting = Meeting.objects.create(
+                title=title,
+                date=date,
+                start_time=start_time,
+                end_time=end_time,
+                creator=creator,
+                manual_numbers=manual_numbers,
+                notify_transport_coordinator=notify_transport_coordinator,
+                location=location,
+                description=description,
+                approval_status='pending',
+            )
+            meeting.participants.set(participants)
+        logger.info("Meeting %s created and is waiting for approval", meeting.pk)
+        return meeting
 
-            with transaction.atomic():
-                meeting = Meeting.objects.create(
-                    title=title,
-                    date=date, # تاریخ اینجا یک تاریخ استاندارد است
-                    start_time=start_time,
-                    end_time=end_time,
-                    creator=creator,
-                    manual_numbers=manual_numbers,
-                    notify_transport_coordinator=notify_transport_coordinator,
-                    location=location,
-                    description=description
+    @staticmethod
+    def _register_approved_delivery(meeting):
+        """Register notifications, SMS, and reminders after approval."""
+        MeetingService.send_notifications_to_all_users(meeting)
+
+        def enqueue_tasks():
+            try:
+                from .tasks import send_meeting_created_sms_async, send_sms_reminder
+                send_meeting_created_sms_async.delay(meeting.pk)
+                reminder_times = (
+                    timezone.make_aware(timezone.datetime.combine(meeting.date - timedelta(days=1), time(18, 0))),
+                    timezone.make_aware(timezone.datetime.combine(meeting.date, time(7, 0))),
                 )
-                meeting_instance = meeting
-                logger.info(f"Meeting object created in DB (within transaction): ID {meeting.pk}")
-                meeting.participants.set(participants)
-                logger.info("Participants set (within transaction)")
+                now = timezone.now()
+                for eta in reminder_times:
+                    if eta > now:
+                        send_sms_reminder.apply_async(args=[meeting.pk], eta=eta)
+            except Exception:
+                logger.exception("Could not enqueue approved meeting %s deliveries", meeting.pk)
 
-                # ثبت تسک ارسال پیامک ایجاد برای اجرا *بعد* از کامیت
-                def task_send_creation_sms():
-                    try:
-                        from .tasks import send_meeting_created_sms_async
-                        from kombu.exceptions import OperationalError
-                        from redis.exceptions import ConnectionError as RedisConnectionError
-                        send_meeting_created_sms_async.delay(meeting.pk)
-                        logger.info(f"Creation SMS task triggered via on_commit for meeting {meeting.pk}")
-                    except (OperationalError, RedisConnectionError) as e:
-                        logger.warning(f"Redis/Celery not available for sending creation SMS for meeting {meeting.pk}: {e}. Meeting created successfully but SMS will not be sent.")
-                    except Exception as e:
-                        logger.error(f"Unexpected error scheduling creation SMS task for meeting {meeting.pk}: {e}", exc_info=True)
-                transaction.on_commit(task_send_creation_sms)
+        transaction.on_commit(enqueue_tasks)
 
-                # ثبت تسک‌های یادآوری برای اجرا *بعد* از کامیت
-                try:
-                    # تاریخ ورودی اکنون تاریخ میلادی استاندارد است
-                    from datetime import date as date_type
-                    if isinstance(date, str):
-                         # اطمینان از فرمت و تبدیل به شیء date
-                         try:
-                             gregorian_date = date_type.fromisoformat(date)
-                         except ValueError:
-                             logger.error(f"Invalid date format '{date}' received for reminder scheduling.")
-                             raise ValueError(f"فرمت تاریخ نامعتبر: {date}")
-                    elif isinstance(date, date_type):
-                         gregorian_date = date
-                    else:
-                        logger.error(f"Unexpected date type '{type(date)}' received for reminder scheduling.")
-                        raise TypeError(f"نوع تاریخ نامشخص: {type(date)}")
-
-                    day_before = gregorian_date - timedelta(days=1)
-                    reminder_time_before = timezone.make_aware(timezone.datetime.combine(day_before, time(18, 0)))
-                    day_of_meeting = gregorian_date
-                    reminder_time_day_of = timezone.make_aware(timezone.datetime.combine(day_of_meeting, time(7, 0)))
-
-                    def task_schedule_reminders():
-                        try:
-                            from .tasks import send_sms_reminder
-                            from kombu.exceptions import OperationalError
-                            from redis.exceptions import ConnectionError as RedisConnectionError
-                            # فقط اگر جلسه لغو نشده باشد، یادآوری برنامه‌ریزی می‌شود
-                            if meeting.status != 'cancelled':
-                                send_sms_reminder.apply_async(args=[meeting.pk], eta=reminder_time_before)
-                                logger.info(f"Scheduled day_before reminder via on_commit for meeting {meeting.pk} at {reminder_time_before}")
-                                send_sms_reminder.apply_async(args=[meeting.pk], eta=reminder_time_day_of)
-                                logger.info(f"Scheduled day_of_meeting reminder via on_commit for meeting {meeting.pk} at {reminder_time_day_of}")
-                            else:
-                                logger.info(f"Meeting {meeting.pk} is cancelled, skipping reminder scheduling")
-                        except (OperationalError, RedisConnectionError) as e:
-                            logger.warning(f"Redis/Celery not available for scheduling reminders for meeting {meeting.pk}: {e}. Meeting created successfully but reminders will not be scheduled.")
-                        except Exception as e:
-                            logger.error(f"Unexpected error scheduling reminder tasks for meeting {meeting.pk}: {e}", exc_info=True)
-                    transaction.on_commit(task_schedule_reminders)
-                    logger.info(f"Reminder tasks registered via on_commit for meeting {meeting.pk}")
-
-                except Exception as celery_err:
-                    # فقط خطاهای مربوط به آماده‌سازی داده‌ها (نه اتصال Redis) باعث rollback می‌شوند
-                    if 'Connection refused' in str(celery_err) or '6379' in str(celery_err):
-                        logger.warning(f"Redis/Celery connection error during reminder scheduling for meeting {meeting.pk}: {celery_err}. Meeting will be created but reminders won't be scheduled.")
-                    else:
-                        logger.error(f"!!! Error preparing reminder schedule data for meeting {meeting.pk}: {celery_err}", exc_info=True)
-                        raise # Rollback transaction only for non-connection errors
-
-                # ایجاد نوتیفیکیشن دیتابیس *داخل* تراکنش
-                MeetingService.send_notifications_to_all_users(meeting)
-
-
-            logger.info(f"create_meeting transaction committed successfully for meeting ID {meeting.pk}.")
-            return meeting
-
-        except Exception as e:
-            meeting_pk = meeting_instance.pk if meeting_instance else "N/A"
-            logger.error(f"!!! Error during create_meeting (Meeting PK if created: {meeting_pk}): {e}", exc_info=True)
-            # raise Exception(f"خطا در ایجاد جلسه: {e}") from e # این خطا را به view برمی‌گرداند
-            # برای نمایش خطای اصلی jdatetime به کاربر:
-            raise Exception(f"خطا در ایجاد جلسه: {str(e)}") from e
-
-
+    @staticmethod
+    def approve_meeting(meeting_id, approver):
+        """Approve a pending meeting once and activate its deliveries."""
+        with transaction.atomic():
+            meeting = Meeting.objects.select_for_update().get(pk=meeting_id)
+            if meeting.approval_status != 'pending':
+                raise ValueError('این جلسه قبلاً بررسی شده است.')
+            meeting.approval_status = 'approved'
+            meeting.approved_by = approver
+            meeting.approved_at = timezone.now()
+            meeting.rejection_reason = ''
+            meeting.save(update_fields=['approval_status', 'approved_by', 'approved_at', 'rejection_reason', 'updated_at'])
+            MeetingService._register_approved_delivery(meeting)
+        return meeting

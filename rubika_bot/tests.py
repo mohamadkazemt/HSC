@@ -90,15 +90,67 @@ class RubikaBotEngineTests(TestCase):
 
 
 class SignalsTests(TestCase):
-    @patch('rubika_bot.tasks.send_rubika_message.delay')
-    def test_notification_signal_enqueues(self, mock_delay: MagicMock) -> None:
+    @patch('rubika_bot.signals.send_rubika_message.delay')
+    def test_notification_signal_enqueues_after_commit(self, mock_delay: MagicMock) -> None:
         from dashboard.models import Notification
 
         user = User.objects.create_user(username='x', password='p')
         RubikaUser.objects.create(chat_id='555', user=user)
-        Notification.objects.create(user=user, message='hello')
-        self.assertTrue(mock_delay.called)
 
+        with self.captureOnCommitCallbacks(execute=True):
+            Notification.objects.create(
+                user=user,
+                title='جلسه جدید',
+                message='جلسه فردا برگزار می‌شود',
+                notification_type='meeting',
+                url='/meetings/1/',
+            )
+
+        mock_delay.assert_called_once()
+        chat_id, text = mock_delay.call_args.args
+        self.assertEqual(chat_id, '555')
+        self.assertIn('جلسه جدید', text)
+        self.assertIn('جلسه فردا برگزار می‌شود', text)
+
+    @patch('rubika_bot.signals.send_rubika_message.delay')
+    def test_unlinked_user_keeps_in_app_notification(self, mock_delay: MagicMock) -> None:
+        from dashboard.models import Notification
+
+        user = User.objects.create_user(username='unlinked', password='p')
+        with self.captureOnCommitCallbacks(execute=True):
+            notification = Notification.objects.create(user=user, message='hello')
+
+        self.assertTrue(Notification.objects.filter(pk=notification.pk).exists())
+        mock_delay.assert_not_called()
+
+    @patch(
+        'rubika_bot.signals.send_rubika_message.delay',
+        side_effect=ConnectionError('broker unavailable'),
+    )
+    def test_broker_failure_does_not_rollback_notification(self, _mock_delay: MagicMock) -> None:
+        from dashboard.models import Notification
+
+        user = User.objects.create_user(username='broker', password='p')
+        RubikaUser.objects.create(chat_id='777', user=user)
+        with self.captureOnCommitCallbacks(execute=True):
+            notification = Notification.objects.create(user=user, message='persist me')
+
+        self.assertTrue(Notification.objects.filter(pk=notification.pk).exists())
+
+    @patch('rubika_bot.signals.send_rubika_message.delay')
+    def test_interactive_leave_notification_is_not_duplicated(self, mock_delay: MagicMock) -> None:
+        from dashboard.models import Notification
+
+        user = User.objects.create_user(username='leave', password='p')
+        RubikaUser.objects.create(chat_id='888', user=user)
+        with self.captureOnCommitCallbacks(execute=True):
+            Notification.objects.create(
+                user=user,
+                title='درخواست تأیید مرخصی',
+                message='approval',
+            )
+
+        mock_delay.assert_not_called()
 
 class SettingsTests(TestCase):
     def test_token_persistence(self) -> None:

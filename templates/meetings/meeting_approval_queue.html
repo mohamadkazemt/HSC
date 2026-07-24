@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load meetings_jalali %}
+
+{% block title %}تأیید جلسات{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">جلسات منتظر تأیید</h1>
+      <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">اطلاعات جلسه را پیش از فعال‌شدن پیامک و اعلان بررسی کنید.</p>
+    </div>
+    <a href="{% url 'meetings:meeting_calendar' %}" class="px-4 py-2 text-sm bg-gray-100 text-gray-800 rounded-md dark:bg-gray-700 dark:text-white">بازگشت به تقویم</a>
+  </div>
+
+  <div class="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-md">
+    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+      <thead class="bg-gray-50 dark:bg-gray-800">
+        <tr>
+          <th class="px-4 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-300">جلسه</th>
+          <th class="px-4 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-300">زمان و مکان</th>
+          <th class="px-4 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-300">سازنده</th>
+          <th class="px-4 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-300">شرکت‌کنندگان</th>
+          <th class="px-4 py-3 text-right text-xs font-medium text-gray-600 dark:text-gray-300">عملیات</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-900">
+        {% for meeting in meetings %}
+        <tr>
+          <td class="px-4 py-3 text-sm text-gray-900 dark:text-white">
+            <div class="font-medium">{{ meeting.title }}</div>
+            {% if meeting.description %}<div class="mt-1 text-xs text-gray-500">{{ meeting.description|truncatechars:100 }}</div>{% endif %}
+          </td>
+          <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+            <div>{{ meeting.date|to_jalali }}، {{ meeting.start_time|time:"H:i" }} تا {{ meeting.end_time|time:"H:i" }}</div>
+            <div class="mt-1 text-xs text-gray-500">{{ meeting.location|default:"بدون مکان" }}</div>
+          </td>
+          <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">{{ meeting.creator.get_full_name|default:meeting.creator.username }}</td>
+          <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">
+            {% for participant in meeting.participants.all %}{{ participant.get_full_name|default:participant.username }}{% if not forloop.last %}، {% endif %}{% endfor %}
+          </td>
+          <td class="px-4 py-3">
+            <form method="post" action="{% url 'meetings:meeting_approve_action' meeting.pk %}">
+              {% csrf_token %}
+              <button type="submit" class="px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700">تأیید و ارسال اعلان‌ها</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="px-4 py-10 text-center text-sm text-gray-500">جلسه‌ای منتظر تأیید نیست.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

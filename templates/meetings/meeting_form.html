@@ -2,255 +2,151 @@
 {% load static %}
 {% load meetings_jalali %}
 
-{% block title %}{% if object %}ویرایش جلسه{% else %}ایجاد جلسه جدید{% endif %}{% endblock %}
+{% block title %}{% if object %}ویرایش جلسه{% else %}ایجاد جلسه{% endif %}{% endblock %}
 
 {% block extra_css %}
-<link href="{% static "vendor/css/select2.min.css" %}" rel="stylesheet" />
-<link rel="stylesheet" href="{% static "vendor/css/persian-datepicker.min.css" %}" />
+<link href="{% static 'vendor/css/select2.min.css' %}" rel="stylesheet">
 <style>
-  .form-control {
-    @apply w-full rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-3;
-  }
-  .form-control:focus {
-    @apply ring-2 ring-indigo-500 border-indigo-500;
-  }
-  .select2-container {
-    @apply w-full;
-  }
-  .select2-selection {
-    @apply rounded-lg border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800;
-  }
+  .meeting-form-control { width: 100%; min-height: 2.75rem; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; padding: .625rem .75rem; color: #111827; font-size: .875rem; transition: border-color .15s, box-shadow .15s; }
+  .meeting-form-control:focus { outline: 0; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.14); }
+  textarea.meeting-form-control { min-height: 6.5rem; resize: vertical; }
+  .meeting-field-error ul { margin: 0; padding: 0; list-style: none; }
+  .select2-container { width: 100% !important; }
+  .select2-container .select2-selection--multiple { min-height: 2.75rem; border: 1px solid #d1d5db; border-radius: 6px; padding: .25rem .5rem; }
+  .select2-container--default.select2-container--focus .select2-selection--multiple { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.14); }
+  .dark .meeting-form-control { border-color: #4b5563; background: #374151; color: #f9fafb; }
+  .dark .select2-container .select2-selection--multiple { border-color: #4b5563; background: #374151; }
+  .dark .select2-container--default .select2-selection--multiple .select2-selection__choice { border-color: #4b5563; background: #1f2937; color: #e5e7eb; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-  <!-- Header -->
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-4">
-        <div class="bg-indigo-100 dark:bg-indigo-900/30 rounded-lg p-3">
-          <svg class="h-8 w-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-        </div>
-        <div>
-          <h1 class="text-2xl font-bold text-gray-800 dark:text-white">
-            {% if object %}ویرایش جلسه{% else %}ایجاد جلسه جدید{% endif %}
-          </h1>
-          <p class="text-gray-600 dark:text-gray-400 mt-1">
-            {% if object %}ویرایش اطلاعات جلسه{% else %}اطلاعات جلسه جدید را وارد کنید{% endif %}
-          </p>
-        </div>
-      </div>
-      <a href="{% url 'meetings:meeting_list' %}" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
+<div class="mx-auto max-w-5xl space-y-5">
+  <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <a href="{% url 'meetings:meeting_calendar' %}" class="mb-2 inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-blue-600 dark:text-gray-400">
+        <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+        بازگشت به تقویم
       </a>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{% if object %}ویرایش جلسه{% else %}ایجاد جلسه جدید{% endif %}</h1>
+      <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">زمان، افراد و جزئیات لازم برای برگزاری جلسه را ثبت کنید.</p>
     </div>
-  </div>
+    {% if not object %}
+    <div class="inline-flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+      <i class="fa-solid fa-clock" aria-hidden="true"></i>
+      اعلان‌ها پس از تأیید مدیر ارسال می‌شوند
+    </div>
+    {% endif %}
+  </header>
 
-  <!-- Form Card -->
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-    <form method="post" class="space-y-6">
-      {% csrf_token %}
-      
-      {% if form.non_field_errors %}
-      <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-        <div class="flex">
-          <svg class="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-          </svg>
-          <div class="text-sm text-red-800 dark:text-red-200">
-            {{ form.non_field_errors }}
-          </div>
-        </div>
+  <form method="post" novalidate class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+    <div class="border-b border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200" role="alert">
+      {{ form.non_field_errors }}
+    </div>
+    {% endif %}
+
+    <section class="border-b border-gray-200 px-5 py-5 dark:border-gray-700 sm:px-6">
+      <div class="mb-5">
+        <h2 class="text-base font-bold text-gray-900 dark:text-white">زمان و موضوع</h2>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">فیلدهای ستاره‌دار الزامی هستند.</p>
       </div>
-      {% endif %}
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Title -->
-        <div class="md:col-span-2">
-          <label for="{{ form.title.id_for_label }}" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            {{ form.title.label }} <span class="text-red-500">*</span>
-          </label>
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div class="sm:col-span-2">
+          <label for="{{ form.title.id_for_label }}" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ form.title.label }} <span class="text-red-500">*</span></label>
           {{ form.title }}
-          {% if form.title.errors %}
-          <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.title.errors }}</p>
-          {% endif %}
+          {% if form.title.errors %}<div class="meeting-field-error mt-1.5 text-xs text-red-600 dark:text-red-400">{{ form.title.errors }}</div>{% endif %}
         </div>
-
-        <!-- Date -->
         <div>
-          <label for="{{ form.date.id_for_label }}" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            {{ form.date.label }} <span class="text-red-500">*</span>
-          </label>
-          <input type="text" 
-                 id="{{ form.date.id_for_label }}" 
-                 name="{{ form.date.name }}" 
-                 value="{% if form.date.value %}{{ form.date.value|to_jalali:'%Y/%m/%d' }}{% endif %}" 
-                 class="persian-datepicker form-control" 
-                 placeholder="انتخاب تاریخ">
-          {% if form.date.errors %}
-          <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.date.errors }}</p>
-          {% endif %}
+          <label for="{{ form.date.id_for_label }}" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ form.date.label }} <span class="text-red-500">*</span></label>
+          <input type="text" id="{{ form.date.id_for_label }}" name="{{ form.date.name }}" value="{% if form.date.value %}{{ form.date.value|to_jalali:'%Y/%m/%d' }}{% endif %}" class="meeting-form-control persian-datepicker" placeholder="۱۴۰۵/۰۵/۱۰" autocomplete="off" inputmode="numeric">
+          {% if form.date.errors %}<div class="meeting-field-error mt-1.5 text-xs text-red-600 dark:text-red-400">{{ form.date.errors }}</div>{% endif %}
         </div>
-
-        <!-- Start Time -->
-        <div>
-          <label for="{{ form.start_time.id_for_label }}" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            {{ form.start_time.label }} <span class="text-red-500">*</span>
-          </label>
-          {{ form.start_time }}
-          {% if form.start_time.errors %}
-          <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.start_time.errors }}</p>
-          {% endif %}
-        </div>
-
-        <!-- End Time -->
-        <div>
-          <label for="{{ form.end_time.id_for_label }}" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            {{ form.end_time.label }} <span class="text-red-500">*</span>
-          </label>
-          {{ form.end_time }}
-          {% if form.end_time.errors %}
-          <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.end_time.errors }}</p>
-          {% endif %}
-        </div>
-
-        <!-- Location -->
-        <div>
-          <label for="{{ form.location.id_for_label }}" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            {{ form.location.label }}
-          </label>
-          {{ form.location }}
-          {% if form.location.errors %}
-          <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.location.errors }}</p>
-          {% endif %}
-        </div>
-
-        <!-- Description -->
-        <div class="md:col-span-2">
-          <label for="{{ form.description.id_for_label }}" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            {{ form.description.label }}
-          </label>
-          {{ form.description }}
-          {% if form.description.errors %}
-          <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.description.errors }}</p>
-          {% endif %}
-        </div>
-
-        <!-- Participants -->
-        <div class="md:col-span-2">
-          <label for="{{ form.participants.id_for_label }}" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            {{ form.participants.label }} <span class="text-red-500">*</span>
-          </label>
-          {{ form.participants }}
-          {% if form.participants.errors %}
-          <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.participants.errors }}</p>
-          {% endif %}
-        </div>
-
-        <!-- Manual Numbers -->
-        <div class="md:col-span-2">
-          <label for="{{ form.manual_numbers.id_for_label }}" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-            {{ form.manual_numbers.label }}
-          </label>
-          {{ form.manual_numbers }}
-          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">هر شماره را در یک خط وارد کنید</p>
-          {% if form.manual_numbers.errors %}
-          <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.manual_numbers.errors }}</p>
-          {% endif %}
-        </div>
-
-        <!-- Notify Transport Coordinator -->
-        <div class="md:col-span-2">
-          <div class="flex items-center">
-            {{ form.notify_transport_coordinator }}
-            <label for="{{ form.notify_transport_coordinator.id_for_label }}" class="mr-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-              {{ form.notify_transport_coordinator.label }}
-            </label>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="{{ form.start_time.id_for_label }}" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">شروع <span class="text-red-500">*</span></label>
+            {{ form.start_time }}
+            {% if form.start_time.errors %}<div class="meeting-field-error mt-1.5 text-xs text-red-600 dark:text-red-400">{{ form.start_time.errors }}</div>{% endif %}
           </div>
-          {% if form.notify_transport_coordinator.errors %}
-          <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.notify_transport_coordinator.errors }}</p>
-          {% endif %}
+          <div>
+            <label for="{{ form.end_time.id_for_label }}" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">پایان <span class="text-red-500">*</span></label>
+            {{ form.end_time }}
+            {% if form.end_time.errors %}<div class="meeting-field-error mt-1.5 text-xs text-red-600 dark:text-red-400">{{ form.end_time.errors }}</div>{% endif %}
+          </div>
+        </div>
+        <div class="sm:col-span-2">
+          <label for="{{ form.location.id_for_label }}" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ form.location.label }}</label>
+          {{ form.location }}
+          {% if form.location.errors %}<div class="meeting-field-error mt-1.5 text-xs text-red-600 dark:text-red-400">{{ form.location.errors }}</div>{% endif %}
         </div>
       </div>
+    </section>
 
-      <!-- Form Actions -->
-      <div class="flex items-center justify-end gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-        <a href="{% url 'meetings:meeting_list' %}" class="px-6 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
-          انصراف
-        </a>
-        <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm">
-          {% if object %}ذخیره تغییرات{% else %}ایجاد جلسه{% endif %}
-        </button>
+    <section class="border-b border-gray-200 px-5 py-5 dark:border-gray-700 sm:px-6">
+      <div class="mb-5">
+        <h2 class="text-base font-bold text-gray-900 dark:text-white">افراد و اطلاع‌رسانی</h2>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">کاربران سامانه را انتخاب کنید؛ شماره‌های خارج از سامانه اختیاری هستند.</p>
       </div>
-    </form>
-  </div>
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div class="sm:col-span-2">
+          <label for="{{ form.participants.id_for_label }}" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ form.participants.label }} <span class="text-red-500">*</span></label>
+          {{ form.participants }}
+          {% if form.participants.errors %}<div class="meeting-field-error mt-1.5 text-xs text-red-600 dark:text-red-400">{{ form.participants.errors }}</div>{% endif %}
+        </div>
+        <div>
+          <label for="{{ form.manual_numbers.id_for_label }}" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ form.manual_numbers.label }}</label>
+          {{ form.manual_numbers }}
+          <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">نمونه: 09121234567؛ هر شماره در یک خط</p>
+          {% if form.manual_numbers.errors %}<div class="meeting-field-error mt-1.5 text-xs text-red-600 dark:text-red-400">{{ form.manual_numbers.errors }}</div>{% endif %}
+        </div>
+        <div>
+          <label for="{{ form.description.id_for_label }}" class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ form.description.label }}</label>
+          {{ form.description }}
+          {% if form.description.errors %}<div class="meeting-field-error mt-1.5 text-xs text-red-600 dark:text-red-400">{{ form.description.errors }}</div>{% endif %}
+        </div>
+        <label for="{{ form.notify_transport_coordinator.id_for_label }}" class="sm:col-span-2 flex cursor-pointer items-start gap-3 rounded-md border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/40">
+          {{ form.notify_transport_coordinator }}
+          <span>
+            <span class="block text-sm font-medium text-gray-800 dark:text-gray-200">{{ form.notify_transport_coordinator.label }}</span>
+            <span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">پس از تأیید جلسه، هماهنگ‌کنندگان حمل‌ونقل نیز مطلع می‌شوند.</span>
+          </span>
+        </label>
+      </div>
+    </section>
+
+    <footer class="flex flex-col-reverse gap-3 bg-gray-50 px-5 py-4 dark:bg-gray-900/40 sm:flex-row sm:justify-end sm:px-6">
+      <a href="{% url 'meetings:meeting_calendar' %}" class="inline-flex min-h-10 items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200">انصراف</a>
+      <button type="submit" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+        <i class="fa-solid fa-check" aria-hidden="true"></i>
+        {% if object %}ذخیره تغییرات{% else %}ثبت برای تأیید{% endif %}
+      </button>
+    </footer>
+  </form>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static "vendor/js/jquery.min.js" %}"></script>
-<script src="{% static "vendor/js/select2.min.js" %}"></script>
-<script src="{% static "vendor/js/persian-datepicker.min.js" %}"></script>
+<script src="{% static 'vendor/js/select2.min.js' %}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  // Initialize Select2 for participants
+  const controls = document.querySelectorAll('.form-control');
+  controls.forEach(control => control.classList.add('meeting-form-control'));
+
   if ($.fn.select2) {
     $('#{{ form.participants.id_for_label }}').select2({
-      dir: 'rtl',
-      language: 'fa',
-      width: '100%',
-      placeholder: 'شرکت‌کنندگان را انتخاب کنید...',
-      allowClear: true
+      dir: 'rtl', language: 'fa', width: '100%',
+      placeholder: 'نام یا کد پرسنلی را جست‌وجو کنید',
+      closeOnSelect: false
     });
   }
-
-  // Initialize Persian Datepicker
   if ($.fn.persianDatepicker) {
     $('#{{ form.date.id_for_label }}').persianDatepicker({
-      format: 'YYYY/MM/DD',
-      autoClose: true,
-      initialValue: false,
-      persianDigit: false,
-      observer: true,
-      calendar: {
-        persian: {
-          locale: 'fa'
-        }
-      },
-      toolbox: {
-        calendarSwitch: {
-          enabled: false
-        }
-      },
-      onSelect: function(unix) {
-        try {
-          const date = new Date(unix);
-          const utcDate = new Date(Date.UTC(
-            date.getUTCFullYear(),
-            date.getUTCMonth(),
-            date.getUTCDate(),
-            12, 0, 0, 0
-          ));
-          if (typeof persianDate !== 'undefined') {
-            const pd = new persianDate(utcDate);
-            const jalaliDate = pd.toCalendar('persian');
-            const formatted = jalaliDate.format('YYYY/MM/DD');
-            setTimeout(() => {
-              $('#{{ form.date.id_for_label }}').val(formatted);
-            }, 0);
-          }
-        } catch (e) {
-          console.warn('Date conversion error:', e);
-        }
-      }
+      format: 'YYYY/MM/DD', autoClose: true, initialValue: false,
+      persianDigit: true, observer: true,
+      calendar: { persian: { locale: 'fa' } }
     });
   }
 });
 </script>
 {% endblock %}
-

@@ -4,18 +4,50 @@ from celery import shared_task
 # from django.core.mail import send_mail # حذف شد چون ایمیل ارسال نمی شود
 from django.conf import settings
 from .models import Meeting # Notification را اگر لازم نیست حذف کنید
+from dashboard.models import Notification
+import jdatetime
 from django.contrib.auth.models import User, Group # Group اضافه شد
 # from .services import MeetingService # <<<--- حذف شد برای رفع وابستگی دایره ای
 from .sms_utils import ( # وارد کردن توابع مورد نیاز به طور مشخص
     send_meeting_created_sms,
     send_meeting_cancelled_sms,
-    send_meeting_reminder_sms
+    send_meeting_reminder_sms,
+    send_meeting_updated_sms,
+    send_meeting_deleted_sms,
 )
 from celery.utils.log import get_task_logger
 import time
 import traceback # اضافه شد برای لاگ دقیق تر خطا
 
 logger = get_task_logger(__name__)
+
+
+@shared_task
+def send_meeting_event_sms_async(action, mobiles, meeting_id, title, date, start_time, reason=''):
+    """Send a meeting event SMS after the related database transaction commits."""
+    senders = {
+        'updated': send_meeting_updated_sms,
+        'cancelled': send_meeting_cancelled_sms,
+        'deleted': send_meeting_deleted_sms,
+    }
+    sender = senders.get(action)
+    if sender is None:
+        logger.error("Unsupported meeting SMS action: %s", action)
+        return
+
+    for mobile in set(filter(None, mobiles)):
+        try:
+            args = [mobile, meeting_id, title, date, start_time]
+            if action == 'cancelled':
+                args.append(reason)
+            sender(*args)
+        except Exception:
+            logger.exception(
+                "Failed to send %s SMS for meeting %s to %s",
+                action,
+                meeting_id,
+                mobile,
+            )
 
 # تابع کمکی برای دریافت هماهنگ کنندگان بدون وابستگی به MeetingService
 def _get_transport_coordinators():
@@ -81,7 +113,7 @@ def send_meeting_created_sms_async(meeting_id):
         # ارسال به هماهنگ‌کننده حمل و نقل
         if meeting.notify_transport_coordinator:
             logger.info("--- Sending SMS to Transport Coordinators ---")
-            coordinators = _get_transport_coordinators() # <<<--- استفاده از تابع کمکی
+            coordinators = _get_transport_coordinators()
             logger.info(f"Found {coordinators.count()} transport coordinators.")
             for coordinator in coordinators:
                 logger.debug(f"Checking coordinator: {coordinator.get_full_name()} (ID: {coordinator.id})")
@@ -138,8 +170,11 @@ def send_sms_reminder(meeting_id):
         meeting = Meeting.objects.get(id=meeting_id)
         
         # بررسی وضعیت جلسه قبل از ارسال پیامک
-        if meeting.status == 'cancelled':
-            logger.info(f"Meeting {meeting.id} is cancelled, skipping reminder SMS")
+        if meeting.status == 'cancelled' or meeting.approval_status != 'approved':
+            logger.info(
+                "Meeting %s is cancelled or not approved; skipping all reminders",
+                meeting.id,
+            )
             return
             
         logger.info(f"Starting reminder SMS sending for meeting {meeting.id} ('{meeting.title}')")
@@ -150,8 +185,26 @@ def send_sms_reminder(meeting_id):
 
         # ارسال به شرکت‌کنندگان
         logger.info("--- Sending Reminder SMS to Participants ---")
-        participants = meeting.participants.all()
-        logger.info(f"Found {participants.count()} participants.")
+        participants = list(meeting.participants.select_related('userprofile').all())
+        coordinators = list(_get_transport_coordinators()) if meeting.notify_transport_coordinator else []
+        reminder_users = {user.pk: user for user in participants}
+        reminder_users.update({user.pk: user for user in coordinators})
+        jalali_date = jdatetime.date.fromgregorian(date=meeting.date).strftime('%Y/%m/%d')
+        reminder_message = (
+            f'یادآوری جلسه «{meeting.title}» در تاریخ {jalali_date} '
+            f'ساعت {meeting.start_time.strftime("%H:%M")}'
+        )
+        for user in reminder_users.values():
+            Notification.objects.create(
+                user=user,
+                title='یادآوری جلسه',
+                message=reminder_message,
+                notification_type='meeting',
+                url=f'/meetings/{meeting.pk}/',
+                meeting=meeting,
+            )
+
+        logger.info(f"Found {len(participants)} participants.")
         for participant in participants:
              logger.debug(f"Checking participant: {participant.get_full_name()} (ID: {participant.id})")
              if hasattr(participant, 'userprofile') and participant.userprofile and participant.userprofile.mobile:
@@ -196,8 +249,7 @@ def send_sms_reminder(meeting_id):
         # ارسال به هماهنگ‌کننده حمل و نقل
         if meeting.notify_transport_coordinator:
             logger.info("--- Sending Reminder SMS to Transport Coordinators ---")
-            coordinators = _get_transport_coordinators() # <<<--- استفاده از تابع کمکی
-            logger.info(f"Found {coordinators.count()} transport coordinators.")
+            logger.info(f"Found {len(coordinators)} transport coordinators.")
             for coordinator in coordinators:
                 logger.debug(f"Checking coordinator: {coordinator.get_full_name()} (ID: {coordinator.id})")
                 if hasattr(coordinator, 'userprofile') and coordinator.userprofile and coordinator.userprofile.mobile:
