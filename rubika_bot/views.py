@@ -227,6 +227,103 @@ def users_management_view(request: HttpRequest) -> HttpResponse:
 
 
 @superuser_required
+def users_export_excel(request: HttpRequest) -> HttpResponse:
+    """Export rubika bot users to Excel, respecting the same filters as the list view."""
+    from io import BytesIO
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+
+    search = request.GET.get('q', '').strip()
+    status_filter = request.GET.get('status', 'all')
+
+    users_qs = RubikaUser.objects.select_related('user', 'user__userprofile').order_by('-updated_at')
+
+    if status_filter == 'connected':
+        users_qs = users_qs.filter(user__isnull=False)
+    elif status_filter == 'unconnected':
+        users_qs = users_qs.filter(user__isnull=True)
+
+    if search:
+        users_qs = users_qs.filter(
+            Q(chat_id__icontains=search) |
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search) |
+            Q(user__username__icontains=search) |
+            Q(user__first_name__icontains=search) |
+            Q(user__last_name__icontains=search) |
+            Q(user__userprofile__personnel_code__icontains=search) |
+            Q(user__userprofile__national_code__icontains=search)
+        )
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'کاربران ربات'
+    try:
+        ws.sheet_view.rightToLeft = True
+    except Exception:
+        pass
+
+    headers = ['نام و نام خانوادگی', 'کد پرسنلی', 'کد ملی', 'Chat ID', 'نام کاربری ربات', 'وضعیت', 'آخرین بازدید']
+    ws.append(headers)
+
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill(start_color='4F46E5', end_color='4F46E5', fill_type='solid')
+    center = Alignment(horizontal='center', vertical='center')
+
+    for cell in ws[1]:
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = center
+
+    for u in users_qs:
+        if u.user:
+            full_name = f"{u.user.first_name} {u.user.last_name}".strip()
+        else:
+            full_name = f"{u.first_name} {u.last_name or ''}".strip() or '-'
+
+        personnel_code = ''
+        national_code = ''
+        username = ''
+        if u.user and hasattr(u.user, 'userprofile') and u.user.userprofile:
+            personnel_code = u.user.userprofile.personnel_code or ''
+            national_code = u.user.userprofile.national_code or ''
+        if u.user:
+            username = u.user.username or ''
+
+        status_display = 'متصل شده' if u.user else 'متصل نشده'
+        last_seen_display = u.last_seen.strftime('%Y/%m/%d %H:%M') if u.last_seen else '-'
+
+        ws.append([
+            full_name,
+            personnel_code,
+            national_code,
+            u.chat_id,
+            username,
+            status_display,
+            last_seen_display,
+        ])
+
+    ws.freeze_panes = 'A2'
+    ws.auto_filter.ref = f"A1:G{ws.max_row}"
+
+    widths = [25, 12, 12, 18, 18, 14, 18]
+    for idx, w in enumerate(widths, start=1):
+        ws.column_dimensions[chr(64 + idx)].width = w
+
+    right = Alignment(horizontal='right', vertical='center')
+    for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=7):
+        for cell in row:
+            cell.alignment = right
+
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    resp = HttpResponse(buffer.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    resp['Content-Disposition'] = 'attachment; filename=کاربران_ربات.xlsx'
+    return resp
+
+
+@superuser_required
 @require_http_methods(["POST"])
 def action_register_webhook(request: HttpRequest) -> JsonResponse:
     """Register the webhook endpoints using the RubPy client."""

@@ -1133,6 +1133,26 @@ def personnel_export(request):
         search_conditions = name_conditions | personnel_code_conditions
         queryset = queryset.filter(search_conditions)
 
+    no_approver_filter = request.GET.get('no_approver', '').lower() == 'true'
+    if no_approver_filter:
+        try:
+            from leave_reports.utils import get_approver_for_user_profile
+            all_profiles = list(queryset.all())
+            profiles_without_approver = []
+            for profile in all_profiles:
+                try:
+                    approver = get_approver_for_user_profile(profile)
+                    if approver is None:
+                        profiles_without_approver.append(profile.id)
+                except Exception:
+                    profiles_without_approver.append(profile.id)
+            if profiles_without_approver:
+                queryset = queryset.filter(id__in=profiles_without_approver)
+            else:
+                queryset = queryset.none()
+        except Exception:
+            pass
+
     wb = Workbook()
     ws = wb.active
     ws.title = 'پرسنل'

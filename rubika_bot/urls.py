@@ -6,6 +6,7 @@ app_name = 'rubika_bot'
 urlpatterns = [
     path('settings/', views.settings_view, name='settings'),
     path('settings/users/', views.users_management_view, name='users_management'),
+    path('settings/users/export/', views.users_export_excel, name='users_export'),
     path('settings/broadcast/', views.broadcast_view, name='broadcast'),
     path('settings/broadcast/send/', views.action_broadcast_send, name='broadcast_send'),
     path('settings/webhook-logs/', views.webhook_logs_view, name='webhook_logs'),
