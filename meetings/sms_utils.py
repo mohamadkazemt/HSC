@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import date as gregorian_date, datetime
 
 import jdatetime
@@ -36,6 +37,15 @@ def format_jalali_date(value):
     raise ValueError(f'Invalid meeting date: {value!r}')
 
 
+def format_meeting_title(value):
+    """Avoid template output such as «جلسه جلسه شورای مدیران».
+
+    The SMS provider template already prefixes the title with «جلسه».
+    """
+    title = str(value or '').strip()
+    without_prefix = re.sub(r'^(?:جلسه\s*)+', '', title).strip(' :-–—')
+    return without_prefix or title
+
 def format_meeting_time(value):
     if hasattr(value, 'strftime'):
         return value.strftime('%H:%M')
@@ -51,7 +61,7 @@ def send_meeting_sms(mobile, status, meeting_id, meeting_title, date, time):
     try:
         parameters = [
             {'Name': 'STATUS', 'Value': status},
-            {'Name': 'MEETING_TITLE', 'Value': meeting_title},
+            {'Name': 'MEETING_TITLE', 'Value': format_meeting_title(meeting_title)},
             {'Name': 'MEETING_DATE', 'Value': format_jalali_date(date)},
             {'Name': 'MEETING_TIME', 'Value': format_meeting_time(time)},
         ]
@@ -62,7 +72,14 @@ def send_meeting_sms(mobile, status, meeting_id, meeting_title, date, time):
 
 
 def send_meeting_created_sms(mobile, meeting_id, meeting_title, date, time):
-    return send_meeting_sms(mobile, 'ایجاد شد', meeting_id, meeting_title, date, time)
+    return send_meeting_sms(
+        mobile,
+        'برای شما برنامه‌ریزی شده است',
+        meeting_id,
+        meeting_title,
+        date,
+        time,
+    )
 
 
 def send_meeting_cancelled_sms(mobile, meeting_id, meeting_title, date, time, reason):

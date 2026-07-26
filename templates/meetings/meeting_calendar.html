@@ -608,6 +608,13 @@ function meetingFormModal() {
                   initialValue: false,
                   autoClose: true,
                   calendar: { persian: { locale: 'fa' } },
+                  onSelect: function() {
+                    window.setTimeout(function() {
+                      const input = document.getElementById('id_date');
+                      input.dispatchEvent(new Event('input', { bubbles: true }));
+                      input.dispatchEvent(new Event('change', { bubbles: true }));
+                    }, 0);
+                  },
                   altFieldFormatter: function(unix) {
                     const date = new Date(unix);
                     const year = date.getFullYear();
@@ -653,6 +660,13 @@ function meetingFormModal() {
               initialValue: false,
               autoClose: true,
               calendar: { persian: { locale: 'fa' } },
+              onSelect: function() {
+                window.setTimeout(function() {
+                  const input = document.getElementById('id_date');
+                  input.dispatchEvent(new Event('input', { bubbles: true }));
+                  input.dispatchEvent(new Event('change', { bubbles: true }));
+                }, 0);
+              },
               altFieldFormatter: function(unix) {
                 const date = new Date(unix);
                 const year = date.getFullYear();
@@ -677,9 +691,12 @@ function meetingFormModal() {
     async submitForm() {
       this.errors = {};
       this.formError = '';
+      const enteredDate = ($('#id_date').val() || '').trim();
+      const gregorianDate = ($('#id_date_gregorian').val() || '').trim();
+      if (enteredDate) this.formData.date = enteredDate;
       const selectedParticipants = $('#id_participants').val() || this.formData.participants || [];
       if (!this.formData.title || this.formData.title.trim().length < 3) this.errors.title = 'عنوان جلسه باید حداقل ۳ نویسه باشد.';
-      if (!this.formData.date) this.errors.date = 'تاریخ جلسه را وارد کنید.';
+      if (!enteredDate && !gregorianDate) this.errors.date = 'تاریخ جلسه را وارد کنید.';
       if (!this.formData.start_time) this.errors.start_time = 'ساعت شروع را وارد کنید.';
       if (!this.formData.end_time) this.errors.end_time = 'ساعت پایان را وارد کنید.';
       if (this.formData.start_time && this.formData.end_time && this.formData.start_time >= this.formData.end_time) this.errors.end_time = 'ساعت پایان باید بعد از ساعت شروع باشد.';
@@ -687,12 +704,12 @@ function meetingFormModal() {
       if (Object.keys(this.errors).length) { this.formError = 'لطفاً موارد مشخص‌شده را اصلاح کنید.'; return; }
       this.loading = true;
       
-      // دریافت تاریخ میلادی از altField
-      const gregorianDate = $('#id_date_gregorian').val() || $('#id_date').val();
+      // Datepicker writes directly to DOM; prefer its Gregorian alt field.
+      const submissionDate = gregorianDate || enteredDate;
       
       const formData = new FormData();
       formData.append('title', this.formData.title);
-      formData.append('date', gregorianDate);
+      formData.append('date', submissionDate);
       formData.append('start_time', this.formData.start_time);
       formData.append('end_time', this.formData.end_time);
       formData.append('location', this.formData.location || '');

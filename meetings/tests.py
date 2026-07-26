@@ -398,3 +398,23 @@ class MeetingViewRegressionTests(TestCase):
         values = {item['Name']: item['Value'] for item in parameters}
         self.assertEqual(values['MEETING_DATE'], '1405/05/02')
         self.assertEqual(values['MEETING_TIME'], '09:05')
+    @patch('meetings.sms_utils.send_template_sms', return_value=True)
+    def test_creation_sms_is_addressed_to_participant_without_duplicate_meeting_word(
+        self, mock_send
+    ):
+        from .sms_utils import send_meeting_created_sms
+
+        send_meeting_created_sms(
+            '09121234567',
+            self.meeting.pk,
+            'جلسه جلسه شورای مدیران',
+            date(2026, 7, 26),
+            time(12, 0),
+        )
+
+        parameters = mock_send.call_args.args[2]
+        values = {item['Name']: item['Value'] for item in parameters}
+        self.assertEqual(values['MEETING_TITLE'], 'شورای مدیران')
+        self.assertEqual(values['STATUS'], 'برای شما برنامه‌ریزی شده است')
+        self.assertEqual(values['MEETING_DATE'], '1405/05/04')
+        self.assertEqual(values['MEETING_TIME'], '12:00')
