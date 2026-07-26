@@ -77,7 +77,7 @@ INSTALLED_APPS = [
 
     # Celery related apps
     'django_celery_results',
-    'django_celery_beat',
+    # 'django_celery_beat',  # REMOVED: not used, saves ~180MB RAM in celery-beat
 
     # Your project apps
     'core',
