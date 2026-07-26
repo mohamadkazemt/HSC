@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load jalali_tags %}
 
 {% block title %}مدیریت افراد تحت تکفل{% endblock %}
 
@@ -175,7 +176,7 @@
           <tr class="dependent-row" x-show="'{{ dependent.first_name|escapejs }} {{ dependent.last_name|escapejs }} {{ dependent.national_code|escapejs }} {{ dependent.personnel.personnel_code|escapejs }} {{ dependent.personnel.user.get_full_name|escapejs }}'.toLowerCase().includes(query.toLowerCase())">
             <td data-label="فرد تحت تکفل" class="px-5 py-4"><div class="flex items-center gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {% if dependent.gender == 'female' %}bg-pink-50 text-pink-600 dark:bg-pink-900/30{% else %}bg-sky-50 text-sky-600 dark:bg-sky-900/30{% endif %}"><i class="fa-solid fa-user"></i></span><div><strong class="block text-slate-800 dark:text-white">{{ dependent.first_name }} {{ dependent.last_name }}</strong><span class="mt-1 block text-xs text-slate-400">{{ dependent.get_gender_display|default:"جنسیت ثبت نشده" }}</span></div></div></td>
             <td data-label="پرسنل مرتبط" class="px-5 py-4"><span class="font-medium text-slate-700 dark:text-slate-200">{{ dependent.personnel.user.get_full_name|default:dependent.personnel.user.username }}</span><span class="mt-1 block w-fit rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-500 dark:bg-slate-700 dark:text-slate-300">{{ dependent.personnel.personnel_code }}</span></td>
-            <td data-label="اطلاعات هویتی" class="px-5 py-4"><span class="font-mono text-slate-700 dark:text-slate-200">{{ dependent.national_code }}</span>{% if dependent.birth_date %}<span class="mt-1 block text-xs text-slate-400">تولد: {{ dependent.birth_date|date:"Y/m/d" }}</span>{% endif %}</td>
+            <td data-label="اطلاعات هویتی" class="px-5 py-4"><span class="font-mono text-slate-700 dark:text-slate-200">{{ dependent.national_code }}</span>{% if dependent.birth_date %}<span class="mt-1 block text-xs text-slate-400">تولد: {{ dependent.birth_date|to_jalali:"%Y/%m/%d" }}</span>{% endif %}</td>
             <td data-label="نسبت" class="px-5 py-4"><span class="rounded-full bg-indigo-50 px-2.5 py-1 text-xs font-bold text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">{{ dependent.relationship }}</span></td>
             <td data-label="سلامت و تماس" class="px-5 py-4"><div class="space-y-1 text-xs">{% if dependent.disease_type %}<span class="block text-rose-600 dark:text-rose-300"><i class="fa-solid fa-heart-pulse ml-1"></i>{{ dependent.disease_type }}</span>{% else %}<span class="block text-emerald-600 dark:text-emerald-300"><i class="fa-solid fa-circle-check ml-1"></i>بیماری ثبت نشده</span>{% endif %}{% if dependent.mobile %}<span class="block font-mono text-slate-500">{{ dependent.mobile }}</span>{% endif %}</div></td>
             <td data-label="عملیات" class="px-5 py-4">
