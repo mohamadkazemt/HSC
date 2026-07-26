@@ -23,16 +23,19 @@ class CoreConfig(AppConfig):
         admin.site.get_app_list = get_app_list
         admin.site._module_filter_installed = True
 
-        # Preload Whisper model at startup (avoids first-call delay)
-        import threading
-        def preload_whisper():
-            try:
-                from .stt_service import get_whisper_model
-                get_whisper_model('small')  # Load small model (best accuracy)
-                import logging
-                logging.getLogger(__name__).info("Whisper model preloaded successfully")
-            except Exception as e:
-                import logging
-                logging.getLogger(__name__).warning(f"Whisper preload failed: {e}")
-        
-        threading.Thread(target=preload_whisper, daemon=True).start()
+        # Preload Whisper model ONLY in celery-worker process
+        import sys
+        is_celery_worker = 'celery' in sys.argv[0] and 'worker' in sys.argv
+        if is_celery_worker:
+            import threading
+            def preload_whisper():
+                try:
+                    from .stt_service import get_whisper_model
+                    get_whisper_model('small')
+                    import logging
+                    logging.getLogger(__name__).info("Whisper model preloaded successfully")
+                except Exception as e:
+                    import logging
+                    logging.getLogger(__name__).warning(f"Whisper preload failed: {e}")
+
+            threading.Thread(target=preload_whisper, daemon=True).start()
