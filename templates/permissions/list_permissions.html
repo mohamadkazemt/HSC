@@ -3,10 +3,20 @@
 {% block title %}لیست دسترسی‌ها{% endblock %}
 {% block styles %}
   <link href="{% static "vendor/css/select2.min.css" %}" rel="stylesheet" />
+  <link href="{% static 'css/permissions.css' %}" rel="stylesheet" />
 {% endblock %}
 {% block content %}
-<div id="permissions-content" class="space-y-6" x-data>
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+<div id="permissions-content" class="permissions-shell space-y-6" x-data>
+  <div class="permission-hero rounded-3xl px-5 py-6 text-white sm:px-8">
+    <div class="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center gap-4">
+        <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-xl ring-1 ring-white/20"><i class="fa-solid fa-shield-halved"></i></span>
+        <div><div class="mb-1 text-xs text-indigo-100">امنیت و کنترل دسترسی</div><h1 class="text-2xl font-extrabold">فهرست دسترسی‌ها</h1><p class="mt-1 text-sm text-indigo-100">مشاهده، فیلتر و تغییر سریع مجوزهای ثبت‌شده</p></div>
+      </div>
+      <a href="{% url 'permissions:manage_access' %}" class="inline-flex self-start items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-indigo-700 hover:bg-indigo-50"><i class="fa-solid fa-plus"></i> دسترسی جدید</a>
+    </div>
+  </div>
+  <div class="permission-panel overflow-hidden">
     <div class="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
       <div class="flex items-center gap-2 mb-4">
         <svg class="h-6 w-6 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -72,7 +82,7 @@
     </div>
 
     <div class="p-4 sm:p-6 overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+      <table class="permissions-responsive-table min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
         <thead class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900/40 dark:to-gray-800/40">
           <tr>
             <th class="px-4 py-3 text-right font-semibold text-gray-700 dark:text-gray-300">نوع</th>

@@ -23,6 +23,8 @@ urlpatterns = [
     path('personnel/<int:user_id>/edit/', views.personnel_edit, name='personnel_edit'),
     path('personnel/import/', views.personnel_import, name='personnel_import'),
     path('personnel/export/', views.personnel_export, name='personnel_export'),
+    path('personnel/dependents/', views.dependent_management, name='dependent_management'),
+    path('personnel/<int:user_id>/dependents/', views.dependent_management, name='personnel_dependents'),
     # Personnel cascading filter APIs
     path('personnel/api/parts/', views.api_parts_by_section, name='personnel_api_parts'),
     path('personnel/api/unit-groups/', views.api_unit_groups_by_part, name='personnel_api_unit_groups'),

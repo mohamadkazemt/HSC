@@ -1,20 +1,24 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}حذف دسترسی{% endblock %}
+{% block styles %}<link href="{% static 'css/permissions.css' %}" rel="stylesheet" />{% endblock %}
 {% block content %}
-<div class="max-w-2xl mx-auto">
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-red-300 dark:border-red-700">
-    <div class="p-5 border-b border-red-200 dark:border-red-700 bg-red-50 dark:bg-red-900/20 rounded-t-xl">
-      <h1 class="text-lg font-semibold text-red-700 dark:text-red-400">تایید حذف دسترسی</h1>
+<div class="permissions-shell max-w-xl mx-auto py-6">
+  <div class="permission-panel overflow-hidden">
+    <div class="bg-gradient-to-l from-rose-600 to-red-600 p-6 text-white">
+      <div class="flex items-center gap-4"><span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/20"><i class="fa-solid fa-triangle-exclamation text-xl"></i></span><div><div class="text-xs text-rose-100">عملیات حساس</div><h1 class="mt-1 text-xl font-bold">حذف دسترسی</h1></div></div>
     </div>
-    <form method="post" class="p-5 space-y-5">
+    <form method="post" class="p-6 space-y-6">
       {% csrf_token %}
-      <p class="text-sm">آیا مطمئن هستید که می‌خواهید دسترسی {{ permission_type }}
+      <div class="rounded-2xl border border-rose-100 bg-rose-50 p-4 text-sm leading-7 text-slate-700 dark:border-rose-900 dark:bg-rose-500/10 dark:text-slate-200">
+        آیا مطمئن هستید که می‌خواهید دسترسی <strong>{{ permission_type }}</strong>
         {% if permission.part %}{{ permission.part.name }}{% elif permission.section %}{{ permission.section.name }}{% elif permission.position %}{{ permission.position.name }}{% elif permission.unit_group %}{{ permission.unit_group.name }}{% elif permission.user %}{{ permission.user.get_full_name|default:permission.user.username }}{% endif %}
-        برای صفحه {{ view_label }} را حذف کنید؟
-      </p>
-      <div class="flex items-center gap-3">
-        <button type="submit" class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700">تایید و حذف</button>
-        <a href="{% url 'permissions:list_permissions' %}" class="px-4 py-2 rounded-lg border">انصراف</a>
+        برای صفحه <strong class="text-rose-700 dark:text-rose-300">{{ view_label }}</strong> را حذف کنید؟
+        <div class="mt-2 text-xs text-rose-500">این عملیات قابل بازگشت نیست.</div>
+      </div>
+      <div class="flex flex-col-reverse gap-3 border-t border-slate-100 pt-5 dark:border-slate-700 sm:flex-row sm:justify-end">
+        <a href="{% url 'permissions:list_permissions' %}" class="inline-flex justify-center rounded-xl border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">انصراف</a>
+        <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-rose-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-rose-600/20 hover:bg-rose-700"><i class="fa-solid fa-trash-can"></i> تایید و حذف</button>
       </div>
     </form>
   </div>

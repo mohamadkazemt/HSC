@@ -124,6 +124,45 @@ class UserProfile(models.Model):
         verbose_name_plural = 'پروفایل کاربران'
 
 
+class Dependent(models.Model):
+    GENDER_CHOICES = [('male', 'مرد'), ('female', 'زن')]
+
+    personnel = models.ForeignKey(
+        UserProfile, on_delete=models.CASCADE, related_name='dependents',
+        verbose_name='پرسنل'
+    )
+    first_name = models.CharField(max_length=150, verbose_name='نام')
+    last_name = models.CharField(max_length=150, verbose_name='نام خانوادگی')
+    father_name = models.CharField(max_length=150, blank=True, verbose_name='نام پدر')
+    national_code = models.CharField(max_length=10, verbose_name='کد ملی')
+    birth_certificate_number = models.CharField(
+        max_length=20, blank=True, verbose_name='شماره شناسنامه'
+    )
+    birth_date = models.DateField(null=True, blank=True, verbose_name='تاریخ تولد')
+    gender = models.CharField(
+        max_length=10, choices=GENDER_CHOICES, blank=True, verbose_name='جنسیت'
+    )
+    mobile = models.CharField(max_length=11, blank=True, verbose_name='شماره تماس')
+    relationship = models.CharField(max_length=50, verbose_name='نسبت')
+    disease_type = models.CharField(max_length=255, blank=True, verbose_name='نوع بیماری')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'فرد تحت تکفل'
+        verbose_name_plural = 'افراد تحت تکفل'
+        ordering = ('last_name', 'first_name')
+        constraints = [
+            models.UniqueConstraint(
+                fields=('personnel', 'national_code'),
+                name='unique_dependent_national_code_per_personnel',
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.first_name} {self.last_name} ({self.relationship})'
+
+
 class Section(models.Model):
     name = models.CharField(max_length=50, verbose_name="نام بخش")
     description = models.TextField(blank=True, null=True, verbose_name="توضیحات")

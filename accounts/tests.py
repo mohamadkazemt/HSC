@@ -10,7 +10,7 @@ import tempfile
 import os
 from unittest.mock import patch
 
-from .models import UserProfile, Section, Part, UnitGroup, Position, DriverLicense
+from .models import UserProfile, Section, Part, UnitGroup, Position, DriverLicense, Dependent
 from core.validators import validate_signature_image, validate_image_file
 
 
@@ -256,6 +256,44 @@ class UserProfileModelTest(TestCase):
         profile.refresh_from_db()
         self.assertEqual(profile.father_name, 'اکبر')
         self.assertEqual(profile.national_code, '0012345678')
+
+    def test_dependent_excel_connects_by_personnel_code_and_updates(self):
+        import pandas as pd
+        from .dependent_excel import EXCEL_COLUMNS, import_dependents_dataframe
+
+        profile = UserProfile.objects.create(user=self.user, personnel_code='12345')
+        row = [
+            '12345', 'مریم', 'رضایی', 'حسن', '0012345678', '۱۲۳۴',
+            '1372/05/10', 'زن', '9123456789', 'همسر', '',
+        ]
+        dataframe = pd.DataFrame([row], columns=EXCEL_COLUMNS)
+
+        created, updated, errors, missing = import_dependents_dataframe(dataframe)
+        self.assertEqual((created, updated, errors, missing), (1, 0, [], []))
+        dependent = Dependent.objects.get(personnel=profile, national_code='0012345678')
+        self.assertEqual(str(dependent.birth_date), '1993-08-01')
+        self.assertEqual(dependent.gender, 'female')
+        self.assertEqual(dependent.mobile, '09123456789')
+
+        dataframe.loc[0, 'نوع بیماری'] = 'آسم'
+        created, updated, errors, missing = import_dependents_dataframe(dataframe)
+        self.assertEqual((created, updated, errors, missing), (0, 1, [], []))
+        dependent.refresh_from_db()
+        self.assertEqual(dependent.disease_type, 'آسم')
+
+    def test_dependent_excel_reports_unknown_personnel_code(self):
+        import pandas as pd
+        from .dependent_excel import EXCEL_COLUMNS, import_dependents_dataframe
+
+        dataframe = pd.DataFrame([[
+            '99999', 'علی', 'رضایی', '', '0099999999', '',
+            '', 'مرد', '', 'فرزند', '',
+        ]], columns=EXCEL_COLUMNS)
+        created, updated, errors, missing = import_dependents_dataframe(dataframe)
+
+        self.assertEqual((created, updated), (0, 0))
+        self.assertEqual(missing, [])
+        self.assertIn('یافت نشد', errors[0])
     
     def create_test_image(self, width=200, height=100, format='PNG'):
         """ایجاد تصویر تست"""

@@ -155,6 +155,7 @@
       </div>
     </div>
 
+    {% if can_view_personnel_dashboard %}
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <article class="executive-card rounded-2xl p-5">
         <div class="flex items-start justify-between gap-4">
@@ -230,7 +231,93 @@
       </article>
     </div>
     {{ personnel_charts|json_script:"personnel-chart-data" }}
+    {% endif %}
   </section>
+
+  {% if can_view_dependent_dashboard and dependent_summary %}
+  <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800" aria-labelledby="dependent-overview-title">
+    <div class="relative overflow-hidden bg-gradient-to-l from-slate-900 via-indigo-950 to-cyan-950 px-5 py-6 text-white sm:px-7">
+      <div class="absolute -left-8 -top-14 h-40 w-40 rounded-full bg-cyan-400/15 blur-2xl"></div>
+      <div class="absolute -bottom-20 right-1/3 h-44 w-44 rounded-full bg-indigo-400/15 blur-2xl"></div>
+      <div class="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex items-start gap-4">
+          <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-xl ring-1 ring-white/15"><i class="fa-solid fa-people-roof"></i></span>
+          <div>
+            <div class="mb-1 flex items-center gap-2 text-[11px] font-medium text-cyan-200"><span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>گزارش زنده منابع انسانی</div>
+            <h2 id="dependent-overview-title" class="text-xl font-bold sm:text-2xl">وضعیت افراد تحت تکفل</h2>
+            <p class="mt-1 text-xs leading-6 text-slate-300 sm:text-sm">خلاصه پوشش پرونده خانوادگی و اطلاعات سلامت پرسنل فعال</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="rounded-2xl bg-white/10 px-5 py-3 text-center ring-1 ring-white/10 backdrop-blur">
+            <span class="block text-3xl font-extrabold">{{ dependent_summary.total|default:0 }}</span>
+            <span class="mt-1 block text-[10px] text-slate-300">کل افراد ثبت‌شده</span>
+          </div>
+          {% if request.user.is_superuser %}
+          <a href="{% url 'accounts:dependent_management' %}" class="flex h-full min-h-16 items-center gap-2 rounded-2xl bg-cyan-400 px-4 text-sm font-bold text-cyan-950 transition hover:bg-cyan-300">
+            مشاهده جزئیات <i class="fa-solid fa-arrow-left text-xs"></i>
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="p-5 sm:p-7">
+      <div class="grid gap-6 xl:grid-cols-12">
+        <div class="space-y-5 xl:col-span-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/45">
+              <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400"><i class="fa-solid fa-id-badge text-indigo-500"></i>پرسنل دارای پرونده</div>
+              <div class="mt-2 text-2xl font-extrabold text-slate-900 dark:text-white">{{ dependent_summary.covered_personnel|default:0 }}</div>
+              <div class="mt-1 text-[10px] text-slate-400">از {{ dependent_summary.active_personnel_total|default:0 }} پرسنل فعال</div>
+            </div>
+            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-900/45">
+              <div class="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400"><i class="fa-solid fa-users text-cyan-500"></i>میانگین خانوار</div>
+              <div class="mt-2 text-2xl font-extrabold text-slate-900 dark:text-white">{{ dependent_summary.average_per_personnel|default:0 }}</div>
+              <div class="mt-1 text-[10px] text-slate-400">نفر به‌ازای هر پرسنل</div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
+            <div class="mb-2 flex items-center justify-between text-xs"><span class="font-semibold text-slate-700 dark:text-slate-200">پوشش پرونده خانوادگی</span><strong class="text-cyan-600 dark:text-cyan-300">{{ dependent_summary.coverage_rate|default:0 }}٪</strong></div>
+            <div class="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700"><div class="h-full rounded-full bg-gradient-to-l from-cyan-400 to-indigo-500" style="width: {{ dependent_summary.coverage_rate|default:0 }}%"></div></div>
+            <p class="mt-2 text-[10px] leading-5 text-slate-400">درصد پرسنل فعال که حداقل یک فرد تحت تکفل برای آن‌ها ثبت شده است.</p>
+          </div>
+
+          <div class="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
+            <div class="mb-3 flex items-center justify-between"><span class="text-xs font-semibold text-slate-700 dark:text-slate-200">ترکیب جنسیتی</span><i class="fa-solid fa-venus-mars text-violet-500"></i></div>
+            <div class="flex h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
+              <div class="bg-pink-400" style="width: {% widthratio dependent_summary.female dependent_summary.total 100 %}%"></div>
+              <div class="bg-sky-400" style="width: {% widthratio dependent_summary.male dependent_summary.total 100 %}%"></div>
+            </div>
+            <div class="mt-3 flex justify-between text-xs">
+              <span class="text-slate-500"><i class="ml-1 inline-block h-2 w-2 rounded-full bg-pink-400"></i>{{ dependent_summary.female|default:0 }} زن</span>
+              <span class="text-slate-500"><i class="ml-1 inline-block h-2 w-2 rounded-full bg-sky-400"></i>{{ dependent_summary.male|default:0 }} مرد</span>
+            </div>
+          </div>
+        </div>
+
+        <article class="rounded-2xl border border-slate-200 p-4 dark:border-slate-700 sm:p-5 xl:col-span-5">
+          <div class="mb-4 flex items-start justify-between">
+            <div><h3 class="text-sm font-bold text-slate-900 dark:text-white">ترکیب نسبت خانوادگی</h3><p class="mt-1 text-[11px] text-slate-400">گروه‌های پرتکرار در اطلاعات ثبت‌شده</p></div>
+            <span class="rounded-lg bg-indigo-50 px-2.5 py-1 text-[10px] font-semibold text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300">۶ گروه برتر</span>
+          </div>
+          <div class="h-60"><canvas id="dependentRelationshipChart" aria-label="نمودار نسبت افراد تحت تکفل"></canvas></div>
+        </article>
+
+        <article class="flex flex-col rounded-2xl border border-slate-200 p-4 dark:border-slate-700 sm:p-5 xl:col-span-3">
+          <div><h3 class="text-sm font-bold text-slate-900 dark:text-white">ثبت وضعیت بیماری</h3><p class="mt-1 text-[11px] leading-5 text-slate-400">این شاخص وجود اطلاعات ثبت‌شده را نشان می‌دهد، نه وضعیت قطعی سلامت.</p></div>
+          <div class="relative mx-auto mt-2 h-44 w-full max-w-[220px]"><canvas id="dependentHealthChart" aria-label="نمودار وضعیت بیماری افراد تحت تکفل"></canvas></div>
+          <div class="mt-auto rounded-xl {% if dependent_summary.with_disease %}bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300{% else %}bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300{% endif %} p-3">
+            <div class="flex items-center justify-between"><span class="text-xs font-semibold">دارای بیماری ثبت‌شده</span><strong class="text-lg">{{ dependent_summary.with_disease|default:0 }}</strong></div>
+            <div class="mt-1 text-[10px] opacity-75">{{ dependent_summary.disease_rate|default:0 }}٪ از کل پرونده‌ها</div>
+          </div>
+        </article>
+      </div>
+    </div>
+    {{ dependent_charts|json_script:"dependent-chart-data" }}
+  </section>
+  {% endif %}
 
   <!-- Leave Inbox Widget (کارتابل مرخصی‌ها) -->
   {% if pending_replacement_approvals or pending_manager_approvals %}
@@ -846,6 +933,68 @@ if (personnelChartNode && window.Chart) {
                 cutout: '68%',
                 plugins: {
                     legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'circle', padding: 16, boxWidth: 7 } }
+                }
+            }
+        });
+    }
+}
+
+const dependentChartNode = document.getElementById('dependent-chart-data');
+if (dependentChartNode && window.Chart) {
+    const dependentCharts = JSON.parse(dependentChartNode.textContent);
+    const isDark = document.documentElement.classList.contains('dark');
+    const dependentTextColor = isDark ? '#a9b0c3' : '#71809b';
+    const dependentGridColor = isDark ? 'rgba(255,255,255,.07)' : 'rgba(74,85,125,.08)';
+
+    const relationshipCanvas = document.getElementById('dependentRelationshipChart');
+    if (relationshipCanvas && dependentCharts.relationships.labels.length) {
+        new Chart(relationshipCanvas, {
+            type: 'bar',
+            data: {
+                labels: dependentCharts.relationships.labels,
+                datasets: [{
+                    data: dependentCharts.relationships.values,
+                    backgroundColor: ['#06b6d4', '#22d3ee', '#67e8f9', '#8b5cf6', '#a78bfa', '#c4b5fd'],
+                    borderRadius: 8,
+                    borderSkipped: false,
+                    maxBarThickness: 34
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { beginAtZero: true, ticks: { precision: 0, color: dependentTextColor }, grid: { color: dependentGridColor }, border: { display: false } },
+                    y: { ticks: { color: dependentTextColor }, grid: { display: false }, border: { display: false } }
+                }
+            }
+        });
+    }
+
+    const healthCanvas = document.getElementById('dependentHealthChart');
+    if (healthCanvas && dependentCharts.health.values.some(value => value > 0)) {
+        new Chart(healthCanvas, {
+            type: 'doughnut',
+            data: {
+                labels: dependentCharts.health.labels,
+                datasets: [{
+                    data: dependentCharts.health.values,
+                    backgroundColor: ['#34d399', '#fb7185'],
+                    borderWidth: 0,
+                    spacing: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '68%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { usePointStyle: true, pointStyle: 'circle', padding: 16, boxWidth: 7, color: dependentTextColor }
+                    }
                 }
             }
         });

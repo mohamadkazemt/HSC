@@ -117,6 +117,11 @@
         <i class="fa-solid fa-file-import"></i>
         <span>ایمپورت اکسل</span>
       </a>
+      <a href="{% url 'accounts:dependent_management' %}"
+         class="inline-flex items-center gap-2 rounded-lg bg-cyan-600 px-4 py-2.5 text-white hover:bg-cyan-700 shadow-md hover:shadow-lg transition-all duration-200 text-sm font-medium">
+        <i class="fa-solid fa-people-roof"></i>
+        <span>افراد تحت تکفل</span>
+      </a>
       <a href="{% url 'accounts:personnel_export' %}{% if query_string %}?{{ query_string }}{% endif %}"
          class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-white hover:bg-emerald-700 shadow-md hover:shadow-lg transition-all duration-200 text-sm font-medium">
         <i class="fa-solid fa-file-export"></i>

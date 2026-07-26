@@ -1,7 +1,9 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}ویرایش دسترسی{% endblock %}
+{% block styles %}<link href="{% static 'css/permissions.css' %}" rel="stylesheet" />{% endblock %}
 {% block content %}
-<div class="max-w-3xl mx-auto space-y-6">
+<div class="permissions-shell max-w-3xl mx-auto space-y-6">
   <!-- Breadcrumb -->
   <nav class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
     <a href="{% url 'permissions:manage_access' %}" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">مدیریت دسترسی‌ها</a>
@@ -11,7 +13,7 @@
     <span class="text-gray-900 dark:text-gray-100 font-medium">ویرایش دسترسی</span>
   </nav>
 
-  <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+  <div class="permission-panel overflow-hidden">
     <!-- Header -->
     <div class="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 p-6 border-b border-gray-200 dark:border-gray-700">
       <div class="flex items-center gap-3">

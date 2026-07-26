@@ -12,7 +12,7 @@ from django.core.exceptions import PermissionDenied
 from dashboard.views import dashboard
 from .forms import LoginForm
 from .forms import PasswordResetSMSForm
-from accounts.models import UserProfile, DriverLicense, Section, Part, UnitGroup, Position, Payslip
+from accounts.models import UserProfile, DriverLicense, Section, Part, UnitGroup, Position, Payslip, Dependent
 from .organization_views import (
     organization_manage,
     organization_add,
@@ -937,6 +937,134 @@ def personnel_import(request):
         return redirect('accounts:personnel_import')
 
     return render(request, 'accounts/personnel_import.html')
+
+
+@login_required
+@superuser_required
+def dependent_management(request, user_id=None):
+    from .dependent_excel import (
+        import_dependents_dataframe, normalize_gender, sample_dataframe,
+    )
+    from .personnel_excel import (
+        clean_digits, clean_mobile, clean_national_code, parse_excel_date,
+    )
+
+    selected_profile = None
+    if user_id is not None:
+        selected_profile = get_object_or_404(UserProfile.objects.select_related('user'), user_id=user_id)
+
+    if request.method == 'GET' and request.GET.get('download') == 'sample':
+        buffer = BytesIO()
+        with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+            sample_dataframe().to_excel(writer, index=False, sheet_name='افراد تحت تکفل')
+        buffer.seek(0)
+        response = HttpResponse(
+            buffer,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        response['Content-Disposition'] = 'attachment; filename=dependents_sample.xlsx'
+        return response
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'import':
+            excel_file = request.FILES.get('excel_file')
+            if not excel_file:
+                messages.error(request, 'لطفاً فایل اکسل را انتخاب کنید.')
+            else:
+                try:
+                    dataframe = pd.read_excel(excel_file, dtype=object)
+                    created, updated, errors, missing = import_dependents_dataframe(dataframe)
+                    if missing:
+                        messages.error(request, f"ستون‌های الزامی موجود نیست: {', '.join(missing)}")
+                    else:
+                        for error in errors:
+                            messages.error(request, error)
+                        if created or updated:
+                            messages.success(
+                                request,
+                                f'{created} فرد تحت تکفل ایجاد و {updated} مورد به‌روزرسانی شد.'
+                            )
+                except Exception as exc:
+                    messages.error(request, f'خطا در پردازش فایل: {exc}')
+
+        elif action == 'save':
+            dependent_id = request.POST.get('dependent_id')
+            profile_id = selected_profile.id if selected_profile else request.POST.get('personnel')
+            try:
+                profile = UserProfile.objects.get(pk=profile_id)
+                national_code = clean_national_code(request.POST.get('national_code'))
+                first_name = request.POST.get('first_name', '').strip()
+                last_name = request.POST.get('last_name', '').strip()
+                relationship = request.POST.get('relationship', '').strip()
+                if not national_code or not first_name or not last_name or not relationship:
+                    raise ValueError('نام، نام خانوادگی، کد ملی و نسبت الزامی هستند.')
+
+                dependent = (
+                    get_object_or_404(Dependent, pk=dependent_id)
+                    if dependent_id else Dependent(personnel=profile)
+                )
+                if selected_profile and dependent.pk and dependent.personnel_id != selected_profile.id:
+                    raise PermissionDenied
+                duplicate = Dependent.objects.filter(
+                    personnel=profile, national_code=national_code
+                ).exclude(pk=dependent.pk).exists()
+                if duplicate:
+                    raise ValueError('این کد ملی قبلاً برای افراد تحت تکفل این پرسنل ثبت شده است.')
+
+                dependent.personnel = profile
+                dependent.first_name = first_name
+                dependent.last_name = last_name
+                dependent.father_name = request.POST.get('father_name', '').strip()
+                dependent.national_code = national_code
+                dependent.birth_certificate_number = clean_digits(
+                    request.POST.get('birth_certificate_number')
+                )
+                dependent.birth_date = parse_excel_date(
+                    request.POST.get('birth_date'), 'تاریخ تولد'
+                )
+                dependent.gender = normalize_gender(request.POST.get('gender'))
+                dependent.mobile = clean_mobile(request.POST.get('mobile'))
+                dependent.relationship = relationship
+                dependent.disease_type = request.POST.get('disease_type', '').strip()
+                dependent.save()
+                messages.success(request, 'اطلاعات فرد تحت تکفل ذخیره شد.')
+            except (UserProfile.DoesNotExist, ValueError) as exc:
+                messages.error(request, str(exc) if str(exc) else 'پرسنل انتخاب‌شده معتبر نیست.')
+
+        elif action == 'delete':
+            dependent = get_object_or_404(Dependent, pk=request.POST.get('dependent_id'))
+            if selected_profile and dependent.personnel_id != selected_profile.id:
+                raise PermissionDenied
+            dependent.delete()
+            messages.success(request, 'فرد تحت تکفل حذف شد.')
+
+        target = (
+            reverse('accounts:personnel_dependents', args=[user_id])
+            if user_id is not None else reverse('accounts:dependent_management')
+        )
+        return redirect(target)
+
+    dependents = Dependent.objects.select_related('personnel__user')
+    if selected_profile:
+        dependents = dependents.filter(personnel=selected_profile)
+    dependent_stats = dependents.aggregate(
+        total=Count('id'),
+        male=Count('id', filter=Q(gender='male')),
+        female=Count('id', filter=Q(gender='female')),
+        with_disease=Count('id', filter=~Q(disease_type='')),
+        personnel_count=Count('personnel', distinct=True),
+    )
+    profiles = UserProfile.objects.select_related('user').exclude(personnel_code='').order_by(
+        'user__last_name', 'user__first_name'
+    )
+    return render(request, 'accounts/dependent_management.html', {
+        'dependents': dependents,
+        'dependent_stats': dependent_stats,
+        'profiles': profiles,
+        'selected_profile': selected_profile,
+    })
 
 
 @login_required

@@ -3,6 +3,17 @@ from . import views
 
 app_name = 'dashboard'
 
+URLS_WITH_LABELS = [
+    {
+        'name': 'dashboard_personnel_statistics',
+        'label': 'داشبورد_آمار مدیریتی پرسنل',
+    },
+    {
+        'name': 'dashboard_dependent_statistics',
+        'label': 'داشبورد_آمار مدیریتی افراد تحت تکفل',
+    },
+]
+
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
     path('admin-overview/', views.admin_overview, name='admin_overview'),

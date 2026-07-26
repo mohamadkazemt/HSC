@@ -11,7 +11,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .models import UserActivity
 from permissions.utils import get_all_views_with_labels, check_permission
 from permissions.models import UserPermission, PartPermission, SectionPermission, PositionPermission, UnitGroupPermission
-from accounts.models import UnitGroup, UserProfile, DriverLicense
+from accounts.models import UnitGroup, UserProfile, DriverLicense, Dependent
 from django.contrib import messages
 from django.http import JsonResponse
 from django.contrib.admin.views.decorators import staff_member_required
@@ -28,6 +28,15 @@ name = 'dashboard'
 def dashboard(request):
     module_states = get_module_states()
     today = timezone.localdate()
+    # These two executive reports intentionally do not inherit Django's
+    # superuser bypass. Their potentially sensitive HR data is displayed only
+    # when an explicit/custom permission grants ``can_view``.
+    can_view_personnel_dashboard = check_permission(
+        request.user, 'dashboard_personnel_statistics'
+    ).get('can_view', False)
+    can_view_dependent_dashboard = check_permission(
+        request.user, 'dashboard_dependent_statistics'
+    ).get('can_view', False)
     # بررسی اینکه آیا کاربر پرسنل اورژانس است (پرستار یا پزشک - نه مدیر)
     is_emergency_nurse = request.user.groups.filter(name='EmergencyNurse').exists()
     is_emergency_doctor = request.user.groups.filter(name='EmergencyDoctor').exists()
@@ -153,6 +162,44 @@ def dashboard(request):
             'values': [row['total'] for row in group_rows],
         },
     }
+
+    dependent_summary = None
+    dependent_charts = None
+    if can_view_dependent_dashboard:
+        active_dependents = Dependent.objects.filter(personnel__user__is_active=True)
+        dependent_total = active_dependents.count()
+        covered_personnel = active_dependents.values('personnel_id').distinct().count()
+        with_disease = active_dependents.exclude(disease_type='').count()
+        relationship_rows = list(
+            active_dependents.values('relationship')
+            .annotate(total=Count('id'))
+            .order_by('-total', 'relationship')[:6]
+        )
+        dependent_summary = {
+            'total': dependent_total,
+            'active_personnel_total': personnel_total,
+            'covered_personnel': covered_personnel,
+            'coverage_rate': round(covered_personnel * 100 / personnel_total) if personnel_total else 0,
+            'average_per_personnel': round(dependent_total / personnel_total, 1) if personnel_total else 0,
+            'with_disease': with_disease,
+            'disease_rate': round(with_disease * 100 / dependent_total) if dependent_total else 0,
+            'male': active_dependents.filter(gender='male').count(),
+            'female': active_dependents.filter(gender='female').count(),
+        }
+        dependent_charts = {
+            'relationships': {
+                'labels': [row['relationship'] or 'نامشخص' for row in relationship_rows],
+                'values': [row['total'] for row in relationship_rows],
+            },
+            'health': {
+                'labels': ['بدون بیماری ثبت‌شده', 'دارای بیماری ثبت‌شده'],
+                'values': [dependent_total - with_disease, with_disease],
+            },
+        }
+
+    if not can_view_personnel_dashboard:
+        personnel_summary = None
+        personnel_charts = None
     
     # دریافت دسترسی‌های مستقیم کاربر
     user_permissions = UserPermission.objects.filter(user=request.user)
@@ -658,6 +705,10 @@ def dashboard(request):
         'quick_access_forms_by_category': accessible_forms_by_category,
         'personnel_summary': personnel_summary,
         'personnel_charts': personnel_charts,
+        'dependent_summary': dependent_summary,
+        'dependent_charts': dependent_charts,
+        'can_view_personnel_dashboard': can_view_personnel_dashboard,
+        'can_view_dependent_dashboard': can_view_dependent_dashboard,
     }
 
     return render(request, 'dashboard/dashboard.html', context)

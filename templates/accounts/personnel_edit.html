@@ -149,11 +149,18 @@
         </p>
       </div>
     </div>
-    <a href="{% url 'accounts:personnel_list' %}" 
-       class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200">
-      <i class="fa-solid fa-arrow-right"></i>
-      <span>بازگشت به لیست</span>
-    </a>
+    <div class="flex flex-wrap gap-2">
+      <a href="{% url 'accounts:personnel_dependents' edit_user.id %}"
+         class="inline-flex items-center gap-2 rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700">
+        <i class="fa-solid fa-people-roof"></i>
+        <span>افراد تحت تکفل ({{ profile.dependents.count }})</span>
+      </a>
+      <a href="{% url 'accounts:personnel_list' %}"
+         class="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200">
+        <i class="fa-solid fa-arrow-right"></i>
+        <span>بازگشت به لیست</span>
+      </a>
+    </div>
   </div>
 
   {% if messages %}

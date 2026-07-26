@@ -3,7 +3,7 @@ import pandas as pd
 from io import BytesIO
 from django.urls import path
 from django.contrib import admin, messages
-from .models import UserProfile, Section, Part, Position, UnitGroup, DriverLicense
+from .models import UserProfile, Section, Part, Position, UnitGroup, DriverLicense, Dependent
 from .personnel_excel import import_personnel_dataframe, sample_dataframe
 
 class UserImportAdmin(admin.ModelAdmin):
@@ -89,6 +89,16 @@ class UserImportAdmin(admin.ModelAdmin):
 
 
 admin.site.register(UserProfile, UserImportAdmin)
+
+
+@admin.register(Dependent)
+class DependentAdmin(admin.ModelAdmin):
+    list_display = ('first_name', 'last_name', 'national_code', 'relationship', 'personnel')
+    search_fields = (
+        'first_name', 'last_name', 'national_code',
+        'personnel__personnel_code', 'personnel__user__first_name', 'personnel__user__last_name',
+    )
+    list_filter = ('gender', 'relationship')
 
 @admin.register(Part)
 class PartAdmin(admin.ModelAdmin):
