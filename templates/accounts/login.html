@@ -1,416 +1,451 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="fa" dir="rtl" class="h-full">
+<html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
     <title>ورود به سیستم{% if site_settings and site_settings.site_name %} - {{ site_settings.site_name }}{% endif %}</title>
     {% if site_settings and site_settings.site_favicon %}
     <link rel="icon" href="{{ site_settings.site_favicon.url }}">
     {% endif %}
-    
-    <!-- Tailwind CSS -->
-    <script src="{% static "vendor/js/tailwind.js" %}"></script>
+    <script src="{% static 'vendor/js/tailwind.js' %}"></script>
     <script>
         tailwind.config = {
-            darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['Vazirmatn', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'Noto Sans', 'sans-serif'],
+                        sans: ['Vazirmatn', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif']
+                    },
+                    colors: {
+                        brand: {50: '#eef2ff', 600: '#3556c8', 700: '#263b80', 900: '#16234c'}
                     }
                 }
             }
-        }
+        };
     </script>
-    
-    <!-- Vazirmatn Font -->
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="{% static "vendor/css/font-awesome.min.css" %}">
-    
+    <link rel="stylesheet" href="{% static 'vendor/css/font-awesome.min.css' %}">
     <style>
-        [x-cloak] { display: none !important; }
+        :root {
+            --navy: #263b80;
+            --navy-deep: #0b1530;
+            --blue: #3556c8;
+            --surface: #f6f8fc;
+            --text: #0f172a;
+        }
+        * { box-sizing: border-box; }
+        html, body { min-height: 100%; }
+        body { margin: 0; background: var(--surface); color: var(--text); }
+        button, input, a { -webkit-tap-highlight-color: transparent; }
+        .login-shell { min-height: 100svh; }
+        .visual-panel { isolation: isolate; min-height: 100svh; }
+        .visual-panel::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: -1;
+            background:
+                linear-gradient(118deg, rgba(7, 15, 36, .94) 0%, rgba(18, 40, 82, .78) 58%, rgba(17, 31, 65, .65) 100%),
+                radial-gradient(circle at 78% 25%, rgba(79, 70, 229, .22), transparent 35%);
+        }
+        .mine-image { animation: mine-drift 18s ease-in-out infinite alternate; }
+        .industrial-grid {
+            background-image:
+                linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+            background-size: 64px 64px;
+            mask-image: linear-gradient(to bottom, transparent, black 35%, black);
+        }
+        .status-card {
+            background: rgba(9, 20, 45, .72);
+            border: 1px solid rgba(255, 255, 255, .14);
+            box-shadow: 0 12px 34px rgba(0, 0, 0, .16);
+            animation: card-in .26s both;
+        }
+        .status-card:nth-child(2) { animation-delay: .07s; }
+        .status-card:nth-child(3) { animation-delay: .14s; }
+        .status-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,.24); }
+        .form-control {
+            min-height: 48px;
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            transition: border-color .18s, box-shadow .18s, background .18s;
+        }
+        .form-control:hover { border-color: #94a3b8; }
+        .form-control:focus {
+            outline: 0;
+            border-color: var(--blue);
+            box-shadow: 0 0 0 4px rgba(53, 86, 200, .13);
+        }
+        .form-control:read-only { background: #f1f5f9; color: #64748b; }
+        .login-input {
+            padding-right: 3rem !important;
+            padding-left: 1rem !important;
+        }
+        .login-input--password {
+            padding-left: 3.25rem !important;
+        }
+        .focus-ring:focus-visible {
+            outline: 3px solid rgba(53, 86, 200, .28);
+            outline-offset: 3px;
+        }
+        .mode-tab[aria-selected="true"] {
+            color: var(--navy);
+            background: white;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, .08);
+        }
+        .mode-tab[aria-selected="false"] { color: #64748b; }
+        @keyframes card-in {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes mine-drift {
+            from { transform: scale(1.02); }
+            to { transform: scale(1.07) translateX(-.7%); }
+        }
+        @media (max-width: 1023px) {
+            .visual-panel { display: none !important; }
+            .login-shell { min-height: 100svh; }
+        }
+        @media (max-width: 639px) {
+            .login-shell { min-height: 100svh; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: .01ms !important;
+                animation-iteration-count: 1 !important;
+                scroll-behavior: auto !important;
+                transition-duration: .01ms !important;
+            }
+        }
     </style>
 </head>
-<body class="h-screen flex overflow-hidden bg-white dark:bg-gray-900 font-sans" dir="rtl">
-    <!-- Form Section (Visually Left on Desktop) -->
-    <div class="w-full lg:w-1/2 xl:w-2/5 flex items-center justify-center p-4 sm:p-8 overflow-y-auto bg-white dark:bg-gray-900">
-        <div class="w-full max-w-md">
-            <!-- Logo Section -->
-            <div class="text-center mb-8">
-                {% if site_settings and site_settings.company_logo %}
-                    <img src="{{ site_settings.company_logo.url }}" 
-                         alt="{{ site_settings.site_name|default:'لوگو' }}" 
-                         class="h-16 mx-auto mb-4 object-contain">
-                {% else %}
-                    <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 dark:bg-indigo-500 rounded-2xl mb-4 shadow-lg">
-                        <i class="fas fa-shield-alt text-white text-2xl"></i>
+<body class="font-sans antialiased">
+    <main class="login-shell flex flex-col lg:flex-row-reverse" aria-labelledby="loginTitle">
+        <section class="visual-panel relative flex w-full overflow-hidden bg-slate-950 text-white lg:w-[55%]" aria-labelledby="visualTitle">
+            <img
+                src="{% static 'images/login-bg.webp' %}"
+                alt=""
+                aria-hidden="true"
+                class="mine-image absolute inset-0 -z-10 h-full w-full object-cover object-center"
+                fetchpriority="high">
+            <div id="miningLottie" class="absolute inset-0 -z-10 hidden" aria-hidden="true"
+                 data-animation-src="{% static 'lottie/mining-login.json' %}"></div>
+            <div class="industrial-grid pointer-events-none absolute inset-0 -z-10" aria-hidden="true"></div>
+
+            <div class="visual-copy relative z-10 flex w-full flex-col justify-center px-8 py-12 xl:px-14 2xl:px-20">
+                <div class="max-w-3xl">
+                    <div class="visual-kicker mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-slate-950/35 px-3 py-1.5 text-xs font-medium text-slate-200">
+                        <span class="h-2 w-2 rounded-full bg-emerald-400" aria-hidden="true"></span>
+                        سامانه یکپارچه مدیریت عملیات
                     </div>
-                {% endif %}
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">ورود به سیستم</h1>
-                <p class="text-gray-600 dark:text-gray-400">لطفاً اطلاعات خود را وارد کنید</p>
+                    <h2 id="visualTitle" class="text-2xl font-black leading-tight tracking-tight sm:text-3xl xl:text-5xl">
+                        ایمنی، مدیریت، عملکرد، توسعه
+                    </h2>
+                    <p class="mt-4 max-w-xl text-sm leading-7 text-slate-200 sm:text-base xl:text-lg">
+                        یک سیستم یکپارچه برای پشتیبانی از همه بخش‌ها
+                    </p>
+                    <p class="visual-description mt-1 text-sm text-slate-400">
+                        پیشرفت پایدار با کنترل حرفه‌ای
+                    </p>
+                </div>
+
+                <div id="miningStatusCards" class="mt-6 grid max-w-4xl grid-cols-1 gap-3 sm:grid-cols-3 lg:mt-10" aria-label="وضعیت عمومی سامانه"></div>
             </div>
+        </section>
 
-            <!-- Login Card -->
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8">
-                <form id="loginForm" method="POST" action="{% url 'accounts:login' %}">
-                    {% csrf_token %}
-                    
-                    <!-- Error Message -->
-                    <div id="errorMessage" class="hidden mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                        <div class="flex items-start gap-3">
-                            <i class="fas fa-circle-exclamation text-red-500 dark:text-red-400 text-xl mt-0.5"></i>
-                            <div class="flex-1">
-                                <span id="errorText" class="text-sm text-red-800 dark:text-red-300"></span>
-                            </div>
-                        </div>
+        <section class="flex w-full flex-1 items-center justify-center bg-[#f6f8fc] px-4 py-8 sm:px-8 lg:w-[45%] lg:py-12">
+            <div class="w-full max-w-[470px]">
+                <header class="mb-6 flex items-center gap-4">
+                    {% if site_settings and site_settings.company_logo %}
+                    <img src="{{ site_settings.company_logo.url }}"
+                         alt="{{ site_settings.site_name|default:'نشان سازمان' }}"
+                         class="h-14 w-14 rounded-xl bg-white object-contain p-1 shadow-sm ring-1 ring-slate-200">
+                    {% else %}
+                    <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-brand-700 text-white shadow-lg shadow-blue-900/15" aria-hidden="true">
+                        <i class="fas fa-shield-alt text-xl"></i>
                     </div>
-
-                    <!-- Django Messages -->
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="mb-6 p-4 rounded-lg border
-                                {% if 'success' in message.tags %} bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-300
-                                {% elif 'error' in message.tags or 'danger' in message.tags %} bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300
-                                {% elif 'warning' in message.tags %} bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300
-                                {% else %} bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-300
-                                {% endif %}">
-                                <div class="flex items-start gap-3">
-                                    {% if 'success' in message.tags %}
-                                        <i class="fas fa-circle-check text-xl mt-0.5"></i>
-                                    {% elif 'error' in message.tags or 'danger' in message.tags %}
-                                        <i class="fas fa-circle-xmark text-xl mt-0.5"></i>
-                                    {% elif 'warning' in message.tags %}
-                                        <i class="fas fa-triangle-exclamation text-xl mt-0.5"></i>
-                                    {% else %}
-                                        <i class="fas fa-circle-info text-xl mt-0.5"></i>
-                                    {% endif %}
-                                    <span class="text-sm">{{ message|safe }}</span>
-                                </div>
-                            </div>
-                        {% endfor %}
                     {% endif %}
-
-                    <div class="grid grid-cols-2 gap-2 mb-6 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                        <button type="button" id="passwordModeBtn"
-                                class="login-mode py-2 px-3 rounded-md text-sm font-medium bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 shadow-sm">
-                            <i class="fas fa-key ml-1"></i> ورود با رمز
-                        </button>
-                        <button type="button" id="otpModeBtn"
-                                class="login-mode py-2 px-3 rounded-md text-sm font-medium text-gray-600 dark:text-gray-300">
-                            <i class="fas fa-comment-sms ml-1"></i> رمز یک‌بارمصرف
-                        </button>
+                    <div>
+                        <h1 id="loginTitle" class="text-2xl font-black text-slate-900 sm:text-3xl">ورود به سامانه</h1>
+                        <p class="mt-1 text-sm text-slate-500">برای ادامه، اطلاعات حساب خود را وارد کنید.</p>
                     </div>
+                </header>
 
-                    <div id="successMessage" class="hidden mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-                        <span id="successText" class="text-sm text-green-800 dark:text-green-300"></span>
-                    </div>
+                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_20px_50px_rgba(15,23,42,.08)] sm:p-7">
+                    <form id="loginForm" method="POST" action="{% url 'accounts:login' %}" novalidate>
+                        {% csrf_token %}
 
-                    <!-- Username Field -->
-                    <div class="mb-6">
-                        <label id="identifierLabel" for="id_username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            نام کاربری، کد ملی یا شماره موبایل
-                        </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none z-10">
-                                <i class="fas fa-user text-gray-400"></i>
+                        <div id="errorMessage" class="mb-5 hidden rounded-xl border border-red-200 bg-red-50 p-3.5 text-red-800" role="alert" aria-live="assertive">
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-circle-exclamation mt-0.5 text-red-600" aria-hidden="true"></i>
+                                <span id="errorText" class="text-sm leading-6"></span>
                             </div>
-                            <input type="text" 
-                                   id="id_username" 
-                                   name="username" 
-                                   required
-                                   autocomplete="username"
-                                   class="block w-full pr-12 pl-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg 
-                                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 
-                                          dark:bg-gray-700 dark:text-white dark:placeholder-gray-400
-                                          transition duration-200"
-                                   style="padding-right: 4rem;"
-                                   inputmode="text"
-                                   placeholder="نام کاربری، کد ملی یا شماره موبایل">
                         </div>
-                    </div>
-
-                    <!-- Password Field -->
-                    <div id="passwordFieldGroup" class="mb-6">
-                        <label for="id_password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            رمز عبور
-                        </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none z-10">
-                                <i class="fas fa-lock text-gray-400"></i>
+                        <div id="successMessage" class="mb-5 hidden rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-emerald-800" role="status" aria-live="polite">
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-circle-check mt-0.5 text-emerald-600" aria-hidden="true"></i>
+                                <span id="successText" class="text-sm leading-6"></span>
                             </div>
-                            <input type="password" 
-                                   id="id_password" 
-                                   name="password" 
-                                   required
-                                   autocomplete="current-password"
-                                   class="block w-full pr-12 pl-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg 
-                                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 
-                                          dark:bg-gray-700 dark:text-white dark:placeholder-gray-400
-                                          transition duration-200"
-                                   style="padding-right: 4rem;"
-                                   placeholder="رمز عبور">
                         </div>
-                    </div>
 
-                    <div id="otpFieldGroup" class="hidden mb-6">
-                        <label for="id_otp" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            کد یک‌بارمصرف
-                        </label>
-                        <div class="relative">
-                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none z-10">
-                                <i class="fas fa-shield-halved text-gray-400"></i>
+                        {% if messages %}
+                            {% for message in messages %}
+                            <div class="mb-5 rounded-xl border p-3.5 text-sm leading-6
+                                {% if 'success' in message.tags %}border-emerald-200 bg-emerald-50 text-emerald-800
+                                {% elif 'error' in message.tags or 'danger' in message.tags %}border-red-200 bg-red-50 text-red-800
+                                {% elif 'warning' in message.tags %}border-amber-200 bg-amber-50 text-amber-800
+                                {% else %}border-blue-200 bg-blue-50 text-blue-800{% endif %}"
+                                role="{% if 'error' in message.tags or 'danger' in message.tags %}alert{% else %}status{% endif %}">
+                                {{ message|safe }}
                             </div>
-                            <input type="text" id="id_otp" name="otp" inputmode="numeric"
-                                   autocomplete="one-time-code" maxlength="6" pattern="[0-9۰-۹٠-٩]{6}"
-                                   class="block w-full pr-12 pl-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white text-center tracking-widest text-lg"
+                            {% endfor %}
+                        {% endif %}
+
+                        <div class="mb-5 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1" role="tablist" aria-label="روش ورود">
+                            <button type="button" id="passwordModeBtn" class="mode-tab focus-ring rounded-lg px-2 py-2.5 text-sm font-bold transition"
+                                    role="tab" aria-selected="true" aria-controls="passwordFieldGroup">
+                                <i class="fas fa-key ml-1.5 text-xs" aria-hidden="true"></i>ورود با رمز
+                            </button>
+                            <button type="button" id="otpModeBtn" class="mode-tab focus-ring rounded-lg px-2 py-2.5 text-sm font-bold transition"
+                                    role="tab" aria-selected="false" aria-controls="otpFieldGroup">
+                                <i class="fas fa-comment-sms ml-1.5 text-xs" aria-hidden="true"></i>رمز یک‌بارمصرف
+                            </button>
+                        </div>
+
+                        <div class="mb-5">
+                            <label id="identifierLabel" for="id_username" class="mb-2 block text-sm font-bold text-slate-700">نام کاربری، کد ملی یا شماره موبایل</label>
+                            <div class="relative">
+                                <i class="fas fa-user pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true"></i>
+                                <input type="text" id="id_username" name="username" required autocomplete="username" inputmode="text"
+                                       class="form-control login-input block w-full rounded-xl py-3 text-sm text-slate-900 placeholder:text-slate-400"
+                                       placeholder="نام کاربری، کد ملی یا شماره موبایل">
+                            </div>
+                        </div>
+
+                        <div id="passwordFieldGroup" class="mb-3" role="tabpanel" aria-labelledby="passwordModeBtn">
+                            <label for="id_password" class="mb-2 block text-sm font-bold text-slate-700">رمز عبور</label>
+                            <div class="relative">
+                                <i class="fas fa-lock pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden="true"></i>
+                                <input type="password" id="id_password" name="password" required autocomplete="current-password"
+                                       class="form-control login-input login-input--password block w-full rounded-xl py-3 text-sm text-slate-900 placeholder:text-slate-400"
+                                       placeholder="رمز عبور">
+                                <button type="button" id="togglePassword" class="focus-ring absolute left-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                                        aria-label="نمایش رمز عبور" aria-pressed="false">
+                                    <i class="fas fa-eye" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="otpFieldGroup" class="mb-5 hidden" role="tabpanel" aria-labelledby="otpModeBtn">
+                            <label for="id_otp" class="mb-2 block text-sm font-bold text-slate-700">کد یک‌بارمصرف</label>
+                            <input type="text" id="id_otp" name="otp" inputmode="numeric" autocomplete="one-time-code"
+                                   maxlength="6" pattern="[0-9۰-۹٠-٩]{6}"
+                                   class="form-control block w-full rounded-xl px-4 py-3 text-center text-lg tracking-[.35em] text-slate-900"
                                    placeholder="کد ۶ رقمی">
+                            <button type="button" id="resendOtpBtn" class="focus-ring mt-3 hidden rounded text-sm font-bold text-brand-700 disabled:cursor-not-allowed disabled:text-slate-400">
+                                ارسال مجدد کد <span id="resendTimer"></span>
+                            </button>
                         </div>
-                        <button type="button" id="resendOtpBtn" class="hidden mt-3 text-sm text-indigo-600 dark:text-indigo-400 disabled:text-gray-400 disabled:cursor-not-allowed">
-                            ارسال مجدد کد <span id="resendTimer"></span>
-                        </button>
-                    </div>
 
-                    <!-- Forgot Password Link -->
-                    <div id="forgotPasswordGroup" class="mb-6 text-left">
-                        <a href="{% url 'accounts:send_reset_code' %}" 
-                           class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium transition duration-200">
-                            <i class="fas fa-key ml-1"></i>
-                            رمز عبور خود را فراموش کرده‌اید؟
+                        <div id="forgotPasswordGroup" class="mb-5 text-left">
+                            <a href="{% url 'accounts:send_reset_code' %}" class="focus-ring rounded text-sm font-bold text-brand-700 hover:text-brand-900">
+                                رمز عبور را فراموش کرده‌اید؟
+                            </a>
+                        </div>
+
+                        <button type="submit" id="submitBtn"
+                                class="focus-ring flex min-h-12 w-full items-center justify-center rounded-xl bg-brand-700 px-4 py-3 font-bold text-white shadow-lg shadow-blue-900/15 transition hover:bg-brand-900 disabled:cursor-not-allowed disabled:opacity-60">
+                            <span id="btnText"><span id="btnLabel">ورود به سامانه</span><i class="fas fa-arrow-left mr-2 text-sm" aria-hidden="true"></i></span>
+                            <span id="btnSpinner" class="hidden"><i class="fas fa-spinner fa-spin ml-2" aria-hidden="true"></i>در حال بررسی...</span>
+                        </button>
+                    </form>
+
+                    <div class="my-5 flex items-center gap-3 text-xs text-slate-400" aria-hidden="true">
+                        <span class="h-px flex-1 bg-slate-200"></span><span>دسترسی‌های سازمانی</span><span class="h-px flex-1 bg-slate-200"></span>
+                    </div>
+                    <div class="grid gap-2 sm:grid-cols-2">
+                        <a href="{% url 'contractor_management:contractor_login' %}"
+                           class="focus-ring flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-bold text-slate-700 transition hover:border-brand-600 hover:bg-brand-50 hover:text-brand-700">
+                            <i class="fas fa-users text-brand-600" aria-hidden="true"></i>پیمانکاران و پرسنل
+                        </a>
+                        <a href="{% url 'emergency_services:emergency_login' %}"
+                           class="focus-ring flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm font-bold text-red-700 transition hover:border-red-300 hover:bg-red-100">
+                            <i class="fas fa-ambulance" aria-hidden="true"></i>پرسنل اورژانس
                         </a>
                     </div>
-
-                    <!-- Submit Button -->
-                    <button type="submit" 
-                            id="submitBtn"
-                            class="w-full bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 
-                                   text-white font-semibold py-3 px-4 rounded-lg transition duration-200 
-                                   transform hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl
-                                   disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
-                        <span id="btnText">
-                            <i class="fas fa-sign-in-alt ml-2"></i>
-                            <span id="btnLabel">ورود به سیستم</span>
-                        </span>
-                        <span id="btnSpinner" class="hidden">
-                            <i class="fas fa-spinner fa-spin ml-2"></i>
-                            در حال ورود...
-                        </span>
-                    </button>
-                </form>
-            </div>
-
-            <!-- Contractor & Emergency Login Links -->
-            <div class="mt-6">
-                <div class="relative">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-gray-300 dark:border-gray-600"></div>
-                    </div>
-                    <div class="relative flex justify-center text-sm">
-                        <span class="px-4 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400">یا</span>
-                    </div>
                 </div>
-                
-                <!-- Emergency Portal Login -->
-                <div class="mt-6">
-                    <a href="{% url 'emergency_services:emergency_login' %}" 
-                       class="w-full flex items-center justify-center gap-3 bg-gradient-to-r from-red-500 to-red-600 
-                              hover:from-red-600 hover:to-red-700 text-white font-semibold py-3 px-4 rounded-lg 
-                              transition duration-200 transform hover:scale-[1.02] active:scale-[0.98] 
-                              shadow-lg hover:shadow-xl">
-                        <i class="fas fa-ambulance text-xl"></i>
-                        <span>ورود پرسنل اورژانس</span>
-                        <i class="fas fa-heart-pulse animate-pulse"></i>
-                    </a>
-                </div>
-                
-                <!-- Contractor Login -->
-                <div class="mt-4">
-                    <a href="{% url 'contractor_management:contractor_login' %}" 
-                       class="w-full flex items-center justify-center gap-3 bg-white dark:bg-gray-800 
-                              border-2 border-indigo-600 dark:border-indigo-500 text-indigo-600 dark:text-indigo-400 
-                              font-semibold py-3 px-4 rounded-lg transition duration-200 
-                              transform hover:scale-[1.02] active:scale-[0.98] 
-                              shadow-lg hover:shadow-xl hover:bg-indigo-50 dark:hover:bg-gray-700">
-                        <i class="fas fa-users text-xl"></i>
-                        <span>ورود پیمانکاران و پرسنل</span>
-                    </a>
-                </div>
+
+                <footer class="mt-6 text-center text-xs leading-6 text-slate-500">
+                    {% if site_settings and site_settings.site_name %}{{ site_settings.site_name }} · {% endif %}دسترسی صرفاً برای کاربران مجاز
+                </footer>
             </div>
+        </section>
+    </main>
 
-            <!-- Footer -->
-            <div class="text-center mt-8">
-                <p class="text-sm text-gray-600 dark:text-gray-400">
-                    {% if site_settings and site_settings.site_name %}
-                        © 2024 {{ site_settings.site_name }} - تمامی حقوق محفوظ است
-                    {% else %}
-                        © 2024 تمامی حقوق محفوظ است
-                    {% endif %}
-                </p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Image Section (Visually Right on Desktop) -->
-    <div class="hidden lg:flex lg:w-1/2 xl:w-3/5 relative">
-        <div class="absolute inset-0 w-full h-full overflow-hidden">
-            <img src="{% static 'images/login-bg.webp' %}" 
-                 alt="Background" 
-                 class="absolute inset-0 w-full h-full object-cover object-center"
-                 style="min-width: 100%; min-height: 100%;"
-                 onerror="this.style.display='none'; this.parentElement.parentElement.classList.add('bg-gradient-to-br', 'from-indigo-900', 'via-blue-900', 'to-gray-900');">
-            <div class="absolute inset-0 bg-gradient-to-br from-gray-900/60 via-blue-900/50 to-indigo-900/60"></div>
-        </div>
-        
-        <!-- Optional: Quote or Text over image -->
-        <div class="relative z-10 flex flex-col justify-center items-center text-center px-12 text-white">
-            <div class="max-w-md">
-                <h2 class="text-4xl font-bold mb-4">خوش آمدید</h2>
-                <p class="text-lg text-gray-200 leading-relaxed">
-                    به سامانه مدیریت ایمنی و بهداشت حرفه‌ای خوش آمدید
-                </p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Alpine.js -->
-    <script defer src="{% static "vendor/js/alpine.min.js" %}"></script>
-
-    <!-- Login Script with AJAX -->
     <script>
-        const form = document.getElementById('loginForm');
-        const submitBtn = document.getElementById('submitBtn');
-        const btnText = document.getElementById('btnText');
-        const btnSpinner = document.getElementById('btnSpinner');
-        const btnLabel = document.getElementById('btnLabel');
-        const identifier = document.getElementById('id_username');
-        const password = document.getElementById('id_password');
-        const otpInput = document.getElementById('id_otp');
-        const errorMessage = document.getElementById('errorMessage');
-        const errorText = document.getElementById('errorText');
-        const successMessage = document.getElementById('successMessage');
-        const successText = document.getElementById('successText');
-        const resendBtn = document.getElementById('resendOtpBtn');
-        let mode = 'password';
-        let otpSent = false;
-        let timerId = null;
+        (() => {
+            'use strict';
 
-        function setLoading(loading) {
-            submitBtn.disabled = loading;
-            btnText.classList.toggle('hidden', loading);
-            btnSpinner.classList.toggle('hidden', !loading);
-        }
+            // Neutral public-page fallbacks. Replace only with a safe, existing public endpoint.
+            const miningStatusItems = [
+                {id: 'safety', title: 'وضعیت ایمنی', value: 'پایش فعال', description: 'کنترل مستمر فرآیندها', icon: 'fa-shield-alt'},
+                {id: 'system', title: 'عملکرد سامانه', value: 'عملیاتی', description: 'دسترسی یکپارچه به خدمات', icon: 'fa-chart-line'},
+                {id: 'shift', title: 'شیفت جاری', value: 'در حال فعالیت', description: 'هماهنگی واحدهای عملیاتی', icon: 'fa-clock'}
+            ];
 
-        function showMessage(message, success = false) {
-            errorMessage.classList.toggle('hidden', success);
-            successMessage.classList.toggle('hidden', !success);
-            (success ? successText : errorText).textContent = message;
-        }
+            const cardsRoot = document.getElementById('miningStatusCards');
+            const cardTemplate = ({id, title, value, description, icon}) => `
+                <article class="status-card flex min-w-0 items-center gap-3 rounded-2xl p-4 transition" data-status-id="${id}">
+                    <span class="status-icon flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 text-blue-200" aria-hidden="true">
+                        <i class="fas ${icon}"></i>
+                    </span>
+                    <span class="min-w-0">
+                        <span class="block text-[11px] font-medium text-slate-400">${title}</span>
+                        <strong class="mt-0.5 block truncate text-sm text-white">${value}</strong>
+                        <span class="status-description mt-0.5 block truncate text-[10px] text-slate-400">${description}</span>
+                    </span>
+                </article>`;
+            cardsRoot.innerHTML = miningStatusItems.map(cardTemplate).join('');
 
-        function startResendTimer(seconds) {
-            clearInterval(timerId);
-            resendBtn.classList.remove('hidden');
-            resendBtn.disabled = true;
-            let remaining = Number(seconds || 60);
-            const render = () => {
-                document.getElementById('resendTimer').textContent = remaining > 0 ? `(${remaining})` : '';
-                resendBtn.disabled = remaining > 0;
-                if (remaining <= 0) clearInterval(timerId);
-                remaining -= 1;
-            };
-            render();
-            timerId = setInterval(render, 1000);
-        }
-
-        function setMode(nextMode) {
-            mode = nextMode;
-            otpSent = false;
-            clearInterval(timerId);
-            errorMessage.classList.add('hidden');
-            successMessage.classList.add('hidden');
-            document.getElementById('passwordFieldGroup').classList.toggle('hidden', mode === 'otp');
-            document.getElementById('forgotPasswordGroup').classList.toggle('hidden', mode === 'otp');
-            document.getElementById('otpFieldGroup').classList.add('hidden');
-            password.required = mode === 'password';
-            otpInput.required = false;
-            resendBtn.classList.add('hidden');
-            document.getElementById('identifierLabel').textContent = mode === 'otp' ? 'شماره موبایل' : 'نام کاربری، کد ملی یا شماره موبایل';
-            identifier.placeholder = mode === 'otp' ? 'مثلاً 09123456789' : 'نام کاربری، کد ملی یا شماره موبایل';
-            identifier.inputMode = mode === 'otp' ? 'tel' : 'text';
-            btnLabel.textContent = mode === 'otp' ? 'ارسال کد یک‌بارمصرف' : 'ورود به سیستم';
-            const active = ['bg-white', 'dark:bg-gray-800', 'text-indigo-600', 'dark:text-indigo-400', 'shadow-sm'];
-            const inactive = ['text-gray-600', 'dark:text-gray-300'];
+            const form = document.getElementById('loginForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+            const btnLabel = document.getElementById('btnLabel');
+            const identifier = document.getElementById('id_username');
+            const password = document.getElementById('id_password');
+            const otpInput = document.getElementById('id_otp');
+            const errorMessage = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            const successMessage = document.getElementById('successMessage');
+            const successText = document.getElementById('successText');
+            const resendBtn = document.getElementById('resendOtpBtn');
             const passwordBtn = document.getElementById('passwordModeBtn');
             const otpBtn = document.getElementById('otpModeBtn');
-            passwordBtn.classList.remove(...active, ...inactive);
-            otpBtn.classList.remove(...active, ...inactive);
-            (mode === 'password' ? passwordBtn : otpBtn).classList.add(...active);
-            (mode === 'password' ? otpBtn : passwordBtn).classList.add(...inactive);
-        }
+            let mode = 'password';
+            let otpSent = false;
+            let timerId = null;
 
-        async function postForm(url, payload) {
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    body: payload,
-                    headers: {'X-Requested-With': 'XMLHttpRequest'}
-                });
-                const responseData = await response.json();
-                return {response, data: responseData};
-            } catch (error) {
-                console.error('Error:', error);
-                return {response: null, data: {success: false, message: 'خطایی در اتصال به سرور رخ داده است'}};
-            }
-        }
-
-        async function sendOtp() {
-            const data = new FormData();
-            data.append('csrfmiddlewaretoken', form.elements.csrfmiddlewaretoken.value);
-            data.append('mobile', identifier.value);
-            setLoading(true);
-            const result = await postForm("{% url 'accounts:send_login_otp' %}", data);
-            setLoading(false);
-            if (!result.data.success || !result.data.code_sent) {
-                showMessage(result.data.message, Boolean(result.data.success));
-                if (result.data.retry_after) startResendTimer(result.data.retry_after);
-                return;
-            }
-            otpSent = true;
-            document.getElementById('otpFieldGroup').classList.remove('hidden');
-            otpInput.required = true;
-            identifier.readOnly = true;
-            btnLabel.textContent = 'تأیید و ورود';
-            showMessage(result.data.message, true);
-            startResendTimer(result.data.retry_after);
-            otpInput.focus();
-        }
-
-        document.getElementById('passwordModeBtn').addEventListener('click', () => { identifier.readOnly = false; setMode('password'); });
-        document.getElementById('otpModeBtn').addEventListener('click', () => { identifier.readOnly = false; setMode('otp'); });
-        resendBtn.addEventListener('click', sendOtp);
-
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            errorMessage.classList.add('hidden');
-            successMessage.classList.add('hidden');
-            if (mode === 'otp' && !otpSent) {
-                await sendOtp();
-                return;
+            function setLoading(loading) {
+                submitBtn.disabled = loading;
+                submitBtn.setAttribute('aria-busy', String(loading));
+                btnText.classList.toggle('hidden', loading);
+                btnSpinner.classList.toggle('hidden', !loading);
             }
 
-            setLoading(true);
-            const data = new FormData(form);
-            const url = mode === 'otp' ? "{% url 'accounts:verify_login_otp' %}" : form.action;
-            if (mode === 'otp') data.set('code', otpInput.value);
-            const result = await postForm(url, data);
-            setLoading(false);
-            if (result.data.success) {
-                window.location.href = "{% url 'dashboard:dashboard' %}";
-            } else {
-                showMessage(result.data.message || 'اطلاعات ورود صحیح نیست.');
+            function showMessage(message, success = false) {
+                errorMessage.classList.toggle('hidden', success);
+                successMessage.classList.toggle('hidden', !success);
+                (success ? successText : errorText).textContent = message || 'خطایی رخ داده است؛ دوباره تلاش کنید.';
+                (success ? successMessage : errorMessage).scrollIntoView({block: 'nearest'});
             }
-        });
+
+            function startResendTimer(seconds) {
+                window.clearInterval(timerId);
+                resendBtn.classList.remove('hidden');
+                resendBtn.disabled = true;
+                let remaining = Number(seconds || 60);
+                const render = () => {
+                    document.getElementById('resendTimer').textContent = remaining > 0 ? `(${remaining})` : '';
+                    resendBtn.disabled = remaining > 0;
+                    if (remaining <= 0) window.clearInterval(timerId);
+                    remaining -= 1;
+                };
+                render();
+                timerId = window.setInterval(render, 1000);
+            }
+
+            function setMode(nextMode) {
+                mode = nextMode;
+                otpSent = false;
+                window.clearInterval(timerId);
+                errorMessage.classList.add('hidden');
+                successMessage.classList.add('hidden');
+                document.getElementById('passwordFieldGroup').classList.toggle('hidden', mode === 'otp');
+                document.getElementById('forgotPasswordGroup').classList.toggle('hidden', mode === 'otp');
+                document.getElementById('otpFieldGroup').classList.add('hidden');
+                password.required = mode === 'password';
+                otpInput.required = false;
+                resendBtn.classList.add('hidden');
+                passwordBtn.setAttribute('aria-selected', String(mode === 'password'));
+                otpBtn.setAttribute('aria-selected', String(mode === 'otp'));
+                document.getElementById('identifierLabel').textContent = mode === 'otp' ? 'شماره موبایل' : 'نام کاربری، کد ملی یا شماره موبایل';
+                identifier.placeholder = mode === 'otp' ? 'مثلاً 09123456789' : 'نام کاربری، کد ملی یا شماره موبایل';
+                identifier.inputMode = mode === 'otp' ? 'tel' : 'text';
+                identifier.setAttribute('autocomplete', mode === 'otp' ? 'tel' : 'username');
+                btnLabel.textContent = mode === 'otp' ? 'ارسال کد یک‌بارمصرف' : 'ورود به سامانه';
+            }
+
+            async function postForm(url, payload) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        body: payload,
+                        headers: {'X-Requested-With': 'XMLHttpRequest'}
+                    });
+                    const data = await response.json();
+                    return {response, data};
+                } catch (_) {
+                    return {response: null, data: {success: false, message: 'ارتباط با سرور برقرار نشد؛ دوباره تلاش کنید.'}};
+                }
+            }
+
+            async function sendOtp() {
+                if (!identifier.reportValidity()) return;
+                const data = new FormData();
+                data.append('csrfmiddlewaretoken', form.elements.csrfmiddlewaretoken.value);
+                data.append('mobile', identifier.value);
+                setLoading(true);
+                const result = await postForm("{% url 'accounts:send_login_otp' %}", data);
+                setLoading(false);
+                if (!result.data.success || !result.data.code_sent) {
+                    showMessage(result.data.message);
+                    if (result.data.retry_after) startResendTimer(result.data.retry_after);
+                    return;
+                }
+                otpSent = true;
+                document.getElementById('otpFieldGroup').classList.remove('hidden');
+                otpInput.required = true;
+                identifier.readOnly = true;
+                btnLabel.textContent = 'تأیید و ورود';
+                showMessage(result.data.message, true);
+                startResendTimer(result.data.retry_after);
+                otpInput.focus();
+            }
+
+            passwordBtn.addEventListener('click', () => { identifier.readOnly = false; setMode('password'); });
+            otpBtn.addEventListener('click', () => { identifier.readOnly = false; setMode('otp'); });
+            resendBtn.addEventListener('click', sendOtp);
+            document.getElementById('togglePassword').addEventListener('click', (event) => {
+                const visible = password.type === 'text';
+                password.type = visible ? 'password' : 'text';
+                event.currentTarget.setAttribute('aria-pressed', String(!visible));
+                event.currentTarget.setAttribute('aria-label', visible ? 'نمایش رمز عبور' : 'پنهان کردن رمز عبور');
+                event.currentTarget.querySelector('i').className = `fas ${visible ? 'fa-eye' : 'fa-eye-slash'}`;
+            });
+
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                errorMessage.classList.add('hidden');
+                successMessage.classList.add('hidden');
+                if (!form.reportValidity()) return;
+                if (mode === 'otp' && !otpSent) return sendOtp();
+
+                setLoading(true);
+                const data = new FormData(form);
+                const url = mode === 'otp' ? "{% url 'accounts:verify_login_otp' %}" : form.action;
+                if (mode === 'otp') data.set('code', otpInput.value);
+                const result = await postForm(url, data);
+                setLoading(false);
+                if (result.data.success) {
+                    window.location.assign("{% url 'dashboard:dashboard' %}");
+                } else {
+                    showMessage(result.data.message || 'اطلاعات ورود صحیح نیست.');
+                }
+            });
+        })();
     </script>
 </body>
 </html>
