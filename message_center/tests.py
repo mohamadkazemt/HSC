@@ -1,3 +1,5 @@
+import hashlib
+import hmac
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
@@ -7,9 +9,10 @@ from django.utils import timezone
 
 from accounts.models import UserProfile
 from leave_reports.models import ShiftReport
-from message_center.models import ReminderLog
+from message_center.models import InboundMessage, ReminderLog, WebhookConfig, generate_webhook_secret
 from message_center.peyamhub_client import normalize_phone
 from message_center.services import collect_pending_reminders, send_pending_reminders
+from permissions.models import UserPermission
 
 
 def _make_leave(requester, replacement=None, status="pending_replacement"):
@@ -154,17 +157,13 @@ class LeaveRemindersPageTests(TestCase):
             for view in get_all_views_with_labels()
             if view.get("app_label") == "message_center"
         }
-        self.assertEqual(registered, {"send_leave_reminders"})
+        self.assertEqual(registered, {"send_leave_reminders", "message_webhook_settings"})
 
         # شبیه‌سازی کامل مسیر ادمین: اجازه با همان نامِ UI صادر می‌شود
-        from accounts.models import UserProfile as UP
-        from permissions.models import UserPermission as UP2
-
         user = User.objects.create_user("viaui", password="x")
-        UP.objects.create(user=user, personnel_code="P3")
-        granted_names = [n for n in registered]  # ادمین همین‌ها را می‌بیند و تیک می‌زند
-        for n in granted_names:
-            UP2.objects.create(user=user, view_name=n, can_view=True)
+        UserProfile.objects.create(user=user, personnel_code="P3")
+        for name in ("send_leave_reminders",):
+            UserPermission.objects.create(user=user, view_name=name, can_view=True)
         self.client.force_login(user)
         self.assertEqual(self.client.get(self.url).status_code, 200)
 
@@ -175,3 +174,114 @@ class LeaveRemindersPageTests(TestCase):
             response = self.client.post(self.url, {"role": "replacement"})
             self.assertEqual(response.status_code, 302)
             task_mock.delay.assert_called_once_with(role="replacement", actor_id=self.staff.pk)
+
+
+class InboundWebhookTests(TestCase):
+    def setUp(self):
+        self.url = reverse("message_center:webhook_inbound")
+        self.config = WebhookConfig.load()
+        self.secret = self.config.secret
+
+    def sign(self, body):
+        return hmac.new(self.secret.encode(), body, hashlib.sha256).hexdigest()
+
+    def _payload(self, text="سلام، درخواست تایید شد."):
+        import json
+
+        return json.dumps({
+            "event": "message",
+            "account": "کاراوران",
+            "phone": "+989982134558",
+            "message": {
+                "id": 1, "message_id": "mid-1", "chat_guid": "g0ABC",
+                "author_guid": "u0XYZ", "type": "Text",
+                "text": text, "received_at": "2026-08-24T10:00:00Z",
+            },
+        }, ensure_ascii=False).encode("utf-8")
+
+    def test_valid_signature_stores_message(self):
+        body = self._payload()
+        response = self.client.post(
+            self.url, data=body, content_type="application/json",
+            headers={"X-Rubika-Signature": self.sign(body)},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(InboundMessage.objects.count(), 1)
+        msg = InboundMessage.objects.get()
+        self.assertEqual(msg.account_phone, "+989982134558")
+        self.assertIn("تایید", msg.text)
+
+    def test_missing_or_bad_signature_rejected(self):
+        body = self._payload()
+        # بدون امضا
+        r1 = self.client.post(self.url, data=body, content_type="application/json")
+        self.assertEqual(r1.status_code, 403)
+        # امضای اشتباه
+        r2 = self.client.post(
+            self.url, data=body, content_type="application/json",
+            headers={"X-Rubika-Signature": "0" * 64},
+        )
+        self.assertEqual(r2.status_code, 403)
+        self.assertEqual(InboundMessage.objects.count(), 0)
+
+    def test_inactive_webhook_returns_503(self):
+        self.config.is_active = False
+        self.config.save(update_fields=("is_active",))
+        body = self._payload()
+        response = self.client.post(
+            self.url, data=body, content_type="application/json",
+            headers={"X-Rubika-Signature": self.sign(body)},
+        )
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(InboundMessage.objects.count(), 0)
+
+    def test_secret_rotation_invalidates_old_signatures(self):
+        body = self._payload()
+        old_sig = self.sign(body)
+        self.config.secret = generate_webhook_secret()
+        self.config.save(update_fields=("secret",))
+        response = self.client.post(
+            self.url, data=body, content_type="application/json",
+            headers={"X-Rubika-Signature": old_sig},
+        )
+        self.assertEqual(response.status_code, 403)
+
+
+class WebhookSettingsPageTests(TestCase):
+    def setUp(self):
+        self.url = reverse("message_center:webhook_settings")
+        self.staff = User.objects.create_superuser("rootw", password="x")
+
+    def test_superuser_sees_url_and_secret(self):
+        self.client.force_login(self.staff)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "/message-center/webhook/inbound/")
+        config = WebhookConfig.load()
+        self.assertContains(response, config.secret)
+
+    def test_regular_user_denied(self):
+        user = User.objects.create_user("plain2", password="x")
+        UserProfile.objects.create(user=user, personnel_code="W1")
+        self.client.force_login(user)
+        self.assertEqual(self.client.get(self.url).status_code, 403)
+
+    def test_registry_name_matches_gate(self):
+        from permissions.utils import get_all_views_with_labels
+
+        registered = {
+            v["name"] for v in get_all_views_with_labels()
+            if v.get("app_label") == "message_center"
+        }
+        self.assertIn("message_webhook_settings", registered)
+        user = User.objects.create_user("viaui2", password="x")
+        UserProfile.objects.create(user=user, personnel_code="W2")
+        UserPermission.objects.create(user=user, view_name="message_webhook_settings", can_view=True)
+        self.client.force_login(user)
+        self.assertEqual(self.client.get(self.url).status_code, 200)
+
+    def test_regenerate_rotates_secret(self):
+        self.client.force_login(self.staff)
+        old = WebhookConfig.load().secret
+        self.client.post(self.url, {"action": "regenerate_secret"})
+        self.assertNotEqual(WebhookConfig.load().secret, old)
