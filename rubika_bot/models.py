@@ -362,3 +362,34 @@ class ConnectionRequestState(models.Model):
         """دریافت یا ساخت state برای یک کاربر"""
         obj, created = cls.objects.get_or_create(rubika_user=rubika_user)
         return obj
+
+
+class GymReferralState(models.Model):
+    """Persistent conversation state for the gym referral flow."""
+
+    rubika_user = models.OneToOneField(
+        RubikaUser, on_delete=models.CASCADE, related_name="gym_referral_state"
+    )
+    step = models.CharField(max_length=50, default="idle")
+    data = models.JSONField(default=dict, blank=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [models.Index(fields=("rubika_user", "step"))]
+
+    def reset(self):
+        self.step = "idle"
+        self.data = {}
+        self.save(update_fields=("step", "data", "updated_at"))
+
+    def update_step(self, step, data_update=None):
+        self.step = step
+        if data_update:
+            self.data.update(data_update)
+        self.save(update_fields=("step", "data", "updated_at"))
+
+    @classmethod
+    def get_or_create_for_user(cls, rubika_user):
+        obj, _ = cls.objects.get_or_create(rubika_user=rubika_user)
+        return obj

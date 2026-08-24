@@ -404,9 +404,10 @@ class DriverLicenseModelTest(TestCase):
         
         self.assertTrue(license.is_complete())
         
-        # گواهینامه ناکامل (بدون تاریخ انقضا)
+        # is_complete must handle an incomplete in-memory form/model instance.
+        # expiry_date is NOT NULL in both the model and database schema, so
+        # persisting this deliberately invalid state is not a valid test.
         license.expiry_date = None
-        license.save()
         self.assertFalse(license.is_complete())
     
     def create_test_image(self):

@@ -1,9 +1,6 @@
 import os
 import sys
 
-# اجازه اجرای عملیات همگام جنگو در محیطی که حلقه asyncio فعال است (کلاینت RubPy)
-os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
-
 try:
     from celery import Celery
 except ImportError:
@@ -30,4 +27,4 @@ if Celery is not None:
     def debug_task(self):
         print(f'Request: {self.request!r}')
 else:
-    app = None 
+    app = None

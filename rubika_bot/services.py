@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import threading
+import uuid
 from concurrent.futures import Future
 from typing import Any, Awaitable, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
@@ -318,6 +319,7 @@ class RubikaBotEngine:
         mapping = {
             'start': self._send_welcome, 'help': self._send_help, 'connect': self._handle_connect_button,
             'account': self._send_account_status,
+            'disconnect': self._disconnect_user,
             'payslip': self._handle_payslip_request,
             'leave_request': self._start_leave_request,
             'voice_leave': self._start_voice_leave,
@@ -330,6 +332,9 @@ class RubikaBotEngine:
             'sms_connect': self._start_sms_connection,
             'cancel_sms_connect': self._cancel_sms_connection,
             'paste_connection_code': self._prompt_paste_connection_code,
+            'gym_referrals': self._start_gym_referral,
+            'gym_referral_cancel': self._cancel_gym_referral,
+            'gym_referral_back_beneficiaries': self._show_gym_beneficiaries,
             # Help sections
             'help_connect': lambda cid, u: self._show_help_section(cid, u, 'help_connect'),
             'help_leave': lambda cid, u: self._show_help_section(cid, u, 'help_leave'),
@@ -364,6 +369,22 @@ class RubikaBotEngine:
             # Check if it's a leave approval/rejection button (format: approve_leave_replacement_123 or reject_leave_manager_456)
             elif button_id.startswith('approve_leave_') or button_id.startswith('reject_leave_'):
                 await self._handle_leave_approval_action(chat_id, user, button_id)
+            elif button_id.startswith('gym_beneficiary_'):
+                await self._select_gym_beneficiary(chat_id, user, button_id)
+            elif button_id.startswith('gym_select_'):
+                await self._select_gym(chat_id, user, button_id)
+            elif button_id.startswith('gym_page_'):
+                try:
+                    page = int(button_id.rsplit('_', 1)[1])
+                except ValueError:
+                    page = 1
+                await self._show_gym_choices(chat_id, user, page)
+            elif button_id == 'gym_referral_confirm':
+                await self._confirm_gym_referral(chat_id, user)
+            elif button_id.startswith('gym_cancel_ask_'):
+                await self._ask_cancel_gym_referral(chat_id, user, button_id[len('gym_cancel_ask_'):])
+            elif button_id == 'gym_cancel_confirm':
+                await self._confirm_cancel_gym_referral(chat_id, user)
             else:
                 logger.debug("Unknown button id %s for chat %s", button_id, chat_id)
 
@@ -823,10 +844,18 @@ class RubikaBotEngine:
             await self._send_text_message(chat_id, message, buttons)
 
     async def _disconnect_user(self, chat_id: str, user: RubikaUser) -> None:
-        if user.user:
-            username = user.user.username
+        @sync_to_async(thread_sensitive=True)
+        def disconnect_link():
+            linked_user = user.user
+            if not linked_user:
+                return None
+            username = linked_user.username
             user.user = None
-            await sync_to_async(user.save, thread_sensitive=True)(update_fields=['user'])
+            user.save(update_fields=['user'])
+            return username
+
+        username = await disconnect_link()
+        if username:
             message = f'✅ حساب کاربری "{username}" با موفقیت قطع شد.\n\n💡 برای اتصال مجدد می‌توانید از دکمه‌های زیر استفاده کنید:'
         else:
             message = '⚠️ شما به هیچ حساب کاربری متصل نیستید.'
@@ -3724,7 +3753,319 @@ class RubikaBotEngine:
         else:
             await self._send_text_message(chat_id, f'❌ {message}')
 
+    # ============= Gym referral handlers =============
 
+    async def _start_gym_referral(self, chat_id: str, user: RubikaUser) -> None:
+        if not user.user_id:
+            await self._send_text_message(
+                chat_id,
+                '⚠️ برای استفاده از معرفی‌نامه باشگاه ابتدا حساب روبیکای خود را متصل کنید.',
+                self._build_command_keyboard(connected=False),
+            )
+            return
+
+        @sync_to_async(thread_sensitive=True)
+        def initialize_state():
+            from .models import GymReferralState
+            state = GymReferralState.get_or_create_for_user(user)
+            state.reset()
+            state.update_step('select_beneficiary', {'operation_id': uuid.uuid4().hex})
+
+        await initialize_state()
+        await self._show_gym_beneficiaries(chat_id, user)
+
+    async def _show_gym_beneficiaries(self, chat_id: str, user: RubikaUser) -> None:
+        if not user.user_id:
+            await self._start_gym_referral(chat_id, user)
+            return
+        from gym_referrals.rubika import RubikaReferralAdapter
+        try:
+            beneficiaries = await RubikaReferralAdapter.beneficiaries(user)
+        except Exception:
+            logger.exception('Unable to load gym referral beneficiaries for chat %s', chat_id)
+            await self._send_text_message(chat_id, '❌ اطلاعات پرسنلی شما قابل دریافت نیست.', self._build_command_keyboard(True))
+            return
+
+        @sync_to_async(thread_sensitive=True)
+        def set_step():
+            from .models import GymReferralState
+            state = GymReferralState.get_or_create_for_user(user)
+            expired = state.updated_at < timezone.now() - timezone.timedelta(minutes=30)
+            if state.step == 'idle' or expired:
+                state.data = {'operation_id': uuid.uuid4().hex}
+            state.update_step('select_beneficiary')
+
+        await set_step()
+        rows = []
+        for item in beneficiaries:
+            label = '👤 خودم' if item['type'] == 'EMPLOYEE' else f"👤 {item['relation']} - {item['name']}"
+            rows.append(KeypadRow(buttons=[self._button(
+                f"gym_beneficiary_{item['type']}_{item['id']}", label
+            )]))
+        rows.append(KeypadRow(buttons=[self._button('gym_referral_cancel', '❌ انصراف')]))
+        await self._send_text_message(chat_id, 'فرد مورد نظر برای معرفی به باشگاه را انتخاب کنید:', Keypad(rows=rows))
+
+    async def _select_gym_beneficiary(self, chat_id: str, user: RubikaUser, button_id: str) -> None:
+        from gym_referrals.rubika import RubikaReferralAdapter
+        try:
+            payload = button_id[len('gym_beneficiary_'):]
+            beneficiary_type, beneficiary_id = payload.rsplit('_', 1)
+            beneficiary_id = int(beneficiary_id)
+        except (ValueError, TypeError):
+            await self._gym_referral_error(chat_id, 'INVALID_INPUT')
+            return
+
+        @sync_to_async(thread_sensitive=True)
+        def valid_state():
+            from .models import GymReferralState
+            state = GymReferralState.objects.filter(
+                rubika_user=user, step='select_beneficiary',
+                updated_at__gte=timezone.now() - timezone.timedelta(minutes=30),
+            ).first()
+            return bool(state)
+
+        if not await valid_state():
+            await self._gym_referral_error(chat_id, 'INVALID_STATE')
+            return
+        try:
+            beneficiaries = await RubikaReferralAdapter.beneficiaries(user)
+            selected = next(item for item in beneficiaries if item['type'] == beneficiary_type and item['id'] == beneficiary_id)
+            active = await RubikaReferralAdapter.active(user, beneficiary_type, beneficiary_id)
+        except (PermissionError, StopIteration):
+            await self._gym_referral_error(chat_id, 'UNAUTHORIZED_BENEFICIARY')
+            return
+        except Exception:
+            logger.exception('Beneficiary selection failed for chat %s', chat_id)
+            await self._gym_referral_error(chat_id, 'BENEFICIARY_NOT_ELIGIBLE')
+            return
+
+        if active:
+            @sync_to_async(thread_sensitive=True)
+            def save_active_state():
+                from .models import GymReferralState
+                state = GymReferralState.objects.get(rubika_user=user)
+                state.update_step('active_referral', {'referral_number': active.referral_number})
+            await save_active_state()
+            await self._send_text_message(chat_id, self._format_active_referral(active), Keypad(rows=[
+                KeypadRow(buttons=[self._button(f'gym_cancel_ask_{active.referral_number}', 'لغو معرفی‌نامه')]),
+                KeypadRow(buttons=[self._button('gym_referrals', '🔙 انتخاب فرد دیگر')]),
+                KeypadRow(buttons=[self._button('start', '🏠 منوی اصلی')]),
+            ]))
+            return
+
+        @sync_to_async(thread_sensitive=True)
+        def save_beneficiary():
+            from .models import GymReferralState
+            state = GymReferralState.objects.get(rubika_user=user)
+            state.update_step('select_gym', {
+                'beneficiary_type': beneficiary_type, 'beneficiary_id': beneficiary_id,
+                'beneficiary_name': selected['name'],
+            })
+        await save_beneficiary()
+        await self._show_gym_choices(chat_id, user, 1)
+
+    async def _show_gym_choices(self, chat_id: str, user: RubikaUser, page: int = 1) -> None:
+        from gym_referrals.rubika import RubikaReferralAdapter
+        @sync_to_async(thread_sensitive=True)
+        def valid_state():
+            from .models import GymReferralState
+            return GymReferralState.objects.filter(
+                rubika_user=user, step='select_gym',
+                updated_at__gte=timezone.now() - timezone.timedelta(minutes=30),
+            ).exists()
+        if not await valid_state():
+            await self._gym_referral_error(chat_id, 'INVALID_STATE')
+            return
+        gyms = await RubikaReferralAdapter.gyms()
+        page_size = 6
+        total_pages = max(1, (len(gyms) + page_size - 1) // page_size)
+        page = max(1, min(page, total_pages))
+        visible = gyms[(page - 1) * page_size:page * page_size]
+        if not visible:
+            await self._send_text_message(chat_id, 'در حال حاضر باشگاه دارای قرارداد معتبر وجود ندارد.', Keypad(rows=[
+                KeypadRow(buttons=[self._button('gym_referral_back_beneficiaries', '🔙 بازگشت')]),
+            ]))
+            return
+        rows = [KeypadRow(buttons=[self._button(f"gym_select_{gym['id']}", f"🏋️ {gym['name']}")]) for gym in visible]
+        navigation = []
+        if page > 1:
+            navigation.append(self._button(f'gym_page_{page - 1}', 'قبلی'))
+        if page < total_pages:
+            navigation.append(self._button(f'gym_page_{page + 1}', 'بعدی'))
+        if navigation:
+            rows.append(KeypadRow(buttons=navigation))
+        rows.extend([
+            KeypadRow(buttons=[self._button('gym_referral_back_beneficiaries', '🔙 بازگشت')]),
+            KeypadRow(buttons=[self._button('gym_referral_cancel', '❌ انصراف')]),
+        ])
+        await self._send_text_message(chat_id, 'باشگاه مورد نظر را انتخاب کنید:', Keypad(rows=rows))
+
+    async def _select_gym(self, chat_id: str, user: RubikaUser, button_id: str) -> None:
+        from gym_referrals.rubika import RubikaReferralAdapter
+        try:
+            gym_id = int(button_id[len('gym_select_'):])
+        except ValueError:
+            await self._gym_referral_error(chat_id, 'INVALID_INPUT')
+            return
+
+        @sync_to_async(thread_sensitive=True)
+        def load_state():
+            from .models import GymReferralState
+            return GymReferralState.objects.filter(
+                rubika_user=user, step='select_gym',
+                updated_at__gte=timezone.now() - timezone.timedelta(minutes=30),
+            ).first()
+        state = await load_state()
+        if not state:
+            await self._gym_referral_error(chat_id, 'INVALID_STATE')
+            return
+        gym = await RubikaReferralAdapter.gym(gym_id)
+        if not gym:
+            await self._gym_referral_error(chat_id, 'GYM_NOT_ACTIVE')
+            return
+        @sync_to_async(thread_sensitive=True)
+        def save_gym():
+            from .models import GymReferralState
+            current = GymReferralState.objects.get(rubika_user=user)
+            current.update_step('confirm', {'gym_id': gym.pk, 'gym_name': gym.name})
+            return current.data
+        data = await save_gym()
+        message = f"لطفاً اطلاعات را بررسی کنید:\n\n👤 فرد:\n{data['beneficiary_name']}\n\n🏋️ باشگاه:\n{gym.name}\n\nآیا معرفی‌نامه صادر شود؟"
+        await self._send_text_message(chat_id, message, Keypad(rows=[
+            KeypadRow(buttons=[self._button('gym_referral_confirm', '✅ تأیید'), self._button('gym_referral_cancel', '❌ انصراف')]),
+            KeypadRow(buttons=[self._button('gym_referral_back_beneficiaries', '🔙 بازگشت')]),
+        ]))
+
+    async def _confirm_gym_referral(self, chat_id: str, user: RubikaUser) -> None:
+        from gym_referrals.rubika import RubikaReferralAdapter
+        from gym_referrals.services import ReferralError
+
+        @sync_to_async(thread_sensitive=True)
+        def load_confirmation():
+            from .models import GymReferralState
+            state = GymReferralState.objects.filter(
+                rubika_user=user, step='confirm',
+                updated_at__gte=timezone.now() - timezone.timedelta(minutes=30),
+            ).first()
+            return dict(state.data) if state else None
+        data = await load_confirmation()
+        if not data:
+            await self._gym_referral_error(chat_id, 'INVALID_STATE')
+            return
+        try:
+            referral, _ = await RubikaReferralAdapter.create(
+                user, data['beneficiary_type'], data['beneficiary_id'], data['gym_id'],
+                f"rubika-gym:{user.chat_id}:{data['operation_id']}",
+            )
+        except ReferralError as exc:
+            await self._gym_referral_error(chat_id, exc.code, exc.existing_referral)
+            return
+        except (KeyError, PermissionError):
+            await self._gym_referral_error(chat_id, 'UNAUTHORIZED_BENEFICIARY')
+            return
+        except Exception:
+            logger.exception('Gym referral creation failed for chat %s', chat_id)
+            await self._gym_referral_error(chat_id, 'UNKNOWN_ERROR')
+            return
+
+        @sync_to_async(thread_sensitive=True)
+        def reset_state():
+            from .models import GymReferralState
+            GymReferralState.objects.get(rubika_user=user).reset()
+        await reset_state()
+        base_url = getattr(settings, 'PUBLIC_BASE_URL', 'https://miepcoj.ir').rstrip('/')
+        from gym_referrals.presentation import format_jalali
+        verify_url = f"{base_url}/gym-referrals/api/referrals/verify/{referral.public_token}/"
+        message = (
+            f"✅ معرفی‌نامه با موفقیت صادر شد.\n\n👤 فرد:\n{referral.beneficiary_full_name_snapshot}"
+            f"\n\n🏋️ باشگاه:\n{referral.gym.name}\n\n🔢 شماره معرفی:\n{referral.referral_number}"
+            f"\n\n📅 تاریخ صدور: {format_jalali(referral.issue_date)}\n📅 اعتبار تا: {format_jalali(referral.valid_until)}"
+            f"\n\n🔗 استعلام امن:\n{verify_url}"
+        )
+        await self._send_text_message(chat_id, message, self._build_command_keyboard(True))
+
+    async def _cancel_gym_referral(self, chat_id: str, user: RubikaUser) -> None:
+        @sync_to_async(thread_sensitive=True)
+        def reset_state():
+            from .models import GymReferralState
+            state = GymReferralState.objects.filter(rubika_user=user).first()
+            if state:
+                state.reset()
+        await reset_state()
+        await self._send_text_message(chat_id, 'فرآیند معرفی به باشگاه لغو شد.', self._build_command_keyboard(bool(user.user_id)))
+
+    async def _ask_cancel_gym_referral(self, chat_id: str, user: RubikaUser, referral_number: str) -> None:
+        @sync_to_async(thread_sensitive=True)
+        def validate_and_store():
+            from .models import GymReferralState
+            from gym_referrals.models import Referral
+            referral = Referral.objects.filter(referral_number=referral_number, employee=user.user, status=Referral.Status.ACTIVE).first()
+            if not referral:
+                return False
+            state = GymReferralState.get_or_create_for_user(user)
+            state.update_step('cancel_confirm', {'referral_number': referral.referral_number})
+            return True
+        if not user.user_id or not await validate_and_store():
+            await self._gym_referral_error(chat_id, 'UNAUTHORIZED_BENEFICIARY')
+            return
+        await self._send_text_message(chat_id, 'آیا از لغو این معرفی‌نامه مطمئن هستید؟', Keypad(rows=[
+            KeypadRow(buttons=[self._button('gym_cancel_confirm', '✅ بله، لغو شود'), self._button('gym_referral_cancel', '❌ خیر')]),
+        ]))
+
+    async def _confirm_cancel_gym_referral(self, chat_id: str, user: RubikaUser) -> None:
+        from gym_referrals.rubika import RubikaReferralAdapter
+        from gym_referrals.services import ReferralError
+        @sync_to_async(thread_sensitive=True)
+        def load_number():
+            from .models import GymReferralState
+            state = GymReferralState.objects.filter(rubika_user=user, step='cancel_confirm').first()
+            return state.data.get('referral_number') if state else None
+        number = await load_number()
+        if not number:
+            await self._gym_referral_error(chat_id, 'INVALID_STATE')
+            return
+        try:
+            await RubikaReferralAdapter.cancel(user, number)
+        except PermissionError:
+            await self._gym_referral_error(chat_id, 'UNAUTHORIZED_BENEFICIARY')
+            return
+        except ReferralError as exc:
+            await self._gym_referral_error(chat_id, exc.code)
+            return
+        await self._cancel_gym_referral(chat_id, user)
+        await self._send_text_message(chat_id, '✅ معرفی‌نامه با موفقیت لغو شد.', self._build_command_keyboard(True))
+
+    async def _gym_referral_error(self, chat_id: str, code: str, existing=None) -> None:
+        messages = {
+            'ACTIVE_REFERRAL_ALREADY_EXISTS': 'این فرد در حال حاضر معرفی‌نامه فعال دارد و تا پایان یا لغو آن امکان دریافت معرفی‌نامه جدید وجود ندارد.',
+            'BENEFICIARY_NOT_ELIGIBLE': 'این فرد در حال حاضر شرایط دریافت معرفی‌نامه را ندارد.',
+            'UNAUTHORIZED_BENEFICIARY': 'دسترسی به فرد انتخاب‌شده مجاز نیست.',
+            'FORBIDDEN': 'دسترسی به فرد انتخاب‌شده مجاز نیست.',
+            'GYM_NOT_ACTIVE': 'باشگاه انتخاب‌شده فعال نیست.',
+            'GYM_CONTRACT_EXPIRED': 'قرارداد باشگاه انتخاب‌شده معتبر نیست.',
+            'REFERRAL_EXPIRED': 'اعتبار معرفی‌نامه پایان یافته است.',
+            'REFERRAL_CANCELLED': 'معرفی‌نامه لغو شده است.',
+            'REFERRAL_ALREADY_USED': 'معرفی‌نامه قبلاً استفاده شده است.',
+            'INVALID_STATE': 'این عملیات منقضی یا قبلاً پردازش شده است. لطفاً دوباره از منوی معرفی به باشگاه شروع کنید.',
+            'INVALID_INPUT': 'اطلاعات ارسالی معتبر نیست.',
+            'UNKNOWN_ERROR': 'صدور معرفی‌نامه انجام نشد. لطفاً دوباره تلاش کنید.',
+        }
+        message = f"❌ {messages.get(code, 'انجام عملیات ممکن نیست.')}"
+        if existing:
+            message += f"\n\n🏋️ باشگاه: {existing.gym.name}\n🔢 شماره معرفی: {existing.referral_number}\n📅 اعتبار تا: {existing.valid_until}"
+        await self._send_text_message(chat_id, message, Keypad(rows=[
+            KeypadRow(buttons=[self._button('gym_referrals', '🔄 شروع مجدد'), self._button('start', '🏠 منوی اصلی')]),
+        ]))
+
+    @staticmethod
+    def _format_active_referral(referral) -> str:
+        from gym_referrals.presentation import format_jalali
+        source = '\nنوع معرفی‌نامه: معرفی‌نامه فیزیکی قبلی' if referral.source == 'PHYSICAL_LEGACY' else ''
+        return (
+            f"✅ این فرد در حال حاضر معرفی‌نامه فعال دارد.\n\n👤 فرد:\n{referral.beneficiary_full_name_snapshot}"
+            f"\n\n🏋️ باشگاه:\n{referral.gym.name}\n\n🔢 شماره معرفی:\n{referral.referral_number}"
+            f"\n\n📅 اعتبار تا: {format_jalali(referral.valid_until)}{source}"
+        )
 
     # --- Synchronous helper methods ---
     def _build_command_keyboard(self, connected: bool) -> Keypad:
@@ -3736,15 +4077,19 @@ class RubikaBotEngine:
             second_row = [('payslip', '💰 فیش حقوقی'), ('leave_request', '🏖️ درخواست مرخصی')]
             third_row = [('voice_leave', '🎙️ مرخصی صوتی'), ('leave_inbox', '📋 کارتابل مرخصی')]
             fourth_row = [('my_leaves', '📊 وضعیت درخواست‌ها'), ('help', '❓ راهنما')]
+            fifth_row = [('gym_referrals', '🏋️ معرفی به باشگاه')]
         else:
             # کیبورد برای کاربران غیر متصل
             second_row = [('connect', '🔗 اتصال با کد'), ('sms_connect', '📱 اتصال با پیامک')]
             third_row = [('help', '❓ راهنما')]
             fourth_row = []
+            fifth_row = []
         
         rows = [first_row, second_row, third_row]
         if fourth_row:
             rows.append(fourth_row)
+        if fifth_row:
+            rows.append(fifth_row)
         keypad_rows = [KeypadRow(buttons=[self._button(button_id, label) for button_id, label in row]) for row in rows]
         return Keypad(rows=keypad_rows)
 

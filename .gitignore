@@ -39,6 +39,7 @@ collectstatic/
 .env.local
 .env.*.local
 .venv
+.venv-*/
 env/
 venv/
 ENV/
@@ -193,6 +194,10 @@ local_config.py
 *.sqlite
 *.sqlite3
 *.db
+*.dump
+
+# Local release rehearsal artifacts
+.release_postgres_*/
 
 # Temporary files
 tmp/

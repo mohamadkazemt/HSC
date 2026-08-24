@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import RubikaUser, RubikaBotSettings, RubikaConnectionCode, WebhookLog, LeaveRequestState
+from .models import GymReferralState, RubikaUser, RubikaBotSettings, RubikaConnectionCode, WebhookLog, LeaveRequestState
 
 
 @admin.register(RubikaUser)
@@ -43,4 +43,14 @@ class LeaveRequestStateAdmin(admin.ModelAdmin):
     
     def has_add_permission(self, request):
         # Prevent manual addition - states are created automatically
+        return False
+
+
+@admin.register(GymReferralState)
+class GymReferralStateAdmin(admin.ModelAdmin):
+    list_display = ("rubika_user", "step", "started_at", "updated_at")
+    list_filter = ("step",)
+    readonly_fields = ("started_at", "updated_at")
+
+    def has_add_permission(self, request):
         return False

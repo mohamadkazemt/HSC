@@ -188,10 +188,10 @@
         {% endif %}
 
         <!-- HR / Admin Unit (واحد اداری) -->
-        {% if not request.user.contractor_profile and not request.user.employee_profile %}
+        {% if not request.user.contractor_profile %}
         <li>
-          <div x-data="{ openHR: false }" class="space-y-1">
-            <button @click="openHR = !openHR" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-semibold text-gray-700 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700">
+          <div x-data="{ openHR: {% if request.path|slice:':15' == '/gym-referrals/' %}true{% else %}false{% endif %} }" class="space-y-1">
+            <button @click="openHR = !openHR" :aria-expanded="openHR" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-semibold {% if request.path|slice:':15' == '/gym-referrals/' %}bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300{% else %}text-gray-700 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700{% endif %}">
               <span class="flex items-center gap-x-3">
                 <!-- Users/Admin icon -->
                 <svg class="h-6 w-6 shrink-0 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -293,6 +293,27 @@
                       </a>
                     </li>
                     {% endif %}
+                  </ul>
+                </div>
+              </li>
+              {% endif %}
+              {% if active_modules.gym_referrals %}
+              <li>
+                <div x-data="{ openGym: {% if request.resolver_match.namespace == 'gym_referrals' %}true{% else %}false{% endif %} }" class="space-y-1">
+                  <button @click="openGym = !openGym" class="flex w-full items-center justify-between rounded-md p-2 text-sm {% if request.resolver_match.namespace == 'gym_referrals' %}bg-indigo-50 font-semibold text-indigo-700{% else %}font-semibold text-gray-700{% endif %} hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700">
+                    <span class="flex items-center gap-2"><i class="fas fa-dumbbell text-indigo-600"></i><span>امور باشگاه‌ها</span></span><i class="fas fa-chevron-down text-xs" :class="openGym ? 'rotate-180' : ''"></i>
+                  </button>
+                  <ul x-show="openGym" x-collapse class="space-y-1 pr-5">
+                    {% if request.user.is_superuser or request.user|check_permission:'gym_referral_create' %}<li><a href="{% url 'gym_referrals:create' %}" class="block rounded-md p-2 text-sm">معرفی‌نامه جدید</a></li>{% endif %}
+                    {% if request.user.is_superuser or request.user|check_permission:'gym_referral_history' %}<li><a href="{% url 'gym_referrals:history' %}" class="block rounded-md p-2 text-sm">معرفی‌نامه‌های من</a></li>{% endif %}
+                    {% if perms.gym_referrals.view_referral or request.user|check_permission:'gym_referral_management' %}<li><a href="{% url 'gym_referrals:referral_admin_list' %}" class="block rounded-md p-2 text-sm">همه معرفی‌نامه‌ها</a></li>{% endif %}
+                    {% if perms.gym_referrals.view_gym or request.user|check_permission:'gym_manage' %}<li><a href="{% url 'gym_referrals:gym_list' %}" class="block rounded-md p-2 text-sm">مدیریت باشگاه‌ها</a></li>{% endif %}
+                    {% if perms.gym_referrals.view_gymcontract or request.user|check_permission:'gym_contract_manage' %}<li><a href="{% url 'gym_referrals:contract_list' %}" class="block rounded-md p-2 text-sm">قراردادهای باشگاه‌ها</a></li>{% endif %}
+                    {% if perms.gym_referrals.view_gymoperator or request.user|check_permission:'gym_operator_manage' %}<li><a href="{% url 'gym_referrals:operator_list' %}" class="block rounded-md p-2 text-sm">اپراتورهای باشگاه</a></li>{% endif %}
+                    {% if perms.gym_referrals.view_referralusage or request.user|check_permission:'gym_referral_usage' %}<li><a href="{% url 'gym_referrals:usage_list' %}" class="block rounded-md p-2 text-sm">مراجعات ثبت‌شده</a></li>{% endif %}
+                    {% if perms.gym_referrals.view_referral or request.user|check_permission:'gym_referral_management' %}<li><a href="{% url 'gym_referrals:legacy_list' %}" class="block rounded-md p-2 text-sm">سوابق فیزیکی قدیمی</a></li>{% endif %}
+                    {% if perms.gym_referrals.view_gyminvoice or request.user|check_permission:'gym_invoice_view' %}<li><a href="{% url 'gym_referrals:invoice_list' %}" class="block rounded-md p-2 text-sm">صورتحساب باشگاه‌ها</a></li>{% endif %}
+                    {% if perms.gym_referrals.view_referral or request.user|check_permission:'gym_referral_management' %}<li><a href="{% url 'gym_referrals:reports' %}" class="block rounded-md p-2 text-sm">گزارش امور باشگاه‌ها</a></li>{% endif %}
                   </ul>
                 </div>
               </li>

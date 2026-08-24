@@ -75,6 +75,67 @@ html { scrollbar-gutter: stable; }
 input[type="text"], input[type="email"], input[type="password"], select, textarea { border-radius: .5rem; border: 1px solid #e5e7eb; padding: .55rem .75rem; }
 input:focus, select:focus, textarea:focus { border-color: var(--brand-500); box-shadow: 0 0 0 3px rgba(99,102,241,.25); outline: none; }
 
+/* Native select popups use OS surfaces on Windows and do not reliably inherit
+   Tailwind's dark background. Keep option foreground/background paired. */
+.gym-native-select {
+  color: #111827;
+  background-color: #fff;
+  direction: rtl;
+  text-align: right;
+  color-scheme: light;
+}
+.gym-native-select option,
+.gym-native-select optgroup {
+  color: #111827;
+  background-color: #fff;
+  opacity: 1;
+}
+.dark .gym-native-select {
+  color: #f9fafb;
+  background-color: #374151;
+  color-scheme: light;
+}
+.dark .gym-native-select option,
+.dark .gym-native-select optgroup {
+  /* Windows native dropdown surfaces can ignore option background-color.
+     A dark foreground remains readable whether the OS honors white or uses
+     its own light menu surface. */
+  color: #111827;
+  background-color: #fff;
+}
+
+/* DOM-based dropdown for Gym Referral selects. This avoids the inconsistent
+   Windows native popup while preserving the original select for form submit. */
+.gym-choices { width: 100%; margin: 0; direction: rtl; color: #111827; }
+.gym-choices .choices__inner {
+  min-height: 42px; padding: .2rem .45rem; border: 1px solid #d1d5db;
+  border-radius: .5rem; background: #fff; color: #111827;
+}
+.gym-choices .choices__list--single { padding: .35rem .25rem .35rem 1.25rem; }
+.gym-choices .choices__list--dropdown,
+.gym-choices .choices__list[aria-expanded] {
+  z-index: 60; border-color: #d1d5db; background: #fff; color: #111827;
+  box-shadow: 0 12px 28px rgba(15,23,42,.18);
+}
+.gym-choices .choices__list--dropdown .choices__item,
+.gym-choices .choices__list[aria-expanded] .choices__item {
+  color: #111827; background: #fff; text-align: right; opacity: 1;
+}
+.gym-choices .choices__list--dropdown .choices__item--selectable.is-highlighted,
+.gym-choices .choices__list[aria-expanded] .choices__item--selectable.is-highlighted {
+  color: #312e81; background: #eef2ff;
+}
+.gym-choices.is-focused .choices__inner,
+.gym-choices.is-open .choices__inner { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.25); }
+.dark .gym-choices .choices__inner { border-color: #4b5563; background: #374151; color: #f9fafb; }
+.dark .gym-choices .choices__list--single .choices__item { color: #f9fafb; }
+.dark .gym-choices .choices__list--dropdown,
+.dark .gym-choices .choices__list[aria-expanded] { border-color: #4b5563; background: #1f2937; color: #f9fafb; }
+.dark .gym-choices .choices__list--dropdown .choices__item,
+.dark .gym-choices .choices__list[aria-expanded] .choices__item { color: #f9fafb; background: #1f2937; }
+.dark .gym-choices .choices__list--dropdown .choices__item--selectable.is-highlighted,
+.dark .gym-choices .choices__list[aria-expanded] .choices__item--selectable.is-highlighted { color: #fff; background: #4338ca; }
+
 /* Respect RTL where appropriate */
 html[dir="rtl"] .border-l { border-left-width: 1px; }
 html[dir="rtl"] .border-r { border-right-width: 1px; }

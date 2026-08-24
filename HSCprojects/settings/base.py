@@ -15,6 +15,11 @@ from pathlib import Path
 from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime
 
+# Interpreter/framework compatibility shims (no-op where not applicable).
+from core.compat import apply_django_context_copy_fix
+
+apply_django_context_copy_fix()
+
 # Load environment variables from .env file using python-decouple
 try:
     from decouple import config
@@ -104,6 +109,7 @@ INSTALLED_APPS = [
     'hse_docs.apps.HseDocsConfig',
     'corrective_actions.apps.CorrectiveActionsConfig',
     'mining_operations.apps.MiningOperationsConfig',
+    'gym_referrals.apps.GymReferralsConfig',
 ]
 
 MIDDLEWARE = [
@@ -245,6 +251,7 @@ CSRF_TRUSTED_ORIGINS = [
     'https://www.miepcoj.ir',
     'https://mtorkzadeh.ir',
     'https://www.mtorkzadeh.ir',
+    'https://t.miepcoj.ir',
 ]
 
 CORS_ALLOW_METHODS = [

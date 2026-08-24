@@ -26,6 +26,7 @@ MODULES = {
     "hse_docs": ("مستندات HSE", ("/hse-docs/",)),
     "corrective_actions": ("اقدامات اصلاحی", ("/corrective-actions/",)),
     "mining_operations": ("عملیات معدن", ("/mining-operations/",)),
+    "gym_referrals": ("معرفی‌نامه باشگاه", ("/gym-referrals/",)),
 }
 
 

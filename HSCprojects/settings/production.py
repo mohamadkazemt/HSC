@@ -45,6 +45,9 @@ STATICFILES_DIRS = []  # در تولید، این باید خالی باشد.
 
 # تنظیمات امنیتی HTTPS
 SECURE_SSL_REDIRECT = True
+# Nginx is the only documented application ingress and explicitly overwrites
+# this header with its own request scheme before proxying to Gunicorn.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_BROWSER_XSS_FILTER = True

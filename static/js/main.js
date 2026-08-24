@@ -39,3 +39,21 @@
     };
   };
 })();
+
+// Replace only Gym Referral native selects with the project's existing
+// Choices component. Native option popups are not consistently themeable on Windows.
+document.addEventListener('DOMContentLoaded', function () {
+  if (typeof window.Choices !== 'function') return;
+  document.querySelectorAll('select.gym-native-select').forEach(function (element) {
+    if (element._gymChoices) return;
+    element._gymChoices = new window.Choices(element, {
+      allowHTML: false,
+      shouldSort: false,
+      searchEnabled: false,
+      placeholder: true,
+      itemSelectText: '',
+      noChoicesText: 'گزینه‌ای وجود ندارد',
+      classNames: { containerOuter: ['choices', 'gym-choices'] }
+    });
+  });
+});

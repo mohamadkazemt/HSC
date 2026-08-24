@@ -2,8 +2,8 @@
 
 ## Requirements
 
-- Ubuntu 24.04+ (tested on 26.04)
-- Python 3.14
+- Ubuntu 24.04+
+- Python 3.12
 - PostgreSQL 16
 - Redis 7
 - Nginx + Certbot
@@ -109,57 +109,12 @@ DJANGO_SETTINGS_MODULE=HSCprojects.settings.production venv/bin/python manage.py
 '
 ```
 
-## 6. Python 3.14 Patches
+## 6. Supported Python Runtime
 
-**These are automatically applied by `hsc-deploy.sh` on every deploy.** But for initial setup, run:
-
-```bash
-sudo -u hsc_admin /var/www/HSC/venv/bin/python - <<'EOF'
-import pathlib, textwrap
-VENV = pathlib.Path("/var/www/HSC/venv")
-SITE = next(p for p in VENV.glob("lib/python3.*/site-packages") if p.is_dir())
-
-# Django 4.2 BaseContext.__copy__ (copy(super()) fails in Python 3.14)
-f = SITE / "django" / "template" / "context.py"
-s = f.read_text()
-if "self.__class__.__new__(self.__class__)" not in s:
-    s = s.replace(
-        "duplicate = copy(super())",
-        "duplicate = self.__class__.__new__(self.__class__)\n"
-        "        duplicate.__dict__.update(self.__dict__)"
-    )
-    f.write_text(s)
-    print("Patched Django context.py")
-
-# aiohttp TimerContext (current_task() returns None in threads)
-f = SITE / "aiohttp" / "helpers.py"
-s = f.read_text()
-if "return TimerNoop()" not in s:
-    s = s.replace(
-        'raise RuntimeError("Timer context is used outside of a task")',
-        "return TimerNoop()"
-    )
-    f.write_text(s)
-    print("Patched aiohttp helpers.py")
-
-# asyncio.timeouts Timeout (current_task() returns None in threads)
-f = pathlib.Path("/usr/lib/python3.14/asyncio/timeouts.py")
-s = f.read_text()
-if "Timeout should be used inside a task" in s:
-    s = s.replace(
-        'raise RuntimeError("Timeout should be used inside a task")',
-        "self._state = _State.ENTERED\n"
-        "            self._task = None\n"
-        "            self._timeout_handler = None\n"
-        "            return self"
-    )
-    s = s.replace("if self._task.uncancel()", "if self._task is not None and self._task.uncancel()")
-    f.write_text(s)
-    print("Patched asyncio timeouts.py")
-
-print("Done")
-EOF
-```
+Use Python 3.12 for this release candidate. Do not patch Django packages or the
+Python standard library in-place during deployment. Recreate the virtual
+environment from `requirements.txt` and fail deployment if dependency
+installation or `manage.py check` fails.
 
 ## 7. Systemd Services
 
@@ -210,7 +165,8 @@ UNIT
 
 ### Celery Worker
 
-**Must use `--pool=solo`** (not `prefork`). Python 3.14's asyncio task registry breaks after `os.fork()`.
+Use `--pool=solo` for the current Rubika worker until its async/thread behavior
+has been validated with prefork on the supported Python 3.12 runtime.
 
 ```bash
 sudo tee /etc/systemd/system/celery-worker.service <<'UNIT'
@@ -462,9 +418,6 @@ fi
 DJANGO_SETTINGS_MODULE=HSCprojects.settings.production "${VENV}/bin/python" manage.py migrate --no-input 2>&1
 DJANGO_SETTINGS_MODULE=HSCprojects.settings.production "${VENV}/bin/python" manage.py collectstatic --noinput 2>&1
 
-# Python 3.14 patches (idempotent, see section 6)
-# ... (patch commands - see full deploy script in this repo)
-
 chmod 755 "${PROJECT_DIR}"
 sudo systemctl reload gunicorn
 sudo systemctl restart celery-worker
@@ -522,10 +475,7 @@ sudo /usr/local/bin/hsc-deploy.sh
 
 | Decision | Why |
 |---|---|
-| Celery `--pool=solo` | Python 3.14 asyncio task registry is broken after `os.fork()`. Solo pool avoids fork entirely. |
+| Celery `--pool=solo` | Current conservative Rubika worker configuration; validate prefork separately before changing it. |
 | `rubpy.sync` unwrap in services.py | rubpy.sync wraps BotClient methods with sync wrappers that capture the event loop at import time. Our async helpers run on a dedicated loop thread, so the captured loop is wrong. We restore original async methods. |
-| Django context.py patch | Django 4.2's `BaseContext.__copy__` uses `copy(super())` which fails in Python 3.14. |
-| aiohttp TimerContext patch | `asyncio.current_task()` returns `None` for tasks running on event loops in non-main threads in Python 3.14. Patched to return `TimerNoop()` instead of crashing. |
-| asyncio.timeout patch | Same root cause as aiohttp. Patched `Timeout.__aenter__` to be a no-op when no task is found. |
 | Requirements hash caching | `pip install` is slow on the small server. Hash stored at `/home/hsc_admin/.hsc_req_hash` (outside git) to skip when unchanged. |
 | CDN → local vendor | 21 JS/CSS libraries downloaded to `static/vendor/` to avoid external dependencies. |
