@@ -1522,6 +1522,8 @@ def api_get_user_profiles(request):
 @permission_required('leave_settings')
 def registration_window_settings(request):
     """صفحه تنظیمات مهلت ثبت و تأیید درخواست‌های مرخصی (وب و ربات)."""
+    import jdatetime
+
     from .models import LeaveSettings
     from django import forms as django_forms
 
@@ -1535,12 +1537,23 @@ def registration_window_settings(request):
 
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
-            for field in self.fields.values():
-                css = field.widget.__class__.__name__
-                if css == 'BooleanInput':
-                    field.widget.attrs['class'] = 'h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500'
-                else:
-                    field.widget.attrs['class'] = 'w-full rounded-lg border-gray-300 bg-white text-gray-900 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white'
+            number_classes = (
+                'w-full rounded-xl border-gray-300 bg-white text-gray-900 text-sm font-semibold '
+                'focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition dark:bg-gray-900 '
+                'dark:border-gray-600 dark:text-white'
+            )
+            self.fields['registration_max_days_after'].widget.attrs.update({
+                'class': number_classes, 'min': 0, 'max': 365, 'dir': 'ltr', 'inputmode': 'numeric',
+                'x-ref': 'regAfter', '@input': 'regAfter = $el.value', ':disabled': '!regEnabled',
+            })
+            self.fields['registration_max_days_future'].widget.attrs.update({
+                'class': number_classes, 'min': 0, 'max': 365, 'dir': 'ltr', 'inputmode': 'numeric',
+                'x-ref': 'regFuture', '@input': 'regFuture = $el.value', ':disabled': '!regEnabled',
+            })
+            self.fields['approval_max_days'].widget.attrs.update({
+                'class': number_classes, 'min': 0, 'max': 365, 'dir': 'ltr', 'inputmode': 'numeric',
+                'x-ref': 'apprDays', '@input': 'apprDays = $el.value', ':disabled': '!apprEnabled',
+            })
 
     settings_obj = LeaveSettings.load()
     form = RegistrationWindowForm(request.POST or None, instance=settings_obj)
@@ -1558,7 +1571,16 @@ def registration_window_settings(request):
         messages.success(request, 'تنظیمات مهلت مرخصی با موفقیت ذخیره شد.')
         return redirect('leave_reports:registration_window_settings')
 
+    updated_at_jalali = '-'
+    if settings_obj.updated_at:
+        local_updated = timezone.localtime(settings_obj.updated_at)
+        updated_at_jalali = '{} - {}'.format(
+            jdatetime.date.fromgregorian(date=local_updated.date()).strftime('%Y/%m/%d'),
+            local_updated.strftime('%H:%M'),
+        )
+
     return render(request, 'leave_reports/registration_window_settings.html', {
         'form': form,
         'settings_obj': settings_obj,
+        'updated_at_jalali': updated_at_jalali,
     })

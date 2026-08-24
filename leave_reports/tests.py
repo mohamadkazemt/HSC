@@ -97,6 +97,12 @@ class RegistrationWindowSettingsPageTests(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "تنظیمات مهلت ثبت و تأیید")
+        # سوییچ‌ها و فیلدهای وابسته رندر شده‌اند
+        self.assertContains(response, 'name="registration_window_enabled"')
+        self.assertContains(response, 'name="approval_window_enabled"')
+        self.assertContains(response, "switch-track")
+        # تاریخ آخرین تغییر به شمسی نمایش داده می‌شود
+        self.assertNotContains(response, "updated_at|date")
 
     def test_regular_user_without_grant_is_denied(self):
         user = User.objects.create_user("plain", password="x")
