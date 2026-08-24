@@ -2,6 +2,8 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+from django.utils import timezone
+from datetime import timedelta
 from permissions.utils import permission_required
 
 from leave_reports.models import ShiftReport
@@ -31,11 +33,16 @@ def leave_reminders(request):
         return redirect("message_center:leave_reminders")
 
     collection = collect_pending_reminders()
+    recent_rate_limit = ReminderLog.objects.filter(
+        error__contains="محدود", created_at__gte=timezone.now() - timedelta(hours=2)
+    ).exists()
     context = {
         "counts": _counts(),
         "missing": collection["missing"][:20],
         "missing_count": len(collection["missing"]),
         "dedup_hours": getattr(settings, "PEYAMHUB_REMINDER_DEDUP_HOURS", 12),
+        "send_delay": getattr(settings, "PEYAMHUB_SEND_DELAY_SECONDS", 4),
+        "recent_rate_limit": recent_rate_limit,
         "logs": ReminderLog.objects.select_related("leave", "recipient", "triggered_by")[:50],
     }
     return render(request, "message_center/leave_reminders.html", context)

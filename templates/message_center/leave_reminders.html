@@ -30,6 +30,16 @@
         {% endfor %}
     {% endif %}
 
+    {% if recent_rate_limit %}
+        <div class="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300">
+            <i class="fas fa-ban mt-0.5 text-lg"></i>
+            <div>
+                <b>محدودیت فعال روبیکا:</b> در دو ساعت گذشته ارسال‌های ناموفقِ ناشی از محدودیت ثبت شده است.
+                روبیکا حساب را موقتاً محدود می‌کند؛ تا پایان مهلت اعلام‌شده در پیام خطا دوباره تلاش نکنید.
+            </div>
+        </div>
+    {% endif %}
+
     <!-- کارت‌های آمار و ارسال -->
     <div class="grid gap-5 lg:grid-cols-2">
         <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
@@ -41,8 +51,8 @@
                 <span class="rounded-full bg-purple-100 px-3 py-1 text-sm font-bold text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">{{ counts.pending_replacement }}</span>
             </div>
             <p class="mb-4 text-xs leading-5 text-gray-500 dark:text-gray-400">
-                به هر جانشینی که حداقل یک درخواست «در انتظار تأیید جانشین» دارد، یک پیام یادآوری ارسال می‌شود.
-                برای هر درخواست حداکثر هر {{ dedup_hours }} ساعت یک بار پیام می‌رود.
+                به هر جانشینی که حداقل یک درخواست «در انتظار تأیید جانشین» دارد، <b>یک پیام جمع‌بندی‌شده</b> ارسال می‌شود.
+                برای هر درخواست حداکثر هر {{ dedup_hours }} ساعت یک بار پیام می‌رود و فاصله بین پیام‌ها {{ send_delay }} ثانیه است.
             </p>
             <form method="post" @submit="$el.querySelector('button').disabled = true">
                 {% csrf_token %}
@@ -119,6 +129,7 @@
                         <td class="px-4 py-3">
                             <span class="rounded-full px-2.5 py-1 text-xs font-semibold
                                 {% if log.status == 'sent' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300
+                                {% elif log.status == 'failed_permanent' %}bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300
                                 {% elif log.status == 'failed' %}bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300
                                 {% else %}bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300{% endif %}">
                                 {{ log.get_status_display }}

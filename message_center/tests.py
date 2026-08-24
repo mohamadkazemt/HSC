@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+from datetime import timedelta
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
@@ -15,10 +16,10 @@ from message_center.services import collect_pending_reminders, send_pending_remi
 from permissions.models import UserPermission
 
 
-def _make_leave(requester, replacement=None, status="pending_replacement"):
+def _make_leave(requester, replacement=None, status="pending_replacement", day_offset=0):
     return ShiftReport.objects.create(
         user=requester, leave_type="regular", shift_type="day",
-        shift_date=timezone.localdate(), work_group="A",
+        shift_date=timezone.localdate() + timedelta(days=day_offset), work_group="A",
         status=status, replacement_person=replacement,
     )
 
@@ -40,16 +41,29 @@ class CollectPendingRemindersTests(TestCase):
         self.replacement = User.objects.create_user("repl", first_name="رضا", last_name="کریمی")
         UserProfile.objects.create(user=self.replacement, personnel_code="M2", mobile="09120000002")
 
-    def test_pending_replacement_is_collected_with_message(self):
+    def test_pending_replacement_is_collected_with_details(self):
         _make_leave(self.employee, replacement=self.replacement)
         result = collect_pending_reminders("replacement")
         self.assertEqual(len(result["items"]), 1)
         item = result["items"][0]
         self.assertEqual(item["target"], "+989120000002")
-        self.assertIn("جانشین", item["message"])
-        self.assertIn(self.employee.get_full_name(), item["message"])
         self.assertEqual(item["recipient"], self.replacement)
+        self.assertIn(self.employee.get_full_name(), item["requester_name"])
         self.assertEqual(result["missing"], [])
+
+    def test_grouping_builds_single_combined_message(self):
+        """دو درخواستِ یک جانشین → یک پیام جمع‌بندی‌شده."""
+        from message_center.services import _build_message, _group_for_recipient
+
+        _make_leave(self.employee, replacement=self.replacement)
+        _make_leave(self.employee, replacement=self.replacement, day_offset=1)
+
+        result = collect_pending_reminders("replacement")
+        groups = _group_for_recipient(result["items"])
+        self.assertEqual(len(groups), 1)
+        text = _build_message(groups[0])
+        self.assertIn("جانشین", text)
+        self.assertIn("کارتابل", text)
 
     def test_rejected_leaves_are_not_collected(self):
         _make_leave(self.employee, replacement=self.replacement, status="rejected")
@@ -88,36 +102,89 @@ class SendPendingRemindersTests(TestCase):
         UserProfile.objects.create(user=self.employee, personnel_code="S1", mobile="09120000011")
         self.replacement = User.objects.create_user("repl2", first_name="رضا", last_name="کریمی")
         UserProfile.objects.create(user=self.replacement, personnel_code="S2", mobile="09120000012")
-        _make_leave(self.employee, replacement=self.replacement)
         self.admin = User.objects.create_superuser("rootx", password="x")
 
-    @patch("message_center.services.send_message")
-    def test_send_logs_success_then_dedupes(self, send_mock):
-        summary = send_pending_reminders(role="replacement", actor=self.admin)
-        self.assertEqual(summary["sent"], 1)
-        send_mock.assert_called_once()
-        self.assertEqual(send_mock.call_args.args[0], "+989120000012")
+    def _run(self, role="replacement"):
+        with patch("message_center.services.time.sleep"), \
+             patch("message_center.services.send_message") as send_mock:
+            summary = send_pending_reminders(role=role, actor=self.admin)
+        return summary, send_mock
 
-        log = ReminderLog.objects.get()
-        self.assertEqual(log.status, ReminderLog.Status.SENT)
-        self.assertEqual(log.triggered_by, self.admin)
+    def test_send_logs_success_then_dedupes(self):
+        _make_leave(self.employee, replacement=self.replacement)
+        with patch("message_center.services.time.sleep"), \
+             patch("message_center.services.send_message") as send_mock:
+            summary = send_pending_reminders(role="replacement", actor=self.admin)
+            self.assertEqual(summary["sent"], 1)
+            send_mock.assert_called_once()
+            self.assertEqual(send_mock.call_args.args[0], "+989120000012")
 
-        summary2 = send_pending_reminders(role="replacement", actor=self.admin)
+            log = ReminderLog.objects.get()
+            self.assertEqual(log.status, ReminderLog.Status.SENT)
+            self.assertEqual(log.triggered_by, self.admin)
+
+            summary2 = send_pending_reminders(role="replacement", actor=self.admin)
         self.assertEqual(summary2["skipped_duplicate"], 1)
         self.assertEqual(summary2["sent"], 0)
-        send_mock.assert_called_once()  # still once
 
-    @patch("message_center.services.send_message", side_effect=Exception("TOO_REQUESTS"))
-    def test_failure_is_logged_and_not_deduplicated(self, send_mock):
-        first = send_pending_reminders(role="replacement", actor=self.admin)
+    def test_multiple_leaves_same_recipient_are_grouped_into_one_message(self):
+        """جانشینِ چند درخواست فقط یک پیام جمع‌بندی‌شده می‌گیرد."""
+        _make_leave(self.employee, replacement=self.replacement)
+        _make_leave(self.employee, replacement=self.replacement, day_offset=1)
+
+        summary, send_mock = self._run()
+        self.assertEqual(summary["sent"], 1)          # فقط یک پیام
+        self.assertEqual(send_mock.call_count, 1)
+        text = send_mock.call_args.args[1]
+        self.assertIn("۲ درخواست" if "۲" in text else "2 درخواست", text)
+        # برای هر دو برگه لاگ جدا ثبت می‌شود
+        self.assertEqual(ReminderLog.objects.filter(status="sent").count(), 2)
+
+    @patch("message_center.services.send_message",
+           side_effect=[None, Exception("روبیکا به‌طور موقت درخواست را محدود کرده است (دسترسی شما تا تاریخ 1405/06/03 03:03:02)")])
+    def test_rate_limit_aborts_the_run(self, send_mock):
+        other_repl = User.objects.create_user("repl3", first_name="سارا", last_name="احمدی")
+        UserProfile.objects.create(user=other_repl, personnel_code="S3", mobile="09120000013")
+        _make_leave(self.employee, replacement=self.replacement)
+        _make_leave(self.employee, replacement=other_repl, day_offset=1)
+
+        with patch("message_center.services.time.sleep"):
+            summary = send_pending_reminders(role="replacement", actor=self.admin)
+
+        self.assertTrue(summary["aborted_rate_limited"])
+        self.assertEqual(summary["sent"], 1)
+        self.assertEqual(summary["failed"], 1)
+        self.assertEqual(summary["remaining_not_sent"], 0)
+        # بعد از تشخیص محدودیت، دیگر پیامی ارسال نشده
+        self.assertEqual(send_mock.call_count, 2)
+        statuses = list(ReminderLog.objects.values_list("status", flat=True))
+        self.assertEqual(statuses.count("sent"), 1)
+        self.assertEqual(statuses.count("failed"), 1)
+
+    def test_permanent_failure_never_retried(self):
+        _make_leave(self.employee, replacement=self.replacement)
+        with patch("message_center.services.time.sleep"), \
+             patch("message_center.services.send_message", side_effect=Exception(
+                 "شماره 989120000012 در روبیکا ثبت نشده است (کاربر روبیکا نیست) و امکان ارسال به آن وجود ندارد.")):
+            first = send_pending_reminders(role="replacement", actor=self.admin)
         self.assertEqual(first["failed"], 1)
         log = ReminderLog.objects.get()
-        self.assertEqual(log.status, ReminderLog.Status.FAILED)
-        self.assertIn("TOO_REQUESTS", log.error)
+        self.assertEqual(log.status, ReminderLog.Status.FAILED_PERMANENT)
 
-        # تلاش مجدد چون قبلی موفق نبوده، دوباره تلاش می‌کند
-        send_mock.side_effect = None
-        second = send_pending_reminders(role="replacement", actor=self.admin)
+        second, send_mock2 = self._run()
+        self.assertEqual(second["skipped_invalid"], 1)
+        self.assertEqual(second["sent"], 0)
+        self.assertFalse(send_mock2.called)
+        # هیچ لاگ تکراری هم ساخته نمی‌شود
+        self.assertEqual(ReminderLog.objects.count(), 1)
+
+    def test_transient_failure_is_retryable(self):
+        _make_leave(self.employee, replacement=self.replacement)
+        with patch("message_center.services.time.sleep"), \
+             patch("message_center.services.send_message", side_effect=[Exception("خطای شبکه"), None]):
+            first = send_pending_reminders(role="replacement", actor=self.admin)
+            second = send_pending_reminders(role="replacement", actor=self.admin)
+        self.assertEqual(first["failed"], 1)
         self.assertEqual(second["sent"], 1)
 
 

@@ -14,6 +14,7 @@ class ReminderLog(models.Model):
     class Status(models.TextChoices):
         SENT = "sent", "ارسال شد"
         FAILED = "failed", "ناموفق"
+        FAILED_PERMANENT = "failed_permanent", "شماره نامعتبر (تلاش نمی‌شود)"
         SKIPPED_NO_PHONE = "skipped_no_phone", "بدون شماره همراه"
         SKIPPED_DUPLICATE = "skipped_duplicate", "اخیراً ارسال شده"
 
