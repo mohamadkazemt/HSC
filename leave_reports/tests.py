@@ -126,3 +126,21 @@ class RegistrationWindowSettingsPageTests(TestCase):
         self.assertTrue(settings.registration_window_enabled)
         self.assertEqual(settings.registration_max_days_after, 5)
         self.assertFalse(settings.approval_window_enabled)  # unchecked box stays off
+
+    def test_permissions_ui_registry_matches_view_gate(self):
+        """نامی که در UI پرمیشن نمایش داده می‌شود باید همان باشد که ویو چک می‌کند."""
+        from permissions.utils import get_all_views_with_labels
+
+        registered = {
+            view["name"]
+            for view in get_all_views_with_labels()
+            if view.get("app_label") == "leave_reports"
+        }
+        self.assertIn("leave_settings", registered)
+
+        # شبیه‌سازی مسیر ادمین: کاربر عادی با اجازه‌ای که از UI صادر شده
+        user = User.objects.create_user("viaui", password="x")
+        UserProfile.objects.create(user=user, personnel_code="L4")
+        UserPermission.objects.create(user=user, view_name="leave_settings", can_view=True)
+        self.client.force_login(user)
+        self.assertEqual(self.client.get(self.url).status_code, 200)
