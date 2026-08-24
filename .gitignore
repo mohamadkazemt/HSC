@@ -218,3 +218,8 @@ HSCprojects/settings/testing.py
 
 #documentation files
 documentation/
+
+# Gym referrals app: keep management commands and tests under version control
+!gym_referrals/management/commands/check_*.py
+!gym_referrals/tests.py
+!gym_referrals/test_*.py
