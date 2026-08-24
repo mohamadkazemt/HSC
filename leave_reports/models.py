@@ -361,11 +361,12 @@ class ShiftReport(models.Model):
     def clean(self):
         # بررسی تکراری بودن گزارش برای یک کاربر در یک تاریخ خاص
         # فقط اگر user وجود داشته باشد این چک انجام شود
+        # درخواست‌های «رد شده» مانع ثبت مجدد نیستند
         if self.user_id:
             existing_report = ShiftReport.objects.filter(
                 user=self.user,
                 shift_date=self.shift_date
-            ).exclude(pk=self.pk).first()
+            ).exclude(status='rejected').exclude(pk=self.pk).first()
 
             if existing_report:
                 # تبدیل تاریخ میلادی به شمسی برای نمایش بهتر

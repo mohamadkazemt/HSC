@@ -65,6 +65,27 @@ class RegistrationWindowTests(TestCase):
         settings.save()
         self.assertIn("مهلت تأیید", validate_approval_deadline(stale))
 
+    def test_rejected_request_does_not_block_resubmission(self):
+        rejected = ShiftReport.objects.create(
+            user=self.user, leave_type="regular", shift_type="day",
+            shift_date=timezone.localdate(), work_group="A", status="rejected",
+        )
+        self.assertEqual(rejected.status, "rejected")
+        fresh = ShiftReport(user=self.user, leave_type="regular", shift_type="day",
+                            shift_date=timezone.localdate(), work_group="A")
+        fresh.clean()  # must not raise
+
+    def test_pending_or_approved_still_block_duplicates(self):
+        for status in ("pending_replacement", "pending_approval", "approved"):
+            ShiftReport.objects.create(
+                user=self.user, leave_type="regular", shift_type="day",
+                shift_date=timezone.localdate(), work_group="A", status=status,
+            )
+            with self.assertRaises(Exception):
+                ShiftReport(user=self.user, leave_type="regular", shift_type="day",
+                            shift_date=timezone.localdate(), work_group="A").clean()
+            ShiftReport.objects.filter(status=status).delete()
+
 
 class RegistrationWindowSettingsPageTests(TestCase):
     def setUp(self):
