@@ -28,6 +28,25 @@ from .models import RubikaBotSettings, RubikaConnectionCode, RubikaUser, Webhook
 
 logger = logging.getLogger(__name__)
 
+
+def _sync_db(func):
+    """Run a sync DB function in the thread-sensitive executor, refreshing
+    stale PostgreSQL connections before/after execution.
+
+    A dedicated event-loop thread owns its own DB connection. When PostgreSQL
+    restarts (or a connection goes stale), Django's connection wrapper still
+    holds a closed psycopg2 object and raises InterfaceError on next use.
+    Closing old connections right before/after the call forces a reconnect.
+    """
+    @sync_to_async(thread_sensitive=True)
+    def _wrapped(*args, **kwargs):
+        close_old_connections()
+        try:
+            return func(*args, **kwargs)
+        finally:
+            close_old_connections()
+    return _wrapped
+
 # ---------------------------------------------------------------------------
 # Undo rubpy.sync's wrapping of BotClient methods.
 #
@@ -250,7 +269,7 @@ class RubikaBotEngine:
             
             # OLD CODE - TEMPORARILY DISABLED:
             # # Try to handle as photo anyway if we're in medical_document step
-            # @sync_to_async(thread_sensitive=True)
+            # @_sync_db
             # def check_medical_step():
             #     from rubika_bot.models import LeaveRequestState
             #     try:
@@ -273,8 +292,8 @@ class RubikaBotEngine:
         elif hasattr(aux, "button_id"):
             button_id = aux.button_id
         if button_id:
-            user = await sync_to_async(RubikaUser.get_or_create_by_chat, thread_sensitive=True)(chat_id)
-            await sync_to_async(user.touch_seen, thread_sensitive=True)()
+            user = await _sync_db(RubikaUser.get_or_create_by_chat)(chat_id)
+            await _sync_db(user.touch_seen)()
             await self._handle_button(chat_id, str(button_id), user)
 
     async def _ensure_profile(self, chat_id: str, message: Message, raw_payload: Dict[str, Any]) -> RubikaUser:
@@ -283,7 +302,7 @@ class RubikaBotEngine:
         if first_name: defaults['first_name'] = first_name
         if last_name: defaults['last_name'] = last_name
 
-        rubika_user, created = await sync_to_async(RubikaUser.objects.get_or_create, thread_sensitive=True)(chat_id=chat_id, defaults=defaults)
+        rubika_user, created = await _sync_db(RubikaUser.objects.get_or_create)(chat_id=chat_id, defaults=defaults)
         
         # Optimized: Update last_seen and other fields in a single query if needed
         if not created:
@@ -291,15 +310,15 @@ class RubikaBotEngine:
             if first_name and rubika_user.first_name != first_name: attrs_to_update['first_name'] = first_name
             if last_name and rubika_user.last_name != last_name: attrs_to_update['last_name'] = last_name
             if len(attrs_to_update) > 1:  # More than just last_seen
-                await sync_to_async(RubikaUser.objects.filter(pk=rubika_user.pk).update, thread_sensitive=True)(**attrs_to_update)
+                await _sync_db(RubikaUser.objects.filter(pk=rubika_user.pk).update)(**attrs_to_update)
                 for key, value in attrs_to_update.items():
                     setattr(rubika_user, key, value)
             else:
                 # Only update last_seen
-                await sync_to_async(rubika_user.touch_seen, thread_sensitive=True)()
+                await _sync_db(rubika_user.touch_seen)()
         else:
             # New user, last_seen is already set in defaults or will be set on first touch_seen
-            await sync_to_async(rubika_user.touch_seen, thread_sensitive=True)()
+            await _sync_db(rubika_user.touch_seen)()
         return rubika_user
 
     def _extract_names(self, raw_payload: Dict[str, Any], message: Message) -> Tuple[Optional[str], Optional[str]]:
@@ -402,7 +421,7 @@ class RubikaBotEngine:
 
     async def _handle_plain_text(self, chat_id: str, text: str, user: RubikaUser) -> None:
         # Optimized: Fetch both states in a single query batch
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def get_states():
             from rubika_bot.models import ConnectionRequestState, LeaveRequestState
             connection_state = None
@@ -421,13 +440,22 @@ class RubikaBotEngine:
         
         # If in leave request flow, handle accordingly (prioritized over connection flow)
         if leave_state and leave_state.step != 'idle':
+            # اگر کاربر دیگر متصل نیست، فرایند مرخصی را متوقف کن و بگذار درخواستش
+            # توسط فرایند اتصال (در صورت فعال بودن) یا پیام راهنما مدیریت شود.
+            # در غیر این صورت ادامه فرایند با user=None باعث خطای «پروفایل یافت نشد» می‌شود.
+            if not user.user:
+                await _sync_db(leave_state.reset)()
+                message = '⚠️ درخواست مرخصی قبلی شما به دلیل قطع اتصال حساب لغو شد.'
+                await self._send_text_message(chat_id, message)
+                # اجازه ادامه پردازش (اتصال SMS یا پیام راهنما) به جای return
+            
             # بررسی اینکه آیا در مرحله وارد کردن دلیل رد است
-            if leave_state.step == 'rejection_reason':
+            elif leave_state.step == 'rejection_reason':
                 await self._process_rejection_reason(chat_id, user, text, leave_state)
                 return
-            
-            await self._handle_leave_request_input(chat_id, user, text, leave_state)
-            return
+            else:
+                await self._handle_leave_request_input(chat_id, user, text, leave_state)
+                return
         
         # If in SMS connection flow, handle accordingly
         if connection_state and connection_state.step != 'idle':
@@ -469,7 +497,7 @@ class RubikaBotEngine:
         
         if user.user:
             # دریافت اطلاعات کامل کاربر
-            @sync_to_async(thread_sensitive=True)
+            @_sync_db
             def get_user_info():
                 from accounts.models import UserProfile
                 try:
@@ -745,7 +773,7 @@ class RubikaBotEngine:
         
         if user.user:
             # دریافت اطلاعات پروفایل کاربر
-            @sync_to_async(thread_sensitive=True)
+            @_sync_db
             def get_profile_info():
                 from accounts.models import UserProfile
                 try:
@@ -822,7 +850,7 @@ class RubikaBotEngine:
                             )
                         )
                     
-                    await sync_to_async(send_profile_image, thread_sensitive=True)()
+                    await _sync_db(send_profile_image)()
                     
                     # ارسال دکمه‌ها به صورت جداگانه
                     buttons = self._build_command_keyboard(connected=True)
@@ -844,7 +872,7 @@ class RubikaBotEngine:
             await self._send_text_message(chat_id, message, buttons)
 
     async def _disconnect_user(self, chat_id: str, user: RubikaUser) -> None:
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def disconnect_link():
             linked_user = user.user
             if not linked_user:
@@ -875,7 +903,7 @@ class RubikaBotEngine:
             return
         
         # Get user profile and payslips (optimized with select_related)
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def get_payslips():
             from accounts.models import UserProfile, Payslip
             try:
@@ -963,7 +991,7 @@ class RubikaBotEngine:
             return
         
         # Get payslip from database (optimized with select_related)
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def get_payslip():
             from accounts.models import UserProfile, Payslip
             try:
@@ -994,7 +1022,7 @@ class RubikaBotEngine:
         # Send file to user
         try:
             # Get file path
-            @sync_to_async(thread_sensitive=True)
+            @_sync_db
             def get_file_path():
                 try:
                     return payslip.file.path
@@ -1069,7 +1097,7 @@ class RubikaBotEngine:
         # تبدیل اعداد فارسی و عربی به انگلیسی در کد اتصال
         code_value = normalize_digits(args[0])
         
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def get_code():
             return RubikaConnectionCode.objects.filter(code=code_value, used=False, expires_at__gt=timezone.now()).select_related('user').first()
         
@@ -1085,7 +1113,7 @@ class RubikaBotEngine:
 
         previous_username = user.user.username if user.user and user.user != code.user else None
 
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def link_user():
             from django.db import transaction
             with transaction.atomic():
@@ -1106,7 +1134,7 @@ class RubikaBotEngine:
             await self._send_text_message(chat_id, '❌ خطا در اتصال حساب. لطفاً دوباره تلاش کنید.', buttons)
             return
 
-        await sync_to_async(code.mark_used, thread_sensitive=True)(chat_id=chat_id)
+        await _sync_db(code.mark_used)(chat_id=chat_id)
 
         if previous_username:
             welcome = f'✅ حساب شما از "{previous_username}" به "{code.user.username}" تغییر یافت!\n\n💡 می‌توانید از امکانات ربات استفاده کنید:'
@@ -1119,10 +1147,10 @@ class RubikaBotEngine:
     async def _send_text_message(self, chat_id: str, text: str, inline_keyboard: Optional[Keypad] = None) -> None:
         try:
             await self.client.send_message(chat_id=chat_id, text=text, inline_keypad=inline_keyboard)
-            await sync_to_async(WebhookLog.log_outgoing, thread_sensitive=True)('پیام ارسالی', f'پیام به {chat_id} ارسال شد', {'text': text[:120]})
+            await _sync_db(WebhookLog.log_outgoing)('پیام ارسالی', f'پیام به {chat_id} ارسال شد', {'text': text[:120]})
         except Exception as exc:
             logger.exception("Failed to send message to chat %s", chat_id)
-            await sync_to_async(WebhookLog.log_error, thread_sensitive=True)('ارسال پیام ناموفق', str(exc), {'chat_id': chat_id})
+            await _sync_db(WebhookLog.log_error)('ارسال پیام ناموفق', str(exc), {'chat_id': chat_id})
 
     async def _send_file(self, chat_id: str, file_path: str, file_name: str, text: str = '', file_type: str = 'File') -> None:
         """
@@ -1137,14 +1165,14 @@ class RubikaBotEngine:
                 text=text,
                 type=file_type
             )
-            await sync_to_async(WebhookLog.log_outgoing, thread_sensitive=True)(
+            await _sync_db(WebhookLog.log_outgoing)(
                 'ارسال فایل', 
                 f'فایل به {chat_id} ارسال شد', 
                 {'file_name': file_name, 'file_type': file_type}
             )
         except Exception as exc:
             logger.exception("Failed to send file to chat %s", chat_id)
-            await sync_to_async(WebhookLog.log_error, thread_sensitive=True)(
+            await _sync_db(WebhookLog.log_error)(
                 'ارسال فایل ناموفق', 
                 str(exc), 
                 {'chat_id': chat_id, 'file_name': file_name}
@@ -1162,7 +1190,7 @@ class RubikaBotEngine:
             return
         
         # Create or get leave request state
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def init_leave_state():
             from rubika_bot.models import LeaveRequestState
             state, created = LeaveRequestState.objects.get_or_create(rubika_user=user)
@@ -1206,7 +1234,7 @@ class RubikaBotEngine:
             await self._send_text_message(chat_id, message, buttons)
             return
 
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def init_voice_state():
             from rubika_bot.models import LeaveRequestState
             state, created = LeaveRequestState.objects.get_or_create(rubika_user=user)
@@ -1243,7 +1271,7 @@ class RubikaBotEngine:
     async def _handle_voice_leave_confirm(self, chat_id: str, user: RubikaUser) -> None:
         """تایید نهایی درخواست مرخصی صوتی - ابتدا جایگزین را می‌پرسد"""
         # چک کن آیا مرخصی regular هست (نیاز به جایگزین دارد)
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def get_leave_type():
             from rubika_bot.models import LeaveRequestState
             try:
@@ -1257,7 +1285,7 @@ class RubikaBotEngine:
         if leave_type == 'regular':
             # مرخصی استحقاقی → نیاز به انتخاب جایگزین
             # آپدیت state به مرحله انتخاب جایگزین
-            @sync_to_async(thread_sensitive=True)
+            @_sync_db
             def update_state_for_replacement():
                 from rubika_bot.models import LeaveRequestState
                 state = LeaveRequestState.objects.get(rubika_user=user)
@@ -1266,7 +1294,7 @@ class RubikaBotEngine:
             await update_state_for_replacement()
 
             # دریافت اطلاعات سمت کاربر
-            @sync_to_async(thread_sensitive=True)
+            @_sync_db
             def get_user_position():
                 from accounts.models import UserProfile
                 try:
@@ -1305,7 +1333,7 @@ class RubikaBotEngine:
 
     async def _save_voice_leave_request(self, chat_id: str, user: RubikaUser, replacement_id=None) -> None:
         """ذخیره درخواست مرخصی صوتی"""
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def get_state_and_save():
             from rubika_bot.models import LeaveRequestState
             from leave_reports.models import ShiftReport
@@ -1397,7 +1425,7 @@ class RubikaBotEngine:
 
     async def _cancel_leave_request(self, chat_id: str, user: RubikaUser) -> None:
         """لغو فرایند درخواست مرخصی"""
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def reset_state():
             from rubika_bot.models import LeaveRequestState
             try:
@@ -1413,7 +1441,7 @@ class RubikaBotEngine:
     
     async def _cancel_rejection(self, chat_id: str, user: RubikaUser) -> None:
         """لغو فرایند رد درخواست"""
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def reset_state():
             from rubika_bot.models import LeaveRequestState
             try:
@@ -1438,7 +1466,7 @@ class RubikaBotEngine:
             return
         
         # دریافت لیست درخواست‌های منتظر تایید
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def get_pending_leaves():
             from leave_reports.models import ShiftReport
             import jdatetime
@@ -1589,7 +1617,7 @@ class RubikaBotEngine:
             await self._send_text_message(chat_id, message, buttons)
             return
         
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def get_my_leaves():
             from leave_reports.models import ShiftReport
             import jdatetime
@@ -1724,7 +1752,7 @@ class RubikaBotEngine:
             return
         
         # Update state (optimized with get_or_create_for_user)
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def update_state():
             from rubika_bot.models import LeaveRequestState
             state = LeaveRequestState.get_or_create_for_user(user)
@@ -1773,7 +1801,7 @@ class RubikaBotEngine:
             return
         
         # Update state
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def update_and_get_state():
             from rubika_bot.models import LeaveRequestState
             state = LeaveRequestState.objects.get(rubika_user=user)
@@ -1801,7 +1829,7 @@ class RubikaBotEngine:
         """پردازش تایید/رد جایگزین"""
         if button_id == 'confirm_replacement':
             # Get pending replacement from state
-            @sync_to_async(thread_sensitive=True)
+            @_sync_db
             def confirm_replacement():
                 from rubika_bot.models import LeaveRequestState
                 state = LeaveRequestState.objects.get(rubika_user=user)
@@ -1831,7 +1859,7 @@ class RubikaBotEngine:
     async def _ask_for_replacement(self, chat_id: str, user: RubikaUser) -> None:
         """درخواست کد پرسنلی جایگزین"""
         # Get user position info
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def get_user_position():
             from accounts.models import UserProfile
             try:
@@ -1845,7 +1873,7 @@ class RubikaBotEngine:
         position_name = await get_user_position()
         
         # Update state to replacement step
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def update_state():
             from rubika_bot.models import LeaveRequestState
             state = LeaveRequestState.objects.get(rubika_user=user)
@@ -1883,7 +1911,7 @@ class RubikaBotEngine:
     
     async def _ask_for_hourly_times(self, chat_id: str, user: RubikaUser) -> None:
         """درخواست ساعات شروع و پایان برای مرخصی ساعتی"""
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def update_state():
             from rubika_bot.models import LeaveRequestState
             state = LeaveRequestState.get_or_create_for_user(user)
@@ -1909,7 +1937,7 @@ class RubikaBotEngine:
     
     async def _ask_for_medical_document(self, chat_id: str, user: RubikaUser) -> None:
         """درخواست عکس نامه پزشک برای مرخصی استعلاجی"""
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def update_state():
             from rubika_bot.models import LeaveRequestState
             state = LeaveRequestState.get_or_create_for_user(user)
@@ -1937,7 +1965,7 @@ class RubikaBotEngine:
     
     async def _ask_for_description(self, chat_id: str, user: RubikaUser) -> None:
         """درخواست توضیحات"""
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def update_state():
             from rubika_bot.models import LeaveRequestState
             state = LeaveRequestState.get_or_create_for_user(user)
@@ -1986,8 +2014,16 @@ class RubikaBotEngine:
         # تبدیل اعداد فارسی و عربی به انگلیسی
         personnel_code = normalize_digits(text.strip())
         
+        # اگر کاربر متصل نیست، فرایند را متوقف کن
+        if not user.user:
+            await _sync_db(leave_state.reset)()
+            message = '⚠️ اتصال شما به حساب کاربری قطع شده است، بنابراین درخواست مرخصی شما لغو شد.\n\n🔗 لطفاً ابتدا دوباره به حساب خود متصل شوید و سپس درخواست جدید ثبت کنید.'
+            buttons = self._build_command_keyboard(connected=False)
+            await self._send_text_message(chat_id, message, buttons)
+            return
+        
         # Validate and find replacement
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def find_replacement():
             from django.contrib.auth.models import User
             from accounts.models import UserProfile
@@ -2075,7 +2111,7 @@ class RubikaBotEngine:
             ]
             
             # Save pending replacement
-            @sync_to_async(thread_sensitive=True)
+            @_sync_db
             def save_pending():
                 from rubika_bot.models import LeaveRequestState
                 state = LeaveRequestState.objects.get(rubika_user=user)
@@ -2111,7 +2147,7 @@ class RubikaBotEngine:
             ]
             
             # Save pending replacement
-            @sync_to_async(thread_sensitive=True)
+            @_sync_db
             def save_pending():
                 from rubika_bot.models import LeaveRequestState
                 state = LeaveRequestState.objects.get(rubika_user=user)
@@ -2134,7 +2170,24 @@ class RubikaBotEngine:
         """پردازش ورودی کد پرسنلی جایگزین در فرآیند صوتی"""
         personnel_code = normalize_digits(text.strip())
 
-        @sync_to_async(thread_sensitive=True)
+        # اگر کاربر متصل نیست، فرایند را متوقف کن
+        if not user.user:
+            @_sync_db
+            def reset_voice_state():
+                from rubika_bot.models import LeaveRequestState
+                try:
+                    state = LeaveRequestState.objects.get(rubika_user=user)
+                    state.reset()
+                except LeaveRequestState.DoesNotExist:
+                    pass
+
+            await reset_voice_state()
+            message = '⚠️ اتصال شما به حساب کاربری قطع شده است، بنابراین درخواست مرخصی شما لغو شد.\n\n🔗 لطفاً ابتدا دوباره به حساب خود متصل شوید و سپس درخواست جدید ثبت کنید.'
+            buttons = self._build_command_keyboard(connected=False)
+            await self._send_text_message(chat_id, message, buttons)
+            return
+
+        @_sync_db
         def find_replacement():
             from django.contrib.auth.models import User
             from accounts.models import UserProfile
@@ -2232,7 +2285,7 @@ class RubikaBotEngine:
             return
         
         # Update state
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def update_state():
             from rubika_bot.models import LeaveRequestState
             state = LeaveRequestState.objects.get(rubika_user=user)
@@ -2311,7 +2364,7 @@ class RubikaBotEngine:
             return
         
         # Update state
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def update_state():
             from rubika_bot.models import LeaveRequestState
             state = LeaveRequestState.objects.get(rubika_user=user)
@@ -2332,7 +2385,7 @@ class RubikaBotEngine:
         sys.stdout.flush()
         sys.stderr.flush()
         
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def get_leave_state():
             from rubika_bot.models import LeaveRequestState
             try:
@@ -2381,7 +2434,7 @@ class RubikaBotEngine:
             #     return
             # 
             # # Save file path to state
-            # @sync_to_async(thread_sensitive=True)
+            # @_sync_db
             # def save_file_path():
             #     from rubika_bot.models import LeaveRequestState
             #     state = LeaveRequestState.objects.get(rubika_user=user)
@@ -2638,7 +2691,7 @@ class RubikaBotEngine:
         logger.info(f"Handling voice message for chat {chat_id}, user: {user.chat_id}")
         print(f"[RUBIKA_BOT] Handling voice message for chat {chat_id}", flush=True)
 
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def get_leave_state():
             from rubika_bot.models import LeaveRequestState
             try:
@@ -2664,7 +2717,7 @@ class RubikaBotEngine:
 
         # اگر در مرحله voice_confirm است و صوت جدید فرستاده، به voice_pending برگرد
         if leave_state.step == 'voice_confirm':
-            @sync_to_async(thread_sensitive=True)
+            @_sync_db
             def reset_to_pending():
                 from rubika_bot.models import LeaveRequestState
                 state = LeaveRequestState.objects.get(rubika_user=user)
@@ -2693,7 +2746,7 @@ class RubikaBotEngine:
 
             from core.stt_service import transcribe_audio, LEAVE_PROMPT_FA
 
-            transcribed_text = await sync_to_async(thread_sensitive=True)(lambda: transcribe_audio(
+            transcribed_text = await _sync_db(lambda: transcribe_audio(
                 audio_path=full_path,
                 language='fa',
                 initial_prompt=LEAVE_PROMPT_FA,
@@ -3092,7 +3145,7 @@ class RubikaBotEngine:
                     'شب کار اول': 'night', 'شب کار دوم': 'night2',
                 }
 
-                @sync_to_async(thread_sensitive=True)
+                @_sync_db
                 def get_user_shift():
                     django_user = user.user if hasattr(user, 'user') else None
                     if django_user and hasattr(django_user, 'userprofile'):
@@ -3144,7 +3197,7 @@ class RubikaBotEngine:
             except Exception:
                 pass
 
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def save_state():
             from rubika_bot.models import LeaveRequestState
             state = LeaveRequestState.objects.get(rubika_user=user)
@@ -3213,7 +3266,7 @@ class RubikaBotEngine:
             description = text.strip()
         
         # Update state
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def update_state():
             from rubika_bot.models import LeaveRequestState
             state = LeaveRequestState.objects.get(rubika_user=user)
@@ -3257,7 +3310,7 @@ class RubikaBotEngine:
         
         # Add replacement if applicable
         if data.get('replacement_id'):
-            @sync_to_async(thread_sensitive=True)
+            @_sync_db
             def get_replacement_name():
                 from django.contrib.auth.models import User
                 try:
@@ -3300,7 +3353,7 @@ class RubikaBotEngine:
     
     async def _save_leave_request(self, chat_id: str, user: RubikaUser) -> None:
         """ذخیره درخواست مرخصی در دیتابیس"""
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def save_leave():
             from rubika_bot.models import LeaveRequestState
             from leave_reports.models import ShiftReport
@@ -3433,7 +3486,7 @@ class RubikaBotEngine:
         leave_id = normalize_digits(parts[3])  # درخواست ID
         
         # دریافت اطلاعات درخواست مرخصی
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def get_leave_info():
             from leave_reports.models import ShiftReport
             from datetime import timedelta
@@ -3514,7 +3567,7 @@ class RubikaBotEngine:
     async def _ask_rejection_reason(self, chat_id: str, user: RubikaUser, leave_id: str, approval_type: str) -> None:
         """درخواست دلیل رد از کاربر"""
         # ذخیره state برای پردازش پاسخ بعدی
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def save_rejection_state():
             from rubika_bot.models import LeaveRequestState
             state, _ = LeaveRequestState.objects.get_or_create(rubika_user=user)
@@ -3543,13 +3596,12 @@ class RubikaBotEngine:
     
     async def _process_leave_approval(self, chat_id: str, user: RubikaUser, leave_request, approval_type: str) -> None:
         """پردازش تایید درخواست مرخصی"""
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def approve_leave():
             from django.utils import timezone
             from datetime import timedelta
             import jdatetime
             from leave_reports.utils import (
-                send_notification_to_manager, 
                 send_notification_to_requester_approved
             )
             from rubika_bot.models import WebhookLog
@@ -3585,8 +3637,9 @@ class RubikaBotEngine:
                         }
                     )
                     
-                    # ارسال نوتیفیکیشن به مدیر و درخواست‌دهنده
-                    send_notification_to_manager(leave_request)
+                    # نوتیفیکیشن مدیر توسط سیگنال post_save ارسال می‌شود
+                    # (وقتی status از pending_replacement به pending_approval تغییر می‌کند)
+                    # فقط نوتیفیکیشن درخواست‌دهنده ارسال می‌شود
                     send_notification_to_requester_approved(leave_request, approved_by_type='replacement')
                     
                     return True, 'تأیید جایگزینی با موفقیت انجام شد. درخواست برای تأیید نهایی مدیر ارسال شد.'
@@ -3650,14 +3703,14 @@ class RubikaBotEngine:
         if not leave_id or not approval_type:
             await self._send_text_message(chat_id, '❌ خطا در دریافت اطلاعات درخواست.')
             # Reset state
-            @sync_to_async(thread_sensitive=True)
+            @_sync_db
             def reset():
                 leave_state.reset()
             await reset()
             return
         
         # پردازش رد درخواست
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def reject_leave():
             from leave_reports.models import ShiftReport
             from django.utils import timezone
@@ -4116,7 +4169,7 @@ class RubikaBotEngine:
             return
         
         # Create or get connection request state
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def init_connection_state():
             from rubika_bot.models import ConnectionRequestState
             state, created = ConnectionRequestState.objects.get_or_create(rubika_user=user)
@@ -4144,7 +4197,7 @@ class RubikaBotEngine:
     
     async def _cancel_sms_connection(self, chat_id: str, user: RubikaUser) -> None:
         """لغو فرایند اتصال از طریق SMS"""
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def reset_state():
             from rubika_bot.models import ConnectionRequestState
             try:
@@ -4195,7 +4248,7 @@ class RubikaBotEngine:
             return
         
         # Save national code and ask for personnel code
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def update_state():
             state.update_step('personnel_code', {'national_code': national_code})
         
@@ -4232,7 +4285,7 @@ class RubikaBotEngine:
             return
         
         # Find user by national_code and personnel_code
-        @sync_to_async(thread_sensitive=True)
+        @_sync_db
         def find_and_send_code():
             from accounts.models import UserProfile
             from rubika_bot.models import RubikaConnectionCode, WebhookLog
@@ -4394,7 +4447,7 @@ class RubikaBotEngine:
             await self._send_text_message(chat_id, message, keyboard)
         else:
             # Reset state only on success
-            @sync_to_async(thread_sensitive=True)
+            @_sync_db
             def reset_state():
                 state.reset()
             
@@ -4623,7 +4676,7 @@ class RubPyIntegrationService:
                     await self.engine.handle_update(update)
             except Exception as exc:
                 logger.exception("Error handling update: %s", exc)
-                await sync_to_async(WebhookLog.log_error, thread_sensitive=True)('خطای هندلر', str(exc), {'update': getattr(update, '_raw_payload', {})})
+                await _sync_db(WebhookLog.log_error)('خطای هندلر', str(exc), {'update': getattr(update, '_raw_payload', {})})
             finally:
                 close_old_connections()
 

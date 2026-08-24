@@ -69,15 +69,7 @@ def request_leave(request):
                         request=request
                     )
                     
-                    # ارسال اعلان به جایگزین یا مدیر
-                    if leave_request.status == 'pending_replacement':
-                        # اگر نیاز به تأیید جایگزین داشت، به جایگزین اطلاع می‌دهیم
-                        from .utils import send_notification_to_replacement
-                        send_notification_to_replacement(leave_request)
-                    elif leave_request.status == 'pending_approval':
-                        # اگر مستقیم رفت به مدیر (مثل غیبت، استعلاجی)، به مدیر اطلاع می‌دهیم
-                        from .utils import send_notification_to_manager
-                        send_notification_to_manager(leave_request)
+                    # نوتیفیکیشن‌ها توسط سیگنال post_save ارسال می‌شوند
                     
                     messages.success(request, 'درخواست مرخصی شما با موفقیت ثبت شد و برای جایگزین ارسال شد.')
                     
@@ -348,9 +340,10 @@ def approve_as_replacement(request, leave_id):
                 request=request
             )
             
-            # ارسال اعلان به مدیر و درخواست دهنده
-            from .utils import send_notification_to_manager, send_notification_to_requester_approved
-            send_notification_to_manager(leave_request)
+            # نوتیفیکیشن مدیر توسط سیگنال post_save ارسال می‌شود
+            # (وقتی status از pending_replacement به pending_approval تغییر می‌کند)
+            # فقط نوتیفیکیشن درخواست‌دهنده ارسال می‌شود
+            from .utils import send_notification_to_requester_approved
             send_notification_to_requester_approved(leave_request, approved_by_type='replacement')
             
             logger.info(f"✅ Approval completed successfully")
@@ -512,11 +505,6 @@ def approve_as_manager(request, leave_id):
             
     except Exception as e:
         logger.error(f"❌ Error in manager approval: {str(e)}", exc_info=True)
-        return JsonResponse({
-            'status': 'error',
-            'message': f'خطا در تأیید: {str(e)}'
-        }, status=500)
-    except Exception as e:
         return JsonResponse({
             'status': 'error',
             'message': f'خطا در تأیید: {str(e)}'
