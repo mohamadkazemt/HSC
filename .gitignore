@@ -224,3 +224,4 @@ documentation/
 !gym_referrals/tests.py
 !gym_referrals/test_*.py
 !leave_reports/tests.py
+!message_center/tests.py
