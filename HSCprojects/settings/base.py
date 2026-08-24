@@ -110,6 +110,7 @@ INSTALLED_APPS = [
     'corrective_actions.apps.CorrectiveActionsConfig',
     'mining_operations.apps.MiningOperationsConfig',
     'gym_referrals.apps.GymReferralsConfig',
+    'message_center.apps.MessageCenterConfig',
 ]
 
 MIDDLEWARE = [
@@ -645,3 +646,10 @@ GROQ_MODEL = config('GROQ_MODEL', default='llama3-70b-8192')  # Alternative: 'mi
 
 # OpenRouter Model
 OPENROUTER_MODEL = config('OPENROUTER_MODEL', default='google/gemini-2.0-flash-lite:free')  # Alternative: 'meta-llama/llama-3-8b-instruct' 
+
+
+# --- PeyamHub messenger service (message_center app) ---
+PEYAMHUB_BASE_URL = config('PEYAMHUB_BASE_URL', default='https://peyamhub.ir')
+PEYAMHUB_API_KEY = config('PEYAMHUB_API_KEY', default='')
+PEYAMHUB_TIMEOUT = config('PEYAMHUB_TIMEOUT', default=20, cast=int)
+PEYAMHUB_REMINDER_DEDUP_HOURS = config('PEYAMHUB_REMINDER_DEDUP_HOURS', default=12, cast=int)

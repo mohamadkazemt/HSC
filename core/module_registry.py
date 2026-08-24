@@ -27,6 +27,7 @@ MODULES = {
     "corrective_actions": ("اقدامات اصلاحی", ("/corrective-actions/",)),
     "mining_operations": ("عملیات معدن", ("/mining-operations/",)),
     "gym_referrals": ("معرفی‌نامه باشگاه", ("/gym-referrals/",)),
+    "message_center": ("مرکز پیام", ("/message-center/",)),
 }
 
 

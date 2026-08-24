@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}یادآوری تأیید مرخصی{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-6xl space-y-6">
+
+    <nav class="text-sm text-gray-500 dark:text-gray-400">مرکز پیام / یادآوری تأیید مرخصی</nav>
+
+    <header class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-300">
+                <i class="fas fa-paper-plane text-lg"></i>
+            </span>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">یادآوری تأیید مرخصی</h1>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">ارسال پیام روبیکا به جانشین‌ها و مدیرانی که درخواست‌ها را هنوز تأیید نکرده‌اند.</p>
+            </div>
+        </div>
+    </header>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium
+                {% if message.tags == 'success' %}border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+                {% elif message.tags == 'error' %}border-red-200 bg-red-50 text-red-800 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300
+                {% else %}border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-700 dark:bg-sky-900/30 dark:text-sky-300{% endif %}">
+                <i class="fas fa-info-circle text-lg"></i><span>{{ message }}</span>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- کارت‌های آمار و ارسال -->
+    <div class="grid gap-5 lg:grid-cols-2">
+        <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+            <div class="mb-4 flex items-start justify-between">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-user-clock text-purple-600 dark:text-purple-400"></i>
+                    <h2 class="font-bold text-gray-900 dark:text-white">جانشین‌های منتظر تأیید</h2>
+                </div>
+                <span class="rounded-full bg-purple-100 px-3 py-1 text-sm font-bold text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">{{ counts.pending_replacement }}</span>
+            </div>
+            <p class="mb-4 text-xs leading-5 text-gray-500 dark:text-gray-400">
+                به هر جانشینی که حداقل یک درخواست «در انتظار تأیید جانشین» دارد، یک پیام یادآوری ارسال می‌شود.
+                برای هر درخواست حداکثر هر {{ dedup_hours }} ساعت یک بار پیام می‌رود.
+            </p>
+            <form method="post" @submit="$el.querySelector('button').disabled = true">
+                {% csrf_token %}
+                <input type="hidden" name="role" value="replacement">
+                <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-indigo-600 to-purple-600 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:brightness-110 disabled:opacity-60">
+                    <i class="fas fa-paper-plane"></i>ارسال یادآوری به جانشین‌ها
+                </button>
+            </form>
+        </section>
+
+        <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+            <div class="mb-4 flex items-start justify-between">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-user-check text-teal-600 dark:text-teal-400"></i>
+                    <h2 class="font-bold text-gray-900 dark:text-white">مدیران منتظر تأیید</h2>
+                </div>
+                <span class="rounded-full bg-teal-100 px-3 py-1 text-sm font-bold text-teal-700 dark:bg-teal-900/40 dark:text-teal-300">{{ counts.pending_approval }}</span>
+            </div>
+            <p class="mb-4 text-xs leading-5 text-gray-500 dark:text-gray-400">
+                مدیر تأییدکننده هر درخواستِ «در انتظار تأیید مدیر» بر اساس سلسله‌مراتب تعیین‌شده، پیام دریافت می‌کند.
+            </p>
+            <form method="post" @submit="$el.querySelector('button').disabled = true">
+                {% csrf_token %}
+                <input type="hidden" name="role" value="manager">
+                <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-teal-600 to-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:brightness-110 disabled:opacity-60">
+                    <i class="fas fa-paper-plane"></i>ارسال یادآوری به مدیران
+                </button>
+            </form>
+        </section>
+    </div>
+
+    <!-- گیرندگان بدون شماره -->
+    {% if missing_count > 0 %}
+    <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-700 dark:bg-amber-900/20">
+        <h2 class="mb-2 flex items-center gap-2 text-sm font-bold text-amber-800 dark:text-amber-300">
+            <i class="fas fa-exclamation-triangle"></i>
+            {{ missing_count }} مورد قابل ارسال نبود (شماره همراه ناموجود / تأییدکننده نامشخص)
+        </h2>
+        <ul class="list-inside list-disc space-y-1 text-xs text-amber-700 dark:text-amber-300/80">
+            {% for item in missing %}
+                <li>
+                    درخواست #{{ item.leave.pk }} — {{ item.leave.user.get_full_name|default:item.leave.user.username }}
+                    ({{ item.get_role_display }}): {{ item.reason }}
+                </li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% endif %}
+
+    <!-- لاگ ارسال‌ها -->
+    <section class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+        <header class="border-b border-gray-100 px-6 py-4 dark:border-gray-700">
+            <h2 class="font-bold text-gray-900 dark:text-white"><i class="fas fa-history ml-2 text-gray-400"></i>آخرین ارسال‌ها</h2>
+        </header>
+        <div class="overflow-x-auto">
+            <table class="w-full text-right text-sm">
+                <thead class="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-900/50 dark:text-gray-400">
+                    <tr>
+                        <th class="px-4 py-3">زمان</th>
+                        <th class="px-4 py-3">نقش</th>
+                        <th class="px-4 py-3">گیرنده</th>
+                        <th class="px-4 py-3">درخواست</th>
+                        <th class="px-4 py-3">وضعیت</th>
+                        <th class="px-4 py-3">خطا</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    {% for log in logs %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                        <td class="whitespace-nowrap px-4 py-3 text-xs text-gray-500 dark:text-gray-400">{{ log.created_at|date:"j/n H:i" }}</td>
+                        <td class="px-4 py-3">{{ log.get_role_display }}</td>
+                        <td class="px-4 py-3" dir="ltr">{{ log.recipient.get_full_name|default:log.target }}</td>
+                        <td class="px-4 py-3">#{{ log.leave_id }}</td>
+                        <td class="px-4 py-3">
+                            <span class="rounded-full px-2.5 py-1 text-xs font-semibold
+                                {% if log.status == 'sent' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300
+                                {% elif log.status == 'failed' %}bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300
+                                {% else %}bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                                {{ log.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="max-w-xs truncate px-4 py-3 text-xs text-red-500" title="{{ log.error }}">{{ log.error }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="px-4 py-8 text-center text-sm text-gray-400">هنوز ارسالی ثبت نشده است.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

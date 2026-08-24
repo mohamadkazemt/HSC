@@ -331,6 +331,20 @@
                 </div>
               </li>
               {% endif %}
+
+              <!-- Message Center -->
+              {% if not request.user.contractor_profile and not request.user.employee_profile %}
+              {% if active_modules.message_center %}
+              {% if request.user.is_superuser or request.user|check_permission:'send_leave_reminders' %}
+              <li>
+                <a href="{% url 'message_center:leave_reminders' %}" class="flex w-full items-center justify-between rounded-md p-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700">
+                  <span class="flex items-center gap-2"><i class="fas fa-paper-plane text-sky-600"></i><span>مرکز پیام</span></span>
+                </a>
+              </li>
+              {% endif %}
+              {% endif %}
+              {% endif %}
+
             </ul>
           </div>
         </li>

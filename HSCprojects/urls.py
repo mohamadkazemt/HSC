@@ -63,6 +63,7 @@ urlpatterns = [
     path('corrective-actions/', include(('corrective_actions.urls', 'corrective_actions'), namespace='corrective_actions')),
     path('mining-operations/', include(('mining_operations.urls', 'mining_operations'), namespace='mining_operations')),
     path('gym-referrals/', include(('gym_referrals.urls', 'gym_referrals'), namespace='gym_referrals')),
+    path('message-center/', include(('message_center.urls', 'message_center'), namespace='message_center')),
 ]
 
 # اضافه کردن مسیرهای media و static در حالت debug
