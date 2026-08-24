@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import ShiftReport, ApprovalHierarchy
+from .models import ShiftReport, ApprovalHierarchy, LeaveSettings
 
 
 @admin.register(ShiftReport)
@@ -103,3 +103,27 @@ class ApprovalHierarchyAdmin(admin.ModelAdmin):
         return obj.get_weight()
     get_weight_display.short_description = "وزن"
     get_weight_display.admin_order_field = 'id'  # برای مرتب‌سازی بر اساس وزن نیاز به annotation داریم
+
+
+@admin.register(LeaveSettings)
+class LeaveSettingsAdmin(admin.ModelAdmin):
+    list_display = ('registration_window_enabled', 'approval_window_enabled', 'updated_at')
+
+    fieldsets = (
+        ('مهلت ثبت درخواست', {
+            'fields': ('registration_window_enabled', 'registration_max_days_after', 'registration_max_days_future'),
+        }),
+        ('مهلت تأیید', {
+            'fields': ('approval_window_enabled', 'approval_max_days'),
+        }),
+    )
+
+    def has_add_permission(self, request):
+        # رکورد یکتا به صورت خودکار ساخته می‌شود
+        return not LeaveSettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_superuser or request.user.is_staff

@@ -109,29 +109,13 @@ class LeaveRequestForm(forms.ModelForm):
                     gregorian_date = jalali_date.togregorian()
                     
                     today = timezone.now().date()
-                    
-                    # محاسبه آخرین مهلت ثبت: 3 روز بعد از تاریخ مرخصی
-                    max_registration_date = gregorian_date + timedelta(days=3)
-                    
-                    # بررسی: آیا امروز بیشتر از 3 روز بعد از تاریخ مرخصی است؟
-                    if today > max_registration_date:
-                        jalali_max_registration = jdatetime.date.fromgregorian(date=max_registration_date)
-                        raise forms.ValidationError(
-                            f'مهلت ثبت این درخواست به پایان رسیده است. '
-                            f'تاریخ مرخصی: {jalali_date.strftime("%Y/%m/%d")}، '
-                            f'آخرین مهلت ثبت: {jalali_max_registration.strftime("%Y/%m/%d")}'
-                        )
-                    
-                    # بررسی: تاریخ مرخصی نباید بیشتر از 3 روز بعد از امروز باشد (برای ثبت)
-                    max_future_date = today + timedelta(days=3)
-                    
-                    if gregorian_date > max_future_date:
-                        jalali_max_date = jdatetime.date.fromgregorian(date=max_future_date)
-                        raise forms.ValidationError(
-                            f'شما می‌توانید فقط تا 3 روز بعد از تاریخ مرخصی، درخواست ثبت کنید. '
-                            f'حداکثر تاریخ مجاز: {jalali_max_date.strftime("%Y/%m/%d")}'
-                        )
-                    
+
+                    # مهلت ثبت بر اساس تنظیمات ادمین (registration_window)
+                    from .registration_window import validate_submission_date
+                    error = validate_submission_date(gregorian_date)
+                    if error:
+                        raise forms.ValidationError(error)
+
                     return gregorian_date
             except (ValueError, TypeError) as e:
                 raise forms.ValidationError(f'تاریخ نامعتبر است: {str(e)}')

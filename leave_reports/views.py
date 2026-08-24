@@ -21,7 +21,7 @@ from .models import ShiftReport, ApprovalHierarchy
 from .forms import LeaveRequestForm, RejectLeaveForm, ApprovalHierarchyForm, LeaveSearchForm
 from accounts.models import UserProfile
 from dashboard.utils import log_user_activity
-from permissions.utils import check_permission
+from permissions.utils import check_permission, permission_required
 
 
 # ============= درخواست مرخصی جدید =============
@@ -308,18 +308,16 @@ def approve_as_replacement(request, leave_id):
             'message': 'این درخواست قابل تأیید نیست'
         }, status=400)
     
-    # بررسی اینکه آیا هنوز 3 روز از تاریخ مرخصی گذشته یا نه
-    today = timezone.now().date()
-    max_allowed_date = leave_request.shift_date + timedelta(days=3)
-    if today > max_allowed_date:
-        logger.warning(f"❌ Too late to approve - shift_date: {leave_request.shift_date}, today: {today}, max_allowed: {max_allowed_date}")
-        jalali_shift_date = jdatetime.date.fromgregorian(date=leave_request.shift_date)
-        jalali_max_date = jdatetime.date.fromgregorian(date=max_allowed_date)
+    # بررسی مهلت تأیید بر اساس تنظیمات ادمین (approval window)
+    from .registration_window import validate_approval_deadline
+    approval_error = validate_approval_deadline(leave_request.shift_date)
+    if approval_error:
+        logger.warning(f"❌ Too late to approve - shift_date: {leave_request.shift_date}")
         return JsonResponse({
             'status': 'error',
-            'message': f'مهلت تأیید این درخواست به پایان رسیده است. تاریخ مرخصی: {jalali_shift_date.strftime("%Y/%m/%d")}، آخرین مهلت تأیید: {jalali_max_date.strftime("%Y/%m/%d")}'
+            'message': approval_error
         }, status=400)
-    
+
     try:
         logger.info(f"✅ Proceeding with approval...")
         with transaction.atomic():
@@ -460,18 +458,16 @@ def approve_as_manager(request, leave_id):
             'message': 'این درخواست قابل تأیید نیست'
         }, status=400)
     
-    # بررسی اینکه آیا هنوز 3 روز از تاریخ مرخصی گذشته یا نه
-    today = timezone.now().date()
-    max_allowed_date = leave_request.shift_date + timedelta(days=3)
-    if today > max_allowed_date:
-        logger.warning(f"❌ Too late to approve - shift_date: {leave_request.shift_date}, today: {today}, max_allowed: {max_allowed_date}")
-        jalali_shift_date = jdatetime.date.fromgregorian(date=leave_request.shift_date)
-        jalali_max_date = jdatetime.date.fromgregorian(date=max_allowed_date)
+    # بررسی مهلت تأیید بر اساس تنظیمات ادمین (approval window)
+    from .registration_window import validate_approval_deadline
+    approval_error = validate_approval_deadline(leave_request.shift_date)
+    if approval_error:
+        logger.warning(f"❌ Too late to approve - shift_date: {leave_request.shift_date}")
         return JsonResponse({
             'status': 'error',
-            'message': f'مهلت تأیید این درخواست به پایان رسیده است. تاریخ مرخصی: {jalali_shift_date.strftime("%Y/%m/%d")}، آخرین مهلت تأیید: {jalali_max_date.strftime("%Y/%m/%d")}'
+            'message': approval_error
         }, status=400)
-    
+
     try:
         logger.info(f"✅ Proceeding with manager approval...")
         with transaction.atomic():
@@ -1520,3 +1516,49 @@ def api_get_user_profiles(request):
     })
 
 
+
+
+@login_required
+@permission_required('leave_settings')
+def registration_window_settings(request):
+    """صفحه تنظیمات مهلت ثبت و تأیید درخواست‌های مرخصی (وب و ربات)."""
+    from .models import LeaveSettings
+    from django import forms as django_forms
+
+    class RegistrationWindowForm(django_forms.ModelForm):
+        class Meta:
+            model = LeaveSettings
+            fields = (
+                'registration_window_enabled', 'registration_max_days_after', 'registration_max_days_future',
+                'approval_window_enabled', 'approval_max_days',
+            )
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            for field in self.fields.values():
+                css = field.widget.__class__.__name__
+                if css == 'BooleanInput':
+                    field.widget.attrs['class'] = 'h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500'
+                else:
+                    field.widget.attrs['class'] = 'w-full rounded-lg border-gray-300 bg-white text-gray-900 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white'
+
+    settings_obj = LeaveSettings.load()
+    form = RegistrationWindowForm(request.POST or None, instance=settings_obj)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        log_user_activity(
+            user=request.user,
+            activity_type='update',
+            description='به‌روزرسانی تنظیمات مهلت ثبت/تأیید مرخصی',
+            related_model='LeaveSettings',
+            related_object_id=settings_obj.pk,
+            url=request.path,
+            request=request,
+        )
+        messages.success(request, 'تنظیمات مهلت مرخصی با موفقیت ذخیره شد.')
+        return redirect('leave_reports:registration_window_settings')
+
+    return render(request, 'leave_reports/registration_window_settings.html', {
+        'form': form,
+        'settings_obj': settings_obj,
+    })

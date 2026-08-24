@@ -223,3 +223,4 @@ documentation/
 !gym_referrals/management/commands/check_*.py
 !gym_referrals/tests.py
 !gym_referrals/test_*.py
+!leave_reports/tests.py

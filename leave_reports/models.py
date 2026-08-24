@@ -375,35 +375,13 @@ class ShiftReport(models.Model):
                 raise ValidationError(
                     f'برای کاربر {self.user.get_full_name()} در تاریخ {jalali_date_str} قبلاً گزارش ثبت شده است.')
         
-        # بررسی مهلت 3 روزه برای ثبت (فقط برای ثبت جدید، نه ویرایش)
+        # بررسی مهلت ثبت بر اساس تنظیمات (فقط برای ثبت جدید، نه ویرایش)
         if self.shift_date and not self.pk:  # فقط برای ثبت جدید
-            from django.utils import timezone
-            from datetime import timedelta
-            import jdatetime
-            
-            today = timezone.now().date()
-            
-            # محاسبه آخرین مهلت ثبت: 3 روز بعد از تاریخ مرخصی
-            max_registration_date = self.shift_date + timedelta(days=3)
-            
-            # بررسی: آیا امروز بیشتر از 3 روز بعد از تاریخ مرخصی است؟
-            if today > max_registration_date:
-                jalali_shift_date = jdatetime.date.fromgregorian(date=self.shift_date)
-                jalali_max_registration = jdatetime.date.fromgregorian(date=max_registration_date)
-                raise ValidationError(
-                    f'مهلت ثبت این درخواست به پایان رسیده است. '
-                    f'تاریخ مرخصی: {jalali_shift_date.strftime("%Y/%m/%d")}، '
-                    f'آخرین مهلت ثبت: {jalali_max_registration.strftime("%Y/%m/%d")}'
-                )
-            
-            # بررسی: تاریخ مرخصی نباید بیشتر از 3 روز بعد از امروز باشد
-            max_future_date = today + timedelta(days=3)
-            if self.shift_date > max_future_date:
-                jalali_max_date = jdatetime.date.fromgregorian(date=max_future_date)
-                raise ValidationError(
-                    f'شما می‌توانید فقط تا 3 روز بعد از تاریخ مرخصی، درخواست ثبت کنید. '
-                    f'حداکثر تاریخ مجاز: {jalali_max_date.strftime("%Y/%m/%d")}'
-                )
+            from .registration_window import validate_submission_date
+
+            error = validate_submission_date(self.shift_date)
+            if error:
+                raise ValidationError(error)
         
         # اعتبارسنجی برای مرخصی ساعتی
         if self.leave_type == 'hourly' and (not self.start_time or not self.end_time):
@@ -529,3 +507,53 @@ class ShiftReport(models.Model):
 
     def __str__(self):
         return f"{self.user.get_full_name()} - {self.get_leave_type_display()} - {self.shift_date}"
+
+
+class LeaveSettings(models.Model):
+    """تنظیمات سراسری مهلت ثبت و تأیید درخواست‌های مرخصی (تک‌ردیفی).
+
+    وقتی محدودیت‌ها غیرفعال باشند، هیچ بازه زمانی‌ای برای ثبت یا تأیید
+    اعمال نمی‌شود و کاربران می‌توانند برای هر تاریخی درخواست بدهند.
+    """
+
+    registration_window_enabled = models.BooleanField(
+        default=False,
+        verbose_name="محدودیت مهلت ثبت فعال باشد",
+        help_text="در صورت فعال بودن، ثبت درخواست فقط در بازه مجاز نسبت به تاریخ مرخصی امکان‌پذیر است.",
+    )
+    registration_max_days_after = models.PositiveSmallIntegerField(
+        default=3,
+        verbose_name="مهلت ثبت پس از تاریخ مرخصی (روز)",
+        help_text="حداکثر فاصله مجاز بین تاریخ مرخصی و روز ثبت درخواست.",
+    )
+    registration_max_days_future = models.PositiveSmallIntegerField(
+        default=3,
+        verbose_name="حداکثر روزهای آینده مجاز (روز)",
+        help_text="درخواست برای چند روز آینده قابل ثبت است.",
+    )
+    approval_window_enabled = models.BooleanField(
+        default=False,
+        verbose_name="محدودیت مهلت تأیید فعال باشد",
+        help_text="در صورت فعال بودن، تأییدکننده‌ها فقط تا N روز پس از تاریخ مرخصی فرصت تأیید دارند.",
+    )
+    approval_max_days = models.PositiveSmallIntegerField(
+        default=3,
+        verbose_name="مهلت تأیید پس از تاریخ مرخصی (روز)",
+    )
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="آخرین تغییر")
+
+    class Meta:
+        verbose_name = "تنظیمات مهلت مرخصی"
+        verbose_name_plural = "تنظیمات مهلت مرخصی"
+
+    def save(self, *args, **kwargs):
+        self.pk = 1  # singleton
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def __str__(self):
+        return "تنظیمات مهلت مرخصی"

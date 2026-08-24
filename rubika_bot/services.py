@@ -1353,18 +1353,11 @@ class RubikaBotEngine:
 
             try:
                 shift_date = datetime.fromisoformat(data['date']).date()
-                today = timezone.now().date()
-                max_registration_date = shift_date + timedelta(days=3)
 
-                if today > max_registration_date:
-                    jalali_shift = jdatetime.date.fromgregorian(date=shift_date)
-                    jalali_max = jdatetime.date.fromgregorian(date=max_registration_date)
-                    return False, f'⚠️ مهلت ثبت به پایان رسیده.\n\n📅 تاریخ: {jalali_shift.strftime("%Y/%m/%d")}\n⏳ مهلت: {jalali_max.strftime("%Y/%m/%d")}'
-
-                max_future = today + timedelta(days=3)
-                if shift_date > max_future:
-                    jalali_max = jdatetime.date.fromgregorian(date=max_future)
-                    return False, f'⚠️ حداکثر تاریخ مجاز: {jalali_max.strftime("%Y/%m/%d")}'
+                from leave_reports.registration_window import validate_submission_date
+                submission_error = validate_submission_date(shift_date)
+                if submission_error:
+                    return False, f'⚠️ {submission_error}'
 
                 profile = UserProfile.objects.select_related(
                     'position', 'section', 'user'
@@ -2251,34 +2244,15 @@ class RubikaBotEngine:
             # Create jalali date
             jalali_date = jdatetime.date(year, month, day)
             gregorian_date = jalali_date.togregorian()
-            
-            # بررسی محدودیت تاریخ: می‌تواند تا 3 روز بعد از تاریخ مرخصی ثبت شود
-            today = jdatetime.date.today()
-            from datetime import timedelta
-            
-            # تبدیل به میلادی برای محاسبه
-            today_gregorian = today.togregorian()
-            jalali_date_gregorian = gregorian_date
-            
-            # محاسبه آخرین مهلت ثبت: 3 روز بعد از تاریخ مرخصی
-            max_registration_date_gregorian = jalali_date_gregorian + timedelta(days=3)
-            max_registration_date_jalali = jdatetime.date.fromgregorian(date=max_registration_date_gregorian)
-            
-            # بررسی: آیا امروز بیشتر از 3 روز بعد از تاریخ مرخصی است؟
-            if today_gregorian > max_registration_date_gregorian:
-                message = f'⚠️ مهلت ثبت این درخواست به پایان رسیده است.\n\n📅 تاریخ مرخصی: {jalali_date.strftime("%Y/%m/%d")}\n⏳ آخرین مهلت ثبت: {max_registration_date_jalali.strftime("%Y/%m/%d")}'
+
+            # بررسی محدودیت تاریخ بر اساس تنظیمات ادمین
+            from leave_reports.registration_window import validate_submission_date
+            submission_error = await _sync_db(validate_submission_date)(gregorian_date)
+            if submission_error:
+                message = f'⚠️ {submission_error}'
                 await self._send_text_message(chat_id, message)
                 return
-            
-            # بررسی: تاریخ مرخصی نباید بیشتر از 3 روز بعد از امروز باشد (برای ثبت)
-            max_future_date_gregorian = today_gregorian + timedelta(days=3)
-            max_future_date_jalali = jdatetime.date.fromgregorian(date=max_future_date_gregorian)
-            
-            if jalali_date > max_future_date_jalali:
-                message = f'⚠️ شما می‌توانید فقط تا 3 روز بعد از تاریخ مرخصی، درخواست ثبت کنید.\n\n📅 حداکثر تاریخ مجاز: {max_future_date_jalali.strftime("%Y/%m/%d")}'
-                await self._send_text_message(chat_id, message)
-                return
-            
+
         except Exception as e:
             message = '❌ فرمت تاریخ نامعتبر است. لطفاً به فرمت زیر وارد کنید:\n\n1403/09/15\n\nیا 1403-09-15'
             await self._send_text_message(chat_id, message)
@@ -3090,30 +3064,14 @@ class RubikaBotEngine:
                 jalali_date = jdatetime.date(year, month, day)
                 gregorian_date = jalali_date.togregorian()
 
-                # بررسی مهلت ثبت (3 روز)
-                today = jdatetime.date.today()
-                today_gregorian = today.togregorian()
-                max_registration = gregorian_date + timedelta(days=3)
-
-                if today_gregorian > max_registration:
-                    max_reg_jalali = jdatetime.date.fromgregorian(date=max_registration)
+                # بررسی مهلت ثبت بر اساس تنظیمات ادمین
+                from leave_reports.registration_window import validate_submission_date
+                submission_error = await _sync_db(validate_submission_date)(gregorian_date)
+                if submission_error:
                     await self._send_text_message(
                         chat_id,
-                        f'⚠️ مهلت ثبت این درخواست به پایان رسیده است.\n\n'
-                        f'📅 تاریخ مرخصی: {jalali_date.strftime("%Y/%m/%d")}\n'
-                        f'⏳ آخرین مهلت ثبت: {max_reg_jalali.strftime("%Y/%m/%d")}\n\n'
+                        f'⚠️ {submission_error}\n\n'
                         f'لطفاً پیام صوتی جدیدی با تاریخ مناسب ارسال کنید.'
-                    )
-                    return
-
-                # بررسی تاریخ آینده (حداکثر 3 روز)
-                max_future = today_gregorian + timedelta(days=3)
-                if gregorian_date > max_future:
-                    max_future_jalali = jdatetime.date.fromgregorian(date=max_future)
-                    await self._send_text_message(
-                        chat_id,
-                        f'⚠️ شما فقط تا 3 روز آینده می‌توانید درخواست ثبت کنید.\n\n'
-                        f'📅 حداکثر تاریخ مجاز: {max_future_jalali.strftime("%Y/%m/%d")}'
                     )
                     return
 
@@ -3370,22 +3328,11 @@ class RubikaBotEngine:
                 
                 # بررسی تاریخ قبل از ایجاد درخواست (بررسی مجدد برای اطمینان)
                 shift_date = datetime.fromisoformat(data['date']).date()
-                today = timezone.now().date()
-                
-                # محاسبه آخرین مهلت ثبت: 3 روز بعد از تاریخ مرخصی
-                max_registration_date = shift_date + timedelta(days=3)
-                
-                # بررسی: آیا امروز بیشتر از 3 روز بعد از تاریخ مرخصی است؟
-                if today > max_registration_date:
-                    jalali_shift_date = jdatetime.date.fromgregorian(date=shift_date)
-                    jalali_max_registration = jdatetime.date.fromgregorian(date=max_registration_date)
-                    return False, f'⚠️ مهلت ثبت این درخواست به پایان رسیده است.\n\n📅 تاریخ مرخصی: {jalali_shift_date.strftime("%Y/%m/%d")}\n⏳ آخرین مهلت ثبت: {jalali_max_registration.strftime("%Y/%m/%d")}'
-                
-                # بررسی: تاریخ مرخصی نباید بیشتر از 3 روز بعد از امروز باشد
-                max_future_date = today + timedelta(days=3)
-                if shift_date > max_future_date:
-                    jalali_max_date = jdatetime.date.fromgregorian(date=max_future_date)
-                    return False, f'⚠️ شما می‌توانید فقط تا 3 روز بعد از تاریخ مرخصی، درخواست ثبت کنید.\n\n📅 حداکثر تاریخ مجاز: {jalali_max_date.strftime("%Y/%m/%d")}'
+
+                from leave_reports.registration_window import validate_submission_date
+                submission_error = validate_submission_date(shift_date)
+                if submission_error:
+                    return False, f'⚠️ {submission_error}'
                 
                 # Get user profile (optimized with select_related)
                 profile = UserProfile.objects.select_related('position', 'section', 'user').get(user=user.user)

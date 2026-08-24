@@ -92,6 +92,14 @@ URLS_WITH_LABELS = [
         "label": "مرخصی_حذف تأیید کننده",
     },
     
+    # تنظیمات مهلت ثبت و تأیید
+    {
+        "path": "settings/registration-window/",
+        "view": views.registration_window_settings,
+        "name": "registration_window_settings",
+        "label": "مرخصی_تنظیمات مهلت ثبت",
+    },
+
     # API endpoints
     {
         "path": "api/users-for-replacement/",
