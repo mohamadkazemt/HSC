@@ -12,7 +12,9 @@ app_name = "gym_referrals"
 # endpoints (QR verification, operator redeem) are not listed because their
 # authorization is token/operator based.
 URLS_WITH_LABELS = [
-    {"path": "", "view": views.create_page, "url_name": "create", "name": "gym_referral_create",
+    {"path": "", "view": views.gym_dashboard, "url_name": "dashboard", "name": "gym_manage",
+     "label": "باشگاه_داشبورد"},
+    {"path": "create/", "view": views.create_page, "url_name": "create", "name": "gym_referral_create",
      "label": "باشگاه_صدور معرفی‌نامه"},
     {"path": "history/", "view": views.history_page, "url_name": "history", "name": "gym_referral_history",
      "label": "باشگاه_سوابق معرفی‌نامه‌های من"},
@@ -27,6 +29,8 @@ URLS_WITH_LABELS = [
     {"path": "management/legacy/", "view": views.legacy_list, "url_name": "legacy_list",
      "name": "gym_referral_management", "label": "باشگاه_مدیریت معرفی‌نامه‌ها"},
     {"path": "legacy/import/", "view": views.legacy_import, "url_name": "legacy_import",
+     "name": "gym_referral_management", "label": "باشگاه_مدیریت معرفی‌نامه‌ها"},
+    {"path": "legacy/import/sample.xlsx", "view": views.legacy_import_sample, "url_name": "legacy_import_sample",
      "name": "gym_referral_management", "label": "باشگاه_مدیریت معرفی‌نامه‌ها"},
     {"path": "management/reports/", "view": views.reports_page, "url_name": "reports",
      "name": "gym_referral_management", "label": "باشگاه_مدیریت معرفی‌نامه‌ها"},

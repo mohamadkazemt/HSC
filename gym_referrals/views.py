@@ -14,7 +14,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods, require_POST
 
-from accounts.models import Dependent
+from accounts.models import Dependent, UserProfile
 from permissions.utils import check_permission
 from .access import gym_access_required
 from .billing import BillingError, GymInvoiceService
@@ -28,6 +28,49 @@ def _spreadsheet_safe(value):
     if isinstance(value, str) and value.startswith(("=", "+", "-", "@")):
         return "'" + value
     return value
+
+
+@permission_required("gym_referrals.view_gym", raise_exception=True)
+@login_required
+@gym_access_required("gym_manage")
+def gym_dashboard(request):
+    today = timezone.localdate()
+    gyms = Gym.objects.all()
+    active_gyms = gyms.filter(is_active=True)
+    contracts = GymContract.objects.filter(is_active=True, start_date__lte=today, end_date__gte=today)
+    operators = GymOperator.objects.filter(is_active=True)
+    active_referrals = Referral.objects.filter(
+        status=Referral.Status.ACTIVE, valid_from__lte=today, valid_until__gte=today
+    )
+    recent_referrals = Referral.objects.select_related("employee", "gym").order_by("-created_at")[:5]
+    
+    stats = {
+        "total_gyms": gyms.count(),
+        "active_gyms": active_gyms.count(),
+        "total_contracts": GymContract.objects.count(),
+        "active_contracts": contracts.count(),
+        "total_operators": GymOperator.objects.count(),
+        "active_operators": operators.count(),
+        "total_referrals": Referral.objects.count(),
+        "active_referrals": active_referrals.count(),
+        "used_referrals": Referral.objects.filter(status=Referral.Status.USED).count(),
+        "expired_referrals": Referral.objects.filter(status=Referral.Status.EXPIRED).count(),
+    }
+    
+    onboarding = {
+        "has_gyms": gyms.exists(),
+        "has_contracts": GymContract.objects.exists(),
+        "has_operators": GymOperator.objects.exists(),
+        "can_create_referral": gyms.filter(is_active=True, contracts__is_active=True).exists(),
+    }
+    onboarding["setup_complete"] = all(onboarding.values())
+    
+    return render(request, "gym_referrals/dashboard.html", {
+        "stats": stats,
+        "onboarding": onboarding,
+        "recent_referrals": recent_referrals,
+        "today": today,
+    })
 
 
 def _decorate_contract(contract, today):
@@ -89,7 +132,14 @@ def create_page(request):
         employee=request.user, status=Referral.Status.ACTIVE,
         valid_from__lte=today, valid_until__gte=today,
     ).select_related("gym")
-    return render(request, "gym_referrals/create.html", {"form": form, "active_referrals": active_referrals})
+    available_gyms = Gym.objects.filter(
+        is_active=True, contracts__is_active=True,
+        contracts__start_date__lte=today, contracts__end_date__gte=today,
+    ).distinct().count()
+    return render(request, "gym_referrals/create.html", {
+        "form": form, "active_referrals": active_referrals,
+        "available_gyms": available_gyms,
+    })
 
 
 @permission_required("gym_referrals.view_gym", raise_exception=True)
@@ -321,16 +371,28 @@ MAX_LEGACY_IMPORT_ROWS = 500
 def legacy_import(request):
     form, report, truncated = LegacyImportForm(request.POST or None, request.FILES or None), [], False
     if request.method == "POST" and form.is_valid():
+        uploaded_file = form.cleaned_data["file"]
+        file_name = uploaded_file.name.lower()
         try:
-            rows = csv.DictReader(io.StringIO(form.cleaned_data["file"].read().decode("utf-8-sig")))
+            if file_name.endswith(".csv"):
+                rows = _parse_csv(uploaded_file)
+            else:
+                rows = _parse_excel(uploaded_file)
             for line, row in enumerate(rows, 2):
                 if line > MAX_LEGACY_IMPORT_ROWS + 1:
                     truncated = True
                     break
                 try:
-                    employee = request.user.__class__.objects.get(username=row["employee_username"])
-                    btype = row["beneficiary_type"].upper()
-                    bid = employee.userprofile.pk if btype == "EMPLOYEE" else int(row["beneficiary_id"])
+                    profile = UserProfile.objects.select_related("user").get(personnel_code=row["personnel_no"])
+                    employee = profile.user
+                    dn_code = row.get("dependent_national_code", "").strip()
+                    if dn_code:
+                        btype = "DEPENDENT"
+                        dependent = profile.dependents.get(national_code=dn_code)
+                        bid = dependent.pk
+                    else:
+                        btype = "EMPLOYEE"
+                        bid = profile.pk
                     issue_date = date.fromisoformat(row["issue_date"])
                     valid_from = date.fromisoformat(row["valid_from"])
                     valid_until = date.fromisoformat(row["valid_until"])
@@ -341,10 +403,14 @@ def legacy_import(request):
                         legacy_letter_no=row["legacy_letter_no"], notes=row.get("notes", ""), actor=request.user,
                     )
                     report.append({"line": line, "ok": True, "detail": referral.referral_number if created else "تکراری"})
-                except (KeyError, ValueError, ReferralError, IntegrityError, request.user.__class__.DoesNotExist, Dependent.DoesNotExist) as exc:
+                except (KeyError, ValueError, ReferralError, IntegrityError, UserProfile.DoesNotExist, Dependent.DoesNotExist) as exc:
                     report.append({"line": line, "ok": False, "detail": getattr(exc, "message", str(exc))})
         except UnicodeDecodeError:
             form.add_error("file", "فایل باید UTF-8 باشد.")
+        except ImportError:
+            form.add_error("file", "برای خواندن فایل Excel، کتابخانه openpyxl نصب نیست.")
+        except Exception as exc:
+            form.add_error("file", f"خطا در خواندن فایل: {exc}")
     summary = {
         "total": len(report),
         "successful": sum(1 for item in report if item["ok"]),
@@ -355,6 +421,170 @@ def legacy_import(request):
     if truncated:
         messages.warning(request, f"پردازش پس از {MAX_LEGACY_IMPORT_ROWS} ردیف متوقف شد؛ فایل را به بخش‌های کوچک‌تر تقسیم کنید.")
     return render(request, "gym_referrals/import.html", {"form": form, "report": report, "summary": summary})
+
+
+def _parse_csv(uploaded_file):
+    rows_dict = csv.DictReader(io.StringIO(uploaded_file.read().decode("utf-8-sig")))
+    return [_normalize_row(row) for row in rows_dict]
+
+
+def _parse_excel(uploaded_file):
+    from openpyxl import load_workbook
+    wb = load_workbook(uploaded_file, read_only=True, data_only=True)
+    ws = wb.active
+    rows_iter = ws.iter_rows(values_only=True)
+    headers_raw = next(rows_iter, None)
+    if not headers_raw:
+        return []
+    headers = [str(h).strip().lower().replace(" ", "_").replace("\u200c", "_") for h in headers_raw]
+    result = []
+    for row_values in rows_iter:
+        if all(v is None for v in row_values):
+            continue
+        row_dict = {}
+        for idx, header in enumerate(headers):
+            val = row_values[idx] if idx < len(row_values) else None
+            if val is None:
+                row_dict[header] = ""
+            elif isinstance(val, float) and val == int(val):
+                row_dict[header] = str(int(val))
+            else:
+                row_dict[header] = str(val).strip()
+        result.append(_normalize_row(row_dict))
+    return result
+
+
+def _normalize_row(row):
+    mapping = {
+        "personnel_no": "personnel_no",
+        "personnel_code": "personnel_no",
+        "personnel_number": "personnel_no",
+        "کد پرسنلی": "personnel_no",
+        "کد_پرسنلی": "personnel_no",
+        "dependent_national_code": "dependent_national_code",
+        "dependent_code": "dependent_national_code",
+        "dnational_code": "dependent_national_code",
+        "کد ملی تحت تکفل": "dependent_national_code",
+        "کد_ملی_تحت_تکفل": "dependent_national_code",
+        "کد ملی": "dependent_national_code",
+        "کد_ملی": "dependent_national_code",
+        "gym_id": "gym_id",
+        "gym": "gym_id",
+        "شناسه باشگاه": "gym_id",
+        "شناسه_باشگاه": "gym_id",
+        "legacy_letter_no": "legacy_letter_no",
+        "letter_no": "legacy_letter_no",
+        "letter_number": "legacy_letter_no",
+        "شماره معرفی‌نامه": "legacy_letter_no",
+        "شماره_معرفی_نامه": "legacy_letter_no",
+        "issue_date": "issue_date",
+        "تاریخ صدور": "issue_date",
+        "تاریخ_صدور": "issue_date",
+        "valid_from": "valid_from",
+        "تاریخ شروع": "valid_from",
+        "تاریخ_شروع": "valid_from",
+        "valid_until": "valid_until",
+        "تاریخ پایان": "valid_until",
+        "تاریخ_پایان": "valid_until",
+        "notes": "notes",
+        "description": "notes",
+        "توضیحات": "notes",
+    }
+    normalized = {}
+    for key, value in row.items():
+        clean_key = key.strip().lower().replace(" ", "_").replace("\u200c", "_")
+        canonical = mapping.get(clean_key, clean_key)
+        normalized[canonical] = str(value).strip() if value is not None else ""
+    return normalized
+
+
+@login_required
+@gym_access_required("gym_referral_management")
+def legacy_import_sample(request):
+    from openpyxl import Workbook
+    from openpyxl.comments import Comment
+    from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "نمونه ورود اطلاعات"
+    ws.sheet_view.rightToLeft = True
+
+    headers = [
+        ("کد پرسنلی", "کد پرسنلی کارمند"),
+        ("کد ملی تحت تکفل", "برای صدور معرفی‌نامه همسر/فرزند؛ برای خود کارمند خالی بماند"),
+        ("شناسه باشگاه", "شناسه باشگاه در سامانه"),
+        ("شماره معرفی‌نامه", "شماره معرفی‌نامه فیزیکی"),
+        ("تاریخ صدور", "فرمت YYYY-MM-DD"),
+        ("تاریخ شروع", "فرمت YYYY-MM-DD"),
+        ("تاریخ پایان", "فرمت YYYY-MM-DD"),
+        ("توضیحات", "اختیاری"),
+    ]
+
+    header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    header_font = Font(name="Tahoma", bold=True, color="FFFFFF", size=11)
+    cell_font = Font(name="Tahoma", size=10)
+    example_fill = PatternFill(start_color="E2EFDA", end_color="E2EFDA", fill_type="solid")
+    thin_border = Border(
+        left=Side(style="thin"), right=Side(style="thin"),
+        top=Side(style="thin"), bottom=Side(style="thin"),
+    )
+
+    col_widths = [18, 30, 20, 26, 18, 18, 18, 26]
+    for col_idx, (field_name, description) in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_idx, value=field_name)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = thin_border
+        cell.comment = Comment(description, "سامانه باشگاه‌ها")
+
+        ws.column_dimensions[cell.column_letter].width = col_widths[col_idx - 1]
+
+    example_rows = [
+        ["110001", "", "1", "PH-1403-001", "1403-06-15", "1403-06-15", "1403-12-29", "معرفی‌نامه کاغذی قدیمی"],
+        ["110001", "0012345678", "1", "PH-1403-002", "1403-07-01", "1403-07-01", "1403-12-29", "معرفی همسر"],
+    ]
+    for row_idx, row_values in enumerate(example_rows, 2):
+        for col_idx, val in enumerate(row_values, 1):
+            cell = ws.cell(row=row_idx, column=col_idx, value=val)
+            cell.fill = example_fill
+            cell.font = cell_font
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+            cell.border = thin_border
+
+    ws.auto_filter.ref = "A1:H3"
+    ws.freeze_panes = "A2"
+
+    guide = wb.create_sheet("راهنما")
+    guide.sheet_view.rightToLeft = True
+    guide.column_dimensions["A"].width = 110
+    guide_text = [
+        "راهنمای ورود اطلاعات",
+        "",
+        "1) ستون‌ها باید فارسی باشد: کد پرسنلی / کد ملی تحت تکفل / شناسه باشگاه / شماره معرفی‌نامه / تاریخ صدور / تاریخ شروع / تاریخ پایان / توضیحات",
+        "2) برای صدور معرفی‌نامه برای خود کارمند: فقط کد پرسنلی را پر کنید و ستون کد ملی تحت تکفل را خالی بگذارید.",
+        "3) برای همسر یا فرزند: کد پرسنلی کارمند و کد ملی فرد تحت تکفل را وارد کنید.",
+        "4) تاریخ‌ها به فرمت YYYY-MM-DD باشد.",
+        "5) کد پرسنلی و کد ملی افراد باید قبلاً در سامانه ثبت شده باشند.",
+        "6) ردیف‌های نمونه در برگه اول را با اطلاعات واقعی جایگزین کنید.",
+    ]
+    for idx, text in enumerate(guide_text, 1):
+        cell = guide.cell(row=idx, column=1, value=text)
+        if idx == 1:
+            cell.font = Font(name="Tahoma", bold=True, size=13)
+        else:
+            cell.font = Font(name="Tahoma", size=11)
+
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    response["Content-Disposition"] = 'attachment; filename="legacy_import_sample.xlsx"'
+    return response
 
 
 @permission_required("gym_referrals.view_gyminvoice", raise_exception=True)

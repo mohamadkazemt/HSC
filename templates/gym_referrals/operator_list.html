@@ -1,1 +1,82 @@
-{% extends "base.html" %}{% block title %}اپراتورهای باشگاه‌ها{% endblock %}{% block content %}<div class="space-y-6"><header class="flex justify-between"><div><h1 class="text-2xl font-bold">اپراتورهای باشگاه‌ها</h1><p class="text-sm text-gray-500">کاربران مجاز ثبت مراجعه</p></div>{% if perms.gym_referrals.add_gymoperator %}<a class="rounded bg-indigo-600 px-4 py-2 text-white" href="{% url 'gym_referrals:operator_create' %}">افزودن اپراتور</a>{% endif %}</header><div class="overflow-x-auto rounded-xl border bg-white dark:border-gray-700 dark:bg-gray-800"><table class="min-w-full text-right"><tr><th class="p-3">کاربر</th><th>باشگاه</th><th>وضعیت کاربر</th><th>وضعیت اپراتور</th><th>عملیات</th></tr>{% for op in operators %}<tr class="border-t"><td class="p-3">{{ op.user.get_full_name|default:op.user.username }}</td><td>{{ op.gym.name }}</td><td>{% if op.user.is_active %}فعال{% else %}غیرفعال{% endif %}</td><td>{% if op.is_active %}فعال{% else %}غیرفعال{% endif %}</td><td>{% if perms.gym_referrals.delete_gymoperator %}<form method="post" action="{% url 'gym_referrals:operator_delete' op.pk %}" onsubmit="return confirm('ارتباط اپراتور حذف شود؟')">{% csrf_token %}<button class="text-red-600">حذف</button></form>{% endif %}</td></tr>{% empty %}<tr><td colspan="5" class="p-10 text-center">برای این باشگاه اپراتوری تعیین نشده است.</td></tr>{% endfor %}</table></div></div>{% endblock %}
+{% extends "base.html" %}
+{% block title %}اپراتورهای باشگاه‌ها{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-7xl space-y-6">
+  <nav class="text-sm text-gray-500 dark:text-gray-400" aria-label="مسیر صفحه">
+    <ol class="flex flex-wrap items-center gap-2">
+      <li><a href="{% url 'gym_referrals:dashboard' %}" class="hover:text-indigo-600">امور باشگاه‌ها</a></li>
+      <li aria-hidden="true">/</li>
+      <li class="text-gray-900 dark:text-white">اپراتورها</li>
+    </ol>
+  </nav>
+
+  <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">اپراتورهای باشگاه‌ها</h1>
+      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">کاربران مجاز برای ثبت مراجعه و استفاده از معرفی‌نامه‌ها</p>
+    </div>
+    {% if perms.gym_referrals.add_gymoperator %}
+    <a href="{% url 'gym_referrals:operator_create' %}" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">
+      <i class="fas fa-plus" aria-hidden="true"></i>افزودن اپراتور
+    </a>
+    {% endif %}
+  </header>
+
+  {% if not operators %}
+  <section class="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-800">
+    <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-indigo-50 text-xl text-indigo-600 dark:bg-indigo-900/30">
+      <i class="fas fa-user-check"></i>
+    </span>
+    <h2 class="mt-4 font-bold text-gray-900 dark:text-white">هنوز اپراتوری تعیین نشده است</h2>
+    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">برای ثبت مراجعه باشگاه، کاربران مجاز را به عنوان اپراتور تعیین کنید.</p>
+    {% if perms.gym_referrals.add_gymoperator %}
+    <a href="{% url 'gym_referrals:operator_create' %}" class="mt-5 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">
+      <i class="fas fa-plus"></i>افزودن اولین اپراتور
+    </a>
+    {% endif %}
+  </section>
+  {% else %}
+  <div class="overflow-hidden rounded-2xl border bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-right text-sm">
+        <thead class="bg-gray-50 dark:bg-gray-700">
+          <tr>
+            <th class="p-4">کاربر</th>
+            <th class="p-4">باشگاه</th>
+            <th class="p-4">وضعیت کاربر</th>
+            <th class="p-4">وضعیت اپراتور</th>
+            <th class="p-4">عملیات</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y dark:divide-gray-700">
+          {% for op in operators %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30">
+            <td class="p-4 font-semibold dark:text-white">{{ op.user.get_full_name|default:op.user.username }}</td>
+            <td class="p-4">{{ op.gym.name }}</td>
+            <td class="p-4">
+              <span class="rounded-full px-2.5 py-1 text-xs font-semibold {% if op.user.is_active %}bg-emerald-100 text-emerald-700{% else %}bg-gray-100 text-gray-700{% endif %}">
+                {% if op.user.is_active %}فعال{% else %}غیرفعال{% endif %}
+              </span>
+            </td>
+            <td class="p-4">
+              <span class="rounded-full px-2.5 py-1 text-xs font-semibold {% if op.is_active %}bg-emerald-100 text-emerald-700{% else %}bg-amber-100 text-amber-700{% endif %}">
+                {% if op.is_active %}فعال{% else %}غیرفعال{% endif %}
+              </span>
+            </td>
+            <td class="whitespace-nowrap p-4">
+              {% if perms.gym_referrals.delete_gymoperator %}
+              <form method="post" action="{% url 'gym_referrals:operator_delete' op.pk %}" onsubmit="return confirm('ارتباط اپراتور حذف شود؟')" class="inline">
+                {% csrf_token %}
+                <button type="submit" class="font-semibold text-red-600 hover:text-red-800">حذف</button>
+              </form>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -91,13 +91,16 @@ class ReferralCancelForm(forms.Form):
 
 
 class LegacyImportForm(forms.Form):
-    max_file_bytes = 2 * 1024 * 1024
-    file = forms.FileField(label="فایل CSV", widget=forms.FileInput(attrs={"accept": ".csv,text/csv"}))
+    max_file_bytes = 5 * 1024 * 1024
+    file = forms.FileField(label="فایل CSV یا Excel", widget=forms.FileInput(attrs={"accept": ".csv,.xlsx,.xls"}))
 
     def clean_file(self):
         uploaded = self.cleaned_data["file"]
         if uploaded.size > self.max_file_bytes:
-            raise forms.ValidationError("حجم فایل باید کمتر از ۲ مگابایت باشد.")
+            raise forms.ValidationError("حجم فایل باید کمتر از ۵ مگابایت باشد.")
+        name = uploaded.name.lower()
+        if not name.endswith((".csv", ".xlsx", ".xls")):
+            raise forms.ValidationError("فرمت فایل مجاز نیست. فقط CSV یا Excel (.xlsx) پذیرفته می‌شود.")
         return uploaded
 
 

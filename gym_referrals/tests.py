@@ -279,13 +279,20 @@ class LegacyImportTests(TestCase):
         self.client.force_login(self.staff)
 
     def _csv(self, rows):
-        header = "employee_username,beneficiary_type,beneficiary_id,gym_id,legacy_letter_no,issue_date,valid_from,valid_until\n"
+        header = "کد پرسنلی,کد ملی تحت تکفل,شناسه باشگاه,شماره معرفی‌نامه,تاریخ صدور,تاریخ شروع,تاریخ پایان\n"
         return SimpleUploadedFile("legacy.csv", (header + "\n".join(rows)).encode("utf-8-sig"), content_type="text/csv")
 
     def _row(self, index):
         today = timezone.localdate()
-        fields = [self.staff.username, "DEPENDENT", str(self.dependents[(index - 1) % len(self.dependents)].pk), str(self.gym.pk),
+        dependent = self.dependents[(index - 1) % len(self.dependents)]
+        fields = [self.profile.personnel_code, dependent.national_code, str(self.gym.pk),
                   f"L-{index}", today.isoformat(), (today - timedelta(days=30)).isoformat(), today.isoformat()]
+        return ",".join(fields)
+
+    def _employee_row(self, index):
+        today = timezone.localdate()
+        fields = [self.profile.personnel_code, "", str(self.gym.pk),
+                  f"E-{index}", today.isoformat(), (today - timedelta(days=30)).isoformat(), today.isoformat()]
         return ",".join(fields)
 
     def test_oversized_file_is_rejected(self):
@@ -314,6 +321,14 @@ class LegacyImportTests(TestCase):
         self.assertEqual(second.context["summary"]["successful"], 1)
         self.assertIn("تکراری", second.context["report"][0]["detail"])
         self.assertEqual(Referral.objects.count(), 1)
+
+    def test_employee_row_without_dependent_code_creates_employee_referral(self):
+        response = self.client.post(reverse("gym_referrals:legacy_import"), {"file": self._csv([self._employee_row(1)])})
+        summary = response.context["summary"]
+        self.assertEqual(summary["successful"], 1)
+        referral = Referral.objects.get()
+        self.assertEqual(referral.beneficiary_type, "EMPLOYEE")
+        self.assertEqual(referral.employee, self.staff)
 
 
 class PermissionsIntegrationTests(TestCase):

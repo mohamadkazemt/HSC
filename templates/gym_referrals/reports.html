@@ -1,1 +1,54 @@
-{% extends "base.html" %}{% block title %}گزارش امور باشگاه‌ها{% endblock %}{% block content %}<div class="space-y-6"><header><h1 class="text-2xl font-bold">گزارش امور باشگاه‌ها</h1><p class="text-sm text-gray-500">نمای عملیاتی وضعیت جاری</p></header><div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">{% for label,value in stats.items %}<article class="rounded-xl border bg-white p-5 dark:border-gray-700 dark:bg-gray-800"><p class="text-sm text-gray-500">{% if label == 'active' %}معرفی‌نامه‌های فعال{% elif label == 'issued' %}کل معرفی‌نامه‌ها{% elif label == 'usage' %}مراجعات ثبت‌شده{% elif label == 'expired' %}معرفی‌نامه‌های منقضی{% elif label == 'gyms' %}باشگاه‌های فعال{% else %}قراردادهای فعال{% endif %}</p><p class="mt-3 text-3xl font-bold">{{ value }}</p></article>{% endfor %}</div>{% if finance %}<section><h2 class="mb-3 font-bold">وضعیت مالی</h2><div class="grid gap-4 sm:grid-cols-3"><div class="rounded-xl border p-4">پیش‌نویس: {{ finance.draft }}</div><div class="rounded-xl border p-4">تأییدشده: {{ finance.approved }}</div><div class="rounded-xl border p-4">پرداخت‌شده: {{ finance.paid }}</div></div></section>{% endif %}</div>{% endblock %}
+{% extends "base.html" %}
+{% block title %}گزارش امور باشگاه‌ها{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-7xl space-y-6">
+  <nav class="text-sm text-gray-500 dark:text-gray-400" aria-label="مسیر صفحه">
+    <ol class="flex flex-wrap items-center gap-2">
+      <li><a href="{% url 'gym_referrals:dashboard' %}" class="hover:text-indigo-600">امور باشگاه‌ها</a></li>
+      <li aria-hidden="true">/</li>
+      <li class="text-gray-900 dark:text-white">گزارش‌ها</li>
+    </ol>
+  </nav>
+
+  <header>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">گزارش امور باشگاه‌ها</h1>
+    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">نمای عملیاتی وضعیت جاری باشگاه‌ها و معرفی‌نامه‌ها</p>
+  </header>
+
+  <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    {% for label, value in stats.items %}
+    <article class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <p class="text-sm font-medium text-gray-500 dark:text-gray-400">
+        {% if label == 'active' %}معرفی‌نامه‌های فعال
+        {% elif label == 'issued' %}کل معرفی‌نامه‌ها
+        {% elif label == 'usage' %}مراجعات ثبت‌شده
+        {% elif label == 'expired' %}معرفی‌نامه‌های منقضی
+        {% elif label == 'gyms' %}باشگاه‌های فعال
+        {% else %}قراردادهای فعال{% endif %}
+      </p>
+      <p class="mt-3 text-3xl font-bold text-gray-900 dark:text-white">{{ value }}</p>
+    </article>
+    {% endfor %}
+  </div>
+
+  {% if finance %}
+  <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+    <h2 class="font-bold text-gray-900 dark:text-white">وضعیت مالی</h2>
+    <div class="mt-4 grid gap-4 sm:grid-cols-3">
+      <div class="rounded-xl border border-gray-100 p-4 dark:border-gray-700">
+        <p class="text-sm text-gray-500 dark:text-gray-400">پیش‌نویس</p>
+        <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{{ finance.draft }}</p>
+      </div>
+      <div class="rounded-xl border border-gray-100 p-4 dark:border-gray-700">
+        <p class="text-sm text-gray-500 dark:text-gray-400">تأییدشده</p>
+        <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{{ finance.approved }}</p>
+      </div>
+      <div class="rounded-xl border border-gray-100 p-4 dark:border-gray-700">
+        <p class="text-sm text-gray-500 dark:text-gray-400">پرداخت‌شده</p>
+        <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{{ finance.paid }}</p>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

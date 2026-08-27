@@ -1,1 +1,134 @@
-{% extends "base.html" %}{% block title %}ورود معرفی‌نامه‌های قبلی{% endblock %}{% block content %}<div class="mx-auto max-w-5xl space-y-6"><nav class="text-sm text-gray-500">واحد اداری / معرفی‌نامه باشگاه / ورود اطلاعات قبلی</nav><header><h1 class="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">ورود معرفی‌نامه‌های قبلی</h1><p class="mt-2 text-sm text-gray-600 dark:text-gray-400">معرفی‌نامه‌های فیزیکی قدیمی را برای تکمیل سوابق سامانه از فایل CSV وارد کنید.</p></header><div class="grid gap-6 lg:grid-cols-3"><aside class="rounded-2xl border border-indigo-100 bg-indigo-50 p-5 text-sm dark:border-indigo-800 dark:bg-indigo-900/20"><h2 class="font-bold text-indigo-900 dark:text-indigo-200"><i class="fas fa-circle-info ml-2"></i>راهنمای فایل</h2><p class="mt-3 leading-7 text-indigo-800 dark:text-indigo-300">فایل باید UTF-8 و با پسوند CSV باشد. هر ردیف یک معرفی‌نامه فیزیکی را ثبت می‌کند.</p><p class="mt-4 break-words rounded-lg bg-white/70 p-3 font-mono text-xs leading-6 text-gray-700 dark:bg-gray-800 dark:text-gray-300">employee_username, beneficiary_type, beneficiary_id, gym_id, legacy_letter_no, issue_date, valid_from, valid_until, notes</p></aside><form method="post" enctype="multipart/form-data" class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800 lg:col-span-2 sm:p-6">{% csrf_token %}<label for="{{ form.file.id_for_label }}" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">فایل CSV <span class="text-red-500">*</span></label><div class="mt-3 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-8 text-center dark:border-gray-600 dark:bg-gray-700/40"><i class="fas fa-file-csv text-4xl text-emerald-600"></i><div class="mt-4">{{ form.file }}</div><p class="mt-3 text-xs text-gray-500">حداکثر یک فایل CSV با کدگذاری UTF-8</p></div>{% for error in form.file.errors %}<p class="mt-2 text-sm text-red-600">{{ error }}</p>{% endfor %}<button class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 font-semibold text-white hover:bg-indigo-700 sm:w-auto"><i class="fas fa-gears"></i>پردازش فایل</button></form></div>{% if report %}<section class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"><div class="border-b border-gray-200 p-5 dark:border-gray-700"><h2 class="font-bold text-gray-900 dark:text-white">نتیجه پردازش</h2><div class="mt-3 flex gap-3 text-sm"><span class="rounded-full bg-emerald-100 px-3 py-1 font-semibold text-emerald-700">موفق: {{ report|length }}</span></div></div><div class="overflow-x-auto"><table class="min-w-full text-right text-sm"><thead class="bg-gray-50 dark:bg-gray-700"><tr><th class="p-3">ردیف</th><th class="p-3">نتیجه</th><th class="p-3">شرح</th></tr></thead><tbody class="divide-y dark:divide-gray-700">{% for item in report %}<tr><td class="p-3">{{ item.line }}</td><td class="p-3"><span class="rounded-full px-2 py-1 text-xs font-semibold {% if item.ok %}bg-emerald-100 text-emerald-700{% else %}bg-red-100 text-red-700{% endif %}">{% if item.ok %}موفق{% else %}ناموفق{% endif %}</span></td><td class="p-3">{{ item.detail }}</td></tr>{% endfor %}</tbody></table></div></section>{% endif %}</div>{% endblock %}
+{% extends "base.html" %}
+{% block title %}ورود معرفی‌نامه‌های قبلی{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-5xl space-y-6">
+  <nav class="text-sm text-gray-500 dark:text-gray-400" aria-label="مسیر صفحه">
+    <ol class="flex flex-wrap items-center gap-2">
+      <li><a href="{% url 'gym_referrals:dashboard' %}" class="hover:text-indigo-600">امور باشگاه‌ها</a></li>
+      <li aria-hidden="true">/</li>
+      <li class="text-gray-900 dark:text-white">ورود اطلاعات قبلی</li>
+    </ol>
+  </nav>
+
+  <header>
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">ورود معرفی‌نامه‌های قبلی</h1>
+    <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">معرفی‌نامه‌های فیزیکی قدیمی را برای تکمیل سوابق سامانه از فایل CSV یا Excel وارد کنید.</p>
+  </header>
+
+  <div class="grid gap-6 lg:grid-cols-3">
+    <aside class="rounded-2xl border border-indigo-100 bg-indigo-50 p-5 text-sm dark:border-indigo-800 dark:bg-indigo-900/20">
+      <h2 class="font-bold text-indigo-900 dark:text-indigo-200"><i class="fas fa-circle-info ml-2"></i>راهنمای فایل</h2>
+      
+      <div class="mt-4">
+        <h3 class="font-semibold text-indigo-800 dark:text-indigo-300">فرمت‌های مجاز</h3>
+        <div class="mt-2 flex gap-2">
+          <span class="inline-flex items-center gap-1 rounded-full bg-white/70 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+            <i class="fas fa-file-csv"></i>CSV
+          </span>
+          <span class="inline-flex items-center gap-1 rounded-full bg-white/70 px-2.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+            <i class="fas fa-file-excel"></i>Excel (.xlsx)
+          </span>
+        </div>
+      </div>
+
+      <p class="mt-4 leading-7 text-indigo-800 dark:text-indigo-300">هر ردیف یک معرفی‌نامه فیزیکی را ثبت می‌کند. حداکثر حجم فایل ۵ مگابایت و حداکثر ۵۰۰ ردیف.</p>
+
+      <h3 class="mt-4 font-semibold text-indigo-800 dark:text-indigo-300">ستون‌های مورد نیاز</h3>
+      <div class="mt-2 space-y-1">
+        <p class="rounded-lg bg-white/70 p-2 font-mono text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300">کد پرسنلی</p>
+        <p class="rounded-lg bg-white/70 p-2 font-mono text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300">کد ملی تحت تکفل</p>
+        <p class="rounded-lg bg-white/70 p-2 font-mono text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300">شناسه باشگاه</p>
+        <p class="rounded-lg bg-white/70 p-2 font-mono text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300">شماره معرفی‌نامه</p>
+        <p class="rounded-lg bg-white/70 p-2 font-mono text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300">تاریخ صدور</p>
+        <p class="rounded-lg bg-white/70 p-2 font-mono text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300">تاریخ شروع</p>
+        <p class="rounded-lg bg-white/70 p-2 font-mono text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300">تاریخ پایان</p>
+        <p class="rounded-lg bg-white/70 p-2 font-mono text-xs text-gray-700 dark:bg-gray-800 dark:text-gray-300">توضیحات (اختیاری)</p>
+      </div>
+
+      <div class="mt-4 rounded-lg bg-white/50 p-3 dark:bg-gray-800/50">
+        <h4 class="font-semibold text-indigo-800 dark:text-indigo-300">نکات مهم</h4>
+        <ul class="mt-2 space-y-1 text-xs text-indigo-700 dark:text-indigo-400">
+          <li>• نوع ذی‌نفع نیازی به وارد کردن ندارد؛ خودکار تشخیص داده می‌شود</li>
+          <li>• برای خود کارمند: فقط کد پرسنلی را پر کنید</li>
+          <li>• برای همسر/فرزند: کد پرسنلی + کد ملی فرد را وارد کنید</li>
+          <li>• تاریخ‌ها به فرمت YYYY-MM-DD</li>
+          <li>• کد پرسنلی و کد ملی باید قبلاً در سامانه ثبت شده باشند</li>
+        </ul>
+      </div>
+
+      <a href="{% url 'gym_referrals:legacy_import_sample' %}" class="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-blue-300 bg-blue-50 p-4 text-center text-sm font-semibold text-blue-700 transition hover:border-blue-400 hover:bg-blue-100 dark:border-blue-700 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:border-blue-600">
+        <i class="fas fa-download text-lg"></i>
+        <div>
+          <p>دانلود فایل نمونه Excel</p>
+          <p class="mt-0.5 text-xs font-normal text-blue-500 dark:text-blue-400">شامل ستون‌ها و مثال‌های آماده</p>
+        </div>
+      </a>
+    </aside>
+
+    <form method="post" enctype="multipart/form-data" class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800 lg:col-span-2 sm:p-6">
+      {% csrf_token %}
+      
+      <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">فایل CSV یا Excel <span class="text-red-500">*</span></label>
+      
+      <div class="mt-3 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-8 text-center transition hover:border-indigo-400 hover:bg-indigo-50/30 dark:border-gray-600 dark:bg-gray-700/40 dark:hover:border-indigo-500">
+        <div class="flex items-center justify-center gap-4">
+          <i class="fas fa-file-csv text-4xl text-emerald-500"></i>
+          <span class="text-gray-400 dark:text-gray-500">یا</span>
+          <i class="fas fa-file-excel text-4xl text-blue-500"></i>
+        </div>
+        <div class="mt-4">{{ form.file }}</div>
+        <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">حداکثر ۵ مگابایت · CSV یا Excel (.xlsx)</p>
+      </div>
+      {% for error in form.file.errors %}
+      <p class="mt-2 text-sm text-red-600">{{ error }}</p>
+      {% endfor %}
+
+      {% if report %}
+      <div class="mt-6 rounded-xl border border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-gray-700">
+          <h3 class="font-bold text-gray-900 dark:text-white">نتیجه پردازش</h3>
+          <div class="flex gap-3 text-xs">
+            <span class="text-gray-500">کل: {{ summary.total }}</span>
+            <span class="text-emerald-600">موفق: {{ summary.successful }}</span>
+            <span class="text-red-600">خطا: {{ summary.failed }}</span>
+          </div>
+        </div>
+        <div class="max-h-64 overflow-y-auto">
+          <table class="min-w-full text-right text-xs">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th class="px-3 py-2">ردیف</th>
+                <th class="px-3 py-2">نتیجه</th>
+                <th class="px-3 py-2">جزئیات</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y dark:divide-gray-700">
+              {% for item in report %}
+              <tr>
+                <td class="px-3 py-2 text-gray-500">{{ item.line }}</td>
+                <td class="px-3 py-2">
+                  {% if item.ok %}
+                    <span class="text-emerald-600"><i class="fas fa-check-circle"></i></span>
+                  {% else %}
+                    <span class="text-red-600"><i class="fas fa-times-circle"></i></span>
+                  {% endif %}
+                </td>
+                <td class="px-3 py-2 {% if item.ok %}text-emerald-700{% else %}text-red-600{% endif %}">{{ item.detail }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="mt-6 flex flex-col-reverse gap-3 border-t border-gray-100 pt-5 dark:border-gray-700 sm:flex-row sm:justify-end">
+        <a href="{% url 'gym_referrals:dashboard' %}" class="inline-flex justify-center rounded-lg px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700">انصراف</a>
+        <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-700">
+          <i class="fas fa-upload" aria-hidden="true"></i>بارگذاری و پردازش
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
