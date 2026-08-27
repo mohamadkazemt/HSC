@@ -224,7 +224,10 @@ class LeaveRemindersPageTests(TestCase):
             for view in get_all_views_with_labels()
             if view.get("app_label") == "message_center"
         }
-        self.assertEqual(registered, {"send_leave_reminders", "message_webhook_settings"})
+        self.assertEqual(
+            registered,
+            {"send_leave_reminders", "message_webhook_settings", "message_broadcast_send"},
+        )
 
         # شبیه‌سازی کامل مسیر ادمین: اجازه با همان نامِ UI صادر می‌شود
         user = User.objects.create_user("viaui", password="x")

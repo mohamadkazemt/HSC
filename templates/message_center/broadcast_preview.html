@@ -63,7 +63,7 @@
                 </div>
             </div>
 
-            <form method="post" action="{% url 'message_center:broadcast_send' broadcast.id %}" class="space-y-4">
+            <form method="post" action="{% url 'message_center:broadcast_send' broadcast.id %}" id="broadcast-send-form" class="space-y-4">
                 {% csrf_token %}
                 <div>
                     <label class="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -73,8 +73,9 @@
                 </div>
                 <div class="grid gap-3 sm:grid-cols-2">
                     <div>
-                        <label for="scheduled_for" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">زمان‌بندی ارسال (اختیاری)</label>
-                        <input type="datetime-local" name="scheduled_for" id="scheduled_for" class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                        <label for="scheduled_for_display" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">زمان‌بندی ارسال (شمسی - اختیاری)</label>
+                        <input type="text" name="scheduled_for_display" id="scheduled_for_display" placeholder="۱۴۰۴/۰۶/۰۱ ۱۰:۰۰:۰۰" autocomplete="off" data-allow-future="true" class="jalali-datetime w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                        <input type="hidden" name="scheduled_for" id="scheduled_for">
                     </div>
                     <div class="flex items-end">
                         <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-emerald-600 to-teal-600 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:brightness-110">
@@ -82,7 +83,7 @@
                         </button>
                     </div>
                 </div>
-                <p class="text-xs text-gray-400">برای ارسال فوری، فیلد زمان را خالی بگذارید. برای ارسال در آینده، زمان دلخواه را انتخاب کنید.</p>
+                <p class="text-xs text-gray-400">برای ارسال فوری، فیلد زمان را خالی بگذارید. برای ارسال در آینده، تاریخ و ساعت شمسی دلخواه را انتخاب کنید.</p>
             </form>
         </section>
     </div>
@@ -122,4 +123,52 @@
         </div>
     </section>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const form = document.getElementById('broadcast-send-form');
+  if (!form) return;
+  form.addEventListener('submit', function(){
+    const display = document.getElementById('scheduled_for_display');
+    const hidden = document.getElementById('scheduled_for');
+    if (!display || !hidden) return;
+    hidden.value = '';
+    const raw = (display.value || '').trim();
+    if (!raw) return; // empty = immediate send
+
+    const toLatinDigits = (str) => {
+      const persian = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+      const arabic = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+      let out = str;
+      for (let i = 0; i < 10; i++) {
+        out = out.replace(new RegExp(persian[i], 'g'), i).replace(new RegExp(arabic[i], 'g'), i);
+      }
+      return out;
+    };
+
+    const latin = toLatinDigits(raw);
+    const parts = latin.split(' ');
+    if (parts.length < 2) return;
+    const dateParts = parts[0].split('/');
+    const timeParts = (parts[1] || '00:00').split(':');
+    if (dateParts.length !== 3 || timeParts.length < 2) return;
+    const jy = parseInt(dateParts[0]);
+    const jm = parseInt(dateParts[1]);
+    const jd = parseInt(dateParts[2]);
+    const hh = parseInt(timeParts[0]) || 0;
+    const mm = parseInt(timeParts[1]) || 0;
+    if (isNaN(jy) || isNaN(jm) || isNaN(jd)) return;
+    if (typeof persianDate === 'undefined') return;
+
+    try {
+      const gdate = new persianDate([jy, jm, jd]).toCalendar('gregory').toDate();
+      const pad = (n) => String(n).padStart(2, '0');
+      hidden.value = gdate.getFullYear() + '-' + pad(gdate.getMonth() + 1) + '-' + pad(gdate.getDate()) +
+        'T' + pad(hh) + ':' + pad(mm);
+    } catch (e) { console.warn('Jalali->Gregorian conversion error:', e); hidden.value = ''; }
+  });
+});
+</script>
 {% endblock %}

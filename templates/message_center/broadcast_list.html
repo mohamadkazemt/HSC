@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static message_center_jalali %}
 {% block title %}تاریخچه پیام‌های گروهی{% endblock %}
 
 {% block content %}
@@ -106,11 +106,11 @@
                         </td>
                         <td class="whitespace-nowrap px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
                             {% if b.scheduled_for %}
-                            <span class="text-sky-600 dark:text-sky-400">⏰ {{ b.scheduled_for|date:"j/n H:i" }}</span>
+                            <span class="text-sky-600 dark:text-sky-400">⏰ {{ b.scheduled_for|to_jalali:"%Y/%m/%d %H:%M" }}</span>
                             {% elif b.sent_at %}
-                            {{ b.sent_at|date:"j/n H:i" }}
+                            {{ b.sent_at|to_jalali:"%Y/%m/%d %H:%M" }}
                             {% else %}
-                            {{ b.created_at|date:"j/n H:i" }}
+                            {{ b.created_at|to_jalali:"%Y/%m/%d %H:%M" }}
                             {% endif %}
                         </td>
                         <td class="whitespace-nowrap px-4 py-3">

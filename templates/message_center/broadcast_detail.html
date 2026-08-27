@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static message_center_jalali %}
 {% block title %}جزئیات پیام گروهی #{{ broadcast.id }}{% endblock %}
 
 {% block content %}
@@ -16,7 +16,7 @@
                 <p class="mt-1 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                     <span class="rounded-full px-2.5 py-0.5 text-xs font-bold {% if broadcast.channel == 'sms' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300{% else %}bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300{% endif %}">{{ broadcast.get_channel_display }}</span>
                     <span>{{ broadcast.get_status_display }}</span>
-                    <span class="text-gray-400">· {{ broadcast.created_at|date:"Y/m/d H:i" }}</span>
+                    <span class="text-gray-400">· {{ broadcast.created_at|to_jalali:"%Y/%m/%d %H:%M" }}</span>
                 </p>
             </div>
         </div>
@@ -102,7 +102,7 @@
                                 {{ r.get_send_status_display }}
                             </span>
                         </td>
-                        <td class="whitespace-nowrap px-4 py-2.5 text-xs text-gray-500 dark:text-gray-400">{{ r.sent_at|date:"j/n H:i"|default:'—' }}</td>
+                        <td class="whitespace-nowrap px-4 py-2.5 text-xs text-gray-500 dark:text-gray-400">{{ r.sent_at|to_jalali:"%Y/%m/%d %H:%M"|default:'—' }}</td>
                     </tr>
                     {% empty %}
                     <tr><td colspan="5" class="px-4 py-8 text-center text-sm text-gray-400">گیرنده‌ای ثبت نشده است.</td></tr>
