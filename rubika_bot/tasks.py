@@ -261,3 +261,47 @@ def send_leave_approval_request(self, chat_id: str, leave_request_id: int, appro
             exc_info=True,
         )
         raise self.retry(exc=exc)
+
+
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def notify_gym_operators_new_referral(self, referral_id: int) -> int:
+    """
+    Notifies every active Rubika-linked operator of a gym that a new referral
+    was issued to their gym.
+    """
+    from gym_referrals.models import GymOperator, Referral
+    from gym_referrals.presentation import format_jalali
+
+    try:
+        referral = Referral.objects.select_related("gym").get(pk=referral_id)
+    except Referral.DoesNotExist:
+        logger.warning("Referral %s not found for operator notification", referral_id)
+        return 0
+
+    text = (
+        f"🔔 معرفی‌نامه جدید برای باشگاه شما صادر شد.\n\n"
+        f"🏋️ باشگاه: {referral.gym.name}\n"
+        f"🔢 شماره معرفی: {referral.referral_number}\n"
+        f"👤 فرد: {referral.beneficiary_full_name_snapshot}\n"
+        f"📅 اعتبار تا: {format_jalali(referral.valid_until)}\n\n"
+        f"💡 برای بررسی و مدیریت از منوی «باشگاه من» داخل همین ربات استفاده کنید."
+    )
+
+    chat_ids = list(
+        GymOperator.objects.filter(gym=referral.gym, is_active=True)
+        .select_related("user__rubika_profile")
+        .exclude(user__rubika_profile__isnull=True)
+        .exclude(user__rubika_profile__chat_id="")
+        .values_list("user__rubika_profile__chat_id", flat=True)
+    )
+
+    sent = 0
+    for chat_id in chat_ids:
+        try:
+            send_rubika_message.delay(str(chat_id), text)
+            sent += 1
+        except Exception:
+            logger.exception("Could not enqueue gym operator notification for chat %s", chat_id)
+
+    logger.info("Notified %s operator(s) about referral %s", sent, referral_id)
+    return sent

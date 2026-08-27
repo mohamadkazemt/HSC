@@ -2,6 +2,7 @@ import hashlib
 import random
 import re
 import string
+import uuid
 from dataclasses import dataclass
 from datetime import timedelta
 
@@ -99,6 +100,22 @@ def _full_name(user):
 
 
 class ReferralService:
+    @staticmethod
+    def find_referral(code):
+        """Find a referral by its public token or its referral number."""
+        code = str(code or "").strip()
+        if not code:
+            return None
+        try:
+            uuid.UUID(code)
+        except (ValueError, TypeError, AttributeError):
+            pass
+        else:
+            referral = Referral.objects.select_related("gym").filter(public_token=code).first()
+            if referral:
+                return referral
+        return Referral.objects.select_related("gym").filter(referral_number__iexact=code).first()
+
     @staticmethod
     def resolve_beneficiary(requester, beneficiary_type, beneficiary_id):
         try:
@@ -198,6 +215,8 @@ class ReferralService:
             raise ReferralError("REFERRAL_NOT_FOUND", "معرفی‌نامه یافت نشد.") from exc
         if referral.status == Referral.Status.CANCELLED:
             raise ReferralError("REFERRAL_CANCELLED", "معرفی‌نامه لغو شده است.")
+        if referral.status == Referral.Status.USED:
+            raise ReferralError("REFERRAL_ALREADY_USED", "معرفی‌نامه قبلاً استفاده شده است.")
         if not referral.is_active():
             if referral.status == Referral.Status.ACTIVE:
                 referral.status = Referral.Status.EXPIRED

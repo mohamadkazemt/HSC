@@ -225,3 +225,4 @@ documentation/
 !gym_referrals/test_*.py
 !leave_reports/tests.py
 !message_center/tests.py
+!rubika_bot/test_gym_referrals.py

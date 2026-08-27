@@ -4,6 +4,7 @@ from decimal import Decimal
 from io import BytesIO
 from unittest.mock import patch
 
+from asgiref.sync import async_to_sync
 from django.contrib.auth.models import Permission, User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError, transaction
@@ -17,9 +18,12 @@ from openpyxl import load_workbook
 from accounts.models import Dependent, UserProfile
 from permissions.models import UserPermission
 from permissions.utils import get_all_views_with_labels
+from rubika_bot.models import RubikaUser
+from rubika_bot.tasks import notify_gym_operators_new_referral
 from .access import has_gym_admin_access
 from .billing import BillingError, GymInvoiceService
 from .models import Gym, GymContract, GymInvoice, GymOperator, Referral, ReferralUsage
+from .rubika import RubikaGymOperatorAdapter
 from .services import ReferralError, ReferralService, create_gym_account, is_referral_active, reset_gym_account_password
 
 
@@ -478,3 +482,108 @@ class GymAccountAndPortalTests(TestCase):
         foreign.refresh_from_db()
         self.assertIsNone(getattr(foreign, "usage", None))
         self.assertEqual(foreign.status, Referral.Status.ACTIVE)
+
+
+class RubikaOperatorFlowTests(TestCase):
+    """Rubika-side operator panel: review, verify and redeem referrals."""
+
+    def setUp(self):
+        self.employee = User.objects.create_user("op_worker", password="pass")
+        self.profile = UserProfile.objects.create(user=self.employee, personnel_code="911")
+        self.gym = Gym.objects.create(name="باشگاه روبیکایی", code="RBK1")
+        self.other = Gym.objects.create(name="باشگاه دیگر", code="RBK2")
+        self.inactive = Gym.objects.create(name="باشگاه غیرفعال", code="RBKX", is_active=False)
+        today = timezone.localdate()
+        for gym in (self.gym, self.other):
+            GymContract.objects.create(gym=gym, start_date=today - timedelta(days=1), end_date=today + timedelta(days=365))
+
+        self.operator = User.objects.create_user("op_rbk", password="pass")
+        self.rubika_user = RubikaUser.objects.create(chat_id="op-chat-1", user=self.operator)
+        for gym in (self.gym, self.other, self.inactive):
+            GymOperator.objects.create(gym=gym, user=self.operator, is_active=True)
+
+        self.referral = ReferralService.create_referral(
+            requester=self.employee, beneficiary_type="EMPLOYEE", beneficiary_id=self.profile.pk,
+            gym_id=self.gym.pk, source=Referral.Source.RUBIKA,
+        )[0]
+
+    def test_find_referral_by_token_and_number(self):
+        self.assertEqual(ReferralService.find_referral(str(self.referral.public_token)).pk, self.referral.pk)
+        self.assertEqual(ReferralService.find_referral(self.referral.referral_number).pk, self.referral.pk)
+        self.assertIsNone(ReferralService.find_referral("UNDEFINED"))
+
+    def test_operator_gyms_excludes_inactive(self):
+        gyms = async_to_sync(RubikaGymOperatorAdapter.operator_gyms)(self.rubika_user)
+        ids = {g["id"] for g in gyms}
+        self.assertEqual(ids, {self.gym.pk, self.other.pk})
+
+    def test_unlinked_rubika_user_is_rejected(self):
+        foreign = RubikaUser.objects.create(chat_id="op-chat-2")
+        for method in (RubikaGymOperatorAdapter.list_referrals, RubikaGymOperatorAdapter.verify_code, RubikaGymOperatorAdapter.redeem_code):
+            with self.assertRaises(PermissionError):
+                async_to_sync(method)(foreign, self.gym.pk, self.referral.referral_number)
+
+    def test_operator_without_gym_access_is_rejected(self):
+        outsider = User.objects.create_user("op_outsider", password="pass")
+        rubika_outsider = RubikaUser.objects.create(chat_id="op-chat-3", user=outsider)
+        GymOperator.objects.create(gym=self.other, user=outsider, is_active=True)
+        with self.assertRaises(PermissionError):
+            async_to_sync(RubikaGymOperatorAdapter.list_referrals)(rubika_outsider, self.gym.pk)
+
+    def test_verify_code_reports_status(self):
+        info = async_to_sync(RubikaGymOperatorAdapter.verify_code)(
+            self.rubika_user, self.gym.pk, self.referral.referral_number,
+        )
+        self.assertEqual(info["referral_number"], self.referral.referral_number)
+        self.assertTrue(info["is_valid"])
+
+    def test_verify_accepts_public_token(self):
+        info = async_to_sync(RubikaGymOperatorAdapter.verify_code)(
+            self.rubika_user, self.gym.pk, str(self.referral.public_token),
+        )
+        self.assertEqual(info["referral_number"], self.referral.referral_number)
+
+    def test_verify_foreign_gym_code_is_rejected(self):
+        with self.assertRaises(ReferralError) as caught:
+            async_to_sync(RubikaGymOperatorAdapter.verify_code)(
+                self.rubika_user, self.other.pk, self.referral.referral_number,
+            )
+        self.assertEqual(caught.exception.code, "REFERRAL_GYM_MISMATCH")
+
+    def test_verify_unknown_code_is_rejected(self):
+        with self.assertRaises(ReferralError) as caught:
+            async_to_sync(RubikaGymOperatorAdapter.verify_code)(self.rubika_user, self.gym.pk, "UNKNOWN")
+        self.assertEqual(caught.exception.code, "REFERRAL_NOT_FOUND")
+
+    def test_redeem_registers_usage(self):
+        referral = async_to_sync(RubikaGymOperatorAdapter.redeem_code)(
+            self.rubika_user, self.gym.pk, self.referral.referral_number,
+        )
+        referral.refresh_from_db()
+        self.assertEqual(referral.status, Referral.Status.USED)
+        self.assertIsNotNone(referral.redeemed_at)
+        self.assertEqual(referral.usage.gym_id, self.gym.pk)
+        self.assertEqual(referral.usage.redeemed_by_id, self.operator.pk)
+
+    def test_redeem_twice_is_rejected(self):
+        async_to_sync(RubikaGymOperatorAdapter.redeem_code)(self.rubika_user, self.gym.pk, self.referral.referral_number)
+        with self.assertRaises(ReferralError) as caught:
+            async_to_sync(RubikaGymOperatorAdapter.redeem_code)(self.rubika_user, self.gym.pk, self.referral.referral_number)
+        self.assertEqual(caught.exception.code, "REFERRAL_ALREADY_USED")
+
+    def test_redeem_foreign_gym_is_rejected(self):
+        with self.assertRaises(ReferralError) as caught:
+            async_to_sync(RubikaGymOperatorAdapter.redeem_code)(
+                self.rubika_user, self.other.pk, self.referral.referral_number,
+            )
+        self.assertEqual(caught.exception.code, "REFERRAL_GYM_MISMATCH")
+
+    def test_new_referral_notifies_linked_operators(self):
+        with patch("rubika_bot.tasks.send_rubika_message") as sender:
+            sent = notify_gym_operators_new_referral.run(self.referral.pk)
+        self.assertEqual(sent, 1)
+        sender.delay.assert_called_once()
+        chat_id, text = sender.delay.call_args[0]
+        self.assertEqual(chat_id, "op-chat-1")
+        self.assertIn(self.gym.name, text)
+        self.assertIn(self.referral.referral_number, text)

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import GymReferralState, RubikaUser, RubikaBotSettings, RubikaConnectionCode, WebhookLog, LeaveRequestState
+from .models import GymReferralState, GymOperatorState, RubikaUser, RubikaBotSettings, RubikaConnectionCode, WebhookLog, LeaveRequestState
 
 
 @admin.register(RubikaUser)
@@ -50,6 +50,17 @@ class LeaveRequestStateAdmin(admin.ModelAdmin):
 class GymReferralStateAdmin(admin.ModelAdmin):
     list_display = ("rubika_user", "step", "started_at", "updated_at")
     list_filter = ("step",)
+    readonly_fields = ("started_at", "updated_at")
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(GymOperatorState)
+class GymOperatorStateAdmin(admin.ModelAdmin):
+    list_display = ("rubika_user", "step", "started_at", "updated_at")
+    list_filter = ("step",)
+    search_fields = ("rubika_user__chat_id",)
     readonly_fields = ("started_at", "updated_at")
 
     def has_add_permission(self, request):

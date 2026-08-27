@@ -335,6 +335,9 @@ class RubikaBotEngine:
         return first_name, last_name
 
     async def _handle_button(self, chat_id: str, button_id: str, user: RubikaUser) -> None:
+        if await self._is_gym_operator(user) and self._is_employee_only_button(button_id):
+            await self._send_personnel_restricted(chat_id)
+            return
         mapping = {
             'start': self._send_welcome, 'help': self._send_help, 'connect': self._handle_connect_button,
             'account': self._send_account_status,
@@ -354,6 +357,7 @@ class RubikaBotEngine:
             'gym_referrals': self._start_gym_referral,
             'gym_referral_cancel': self._cancel_gym_referral,
             'gym_referral_back_beneficiaries': self._show_gym_beneficiaries,
+            'my_gym': self._start_gym_operator_panel,
             # Help sections
             'help_connect': lambda cid, u: self._show_help_section(cid, u, 'help_connect'),
             'help_leave': lambda cid, u: self._show_help_section(cid, u, 'help_leave'),
@@ -404,12 +408,30 @@ class RubikaBotEngine:
                 await self._ask_cancel_gym_referral(chat_id, user, button_id[len('gym_cancel_ask_'):])
             elif button_id == 'gym_cancel_confirm':
                 await self._confirm_cancel_gym_referral(chat_id, user)
+            elif button_id.startswith('op_selgym_'):
+                await self._open_operator_gym(chat_id, user, button_id[len('op_selgym_'):])
+            elif button_id.startswith('op_list_'):
+                await self._operator_list_referrals(chat_id, user, button_id[len('op_list_'):])
+            elif button_id.startswith('op_redeem_'):
+                await self._operator_ask_redeem(chat_id, user, button_id[len('op_redeem_'):])
+            elif button_id.startswith('op_verify_'):
+                await self._operator_ask_verify(chat_id, user, button_id[len('op_verify_'):])
+            elif button_id.startswith('op_stats_'):
+                await self._operator_stats(chat_id, user, button_id[len('op_stats_'):])
+            elif button_id.startswith('op_cancel_'):
+                await self._operator_cancel_input(chat_id, user, button_id[len('op_cancel_'):])
+            elif button_id.startswith('op_back_'):
+                await self._open_operator_gym(chat_id, user, button_id[len('op_back_'):])
             else:
                 logger.debug("Unknown button id %s for chat %s", button_id, chat_id)
 
     async def _handle_command(self, chat_id: str, text: str, user: RubikaUser) -> None:
         parts = text.split()
         command, args = parts[0].lstrip('/').lower(), parts[1:]
+
+        if command in {'payslip', 'leave_request', 'voice_leave', 'leave_inbox', 'my_leaves', 'cancel_leave', 'gym_referrals', 'gym_referral_cancel'} and await self._is_gym_operator(user):
+            await self._send_personnel_restricted(chat_id)
+            return
 
         if command in {'help', 'راهنما'}: await self._send_help(chat_id, user)
         elif command in {'account', 'status'}: await self._send_account_status(chat_id, user)
@@ -420,12 +442,13 @@ class RubikaBotEngine:
             await self._handle_plain_text(chat_id, text, user)
 
     async def _handle_plain_text(self, chat_id: str, text: str, user: RubikaUser) -> None:
-        # Optimized: Fetch both states in a single query batch
+        # Optimized: Fetch all candidate states in a single query batch
         @_sync_db
         def get_states():
-            from rubika_bot.models import ConnectionRequestState, LeaveRequestState
+            from rubika_bot.models import ConnectionRequestState, GymOperatorState, LeaveRequestState
             connection_state = None
             leave_state = None
+            operator_state = None
             try:
                 connection_state = ConnectionRequestState.objects.get(rubika_user=user)
             except ConnectionRequestState.DoesNotExist:
@@ -434,9 +457,13 @@ class RubikaBotEngine:
                 leave_state = LeaveRequestState.objects.get(rubika_user=user)
             except LeaveRequestState.DoesNotExist:
                 pass
-            return connection_state, leave_state
+            try:
+                operator_state = GymOperatorState.objects.get(rubika_user=user)
+            except GymOperatorState.DoesNotExist:
+                pass
+            return connection_state, leave_state, operator_state
         
-        connection_state, leave_state = await get_states()
+        connection_state, leave_state, operator_state = await get_states()
         
         # If in leave request flow, handle accordingly (prioritized over connection flow)
         if leave_state and leave_state.step != 'idle':
@@ -457,6 +484,18 @@ class RubikaBotEngine:
                 await self._handle_leave_request_input(chat_id, user, text, leave_state)
                 return
         
+        # If in the gym-operator code input flow, handle accordingly
+        if operator_state and operator_state.step in ('redeem_wait', 'verify_wait'):
+            gym_id = operator_state.data.get('gym_id')
+            code = text.strip()
+            if code.lower() in {'انصراف', 'cancel', 'exit'}:
+                await self._operator_cancel_input(chat_id, user, gym_id, silent=True)
+            elif operator_state.step == 'redeem_wait':
+                await self._operator_process_redeem(chat_id, user, code, gym_id)
+            else:
+                await self._operator_process_verify(chat_id, user, code, gym_id)
+            return
+
         # If in SMS connection flow, handle accordingly
         if connection_state and connection_state.step != 'idle':
             await self._handle_sms_connection_input(chat_id, user, text, connection_state)
@@ -488,14 +527,16 @@ class RubikaBotEngine:
             else:
                 reply = f'💬 پیام شما دریافت شد:\n"{text}"\n\n⚠️ برای استفاده از امکانات ربات، لطفاً ابتدا وصل شوید.'
         
-        buttons = self._build_command_keyboard(connected=bool(user.user))
+        buttons = self._build_command_keyboard(connected=bool(user.user), operator=await self._is_gym_operator(user))
         await self._send_text_message(chat_id, reply, buttons)
 
     async def _send_welcome(self, chat_id: str, user: RubikaUser) -> None:
         """ارسال پیام خوش‌آمدگویی با اطلاعات کامل کاربر"""
         display_name = self._display_name(user)
+        is_operator = False
         
         if user.user:
+            is_operator = await self._is_gym_operator(user)
             # دریافت اطلاعات کامل کاربر
             @_sync_db
             def get_user_info():
@@ -533,35 +574,50 @@ class RubikaBotEngine:
             
             user_info = await get_user_info()
             
-            # ساخت پیام خوش‌آمدگویی با اطلاعات کامل
-            message_lines = [
-                f'👋 سلام {user_info["full_name"]} عزیز!',
-            ]
-            
-            # اضافه کردن کد پرسنلی اگر موجود باشد
-            if user_info['personnel_code']:
-                message_lines.append(f'🆔 کد پرسنلی: {user_info["personnel_code"]}')
-            
-            # اضافه کردن سمت و بخش اگر موجود باشد
-            if user_info['position'] or user_info['section']:
-                info_parts = []
-                if user_info['position']:
-                    info_parts.append(f'💼 {user_info["position"]}')
-                if user_info['section']:
-                    info_parts.append(f'🏢 {user_info["section"]}')
-                message_lines.append(' | '.join(info_parts))
-            
-            message_lines.extend([
-                '',
-                '✅ شما به حساب خود متصل هستید.',
-                '',
-                '🎯 از منوی زیر می‌توانید:',
-                '   💰 فیش حقوقی دریافت کنید',
-                '   🏖️ درخواست مرخصی ثبت کنید',
-                '   👤 اطلاعات حساب را مشاهده کنید',
-                '',
-                '👇 دکمه مورد نظر را انتخاب کنید:'
-            ])
+            if is_operator:
+                # پیام خوش‌آمدگویی برای اپراتور باشگاه (بدون بخش‌های پرسنلی)
+                message_lines = [
+                    f'👋 سلام {user_info["full_name"]} عزیز!',
+                    '',
+                    '✅ شما به حساب خود متصل هستید.',
+                    '',
+                    '🏢 شما مدیر باشگاه هستید؛ از منوی زیر می‌توانید:',
+                    '   • مشاهده و مدیریت معرفی‌نامه‌ها',
+                    '   • ثبت مراجعه حضوری',
+                    '   • بررسی اعتبار معرفی‌نامه',
+                    '',
+                    '👇 دکمه مورد نظر را انتخاب کنید:'
+                ]
+            else:
+                # ساخت پیام خوش‌آمدگویی با اطلاعات کامل پرسنل
+                message_lines = [
+                    f'👋 سلام {user_info["full_name"]} عزیز!',
+                ]
+                
+                # اضافه کردن کد پرسنلی اگر موجود باشد
+                if user_info['personnel_code']:
+                    message_lines.append(f'🆔 کد پرسنلی: {user_info["personnel_code"]}')
+                
+                # اضافه کردن سمت و بخش اگر موجود باشد
+                if user_info['position'] or user_info['section']:
+                    info_parts = []
+                    if user_info['position']:
+                        info_parts.append(f'💼 {user_info["position"]}')
+                    if user_info['section']:
+                        info_parts.append(f'🏢 {user_info["section"]}')
+                    message_lines.append(' | '.join(info_parts))
+                
+                message_lines.extend([
+                    '',
+                    '✅ شما به حساب خود متصل هستید.',
+                    '',
+                    '🎯 از منوی زیر می‌توانید:',
+                    '   💰 فیش حقوقی دریافت کنید',
+                    '   🏖️ درخواست مرخصی ثبت کنید',
+                    '   👤 اطلاعات حساب را مشاهده کنید',
+                    '',
+                    '👇 دکمه مورد نظر را انتخاب کنید:'
+                ])
         else:
             # پیام خوش‌آمدگویی برای کاربر غیر متصل
             message_lines = [
@@ -578,7 +634,7 @@ class RubikaBotEngine:
                 '👇 یکی از روش‌های زیر را انتخاب کنید:'
             ]
         
-        buttons = self._build_command_keyboard(connected=bool(user.user))
+        buttons = self._build_command_keyboard(connected=bool(user.user), operator=is_operator)
         await self._send_text_message(chat_id, '\n'.join(message_lines), buttons)
 
     async def _send_help(self, chat_id: str, user: RubikaUser) -> None:
@@ -770,6 +826,7 @@ class RubikaBotEngine:
     async def _send_account_status(self, chat_id: str, user: RubikaUser) -> None:
         """نمایش وضعیت حساب کاربری با جزئیات کامل"""
         display_name = self._display_name(user)
+        is_operator = await self._is_gym_operator(user)
         
         if user.user:
             # دریافت اطلاعات پروفایل کاربر
@@ -853,18 +910,18 @@ class RubikaBotEngine:
                     await _sync_db(send_profile_image)()
                     
                     # ارسال دکمه‌ها به صورت جداگانه
-                    buttons = self._build_command_keyboard(connected=True)
+                    buttons = self._build_command_keyboard(connected=True, operator=is_operator)
                     await self._send_text_message(chat_id, '👇 از منوی زیر استفاده کنید:', buttons)
                     
                     logger.info(f"Sent profile image to {chat_id}")
                 except Exception as e:
                     logger.error(f"Error sending profile image: {e}", exc_info=True)
                     # اگر ارسال عکس با خطا مواجه شد، فقط متن را ارسال کن
-                    buttons = self._build_command_keyboard(connected=True)
+                    buttons = self._build_command_keyboard(connected=True, operator=is_operator)
                     await self._send_text_message(chat_id, message, buttons)
             else:
                 # اگر عکس نداشت، فقط متن را با دکمه‌ها ارسال کن
-                buttons = self._build_command_keyboard(connected=True)
+                buttons = self._build_command_keyboard(connected=True, operator=is_operator)
                 await self._send_text_message(chat_id, message, buttons)
         else:
             message = f'📊 وضعیت حساب:\n\n❌ متصل نشده\n👤 نام: {display_name}\n\n💡 برای اتصال از دکمه‌های زیر استفاده کنید:'
@@ -1141,7 +1198,7 @@ class RubikaBotEngine:
         else:
             welcome = f'✅ حساب شما با موفقیت به "{code.user.username}" متصل شد!\n\n💡 می‌توانید از امکانات ربات استفاده کنید:'
         
-        buttons = self._build_command_keyboard(connected=True)
+        buttons = self._build_command_keyboard(connected=True, operator=await self._is_gym_operator(user))
         await self._send_text_message(chat_id, welcome, buttons)
 
     async def _send_text_message(self, chat_id: str, text: str, inline_keyboard: Optional[Keypad] = None) -> None:
@@ -4067,13 +4124,315 @@ class RubikaBotEngine:
             f"\n\n📅 اعتبار تا: {format_jalali(referral.valid_until)}{source}"
         )
 
+    _EMPLOYEE_ONLY_BUTTONS = {
+        'payslip', 'leave_request', 'voice_leave', 'voice_confirm_leave', 'voice_edit_leave',
+        'leave_inbox', 'my_leaves', 'cancel_leave', 'cancel_rejection',
+        'gym_referrals', 'gym_referral_cancel', 'gym_referral_back_beneficiaries',
+        'gym_referral_confirm', 'gym_cancel_confirm',
+    }
+    _EMPLOYEE_ONLY_PREFIXES = (
+        'payslip_', 'leavetype_', 'shifttype_', 'replacement_', 'approve_leave_',
+        'reject_leave_', 'gym_beneficiary_', 'gym_select_', 'gym_page_', 'gym_cancel_ask_',
+    )
+
+    def _is_employee_only_button(self, button_id: str) -> bool:
+        return (
+            button_id in self._EMPLOYEE_ONLY_BUTTONS
+            or button_id.startswith(self._EMPLOYEE_ONLY_PREFIXES)
+        )
+
+    async def _is_gym_operator(self, user) -> bool:
+        @_sync_db
+        def check() -> bool:
+            from gym_referrals.models import GymOperator
+            if not user or not user.user_id:
+                return False
+            return GymOperator.objects.filter(
+                user=user.user, is_active=True, gym__is_active=True,
+            ).exists()
+        return await check()
+
+    async def _send_personnel_restricted(self, chat_id: str) -> None:
+        message = (
+            '⚠️ این بخش مخصوص پرسنل است و برای حساب اپراتور باشگاه فعال نیست.\n\n'
+            'از منوی «باشگاه من» می‌توانید معرفی‌نامه‌ها و مراجعات را مدیریت کنید:'
+        )
+        buttons = Keypad(rows=[
+            KeypadRow(buttons=[self._button('my_gym', '🏢 باشگاه من'), self._button('start', '🏠 منوی اصلی')]),
+        ])
+        await self._send_text_message(chat_id, message, buttons)
+
+    # ============= Gym Operator Panel =============
+
+    async def _start_gym_operator_panel(self, chat_id: str, user: RubikaUser) -> None:
+        from gym_referrals.rubika import RubikaGymOperatorAdapter
+        if not user.user_id:
+            message = '⚠️ برای دسترسی به پنل باشگاه، ابتدا باید به حساب کاربری خود متصل شوید.\n\n🔗 از دکمه‌های زیر برای اتصال استفاده کنید:'
+            await self._send_text_message(chat_id, message, self._build_command_keyboard(False))
+            return
+        try:
+            gyms = await RubikaGymOperatorAdapter.operator_gyms(user)
+        except PermissionError:
+            await self._send_personnel_restricted(chat_id)
+            return
+        if not gyms:
+            await self._send_text_message(chat_id, '⚠️ برای شما هیچ باشگاهی ثبت نشده است.', self._build_command_keyboard(True, operator=True))
+            return
+        if len(gyms) == 1:
+            await self._show_gym_operator_panel(chat_id, user, gyms[0]['id'])
+            return
+        rows = [KeypadRow(buttons=[self._button(f'op_selgym_{gym["id"]}', f'🏢 {gym["name"]}')]) for gym in gyms]
+        rows.append(KeypadRow(buttons=[self._button('start', '🏠 منوی اصلی')]))
+        await self._send_text_message(chat_id, 'باشگاه مورد نظر را انتخاب کنید:', Keypad(rows=rows))
+
+    async def _open_operator_gym(self, chat_id: str, user: RubikaUser, raw_gym_id: str) -> None:
+        try:
+            gym_id = int(raw_gym_id)
+        except (TypeError, ValueError):
+            await self._operator_error(chat_id, 'INVALID_INPUT')
+            return
+        await self._show_gym_operator_panel(chat_id, user, gym_id)
+
+    async def _show_gym_operator_panel(self, chat_id: str, user: RubikaUser, gym_id) -> None:
+        from gym_referrals.rubika import RubikaGymOperatorAdapter
+        try:
+            gyms = await RubikaGymOperatorAdapter.operator_gyms(user)
+        except PermissionError:
+            gyms = []
+        gym = next((item for item in gyms if item['id'] == gym_id), None)
+        if not gym:
+            await self._operator_error(chat_id, 'FORBIDDEN')
+            return
+        text = (
+            f'🏢 مدیریت باشگاه\n\n'
+            f'🏋️ باشگاه: {gym["name"]}\n'
+            f'🔑 کد باشگاه: {gym["code"]}\n\n'
+            f'یکی از گزینه‌های زیر را انتخاب کنید:'
+        )
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[
+                self._button(f'op_list_{gym_id}', '📋 معرفی‌نامه‌ها'),
+                self._button(f'op_redeem_{gym_id}', '✅ ثبت مراجعه'),
+            ]),
+            KeypadRow(buttons=[
+                self._button(f'op_verify_{gym_id}', '🔍 بررسی اعتبار'),
+                self._button(f'op_stats_{gym_id}', '📊 آمار'),
+            ]),
+            KeypadRow(buttons=[self._button('start', '🏠 منوی اصلی')]),
+        ])
+        await self._send_text_message(chat_id, text, keyboard)
+
+    async def _operator_list_referrals(self, chat_id: str, user: RubikaUser, raw_gym_id: str) -> None:
+        from gym_referrals.presentation import format_jalali
+        from gym_referrals.rubika import RubikaGymOperatorAdapter
+        try:
+            gym_id = int(raw_gym_id)
+        except (TypeError, ValueError):
+            await self._operator_error(chat_id, 'INVALID_INPUT')
+            return
+        try:
+            referrals = await RubikaGymOperatorAdapter.list_referrals(user, gym_id)
+        except PermissionError:
+            await self._operator_error(chat_id, 'FORBIDDEN')
+            return
+        if not referrals:
+            text = '📋 هنوز معرفی‌نامه‌ای برای این باشگاه صادر نشده است.'
+        else:
+            icons = {'ACTIVE': '🟢', 'USED': '🔵', 'EXPIRED': '⚪', 'CANCELLED': '🔴', 'INVOICED': '🟣'}
+            lines = ['📋 آخرین معرفی‌نامه‌های صادرشده:', '']
+            for item in referrals:
+                icon = icons.get(item['status'], '⚪')
+                lines.append(
+                    f"{icon} {item['referral_number']}\n"
+                    f"   👤 فرد: {item['beneficiary']}\n"
+                    f"   📅 اعتبار تا: {format_jalali(item['valid_until'])}"
+                )
+            text = '\n'.join(lines)
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[
+                self._button(f'op_verify_{gym_id}', '🔍 بررسی اعتبار'),
+                self._button(f'op_back_{gym_id}', '🔙 بازگشت'),
+            ]),
+        ])
+        await self._send_text_message(chat_id, text, keyboard)
+
+    async def _operator_stats(self, chat_id: str, user: RubikaUser, raw_gym_id: str) -> None:
+        from gym_referrals.rubika import RubikaGymOperatorAdapter
+        try:
+            gym_id = int(raw_gym_id)
+        except (TypeError, ValueError):
+            await self._operator_error(chat_id, 'INVALID_INPUT')
+            return
+        try:
+            stats = await RubikaGymOperatorAdapter.statistics(user, gym_id)
+        except PermissionError:
+            await self._operator_error(chat_id, 'FORBIDDEN')
+            return
+        text = (
+            f'📊 آمار باشگاه\n\n'
+            f'📄 کل معرفی‌نامه‌ها: {stats["total"]}\n'
+            f'🟢 فعال: {stats["active"]}\n'
+            f'✅ استفاده‌شده: {stats["used"]}\n'
+            f'📅 استفاده در امروز: {stats["used_today"]}'
+        )
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[self._button(f'op_back_{gym_id}', '🔙 بازگشت')]),
+        ])
+        await self._send_text_message(chat_id, text, keyboard)
+
+    async def _set_operator_code_step(self, user: RubikaUser, step: str, gym_id) -> None:
+        @_sync_db
+        def do():
+            from .models import GymOperatorState
+            state, _ = GymOperatorState.objects.get_or_create(rubika_user=user)
+            state.update_step(step, {'gym_id': gym_id})
+        await do()
+
+    def _operator_input_keyboard(self, gym_id) -> Keypad:
+        return Keypad(rows=[
+            KeypadRow(buttons=[self._button(f'op_cancel_{gym_id}', '❌ انصراف')]),
+            KeypadRow(buttons=[self._button('start', '🏠 منوی اصلی')]),
+        ])
+
+    async def _operator_ask_redeem(self, chat_id: str, user: RubikaUser, raw_gym_id: str) -> None:
+        try:
+            gym_id = int(raw_gym_id)
+        except (TypeError, ValueError):
+            await self._operator_error(chat_id, 'INVALID_INPUT')
+            return
+        await self._set_operator_code_step(user, 'redeem_wait', gym_id)
+        text = (
+            '✅ ثبت مراجعه‌ی حضوری\n\n'
+            'شماره معرفی‌نامه یا کد آن را ارسال کنید.\n'
+            'برای انصراف دکمه «انصراف» را بزنید.'
+        )
+        await self._send_text_message(chat_id, text, self._operator_input_keyboard(gym_id))
+
+    async def _operator_ask_verify(self, chat_id: str, user: RubikaUser, raw_gym_id: str) -> None:
+        try:
+            gym_id = int(raw_gym_id)
+        except (TypeError, ValueError):
+            await self._operator_error(chat_id, 'INVALID_INPUT')
+            return
+        await self._set_operator_code_step(user, 'verify_wait', gym_id)
+        text = (
+            '🔍 بررسی اعتبار معرفی‌نامه\n\n'
+            'شماره معرفی‌نامه یا کد آن را ارسال کنید.\n'
+            'برای انصراف دکمه «انصراف» را بزنید.'
+        )
+        await self._send_text_message(chat_id, text, self._operator_input_keyboard(gym_id))
+
+    async def _reset_operator_state(self, user: RubikaUser) -> None:
+        @_sync_db
+        def do():
+            from .models import GymOperatorState
+            state = GymOperatorState.objects.filter(rubika_user=user).first()
+            if state:
+                state.reset()
+        await do()
+
+    async def _operator_cancel_input(self, chat_id: str, user: RubikaUser, gym_id, silent: bool = False) -> None:
+        await self._reset_operator_state(user)
+        if silent:
+            if gym_id:
+                await self._show_gym_operator_panel(chat_id, user, gym_id)
+            return
+        await self._send_text_message(chat_id, 'عملیات لغو شد.', self._build_command_keyboard(True, operator=True))
+
+    async def _operator_process_verify(self, chat_id: str, user: RubikaUser, code: str, gym_id) -> None:
+        from gym_referrals.presentation import format_jalali
+        from gym_referrals.rubika import RubikaGymOperatorAdapter
+        from gym_referrals.services import ReferralError
+        try:
+            info = await RubikaGymOperatorAdapter.verify_code(user, gym_id, code)
+        except ReferralError as exc:
+            await self._reset_operator_state(user)
+            await self._operator_error(chat_id, exc.code, gym_id)
+            return
+        except PermissionError:
+            await self._reset_operator_state(user)
+            await self._operator_error(chat_id, 'FORBIDDEN', gym_id)
+            return
+        await self._reset_operator_state(user)
+        icons = {'ACTIVE': '🟢', 'USED': '🔵', 'EXPIRED': '⚪', 'CANCELLED': '🔴', 'INVOICED': '🟣'}
+        text = (
+            f'🔍 نتیجه استعلام\n\n'
+            f'🔢 شماره معرفی: {info["referral_number"]}\n'
+            f'👤 فرد: {info["beneficiary"]}\n'
+            f'🧑‍💼 پرسنل صادرکننده: {info["employee"]}\n'
+            f'📅 تاریخ صدور: {format_jalali(info["issue_date"])}\n'
+            f'📅 اعتبار تا: {format_jalali(info["valid_until"])}\n'
+            f'📌 وضعیت: {icons.get(info["status"], "⚪")} {info["status"]}'
+        )
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[
+                self._button(f'op_redeem_{gym_id}', '✅ ثبت مراجعه'),
+                self._button(f'op_back_{gym_id}', '🔙 بازگشت'),
+            ]),
+        ])
+        await self._send_text_message(chat_id, text, keyboard)
+
+    async def _operator_process_redeem(self, chat_id: str, user: RubikaUser, code: str, gym_id) -> None:
+        from gym_referrals.presentation import format_jalali
+        from gym_referrals.rubika import RubikaGymOperatorAdapter
+        from gym_referrals.services import ReferralError
+        try:
+            referral = await RubikaGymOperatorAdapter.redeem_code(user, gym_id, code)
+        except ReferralError as exc:
+            await self._reset_operator_state(user)
+            await self._operator_error(chat_id, exc.code, gym_id)
+            return
+        except PermissionError:
+            await self._reset_operator_state(user)
+            await self._operator_error(chat_id, 'FORBIDDEN', gym_id)
+            return
+        await self._reset_operator_state(user)
+        text = (
+            f'✅ مراجعه با موفقیت ثبت شد.\n\n'
+            f'🔢 شماره معرفی: {referral.referral_number}\n'
+            f'👤 فرد: {referral.beneficiary_full_name_snapshot}\n'
+            f'🏋️ باشگاه: {referral.gym.name}\n'
+            f'⏰ زمان: {format_jalali(referral.redeemed_at, with_time=True)}'
+        )
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[
+                self._button(f'op_back_{gym_id}', '🏢 ادامه مدیریت باشگاه'),
+                self._button('start', '🏠 منوی اصلی'),
+            ]),
+        ])
+        await self._send_text_message(chat_id, text, keyboard)
+
+    async def _operator_error(self, chat_id: str, code: str, gym_id=None) -> None:
+        messages = {
+            'FORBIDDEN': 'شما دسترسی مدیریتی به این باشگاه را ندارید.',
+            'REFERRAL_NOT_FOUND': 'معرفی‌نامه‌ای با این کد یافت نشد.',
+            'REFERRAL_GYM_MISMATCH': 'این معرفی‌نامه متعلق به باشگاه دیگری است.',
+            'REFERRAL_EXPIRED': 'اعتبار معرفی‌نامه پایان یافته است.',
+            'REFERRAL_CANCELLED': 'این معرفی‌نامه لغو شده است.',
+            'REFERRAL_ALREADY_USED': 'این معرفی‌نامه قبلاً استفاده شده است.',
+            'INVALID_INPUT': 'اطلاعات ارسالی معتبر نیست.',
+            'UNKNOWN_ERROR': 'عملیات انجام نشد. لطفاً دوباره تلاش کنید.',
+        }
+        text = f'❌ {messages.get(code, "عملیات انجام نشد. لطفاً دوباره تلاش کنید.")}'
+        rows = []
+        if gym_id:
+            rows.append(KeypadRow(buttons=[self._button(f'op_back_{gym_id}', '🏢 پنل باشگاه')]))
+        rows.append(KeypadRow(buttons=[self._button('start', '🏠 منوی اصلی')]))
+        await self._send_text_message(chat_id, text, Keypad(rows=rows))
+
     # --- Synchronous helper methods ---
-    def _build_command_keyboard(self, connected: bool) -> Keypad:
-        """ساخت کیبورد اصلی ربات با دکمه‌های مناسب بر اساس وضعیت اتصال کاربر"""
+    def _build_command_keyboard(self, connected: bool, operator: bool = False) -> Keypad:
+        """ساخت کیبورد اصلی ربات با دکمه‌های مناسب بر اساس وضعیت اتصال و نقش کاربر"""
         first_row = [('start', '🏠 منوی اصلی'), ('account', '👤 حساب من')]
-        
-        if connected:
-            # کیبورد برای کاربران متصل
+
+        if connected and operator:
+            # کیبورد برای اپراتورهای باشگاه (بدون بخش‌های پرسنلی)
+            second_row = [('my_gym', '🏢 باشگاه من')]
+            third_row = [('help', '❓ راهنما')]
+            fourth_row = []
+            fifth_row = []
+        elif connected:
+            # کیبورد برای کاربران متصل (پرسنل)
             second_row = [('payslip', '💰 فیش حقوقی'), ('leave_request', '🏖️ درخواست مرخصی')]
             third_row = [('voice_leave', '🎙️ مرخصی صوتی'), ('leave_inbox', '📋 کارتابل مرخصی')]
             fourth_row = [('my_leaves', '📊 وضعیت درخواست‌ها'), ('help', '❓ راهنما')]

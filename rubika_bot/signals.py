@@ -6,7 +6,9 @@ from django.dispatch import receiver
 
 from dashboard.models import Notification
 
-from .tasks import send_rubika_message
+from gym_referrals.models import Referral
+
+from .tasks import notify_gym_operators_new_referral, send_rubika_message
 
 logger = logging.getLogger(__name__)
 
@@ -81,3 +83,30 @@ def send_notification_to_rubika(sender, instance: Notification, created, **kwarg
     """Deliver every newly-created dashboard notification to its linked user."""
     if created:
         queue_notification_to_rubika(instance)
+
+
+@receiver(
+    post_save,
+    sender=Referral,
+    dispatch_uid='rubika_bot.gym_operator_referral_notice',
+)
+def notify_gym_operators_on_new_referral(sender, instance: Referral, created, **kwargs):
+    """Notify the gym's Rubika operators whenever a usable referral is issued."""
+    if not created:
+        return
+    if instance.status != Referral.Status.ACTIVE:
+        return
+    if instance.source == Referral.Source.PHYSICAL_LEGACY:
+        return
+
+    def enqueue() -> None:
+        try:
+            notify_gym_operators_new_referral.delay(instance.pk)
+        except Exception:
+            # Referral persistence must never depend on broker availability.
+            logger.exception(
+                "Could not enqueue gym operator notification for referral %s",
+                instance.pk,
+            )
+
+    transaction.on_commit(enqueue)
