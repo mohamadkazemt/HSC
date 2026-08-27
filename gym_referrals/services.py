@@ -1,12 +1,79 @@
 import hashlib
+import random
+import re
+import string
 from dataclasses import dataclass
 from datetime import timedelta
 
+from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from accounts.models import Dependent, UserProfile
-from .models import Gym, GymContract, Referral, ReferralAuditLog, ReferralIdempotencyKey, ReferralSequence, ReferralUsage
+from .models import Gym, GymContract, GymOperator, Referral, ReferralAuditLog, ReferralIdempotencyKey, ReferralSequence, ReferralUsage
+
+
+def generate_gym_username(gym_code, try_base=None):
+    """Build a safe, unique username for a gym account."""
+    base = re.sub(r"[^A-Za-z0-9_-]", "", str(gym_code or "")).strip("_") or "gym"
+    base = (try_base or f"gym_{base}").lower()
+    UserModel = get_user_model()
+    candidate, suffix = base, 1
+    while UserModel.objects.filter(username=candidate).exists():
+        candidate = f"{base}{suffix}"
+        suffix += 1
+    return candidate
+
+
+def generate_gym_password(length=10):
+    alphabet = string.ascii_letters + string.digits
+    return "".join(random.SystemRandom().choice(alphabet) for _ in range(length))
+
+
+def create_gym_account(gym, *, username=None, password=None):
+    """Create the gym's login account and link it as an active operator.
+
+    Returns ``(user, raw_password)`` where ``raw_password`` is the password that
+    was actually set (generated when none was provided).
+    """
+    UserModel = get_user_model()
+    raw_password = password or generate_gym_password()
+    with transaction.atomic():
+        user = UserModel.objects.create_user(
+            username=generate_gym_username(gym.code, username),
+            password=raw_password,
+            first_name=gym.name[:80], last_name="", is_active=True,
+        )
+        gym.account_user = user
+        gym.save(update_fields=("account_user", "updated_at"))
+        GymOperator.objects.update_or_create(
+            gym=gym, user=user, defaults={"is_active": True},
+        )
+    return user, raw_password
+
+
+def reset_gym_account_password(gym, password=None):
+    """Reset a gym account password and return ``(user, raw_password)``.
+
+    If the gym has no account yet, one is created on the fly.
+    """
+    new_password = password or generate_gym_password()
+    UserModel = get_user_model()
+    with transaction.atomic():
+        user = getattr(gym, "account_user", None)
+        if user is None:
+            user = UserModel.objects.create_user(
+                username=generate_gym_username(gym.code),
+                password=new_password,
+                first_name=gym.name[:80], last_name="", is_active=True,
+            )
+            gym.account_user = user
+            gym.save(update_fields=("account_user", "updated_at"))
+        user.set_password(new_password)
+        user.is_active = True
+        user.save(update_fields=("password", "is_active"))
+        GymOperator.objects.update_or_create(gym=gym, user=user, defaults={"is_active": True})
+    return user, new_password
 
 
 class ReferralError(Exception):

@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+{% load gym_referral_tags %}
+{% block title %}پرتال باشگاه{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-7xl space-y-6">
+  <nav class="text-sm text-gray-500 dark:text-gray-400" aria-label="مسیر صفحه">
+    <ol class="flex flex-wrap items-center gap-2">
+      <li>پرتال باشگاه</li>
+      {% if gym %}<li aria-hidden="true">/</li><li class="text-gray-900 dark:text-white">{{ gym.name }}</li>{% endif %}
+    </ol>
+  </nav>
+
+  {% if no_access or not gym %}
+  <section class="rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm dark:border-gray-700 dark:bg-gray-800">
+    <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
+      <i class="fas fa-dumbbell text-2xl text-gray-400"></i>
+    </div>
+    <h1 class="mt-4 text-xl font-bold text-gray-900 dark:text-white">شما به باشگاهی متصل نیستید</h1>
+    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">برای استفاده از پرتال باشگاه، مدیر سیستم باید حساب کاربری شما را به یک باشگاه متصل کند.</p>
+    {% if user.is_superuser %}
+    <a href="{% url 'gym_referrals:gym_create' %}" class="mt-6 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">
+      <i class="fas fa-plus" aria-hidden="true"></i>افزودن باشگاه
+    </a>
+    {% else %}
+    <p class="mt-6 text-xs text-gray-400">کاربر فعلی: {{ user.username }}</p>
+    {% endif %}
+  </section>
+  {% else %}
+
+  <header class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div>
+      <h1 class="flex items-center gap-3 text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
+        <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600 text-white">
+          <i class="fas fa-dumbbell" aria-hidden="true"></i>
+        </span>
+        پرتال باشگاه {{ gym.name }}
+      </h1>
+      <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">ديده‌بان مراجعات، معرفی‌نامه‌ها و قرارداد باشگاه شما</p>
+    </div>
+    {% if gyms|length > 1 %}
+    <form method="get" class="lg:min-w-72">
+      <label for="portal-gym-select" class="sr-only">انتخاب باشگاه</label>
+      <div class="relative">
+        <i class="fas fa-chevron-down pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400" aria-hidden="true"></i>
+        <select onchange="this.form.submit()" name="gym" id="portal-gym-select"
+                class="gym-native-select w-full rounded-lg border border-gray-300 bg-white py-2.5 pr-4 pl-10 text-sm font-medium text-gray-900 shadow-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+          {% for g in gyms %}
+          <option value="{{ g.pk }}" {% if g.pk == gym.pk %}selected{% endif %}>{{ g.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </form>
+    {% endif %}
+  </header>
+
+  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">معرفی‌نامه‌های معتبر</p>
+          <p class="mt-1 text-3xl font-bold text-emerald-600 dark:text-emerald-400">{{ stats.issued_active }}</p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">از مجموع {{ stats.issued_total }} صادرشده</p>
+        </div>
+        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+          <i class="fas fa-file-circle-check text-xl" aria-hidden="true"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">مجموع مراجعات</p>
+          <p class="mt-1 text-3xl font-bold text-gray-900 dark:text-white">{{ stats.redeemed_total }}</p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">از کل معرفی‌نامه‌ها</p>
+        </div>
+        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+          <i class="fas fa-right-to-bracket text-xl" aria-hidden="true"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">مراجعات امروز</p>
+          <p class="mt-1 text-3xl font-bold text-indigo-600 dark:text-indigo-400">{{ stats.redeemed_today }}</p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ today|gym_jalali }}</p>
+        </div>
+        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
+          <i class="fas fa-calendar-day text-xl" aria-hidden="true"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">نرخ مراجعه</p>
+          <p class="mt-1 text-3xl font-bold text-amber-600 dark:text-amber-400">٪{{ stats.usage_rate }}</p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">درصد استفاده از معرفی‌نامه‌ها</p>
+        </div>
+        <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+          <i class="fas fa-chart-line text-xl" aria-hidden="true"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-3">
+    <section class="rounded-2xl border border-indigo-200 bg-white shadow-sm dark:border-indigo-800 dark:bg-gray-800 lg:col-span-2">
+      <div class="flex items-center justify-between border-b border-gray-100 p-5 dark:border-gray-700">
+        <div>
+          <h2 class="font-bold text-gray-900 dark:text-white">تأیید و ثبت مراجعه</h2>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">کد معرفی‌نامه مشتری را وارد کنید تا معتبری آن بررسی و مراجعه ثبت شود.</p>
+        </div>
+        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
+          <i class="fas fa-qrcode"></i>
+        </div>
+      </div>
+      <form method="post" action="{% url 'gym_referrals:gym_portal_redeem' %}" class="p-5">
+        {% csrf_token %}
+        <input type="hidden" name="gym" value="{{ gym.pk }}">
+        <div class="flex flex-col gap-3 sm:flex-row">
+          <div class="relative flex-1">
+            <i class="fas fa-ticket absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-400" aria-hidden="true"></i>
+            <input type="text" name="token" required autocomplete="off" dir="ltr"
+                   placeholder="کد معرفی‌نامه را وارد یا اسکن کنید"
+                   class="w-full rounded-lg border border-gray-300 bg-white py-3 pr-10 pl-4 text-sm text-gray-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+          </div>
+          <button type="submit" class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
+            <i class="fas fa-check-circle" aria-hidden="true"></i>تأیید و ثبت
+          </button>
+        </div>
+        <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+          <i class="fas fa-circle-info ml-1" aria-hidden="true"></i>
+          کد بر روی معرفی‌نامه و یا از طریق اسکن کد QR آن قابل دریافت است.
+        </p>
+      </form>
+    </section>
+
+    <section class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <div class="border-b border-gray-100 p-5 dark:border-gray-700">
+        <h2 class="font-bold text-gray-900 dark:text-white">وضعیت قرارداد</h2>
+      </div>
+      <div class="p-5">
+        {% if current_contract %}
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-900/20">
+          <div class="flex items-center gap-3">
+            <i class="fas fa-circle-check text-emerald-600 dark:text-emerald-400"></i>
+            <span class="text-sm font-semibold text-emerald-800 dark:text-emerald-200">قرارداد فعال است</span>
+          </div>
+          <dl class="mt-3 space-y-2 text-sm">
+            <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">شماره قرارداد</dt><dd>{{ current_contract.contract_no }}</dd></div>
+            <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">اعتبار</dt><dd>{{ current_contract.start_date|gym_jalali }} تا {{ current_contract.end_date|gym_jalali }}</dd></div>
+            <div class="flex justify-between"><dt class="text-gray-500 dark:text-gray-400">تعرفه</dt><dd>{{ current_contract.tariff_amount|default:"تعیین نشده" }} تومان</dd></div>
+          </dl>
+        </div>
+        {% else %}
+        <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
+          <div class="flex items-center gap-3">
+            <i class="fas fa-triangle-exclamation text-amber-600 dark:text-amber-400"></i>
+            <span class="text-sm font-semibold text-amber-800 dark:text-amber-200">قرارداد فعالی وجود ندارد</span>
+          </div>
+          <p class="mt-2 text-xs text-amber-700 dark:text-amber-300">برای فعال‌شدن تأیید مراجعات، با واحد اداری موضوع قرارداد را پیگیری کنید.</p>
+        </div>
+        {% endif %}
+        {% if invoices %}
+        <div class="mt-4 space-y-2">
+          {% for invoice in invoices|slice:":3" %}
+          <div class="flex items-center justify-between rounded-lg border border-gray-100 px-3 py-2 text-sm dark:border-gray-700">
+            <span class="font-medium text-gray-700 dark:text-gray-300">{{ invoice.invoice_number }}</span>
+            <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold
+              {% if invoice.status == 'PAID' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400
+              {% elif invoice.status == 'APPROVED' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
+              {% elif invoice.status == 'CANCELLED' %}bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400
+              {% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400{% endif %}">
+              {{ invoice.get_status_display }}
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </section>
+  </div>
+
+  <div class="grid gap-6 lg:grid-cols-2">
+    <section class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <div class="flex items-center justify-between border-b border-gray-100 p-5 dark:border-gray-700">
+        <div>
+          <h2 class="font-bold text-gray-900 dark:text-white">آخرین مراجعات</h2>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">کسب‌وکار اخیر به معرفی‌نامه‌ها</p>
+        </div>
+        <i class="fas fa-people-carry-box text-gray-300 dark:text-gray-600"></i>
+      </div>
+      <div class="p-5">
+        {% if recent_usages %}
+        <div class="space-y-3">
+          {% for usage in recent_usages %}
+          <div class="flex items-center justify-between rounded-xl border border-gray-100 p-3 dark:border-gray-700">
+            <div class="flex items-center gap-3">
+              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                <i class="fas fa-user"></i>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ usage.referral.beneficiary_full_name_snapshot }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ usage.referral.referral_number }}</p>
+              </div>
+            </div>
+            <div class="text-left">
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ usage.redeemed_at|gym_jalali:True }}</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500">به دست {{ usage.redeemed_by.username|default:"—" }}</p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="py-8 text-center">
+          <i class="fas fa-inbox text-3xl text-gray-300 dark:text-gray-600"></i>
+          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">هنوز مراجعه‌ای ثبت نشده است</p>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <div class="flex items-center justify-between border-b border-gray-100 p-5 dark:border-gray-700">
+        <div>
+          <h2 class="font-bold text-gray-900 dark:text-white">معرفی‌نامه‌های اخیر باشگاه</h2>
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">آخرین معرفی‌نامه‌های صادرشده برای {{ gym.name }}</p>
+        </div>
+        <i class="fas fa-file-lines text-gray-300 dark:text-gray-600"></i>
+      </div>
+      <div class="p-5">
+        {% if recent_referrals %}
+        <div class="space-y-3">
+          {% for referral in recent_referrals %}
+          <div class="flex items-center justify-between rounded-xl border border-gray-100 p-3 dark:border-gray-700">
+            <div class="flex items-center gap-3">
+              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                <i class="fas fa-user"></i>
+              </div>
+              <div>
+                <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ referral.beneficiary_full_name_snapshot }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ referral.referral_number }}</p>
+              </div>
+            </div>
+            <div class="text-left">
+              <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold
+                {% if referral.status == 'ACTIVE' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400
+                {% elif referral.status == 'USED' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
+                {% elif referral.status == 'CANCELLED' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
+                {% elif referral.status == 'EXPIRED' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400
+                {% else %}bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400{% endif %}">
+                {{ referral.get_status_display }}
+              </span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="py-8 text-center">
+          <i class="fas fa-inbox text-3xl text-gray-300 dark:text-gray-600"></i>
+          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">معرفی‌نامه‌ای ثبت نشده است</p>
+        </div>
+        {% endif %}
+      </div>
+    </section>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

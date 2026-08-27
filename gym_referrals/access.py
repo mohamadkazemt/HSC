@@ -27,6 +27,20 @@ from permissions.utils import check_permission
 DENIED_MESSAGE = "شما اجازه دسترسی به این بخش را ندارند."
 
 
+def get_operator_gyms(user):
+    """Gyms the user actively operates via an active GymOperator mapping."""
+    if user is None or not user.is_authenticated:
+        return []
+    from .models import Gym
+    if user.is_superuser:
+        return list(Gym.objects.filter(is_active=True))
+    return list(
+        Gym.objects.filter(
+            operators__user=user, operators__is_active=True, is_active=True,
+        ).distinct()
+    )
+
+
 def has_gym_admin_access(user):
     """True for superusers or holders of any gym_referrals model permission."""
     return user.is_superuser or user.has_module_perms("gym_referrals")
@@ -44,3 +58,23 @@ def gym_access_required(view_name):
         return _wrapped
 
     return decorator
+
+
+def gym_portal_access_required(view_func):
+    """Require at least one active GymOperator mapping (role = gym operator).
+
+    Users with gym admin rights (superuser OR any gym_referrals model
+    permission) are also allowed, which keeps administrators able to preview
+    the portal.
+    """
+
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        user = request.user
+        if not user.is_authenticated:
+            raise PermissionDenied(DENIED_MESSAGE)
+        if not (has_gym_admin_access(user) or get_operator_gyms(user)):
+            raise PermissionDenied(DENIED_MESSAGE)
+        return view_func(request, *args, **kwargs)
+
+    return _wrapped

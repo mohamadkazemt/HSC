@@ -48,6 +48,8 @@ URLS_WITH_LABELS = [
      "url_name": "gym_contract_create", "name": "gym_contract_manage", "label": "باشگاه_مدیریت قراردادها"},
     {"path": "management/gyms/<int:gym_id>/operators/new/", "view": views.operator_create,
      "url_name": "gym_operator_create", "name": "gym_operator_manage", "label": "باشگاه_مدیریت اپراتورها"},
+    {"path": "management/gyms/<int:gym_id>/account/reset/", "view": views.gym_account_reset,
+     "url_name": "gym_account_reset", "name": "gym_manage", "label": "باشگاه_مدیریت باشگاه‌ها"},
     {"path": "management/contracts/", "view": views.contract_list, "url_name": "contract_list",
      "name": "gym_contract_manage", "label": "باشگاه_مدیریت قراردادها"},
     {"path": "management/contracts/new/", "view": views.contract_create, "url_name": "contract_create",
@@ -83,4 +85,15 @@ PUBLIC_URL_PATTERNS = [
     path("api/referrals/verify/<uuid:public_token>/redeem/", api.redeem_referral, name="api_redeem"),
 ]
 
-urlpatterns = [path(url["path"], url["view"], name=url["url_name"]) for url in URLS_WITH_LABELS] + PUBLIC_URL_PATTERNS
+# Gym operator portal. Authorization is the active GymOperator mapping, so these
+# are intentionally NOT registered in the permissions UI.
+PORTAL_URL_PATTERNS = [
+    path("portal/", views.gym_portal, name="gym_portal"),
+    path("portal/redeem/", views.gym_portal_redeem, name="gym_portal_redeem"),
+]
+
+urlpatterns = (
+    [path(url["path"], url["view"], name=url["url_name"]) for url in URLS_WITH_LABELS]
+    + PUBLIC_URL_PATTERNS
+    + PORTAL_URL_PATTERNS
+)

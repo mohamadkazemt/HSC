@@ -127,6 +127,17 @@ class InvoiceAdjustmentForm(forms.Form):
 
 
 class GymForm(forms.ModelForm):
+    account_username = forms.CharField(
+        required=False, label="نام کاربری ورود باشگاه",
+        help_text="خالی بگذارید تا به‌صورت خودکار از کد باشگاه ساخته شود.",
+        widget=forms.TextInput(attrs={"class": "gym-native-select w-full bg-white text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white", "placeholder": "به‌صورت خودکار"}),
+    )
+    account_password = forms.CharField(
+        required=False, label="رمز عبور اولیه باشگاه",
+        help_text="خالی بگذارید تا رمز امن تصادفی ساخته شود (برای ورود اولیه از همین رمز استفاده کنید).",
+        widget=forms.PasswordInput(attrs={"class": "gym-native-select w-full bg-white text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white", "autocomplete": "new-password"}),
+    )
+
     class Meta:
         model = Gym
         fields = ("name", "code", "phone", "address", "is_active")
@@ -135,8 +146,11 @@ class GymForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields.pop("account_username")
+            self.fields.pop("account_password")
         for name, field in self.fields.items():
-            if name != "is_active":
+            if name not in ("account_username", "account_password") and name != "is_active":
                 field.widget.attrs["class"] = SELECT_CLASSES if isinstance(field.widget, forms.Select) else "w-full bg-white text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
 
 

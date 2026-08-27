@@ -19,8 +19,8 @@ from permissions.models import UserPermission
 from permissions.utils import get_all_views_with_labels
 from .access import has_gym_admin_access
 from .billing import BillingError, GymInvoiceService
-from .models import Gym, GymContract, GymInvoice, Referral, ReferralUsage
-from .services import ReferralError, ReferralService, is_referral_active
+from .models import Gym, GymContract, GymInvoice, GymOperator, Referral, ReferralUsage
+from .services import ReferralError, ReferralService, create_gym_account, is_referral_active, reset_gym_account_password
 
 
 class ReferralServiceTests(TestCase):
@@ -396,3 +396,85 @@ class PermissionsIntegrationTests(TestCase):
         self.client.logout()
         response = self.client.get(reverse("gym_referrals:api_verify", args=(referral.public_token,)))
         self.assertEqual(response.status_code, 200)
+
+
+class GymAccountAndPortalTests(TestCase):
+    """Gym login accounts are auto-created and power the gym portal."""
+
+    def setUp(self):
+        self.employee = User.objects.create_user("worker", password="pass")
+        self.profile = UserProfile.objects.create(user=self.employee, personnel_code="900")
+        self.gym = Gym.objects.create(name="باشگاه حساب", code="ACCT")
+        today = timezone.localdate()
+        GymContract.objects.create(gym=self.gym, start_date=today - timedelta(days=1), end_date=today + timedelta(days=365))
+
+    def make_referral(self):
+        return ReferralService.create_referral(
+            requester=self.employee, beneficiary_type="EMPLOYEE", beneficiary_id=self.profile.pk,
+            gym_id=self.gym.pk, source="WEB",
+        )[0]
+
+    def test_create_gym_account_links_user_and_operator(self):
+        user, raw = create_gym_account(self.gym)
+        self.gym.refresh_from_db()
+        self.assertTrue(user.check_password(raw))
+        self.assertTrue(self.gym.account_user_id, user.pk)
+        self.assertTrue(self.gym.operators.filter(user=user, is_active=True).exists())
+        self.assertTrue(user.username.startswith("gym_"))
+
+    def test_gym_usernames_are_unique(self):
+        gym2 = Gym.objects.create(name="باشگاه حساب ۲", code="ACCT2")
+        _, _ = create_gym_account(self.gym)
+        user2, _ = create_gym_account(gym2)
+        self.assertNotEqual(user2.username, "gym_acct")
+        self.assertFalse(User.objects.filter(username="gym_acct").count() > 1)
+
+    def test_reset_creates_missing_account_and_changes_password(self):
+        user, raw = reset_gym_account_password(self.gym)
+        self.gym.refresh_from_db()
+        self.assertTrue(user.check_password(raw))
+        self.assertEqual(self.gym.account_user_id, user.pk)
+
+    def test_portal_accessible_only_by_operators(self):
+        unrelated = User.objects.create_user("outsider", password="pass")
+        self.client.force_login(unrelated)
+        self.assertEqual(self.client.get(reverse("gym_referrals:gym_portal")).status_code, 403)
+
+        operator = User.objects.create_user("gymman", password="pass")
+        GymOperator.objects.create(gym=self.gym, user=operator, is_active=True)
+        self.client.force_login(operator)
+        self.assertEqual(self.client.get(reverse("gym_referrals:gym_portal")).status_code, 200)
+
+        admin = User.objects.create_superuser("root", password="x")
+        self.client.force_login(admin)
+        self.assertEqual(self.client.get(reverse("gym_referrals:gym_portal")).status_code, 200)
+
+    def test_portal_redeem_registers_usage(self):
+        referral = self.make_referral()
+        operator = User.objects.create_user("gymman", password="pass")
+        GymOperator.objects.create(gym=self.gym, user=operator, is_active=True)
+        self.client.force_login(operator)
+        response = self.client.post(reverse("gym_referrals:gym_portal_redeem"), {"gym": self.gym.pk, "token": str(referral.public_token)})
+        self.assertNotEqual(response.status_code, 403)
+        referral.refresh_from_db()
+        self.assertIsNotNone(referral.usage)
+        self.assertEqual(referral.status, Referral.Status.USED)
+
+    def test_portal_redeem_rejects_foreign_token(self):
+        other = Gym.objects.create(name="باشگاه دیگر", code="OTHER")
+        today = timezone.localdate()
+        GymContract.objects.create(gym=other, start_date=today - timedelta(days=1), end_date=today + timedelta(days=365))
+        foreign = ReferralService.create_referral(
+            requester=self.employee, beneficiary_type="EMPLOYEE", beneficiary_id=self.profile.pk,
+            gym_id=other.pk, source="WEB",
+        )[0]
+        operator = User.objects.create_user("gymman", password="pass")
+        GymOperator.objects.create(gym=self.gym, user=operator, is_active=True)
+        self.client.force_login(operator)
+        self.client.post(
+            reverse("gym_referrals:gym_portal_redeem"),
+            {"gym": self.gym.pk, "token": str(foreign.public_token)},
+        )
+        foreign.refresh_from_db()
+        self.assertIsNone(getattr(foreign, "usage", None))
+        self.assertEqual(foreign.status, Referral.Status.ACTIVE)

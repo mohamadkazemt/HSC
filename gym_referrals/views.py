@@ -5,6 +5,7 @@ from io import BytesIO
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
+from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError
 from django.db.models import Q
 from django.core.paginator import Paginator
@@ -16,11 +17,11 @@ from django.views.decorators.http import require_http_methods, require_POST
 
 from accounts.models import Dependent, UserProfile
 from permissions.utils import check_permission
-from .access import gym_access_required
+from .access import get_operator_gyms, gym_access_required, gym_portal_access_required
 from .billing import BillingError, GymInvoiceService
 from .forms import GymContractForm, GymForm, GymOperatorForm, InvoiceAdjustmentForm, InvoiceGenerateForm, LegacyImportForm, ReferralCancelForm, ReferralCreateForm
 from .models import Gym, GymContract, GymInvoice, GymOperator, Referral, ReferralAuditLog, ReferralUsage
-from .services import ReferralError, ReferralService
+from .services import ReferralError, ReferralService, create_gym_account, reset_gym_account_password
 
 
 def _spreadsheet_safe(value):
@@ -159,7 +160,15 @@ def gym_create(request):
     form = GymForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         gym = form.save()
-        messages.success(request, "باشگاه با موفقیت ایجاد شد.")
+        account_user, raw_password = create_gym_account(
+            gym,
+            username=form.cleaned_data.get("account_username") or None,
+            password=form.cleaned_data.get("account_password") or None,
+        )
+        messages.success(
+            request,
+            f"باشگاه با موفقیت ایجاد شد. حساب ورود باشگاه: <b>{account_user.username}</b> — رمز عبور: <b>{raw_password}</b>",
+        )
         return redirect("gym_referrals:gym_detail", gym.pk)
     return render(request, "gym_referrals/gym_form.html", {"form": form, "page_title": "افزودن باشگاه"})
 
@@ -317,6 +326,96 @@ def operator_delete(request, operator_id):
     get_object_or_404(GymOperator, pk=operator_id).delete()
     messages.success(request, "ارتباط اپراتور با باشگاه حذف شد.")
     return redirect("gym_referrals:operator_list")
+
+
+@login_required
+@gym_access_required("gym_manage")
+@require_POST
+def gym_account_reset(request, gym_id):
+    gym = get_object_or_404(Gym, pk=gym_id)
+    account_user, raw_password = reset_gym_account_password(gym)
+    messages.success(
+        request,
+        f"رمز عبور حساب باشگاه بازنشانی شد. نام کاربری: <b>{account_user.username}</b> — رمز عبور جدید: <b>{raw_password}</b>",
+    )
+    return redirect("gym_referrals:gym_detail", gym.pk)
+
+
+@login_required
+@gym_portal_access_required
+def gym_portal(request):
+    today = timezone.localdate()
+    gyms = get_operator_gyms(request.user)
+    if request.user.is_superuser:
+        if request.GET.get("gym"):
+            requested = Gym.objects.filter(pk=request.GET.get("gym"))
+            if requested:
+                gym = requested.first()
+            else:
+                gym = gyms[0] if gyms else None
+        else:
+            gym = gyms[0] if gyms else None
+    else:
+        gym = next((g for g in gyms if str(g.pk) == request.GET.get("gym")), gyms[0] if gyms else None)
+
+    if not gyms:
+        return render(request, "gym_referrals/portal.html", {
+            "gyms": [], "gym": None, "today": today,
+            "no_access": True,
+        })
+
+    stats = {
+        "issued_total": gym.referrals.count(),
+        "issued_active": gym.referrals.filter(
+            status=Referral.Status.ACTIVE, valid_from__lte=today, valid_until__gte=today
+        ).count(),
+        "redeemed_total": gym.referralusage_set.count(),
+        "redeemed_today": gym.referralusage_set.filter(redeemed_at__date=today).count(),
+        "usage_rate": (gym.referralusage_set.count() * 100 // gym.referrals.count()) if gym.referrals.exists() else 0,
+    }
+    current_contract = next(
+        (c for c in gym.contracts.all() if c.is_valid_on(today)), None
+    )
+    recent_usages = gym.referralusage_set.select_related("referral", "redeemed_by").order_by("-redeemed_at")[:10]
+    recent_referrals = gym.referrals.select_related("employee").order_by("-created_at")[:10]
+    invoices = gym.invoices.all().order_by("-period_start")[:5]
+    return render(request, "gym_referrals/portal.html", {
+        "gyms": gyms, "gym": gym, "today": today,
+        "stats": stats, "current_contract": current_contract,
+        "recent_usages": recent_usages, "recent_referrals": recent_referrals,
+        "invoices": invoices,
+    })
+
+
+@login_required
+@gym_portal_access_required
+@require_POST
+def gym_portal_redeem(request):
+    gyms = get_operator_gyms(request.user)
+    if not gyms:
+        raise PermissionDenied
+    gym = next((g for g in gyms if str(g.pk) == request.POST.get("gym")), gyms[0])
+    token = request.POST.get("token", "").strip()
+    if not token:
+        messages.error(request, "کد معرفی‌نامه را وارد کنید.")
+        return redirect(f"{reverse('gym_referrals:gym_portal')}?gym={gym.pk}")
+    referral = Referral.objects.filter(public_token=token).select_related("gym").first()
+    if referral is None:
+        messages.error(request, "کد واردشده متعلق به معرفی‌نامه‌ای نیست.")
+    elif referral.gym_id != gym.pk:
+        messages.error(request, "این معرفی‌نامه متعلق به این باشگاه نیست.")
+    elif not referral.is_active(today := timezone.localdate()):
+        messages.warning(request, "معرفی‌نامه منقضی شده یا معتبر نیست.")
+    else:
+        try:
+            ReferralService.redeem(str(referral.public_token), request.user, gym)
+            messages.success(
+                request,
+                f"معرفی‌نامه {referral.referral_number} برای <b>{referral.beneficiary_full_name_snapshot}</b> بلامانع و ثبت شد.",
+            )
+        except ReferralError as exc:
+            messages.error(request, exc.message)
+    return redirect(f"{reverse('gym_referrals:gym_portal')}?gym={gym.pk}")
 
 
 @permission_required("gym_referrals.view_referralusage", raise_exception=True)
