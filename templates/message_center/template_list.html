@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}قالب‌های پیام{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-5xl space-y-6">
+    <nav class="text-sm text-gray-500 dark:text-gray-400">مرکز پیام / قالب‌های پیام</nav>
+
+    <header class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-300">
+                <i class="fas fa-paste text-lg"></i>
+            </span>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">قالب‌های پیام</h1>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">قالب‌های آماده برای ارسال سریع پیام گروهی.</p>
+            </div>
+        </div>
+        <a href="{% url 'message_center:broadcast_compose' %}" class="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">
+            <i class="fas fa-arrow-right"></i>بازگشت به ارسال پیام
+        </a>
+    </header>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium
+                {% if message.tags == 'success' %}border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+                {% elif message.tags == 'error' %}border-red-200 bg-red-50 text-red-800 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300
+                {% else %}border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-700 dark:bg-sky-900/30 dark:text-sky-300{% endif %}">
+                <i class="fas fa-info-circle text-lg"></i><span>{{ message }}</span>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="grid gap-5 lg:grid-cols-2">
+        <!-- ایجاد قالب -->
+        <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+            <h2 class="mb-4 flex items-center gap-2 font-bold text-gray-900 dark:text-white"><i class="fas fa-plus text-emerald-600"></i> ایجاد قالب جدید</h2>
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="title" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">عنوان قالب</label>
+                    <input type="text" name="title" id="title" required class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white" placeholder="مثلاً: اطلاعیه خاموشی">
+                </div>
+                <div class="mb-3">
+                    <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">کانال پیش‌فرض</label>
+                    <div class="flex gap-4">
+                        {% for value, label in channel_choices %}
+                        <label class="flex items-center gap-2 text-sm">
+                            <input type="radio" name="channel" value="{{ value }}" {% if value == 'sms' %}checked{% endif %} class="h-4 w-4 text-sky-600">
+                            {{ label }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label for="text" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">متن قالب</label>
+                    <textarea name="text" id="text" rows="4" required class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white" placeholder="متن پیام..."></textarea>
+                </div>
+                <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-l from-emerald-600 to-teal-600 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:brightness-110">
+                    <i class="fas fa-save"></i> ذخیره قالب
+                </button>
+            </form>
+        </section>
+
+        <!-- لیست قالب‌ها -->
+        <section class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+            <header class="border-b border-gray-100 px-6 py-4 dark:border-gray-700">
+                <h2 class="font-bold text-gray-900 dark:text-white"><i class="fas fa-list ml-2 text-gray-400"></i>قالب‌های موجود ({{ templates|length }})</h2>
+            </header>
+            <div class="divide-y divide-gray-100 dark:divide-gray-700">
+                {% for t in templates %}
+                <div class="p-4">
+                    <div class="mb-2 flex items-start justify-between gap-3">
+                        <div>
+                            <p class="font-semibold text-gray-800 dark:text-gray-200">{{ t.title }}</p>
+                            <span class="text-xs text-gray-400">{{ t.get_channel_display }} · استفاده: {{ t.usage_count }}</span>
+                        </div>
+                        <form method="post" onsubmit="return confirm('حذف این قالب؟')">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="delete_id" value="{{ t.id }}">
+                            <button type="submit" class="rounded-lg p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30"><i class="fas fa-trash"></i></button>
+                        </form>
+                    </div>
+                    <p class="text-sm leading-6 text-gray-600 whitespace-pre-wrap dark:text-gray-300">{{ t.text }}</p>
+                </div>
+                {% empty %}
+                <div class="p-8 text-center text-sm text-gray-400">هنوز قالب‌ی ثبت نشده است.</div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

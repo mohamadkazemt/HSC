@@ -99,3 +99,135 @@ class InboundMessage(models.Model):
 
     def __str__(self):
         return f"{self.account_phone}: {self.text[:40]}"
+
+
+class MessageTemplate(models.Model):
+    """قالب پیام آماده برای ارسال سریع پیام گروهی."""
+
+    class Channel(models.TextChoices):
+        SMS = "sms", "پیامک (SMS)"
+        RUBIKA = "rubika", "روبیکا"
+
+    title = models.CharField(max_length=150, verbose_name="عنوان قالب")
+    text = models.TextField(verbose_name="متن قالب")
+    channel = models.CharField(
+        max_length=10, choices=Channel.choices, default=Channel.SMS, verbose_name="کانال ارسال"
+    )
+    is_active = models.BooleanField(default=True, verbose_name="فعال")
+    usage_count = models.PositiveIntegerField(default=0, verbose_name="تعداد استفاده")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ("-updated_at",)
+        verbose_name = "قالب پیام"
+        verbose_name_plural = "قالب‌های پیام"
+
+    def __str__(self):
+        return self.title
+
+    def increment_usage(self):
+        self.usage_count += 1
+        self.save(update_fields=["usage_count"])
+
+
+class Broadcast(models.Model):
+    """یک پیام گروهی (به sms.ir یا روبیکا) همراه با وضعیت ارسال."""
+
+    class Channel(models.TextChoices):
+        SMS = "sms", "پیامک (SMS)"
+        RUBIKA = "rubika", "روبیکا"
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "پیش‌نویس"
+        RESOLVED = "resolved", "آماده ارسال"
+        SCHEDULED = "scheduled", "زمان‌بندی شده"
+        SENDING = "sending", "در حال ارسال"
+        COMPLETED = "completed", "انجام شد"
+        PARTIAL = "partial", "با خطا انجام شد"
+        FAILED = "failed", "ناموفق"
+        CANCELLED = "cancelled", "لغو شد"
+
+    title = models.CharField(max_length=200, blank=True, default="", verbose_name="عنوان پیام")
+    text = models.TextField(verbose_name="متن پیام")
+    channel = models.CharField(
+        max_length=10, choices=Channel.choices, default=Channel.SMS, verbose_name="کانال ارسال"
+    )
+
+    mobile_numbers = models.JSONField(default=list, blank=True, verbose_name="شماره‌های موبایل")
+    personnel_codes = models.JSONField(default=list, blank=True, verbose_name="کدهای پرسنلی")
+
+    status = models.CharField(
+        max_length=12, choices=Status.choices, default=Status.DRAFT, verbose_name="وضعیت"
+    )
+
+    recipients_total = models.PositiveIntegerField(default=0, verbose_name="دریافت‌کنندگان کل")
+    recipients_resolved = models.PositiveIntegerField(default=0, verbose_name="دریافت‌کنندگان قابل ارسال")
+    recipients_invalid = models.PositiveIntegerField(default=0, verbose_name="دریافت‌کنندگان نامعتبر")
+
+    scheduled_for = models.DateTimeField(null=True, blank=True, verbose_name="زمان‌بندی ارسال")
+    sent_at = models.DateTimeField(null=True, blank=True, verbose_name="زمان ارسال")
+
+    source_file_name = models.CharField(max_length=255, blank=True, default="", verbose_name="نام فایل منبع")
+    error = models.TextField(blank=True, default="", verbose_name="پیام خطا")
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ("-created_at",)
+        verbose_name = "پیام گروهی"
+        verbose_name_plural = "پیام‌های گروهی"
+
+    def __str__(self):
+        return f"{self.title or ('پیام ' + self.get_channel_display())} ({self.get_status_display()})"
+
+
+class BroadcastRecipient(models.Model):
+    """گیرنده یک پیام گروهی با وضعیت تشخیص و ارسال مجزا."""
+
+    class ResolveStatus(models.TextChoices):
+        OK = "ok", "یافت شد"
+        NO_PHONE = "no_phone", "بدون شماره همراه"
+        NOT_FOUND = "not_found", "کاربر یافت نشد"
+        INVALID = "invalid", "شماره نامعتبر"
+
+    class SendStatus(models.TextChoices):
+        PENDING = "pending", "در انتظار"
+        SENDING = "sending", "در حال ارسال"
+        SENT = "sent", "ارسال شد"
+        FAILED = "failed", "ناموفق"
+        CANCELED = "canceled", "لغو شد"
+
+    broadcast = models.ForeignKey(
+        Broadcast, on_delete=models.CASCADE, related_name="recipients"
+    )
+    mobile = models.CharField(max_length=30, blank=True, default="", verbose_name="شماره موبایل")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+",
+        verbose_name="کاربر مرتبط",
+    )
+    name = models.CharField(max_length=150, blank=True, default="", verbose_name="نام")
+
+    resolve_status = models.CharField(
+        max_length=15, choices=ResolveStatus.choices, default=ResolveStatus.OK, verbose_name="وضعیت تشخیص"
+    )
+    resolve_note = models.CharField(max_length=200, blank=True, default="", verbose_name="توضیح تشخیص")
+
+    send_status = models.CharField(
+        max_length=12, choices=SendStatus.choices, default=SendStatus.PENDING, verbose_name="وضعیت ارسال"
+    )
+    error = models.TextField(blank=True, default="", verbose_name="خطای ارسال")
+    sent_at = models.DateTimeField(null=True, blank=True, verbose_name="زمان ارسال")
+
+    class Meta:
+        verbose_name = "گیرنده پیام گروهی"
+        verbose_name_plural = "گیرندگان پیام گروهی"
+
+    def __str__(self):
+        return f"{self.mobile or self.name or self.user} ({self.get_send_status_display()})"

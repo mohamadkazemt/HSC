@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}تاریخچه پیام‌های گروهی{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-6xl space-y-6">
+    <nav class="text-sm text-gray-500 dark:text-gray-400">مرکز پیام / تاریخچه پیام‌های گروهی</nav>
+
+    <header class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-300">
+                <i class="fas fa-history text-lg"></i>
+            </span>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">تاریخچه پیام‌های گروهی</h1>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">مشاهده وضعیت همه پیام‌های گروهی ارسال‌شده و زمان‌بندی‌شده.</p>
+            </div>
+        </div>
+        <a href="{% url 'message_center:broadcast_compose' %}" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-l from-sky-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-md transition hover:brightness-110">
+            <i class="fas fa-plus"></i> پیام گروهی جدید
+        </a>
+    </header>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium
+                {% if message.tags == 'success' %}border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+                {% elif message.tags == 'error' %}border-red-200 bg-red-50 text-red-800 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300
+                {% elif message.tags == 'warning' %}border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300
+                {% else %}border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-700 dark:bg-sky-900/30 dark:text-sky-300{% endif %}">
+                <i class="fas fa-info-circle text-lg"></i><span>{{ message }}</span>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- کارت‌های آمار -->
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+            <p class="text-2xl font-bold text-sky-700 dark:text-sky-300">{{ counts.all }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">کل پیام‌ها</p>
+        </div>
+        <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+            <p class="text-2xl font-bold text-amber-700 dark:text-amber-300">{{ counts.scheduled }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">زمان‌بندی‌شده</p>
+        </div>
+        <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+            <p class="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{{ counts.completed }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">انجام‌شده</p>
+        </div>
+        <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+            <p class="text-2xl font-bold text-red-700 dark:text-red-300">{{ counts.failed }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">ناموفق</p>
+        </div>
+    </div>
+
+    <!-- فیلتر -->
+    <form method="get" class="flex flex-wrap items-center gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+        <input type="text" name="q" value="{{ query }}" placeholder="جستجوی عنوان یا متن..." class="flex-1 rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+        <select name="status" class="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+            <option value="">همه وضعیت‌ها</option>
+            {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="rounded-xl bg-sky-600 px-5 py-2 text-sm font-semibold text-white hover:bg-sky-700">فیلتر</button>
+    </form>
+
+    <!-- جدول پیام‌ها -->
+    <section class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+        <div class="overflow-x-auto">
+            <table class="w-full text-right text-sm">
+                <thead class="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-900/50 dark:text-gray-400">
+                    <tr>
+                        <th class="px-4 py-3">#</th>
+                        <th class="px-4 py-3">عنوان / کانال</th>
+                        <th class="px-4 py-3">گیرندگان</th>
+                        <th class="px-4 py-3">وضعیت</th>
+                        <th class="px-4 py-3">زمان ارسال</th>
+                        <th class="px-4 py-3">عملیات</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    {% for b in broadcasts %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
+                        <td class="px-4 py-3">#{{ b.id }}</td>
+                        <td class="max-w-xs px-4 py-3">
+                            <p class="truncate font-semibold text-gray-800 dark:text-gray-200">{{ b.title|default:'پیام گروهی' }}</p>
+                            <span class="text-xs text-gray-400">{{ b.get_channel_display }} · {% if b.created_by %}{{ b.created_by.get_full_name|default:b.created_by.username }}{% else %}—{% endif %}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="text-emerald-600 dark:text-emerald-400">{{ b.recipients_resolved }}</span>
+                            {% if b.recipients_invalid %}
+                            / <span class="text-amber-600 dark:text-amber-400">{{ b.recipients_invalid }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="rounded-full px-2.5 py-1 text-xs font-semibold
+                                {% if b.status == 'completed' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300
+                                {% elif b.status == 'partial' %}bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300
+                                {% elif b.status == 'scheduled' %}bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300
+                                {% elif b.status == 'sending' %}bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300
+                                {% elif b.status == 'failed' %}bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300
+                                {% else %}bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                                {{ b.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3 text-xs text-gray-500 dark:text-gray-400">
+                            {% if b.scheduled_for %}
+                            <span class="text-sky-600 dark:text-sky-400">⏰ {{ b.scheduled_for|date:"j/n H:i" }}</span>
+                            {% elif b.sent_at %}
+                            {{ b.sent_at|date:"j/n H:i" }}
+                            {% else %}
+                            {{ b.created_at|date:"j/n H:i" }}
+                            {% endif %}
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-3">
+                            <a href="{% url 'message_center:broadcast_detail' b.id %}" class="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">
+                                <i class="fas fa-list"></i> جزئیات
+                            </a>
+                            {% if b.status == 'scheduled' %}
+                            <form method="post" action="{% url 'message_center:broadcast_cancel' b.id %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="inline-flex items-center gap-1 rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 dark:border-red-600 dark:text-red-400 dark:hover:bg-red-900/30">
+                                    <i class="fas fa-ban"></i> لغو
+                                </button>
+                            </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="px-4 py-10 text-center text-sm text-gray-400">هنوز پیام گروهی ثبت نشده است.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

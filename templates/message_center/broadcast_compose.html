@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}ارسال پیام گروهی{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-6xl space-y-6">
+    <nav class="text-sm text-gray-500 dark:text-gray-400">مرکز پیام / ارسال پیام گروهی</nav>
+
+    <header class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <span class="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-sky-100 text-sky-600 dark:bg-sky-900/40 dark:text-sky-300">
+                <i class="fas fa-bullhorn text-lg"></i>
+            </span>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">ارسال پیام گروهی</h1>
+                <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">ارسال پیامک (SMS) یا پیام روبیکا به گروهی از پرسنل / شماره‌ها.</p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'message_center:template_list' %}" class="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">
+                <i class="fas fa-paste"></i>قالب‌های پیام
+            </a>
+            <a href="{% url 'message_center:broadcast_list' %}" class="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">
+                <i class="fas fa-history"></i>تاریخچه ارسال‌ها
+            </a>
+        </div>
+    </header>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium
+                {% if message.tags == 'success' %}border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+                {% elif message.tags == 'error' %}border-red-200 bg-red-50 text-red-800 dark:border-red-700 dark:bg-red-900/30 dark:text-red-300
+                {% else %}border-sky-200 bg-sky-50 text-sky-800 dark:border-sky-700 dark:bg-sky-900/30 dark:text-sky-300{% endif %}">
+                <i class="fas fa-info-circle text-lg"></i><span>{{ message }}</span>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post" action="{% url 'message_center:broadcast_preview' %}" enctype="multipart/form-data" class="space-y-6">
+        {% csrf_token %}
+
+        <!-- ۱) تنظیمات پیام -->
+        <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+            <h2 class="mb-4 flex items-center gap-2 font-bold text-gray-900 dark:text-white"><i class="fas fa-cog text-sky-600"></i> تنظیمات پیام</h2>
+
+            <div class="mb-4">
+                <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">کانال ارسال</label>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <label class="flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition hover:border-sky-400">
+                        <input type="radio" name="channel" value="sms" checked class="h-4 w-4 text-sky-600">
+                        <span class="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-200">
+                            <i class="fas fa-sms text-green-600"></i> پیامک (SMS)
+                        </span>
+                    </label>
+                    <label class="flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition hover:border-sky-400">
+                        <input type="radio" name="channel" value="rubika" class="h-4 w-4 text-sky-600">
+                        <span class="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-200">
+                            <i class="fab fa-telegram text-purple-600"></i> روبیکا
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label for="title" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">عنوان پیام (اختیاری)</label>
+                <input type="text" name="title" id="title" class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white" placeholder="مثلاً: اطلاعیه خاموشی برنامه‌ریزی‌شده">
+            </div>
+
+            <div class="mb-4">
+                <label for="text" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">متن پیام <span class="text-red-500">*</span></label>
+                <textarea name="text" id="text" rows="5" required class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white" placeholder="متن پیام را اینجا بنویسید..."></textarea>
+                <p class="mt-1 text-xs text-gray-400"><span id="charCount">0</span> کاراکتر</p>
+            </div>
+
+            {% if templates %}
+            <div>
+                <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">استفاده از قالب آماده</label>
+                <select id="templateSelect" class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                    <option value="">— انتخاب قالب —</option>
+                    {% for t in templates %}
+                    <option value="{{ t.id }}" data-text="{{ t.text }}" data-channel="{{ t.channel }}">{{ t.title }} ({{ t.get_channel_display }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- ۲) انتخاب گیرندگان -->
+        <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+            <h2 class="mb-4 flex items-center gap-2 font-bold text-gray-900 dark:text-white"><i class="fas fa-users text-indigo-600"></i> انتخاب گیرندگان</h2>
+            <p class="mb-4 text-xs text-gray-500 dark:text-gray-400">از یکی از روش‌های زیر (یا ترکیبی) استفاده کنید.</p>
+
+            <div class="mb-5">
+                <label for="mobile_numbers" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    شماره موبایل‌ها <span class="font-normal text-gray-400">(هر خط یک شماره: 0912... / 912... / +98912...)</span>
+                </label>
+                <textarea name="mobile_numbers" id="mobile_numbers" rows="4" class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white" dir="ltr" placeholder="09123456789&#10;09129876543"></textarea>
+            </div>
+
+            <div class="mb-5">
+                <label for="personnel_codes" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    کد پرسنلی‌ها <span class="font-normal text-gray-400">(هر خط یک کد)</span>
+                </label>
+                <textarea name="personnel_codes" id="personnel_codes" rows="3" class="w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white" dir="ltr" placeholder="110326&#10;110438"></textarea>
+            </div>
+
+            <div class="mb-5">
+                <label for="recipient_file" class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    آپلود فایل <span class="font-normal text-gray-400">(CSV / TXT)</span>
+                </label>
+                <input type="file" name="recipient_file" id="recipient_file" accept=".csv,.txt" class="block w-full text-sm text-gray-500 file:mr-4 file:rounded-lg file:border-0 file:bg-sky-600 file:px-4 file:py-2 file:text-white hover:file:bg-sky-700 dark:text-gray-300">
+            </div>
+
+            <div>
+                <p class="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">انتخاب از لیست پرسنل</p>
+                <div class="rounded-xl border border-gray-200 dark:border-gray-600">
+                    <input type="search" id="personnelSearch" placeholder="جستجوی نام، کد پرسنلی، کد ملی..." class="w-full border-b border-gray-200 bg-transparent px-4 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 dark:border-gray-600 dark:text-white">
+                    <div id="personnelList" class="max-h-64 overflow-y-auto p-2">
+                        <p class="px-3 py-2 text-xs text-gray-400">برای بارگذاری لیست پرسنل، لطفاً صبر کنید یا کد پرسنلی را تایپ کنید...</p>
+                    </div>
+                </div>
+                <p class="mt-2 text-xs text-gray-400">پرسنل‌های انتخاب‌شده: <span id="personnelCount" class="font-bold">0</span></p>
+            </div>
+        </section>
+
+        <div class="flex items-center justify-end gap-3">
+            <a href="{% url 'message_center:broadcast_list' %}" class="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700">انصراف</a>
+            <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-l from-sky-600 to-indigo-600 px-6 py-2.5 text-sm font-bold text-white shadow-md transition hover:brightness-110">
+                <i class="fas fa-eye"></i> پیش‌نمایش و تأیید
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    // شمارنده کاراکتر
+    const textArea = document.getElementById('text');
+    const charCount = document.getElementById('charCount');
+    textArea.addEventListener('input', () => { charCount.textContent = textArea.value.length; });
+
+    // انتخاب قالب
+    const templateSelect = document.getElementById('templateSelect');
+    if (templateSelect) {
+        templateSelect.addEventListener('change', () => {
+            const opt = templateSelect.selectedOptions[0];
+            if (!opt.value) return;
+            textArea.value = opt.dataset.text;
+            charCount.textContent = textArea.value.length;
+            const channelRadio = document.querySelector(`input[name="channel"][value="${opt.dataset.channel}"]`);
+            if (channelRadio) channelRadio.checked = true;
+        });
+    }
+
+    // --- انتخاب از لیست پرسنل ---
+    let selectedPersonnel = new Set();
+    let personnelCache = {};
+
+    async function searchPersonnel(term = '') {
+        const listEl = document.getElementById('personnelList');
+        listEl.innerHTML = '<p class="px-3 py-2 text-xs text-gray-400">در حال جستجو...</p>';
+        try {
+            const url = `{% url 'message_center:personnel_search' %}?q=${encodeURIComponent(term)}`;
+            const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
+            const data = await res.json();
+            renderPersonnel(data.results || []);
+        } catch (e) {
+            listEl.innerHTML = '<p class="px-3 py-2 text-xs text-red-500">خطا در بارگذاری پرسنل</p>';
+        }
+    }
+
+    function renderPersonnel(items) {
+        const listEl = document.getElementById('personnelList');
+        if (!items.length) {
+            listEl.innerHTML = '<p class="px-3 py-2 text-xs text-gray-400">موردی یافت نشد</p>';
+            return;
+        }
+        listEl.innerHTML = '';
+        items.forEach(p => {
+            personnelCache[p.code] = p;
+            const div = document.createElement('label');
+            div.className = 'flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700';
+            const checked = selectedPersonnel.has(p.code) ? 'checked' : '';
+            div.innerHTML = `
+                <input type="checkbox" name="selected_personnel" value="${p.code}" ${checked} class="h-4 w-4 text-sky-600">
+                <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-semibold text-gray-800 dark:text-gray-200">${p.name}</p>
+                    <p class="text-xs text-gray-400" dir="ltr">${p.code}${p.mobile ? ' · ' + p.mobile : ''}</p>
+                </div>
+            `;
+            div.addEventListener('change', (e) => {
+                if (e.target.checked) selectedPersonnel.add(p.code);
+                else selectedPersonnel.delete(p.code);
+                document.getElementById('personnelCount').textContent = selectedPersonnel.size;
+            });
+            listEl.appendChild(div);
+        });
+    }
+
+    const searchInput = document.getElementById('personnelSearch');
+    let debounceTimer;
+    searchInput.addEventListener('input', () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => searchPersonnel(searchInput.value), 300);
+    });
+
+    // بارگذاری اولیه
+    searchPersonnel('');
+</script>
+{% endblock %}

@@ -351,7 +351,7 @@
               <!-- Message Center -->
               {% if not request.user.contractor_profile and not request.user.employee_profile %}
               {% if active_modules.message_center %}
-              {% if request.user.is_superuser or request.user|check_permission:'send_leave_reminders' or request.user|check_permission:'message_webhook_settings' %}
+              {% if request.user.is_superuser or request.user|check_permission:'send_leave_reminders' or request.user|check_permission:'message_webhook_settings' or request.user|check_permission:'message_broadcast_send' %}
               <li>
                 <div x-data="{ openMsgCenter: false }" class="space-y-1">
                   <button @click="openMsgCenter = !openMsgCenter" class="flex w-full items-center justify-between rounded-md p-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700">
@@ -359,6 +359,9 @@
                     <i class="fas fa-chevron-down text-xs" :class="openMsgCenter ? 'rotate-180' : ''"></i>
                   </button>
                   <ul x-show="openMsgCenter" x-collapse class="space-y-1 pr-5">
+                    {% if request.user.is_superuser or request.user|check_permission:'message_broadcast_send' %}<li><a href="{% url 'message_center:broadcast_compose' %}" class="block rounded-md p-2 text-sm">ارسال پیام گروهی</a></li>{% endif %}
+                    {% if request.user.is_superuser or request.user|check_permission:'message_broadcast_send' %}<li><a href="{% url 'message_center:broadcast_list' %}" class="block rounded-md p-2 text-sm">تاریخچه پیام‌های گروهی</a></li>{% endif %}
+                    {% if request.user.is_superuser or request.user|check_permission:'message_broadcast_send' %}<li><a href="{% url 'message_center:template_list' %}" class="block rounded-md p-2 text-sm">قالب‌های پیام</a></li>{% endif %}
                     {% if request.user.is_superuser or request.user|check_permission:'send_leave_reminders' %}<li><a href="{% url 'message_center:leave_reminders' %}" class="block rounded-md p-2 text-sm">یادآوری تأیید مرخصی</a></li>{% endif %}
                     {% if request.user.is_superuser or request.user|check_permission:'message_webhook_settings' %}<li><a href="{% url 'message_center:webhook_settings' %}" class="block rounded-md p-2 text-sm">تنظیمات وب‌هوک</a></li>{% endif %}
                   </ul>
