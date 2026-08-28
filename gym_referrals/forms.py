@@ -140,8 +140,8 @@ class GymForm(forms.ModelForm):
 
     class Meta:
         model = Gym
-        fields = ("name", "code", "phone", "address", "is_active")
-        labels = {"name": "نام باشگاه", "code": "کد باشگاه", "phone": "شماره تماس", "address": "آدرس", "is_active": "فعال"}
+        fields = ("name", "code", "phone", "address", "accepts_male", "accepts_female", "is_active")
+        labels = {"name": "نام باشگاه", "code": "کد باشگاه", "phone": "شماره تماس", "address": "آدرس", "accepts_male": "مردانه", "accepts_female": "زنانه", "is_active": "فعال"}
         widgets = {"address": forms.Textarea(attrs={"rows": 3})}
 
     def __init__(self, *args, **kwargs):
@@ -150,8 +150,19 @@ class GymForm(forms.ModelForm):
             self.fields.pop("account_username")
             self.fields.pop("account_password")
         for name, field in self.fields.items():
-            if name not in ("account_username", "account_password") and name != "is_active":
+            if name not in ("account_username", "account_password", "accepts_male", "accepts_female") and name != "is_active":
                 field.widget.attrs["class"] = SELECT_CLASSES if isinstance(field.widget, forms.Select) else "w-full bg-white text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+        for name in ("accepts_male", "accepts_female"):
+            if name in self.fields:
+                self.fields[name].help_text = "برای باشگاه مختلط هر دو گزینه را انتخاب کنید."
+
+    def clean(self):
+        cleaned = super().clean()
+        accepts_male = cleaned.get("accepts_male")
+        accepts_female = cleaned.get("accepts_female")
+        if not accepts_male and not accepts_female:
+            self.add_error(None, "حداقل یکی از گزینه‌های پذیرش جنسیت (مردانه یا زنانه) را انتخاب کنید.")
+        return cleaned
 
 
 class GymOperatorForm(forms.ModelForm):

@@ -34,6 +34,9 @@ def remove_background(image_file):
         print(f"خطا در حذف پس‌زمینه: {str(e)}")
         return None
 
+GENDER_CHOICES = [('male', 'مرد'), ('female', 'زن')]
+
+
 class UserProfile(models.Model):
     GROUP_CHOICES = [
         ('A', 'گروه A'),
@@ -45,6 +48,7 @@ class UserProfile(models.Model):
     ]
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='userprofile')
     personnel_code = models.CharField(max_length=10, default='', blank=True, verbose_name='کد پرسنلی')
+    gender = models.CharField(max_length=10, choices=GENDER_CHOICES, blank=True, verbose_name='جنسیت')
     national_code = models.CharField(max_length=10, blank=True, null=True, verbose_name='کد ملی')
     section = models.ForeignKey('Section', on_delete=models.SET_NULL, null=True, blank=True, verbose_name="بخش")
     part = models.ForeignKey('Part', on_delete=models.SET_NULL, null=True, blank=True, verbose_name="قسمت")
@@ -125,7 +129,7 @@ class UserProfile(models.Model):
 
 
 class Dependent(models.Model):
-    GENDER_CHOICES = [('male', 'مرد'), ('female', 'زن')]
+    GENDER_CHOICES = GENDER_CHOICES
 
     personnel = models.ForeignKey(
         UserProfile, on_delete=models.CASCADE, related_name='dependents',

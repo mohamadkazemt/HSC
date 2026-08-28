@@ -11,6 +11,7 @@ class UserImportAdmin(admin.ModelAdmin):
         'user',
         'first_name',
         'last_name',
+        'gender',
         'personnel_code',
         'national_id',
         'unit',
@@ -22,7 +23,7 @@ class UserImportAdmin(admin.ModelAdmin):
         'mobile',
     )
 
-    list_filter = ('section', 'part', 'unit_group', 'position','group')
+    list_filter = ('section', 'part', 'unit_group', 'position', 'group', 'gender')
 
     search_fields = ('user__username', 'personnel_code', 'mobile', 'user__first_name', 'user__last_name')
 

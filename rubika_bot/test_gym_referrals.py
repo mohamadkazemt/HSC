@@ -111,6 +111,32 @@ class RubikaGymReferralFlowTests(TestCase):
         self.assertEqual(Referral.objects.count(), 1)
         self.assertEqual(Referral.objects.get().gym, self.gym_a)
 
+    def test_women_only_gym_blocks_male_employee_in_bot(self):
+        self.profile.gender = 'male'
+        self.profile.save(update_fields=('gender',))
+        women = Gym.objects.create(name='باشگاه بانوان', code='BOT-W', accepts_male=False, accepts_female=True)
+        today = timezone.localdate()
+        GymContract.objects.create(gym=women, start_date=today - timedelta(days=1), end_date=today + timedelta(days=30))
+        self.start_and_select_self()
+        self.call_async(self.engine._select_gym, 'gym-chat', self.rubika_user, f'gym_select_{women.pk}')
+        self.assertEqual(Referral.objects.count(), 0)
+        self.assertEqual(GymReferralState.objects.get(rubika_user=self.rubika_user).step, 'select_gym')
+        self.assertIn('بانوان', self.engine._send_text_message.await_args.args[1])
+
+    def test_women_only_gym_allows_female_employee_in_bot(self):
+        woman = User.objects.create_user('gym-woman', first_name='مریم', last_name='محمدی')
+        woman_profile = UserProfile.objects.create(user=woman, personnel_code='201', gender='female')
+        woman_rubika = RubikaUser.objects.create(chat_id='gym-woman-chat', user=woman)
+        women = Gym.objects.create(name='باشگاه بانوان', code='BOT-W', accepts_male=False, accepts_female=True)
+        today = timezone.localdate()
+        GymContract.objects.create(gym=women, start_date=today - timedelta(days=1), end_date=today + timedelta(days=30))
+        self.call_async(self.engine._start_gym_referral, 'gym-woman-chat', woman_rubika)
+        self.call_async(self.engine._select_gym_beneficiary, 'gym-woman-chat', woman_rubika, f'gym_beneficiary_EMPLOYEE_{woman_profile.pk}')
+        self.call_async(self.engine._select_gym, 'gym-woman-chat', woman_rubika, f'gym_select_{women.pk}')
+        self.call_async(self.engine._confirm_gym_referral, 'gym-woman-chat', woman_rubika)
+        self.assertEqual(Referral.objects.count(), 1)
+        self.assertEqual(Referral.objects.get().gym, women)
+
     def test_legacy_active_is_displayed_and_blocks_creation(self):
         ReferralService.create_referral(
             requester=self.user, beneficiary_type='EMPLOYEE', beneficiary_id=self.profile.pk,

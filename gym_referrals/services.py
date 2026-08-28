@@ -89,6 +89,17 @@ class BeneficiarySnapshot:
     account_id: int
     full_name: str
     relation: str
+    gender: str = ""
+
+
+def _gender_restriction_message(gym):
+    """Human-readable reason why the gym rejects the beneficiary's gender."""
+    policy, label = gym.gender_policy()
+    if policy == "FEMALE":
+        return "این باشگاه فقط مخصوص بانوان است؛ آقایان نمی‌توانند معرفی‌نامه دریافت کنند."
+    if policy == "MALE":
+        return "این باشگاه فقط مخصوص آقایان است؛ بانوان نمی‌توانند معرفی‌نامه دریافت کنند."
+    return "جنسیت فرد انتخاب‌شده ثبت نشده و امکان بررسی پذیرش توسط باشگاه وجود ندارد."
 
 
 def is_referral_active(referral, current_datetime=None):
@@ -131,13 +142,13 @@ class ReferralService:
         if beneficiary_type == Referral.BeneficiaryType.EMPLOYEE:
             if beneficiary_id != profile.pk:
                 raise ReferralError("FORBIDDEN", "دسترسی به این ذی‌نفع مجاز نیست.")
-            return profile, BeneficiarySnapshot(beneficiary_type, profile.pk, _full_name(requester), "خود")
+            return profile, BeneficiarySnapshot(beneficiary_type, profile.pk, _full_name(requester), "خود", profile.gender)
         if beneficiary_type == Referral.BeneficiaryType.DEPENDENT:
             try:
                 dependent = profile.dependents.get(pk=beneficiary_id)
             except Dependent.DoesNotExist as exc:
                 raise ReferralError("FORBIDDEN", "فرد تحت تکفل متعلق به کاربر نیست.") from exc
-            return profile, BeneficiarySnapshot(beneficiary_type, dependent.pk, f"{dependent.first_name} {dependent.last_name}".strip(), dependent.relationship)
+            return profile, BeneficiarySnapshot(beneficiary_type, dependent.pk, f"{dependent.first_name} {dependent.last_name}".strip(), dependent.relationship, dependent.gender)
         raise ReferralError("INVALID_BENEFICIARY_TYPE", "نوع ذی‌نفع نامعتبر است.")
 
     @classmethod
@@ -148,6 +159,8 @@ class ReferralService:
             gym = Gym.objects.get(pk=gym_id, is_active=True)
         except Gym.DoesNotExist as exc:
             raise ReferralError("GYM_NOT_ACTIVE", "باشگاه فعال نیست.") from exc
+        if not gym.allows_gender(beneficiary.gender):
+            raise ReferralError("GENDER_RESTRICTED", _gender_restriction_message(gym))
         if not GymContract.objects.filter(gym=gym, is_active=True, start_date__lte=today, end_date__gte=today).exists():
             raise ReferralError("GYM_CONTRACT_EXPIRED", "قرارداد معتبر باشگاه یافت نشد.")
         fingerprint = hashlib.sha256(f"{beneficiary.type}:{beneficiary.account_id}:{gym_id}:{source}".encode()).hexdigest()

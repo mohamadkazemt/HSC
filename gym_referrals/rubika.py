@@ -42,12 +42,14 @@ class RubikaReferralAdapter:
             "id": profile.pk,
             "name": rubika_user.user.get_full_name().strip() or rubika_user.user.username,
             "relation": "خودم",
+            "gender": profile.gender,
         }]
         result.extend({
             "type": Referral.BeneficiaryType.DEPENDENT,
             "id": dependent.pk,
             "name": f"{dependent.first_name} {dependent.last_name}".strip(),
             "relation": dependent.relationship,
+            "gender": dependent.gender,
         } for dependent in profile.dependents.all())
         return result
 

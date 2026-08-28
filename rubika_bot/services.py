@@ -3980,6 +3980,22 @@ class RubikaBotEngine:
         if not gym:
             await self._gym_referral_error(chat_id, 'GYM_NOT_ACTIVE')
             return
+
+        @sync_to_async(thread_sensitive=True)
+        def load_beneficiary_gender():
+            from accounts.models import Dependent, UserProfile
+            from gym_referrals.models import Referral
+            try:
+                if state.data.get('beneficiary_type') == Referral.BeneficiaryType.EMPLOYEE:
+                    return UserProfile.objects.get(pk=state.data['beneficiary_id']).gender
+                return Dependent.objects.get(pk=state.data['beneficiary_id']).gender
+            except (UserProfile.DoesNotExist, Dependent.DoesNotExist, KeyError, TypeError, ValueError):
+                return ''
+        if not gym.allows_gender(await load_beneficiary_gender()):
+            from gym_referrals.services import _gender_restriction_message
+            await self._gym_referral_error(chat_id, 'GENDER_RESTRICTED', text=_gender_restriction_message(gym))
+            return
+
         @sync_to_async(thread_sensitive=True)
         def save_gym():
             from .models import GymReferralState
@@ -4092,7 +4108,7 @@ class RubikaBotEngine:
         await self._cancel_gym_referral(chat_id, user)
         await self._send_text_message(chat_id, '✅ معرفی‌نامه با موفقیت لغو شد.', self._build_command_keyboard(True))
 
-    async def _gym_referral_error(self, chat_id: str, code: str, existing=None) -> None:
+    async def _gym_referral_error(self, chat_id: str, code: str, existing=None, text: str = '') -> None:
         messages = {
             'ACTIVE_REFERRAL_ALREADY_EXISTS': 'این فرد در حال حاضر معرفی‌نامه فعال دارد و تا پایان یا لغو آن امکان دریافت معرفی‌نامه جدید وجود ندارد.',
             'BENEFICIARY_NOT_ELIGIBLE': 'این فرد در حال حاضر شرایط دریافت معرفی‌نامه را ندارد.',
@@ -4100,6 +4116,7 @@ class RubikaBotEngine:
             'FORBIDDEN': 'دسترسی به فرد انتخاب‌شده مجاز نیست.',
             'GYM_NOT_ACTIVE': 'باشگاه انتخاب‌شده فعال نیست.',
             'GYM_CONTRACT_EXPIRED': 'قرارداد باشگاه انتخاب‌شده معتبر نیست.',
+            'GENDER_RESTRICTED': 'جنسیت فرد انتخاب‌شده با نوع باشگاه (مردانه یا زنانه) سازگار نیست.',
             'REFERRAL_EXPIRED': 'اعتبار معرفی‌نامه پایان یافته است.',
             'REFERRAL_CANCELLED': 'معرفی‌نامه لغو شده است.',
             'REFERRAL_ALREADY_USED': 'معرفی‌نامه قبلاً استفاده شده است.',
@@ -4107,7 +4124,7 @@ class RubikaBotEngine:
             'INVALID_INPUT': 'اطلاعات ارسالی معتبر نیست.',
             'UNKNOWN_ERROR': 'صدور معرفی‌نامه انجام نشد. لطفاً دوباره تلاش کنید.',
         }
-        message = f"❌ {messages.get(code, 'انجام عملیات ممکن نیست.')}"
+        message = f"❌ {text or messages.get(code, 'انجام عملیات ممکن نیست.')}"
         if existing:
             message += f"\n\n🏋️ باشگاه: {existing.gym.name}\n🔢 شماره معرفی: {existing.referral_number}\n📅 اعتبار تا: {existing.valid_until}"
         await self._send_text_message(chat_id, message, Keypad(rows=[

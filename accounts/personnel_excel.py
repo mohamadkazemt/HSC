@@ -11,6 +11,7 @@ from .models import Part, Position, Section, UnitGroup, UserProfile
 EXCEL_COLUMNS = [
     'ردیف',
     'شماره پرسنلی',
+    'جنسیت',
     'نام',
     'نام خانوادگی',
     'عنوان شغل کارگاه',
@@ -35,7 +36,8 @@ EXCEL_COLUMNS = [
 ]
 
 # «ردیف» فقط برای خوانایی فایل است و داده محسوب نمی‌شود.
-REQUIRED_COLUMNS = EXCEL_COLUMNS[1:]
+OPTIONAL_COLUMNS = {'جنسیت'}
+REQUIRED_COLUMNS = [column for column in EXCEL_COLUMNS[1:] if column not in OPTIONAL_COLUMNS]
 
 PERSIAN_DIGITS = str.maketrans('۰۱۲۳۴۵۶۷۸۹', '0123456789')
 ARABIC_DIGITS = str.maketrans('٠١٢٣٤٥٦٧٨٩', '0123456789')
@@ -63,6 +65,19 @@ def clean_mobile(value):
     if value.isdigit() and len(value) == 10 and value.startswith('9'):
         return f'0{value}'
     return value
+
+
+def normalize_gender(value):
+    value = clean_value(value).lower()
+    values = {
+        'مرد': 'male', 'مذکر': 'male', 'male': 'male',
+        'زن': 'female', 'مونث': 'female', 'مؤنث': 'female', 'female': 'female',
+    }
+    if not value:
+        return ''
+    if value not in values:
+        raise ValueError('جنسیت باید «مرد» یا «زن» باشد.')
+    return values[value]
 
 
 def clean_non_negative_integer(value, column_name):
@@ -120,11 +135,11 @@ def validate_columns(dataframe):
 
 def sample_dataframe():
     rows = [
-        [1, '12345', 'علی', 'رضایی', 'اپراتور کارگاه', 'اپراتور', 'عملیات معدن',
+        [1, '12345', 'مرد', 'علی', 'رضایی', 'اپراتور کارگاه', 'اپراتور', 'عملیات معدن',
          'تولید', 'عملیات', 'گروه 1', 'A', '0012345678', '1370/01/15', 'متاهل',
          'حسن', 2, '1395/06/01', 'کارشناسی', 'مهندسی معدن', 'کرمان',
          'پایان خدمت', 3650, '09123456789'],
-        [2, '67890', 'زهرا', 'کاظمی', 'کارشناس کارگاه', 'کارشناس', 'HSE',
+        [2, '67890', 'زن', 'زهرا', 'کاظمی', 'کارشناس کارگاه', 'کارشناس', 'HSE',
          'HSE', 'ایمنی', 'گروه 2', 'B', '0023456789', '1375/08/20', 'مجرد',
          'محمد', 0, '1400/02/10', 'کارشناسی ارشد', 'مهندسی ایمنی', 'یزد',
          'معاف', 1825, '09387654321'],
@@ -178,6 +193,7 @@ def import_personnel_row(row):
     values = {
         'personnel_code': personnel_code,
         'national_code': national_code,
+        'gender': normalize_gender(row.get('جنسیت')),
         'unit': clean_value(row.get('واحد')),
         'workshop_job_title': clean_value(row.get('عنوان شغل کارگاه')),
         'section': section,

@@ -587,3 +587,82 @@ class RubikaOperatorFlowTests(TestCase):
         self.assertEqual(chat_id, "op-chat-1")
         self.assertIn(self.gym.name, text)
         self.assertIn(self.referral.referral_number, text)
+
+
+class GenderRestrictionTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("ali", password="pass", first_name="علی", last_name="احمدی")
+        self.profile = UserProfile.objects.create(user=self.user, personnel_code="100", gender="male")
+        self.female_user = User.objects.create_user("zahra", password="pass", first_name="زهرا", last_name="کاظمی")
+        self.female_profile = UserProfile.objects.create(user=self.female_user, personnel_code="101", gender="female")
+        self.unknown_user = User.objects.create_user("nima", password="pass", first_name="نیما", last_name="صادقی")
+        self.unknown_profile = UserProfile.objects.create(user=self.unknown_user, personnel_code="102")
+        self.dep_female = Dependent.objects.create(personnel=self.profile, first_name="مریم", last_name="احمدی", national_code="010", relationship="فرزند", gender="female")
+        today = timezone.localdate()
+        self.women_only = Gym.objects.create(name="باشگاه بانوان", code="G-W", accepts_male=False, accepts_female=True)
+        self.men_only = Gym.objects.create(name="باشگاه آقایان", code="G-M", accepts_male=True, accepts_female=False)
+        self.mixed = Gym.objects.create(name="باشگاه مختلط", code="G-MIX", accepts_male=True, accepts_female=True)
+        for gym in (self.women_only, self.men_only, self.mixed):
+            GymContract.objects.create(gym=gym, start_date=today - timedelta(days=1), end_date=today + timedelta(days=365))
+
+    def create(self, user, gym):
+        profile = user.userprofile
+        return ReferralService.create_referral(
+            requester=user, beneficiary_type="EMPLOYEE", beneficiary_id=profile.pk,
+            gym_id=gym.pk, source="WEB",
+        )[0]
+
+    def test_female_on_women_only_is_allowed(self):
+        self.create(self.female_user, self.women_only)
+
+    def test_male_on_women_only_is_blocked(self):
+        with self.assertRaises(ReferralError) as caught:
+            self.create(self.user, self.women_only)
+        self.assertEqual(caught.exception.code, "GENDER_RESTRICTED")
+
+    def test_female_on_men_only_is_blocked(self):
+        with self.assertRaises(ReferralError) as caught:
+            self.create(self.female_user, self.men_only)
+        self.assertEqual(caught.exception.code, "GENDER_RESTRICTED")
+
+    def test_unknown_gender_on_single_gender_gym_is_blocked(self):
+        for gym in (self.women_only, self.men_only):
+            with self.assertRaises(ReferralError) as caught:
+                self.create(self.unknown_user, gym)
+            self.assertEqual(caught.exception.code, "GENDER_RESTRICTED")
+
+    def test_unknown_gender_on_mixed_gym_is_allowed(self):
+        self.create(self.unknown_user, self.mixed)
+
+    def test_gender_policy_labels(self):
+        policy, label = self.women_only.gender_policy()
+        self.assertEqual((policy, label), ("FEMALE", "زنانه"))
+        policy, label = self.men_only.gender_policy()
+        self.assertEqual((policy, label), ("MALE", "مردانه"))
+        policy, label = self.mixed.gender_policy()
+        self.assertEqual((policy, label), ("BOTH", "مردانه و زنانه"))
+        self.assertTrue(self.women_only.allows_gender("female"))
+        self.assertFalse(self.women_only.allows_gender("male"))
+        self.assertFalse(self.women_only.allows_gender(""))
+        self.assertTrue(self.mixed.allows_gender(""))
+        self.assertTrue(self.mixed.allows_gender("male"))
+
+    def test_dependent_gender_is_respected(self):
+        with self.assertRaises(ReferralError) as caught:
+            ReferralService.create_referral(
+                requester=self.user, beneficiary_type="DEPENDENT", beneficiary_id=self.dep_female.pk,
+                gym_id=self.men_only.pk, source="WEB",
+            )
+        self.assertEqual(caught.exception.code, "GENDER_RESTRICTED")
+        referral = ReferralService.create_referral(
+            requester=self.user, beneficiary_type="DEPENDENT", beneficiary_id=self.dep_female.pk,
+            gym_id=self.women_only.pk, source="WEB",
+        )[0]
+        self.assertTrue(is_referral_active(referral))
+
+    def test_allows_gender_false_when_no_policy(self):
+        none_gym = Gym.objects.create(name="بدون پذیرش", code="NONE", accepts_male=False, accepts_female=False)
+        self.assertEqual(none_gym.gender_policy()[0], "NONE")
+        self.assertFalse(none_gym.allows_gender("male"))
+        self.assertFalse(none_gym.allows_gender("female"))
+        self.assertFalse(none_gym.allows_gender(""))

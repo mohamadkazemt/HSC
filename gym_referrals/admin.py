@@ -13,10 +13,15 @@ class GymContractInline(admin.TabularInline):
 
 @admin.register(Gym)
 class GymAdmin(admin.ModelAdmin):
-    list_display = ("name", "code", "phone", "is_active")
-    list_filter = ("is_active",)
+    list_display = ("name", "code", "phone", "gender_policy_label", "is_active")
+    list_filter = ("is_active", "accepts_male", "accepts_female")
     search_fields = ("name", "code")
     inlines = (GymContractInline,)
+
+    @admin.display(description="پذیرش جنسیت")
+    def gender_policy_label(self, obj):
+        _, label = obj.gender_policy()
+        return label
 
 
 @admin.register(GymContract)

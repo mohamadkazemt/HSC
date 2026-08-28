@@ -57,6 +57,7 @@
           <tr>
             <th class="p-4">نام باشگاه</th>
             <th class="p-4">کد</th>
+            <th class="p-4">پذیرش جنسیت</th>
             <th class="p-4">تلفن</th>
             <th class="p-4">وضعیت</th>
             <th class="p-4">قرارداد جاری</th>
@@ -70,6 +71,9 @@
               <a href="{% url 'gym_referrals:gym_detail' gym.pk %}" class="hover:text-indigo-600">{{ gym.name }}</a>
             </td>
             <td class="whitespace-nowrap p-4">{{ gym.code }}</td>
+            <td class="whitespace-nowrap p-4">
+              {% with policy=gym.gender_policy %}<span class="rounded-full px-2.5 py-1 text-xs font-semibold {% if policy.0 == 'FEMALE' %}bg-pink-100 text-pink-700{% elif policy.0 == 'MALE' %}bg-sky-100 text-sky-700{% elif policy.0 == 'BOTH' %}bg-violet-100 text-violet-700{% else %}bg-gray-100 text-gray-600{% endif %}">{{ policy.1 }}</span>{% endwith %}
+            </td>
             <td class="whitespace-nowrap p-4">{{ gym.phone|default:'—' }}</td>
             <td class="p-4">
               <span class="rounded-full px-2.5 py-1 text-xs font-semibold {% if gym.is_active %}bg-emerald-100 text-emerald-700{% else %}bg-gray-100 text-gray-700{% endif %}">

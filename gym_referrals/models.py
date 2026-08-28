@@ -14,6 +14,8 @@ class Gym(models.Model):
     address = models.TextField(blank=True)
     phone = models.CharField(max_length=30, blank=True)
     is_active = models.BooleanField(default=True)
+    accepts_male = models.BooleanField(default=True, verbose_name="پذیرش مردان")
+    accepts_female = models.BooleanField(default=True, verbose_name="پذیرش زنان")
     account_user = models.OneToOneField(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
         related_name="gym_account", verbose_name="کاربر باشگاه",
@@ -23,6 +25,23 @@ class Gym(models.Model):
 
     class Meta:
         ordering = ("name",)
+
+    def gender_policy(self):
+        """Return ``(policy, label)``; policy is ``BOTH``/``MALE``/``FEMALE``/``NONE``."""
+        if self.accepts_male and self.accepts_female:
+            return "BOTH", "مردانه و زنانه"
+        if self.accepts_male:
+            return "MALE", "مردانه"
+        if self.accepts_female:
+            return "FEMALE", "زنانه"
+        return "NONE", "هیچ‌کدام"
+
+    def allows_gender(self, gender):
+        if self.accepts_male and self.accepts_female:
+            return True
+        if gender not in ("male", "female"):
+            return False
+        return (gender == "male" and self.accepts_male) or (gender == "female" and self.accepts_female)
 
     def __str__(self):
         return self.name
