@@ -13,6 +13,17 @@ from asgiref.sync import sync_to_async, async_to_sync
 from django.conf import settings
 from django.db import close_old_connections
 from django.utils import timezone
+
+# rubpy's sync.py calls asyncio.get_event_loop() at import time. On Python
+# 3.14 that raises when no loop exists on the current thread (e.g. sync
+# workers), which is why nest_asyncio was previously applied here. Instead of
+# that monkeypatch (which breaks asyncio.timeout/aiohttp on Python 3.14),
+# just install a placeholder main-thread loop so the import succeeds.
+try:
+    asyncio.get_running_loop()
+except RuntimeError:
+    asyncio.set_event_loop(asyncio.new_event_loop())
+
 from rubpy.bot.enums import ButtonTypeEnum
 from rubpy.bot.models import InlineMessage, Keypad, KeypadRow, Message, MessageId, Update
 from rubpy.bot.bot import BotClient
