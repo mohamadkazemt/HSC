@@ -1,7 +1,7 @@
-from asgiref.sync import sync_to_async
 from django.utils import timezone
 
 from accounts.models import UserProfile
+from rubika_bot.db import database_sync_to_async
 from .models import Gym, GymContract, GymOperator, Referral
 from .services import ReferralError, ReferralService
 
@@ -10,7 +10,7 @@ class RubikaReferralAdapter:
     """Thin adapter: callers must pass the persisted RubikaUser, never payload identity."""
 
     @staticmethod
-    @sync_to_async(thread_sensitive=True)
+    @database_sync_to_async
     def create(rubika_user, beneficiary_type, beneficiary_id, gym_id, idempotency_key):
         if not rubika_user.user_id:
             raise PermissionError("Rubika account is not linked")
@@ -20,7 +20,7 @@ class RubikaReferralAdapter:
         )
 
     @staticmethod
-    @sync_to_async(thread_sensitive=True)
+    @database_sync_to_async
     def active(rubika_user, beneficiary_type, beneficiary_id):
         if not rubika_user.user_id:
             raise PermissionError("Rubika account is not linked")
@@ -32,7 +32,7 @@ class RubikaReferralAdapter:
         ).first()
 
     @staticmethod
-    @sync_to_async(thread_sensitive=True)
+    @database_sync_to_async
     def beneficiaries(rubika_user):
         if not rubika_user.user_id:
             raise PermissionError("Rubika account is not linked")
@@ -54,7 +54,7 @@ class RubikaReferralAdapter:
         return result
 
     @staticmethod
-    @sync_to_async(thread_sensitive=True)
+    @database_sync_to_async
     def gyms():
         today = timezone.localdate()
         return list(Gym.objects.filter(
@@ -63,7 +63,7 @@ class RubikaReferralAdapter:
         ).distinct().values("id", "name", "code"))
 
     @staticmethod
-    @sync_to_async(thread_sensitive=True)
+    @database_sync_to_async
     def gym(gym_id):
         today = timezone.localdate()
         return Gym.objects.filter(
@@ -72,7 +72,7 @@ class RubikaReferralAdapter:
         ).distinct().first()
 
     @staticmethod
-    @sync_to_async(thread_sensitive=True)
+    @database_sync_to_async
     def cancel(rubika_user, referral_number, reason="لغو توسط کاربر روبیکا"):
         if not rubika_user.user_id:
             raise PermissionError("Rubika account is not linked")
@@ -100,7 +100,7 @@ class RubikaGymOperatorAdapter:
     """Rubika-side operator panel: review, verify and redeem referrals."""
 
     @staticmethod
-    @sync_to_async(thread_sensitive=True)
+    @database_sync_to_async
     def operator_gyms(rubika_user):
         if not rubika_user.user_id:
             raise PermissionError("Rubika account is not linked")
@@ -109,7 +109,7 @@ class RubikaGymOperatorAdapter:
         ).distinct().values("id", "name", "code"))
 
     @staticmethod
-    @sync_to_async(thread_sensitive=True)
+    @database_sync_to_async
     def list_referrals(rubika_user, gym_id, limit=15):
         gym = _ensure_operator(rubika_user, gym_id)
         today = timezone.localdate()
@@ -124,7 +124,7 @@ class RubikaGymOperatorAdapter:
         } for r in queryset]
 
     @staticmethod
-    @sync_to_async(thread_sensitive=True)
+    @database_sync_to_async
     def statistics(rubika_user, gym_id):
         gym = _ensure_operator(rubika_user, gym_id)
         today = timezone.localdate()
@@ -140,7 +140,7 @@ class RubikaGymOperatorAdapter:
         }
 
     @staticmethod
-    @sync_to_async(thread_sensitive=True)
+    @database_sync_to_async
     def verify_code(rubika_user, gym_id, code):
         """Read-only status check for a referral code belonging to the gym."""
         gym = _ensure_operator(rubika_user, gym_id)
@@ -161,7 +161,7 @@ class RubikaGymOperatorAdapter:
         }
 
     @staticmethod
-    @sync_to_async(thread_sensitive=True)
+    @database_sync_to_async
     def redeem_code(rubika_user, gym_id, code):
         """Redeem a referral (register the in-person visit) on behalf of the gym."""
         gym = _ensure_operator(rubika_user, gym_id)

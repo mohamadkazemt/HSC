@@ -9,9 +9,9 @@ import uuid
 from concurrent.futures import Future
 from typing import Any, Awaitable, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
-from asgiref.sync import sync_to_async, async_to_sync
+from asgiref.sync import async_to_sync
 from django.conf import settings
-from django.db import close_old_connections
+from django.db import close_old_connections, connections
 from django.utils import timezone
 
 # rubpy's sync.py calls asyncio.get_event_loop() at import time. On Python
@@ -35,6 +35,7 @@ except ImportError:  # pragma: no cover - only when extra dependency missing
     ProxyConnector = None  # type: ignore[assignment]
 
 from .constants import BOT_REQUEST_TIMEOUT
+from .db import database_sync_to_async
 from .models import RubikaBotSettings, RubikaConnectionCode, RubikaUser, WebhookLog
 
 logger = logging.getLogger(__name__)
@@ -49,14 +50,11 @@ def _sync_db(func):
     holds a closed psycopg2 object and raises InterfaceError on next use.
     Closing old connections right before/after the call forces a reconnect.
     """
-    @sync_to_async(thread_sensitive=True)
-    def _wrapped(*args, **kwargs):
-        close_old_connections()
-        try:
-            return func(*args, **kwargs)
-        finally:
-            close_old_connections()
-    return _wrapped
+    return database_sync_to_async(func)
+
+
+# All synchronous ORM callbacks in this module use the same bounded wrapper.
+sync_to_async = database_sync_to_async
 
 # ---------------------------------------------------------------------------
 # Undo rubpy.sync's wrapping of BotClient methods.
@@ -5076,6 +5074,23 @@ class RubPyIntegrationService:
             # Handle case where loop might be closed or not accessible
             logger.error(f"Error running coroutine in event loop: {e}", exc_info=True)
             raise RuntimeError(f"Failed to execute async operation: {e}") from e
+
+    async def _close_loop_connections(self) -> None:
+        """Close the Django connection owned by the RubPy loop context."""
+
+        @database_sync_to_async
+        def close_connections() -> None:
+            connections.close_all()
+
+        await close_connections()
+
+    def close_database_connections(self) -> None:
+        """Release both the Celery-thread and RubPy-loop DB connections."""
+
+        if self._loop.is_running():
+            self._run_sync(self._close_loop_connections())
+        close_old_connections()
+        connections.close_all()
 
     def _shutdown_loop(self) -> None:
         if not hasattr(self, "_loop"):

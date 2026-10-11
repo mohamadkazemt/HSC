@@ -6,12 +6,35 @@ from typing import Any, Dict
 
 import jdatetime
 from celery import shared_task
+from django.db import close_old_connections, connections
 
 from .constants import LOG_CLEANUP_DAYS
 from .models import WebhookLog
 from .services import RubPyIntegrationService
 
 logger = logging.getLogger(__name__)
+
+
+def _close_task_database_connections() -> None:
+    """Release connections owned by the Celery task thread."""
+
+    close_old_connections()
+    connections.close_all()
+
+
+def _close_rubpy_database_connections() -> None:
+    """Release both the task and RubPy event-loop connection contexts."""
+
+    try:
+        service = RubPyIntegrationService._instance
+        if service is not None:
+            try:
+                service.close_database_connections()
+            except Exception:
+                # Cleanup must never replace the task's original result/error.
+                logger.exception("Could not close RubPy database connections")
+    finally:
+        _close_task_database_connections()
 
 
 def _format_jalali_date(date_value):
@@ -60,6 +83,8 @@ def send_rubika_message(self, chat_id: str, text: str) -> None:
         )
         # Retry the task if an exception occurs
         raise self.retry(exc=exc)
+    finally:
+        _close_rubpy_database_connections()
 
 
 @shared_task
@@ -105,20 +130,23 @@ def process_webhook_task(self, payload: Dict[str, Any]) -> None:
     sys.stdout.flush()
     
     try:
-        service = RubPyIntegrationService.get_instance()
-        service.handle_webhook_payload(payload)
-        logger.info("Task 'process_webhook_task' succeeded.")
-        print(f"[CELERY] process_webhook_task: succeeded", flush=True)
-    except Exception as exc:
-        logger.error(
-            "Error in 'process_webhook_task': %s",
-            exc,
-            exc_info=True,
-        )
-        print(f"[CELERY] process_webhook_task: ERROR - {type(exc).__name__}: {str(exc)}", file=sys.stderr, flush=True)
-        import traceback
-        print(f"[CELERY] Traceback: {traceback.format_exc()}", file=sys.stderr, flush=True)
-        raise self.retry(exc=exc)
+        try:
+            service = RubPyIntegrationService.get_instance()
+            service.handle_webhook_payload(payload)
+            logger.info("Task 'process_webhook_task' succeeded.")
+            print(f"[CELERY] process_webhook_task: succeeded", flush=True)
+        except Exception as exc:
+            logger.error(
+                "Error in 'process_webhook_task': %s",
+                exc,
+                exc_info=True,
+            )
+            print(f"[CELERY] process_webhook_task: ERROR - {type(exc).__name__}: {str(exc)}", file=sys.stderr, flush=True)
+            import traceback
+            print(f"[CELERY] Traceback: {traceback.format_exc()}", file=sys.stderr, flush=True)
+            raise self.retry(exc=exc)
+    finally:
+        _close_rubpy_database_connections()
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
