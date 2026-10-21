@@ -40,6 +40,10 @@ from .models import RubikaBotSettings, RubikaConnectionCode, RubikaUser, Webhook
 
 logger = logging.getLogger(__name__)
 
+# How long a caller waits for the dedicated RubPy event loop thread to finish
+# starting up before treating the service as unavailable.
+LOOP_STARTUP_TIMEOUT_SECONDS = 5.0
+
 
 def _sync_db(func):
     """Run a sync DB function in the thread-sensitive executor, refreshing
@@ -5043,7 +5047,11 @@ class RubPyIntegrationService:
 
     def _run_loop(self) -> None:
         asyncio.set_event_loop(self._loop)
-        self._loop_ready.set()
+        # The readiness event must be signalled from inside the loop itself.
+        # Setting it before ``run_forever()`` leaves a window where the
+        # constructor has returned but the loop is not running yet, and
+        # ``_run_sync`` then fails with "Event loop is not running".
+        self._loop.call_soon_threadsafe(self._loop_ready.set)
         self._loop.run_forever()
 
     def _run_sync(self, awaitable: Awaitable[Any]) -> Any:
@@ -5065,7 +5073,11 @@ class RubPyIntegrationService:
         """
         # Ensure the loop is running and ready
         if not self._loop.is_running():
-            raise RuntimeError("Event loop is not running. Service may not be initialized properly.")
+            if not self._loop_ready.is_set():
+                # The loop thread is still starting up; give it a moment.
+                self._loop_ready.wait(timeout=LOOP_STARTUP_TIMEOUT_SECONDS)
+            if not self._loop.is_running():
+                raise RuntimeError("Event loop is not running. Service may not be initialized properly.")
         
         try:
             future: Future = asyncio.run_coroutine_threadsafe(awaitable, self._loop)
