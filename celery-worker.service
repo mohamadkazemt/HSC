@@ -49,6 +49,12 @@ NoNewPrivileges=true
 # Resource limits (optional)
 LimitNOFILE=65536
 
+# Memory limits: the faster-whisper model is loaded in a short-lived child
+# process (core/stt_service.py), the worker itself stays around 200MB.
+# MemoryHigh starts the reclaim early, MemoryMax is the hard ceiling.
+MemoryHigh=800M
+MemoryMax=1200M
+
 [Install]
 WantedBy=multi-user.target
 
