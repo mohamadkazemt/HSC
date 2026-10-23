@@ -3387,6 +3387,7 @@ class RubikaBotEngine:
             from leave_reports.models import ShiftReport
             from accounts.models import UserProfile
             from django.contrib.auth.models import User
+            from django.core.exceptions import ValidationError
             from datetime import datetime
             from django.utils import timezone
             from datetime import timedelta
@@ -3395,9 +3396,19 @@ class RubikaBotEngine:
             try:
                 state = LeaveRequestState.objects.select_related('rubika_user', 'rubika_user__user').get(rubika_user=user)
                 data = state.data
-                
+
+                # دکمه تایید ممکن است روی پیام قدیمی/تکراری زده شود؛ در این حالت
+                # state قبلاً reset شده و داده‌ها خالی هستند.
+                if not data.get('date') or not data.get('leave_type'):
+                    state.reset()
+                    return False, 'این درخواست منقضی شده یا قبلاً ثبت شده است. لطفاً از ابتدا درخواست جدیدی ثبت کنید.'
+
                 # بررسی تاریخ قبل از ایجاد درخواست (بررسی مجدد برای اطمینان)
-                shift_date = datetime.fromisoformat(data['date']).date()
+                try:
+                    shift_date = datetime.fromisoformat(data['date']).date()
+                except (TypeError, ValueError):
+                    state.reset()
+                    return False, 'تاریخ درخواست نامعتبر است. لطفاً از ابتدا درخواست جدیدی ثبت کنید.'
 
                 from leave_reports.registration_window import validate_submission_date
                 submission_error = validate_submission_date(shift_date)
@@ -3455,7 +3466,12 @@ class RubikaBotEngine:
                 state.reset()
                 
                 return True, leave_request.id
-                
+
+            except ValidationError as exc:
+                message = '، '.join(exc.messages) if exc.messages else str(exc)
+                logger.warning('Leave request rejected by validation: %s', message)
+                return False, message
+
             except Exception as e:
                 logger.exception(f"Error saving leave request: {e}")
                 return False, str(e)
