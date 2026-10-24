@@ -219,12 +219,28 @@ def dependent_portal_logout(request):
 # Portal pages
 # ---------------------------------------------------------------------------
 
+def _split_birth_date(data):
+    value = parse_date(data.get('birth_date')) if data and data.get('birth_date') else None
+    if value is None:
+        return '', '', ''
+    jalali = jdatetime.date.fromgregorian(date=value)
+    return str(jalali.year), str(jalali.month), str(jalali.day)
+
+
 def _form_context(profile, data=None, errors=None, dependent=None):
+    data_dict = data or {}
+    errs = errors or {}
+    non_field_error = errs.get('__all__') or errs.get('general') or ''
+    birth_year, birth_month, birth_day = _split_birth_date(data_dict)
     return {
         'profile': profile,
-        'data': data or {},
-        'errors': errors or {},
+        'data': data_dict,
+        'errors': errs,
+        'non_field_error': non_field_error,
         'dependent': dependent,
+        'birth_year': birth_year,
+        'birth_month': birth_month,
+        'birth_day': birth_day,
         'gender_choices': GENDER_CHOICES,
         'relationship_choices': RELATIONSHIP_CHOICES,
         'marital_choices': MARITAL_STATUS_CHOICES,
@@ -248,14 +264,6 @@ def _collect_form_data(request):
     )
     data['birth_date'] = birth_date.isoformat() if birth_date else ''
     return data
-
-
-def _split_birth_date(data):
-    value = parse_date(data.get('birth_date')) if data.get('birth_date') else None
-    if value is None:
-        return '', '', ''
-    jalali = jdatetime.date.fromgregorian(date=value)
-    return str(jalali.year), str(jalali.month), str(jalali.day)
 
 
 @portal_required
@@ -363,7 +371,6 @@ def dependent_portal_edit(request, pk):
     else:
         data = dependent_snapshot(dependent)
     context = _form_context(profile, data, errors, dependent=dependent)
-    context['birth_year'], context['birth_month'], context['birth_day'] = _split_birth_date(data)
     return render(request, 'accounts/dependents_form.html', context)
 
 

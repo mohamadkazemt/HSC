@@ -49,7 +49,7 @@
   </div>
   <h1>{% if dependent %}ویرایش اطلاعات {{ dependent.first_name }} {{ dependent.last_name }}{% else %}افزودن فرد تحت تکفل جدید{% endif %}</h1>
 
-  {% if errors.__all__ %}<div class="err-banner">{{ errors.__all__ }}</div>{% endif %}
+  {% if non_field_error %}<div class="err-banner">{{ non_field_error }}</div>{% endif %}
 
   <form method="post" id="dep-form" novalidate>
     {% csrf_token %}

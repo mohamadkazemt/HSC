@@ -269,6 +269,21 @@ class PortalViewTests(TestCase):
         self.profile.refresh_from_db()
         self.assertEqual(self.profile.address, 'اصفهان، خیابان چهارباغ')
 
+    def test_render_edit_page(self):
+        sent = self._send_code()
+        self.client.post(reverse('dependents:verify_code'), {'code': sent['code']})
+        response = self.client.get(reverse('dependents:edit', args=[self.dependent.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'ویرایش اطلاعات')
+        self.assertContains(response, self.dependent.first_name)
+
+    def test_render_add_page(self):
+        sent = self._send_code()
+        self.client.post(reverse('dependents:verify_code'), {'code': sent['code']})
+        response = self.client.get(reverse('dependents:add'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'افزودن فرد تحت تکفل جدید')
+
 
 class HrReviewTests(TestCase):
     def setUp(self):
