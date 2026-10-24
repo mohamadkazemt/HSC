@@ -228,3 +228,8 @@ documentation/
 !rubika_bot/test_gym_referrals.py
 !accounts/test_*.py
 !rubika_bot/test_*.py
+
+# Chat session dumps
+new-session*.json
+session-*.json
+
