@@ -371,6 +371,7 @@ class RubikaBotEngine:
             'gym_referral_cancel': self._cancel_gym_referral,
             'gym_referral_back_beneficiaries': self._show_gym_beneficiaries,
             'my_gym': self._start_gym_operator_panel,
+            'my_dependents': self._show_my_dependents,
             # Help sections
             'help_connect': lambda cid, u: self._show_help_section(cid, u, 'help_connect'),
             'help_leave': lambda cid, u: self._show_help_section(cid, u, 'help_leave'),
@@ -442,12 +443,13 @@ class RubikaBotEngine:
         parts = text.split()
         command, args = parts[0].lstrip('/').lower(), parts[1:]
 
-        if command in {'payslip', 'leave_request', 'voice_leave', 'leave_inbox', 'my_leaves', 'cancel_leave', 'gym_referrals', 'gym_referral_cancel'} and await self._is_gym_operator(user):
+        if command in {'payslip', 'leave_request', 'voice_leave', 'leave_inbox', 'my_leaves', 'cancel_leave', 'gym_referrals', 'gym_referral_cancel', 'my_dependents', 'dependents'} and await self._is_gym_operator(user):
             await self._send_personnel_restricted(chat_id)
             return
 
         if command in {'help', 'راهنما'}: await self._send_help(chat_id, user)
         elif command in {'account', 'status'}: await self._send_account_status(chat_id, user)
+        elif command in {'my_dependents', 'dependents', 'تحت_تکفل'}: await self._show_my_dependents(chat_id, user)
         elif command == 'connect': await self._process_connection_code(chat_id, user, args)
         elif command == 'start':
             await self._process_connection_code(chat_id, user, args) if args else await self._send_welcome(chat_id, user)
@@ -960,6 +962,81 @@ class RubikaBotEngine:
         
         buttons = self._build_command_keyboard(connected=False)
         await self._send_text_message(chat_id, message, buttons)
+
+    async def _show_my_dependents(self, chat_id: str, user: RubikaUser) -> None:
+        """نمایش خلاصه افراد تحت تکفل پرسنل و لینک پورتال وب برای ویرایش/تکمیل."""
+        if not user.user:
+            await self._send_text_message(
+                chat_id,
+                '⚠️ برای مشاهده و تکمیل اطلاعات افراد تحت تکفل، ابتدا باید حساب کاربری خود را متصل کنید.',
+                self._build_command_keyboard(connected=False),
+            )
+            return
+
+        @_sync_db
+        def get_dependents_summary():
+            from accounts.models import DependentChangeRequest, UserProfile
+            try:
+                profile = UserProfile.objects.prefetch_related('dependents').get(user=user.user)
+                dependents = list(profile.dependents.all().order_by('last_name', 'first_name'))
+                pending_count = DependentChangeRequest.objects.filter(
+                    personnel=profile, status=DependentChangeRequest.Status.PENDING
+                ).count()
+                return {
+                    'profile': profile,
+                    'dependents': dependents,
+                    'pending_count': pending_count,
+                    'address': profile.address or 'ثبت نشده',
+                }
+            except UserProfile.DoesNotExist:
+                return None
+
+        summary = await get_dependents_summary()
+        if not summary:
+            await self._send_text_message(
+                chat_id,
+                '❌ پرونده پرسنلی شما در سامانه یافت نشد.',
+                self._build_command_keyboard(connected=True),
+            )
+            return
+
+        dependents = summary['dependents']
+        pending_count = summary['pending_count']
+        full_name = user.user.get_full_name() or user.user.username
+
+        lines = [
+            f'👨‍👩‍👧 افراد تحت تکفل — {full_name}',
+            '━━━━━━━━━━━━━━━━━━━━━━━',
+            f'🏠 آدرس ثبت‌شده شما: {summary["address"]}',
+            f'👥 تعداد افراد تحت تکفل: {len(dependents)} نفر',
+        ]
+
+        if dependents:
+            lines.append('\n📋 لیست افراد ثبت‌شده:')
+            for i, dep in enumerate(dependents, 1):
+                rel = dep.get_relationship_display() if hasattr(dep, 'get_relationship_display') else dep.relationship
+                status_part = f' ({dep.disease_type})' if dep.disease_type else ''
+                lines.append(f'  {i}. {dep.first_name} {dep.last_name} — نسبت: {rel}{status_part}')
+        else:
+            lines.append('\nℹ️ در حال حاضر فرد تحت تکفلی برای شما ثبت نشده است.')
+
+        if pending_count > 0:
+            lines.append(f'\n⏳ شما {pending_count} درخواست در انتظار بررسی توسط منابع انسانی دارید.')
+
+        lines.extend([
+            '',
+            '📝 جهت تکمیل اطلاعات، ویرایش یا افزودن فرد جدید به سامانه مراجعه فرمایید:',
+            '🔗 https://miepcoj.ir/d/',
+            '',
+            '📱 ورود با کد پرسنلی و رمز یکبارمصرف پیامکی'
+        ])
+
+        keyboard = Keypad(rows=[
+            KeypadRow(buttons=[
+                self._button('start', '🏠 منوی اصلی'),
+            ])
+        ])
+        await self._send_text_message(chat_id, '\n'.join(lines), keyboard)
 
     async def _handle_payslip_request(self, chat_id: str, user: RubikaUser) -> None:
         """نمایش لیست فیش‌های حقوقی موجود برای کاربر"""
@@ -4174,7 +4251,7 @@ class RubikaBotEngine:
         'payslip', 'leave_request', 'voice_leave', 'voice_confirm_leave', 'voice_edit_leave',
         'leave_inbox', 'my_leaves', 'cancel_leave', 'cancel_rejection',
         'gym_referrals', 'gym_referral_cancel', 'gym_referral_back_beneficiaries',
-        'gym_referral_confirm', 'gym_cancel_confirm',
+        'gym_referral_confirm', 'gym_cancel_confirm', 'my_dependents',
     }
     _EMPLOYEE_ONLY_PREFIXES = (
         'payslip_', 'leavetype_', 'shifttype_', 'replacement_', 'approve_leave_',
@@ -4482,7 +4559,7 @@ class RubikaBotEngine:
             second_row = [('payslip', '💰 فیش حقوقی'), ('leave_request', '🏖️ درخواست مرخصی')]
             third_row = [('voice_leave', '🎙️ مرخصی صوتی'), ('leave_inbox', '📋 کارتابل مرخصی')]
             fourth_row = [('my_leaves', '📊 وضعیت درخواست‌ها'), ('help', '❓ راهنما')]
-            fifth_row = [('gym_referrals', '🏋️ معرفی به باشگاه')]
+            fifth_row = [('my_dependents', '👨‍👩‍👧 افراد تحت تکفل'), ('gym_referrals', '🏋️ معرفی به باشگاه')]
         else:
             # کیبورد برای کاربران غیر متصل
             second_row = [('connect', '🔗 اتصال با کد'), ('sms_connect', '📱 اتصال با پیامک')]

@@ -2,6 +2,8 @@ from django.urls import path
 from . import views
 
 
+from . import dependent_views
+
 app_name = 'accounts'
 
 urlpatterns = [
@@ -25,6 +27,8 @@ urlpatterns = [
     path('personnel/export/', views.personnel_export, name='personnel_export'),
     path('personnel/dependents/', views.dependent_management, name='dependent_management'),
     path('personnel/<int:user_id>/dependents/', views.dependent_management, name='personnel_dependents'),
+    path('dependents/changes/', dependent_views.dependent_change_list, name='dependent_changes'),
+    path('dependents/changes/<int:pk>/', dependent_views.dependent_change_detail, name='dependent_change_detail'),
     # Personnel cascading filter APIs
     path('personnel/api/parts/', views.api_parts_by_section, name='personnel_api_parts'),
     path('personnel/api/unit-groups/', views.api_unit_groups_by_part, name='personnel_api_unit_groups'),

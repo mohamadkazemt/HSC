@@ -226,3 +226,5 @@ documentation/
 !leave_reports/tests.py
 !message_center/tests.py
 !rubika_bot/test_gym_referrals.py
+!accounts/test_*.py
+!rubika_bot/test_*.py

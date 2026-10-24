@@ -31,6 +31,8 @@ handler403 = views.custom_403_handler  # استفاده از هندلر از cor
 urlpatterns = [
     # لینک کوتاه در ریشه سایت (باید قبل از بقیه patterns باشد)
     path('c/<str:short_code>/', rubika_views.short_link_redirect, name='short_link'),
+    # فرم عمومی تکمیل اطلاعات افراد تحت تکفل (لینک کوتاه برای پیامک/ربات)
+    path('d/', include(('accounts.portal_urls', 'dependents'), namespace='dependents')),
     
     path('', include('accounts.urls', namespace='accounts_root')),
     path('accounts/', include('accounts.urls', namespace='accounts')),

@@ -36,6 +36,50 @@ def remove_background(image_file):
 
 GENDER_CHOICES = [('male', 'مرد'), ('female', 'زن')]
 
+RELATIONSHIP_CHOICES = [
+    ('همسر', 'همسر'),
+    ('همسر دوم', 'همسر دوم'),
+    ('فرزند', 'فرزند'),
+    ('پدر', 'پدر'),
+    ('مادر', 'مادر'),
+    ('سایر', 'سایر'),
+]
+
+MARITAL_STATUS_CHOICES = [
+    ('single', 'مجرد'),
+    ('married', 'متاهل'),
+    ('divorced', 'جدا شده'),
+    ('widowed', 'بیوه'),
+]
+
+EDUCATION_STATUS_CHOICES = [
+    ('none', 'بدون تحصیل'),
+    ('studying', 'در حال تحصیل'),
+    ('graduated', 'فارغ‌التحصیل'),
+    ('dropped', 'ترک تحصیل'),
+]
+
+EDUCATION_LEVEL_CHOICES = [
+    ('primary', 'ابتدایی'),
+    ('middle', 'متوسطه اول'),
+    ('high', 'متوسطه دوم'),
+    ('diploma', 'دیپلم'),
+    ('associate', 'فوق دیپلم'),
+    ('bachelor', 'لیسانس'),
+    ('master', 'فوق لیسانس'),
+    ('phd', 'دکتری'),
+    ('other', 'سایر'),
+]
+
+MILITARY_STATUS_CHOICES = [
+    ('exempt', 'معاف'),
+    ('served', 'خدمت کرده'),
+    ('serving', 'در حال خدمت'),
+    ('deferred', 'معافیت تحصیلی'),
+    ('medical', 'معافیت پزشکی'),
+    ('not_served', 'مشمول / خدمت نکرده'),
+]
+
 
 class UserProfile(models.Model):
     GROUP_CHOICES = [
@@ -68,6 +112,7 @@ class UserProfile(models.Model):
     military_service_status = models.CharField(max_length=50, blank=True, verbose_name="وضعیت خدمت سربازی")
     work_experience_days = models.PositiveIntegerField(null=True, blank=True, verbose_name="سابقه کار (روز)")
     mobile = models.CharField(max_length=11, blank=True, verbose_name="شماره تماس")
+    address = models.TextField(blank=True, null=True, verbose_name="آدرس محل سکونت")
     verification_code = models.CharField(max_length=6, blank=True, null=True)
     code_generated_at = models.DateTimeField(blank=True, null=True)
     image = models.ImageField(upload_to='profile_pics', blank=True, validators=[validate_image_file])
@@ -130,6 +175,11 @@ class UserProfile(models.Model):
 
 class Dependent(models.Model):
     GENDER_CHOICES = GENDER_CHOICES
+    RELATIONSHIP_CHOICES = RELATIONSHIP_CHOICES
+    MARITAL_STATUS_CHOICES = MARITAL_STATUS_CHOICES
+    EDUCATION_STATUS_CHOICES = EDUCATION_STATUS_CHOICES
+    EDUCATION_LEVEL_CHOICES = EDUCATION_LEVEL_CHOICES
+    MILITARY_STATUS_CHOICES = MILITARY_STATUS_CHOICES
 
     personnel = models.ForeignKey(
         UserProfile, on_delete=models.CASCADE, related_name='dependents',
@@ -147,7 +197,33 @@ class Dependent(models.Model):
         max_length=10, choices=GENDER_CHOICES, blank=True, verbose_name='جنسیت'
     )
     mobile = models.CharField(max_length=11, blank=True, verbose_name='شماره تماس')
-    relationship = models.CharField(max_length=50, verbose_name='نسبت')
+    relationship = models.CharField(
+        max_length=50, choices=RELATIONSHIP_CHOICES, verbose_name='نسبت'
+    )
+    marital_status = models.CharField(
+        max_length=20, choices=MARITAL_STATUS_CHOICES, blank=True, null=True,
+        verbose_name='وضعیت تاهل'
+    )
+    address = models.TextField(blank=True, null=True, verbose_name='آدرس محل سکونت')
+    education_status = models.CharField(
+        max_length=20, choices=EDUCATION_STATUS_CHOICES, blank=True, null=True,
+        verbose_name='وضعیت تحصیلی'
+    )
+    education_level = models.CharField(
+        max_length=20, choices=EDUCATION_LEVEL_CHOICES, blank=True, null=True,
+        verbose_name='مقطع تحصیلی'
+    )
+    field_of_study = models.CharField(
+        max_length=150, blank=True, null=True, verbose_name='رشته تحصیلی'
+    )
+    study_place = models.CharField(
+        max_length=150, blank=True, null=True, verbose_name='محل تحصیل'
+    )
+    job = models.CharField(max_length=150, blank=True, null=True, verbose_name='شغل')
+    military_status = models.CharField(
+        max_length=20, choices=MILITARY_STATUS_CHOICES, blank=True, null=True,
+        verbose_name='وضعیت نظام وظیفه'
+    )
     disease_type = models.CharField(max_length=255, blank=True, verbose_name='نوع بیماری')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -165,6 +241,67 @@ class Dependent(models.Model):
 
     def __str__(self):
         return f'{self.first_name} {self.last_name} ({self.relationship})'
+
+
+class DependentChangeRequest(models.Model):
+    """درخواست تکمیل/ویرایش/حذف اطلاعات فرد تحت تکفل که پس از تایید HR اعمال می‌شود."""
+
+    class Action(models.TextChoices):
+        CREATE = 'create', 'افزودن فرد جدید'
+        UPDATE = 'update', 'ویرایش اطلاعات'
+        DELETE = 'delete', 'حذف فرد'
+
+    class Status(models.TextChoices):
+        PENDING = 'pending', 'در انتظار بررسی'
+        APPROVED = 'approved', 'تایید شده'
+        REJECTED = 'rejected', 'رد شده'
+
+    class Channel(models.TextChoices):
+        WEB = 'web', 'فرم وب'
+        RUBIKA = 'rubika', 'ربات روبیکا'
+        PANEL = 'panel', 'پنل مدیریت'
+
+    personnel = models.ForeignKey(
+        UserProfile, on_delete=models.CASCADE, related_name='dependent_change_requests',
+        verbose_name='پرسنل'
+    )
+    dependent = models.ForeignKey(
+        Dependent, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='change_requests', verbose_name='فرد تحت تکفل'
+    )
+    action = models.CharField(max_length=10, choices=Action.choices, verbose_name='نوع درخواست')
+    old_data = models.JSONField(default=dict, blank=True, verbose_name='اطلاعات فعلی')
+    new_data = models.JSONField(default=dict, blank=True, verbose_name='اطلاعات درخواستی')
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.PENDING, verbose_name='وضعیت'
+    )
+    channel = models.CharField(
+        max_length=10, choices=Channel.choices, default=Channel.WEB, verbose_name='کانال ثبت'
+    )
+    submitted_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='+', verbose_name='ثبت‌کننده'
+    )
+    submitted_at = models.DateTimeField(auto_now_add=True, verbose_name='تاریخ ثبت')
+    reviewed_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='+', verbose_name='بررسی‌کننده'
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True, verbose_name='تاریخ بررسی')
+    review_note = models.TextField(blank=True, verbose_name='یادداشت بررسی')
+    ip_address = models.GenericIPAddressField(null=True, blank=True, verbose_name='آدرس IP')
+
+    class Meta:
+        verbose_name = 'درخواست تغییر اطلاعات تحت تکفل'
+        verbose_name_plural = 'درخواست‌های تغییر اطلاعات تحت تکفل'
+        ordering = ('-submitted_at',)
+        indexes = [
+            models.Index(fields=['status', 'submitted_at']),
+            models.Index(fields=['personnel', 'status']),
+        ]
+
+    def __str__(self):
+        return f'{self.get_action_display()} - {self.personnel} ({self.get_status_display()})'
 
 
 class Section(models.Model):

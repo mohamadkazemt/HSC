@@ -424,3 +424,40 @@ class GymOperatorState(models.Model):
     def get_or_create_for_user(cls, rubika_user):
         obj, _ = cls.objects.get_or_create(rubika_user=rubika_user)
         return obj
+
+
+class DependentInfoState(models.Model):
+    """ویزارد تکمیل اطلاعات افراد تحت تکفل در ربات روبیکا."""
+
+    rubika_user = models.OneToOneField(
+        RubikaUser, on_delete=models.CASCADE, related_name="dependent_info_state"
+    )
+    step = models.CharField(max_length=60, default="idle")
+    data = models.JSONField(default=dict, blank=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'وضعیت تکمیل اطلاعات تحت تکفل'
+        verbose_name_plural = 'وضعیت‌های تکمیل اطلاعات تحت تکفل'
+        indexes = [models.Index(fields=("rubika_user", "step"))]
+
+    def __str__(self):
+        return f"{self.rubika_user.chat_id} - {self.step}"
+
+    def reset(self):
+        self.step = "idle"
+        self.data = {}
+        self.save(update_fields=("step", "data", "updated_at"))
+
+    def update_step(self, step, data_update=None):
+        self.step = step
+        if data_update:
+            self.data.update(data_update)
+        self.save(update_fields=("step", "data", "updated_at"))
+
+    @classmethod
+    def get_or_create_for_user(cls, rubika_user):
+        obj, _ = cls.objects.get_or_create(rubika_user=rubika_user)
+        return obj
+

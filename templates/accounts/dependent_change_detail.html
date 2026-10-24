@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}بررسی درخواست #{{ change.pk }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6" dir="rtl">
+  <header class="relative overflow-hidden rounded-2xl bg-gradient-to-l from-indigo-700 via-indigo-600 to-violet-600 p-6 text-white shadow-lg shadow-indigo-900/10 sm:p-8">
+    <div class="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <div class="mb-2 flex items-center gap-2 text-xs text-indigo-100">
+          <a href="{% url 'accounts:dependent_changes' %}" class="hover:text-white">درخواست‌های تحت تکفل</a>
+          <i class="fa-solid fa-chevron-left text-[9px]"></i>
+          <span>درخواست #{{ change.pk }}</span>
+        </div>
+        <h1 class="text-2xl font-extrabold tracking-tight sm:text-3xl">
+          {{ change.get_action_display }}
+          {% if change.status == 'pending' %}
+            <span class="align-middle rounded-full bg-amber-400/90 px-3 py-1 text-xs font-bold text-amber-950">در انتظار بررسی</span>
+          {% elif change.status == 'approved' %}
+            <span class="align-middle rounded-full bg-emerald-400/90 px-3 py-1 text-xs font-bold text-emerald-950">تایید شده</span>
+          {% else %}
+            <span class="align-middle rounded-full bg-rose-400/90 px-3 py-1 text-xs font-bold text-rose-950">رد شده</span>
+          {% endif %}
+        </h1>
+        <p class="mt-2 text-sm text-indigo-100">
+          پرسنل: <strong class="text-white">{{ change.personnel.user.get_full_name|default:change.personnel.user.username }}</strong>
+          (کد {{ change.personnel.personnel_code }}) |
+          کانال: {{ change.get_channel_display }} |
+          ثبت: {{ submitted_at_jalali }}
+          {% if change.reviewed_at %} | بررسی: {{ reviewed_at_jalali }} {% endif %}
+        </p>
+      </div>
+      <div class="flex flex-wrap gap-2 text-sm">
+        <a href="{% url 'accounts:personnel_dependents' change.personnel_id %}" class="rounded-xl bg-white/15 px-4 py-2.5 font-medium text-white ring-1 ring-white/25 hover:bg-white/25">
+          پرونده پرسنل
+        </a>
+      </div>
+    </div>
+  </header>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="rounded-xl px-4 py-3 text-sm font-medium {% if message.tags == 'error' %}bg-rose-100 text-rose-800{% else %}bg-emerald-100 text-emerald-800{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <div class="border-b border-slate-100 px-5 py-4 dark:border-slate-800">
+      <h2 class="text-base font-extrabold text-slate-800 dark:text-slate-100">
+        {% if change.action == 'create' %}اطلاعات فرد جدید{% elif change.action == 'delete' %}فردی که حذف می‌شود{% else %}تغییرات درخواستی{% endif %}
+      </h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+          <tr>
+            <th class="px-5 py-3 text-right font-semibold">فیلد</th>
+            <th class="px-5 py-3 text-right font-semibold">مقدار فعلی</th>
+            <th class="px-5 py-3 text-right font-semibold">مقدار جدید</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          {% for row in diff %}
+            <tr>
+              <td class="px-5 py-3 font-bold text-slate-700 dark:text-slate-200">{{ row.label }}</td>
+              <td class="px-5 py-3 text-slate-500">{{ row.old }}</td>
+              <td class="px-5 py-3 font-bold {% if change.action == 'delete' %}text-rose-600{% else %}text-emerald-700 dark:text-emerald-400{% endif %}">{{ row.new }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="3" class="px-5 py-10 text-center text-slate-500">تفاوتی ثبت نشده است.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if change.review_note %}
+    <div class="rounded-2xl border border-slate-200 bg-white p-4 text-sm dark:border-slate-700 dark:bg-slate-900">
+      <span class="font-bold text-slate-700 dark:text-slate-200">یادداشت بررسی:</span>
+      <span class="text-slate-600 dark:text-slate-300">{{ change.review_note }}</span>
+    </div>
+  {% endif %}
+
+  {% if change.status == 'pending' %}
+    <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+        <div>
+          <label class="mb-1.5 block text-sm font-bold text-slate-700 dark:text-slate-200" for="note">یادداشت (اختیاری، برای پرسنل پیامک می‌شود)</label>
+          <textarea id="note" name="note" rows="3"
+                    class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm dark:border-slate-600 dark:bg-slate-800 dark:text-white"></textarea>
+        </div>
+        <div class="flex flex-col gap-3 sm:flex-row">
+          <button type="submit" name="action" value="approve" onclick="return confirm('این درخواست تایید و مستقیماً روی اطلاعات اعمال شود؟');"
+                  class="rounded-xl bg-emerald-600 px-6 py-3 text-sm font-extrabold text-white hover:bg-emerald-700">
+            <i class="fa-solid fa-check ml-1"></i> تایید و اعمال
+          </button>
+          <button type="submit" name="action" value="reject" onclick="return confirm('این درخواست رد شود؟');"
+                  class="rounded-xl bg-rose-600 px-6 py-3 text-sm font-extrabold text-white hover:bg-rose-700">
+            <i class="fa-solid fa-xmark ml-1"></i> رد کردن
+          </button>
+        </div>
+      </form>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

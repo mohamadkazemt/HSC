@@ -1,0 +1,160 @@
+{% load static %}<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>افراد تحت تکفل - {{ profile.user.get_full_name|default:profile.user.username }}</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: Tahoma, "Vazirmatn", "Segoe UI", sans-serif; background: #f1f5f9;
+    color: #0f172a; font-size: 18px; line-height: 1.8;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 18px 14px 60px; }
+  .top {
+    background: #1e3a8a; color: #fff; border-radius: 18px; padding: 20px; margin-bottom: 18px;
+  }
+  .top h1 { margin: 0 0 6px; font-size: 21px; }
+  .top .meta { font-size: 15px; opacity: .9; }
+  .top a { color: #bfdbfe; font-size: 15px; }
+  .card { background: #fff; border-radius: 18px; padding: 18px; margin-bottom: 16px; box-shadow: 0 10px 30px -24px rgba(15,23,42,.5); }
+  .card h2 { font-size: 19px; margin: 0 0 6px; }
+  .card p.note { font-size: 15px; color: #475569; margin: 0 0 14px; }
+  .alert { border-radius: 12px; padding: 12px 14px; font-size: 16px; margin-bottom: 12px; }
+  .alert.ok { background: #dcfce7; color: #166534; }
+  .alert.err { background: #fee2e2; color: #991b1b; }
+  textarea, input[type=text] {
+    width: 100%; padding: 14px; font-size: 17px; font-family: inherit; border-radius: 14px;
+    border: 2px solid #cbd5e1; min-height: 92px; resize: vertical;
+  }
+  textarea:focus, input[type=text]:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 4px rgba(37,99,235,.12); }
+  .btn {
+    display: inline-block; padding: 14px 20px; font-size: 17px; font-weight: 800; font-family: inherit;
+    color: #fff; background: #1d4ed8; border: 0; border-radius: 14px; cursor: pointer; text-decoration: none;
+    text-align: center;
+  }
+  .btn.full { display: block; width: 100%; }
+  .btn.light { background: #e2e8f0; color: #0f172a; }
+  .btn.danger { background: #dc2626; }
+  .btn.small { padding: 9px 14px; font-size: 15px; font-weight: 700; }
+  .person {
+    border: 2px solid #e2e8f0; border-radius: 16px; padding: 16px; margin-bottom: 12px;
+  }
+  .person .name { font-size: 19px; font-weight: 800; }
+  .person .sub { font-size: 15px; color: #475569; margin: 4px 0 12px; }
+  .person .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .badge { display: inline-block; font-size: 14px; font-weight: 800; border-radius: 99px; padding: 4px 12px; }
+  .badge.warn { background: #fef3c7; color: #92400e; }
+  .badge.ok { background: #dcfce7; color: #166534; }
+  .badge.wait { background: #e0e7ff; color: #3730a3; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align: right; padding: 10px 8px; border-bottom: 1px solid #e2e8f0; }
+  th { color: #475569; font-weight: 700; }
+  .empty { text-align: center; color: #64748b; font-size: 16px; padding: 18px 8px; }
+  .sticky-add { position: sticky; bottom: 12px; margin-top: 8px; }
+  @media (max-width: 520px) { body { font-size: 17px; } .top h1 { font-size: 19px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <h1>{{ profile.user.get_full_name|default:profile.user.username }}</h1>
+    <div class="meta">
+      کد پرسنلی: {{ profile.personnel_code|default:"-" }}
+      &nbsp;|&nbsp; موبایل: {{ profile.mobile|default:"-" }}
+    </div>
+    <div style="margin-top:8px;"><a href="{% url 'dependents:logout' %}">خروج</a></div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert {% if message.tags == 'error' %}err{% else %}ok{% endif %}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="card">
+    <h2>آدرس محل سکونت شما</h2>
+    <p class="note">این آدرس مربوط به خود شما (پرسنل) است و بلافاصله ذخیره می‌شود.</p>
+    <form method="post" action="{% url 'dependents:info' %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="save_address">
+      <textarea name="address" placeholder="آدرس کامل محل سکونت خود را بنویسید">{{ profile.address|default:"" }}</textarea>
+      <div style="margin-top:10px;text-align:left;">
+        <button type="submit" class="btn small light">ذخیره آدرس</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>افراد تحت تکفل شما</h2>
+    <p class="note">برای هر نفر، اطلاعات را تکمیل یا اصلاح کنید. تغییرات پس از تایید منابع انسانی اعمال می‌شوند.</p>
+
+    {% for row in rows %}
+      <div class="person">
+        <div class="name">{{ row.dependent.first_name }} {{ row.dependent.last_name }}</div>
+        <div class="sub">
+          {{ row.dependent.relationship }}
+          {% if row.birth_date_jalali %} | تولد: {{ row.birth_date_jalali }}{% endif %}
+          {% if row.dependent.national_code %} | کد ملی: {{ row.dependent.national_code }}{% endif %}
+        </div>
+        {% if row.pending %}
+          <div><span class="badge wait">در انتظار بررسی منابع انسانی</span></div>
+        {% elif row.missing_count %}
+          <div><span class="badge warn">اطلاعات ناقص ({{ row.missing_count }} مورد)</span></div>
+          <div class="actions" style="margin-top:10px;">
+            <a class="btn small" href="{% url 'dependents:edit' row.dependent.pk %}">تکمیل اطلاعات</a>
+          </div>
+        {% else %}
+          <div><span class="badge ok">اطلاعات کامل است</span></div>
+          <div class="actions" style="margin-top:10px;">
+            <a class="btn small light" href="{% url 'dependents:edit' row.dependent.pk %}">ویرایش</a>
+            <form method="post" action="{% url 'dependents:delete' row.dependent.pk %}"
+                  onsubmit="return confirm('درخواست حذف {{ row.dependent.first_name }} {{ row.dependent.last_name }} ثبت شود؟ حذف پس از تایید منابع انسانی انجام می‌شود.');">
+              {% csrf_token %}
+              <button type="submit" class="btn small danger">حذف</button>
+            </form>
+          </div>
+        {% endif %}
+      </div>
+    {% empty %}
+      <div class="empty">هنوز فردی ثبت نشده است.</div>
+    {% endfor %}
+
+    {% for change in pending_creates %}
+      <div class="person">
+        <div class="name">{{ change.new_data.first_name }} {{ change.new_data.last_name }}</div>
+        <div class="sub">{{ change.new_data.relationship }} | کد ملی: {{ change.new_data.national_code }}</div>
+        <div><span class="badge wait">در انتظار بررسی منابع انسانی (فرد جدید)</span></div>
+      </div>
+    {% endfor %}
+
+    <div class="sticky-add">
+      <a class="btn full" href="{% url 'dependents:add' %}">+ افزودن فرد تحت تکفل جدید</a>
+    </div>
+  </div>
+
+  {% if my_requests %}
+  <div class="card">
+    <h2>آخرین درخواست‌های شما</h2>
+    <table>
+      <thead>
+        <tr><th>کد</th><th>نوع</th><th>وضعیت</th><th>تاریخ ثبت</th></tr>
+      </thead>
+      <tbody>
+        {% for change in my_requests %}
+        <tr>
+          <td>{{ change.pk }}</td>
+          <td>{{ change.get_action_display }}</td>
+          <td>{{ change.get_status_display }}</td>
+          <td>{{ change.submitted_at|date:"Y/m/d" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+</div>
+</body>
+</html>
