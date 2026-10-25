@@ -74,9 +74,18 @@ def _otp_digest(nonce, user_id, code):
 def superuser_required(view_func):
     @wraps(view_func)
     def _wrapped(request, *args, **kwargs):
-        if not request.user.is_authenticated or not request.user.is_superuser:
+        if not request.user.is_authenticated:
             raise PermissionDenied
-        return view_func(request, *args, **kwargs)
+        if request.user.is_superuser:
+            return view_func(request, *args, **kwargs)
+        try:
+            from permissions.utils import check_permission
+            perms = check_permission(request.user, 'personnel_management')
+            if any(perms.values()):
+                return view_func(request, *args, **kwargs)
+        except Exception:
+            pass
+        raise PermissionDenied
     return _wrapped
 
 logger = logging.getLogger(__name__)

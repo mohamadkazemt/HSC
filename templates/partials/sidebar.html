@@ -203,8 +203,8 @@
         <!-- HR / Admin Unit (واحد اداری) -->
         {% if not request.user.contractor_profile %}
         <li>
-          <div x-data="{ openHR: {% if request.path|slice:':15' == '/gym-referrals/' %}true{% else %}false{% endif %} }" class="space-y-1">
-            <button @click="openHR = !openHR" :aria-expanded="openHR" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-semibold {% if request.path|slice:':15' == '/gym-referrals/' %}bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300{% else %}text-gray-700 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700{% endif %}">
+          <div x-data="{ openHR: {% if request.path|slice:':15' == '/gym-referrals/' or request.path|slice:':10' == '/accounts/' %}true{% else %}false{% endif %} }" class="space-y-1">
+            <button @click="openHR = !openHR" :aria-expanded="openHR" class="w-full flex items-center justify-between gap-x-3 rounded-md p-2 text-sm font-semibold {% if request.path|slice:':15' == '/gym-referrals/' or request.path|slice:':10' == '/accounts/' %}bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300{% else %}text-gray-700 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700{% endif %}">
               <span class="flex items-center gap-x-3">
                 <!-- Users/Admin icon -->
                 <svg class="h-6 w-6 shrink-0 text-indigo-600 dark:text-indigo-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -218,14 +218,32 @@
             </button>
             <ul x-show="openHR" x-collapse class="pl-9 space-y-2">
               <!-- Personnel Management -->
-              {% if request.user|check_permission:'personnel_management' %}
+              {% if request.user.is_superuser or request.user|check_permission:'personnel_management' %}
               <li>
-                <a href="#" class="block rounded-md p-2 text-sm text-gray-600 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700">
+                <a href="{% url 'accounts:personnel_list' %}" class="block rounded-md p-2 text-sm {% if request.resolver_match.url_name == 'personnel_list' %}font-semibold text-indigo-700 bg-indigo-50 dark:text-indigo-300 dark:bg-indigo-900/30{% else %}text-gray-600 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700{% endif %}">
                   <span class="flex items-center gap-2">
                     <svg class="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/>
                     </svg>
                     <span>مدیریت پرسنل</span>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="{% url 'accounts:dependent_management' %}" class="block rounded-md p-2 text-sm {% if request.resolver_match.url_name == 'dependent_management' or request.resolver_match.url_name == 'personnel_dependents' %}font-semibold text-indigo-700 bg-indigo-50 dark:text-indigo-300 dark:bg-indigo-900/30{% else %}text-gray-600 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700{% endif %}">
+                  <span class="flex items-center gap-2">
+                    <i class="fas fa-users text-cyan-600"></i>
+                    <span>افراد تحت تکفل</span>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="{% url 'accounts:dependent_changes' %}" class="block rounded-md p-2 text-sm {% if request.resolver_match.url_name == 'dependent_changes' or request.resolver_match.url_name == 'dependent_change_detail' %}font-semibold text-indigo-700 bg-indigo-50 dark:text-indigo-300 dark:bg-indigo-900/30{% else %}text-gray-600 hover:text-brand-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700{% endif %}">
+                  <span class="flex items-center justify-between">
+                    <span class="flex items-center gap-2">
+                      <i class="fas fa-user-check text-amber-500"></i>
+                      <span>تایید اطلاعات تکفل</span>
+                    </span>
                   </span>
                 </a>
               </li>
