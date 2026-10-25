@@ -12,7 +12,9 @@
 from __future__ import annotations
 
 import logging
+import random
 import re
+import time
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -225,25 +227,182 @@ def _send_sms_broadcast(broadcast: Broadcast, numbers):
 
 
 def _send_rubika_broadcast(broadcast: Broadcast, recipients):
-    """ارسال پیام روبیکا به گیرنده‌های معتبر. (عدد‌ها به +98 تبدیل می‌شوند)."""
-    from .peyamhub_client import send_message
+    """ارسال هوشمند پیام روبیکا با سناریوی ضداسپم و چند لایه:
+
+    ۱. لایه اول (ربات رسمی شرکت):
+       اگر گیرنده عضو ربات رسمی روبیکای شرکت باشد (RubikaUser با chat_id فعال)، پیام
+       مستقیماً از طریق ربات رسمی ارسال می‌شود (سریع، رایگان، بدون هیچ‌گونه محدودیت اکانت).
+
+    ۲. لایه دوم (PeyamHub با تاخیر محافظتی - Pacing):
+       برای گیرندگانی که هنوز به ربات متصل نشده‌اند، پیام از طریق وب‌سرویس PeyamHub
+       با ایجاد تاخیر کنترل‌شده و تصادفی (بین ۴ تا ۶.۵ ثانیه) ارسال می‌شود تا الگوریتم
+       ضداسپم روبیکا رفتار انسانی تشخیص دهد و از Flood-Wait جلوگیری شود.
+
+    ۳. لایه سوم (مدارشکن - Circuit Breaker):
+       اگر در حین ارسال از PeyamHub، خطای محدودیت زمانی روبیکا دریافت شد، ادامه ارسال
+       از طریق اکانت بلافاصله متوقف می‌شود تا مدت مسدودیت موقت اکانت تمدید نگردد.
+
+    ۴. لایه چهارم (فال‌بک خودکار به پیامک - Smart SMS Fallback):
+       برای شماره‌هایی که اصلاً در روبیکا ثبت نیستند یا گیرندگانی که به دلیل فعال شدن
+       مدارشکن پیام دریافت نکرده‌اند، پیام به صورت خودکار به عنوان پیامک مخابراتی (SMS)
+       ارسال می‌شود تا هیچ پیامی نسوزد و ۱۰۰٪ پرسنل پیام را دریافت کنند.
+    """
+    import random
+    import time
+    from django.utils import timezone
+    from .peyamhub_client import PeyamHubError, send_message
+    from .services import RATE_LIMIT_MARKERS, PERMANENT_MARKERS
+
+    sms_client = None
+    try:
+        sms_client = _get_sms_client()
+    except Exception as e:
+        logger.warning("[broadcast] Could not load SMS client for fallback: %s", e)
+
+    base_delay = float(getattr(settings, "PEYAMHUB_SEND_DELAY_SECONDS", 5))
+    fallback_enabled = getattr(settings, "RUBIKA_SMS_FALLBACK_ENABLED", True)
+
+    circuit_broken = False
+    rate_limit_reason = ""
+    peyamhub_send_count = 0
 
     for rec in recipients:
+        now_time = timezone.now()
         target = normalize_phone(rec.mobile)
-        if not target:
+
+        if not target and not rec.user:
             rec.send_status = BroadcastRecipient.SendStatus.CANCELED
-            rec.error = "شماره برای روبیکا نرمال نشد"
+            rec.error = "شماره برای روبیکا نامعتبر است"
             rec.save(update_fields=["send_status", "error"])
             continue
+
+        # ۱) اولویت اول: بررسی عضویت در ربات رسمی روبیکای شرکت
+        rubika_user = None
+        if rec.user:
+            try:
+                from rubika_bot.models import RubikaUser
+                rubika_user = RubikaUser.objects.filter(user=rec.user).first()
+            except Exception:
+                rubika_user = None
+
+        if rubika_user and rubika_user.chat_id:
+            try:
+                from rubika_bot.services import RubPyIntegrationService
+                service = RubPyIntegrationService.get_instance()
+                service.send_text_message(rubika_user.chat_id, broadcast.text)
+                rec.send_status = BroadcastRecipient.SendStatus.SENT
+                rec.sent_at = now_time
+                rec.error = "ارسال شد (ربات رسمی روبیکا)"
+                rec.save(update_fields=["send_status", "sent_at", "error"])
+                logger.info("[broadcast %s] Sent to user %s via official Rubika bot", broadcast.pk, rec.user)
+                continue
+            except Exception as exc:
+                logger.warning(
+                    "[broadcast %s] Official bot send failed for %s (%s): %s; falling back",
+                    broadcast.pk, rec.user, rubika_user.chat_id, exc
+                )
+
+        # ۲) اگر مدارشکن فعال شده باشد (اکانت روبیکا محدود شده است) -> فال‌بک مستقیم به پیامک
+        if circuit_broken:
+            if fallback_enabled and sms_client and rec.mobile:
+                ok, err = _send_sms_numbers(sms_client, [rec.mobile], broadcast.text)
+                if ok:
+                    rec.send_status = BroadcastRecipient.SendStatus.SENT
+                    rec.sent_at = now_time
+                    rec.error = "ارسال شد (پیامک جایگزین - اکانت روبیکا موقتاً محدود است)"
+                    rec.save(update_fields=["send_status", "sent_at", "error"])
+                else:
+                    rec.send_status = BroadcastRecipient.SendStatus.FAILED
+                    rec.error = f"محدودیت روبیکا و شکست پیامک: {err}"
+                    rec.save(update_fields=["send_status", "error"])
+            else:
+                rec.send_status = BroadcastRecipient.SendStatus.FAILED
+                rec.error = f"اکانت روبیکا محدود است: {rate_limit_reason}"
+                rec.save(update_fields=["send_status", "error"])
+            continue
+
+        if not target:
+            rec.send_status = BroadcastRecipient.SendStatus.CANCELED
+            rec.error = "شماره برای روبیکا نامعتبر است"
+            rec.save(update_fields=["send_status", "error"])
+            continue
+
+        # ۳) تاخیر محافظتی (Pacing) قبل از فراخوانی PeyamHub
+        if peyamhub_send_count > 0 and base_delay > 0:
+            delay_time = random.uniform(base_delay, base_delay + 2.0)
+            logger.debug("[broadcast %s] Sleeping %.2fs before next PeyamHub send", broadcast.pk, delay_time)
+            time.sleep(delay_time)
+
+        peyamhub_send_count += 1
+
         try:
             send_message(target, broadcast.text)
             rec.send_status = BroadcastRecipient.SendStatus.SENT
-            rec.sent_at = rec.sent_at or __import__("django.utils.timezone", fromlist=["now"]).now()
-            rec.save(update_fields=["send_status", "sent_at"])
-        except PeyamHubError as exc:
-            rec.send_status = BroadcastRecipient.SendStatus.FAILED
-            rec.error = str(exc)
-            rec.save(update_fields=["send_status", "error"])
+            rec.sent_at = now_time
+            rec.error = "ارسال شد (روبیکا)"
+            rec.save(update_fields=["send_status", "sent_at", "error"])
+        except (PeyamHubError, Exception) as exc:
+            err_msg = str(exc)
+            is_rate_limit = any(m in err_msg for m in RATE_LIMIT_MARKERS)
+            is_permanent = any(m in err_msg for m in PERMANENT_MARKERS)
+
+            if is_rate_limit:
+                circuit_broken = True
+                rate_limit_reason = err_msg
+                logger.error(
+                    "[broadcast %s] Rubika rate limit hit (%s). Tripping circuit breaker for remaining recipients.",
+                    broadcast.pk, err_msg
+                )
+                if fallback_enabled and sms_client and rec.mobile:
+                    ok, err = _send_sms_numbers(sms_client, [rec.mobile], broadcast.text)
+                    if ok:
+                        rec.send_status = BroadcastRecipient.SendStatus.SENT
+                        rec.sent_at = now_time
+                        rec.error = "ارسال شد (پیامک جایگزین - محدودیت موقت روبیکا)"
+                        rec.save(update_fields=["send_status", "sent_at", "error"])
+                    else:
+                        rec.send_status = BroadcastRecipient.SendStatus.FAILED
+                        rec.error = f"محدودیت روبیکا و شکست پیامک: {err}"
+                        rec.save(update_fields=["send_status", "error"])
+                else:
+                    rec.send_status = BroadcastRecipient.SendStatus.FAILED
+                    rec.error = err_msg
+                    rec.save(update_fields=["send_status", "error"])
+
+            elif is_permanent:
+                logger.info("[broadcast %s] Target %s is not registered on Rubika; falling back to SMS", broadcast.pk, target)
+                if fallback_enabled and sms_client and rec.mobile:
+                    ok, err = _send_sms_numbers(sms_client, [rec.mobile], broadcast.text)
+                    if ok:
+                        rec.send_status = BroadcastRecipient.SendStatus.SENT
+                        rec.sent_at = now_time
+                        rec.error = "ارسال شد (پیامک جایگزین - کاربر عضو روبیکا نبود)"
+                        rec.save(update_fields=["send_status", "sent_at", "error"])
+                    else:
+                        rec.send_status = BroadcastRecipient.SendStatus.FAILED
+                        rec.error = f"کاربر عضو روبیکا نبود و پیامک ناموفق شد: {err}"
+                        rec.save(update_fields=["send_status", "error"])
+                else:
+                    rec.send_status = BroadcastRecipient.SendStatus.FAILED
+                    rec.error = err_msg
+                    rec.save(update_fields=["send_status", "error"])
+            else:
+                logger.warning("[broadcast %s] PeyamHub send failed for %s: %s", broadcast.pk, target, err_msg)
+                if fallback_enabled and sms_client and rec.mobile:
+                    ok, err = _send_sms_numbers(sms_client, [rec.mobile], broadcast.text)
+                    if ok:
+                        rec.send_status = BroadcastRecipient.SendStatus.SENT
+                        rec.sent_at = now_time
+                        rec.error = f"ارسال شد (پیامک جایگزین - خطای روبیکا: {err_msg[:40]})"
+                        rec.save(update_fields=["send_status", "sent_at", "error"])
+                        continue
+                rec.send_status = BroadcastRecipient.SendStatus.FAILED
+                rec.error = err_msg
+                rec.save(update_fields=["send_status", "error"])
+
+    if circuit_broken:
+        broadcast.error = f"حساب روبیکا موقتاً به سقف ارسال برخورد کرد؛ پیام‌های باقیمانده به پیامک هدایت شدند. ({rate_limit_reason[:100]})"
+        broadcast.save(update_fields=["error"])
 
 
 def execute_broadcast(broadcast: Broadcast) -> bool:

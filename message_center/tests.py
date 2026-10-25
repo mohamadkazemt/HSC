@@ -355,3 +355,78 @@ class WebhookSettingsPageTests(TestCase):
         old = WebhookConfig.load().secret
         self.client.post(self.url, {"action": "regenerate_secret"})
         self.assertNotEqual(WebhookConfig.load().secret, old)
+
+
+class RubikaBroadcastAntiLimitTests(TestCase):
+    def setUp(self):
+        from message_center.models import Broadcast, BroadcastRecipient
+        self.staff = User.objects.create_superuser("admin_bc", password="x")
+        self.u1 = User.objects.create_user("u1", first_name="رضا", last_name="کریمی")
+        UserProfile.objects.create(user=self.u1, personnel_code="101", mobile="09121111111")
+        
+        self.u2 = User.objects.create_user("u2", first_name="علی", last_name="علوی")
+        UserProfile.objects.create(user=self.u2, personnel_code="102", mobile="09122222222")
+
+        self.broadcast = Broadcast.objects.create(
+            title="تست ضداسپم",
+            text="پیام تست برای بررسی سناریوی جدید",
+            channel=Broadcast.Channel.RUBIKA,
+            created_by=self.staff,
+        )
+
+    @patch("rubika_bot.services.RubPyIntegrationService.get_instance")
+    def test_official_bot_used_when_user_connected(self, mock_get_instance):
+        from rubika_bot.models import RubikaUser
+        from message_center.broadcast_service import execute_broadcast
+        from message_center.models import BroadcastRecipient
+
+        RubikaUser.objects.create(user=self.u1, chat_id="chat_u1_123")
+        rec = BroadcastRecipient.objects.create(
+            broadcast=self.broadcast, mobile="09121111111", user=self.u1, resolve_status="ok"
+        )
+        mock_service = mock_get_instance.return_value
+        ok = execute_broadcast(self.broadcast)
+        self.assertTrue(ok)
+        rec.refresh_from_db()
+        self.assertEqual(rec.send_status, BroadcastRecipient.SendStatus.SENT)
+        self.assertIn("ربات رسمی", rec.error)
+        mock_service.send_text_message.assert_called_once_with("chat_u1_123", self.broadcast.text)
+
+    @patch("message_center.broadcast_service._send_sms_numbers", return_value=(True, ""))
+    @patch("message_center.broadcast_service.time.sleep")
+    @patch("message_center.peyamhub_client.send_message", side_effect=Exception("شماره در روبیکا ثبت نشده است (کاربر روبیکا نیست)"))
+    def test_fallback_to_sms_when_not_on_rubika(self, mock_send, mock_sleep, mock_sms):
+        from message_center.broadcast_service import execute_broadcast
+        from message_center.models import BroadcastRecipient
+
+        rec = BroadcastRecipient.objects.create(
+            broadcast=self.broadcast, mobile="09122222222", user=self.u2, resolve_status="ok"
+        )
+        ok = execute_broadcast(self.broadcast)
+        self.assertTrue(ok)
+        rec.refresh_from_db()
+        self.assertEqual(rec.send_status, BroadcastRecipient.SendStatus.SENT)
+        self.assertIn("پیامک جایگزین", rec.error)
+        mock_sms.assert_called_once()
+
+    @patch("message_center.broadcast_service._send_sms_numbers", return_value=(True, ""))
+    @patch("message_center.broadcast_service.time.sleep")
+    @patch("message_center.peyamhub_client.send_message", side_effect=Exception("روبیکا به‌طور موقت درخواست را محدود کرده است (دسترسی شما تا تاریخ ... محدود شده است)"))
+    def test_circuit_breaker_on_rate_limit(self, mock_send, mock_sleep, mock_sms):
+        from message_center.broadcast_service import execute_broadcast
+        from message_center.models import BroadcastRecipient
+
+        rec1 = BroadcastRecipient.objects.create(
+            broadcast=self.broadcast, mobile="09121111111", user=self.u1, resolve_status="ok"
+        )
+        rec2 = BroadcastRecipient.objects.create(
+            broadcast=self.broadcast, mobile="09122222222", user=self.u2, resolve_status="ok"
+        )
+        ok = execute_broadcast(self.broadcast)
+        self.assertTrue(ok)
+        rec1.refresh_from_db()
+        rec2.refresh_from_db()
+        self.assertEqual(rec1.send_status, BroadcastRecipient.SendStatus.SENT)
+        self.assertEqual(rec2.send_status, BroadcastRecipient.SendStatus.SENT)
+        self.assertEqual(mock_send.call_count, 1)
+        self.assertEqual(mock_sms.call_count, 2)

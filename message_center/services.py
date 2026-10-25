@@ -202,37 +202,54 @@ def send_pending_reminders(role=None, actor=None):
             eligible_groups.append(group)
 
     for index, group in enumerate(eligible_groups):
-        if index > 0 and delay > 0:
-            time.sleep(delay)
-
         message = _build_message(group)
-        try:
-            send_message(group["target"], message)
-            status, error = ReminderLog.Status.SENT, ""
-            sent += 1
-        except Exception as exc:
-            error = str(exc)
-            kind = _classify_error(error)
-            if kind == "rate_limit":
-                status = ReminderLog.Status.FAILED
-                failed += 1
-                aborted = True
-                remaining_after_abort = len(eligible_groups) - index - 1
-                logger.error("Rubika ban detected; aborting reminder run (%s)", error[:120])
-                for leaf_item in group["leaves"]:
-                    ReminderLog.objects.create(
-                        leave=leaf_item["leave"], role=group["role"],
-                        recipient=group["recipient"], target=group["target"],
-                        message=message, status=status, error=error,
-                        triggered_by=actor,
-                    )
-                break
-            elif kind == "permanent":
-                status = ReminderLog.Status.FAILED_PERMANENT
-                failed += 1
-            else:
-                status = ReminderLog.Status.FAILED
-                failed += 1
+
+        # اولویت اول: ارسال مستقیم از طریق ربات رسمی برای اعضای ربات
+        bot_sent = False
+        if group.get("recipient"):
+            try:
+                from rubika_bot.models import RubikaUser
+                ru = RubikaUser.objects.filter(user=group["recipient"]).first()
+                if ru and ru.chat_id:
+                    from rubika_bot.services import RubPyIntegrationService
+                    RubPyIntegrationService.get_instance().send_text_message(ru.chat_id, message)
+                    status, error = ReminderLog.Status.SENT, "ارسال شد (ربات رسمی)"
+                    sent += 1
+                    bot_sent = True
+            except Exception as e:
+                logger.debug("Official bot send failed for reminder to user %s: %s", group.get("recipient"), e)
+                bot_sent = False
+
+        if not bot_sent:
+            if index > 0 and delay > 0:
+                time.sleep(delay)
+            try:
+                send_message(group["target"], message)
+                status, error = ReminderLog.Status.SENT, ""
+                sent += 1
+            except Exception as exc:
+                error = str(exc)
+                kind = _classify_error(error)
+                if kind == "rate_limit":
+                    status = ReminderLog.Status.FAILED
+                    failed += 1
+                    aborted = True
+                    remaining_after_abort = len(eligible_groups) - index - 1
+                    logger.error("Rubika ban detected; aborting reminder run (%s)", error[:120])
+                    for leaf_item in group["leaves"]:
+                        ReminderLog.objects.create(
+                            leave=leaf_item["leave"], role=group["role"],
+                            recipient=group["recipient"], target=group["target"],
+                            message=message, status=status, error=error,
+                            triggered_by=actor,
+                        )
+                    break
+                elif kind == "permanent":
+                    status = ReminderLog.Status.FAILED_PERMANENT
+                    failed += 1
+                else:
+                    status = ReminderLog.Status.FAILED
+                    failed += 1
 
         for leaf_item in group["leaves"]:
             ReminderLog.objects.create(

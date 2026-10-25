@@ -101,6 +101,9 @@
                                 {% if r.error %}title="{{ r.error }}"{% endif %}>
                                 {{ r.get_send_status_display }}
                             </span>
+                            {% if r.error %}
+                                <div class="mt-1 text-[11px] text-gray-500 dark:text-gray-400 font-medium">{{ r.error }}</div>
+                            {% endif %}
                         </td>
                         <td class="whitespace-nowrap px-4 py-2.5 text-xs text-gray-500 dark:text-gray-400">{{ r.sent_at|to_jalali:"%Y/%m/%d %H:%M"|default:'—' }}</td>
                     </tr>

@@ -43,6 +43,20 @@
             </span>
             <div class="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm leading-6 text-gray-800 whitespace-pre-wrap dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-200">{{ broadcast.text }}</div>
             {% if broadcast.title %}<p class="mt-3 text-xs text-gray-400">عنوان: {{ broadcast.title }}</p>{% endif %}
+
+            {% if broadcast.channel == 'rubika' %}
+            <div class="mt-4 rounded-xl border border-purple-200 bg-purple-50 p-3 text-xs leading-5 text-purple-900 dark:border-purple-800 dark:bg-purple-900/30 dark:text-purple-200">
+                <div class="flex items-center gap-2 font-bold mb-1">
+                    <i class="fab fa-telegram text-purple-600"></i>
+                    <span>سناریوی ضداسپم هوشمند فعال است:</span>
+                </div>
+                <ul class="list-disc pr-4 space-y-1">
+                    <li>کاربران متصل به ربات رسمی از طریق ربات پیام می‌گیرند (بدون محدودیت).</li>
+                    <li>سایر کاربران با فاصله زمانی ایمن (Pacing) پیام می‌گیرند.</li>
+                    <li>در صورت عدم عضویت در روبیکا یا محدودیت اکانت، به صورت خودکار پیامک (SMS) ارسال می‌شود.</li>
+                </ul>
+            </div>
+            {% endif %}
         </section>
 
         <!-- آمار و ارسال -->
