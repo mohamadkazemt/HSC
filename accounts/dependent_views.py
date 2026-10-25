@@ -171,7 +171,7 @@ def dependent_portal_send_otp(request):
     return JsonResponse({
         'success': True,
         'code_sent': True,
-        'message': 'کد تاÛŒÛŒد ارساÙ„ شد.',
+        'message': 'کد تایید ارسال شد.',
         'expires_in': ttl,
         'retry_after': cooldown,
     })
@@ -183,10 +183,10 @@ def dependent_portal_verify_otp(request):
     code = raw_code.translate(str.maketrans('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩', '01234567890123456789')).strip()
     state = request.session.get(PORTAL_OTP_SESSION_KEY)
     if not state or not code.isdigit() or len(code) != 6:
-        return JsonResponse({'success': False, 'message': 'کد تاÛŒÛŒد Ù†اÙ…عتبر است.'}, status=400)
+        return JsonResponse({'success': False, 'message': 'کد تایید نامعتبر است.'}, status=400)
     if int(state.get('expires_at', 0)) < int(time.time()):
         request.session.pop(PORTAL_OTP_SESSION_KEY, None)
-        return JsonResponse({'success': False, 'message': 'کد Ù…Ù†Ù‚ضÛŒ شدÙ‡ استØ› کد جدÛŒد درÛŒافت کÙ†ÛŒد.'}, status=400)
+        return JsonResponse({'success': False, 'message': 'کد منقضی شده است؛ کد جدید دریافت کنید.'}, status=400)
 
     max_attempts = int(getattr(settings, 'LOGIN_OTP_MAX_ATTEMPTS', 5))
     expected = _otp_digest(state.get('nonce', ''), state.get('profile_id'), code)
@@ -203,7 +203,7 @@ def dependent_portal_verify_otp(request):
     profile = UserProfile.objects.select_related('user').filter(pk=state.get('profile_id')).first()
     if profile is None or profile.user is None or not profile.user.is_active:
         request.session.pop(PORTAL_OTP_SESSION_KEY, None)
-        return JsonResponse({'success': False, 'message': 'اÙ…کاÙ† ÙˆرÙˆد ÙˆجÙˆد Ù†دارد.'}, status=400)
+        return JsonResponse({'success': False, 'message': 'امکان ورود وجود ندارد.'}, status=400)
 
     request.session.pop(PORTAL_OTP_SESSION_KEY, None)
     _set_portal_auth(request, profile)
@@ -273,11 +273,11 @@ def dependent_portal_home(request):
         if request.POST.get('action') == 'save_address':
             address = (request.POST.get('address') or '').strip()
             if not address:
-                messages.error(request, 'آدرس Ù…حÙ„ سکÙˆÙ†ت را Ùˆارد کÙ†ÛŒد.')
+                messages.error(request, 'آدرس محل سکونت را وارد کنید.')
             else:
                 profile.address = address
                 profile.save(update_fields=['address'])
-                messages.success(request, 'آدرس شÙ…ا ذخÛŒرÙ‡ شد.')
+                messages.success(request, 'آدرس شما با موفقیت ذخیره شد.')
             return redirect('dependents:info')
 
     dependents = list(profile.dependents.all().order_by('last_name', 'first_name'))
@@ -327,7 +327,7 @@ def dependent_portal_add(request):
                 notify_change_submitted(change)
                 messages.success(
                     request,
-                    'اطÙ„اعات ثبت شد Ùˆ پس از بررسÛŒ Ù…Ù†ابع اÙ†ساÙ†ÛŒ اعÙ…اÙ„ Ù…ÛŒâ€ŒشÙˆد.',
+                    'اطلاعات ثبت شد و پس از بررسی منابع انسانی اعمال می‌شود.',
                 )
                 return redirect('dependents:info')
             except ChangeRequestError as exc:
@@ -342,7 +342,7 @@ def dependent_portal_edit(request, pk):
     if DependentChangeRequest.objects.filter(
         dependent=dependent, status=DependentChangeRequest.Status.PENDING
     ).exists():
-        messages.error(request, 'براÛŒ اÛŒÙ† فرد ÛŒک درخÙˆاست در اÙ†تظار بررسÛŒ ÙˆجÙˆد دارد.')
+        messages.error(request, 'برای این فرد یک درخواست در انتظار بررسی وجود دارد.')
         return redirect('dependents:info')
 
     data = {}
@@ -363,7 +363,7 @@ def dependent_portal_edit(request, pk):
                 notify_change_submitted(change)
                 messages.success(
                     request,
-                    'تغÛŒÛŒرات ثبت شد Ùˆ پس از بررسÛŒ Ù…Ù†ابع اÙ†ساÙ†ÛŒ اعÙ…اÙ„ Ù…ÛŒâ€ŒشÙˆد.',
+                    'تغییرات ثبت شد و پس از بررسی منابع انسانی اعمال می‌شود.',
                 )
                 return redirect('dependents:info')
             except ChangeRequestError as exc:
@@ -382,7 +382,7 @@ def dependent_portal_delete(request, pk):
     if DependentChangeRequest.objects.filter(
         dependent=dependent, status=DependentChangeRequest.Status.PENDING
     ).exists():
-        messages.error(request, 'براÛŒ اÛŒÙ† فرد ÛŒک درخÙˆاست در اÙ†تظار بررسÛŒ ÙˆجÙˆد دارد.')
+        messages.error(request, 'برای این فرد یک درخواست در انتظار بررسی وجود دارد.')
         return redirect('dependents:info')
     try:
         change = create_change_request(
@@ -396,7 +396,7 @@ def dependent_portal_delete(request, pk):
         notify_change_submitted(change)
         messages.success(
             request,
-            'درخÙˆاست حذف ثبت شد Ùˆ پس از تاÛŒÛŒد Ù…Ù†ابع اÙ†ساÙ†ÛŒ اعÙ…اÙ„ Ù…ÛŒâ€ŒشÙˆد.',
+            'درخواست حذف ثبت شد و پس از تایید منابع انسانی اعمال می‌شود.',
         )
     except ChangeRequestError as exc:
         messages.error(request, str(exc))
@@ -455,25 +455,25 @@ def dependent_change_detail(request, pk):
             if action == 'approve':
                 apply_change_request(change, reviewer=request.user, note=note)
                 notify_change_reviewed(change)
-                messages.success(request, 'درخÙˆاست تاÛŒÛŒد Ùˆ اعÙ…اÙ„ شد.')
+                messages.success(request, 'درخواست تایید و اعمال شد.')
             elif action == 'reject':
                 reject_change_request(change, reviewer=request.user, note=note)
                 notify_change_reviewed(change)
-                messages.success(request, 'درخÙˆاست رد شد.')
+                messages.success(request, 'درخواست رد شد.')
             else:
-                messages.error(request, 'عÙ…Ù„ÛŒات Ù†اÙ…عتبر است.')
+                messages.error(request, 'عملیات نامعتبر است.')
         except ChangeRequestError as exc:
             messages.error(request, str(exc))
         except Exception as exc:  # e.g. duplicate national code on create
             logger.exception('[dependents] failed to apply change %s', pk)
-            messages.error(request, f'اعÙ…اÙ„ تغÛŒÛŒرات اÙ†جاÙ… Ù†شد: {exc}')
+            messages.error(request, f'اعمال تغییرات انجام نشد: {exc}')
         return redirect('accounts:dependent_change_detail', pk=pk)
 
     if change.action == DependentChangeRequest.Action.CREATE:
         diff = [{
             'field': field,
             'label': FIELD_LABELS.get(field, field),
-            'old': 'â€”',
+            'old': '—',
             'new': humanize(field, value),
         } for field, value in (change.new_data or {}).items()]
     elif change.action == DependentChangeRequest.Action.DELETE:
@@ -481,7 +481,7 @@ def dependent_change_detail(request, pk):
             'field': field,
             'label': FIELD_LABELS.get(field, field),
             'old': humanize(field, value),
-            'new': 'حذف Ù…ÛŒâ€ŒشÙˆد',
+            'new': 'حذف می‌شود',
         } for field, value in (change.old_data or {}).items()]
     else:
         diff = build_diff(change.old_data or {}, change.new_data or {})
