@@ -30,6 +30,7 @@ RELATIONSHIP_LABELS = dict(RELATIONSHIP_CHOICES)
 MARITAL_STATUS_LABELS = dict(MARITAL_STATUS_CHOICES)
 EDUCATION_STATUS_LABELS = dict(EDUCATION_STATUS_CHOICES)
 EDUCATION_LEVEL_LABELS = dict(EDUCATION_LEVEL_CHOICES)
+LEVELS_REQUIRING_MAJOR = {'high', 'diploma', 'associate', 'bachelor', 'master', 'phd'}
 MILITARY_STATUS_LABELS = dict(MILITARY_STATUS_CHOICES)
 
 FIELD_LABELS = {
@@ -252,10 +253,15 @@ def validate_dependent_data(data, *, today=None) -> tuple[dict, dict]:
     if cleaned['education_status'] in ('studying', 'graduated', 'dropped'):
         if not cleaned['education_level']:
             errors['education_level'] = 'مقطع تحصیلی را انتخاب کنید.'
-        if not cleaned['field_of_study']:
-            errors['field_of_study'] = 'رشته تحصیلی را وارد کنید.'
+        if cleaned['education_level'] in LEVELS_REQUIRING_MAJOR:
+            if not cleaned['field_of_study']:
+                errors['field_of_study'] = 'رشته تحصیلی را وارد کنید.'
+        else:
+            # Primary, middle, and other education levels don't have a required major
+            if not cleaned['field_of_study']:
+                cleaned['field_of_study'] = ''
         if not cleaned['study_place']:
-            errors['study_place'] = 'محل تحصیل را وارد کنید.'
+            errors['study_place'] = 'محل تحصیل یا نام مدرسه را وارد کنید.'
     else:
         cleaned['education_level'] = ''
         cleaned['field_of_study'] = ''

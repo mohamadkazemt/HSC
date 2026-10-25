@@ -88,6 +88,17 @@ class ValidationTests(TestCase):
         self.assertIn('field_of_study', errors)
         self.assertIn('study_place', errors)
 
+    def test_primary_and_middle_do_not_require_field_of_study(self):
+        payload = dict(ADULT_PAYLOAD, education_level='primary', field_of_study='', study_place='دبستان رازی')
+        cleaned, errors = validate_dependent_data(payload)
+        self.assertNotIn('field_of_study', errors)
+        self.assertIsNone(cleaned['field_of_study'])
+
+        payload['education_level'] = 'middle'
+        cleaned, errors = validate_dependent_data(payload)
+        self.assertNotIn('field_of_study', errors)
+        self.assertIsNone(cleaned['field_of_study'])
+
     def test_education_details_ignored_when_no_education(self):
         payload = dict(
             ADULT_PAYLOAD,

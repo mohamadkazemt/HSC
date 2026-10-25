@@ -2,225 +2,1094 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% if dependent %}ویرایش{% else %}افزودن{% endif %} فرد تحت تکفل</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>{% if dependent %}ویرایش اطلاعات {{ dependent.first_name }} {{ dependent.last_name }}{% else %}افزودن فرد تحت تکفل جدید{% endif %}</title>
+
 <style>
-  * { box-sizing: border-box; }
+  @font-face {
+    font-family: 'Vazirmatn';
+    src: url('{% static "fonts/Vazirmatn-Regular.woff2" %}') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'Vazirmatn';
+    src: url('{% static "fonts/Vazirmatn-Bold.woff2" %}') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  :root {
+    --primary: #1d4ed8;
+    --primary-hover: #1e40af;
+    --primary-light: #eff6ff;
+    --primary-border: #bfdbfe;
+    --success: #15803d;
+    --success-light: #f0fdf4;
+    --success-border: #bbf7d0;
+    --danger: #b91c1c;
+    --danger-light: #fef2f2;
+    --danger-border: #fecaca;
+    --warning: #b45309;
+    --warning-light: #fffbeb;
+    --warning-border: #fde68a;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --bg-page: #f8fafc;
+    --bg-card: #ffffff;
+    --border: #cbd5e1;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  
   body {
-    margin: 0; font-family: Tahoma, "Vazirmatn", "Segoe UI", sans-serif; background: #f1f5f9;
-    color: #0f172a; font-size: 18px; line-height: 1.8;
+    margin: 0;
+    padding: 0;
+    font-family: 'Vazirmatn', Tahoma, -apple-system, sans-serif;
+    background-color: var(--bg-page);
+    color: var(--text-main);
+    font-size: 16px;
+    line-height: 1.7;
+    direction: rtl;
   }
-  .wrap { max-width: 760px; margin: 0 auto; padding: 18px 14px 90px; }
-  .head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
-  .head a { color: #1d4ed8; font-size: 16px; text-decoration: none; }
-  h1 { font-size: 21px; margin: 0 0 16px; }
-  .card { background: #fff; border-radius: 18px; padding: 18px; margin-bottom: 16px; box-shadow: 0 10px 30px -24px rgba(15,23,42,.5); }
-  .card h2 { font-size: 18px; margin: 0 0 12px; color: #1e3a8a; }
-  label { display: block; font-size: 16px; font-weight: 700; margin: 0 0 6px; }
-  .req { color: #dc2626; }
-  .field { margin-bottom: 16px; }
-  input[type=text], input[type=tel], select, textarea {
-    width: 100%; padding: 13px 12px; font-size: 17px; font-family: inherit; border-radius: 13px;
-    border: 2px solid #cbd5e1; background: #fff; color: #0f172a;
+
+  .app-container {
+    max-width: 740px;
+    margin: 0 auto;
+    padding: 16px 14px 110px;
   }
-  textarea { min-height: 86px; resize: vertical; }
-  input:focus, select:focus, textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 4px rgba(37,99,235,.12); }
-  input[type=tel], input[data-ltr] { direction: ltr; text-align: center; letter-spacing: 1px; }
-  .row3 { display: flex; gap: 8px; }
-  .row3 select { flex: 1; }
-  .help { font-size: 14px; color: #64748b; margin-top: 4px; }
-  .err-text { color: #b91c1c; font-size: 15px; margin-top: 5px; }
-  .err-banner { background: #fee2e2; color: #991b1b; border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; font-size: 16px; }
+
+  /* Header */
+  .header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 15px;
+    background: #fff;
+    padding: 8px 14px;
+    border-radius: 99px;
+    border: 1px solid var(--border);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+  .page-title {
+    font-size: 21px;
+    font-weight: 800;
+    margin: 0 0 4px;
+    color: var(--text-main);
+  }
+  .page-subtitle {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  /* Personnel Identity Banner */
+  .personnel-badge {
+    background: linear-gradient(135deg, #1e3a8a, #2563eb);
+    color: #fff;
+    border-radius: var(--radius-md);
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    box-shadow: 0 8px 20px -8px rgba(37,99,235,0.4);
+  }
+  .personnel-badge .user-info {
+    font-size: 15px;
+  }
+  .personnel-badge .user-name {
+    font-weight: 800;
+    font-size: 17px;
+  }
+  .personnel-badge .user-meta {
+    opacity: 0.88;
+    font-size: 13px;
+  }
+
+  /* Stepper */
+  .stepper-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    margin-bottom: 24px;
+    background: #fff;
+    padding: 14px 18px;
+    border-radius: var(--radius-md);
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+  }
+  .step-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+    z-index: 2;
+    cursor: pointer;
+    flex: 1;
+  }
+  .step-circle {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 16px;
+    border: 2px solid #cbd5e1;
+    transition: all 0.25s ease;
+  }
+  .step-item.active .step-circle {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(37,99,235,0.2);
+    transform: scale(1.06);
+  }
+  .step-item.completed .step-circle {
+    background: var(--success);
+    color: #fff;
+    border-color: var(--success);
+  }
+  .step-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-align: center;
+    white-space: nowrap;
+  }
+  .step-item.active .step-title {
+    color: var(--primary);
+    font-weight: 800;
+  }
+  .step-item.completed .step-title {
+    color: var(--success);
+  }
+
+  /* Progress Bar Connecting Line */
+  .stepper-track {
+    position: absolute;
+    top: 33px;
+    right: 45px;
+    left: 45px;
+    height: 3px;
+    background: #e2e8f0;
+    z-index: 1;
+  }
+  .stepper-track-fill {
+    height: 100%;
+    background: var(--primary);
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+
+  /* Form Section Cards */
+  .form-step {
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+  .form-step.active {
+    display: block;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: 24px 20px;
+    margin-bottom: 20px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 28px -20px rgba(15,23,42,0.12);
+  }
+  .card-header {
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 12px;
+    margin-bottom: 18px;
+  }
+  .card-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #1e3a8a;
+    margin: 0 0 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  /* Input Fields */
+  .form-group {
+    margin-bottom: 18px;
+  }
+  .form-row {
+    display: flex;
+    gap: 14px;
+  }
+  .form-row > * {
+    flex: 1;
+  }
+  @media (max-width: 580px) {
+    .form-row { flex-direction: column; gap: 0; }
+  }
+
+  label {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 7px;
+    color: #1e293b;
+  }
+  .required-star {
+    color: var(--danger);
+    margin-right: 3px;
+  }
+
+  .input-control, select.input-control, textarea.input-control {
+    width: 100%;
+    min-height: 52px;
+    padding: 12px 14px;
+    font-size: 16px;
+    font-family: inherit;
+    border-radius: var(--radius-md);
+    border: 2px solid var(--border);
+    background-color: #fff;
+    color: var(--text-main);
+    transition: all 0.2s ease;
+  }
+  textarea.input-control {
+    min-height: 96px;
+    line-height: 1.6;
+    resize: vertical;
+  }
+  .input-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(37,99,235,0.12);
+  }
+  .input-control.error-state {
+    border-color: var(--danger);
+    background-color: var(--danger-light);
+  }
+  .input-control[data-ltr] {
+    direction: ltr;
+    text-align: center;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+  /* Help & Error Text */
+  .field-help {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 5px;
+  }
+  .field-error {
+    font-size: 13px;
+    color: var(--danger);
+    font-weight: 700;
+    margin-top: 5px;
+    display: none;
+  }
+  .field-error.show {
+    display: block;
+  }
+
+  /* Radio Choice Cards */
+  .choice-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+  }
+  .choice-card {
+    position: relative;
+    cursor: pointer;
+  }
+  .choice-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .choice-box {
+    border: 2px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px 10px;
+    min-height: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: #fff;
+    gap: 6px;
+    transition: all 0.2s ease;
+  }
+  .choice-box .choice-icon {
+    font-size: 24px;
+    line-height: 1;
+  }
+  .choice-box .choice-label {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-main);
+  }
+  .choice-card input[type="radio"]:checked + .choice-box {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    color: var(--primary);
+    box-shadow: 0 4px 12px rgba(37,99,235,0.12);
+  }
+  .choice-card input[type="radio"]:checked + .choice-box .choice-label {
+    color: var(--primary);
+    font-weight: 800;
+  }
+
+  /* Birth Date 3-Col Box */
+  .birth-date-row {
+    display: flex;
+    gap: 8px;
+  }
+  .birth-date-row select {
+    flex: 1;
+  }
+
+  /* Calculated Age Pill */
+  .age-indicator {
+    margin-top: 10px;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+  }
+  .age-indicator.minor {
+    background: var(--warning-light);
+    border-color: var(--warning-border);
+    color: var(--warning);
+  }
+  .age-indicator.adult {
+    background: var(--success-light);
+    border-color: var(--success-border);
+    color: var(--success);
+  }
+
+  /* Quick Actions / Chips */
+  .quick-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .chip-btn {
+    background: #f1f5f9;
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #334155;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s ease;
+  }
+  .chip-btn:hover, .chip-btn:active {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+
+  .copy-btn {
+    background: var(--primary-light);
+    color: var(--primary);
+    border: 1px solid var(--primary-border);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 8px;
+  }
+
+  /* Minor Notice Card */
+  .minor-notice-box {
+    background: #f0fdf4;
+    border: 2px dashed #86efac;
+    border-radius: var(--radius-md);
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .minor-notice-box .icon {
+    font-size: 32px;
+    margin-bottom: 6px;
+  }
+  .minor-notice-box h3 {
+    margin: 0 0 6px;
+    font-size: 17px;
+    color: #166534;
+  }
+  .minor-notice-box p {
+    margin: 0;
+    font-size: 14px;
+    color: #15803d;
+  }
+
+  /* Review Summary Table */
+  .review-section {
+    margin-bottom: 18px;
+    border-radius: var(--radius-md);
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+  }
+  .review-header {
+    background: #e2e8f0;
+    padding: 10px 14px;
+    font-weight: 800;
+    font-size: 14px;
+    color: #1e293b;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .review-header .edit-step-btn {
+    color: var(--primary);
+    background: none;
+    border: none;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    padding: 0;
+  }
+  .review-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    padding: 12px 14px;
+    gap: 12px;
+  }
+  .review-item {
+    font-size: 14px;
+  }
+  .review-item .r-label {
+    color: var(--text-muted);
+    margin-bottom: 2px;
+    font-size: 12px;
+  }
+  .review-item .r-value {
+    font-weight: 700;
+    color: var(--text-main);
+  }
+
+  /* Error Banner */
+  .server-error-banner {
+    background: var(--danger-light);
+    border: 1px solid var(--danger-border);
+    color: var(--danger);
+    border-radius: var(--radius-md);
+    padding: 14px 18px;
+    margin-bottom: 18px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  /* Sticky Bottom Navigation */
+  .sticky-bar {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid #e2e8f0;
+    padding: 14px;
+    z-index: 50;
+    box-shadow: 0 -4px 16px rgba(15,23,42,0.06);
+  }
+  .sticky-inner {
+    max-width: 740px;
+    margin: 0 auto;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .btn-nav {
+    min-height: 52px;
+    padding: 14px 20px;
+    font-size: 17px;
+    font-weight: 800;
+    font-family: inherit;
+    border-radius: var(--radius-md);
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+  }
+  .btn-nav.primary {
+    flex: 2;
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(37,99,235,0.3);
+  }
+  .btn-nav.primary:hover {
+    background: var(--primary-hover);
+  }
+  .btn-nav.submit {
+    flex: 2;
+    background: var(--success);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(21,128,61,0.3);
+  }
+  .btn-nav.secondary {
+    flex: 1;
+    background: #e2e8f0;
+    color: #334155;
+  }
+  .btn-nav:disabled {
+    background: #94a3b8 !important;
+    cursor: not-allowed;
+    opacity: 0.8;
+  }
+
   .hidden { display: none !important; }
-  .bottom { position: fixed; bottom: 0; right: 0; left: 0; background: #fff; border-top: 1px solid #e2e8f0; padding: 12px 14px; }
-  .bottom .inner { max-width: 760px; margin: 0 auto; display: flex; gap: 10px; }
-  .btn {
-    flex: 1; padding: 16px; font-size: 19px; font-weight: 800; font-family: inherit; color: #fff;
-    background: #1d4ed8; border: 0; border-radius: 14px; cursor: pointer; text-align: center; text-decoration: none;
-  }
-  .btn.light { background: #e2e8f0; color: #0f172a; flex: 0 0 120px; }
-  .btn:disabled { background: #94a3b8; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="head">
-    <a href="{% url 'dependents:info' %}">&rarr; بازگشت</a>
+
+<div class="app-container">
+
+  <!-- Header -->
+  <div class="header-bar">
+    <a href="{% url 'dependents:info' %}" class="back-link">&rarr; بازگشت به لیست</a>
+    <span style="font-size:13px; color:var(--text-muted);">پرتال تحت تکفل</span>
   </div>
-  <h1>{% if dependent %}ویرایش اطلاعات {{ dependent.first_name }} {{ dependent.last_name }}{% else %}افزودن فرد تحت تکفل جدید{% endif %}</h1>
 
-  {% if non_field_error %}<div class="err-banner">{{ non_field_error }}</div>{% endif %}
+  <h1 class="page-title">
+    {% if dependent %}ویرایش اطلاعات {{ dependent.first_name }} {{ dependent.last_name }}{% else %}افزودن فرد تحت تکفل جدید{% endif %}
+  </h1>
+  <p class="page-subtitle">لطفاً فرم ۳ مرحله‌ای زیر را با دقت تکمیل نمایید.</p>
 
-  <form method="post" id="dep-form" novalidate>
+  <!-- Personnel Badge -->
+  <div class="personnel-badge">
+    <div class="user-info">
+      <div class="user-name">همکار گرامی: {{ profile.user.get_full_name|default:profile.user.username }}</div>
+      <div class="user-meta">کد پرسنلی: {{ profile.personnel_code|default:"-" }} | موبایل: {{ profile.mobile|default:"-" }}</div>
+    </div>
+    {% if profile.address %}
+      <input type="hidden" id="cached-profile-address" value="{{ profile.address }}">
+    {% endif %}
+  </div>
+
+  <!-- Server non-field errors if any -->
+  {% if non_field_error %}
+    <div class="server-error-banner">{{ non_field_error }}</div>
+  {% endif %}
+
+  <!-- Stepper Navigation -->
+  <div class="stepper-nav">
+    <div class="stepper-track"><div class="stepper-track-fill" id="stepper-progress"></div></div>
+    
+    <div class="step-item active" id="step-nav-1" onclick="goToStep(1)">
+      <div class="step-circle">۱</div>
+      <div class="step-title">هویتی</div>
+    </div>
+    <div class="step-item" id="step-nav-2" onclick="goToStep(2)">
+      <div class="step-circle">۲</div>
+      <div class="step-title">تحصیلی</div>
+    </div>
+    <div class="step-item" id="step-nav-3" onclick="goToStep(3)">
+      <div class="step-circle">۳</div>
+      <div class="step-title">تکمیلی</div>
+    </div>
+    <div class="step-item" id="step-nav-4" onclick="goToStep(4)">
+      <div class="step-circle">۴</div>
+      <div class="step-title">تایید نهایی</div>
+    </div>
+  </div>
+
+  <!-- Main Form -->
+  <form method="post" id="dependent-wizard-form" novalidate>
     {% csrf_token %}
 
-    <div class="card">
-      <h2>۱. مشخصات فرد</h2>
-
-      <div class="field">
-        <label for="first_name">نام <span class="req">*</span></label>
-        <input type="text" id="first_name" name="first_name" value="{{ data.first_name|default:'' }}" autocomplete="off">
-        {% if errors.first_name %}<div class="err-text">{{ errors.first_name }}</div>{% endif %}
-      </div>
-
-      <div class="field">
-        <label for="last_name">نام خانوادگی <span class="req">*</span></label>
-        <input type="text" id="last_name" name="last_name" value="{{ data.last_name|default:'' }}" autocomplete="off">
-        {% if errors.last_name %}<div class="err-text">{{ errors.last_name }}</div>{% endif %}
-      </div>
-
-      <div class="field">
-        <label for="father_name">نام پدر</label>
-        <input type="text" id="father_name" name="father_name" value="{{ data.father_name|default:'' }}" autocomplete="off">
-        {% if errors.father_name %}<div class="err-text">{{ errors.father_name }}</div>{% endif %}
-      </div>
-
-      <div class="field">
-        <label for="national_code">کد ملی (۱۰ رقم) <span class="req">*</span></label>
-        <input type="text" id="national_code" name="national_code" data-ltr inputmode="numeric" maxlength="10" value="{{ data.national_code|default:'' }}" autocomplete="off">
-        {% if errors.national_code %}<div class="err-text">{{ errors.national_code }}</div>{% endif %}
-      </div>
-
-      <div class="field">
-        <label for="birth_certificate_number">شماره شناسنامه</label>
-        <input type="text" id="birth_certificate_number" name="birth_certificate_number" data-ltr inputmode="numeric" value="{{ data.birth_certificate_number|default:'' }}" autocomplete="off">
-        {% if errors.birth_certificate_number %}<div class="err-text">{{ errors.birth_certificate_number }}</div>{% endif %}
-      </div>
-
-      <div class="field">
-        <label for="relationship">نسبت با شما <span class="req">*</span></label>
-        <select id="relationship" name="relationship">
-          <option value="">انتخاب کنید...</option>
-          {% for value, label in relationship_choices %}
-            <option value="{{ value }}" {% if data.relationship == value %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-        {% if errors.relationship %}<div class="err-text">{{ errors.relationship }}</div>{% endif %}
-      </div>
-
-      <div class="field">
-        <label for="gender">جنسیت <span class="req">*</span></label>
-        <select id="gender" name="gender">
-          <option value="">انتخاب کنید...</option>
-          {% for value, label in gender_choices %}
-            <option value="{{ value }}" {% if data.gender == value %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-        {% if errors.gender %}<div class="err-text">{{ errors.gender }}</div>{% endif %}
-      </div>
-
-      <div class="field">
-        <label>تاریخ تولد (شمسی) <span class="req">*</span></label>
-        <div class="row3">
-          <select id="birth_year" name="birth_year" data-selected="{{ birth_year|default:'' }}"></select>
-          <select id="birth_month" name="birth_month" data-selected="{{ birth_month|default:'' }}"></select>
-          <select id="birth_day" name="birth_day" data-selected="{{ birth_day|default:'' }}"></select>
-        </div>
-        <div class="help">سال، ماه و روز تولد را انتخاب کنید.</div>
-        {% if errors.birth_date %}<div class="err-text">{{ errors.birth_date }}</div>{% endif %}
-      </div>
-    </div>
-
-    <div class="card hidden" id="adult-block">
-      <h2>۲. اطلاعات فرد بزرگسال</h2>
-
-      <div class="field">
-        <label for="marital_status">وضعیت تاهل <span class="req">*</span></label>
-        <select id="marital_status" name="marital_status">
-          <option value="">انتخاب کنید...</option>
-          {% for value, label in marital_choices %}
-            <option value="{{ value }}" {% if data.marital_status == value %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-        {% if errors.marital_status %}<div class="err-text">{{ errors.marital_status }}</div>{% endif %}
-      </div>
-
-      <div class="field">
-        <label for="mobile">شماره تماس <span class="req">*</span></label>
-        <input type="tel" id="mobile" name="mobile" inputmode="numeric" maxlength="11" placeholder="09xxxxxxxxx" value="{{ data.mobile|default:'' }}">
-        {% if errors.mobile %}<div class="err-text">{{ errors.mobile }}</div>{% endif %}
-      </div>
-
-      <div class="field">
-        <label for="address">آدرس محل سکونت <span class="req">*</span></label>
-        <textarea id="address" name="address" placeholder="آدرس کامل">{{ data.address|default:'' }}</textarea>
-        {% if errors.address %}<div class="err-text">{{ errors.address }}</div>{% endif %}
-      </div>
-
-      <div class="field">
-        <label for="job">شغل <span class="req">*</span></label>
-        <input type="text" id="job" name="job" value="{{ data.job|default:'' }}" placeholder="مثلاً خانه‌دار / کارگر / دانشجو" autocomplete="off">
-        {% if errors.job %}<div class="err-text">{{ errors.job }}</div>{% endif %}
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>۳. وضعیت تحصیلی</h2>
-
-      <div class="field">
-        <label for="education_status">وضعیت تحصیلی <span class="req">*</span></label>
-        <select id="education_status" name="education_status">
-          <option value="">انتخاب کنید...</option>
-          {% for value, label in education_status_choices %}
-            <option value="{{ value }}" {% if data.education_status == value %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-        {% if errors.education_status %}<div class="err-text">{{ errors.education_status }}</div>{% endif %}
-      </div>
-
-      <div id="education-detail">
-        <div class="field">
-          <label for="education_level">مقطع تحصیلی <span class="req">*</span></label>
-          <select id="education_level" name="education_level">
-            <option value="">انتخاب کنید...</option>
-            {% for value, label in education_level_choices %}
-              <option value="{{ value }}" {% if data.education_level == value %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-          {% if errors.education_level %}<div class="err-text">{{ errors.education_level }}</div>{% endif %}
+    <!-- ============================================================ -->
+    <!-- STEP 1: هویتی و نسبت -->
+    <!-- ============================================================ -->
+    <div class="form-step active" id="step-1">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span>👤</span> مشخصات هویتی و شناسنامه‌ای</div>
+          <div class="card-desc">اطلاعات فرد را مطابق با کارت ملی یا شناسنامه وارد فرمایید.</div>
         </div>
 
-        <div class="field">
-          <label for="field_of_study">رشته تحصیلی <span class="req">*</span></label>
-          <input type="text" id="field_of_study" name="field_of_study" value="{{ data.field_of_study|default:'' }}" autocomplete="off">
-          {% if errors.field_of_study %}<div class="err-text">{{ errors.field_of_study }}</div>{% endif %}
+        <div class="form-row">
+          <div class="form-group">
+            <label for="first_name">نام <span class="required-star">*</span></label>
+            <input type="text" id="first_name" name="first_name" class="input-control" value="{{ data.first_name|default:'' }}" placeholder="مثلاً: علی" autocomplete="off">
+            <div class="field-error" id="err-first_name">لطفاً نام را وارد کنید.</div>
+          </div>
+          <div class="form-group">
+            <label for="last_name">نام خانوادگی <span class="required-star">*</span></label>
+            <input type="text" id="last_name" name="last_name" class="input-control" value="{{ data.last_name|default:'' }}" placeholder="مثلاً: احمدی" autocomplete="off">
+            <div class="field-error" id="err-last_name">لطفاً نام خانوادگی را وارد کنید.</div>
+          </div>
         </div>
 
-        <div class="field">
-          <label for="study_place">محل تحصیل <span class="req">*</span></label>
-          <input type="text" id="study_place" name="study_place" value="{{ data.study_place|default:'' }}" placeholder="نام مدرسه یا دانشگاه" autocomplete="off">
-          {% if errors.study_place %}<div class="err-text">{{ errors.study_place }}</div>{% endif %}
+        <div class="form-row">
+          <div class="form-group">
+            <label for="father_name">نام پدر</label>
+            <input type="text" id="father_name" name="father_name" class="input-control" value="{{ data.father_name|default:'' }}" placeholder="اختیاری" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label for="birth_certificate_number">شماره شناسنامه</label>
+            <input type="text" id="birth_certificate_number" name="birth_certificate_number" data-ltr inputmode="numeric" class="input-control" value="{{ data.birth_certificate_number|default:'' }}" placeholder="مثلاً: 123" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="national_code">کد ملی (۱۰ رقم) <span class="required-star">*</span></label>
+          <input type="text" id="national_code" name="national_code" data-ltr inputmode="numeric" maxlength="10" class="input-control" value="{{ data.national_code|default:'' }}" placeholder="10 رقم بدون خط تیره" autocomplete="off">
+          <div class="field-help">کد ملی فرد تحت تکفل را به صورت کامل ۱۰ رقمی بنویسید.</div>
+          <div class="field-error" id="err-national_code">کد ملی باید ۱۰ رقم معتبر باشد.</div>
+        </div>
+
+        <div class="form-group">
+          <label>نسبت با شما <span class="required-star">*</span></label>
+          <div class="choice-grid">
+            <label class="choice-card">
+              <input type="radio" name="relationship" value="همسر" {% if data.relationship == 'همسر' %}checked{% endif %}>
+              <div class="choice-box">
+                <span class="choice-icon">💍</span>
+                <span class="choice-label">همسر</span>
+              </div>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="relationship" value="فرزند" {% if data.relationship == 'فرزند' %}checked{% endif %}>
+              <div class="choice-box">
+                <span class="choice-icon">🧒</span>
+                <span class="choice-label">فرزند</span>
+              </div>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="relationship" value="پدر" {% if data.relationship == 'پدر' %}checked{% endif %}>
+              <div class="choice-box">
+                <span class="choice-icon">👴</span>
+                <span class="choice-label">پدر</span>
+              </div>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="relationship" value="مادر" {% if data.relationship == 'مادر' %}checked{% endif %}>
+              <div class="choice-box">
+                <span class="choice-icon">👵</span>
+                <span class="choice-label">مادر</span>
+              </div>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="relationship" value="سایر" {% if data.relationship and data.relationship not in 'همسر فرزند پدر مادر' %}checked{% endif %}>
+              <div class="choice-box">
+                <span class="choice-icon">📋</span>
+                <span class="choice-label">سایر</span>
+              </div>
+            </label>
+          </div>
+          <div class="field-error" id="err-relationship">لطفاً نسبت را انتخاب نمایید.</div>
+        </div>
+
+        <div class="form-group">
+          <label>جنسیت <span class="required-star">*</span></label>
+          <div class="choice-grid">
+            <label class="choice-card">
+              <input type="radio" name="gender" value="male" {% if data.gender == 'male' %}checked{% endif %}>
+              <div class="choice-box">
+                <span class="choice-icon">👨</span>
+                <span class="choice-label">مرد</span>
+              </div>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="gender" value="female" {% if data.gender == 'female' %}checked{% endif %}>
+              <div class="choice-box">
+                <span class="choice-icon">👩</span>
+                <span class="choice-label">زن</span>
+              </div>
+            </label>
+          </div>
+          <div class="field-error" id="err-gender">لطفاً جنسیت را مشخص کنید.</div>
+        </div>
+
+        <div class="form-group">
+          <label>تاریخ تولد (شمسی) <span class="required-star">*</span></label>
+          <div class="birth-date-row">
+            <select id="birth_year" name="birth_year" class="input-control" data-selected="{{ birth_year|default:'' }}"></select>
+            <select id="birth_month" name="birth_month" class="input-control" data-selected="{{ birth_month|default:'' }}"></select>
+            <select id="birth_day" name="birth_day" class="input-control" data-selected="{{ birth_day|default:'' }}"></select>
+          </div>
+          <div class="field-error" id="err-birth_date">لطفاً سال، ماه و روز تولد را انتخاب کنید.</div>
+
+          <div class="age-indicator" id="calculated-age-pill" style="display:none;">
+            <span>سن محاسبه شده: <strong id="age-number">-</strong> سال</span>
+            <span id="age-status-badge">-</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- STEP 2: وضعیت تحصیلی -->
+    <!-- ============================================================ -->
+    <div class="form-step" id="step-2">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span>🎓</span> وضعیت تحصیلی</div>
+          <div class="card-desc">وضعیت کنونی یا آخرین مدرک تحصیلی را مشخص نمایید.</div>
+        </div>
+
+        <div class="form-group">
+          <label>وضعیت تحصیل <span class="required-star">*</span></label>
+          <div class="choice-grid">
+            <label class="choice-card">
+              <input type="radio" name="education_status" value="studying" {% if data.education_status == 'studying' %}checked{% endif %}>
+              <div class="choice-box">
+                <span class="choice-icon">🏫</span>
+                <span class="choice-label">در حال تحصیل</span>
+              </div>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="education_status" value="graduated" {% if data.education_status == 'graduated' %}checked{% endif %}>
+              <div class="choice-box">
+                <span class="choice-icon">📜</span>
+                <span class="choice-label">فارغ‌التحصیل</span>
+              </div>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="education_status" value="dropped" {% if data.education_status == 'dropped' %}checked{% endif %}>
+              <div class="choice-box">
+                <span class="choice-icon">⏸️</span>
+                <span class="choice-label">ترک تحصیل / انصراف</span>
+              </div>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="education_status" value="none" {% if data.education_status == 'none' %}checked{% endif %}>
+              <div class="choice-box">
+                <span class="choice-icon">🚫</span>
+                <span class="choice-label">فاقد تحصیلات</span>
+              </div>
+            </label>
+          </div>
+          <div class="field-error" id="err-education_status">لطفاً وضعیت تحصیل را انتخاب کنید.</div>
+        </div>
+
+        <!-- Conditional block for studying/graduated/dropped -->
+        <div id="education-fields-block" class="hidden">
+          <div class="form-group">
+            <label for="education_level">مقطع تحصیلی <span class="required-star">*</span></label>
+            <select id="education_level" name="education_level" class="input-control">
+              <option value="">انتخاب مقطع تحصیلی...</option>
+              {% for val, lab in education_level_choices %}
+                <option value="{{ val }}" {% if data.education_level == val %}selected{% endif %}>{{ lab }}</option>
+              {% endfor %}
+            </select>
+            <div class="field-error" id="err-education_level">لطفاً مقطع تحصیلی را انتخاب کنید.</div>
+          </div>
+
+          <!-- Major / Field of Study: automatically hidden for primary/middle school -->
+          <div class="form-group" id="major-field-wrapper">
+            <label for="field_of_study">رشته تحصیلی <span class="required-star" id="major-required-star">*</span></label>
+            <input type="text" id="field_of_study" name="field_of_study" class="input-control" value="{{ data.field_of_study|default:'' }}" placeholder="مثلاً: ریاضی، علوم تجربی، برق، حقوق..." autocomplete="off">
+            <div class="field-help" id="major-help-text">برای مقاطع دبیرستان و دانشگاه نام رشته را بنویسید.</div>
+            <div class="field-error" id="err-field_of_study">لطفاً رشته تحصیلی را وارد کنید.</div>
+          </div>
+
+          <div class="form-group">
+            <label for="study_place">محل تحصیل / نام مدرسه یا دانشگاه <span class="required-star">*</span></label>
+            <input type="text" id="study_place" name="study_place" class="input-control" value="{{ data.study_place|default:'' }}" placeholder="مثلاً: دبستان شهید بهشتی یا دانشگاه تهران" autocomplete="off">
+            <div class="field-error" id="err-study_place">لطفاً نام مدرسه یا دانشگاه محل تحصیل را وارد کنید.</div>
+          </div>
+        </div>
+
+        <div id="no-education-notice" class="minor-notice-box hidden">
+          <div class="icon">✓</div>
+          <h3>فاقد سابقه تحصیلی</h3>
+          <p>نیازی به تکمیل اطلاعات مقطع و نام مدرسه برای این فرد نیست؛ می‌توانید به مرحله بعد بروید.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- STEP 3: اطلاعات تکمیلی (بزرگسالان / نظام وظیفه) -->
+    <!-- ============================================================ -->
+    <div class="form-step" id="step-3">
+      
+      <!-- Notice if Under 18 -->
+      <div id="minor-step-notice" class="minor-notice-box hidden">
+        <div class="icon">🧒</div>
+        <h3>فرد زیر ۱۸ سال (کودک / نوجوان)</h3>
+        <p>به دلیل اینکه سن این فرد زیر ۱۸ سال است، تکمیل اطلاعات شغل، شماره تماس مستقل، آدرس مجزا و وضعیت نظام وظیفه الزامی نیست و تحت تکفل مستقیم شما ثبت می‌شود.</p>
+      </div>
+
+      <!-- Adult Fields Block -->
+      <div id="adult-fields-card" class="card">
+        <div class="card-header">
+          <div class="card-title"><span>📋</span> اطلاعات تماس، سکونت و شغلی</div>
+          <div class="card-desc">این اطلاعات مربوط به افراد بالای ۱۸ سال می‌باشد.</div>
+        </div>
+
+        <div class="form-group">
+          <label>وضعیت تاهل <span class="required-star">*</span></label>
+          <div class="choice-grid">
+            <label class="choice-card">
+              <input type="radio" name="marital_status" value="single" {% if data.marital_status == 'single' %}checked{% endif %}>
+              <div class="choice-box">
+                <span class="choice-icon">👤</span>
+                <span class="choice-label">مجرد</span>
+              </div>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="marital_status" value="married" {% if data.marital_status == 'married' %}checked{% endif %}>
+              <div class="choice-box">
+                <span class="choice-icon">👥</span>
+                <span class="choice-label">متاهل</span>
+              </div>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="marital_status" value="divorced" {% if data.marital_status == 'divorced' %}checked{% endif %}>
+              <div class="choice-box">
+                <span class="choice-icon">⚖️</span>
+                <span class="choice-label">مطلقه</span>
+              </div>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="marital_status" value="widowed" {% if data.marital_status == 'widowed' %}checked{% endif %}>
+              <div class="choice-box">
+                <span class="choice-icon">🕊️</span>
+                <span class="choice-label">همسر فوت‌شده</span>
+              </div>
+            </label>
+          </div>
+          <div class="field-error" id="err-marital_status">لطفاً وضعیت تاهل را انتخاب فرمایید.</div>
+        </div>
+
+        <div class="form-group">
+          <label for="job">شغل <span class="required-star">*</span></label>
+          <input type="text" id="job" name="job" class="input-control" value="{{ data.job|default:'' }}" placeholder="مثلاً: خانه‌دار، کارگر، دانشجو، بدون شغل" autocomplete="off">
+          <div class="quick-chips">
+            <span class="chip-btn" onclick="setJob('خانه‌دار')">خانه‌دار</span>
+            <span class="chip-btn" onclick="setJob('دانشجو')">دانشجو</span>
+            <span class="chip-btn" onclick="setJob('کارگر')">کارگر</span>
+            <span class="chip-btn" onclick="setJob('آزاد')">شغل آزاد</span>
+            <span class="chip-btn" onclick="setJob('بدون شغل')">بدون شغل / جویای کار</span>
+          </div>
+          <div class="field-error" id="err-job">لطفاً شغل را مشخص کنید (در صورت عدم اشتغال بنویسید «بدون شغل»).</div>
+        </div>
+
+        <div class="form-group">
+          <label for="mobile">شماره تماس مستقل <span class="required-star">*</span></label>
+          <input type="tel" id="mobile" name="mobile" data-ltr inputmode="numeric" maxlength="11" class="input-control" value="{{ data.mobile|default:'' }}" placeholder="09xxxxxxxxx">
+          <div class="field-help">شماره موبایل روشن فرد تحت تکفل (۱۱ رقم با ۰۹)</div>
+          <div class="field-error" id="err-mobile">شماره موبایل باید ۱۱ رقم و با ۰۹ شروع شود.</div>
+        </div>
+
+        <div class="form-group">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <label for="address" style="margin:0;">آدرس محل سکونت <span class="required-star">*</span></label>
+            {% if profile.address %}
+              <button type="button" class="copy-btn" onclick="copyPersonnelAddress()">
+                🏡 کپی آدرس پرسنل
+              </button>
+            {% endif %}
+          </div>
+          <textarea id="address" name="address" class="input-control" placeholder="آدرس دقیق شامل شهر، خیابان، پلاک...">{{ data.address|default:'' }}</textarea>
+          <div class="field-error" id="err-address">لطفاً آدرس محل سکونت را بنویسید.</div>
+        </div>
+
+        <!-- Military Status (Male Adult Only) -->
+        <div class="form-group" id="military-group" style="display:none;">
+          <label>وضعیت نظام وظیفه <span class="required-star">*</span></label>
+          <div class="choice-grid">
+            <label class="choice-card">
+              <input type="radio" name="military_status" value="served" {% if data.military_status == 'served' %}checked{% endif %}>
+              <div class="choice-box">
+                <span class="choice-icon">🎖️</span>
+                <span class="choice-label">پایان خدمت</span>
+              </div>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="military_status" value="educational_exemption" {% if data.military_status == 'educational_exemption' %}checked{% endif %}>
+              <div class="choice-box">
+                <span class="choice-icon">📚</span>
+                <span class="choice-label">معافیت تحصیلی</span>
+              </div>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="military_status" value="exempt" {% if data.military_status == 'exempt' %}checked{% endif %}>
+              <div class="choice-box">
+                <span class="choice-icon">🛡️</span>
+                <span class="choice-label">معاف دائم</span>
+              </div>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="military_status" value="medical_exemption" {% if data.military_status == 'medical_exemption' %}checked{% endif %}>
+              <div class="choice-box">
+                <span class="choice-icon">🩺</span>
+                <span class="choice-label">معافیت پزشکی</span>
+              </div>
+            </label>
+            <label class="choice-card">
+              <input type="radio" name="military_status" value="included" {% if data.military_status == 'included' %}checked{% endif %}>
+              <div class="choice-box">
+                <span class="choice-icon">⏳</span>
+                <span class="choice-label">مشمول</span>
+              </div>
+            </label>
+          </div>
+          <div class="field-error" id="err-military_status">لطفاً وضعیت نظام وظیفه را انتخاب فرمایید.</div>
+        </div>
+
+      </div>
+
+      <!-- Optional Special Needs / Illness -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span>🩺</span> وضعیت سلامت یا بیماری خاص (اختیاری)</div>
+          <div class="card-desc">در صورت وجود بیماری خاص یا نیاز به مراقبت‌های درمانی، قید بفرمایید.</div>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <input type="text" id="disease_type" name="disease_type" class="input-control" value="{{ data.disease_type|default:'' }}" placeholder="در صورت سلامت، خالی بگذارید">
         </div>
       </div>
+
     </div>
 
-    <div class="card hidden" id="military-block">
-      <h2>۴. وضعیت نظام وظیفه</h2>
-      <div class="field">
-        <label for="military_status">وضعیت نظام وظیفه <span class="req">*</span></label>
-        <select id="military_status" name="military_status">
-          <option value="">انتخاب کنید...</option>
-          {% for value, label in military_choices %}
-            <option value="{{ value }}" {% if data.military_status == value %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-        {% if errors.military_status %}<div class="err-text">{{ errors.military_status }}</div>{% endif %}
+    <!-- ============================================================ -->
+    <!-- STEP 4: بازبینی و ارسال نهایی -->
+    <!-- ============================================================ -->
+    <div class="form-step" id="step-4">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span>🔍</span> بررسی و تایید نهایی اطلاعات</div>
+          <div class="card-desc">لطفاً قبل از ارسال، اطلاعات ثبت‌شده را یک‌بار مرور کنید.</div>
+        </div>
+
+        <div class="review-section">
+          <div class="review-header">
+            <span>۱. مشخصات فردی و هویتی</span>
+            <button type="button" class="edit-step-btn" onclick="goToStep(1)">ویرایش ✏️</button>
+          </div>
+          <div class="review-grid">
+            <div class="review-item"><div class="r-label">نام و نام خانوادگی</div><div class="r-value" id="rev-fullname">-</div></div>
+            <div class="review-item"><div class="r-label">نام پدر</div><div class="r-value" id="rev-father">-</div></div>
+            <div class="review-item"><div class="r-label">کد ملی</div><div class="r-value" id="rev-national">-</div></div>
+            <div class="review-item"><div class="r-label">نسبت با شما</div><div class="r-value" id="rev-relation">-</div></div>
+            <div class="review-item"><div class="r-label">جنسیت</div><div class="r-value" id="rev-gender">-</div></div>
+            <div class="review-item"><div class="r-label">تاریخ تولد و سن</div><div class="r-value" id="rev-birth">-</div></div>
+          </div>
+        </div>
+
+        <div class="review-section">
+          <div class="review-header">
+            <span>۲. وضعیت تحصیلی</span>
+            <button type="button" class="edit-step-btn" onclick="goToStep(2)">ویرایش ✏️</button>
+          </div>
+          <div class="review-grid">
+            <div class="review-item"><div class="r-label">وضعیت تحصیل</div><div class="r-value" id="rev-edustatus">-</div></div>
+            <div class="review-item"><div class="r-label">مقطع تحصیلی</div><div class="r-value" id="rev-edulevel">-</div></div>
+            <div class="review-item"><div class="r-label">رشته تحصیلی</div><div class="r-value" id="rev-major">-</div></div>
+            <div class="review-item"><div class="r-label">محل تحصیل</div><div class="r-value" id="rev-school">-</div></div>
+          </div>
+        </div>
+
+        <div class="review-section">
+          <div class="review-header">
+            <span>۳. اطلاعات تکمیلی و تماس</span>
+            <button type="button" class="edit-step-btn" onclick="goToStep(3)">ویرایش ✏️</button>
+          </div>
+          <div class="review-grid">
+            <div class="review-item"><div class="r-label">وضعیت تاهل</div><div class="r-value" id="rev-marital">-</div></div>
+            <div class="review-item"><div class="r-label">شغل</div><div class="r-value" id="rev-job">-</div></div>
+            <div class="review-item"><div class="r-label">شماره تماس</div><div class="r-value" id="rev-mobile">-</div></div>
+            <div class="review-item" id="rev-military-wrapper"><div class="r-label">نظام وظیفه</div><div class="r-value" id="rev-military">-</div></div>
+            <div class="review-item" style="grid-column: 1 / -1;"><div class="r-label">آدرس سکونت</div><div class="r-value" id="rev-address">-</div></div>
+          </div>
+        </div>
+
+        <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:var(--radius-sm); padding:14px; font-size:14px; color:#166534; display:flex; align-items:center; gap:8px;">
+          <span>ℹ️</span>
+          <span>پس از ثبت، اطلاعات توسط کارشناسان منابع انسانی بررسی شده و در پرونده اعمال خواهد شد.</span>
+        </div>
+
       </div>
     </div>
 
-    <div class="bottom">
-      <div class="inner">
-        <a class="btn light" href="{% url 'dependents:info' %}">انصراف</a>
-        <button type="submit" class="btn" id="submit-btn">ثبت و ارسال برای بررسی</button>
+    <!-- ============================================================ -->
+    <!-- STICKY BOTTOM ACTION BAR -->
+    <!-- ============================================================ -->
+    <div class="sticky-bar">
+      <div class="sticky-inner">
+        <button type="button" id="btn-prev" class="btn-nav secondary" onclick="changeStep(-1)" style="display:none;">
+          &rarr; مرحله قبل
+        </button>
+        <button type="button" id="btn-next" class="btn-nav primary" onclick="changeStep(1)">
+          مرحله بعد &larr;
+        </button>
+        <button type="submit" id="btn-submit" class="btn-nav submit" style="display:none;">
+          ✓ تایید و ارسال نهایی
+        </button>
       </div>
     </div>
+
   </form>
+
 </div>
 
 <script>
+  var currentStep = 1;
+  var totalSteps = 4;
   var nowYear = {{ now_jalali.year }};
   var months = ['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+  var LEVELS_REQUIRING_MAJOR = ['high', 'diploma', 'associate', 'bachelor', 'master', 'phd'];
 
+  // Fill Date Dropdowns
   function fillSelect(id, items, placeholder) {
     var select = document.getElementById(id);
     var selected = select.getAttribute('data-selected') || '';
@@ -235,62 +1104,350 @@
   for (var y = nowYear; y >= nowYear - 100; y--) { years.push({ value: y, label: y }); }
   fillSelect('birth_year', years, 'سال');
   fillSelect('birth_month', months.map(function (m, i) { return { value: i + 1, label: m }; }), 'ماه');
-
   var days = [];
   for (var d = 1; d <= 31; d++) { days.push({ value: d, label: d }); }
   fillSelect('birth_day', days, 'روز');
 
-  function updateConditionalBlocks() {
-    var year = parseInt(document.getElementById('birth_year').value, 10);
-    var adult = false;
-    if (year) {
-      var age = nowYear - year;
-      adult = age > 18 || (age === 18);
-    }
-    document.getElementById('adult-block').classList.toggle('hidden', !adult);
-    document.getElementById('education-detail').classList.toggle('hidden',
-      ['studying', 'graduated', 'dropped'].indexOf(document.getElementById('education_status').value) === -1);
-    var showMilitary = adult && document.getElementById('gender').value === 'male';
-    document.getElementById('military-block').classList.toggle('hidden', !showMilitary);
+  // Value getter helper
+  function val(id) {
+    var el = document.getElementById(id);
+    return el ? el.value.trim() : '';
   }
 
-  ['birth_year', 'birth_month', 'birth_day', 'education_status', 'gender'].forEach(function (id) {
-    document.getElementById(id).addEventListener('change', updateConditionalBlocks);
-  });
-  updateConditionalBlocks();
+  function getRadio(name) {
+    var checked = document.querySelector('input[name="' + name + '"]:checked');
+    return checked ? checked.value : '';
+  }
 
-  document.getElementById('dep-form').addEventListener('submit', function (e) {
-    var errors = [];
-    function value(id) { return document.getElementById(id).value.trim(); }
-    if (!value('first_name')) errors.push('نام');
-    if (!value('last_name')) errors.push('نام خانوادگی');
-    if (!/^\d{10}$/.test(value('national_code'))) errors.push('کد ملی (۱۰ رقم)');
-    if (!value('relationship')) errors.push('نسبت');
-    if (!value('gender')) errors.push('جنسیت');
-    if (!value('birth_year') || !value('birth_month') || !value('birth_day')) errors.push('تاریخ تولد');
-    if (!document.getElementById('adult-block').classList.contains('hidden')) {
-      if (!value('marital_status')) errors.push('وضعیت تاهل');
-      if (!/^09\d{9}$/.test(value('mobile'))) errors.push('شماره تماس (۱۱ رقم با ۰۹)');
-      if (!value('address')) errors.push('آدرس');
-      if (!value('job')) errors.push('شغل');
+  function setJob(title) {
+    var el = document.getElementById('job');
+    el.value = title;
+    el.focus();
+  }
+
+  function copyPersonnelAddress() {
+    var cached = document.getElementById('cached-profile-address');
+    if (cached && cached.value) {
+      var addrEl = document.getElementById('address');
+      addrEl.value = cached.value;
+      addrEl.focus();
     }
-    if (!value('education_status')) errors.push('وضعیت تحصیلی');
-    if (!document.getElementById('education-detail').classList.contains('hidden')) {
-      if (!value('education_level')) errors.push('مقطع تحصیلی');
-      if (!value('field_of_study')) errors.push('رشته تحصیلی');
-      if (!value('study_place')) errors.push('محل تحصیل');
+  }
+
+  // Calculate Age
+  function getAge() {
+    var y = parseInt(val('birth_year'), 10);
+    if (!y || isNaN(y)) return null;
+    return nowYear - y;
+  }
+
+  function isAdult() {
+    var age = getAge();
+    return age !== null && age >= 18;
+  }
+
+  // National Code Checksum Algorithm
+  function isValidNationalCode(code) {
+    if (!/^\d{10}$/.test(code)) return false;
+    var allSame = true;
+    for (var i = 1; i < 10; i++) {
+      if (code[i] !== code[0]) { allSame = false; break; }
     }
-    if (!document.getElementById('military-block').classList.contains('hidden') && !value('military_status')) {
-      errors.push('وضعیت نظام وظیفه');
+    if (allSame) return false;
+    var sum = 0;
+    for (var j = 0; j < 9; j++) {
+      sum += parseInt(code[j], 10) * (10 - j);
     }
-    if (errors.length) {
-      e.preventDefault();
-      alert('لطفاً این موارد را کامل کنید:\n- ' + errors.join('\n- '));
-      return false;
+    var rem = sum % 11;
+    var check = parseInt(code[9], 10);
+    return (rem < 2 && check === rem) || (rem >= 2 && check === (11 - rem));
+  }
+
+  // Normalize Persian digits to English digits
+  function normalizeDigits(str) {
+    var persian = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+    var arabic  = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+    for (var i = 0; i < 10; i++) {
+      str = str.replace(new RegExp(persian[i], 'g'), i).replace(new RegExp(arabic[i], 'g'), i);
     }
-    document.getElementById('submit-btn').disabled = true;
-    document.getElementById('submit-btn').textContent = 'در حال ارسال...';
+    return str;
+  }
+
+  ['national_code', 'birth_certificate_number', 'mobile'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', function() {
+        this.value = normalizeDigits(this.value);
+      });
+    }
   });
+
+  // Dynamic UI updates
+  function updateConditionalLogic() {
+    var age = getAge();
+    var agePill = document.getElementById('calculated-age-pill');
+    var adult = isAdult();
+
+    if (age !== null && age >= 0) {
+      agePill.style.display = 'flex';
+      document.getElementById('age-number').textContent = age;
+      var badge = document.getElementById('age-status-badge');
+      if (adult) {
+        agePill.className = 'age-indicator adult';
+        badge.textContent = 'بزرگسال (بالای ۱۸ سال)';
+      } else {
+        agePill.className = 'age-indicator minor';
+        badge.textContent = 'زیر ۱۸ سال (فرزند/کودک)';
+      }
+    } else {
+      agePill.style.display = 'none';
+    }
+
+    // Education logic
+    var eduStatus = getRadio('education_status');
+    var eduFields = document.getElementById('education-fields-block');
+    var noEduNotice = document.getElementById('no-education-notice');
+    if (eduStatus === 'none') {
+      eduFields.classList.add('hidden');
+      noEduNotice.classList.remove('hidden');
+    } else if (eduStatus) {
+      eduFields.classList.remove('hidden');
+      noEduNotice.classList.add('hidden');
+    } else {
+      eduFields.classList.add('hidden');
+      noEduNotice.classList.add('hidden');
+    }
+
+    // Field of study (Major) logic: Hide for primary/middle
+    var level = val('education_level');
+    var majorWrapper = document.getElementById('major-field-wrapper');
+    if (level && LEVELS_REQUIRING_MAJOR.indexOf(level) === -1) {
+      majorWrapper.style.display = 'none';
+    } else {
+      majorWrapper.style.display = 'block';
+    }
+
+    // Step 3 adult logic
+    var minorStepNotice = document.getElementById('minor-step-notice');
+    var adultFieldsCard = document.getElementById('adult-fields-card');
+    var militaryGroup = document.getElementById('military-group');
+    var gender = getRadio('gender');
+
+    if (!adult && age !== null) {
+      minorStepNotice.classList.remove('hidden');
+      adultFieldsCard.classList.add('hidden');
+    } else {
+      minorStepNotice.classList.add('hidden');
+      adultFieldsCard.classList.remove('hidden');
+      // Military only for adult males
+      if (gender === 'male') {
+        militaryGroup.style.display = 'block';
+      } else {
+        militaryGroup.style.display = 'none';
+      }
+    }
+  }
+
+  // Bind change events
+  ['birth_year', 'birth_month', 'birth_day', 'education_level'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('change', updateConditionalLogic);
+  });
+  document.querySelectorAll('input[name="education_status"], input[name="gender"]').forEach(function(radio) {
+    radio.addEventListener('change', updateConditionalLogic);
+  });
+
+  // Validation functions per step
+  function showError(id, show) {
+    var el = document.getElementById(id);
+    if (el) {
+      if (show) el.classList.add('show');
+      else el.classList.remove('show');
+    }
+  }
+
+  function validateStep(step) {
+    var valid = true;
+
+    if (step === 1) {
+      if (!val('first_name')) { showError('err-first_name', true); valid = false; } else showError('err-first_name', false);
+      if (!val('last_name')) { showError('err-last_name', true); valid = false; } else showError('err-last_name', false);
+      
+      var nat = val('national_code');
+      if (!nat || !isValidNationalCode(nat)) { showError('err-national_code', true); valid = false; } else showError('err-national_code', false);
+      
+      if (!getRadio('relationship')) { showError('err-relationship', true); valid = false; } else showError('err-relationship', false);
+      if (!getRadio('gender')) { showError('err-gender', true); valid = false; } else showError('err-gender', false);
+      
+      if (!val('birth_year') || !val('birth_month') || !val('birth_day')) {
+        showError('err-birth_date', true); valid = false;
+      } else {
+        showError('err-birth_date', false);
+      }
+    }
+
+    if (step === 2) {
+      var edu = getRadio('education_status');
+      if (!edu) {
+        showError('err-education_status', true); valid = false;
+      } else {
+        showError('err-education_status', false);
+        if (edu !== 'none') {
+          var level = val('education_level');
+          if (!level) { showError('err-education_level', true); valid = false; } else showError('err-education_level', false);
+          
+          if (LEVELS_REQUIRING_MAJOR.indexOf(level) !== -1) {
+            if (!val('field_of_study')) { showError('err-field_of_study', true); valid = false; } else showError('err-field_of_study', false);
+          } else {
+            showError('err-field_of_study', false);
+          }
+
+          if (!val('study_place')) { showError('err-study_place', true); valid = false; } else showError('err-study_place', false);
+        }
+      }
+    }
+
+    if (step === 3) {
+      if (isAdult()) {
+        if (!getRadio('marital_status')) { showError('err-marital_status', true); valid = false; } else showError('err-marital_status', false);
+        if (!val('job')) { showError('err-job', true); valid = false; } else showError('err-job', false);
+        
+        var mob = val('mobile');
+        if (!mob || !/^09\d{9}$/.test(mob)) { showError('err-mobile', true); valid = false; } else showError('err-mobile', false);
+        
+        if (!val('address')) { showError('err-address', true); valid = false; } else showError('err-address', false);
+        
+        if (getRadio('gender') === 'male') {
+          if (!getRadio('military_status')) { showError('err-military_status', true); valid = false; } else showError('err-military_status', false);
+        }
+      }
+    }
+
+    return valid;
+  }
+
+  // Populate Step 4 Review summary
+  function populateReview() {
+    document.getElementById('rev-fullname').textContent = val('first_name') + ' ' + val('last_name');
+    document.getElementById('rev-father').textContent = val('father_name') || 'قید نشده';
+    document.getElementById('rev-national').textContent = val('national_code');
+    document.getElementById('rev-relation').textContent = getRadio('relationship') || '-';
+    document.getElementById('rev-gender').textContent = getRadio('gender') === 'male' ? 'مرد' : 'زن';
+    
+    var bDay = val('birth_year') + '/' + val('birth_month') + '/' + val('birth_day');
+    var age = getAge();
+    document.getElementById('rev-birth').textContent = bDay + (age !== null ? ' (' + age + ' ساله)' : '');
+
+    var eduStatusMap = { 'studying': 'در حال تحصیل', 'graduated': 'فارغ‌التحصیل', 'dropped': 'ترک تحصیل', 'none': 'فاقد تحصیلات' };
+    var eduStatusVal = getRadio('education_status');
+    document.getElementById('rev-edustatus').textContent = eduStatusMap[eduStatusVal] || '-';
+    
+    var eduSelect = document.getElementById('education_level');
+    var levelLabel = eduSelect.options[eduSelect.selectedIndex] ? eduSelect.options[eduSelect.selectedIndex].text : '-';
+    document.getElementById('rev-edulevel').textContent = eduStatusVal === 'none' ? '—' : levelLabel;
+    document.getElementById('rev-major').textContent = val('field_of_study') || (eduStatusVal === 'none' ? '—' : 'بدون انتخاب رشته');
+    document.getElementById('rev-school').textContent = val('study_place') || (eduStatusVal === 'none' ? '—' : '-');
+
+    if (!isAdult()) {
+      document.getElementById('rev-marital').textContent = 'زیر ۱۸ سال (معاف)';
+      document.getElementById('rev-job').textContent = 'زیر ۱۸ سال (تحت تکفل)';
+      document.getElementById('rev-mobile').textContent = 'شماره پرسنل';
+      document.getElementById('rev-address').textContent = 'آدرس پرسنل';
+      document.getElementById('rev-military-wrapper').style.display = 'none';
+    } else {
+      var maritalMap = { 'single': 'مجرد', 'married': 'متاهل', 'divorced': 'مطلقه', 'widowed': 'همسر فوت‌شده' };
+      document.getElementById('rev-marital').textContent = maritalMap[getRadio('marital_status')] || '-';
+      document.getElementById('rev-job').textContent = val('job') || '-';
+      document.getElementById('rev-mobile').textContent = val('mobile') || '-';
+      document.getElementById('rev-address').textContent = val('address') || '-';
+      
+      if (getRadio('gender') === 'male') {
+        document.getElementById('rev-military-wrapper').style.display = 'block';
+        var milMap = { 'served': 'پایان خدمت', 'educational_exemption': 'معافیت تحصیلی', 'exempt': 'معاف دائم', 'medical_exemption': 'معافیت پزشکی', 'included': 'مشمول' };
+        document.getElementById('rev-military').textContent = milMap[getRadio('military_status')] || '-';
+      } else {
+        document.getElementById('rev-military-wrapper').style.display = 'none';
+      }
+    }
+  }
+
+  // Navigation controller
+  function goToStep(step) {
+    if (step === currentStep) return;
+    if (step > currentStep) {
+      for (var s = currentStep; s < step; s++) {
+        if (!validateStep(s)) return;
+      }
+    }
+    setStep(step);
+  }
+
+  function changeStep(delta) {
+    if (delta > 0) {
+      if (!validateStep(currentStep)) return;
+      setStep(currentStep + delta);
+    } else {
+      setStep(currentStep + delta);
+    }
+  }
+
+  function setStep(step) {
+    if (step < 1) step = 1;
+    if (step > totalSteps) step = totalSteps;
+    currentStep = step;
+
+    // Toggle steps
+    for (var i = 1; i <= totalSteps; i++) {
+      var el = document.getElementById('step-' + i);
+      if (el) el.classList.toggle('active', i === currentStep);
+      
+      var nav = document.getElementById('step-nav-' + i);
+      if (nav) {
+        nav.classList.toggle('active', i === currentStep);
+        nav.classList.toggle('completed', i < currentStep);
+      }
+    }
+
+    // Progress bar
+    var progressPercent = ((currentStep - 1) / (totalSteps - 1)) * 100;
+    document.getElementById('stepper-progress').style.width = progressPercent + '%';
+
+    // Buttons
+    var btnPrev = document.getElementById('btn-prev');
+    var btnNext = document.getElementById('btn-next');
+    var btnSubmit = document.getElementById('btn-submit');
+
+    btnPrev.style.display = currentStep > 1 ? 'flex' : 'none';
+    if (currentStep === totalSteps) {
+      btnNext.style.display = 'none';
+      btnSubmit.style.display = 'flex';
+      populateReview();
+    } else {
+      btnNext.style.display = 'flex';
+      btnSubmit.style.display = 'none';
+      btnNext.textContent = 'مرحله بعد &larr;';
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Submit Handler
+  document.getElementById('dependent-wizard-form').addEventListener('submit', function(e) {
+    for (var s = 1; s <= 3; s++) {
+      if (!validateStep(s)) {
+        e.preventDefault();
+        goToStep(s);
+        return false;
+      }
+    }
+    var submitBtn = document.getElementById('btn-submit');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'در حال ارسال اطلاعات...';
+  });
+
+  // Initial trigger
+  updateConditionalLogic();
 </script>
+
 </body>
 </html>
