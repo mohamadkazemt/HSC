@@ -602,7 +602,17 @@
   <!-- Header -->
   <div class="header-bar">
     <a href="{% url 'dependents:info' %}" class="back-link">&rarr; بازگشت به لیست</a>
-    <span style="font-size:13px; color:var(--text-muted);">پرتال تحت تکفل</span>
+    {% if dependent %}
+      <form method="post" action="{% url 'dependents:delete' dependent.pk %}"
+            onsubmit="return confirm('آیا از ثبت درخواست حذف {{ dependent.first_name }} {{ dependent.last_name }} از لیست تحت تکفل اطمینان دارید؟');" style="margin:0;">
+        {% csrf_token %}
+        <button type="submit" style="background:#fff5f5; border:1px solid #fecaca; color:#dc2626; padding:6px 12px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit;">
+          🗑️ درخواست حذف این فرد
+        </button>
+      </form>
+    {% else %}
+      <span style="font-size:13px; color:var(--text-muted);">پرتال تحت تکفل</span>
+    {% endif %}
   </div>
 
   <h1 class="page-title">
