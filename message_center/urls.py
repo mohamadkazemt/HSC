@@ -52,6 +52,8 @@ urlpatterns = [
     path("broadcast/cancel/<int:broadcast_id>/", views.broadcast_cancel, name="broadcast_cancel"),
     path("broadcast/list/", views.broadcast_list, name="broadcast_list"),
     path("broadcast/<int:broadcast_id>/", views.broadcast_detail, name="broadcast_detail"),
+    path("broadcast/retry/<int:broadcast_id>/", views.broadcast_retry, name="broadcast_retry"),
     path("personnel/search/", views.personnel_search, name="personnel_search"),
     path("templates/", views.template_list, name="template_list"),
 ]
+

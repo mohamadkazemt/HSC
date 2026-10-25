@@ -44,3 +44,17 @@ def send_broadcast_task(self, broadcast_id: int):
         if try_count >= self.max_retries:
             return {"status": "failed", "error": str(exc), "id": broadcast_id}
         raise self.retry(exc=exc)
+
+
+@shared_task
+def retry_broadcast_task(broadcast_id: int, channel: str = "sms"):
+    """ارسال مجدد پیام گروهی برای افراد ناموفق در پس‌زمینه."""
+    from .broadcast_service import retry_broadcast_failed_recipients
+    from .models import Broadcast
+
+    try:
+        broadcast = Broadcast.objects.get(pk=broadcast_id)
+        return retry_broadcast_failed_recipients(broadcast, channel=channel)
+    except Exception as exc:
+        return {"status": "failed", "error": str(exc), "id": broadcast_id}
+

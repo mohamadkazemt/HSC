@@ -465,8 +465,65 @@ def execute_broadcast(broadcast: Broadcast) -> bool:
             broadcast.status = Broadcast.Status.FAILED
         broadcast.save(update_fields=["status"])
 
-    # افزایش استفاده قالب اگر از قالب بوده
     return True
+
+
+def retry_broadcast_failed_recipients(broadcast: Broadcast, channel: str = "sms") -> dict:
+    """ارسال مجدد پیام فقط برای گیرندگانی که در ارسال قبلی ناموفق بوده‌اند."""
+    from django.utils import timezone
+
+    failed_recs = list(
+        broadcast.recipients.filter(
+            resolve_status=BroadcastRecipient.ResolveStatus.OK,
+            send_status=BroadcastRecipient.SendStatus.FAILED,
+        )
+    )
+    if not failed_recs:
+        return {"retried": 0, "sent": 0, "failed": 0, "message": "هیچ گیرنده ناموفقی یافت نشد."}
+
+    now_time = timezone.now()
+    if channel == Broadcast.Channel.SMS or channel == "sms":
+        client = _get_sms_client()
+        mobiles = [r.mobile for r in failed_recs if r.mobile]
+        try:
+            ok, err = _send_sms_numbers(client, mobiles, broadcast.text)
+        except Exception as exc:
+            ok, err = False, str(exc)
+
+        if ok:
+            for r in failed_recs:
+                r.send_status = BroadcastRecipient.SendStatus.SENT
+                r.sent_at = now_time
+                r.error = "ارسال شد (پیامک مجدد به ناموفق‌ها)"
+                r.save(update_fields=["send_status", "sent_at", "error"])
+        else:
+            for r in failed_recs:
+                r.error = f"خطا در ارسال پیامک مجدد: {err}"
+                r.save(update_fields=["error"])
+    else:
+        # کانال روبیکا با سناریوی ۴ لایه ضداسپم
+        for r in failed_recs:
+            r.send_status = BroadcastRecipient.SendStatus.PENDING
+            r.save(update_fields=["send_status"])
+        _send_rubika_broadcast(broadcast, failed_recs)
+
+    # به‌روزرسانی وضعیت پیام گروهی
+    sent_count = broadcast.recipients.filter(send_status=BroadcastRecipient.SendStatus.SENT).count()
+    failed_count = broadcast.recipients.filter(send_status=BroadcastRecipient.SendStatus.FAILED).count()
+    if failed_count == 0:
+        broadcast.status = Broadcast.Status.COMPLETED
+    elif sent_count > 0:
+        broadcast.status = Broadcast.Status.PARTIAL
+    else:
+        broadcast.status = Broadcast.Status.FAILED
+    broadcast.save(update_fields=["status"])
+
+    return {
+        "retried": len(failed_recs),
+        "sent": sent_count,
+        "failed": failed_count,
+        "channel": channel,
+    }
 
 
 def mark_invalid_recipients_canceled(broadcast: Broadcast):
@@ -483,5 +540,7 @@ __all__ = [
     "resolve_recipients",
     "prepare_broadcast",
     "execute_broadcast",
+    "retry_broadcast_failed_recipients",
     "mark_invalid_recipients_canceled",
 ]
+

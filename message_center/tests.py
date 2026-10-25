@@ -430,3 +430,44 @@ class RubikaBroadcastAntiLimitTests(TestCase):
         self.assertEqual(rec2.send_status, BroadcastRecipient.SendStatus.SENT)
         self.assertEqual(mock_send.call_count, 1)
         self.assertEqual(mock_sms.call_count, 2)
+
+    @patch("message_center.broadcast_service._send_sms_numbers", return_value=(True, ""))
+    def test_retry_broadcast_failed_recipients_via_sms(self, mock_sms):
+        from message_center.broadcast_service import retry_broadcast_failed_recipients
+        from message_center.models import BroadcastRecipient
+
+        rec = BroadcastRecipient.objects.create(
+            broadcast=self.broadcast,
+            mobile="09123333333",
+            user=self.u1,
+            resolve_status="ok",
+            send_status=BroadcastRecipient.SendStatus.FAILED,
+            error="محدودیت قبلی روبیکا",
+        )
+        res = retry_broadcast_failed_recipients(self.broadcast, channel="sms")
+        self.assertEqual(res["retried"], 1)
+        self.assertEqual(res["failed"], 0)
+        rec.refresh_from_db()
+        self.assertEqual(rec.send_status, BroadcastRecipient.SendStatus.SENT)
+        self.assertIn("پیامک مجدد", rec.error)
+        mock_sms.assert_called_once()
+
+    @patch("message_center.tasks.retry_broadcast_task.delay")
+    def test_broadcast_retry_view(self, mock_delay):
+        from django.urls import reverse
+        from message_center.models import BroadcastRecipient
+
+        rec = BroadcastRecipient.objects.create(
+            broadcast=self.broadcast,
+            mobile="09124444444",
+            user=self.u2,
+            resolve_status="ok",
+            send_status=BroadcastRecipient.SendStatus.FAILED,
+            error="محدودیت قبلی روبیکا",
+        )
+        self.client.force_login(self.staff)
+        url = reverse("message_center:broadcast_retry", args=[self.broadcast.id])
+        response = self.client.post(url, {"channel": "sms"}, follow=True)
+        self.assertEqual(response.status_code, 200)
+        mock_delay.assert_called_once_with(self.broadcast.pk, channel="sms")
+

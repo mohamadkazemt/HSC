@@ -49,6 +49,49 @@
         </div>
     </div>
 
+    {% if stats.failed > 0 %}
+    <!-- جعبه اقدام سریع برای افراد ناموفق -->
+    <section class="rounded-2xl border border-amber-300 bg-amber-50/90 p-5 shadow-sm dark:border-amber-700 dark:bg-amber-950/40">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex items-start gap-3.5">
+                <span class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-200 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300">
+                    <i class="fas fa-exclamation-triangle text-lg"></i>
+                </span>
+                <div>
+                    <h3 class="text-base font-bold text-amber-950 dark:text-amber-100">
+                        سازوکار ارسال مجدد به افراد ناموفق ({{ stats.failed }} نفر)
+                    </h3>
+                    <p class="mt-1 text-xs leading-5 text-amber-800 dark:text-amber-200">
+                        پیام برای <b>{{ stats.failed }} مخاطب</b> به دلیل محدودیت اکانت یا عدم عضویت در روبیکا تحویل نشده است. می‌توانید مستقیماً برای همین افراد مجدداً پیام ارسال نمایید:
+                    </p>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2.5">
+                <form method="post" action="{% url 'message_center:broadcast_retry' broadcast.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="channel" value="sms">
+                    <button type="submit" onclick="return confirm('آیا مطمئن هستید که می‌خواهید به {{ stats.failed }} مخاطب ناموفق، از طریق سامانه پیامک (SMS) پیام ارسال شود؟')" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700 transition">
+                        <i class="fas fa-sms text-sm"></i>
+                        ارسال پیامک به ناموفق‌ها (تضمینی)
+                    </button>
+                </form>
+                <form method="post" action="{% url 'message_center:broadcast_retry' broadcast.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="channel" value="rubika">
+                    <button type="submit" onclick="return confirm('آیا مطمئن هستید که می‌خواهید برای {{ stats.failed }} مخاطب ناموفق، مجدداً از روبیکا با سناریوی ضداسپم تلاش شود؟')" class="inline-flex items-center gap-2 rounded-xl border border-purple-300 bg-white px-4 py-2.5 text-xs font-bold text-purple-700 shadow-sm hover:bg-purple-50 dark:border-purple-600 dark:bg-gray-800 dark:text-purple-300 dark:hover:bg-purple-900/40 transition">
+                        <i class="fab fa-telegram text-sm"></i>
+                        تلاش مجدد با روبیکا
+                    </button>
+                </form>
+                <a href="?status=failed" class="inline-flex items-center gap-1.5 rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 transition">
+                    <i class="fas fa-filter text-gray-400"></i>
+                    مشاهده افراد ناموفق
+                </a>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
     <!-- متن پیام -->
     <section class="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
         <h2 class="mb-3 flex items-center gap-2 font-bold text-gray-900 dark:text-white"><i class="fas fa-file-alt text-sky-600"></i> متن پیام</h2>

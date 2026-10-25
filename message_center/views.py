@@ -353,6 +353,44 @@ def broadcast_detail(request, broadcast_id):
 
 @login_required
 @permission_required("message_broadcast_send")
+def broadcast_retry(request, broadcast_id):
+    """ارسال مجدد پیام گروهی به گیرندگان ناموفق با پیامک یا روبیکا."""
+    broadcast = get_object_or_404(Broadcast, pk=broadcast_id)
+    if request.method == "POST":
+        channel = request.POST.get("channel", "sms")
+        failed_count = broadcast.recipients.filter(
+            resolve_status=BroadcastRecipient.ResolveStatus.OK,
+            send_status=BroadcastRecipient.SendStatus.FAILED,
+        ).count()
+
+        if failed_count == 0:
+            messages.info(request, "هیچ گیرنده ناموفقی برای ارسال مجدد وجود ندارد.")
+            return redirect("message_center:broadcast_detail", broadcast_id=broadcast.id)
+
+        channel_label = "پیامک (SMS)" if channel == "sms" else "روبیکا"
+
+        try:
+            from .tasks import retry_broadcast_task
+
+            retry_broadcast_task.delay(broadcast.pk, channel=channel)
+            messages.success(
+                request,
+                f"ارسال مجدد برای {failed_count} مخاطب ناموفق از طریق {channel_label} در صف قرار گرفت.",
+            )
+        except Exception:
+            logger.exception("Broker unavailable for retry broadcast %s; sending sync", broadcast.pk)
+            from .broadcast_service import retry_broadcast_failed_recipients
+
+            res = retry_broadcast_failed_recipients(broadcast, channel=channel)
+            messages.success(
+                request,
+                f"ارسال مجدد برای {res.get('retried', 0)} مخاطب با {channel_label} انجام شد (ناموفق باقیمانده: {res.get('failed', 0)}).",
+            )
+    return redirect("message_center:broadcast_detail", broadcast_id=broadcast.id)
+
+
+@login_required
+@permission_required("message_broadcast_send")
 def personnel_search(request):
     """جستجوی پرسنل برای انتخاب گیرنده (JSON)."""
     from django.http import JsonResponse
