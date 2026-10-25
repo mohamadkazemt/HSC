@@ -79,10 +79,10 @@
                   <span class="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-bold text-rose-700">حذف</span>
                 {% endif %}
               </td>
-              <td class="px-4 py-3 text-slate-700 dark:text-slate-200">
-                {{ change.new_data.first_name|default:change.old_data.first_name }}
-                {{ change.new_data.last_name|default:change.old_data.last_name }}
+              <td class="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
+                {{ change.target_name }}
               </td>
+
               <td class="px-4 py-3 text-xs text-slate-500">{{ change.get_channel_display }}</td>
               <td class="px-4 py-3 text-xs text-slate-500">
                 {{ change.submitted_at|date:"Y/m/d H:i" }}

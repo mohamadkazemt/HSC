@@ -303,6 +303,20 @@ class DependentChangeRequest(models.Model):
     def __str__(self):
         return f'{self.get_action_display()} - {self.personnel} ({self.get_status_display()})'
 
+    @property
+    def target_name(self) -> str:
+        """نام و نام‌خانوادگی فرد تحت تکفل مربوط به این درخواست."""
+        new = self.new_data or {}
+        old = self.old_data or {}
+        first = new.get('first_name') or old.get('first_name') or ''
+        last = new.get('last_name') or old.get('last_name') or ''
+        full = f"{first} {last}".strip()
+        if full:
+            return full
+        if self.dependent:
+            return f"{self.dependent.first_name} {self.dependent.last_name}".strip()
+        return '-'
+
 
 class Section(models.Model):
     name = models.CharField(max_length=50, verbose_name="نام بخش")

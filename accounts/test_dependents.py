@@ -347,3 +347,26 @@ class HrReviewTests(TestCase):
         self.assertEqual(self.change.status, 'rejected')
         self.dependent.refresh_from_db()
         self.assertEqual(self.dependent.first_name, 'زهرا')
+
+    def test_change_list_renders_with_create_and_delete_requests(self):
+        dep2 = Dependent.objects.create(
+            personnel=self.profile, first_name='مریم', last_name='حسینی',
+            national_code='0499370892', relationship='فرزند',
+        )
+        # ساخت یک درخواست حذف (new_data خالی)
+        create_change_request(
+            self.profile, DependentChangeRequest.Action.DELETE, {},
+            dependent=dep2,
+        )
+        # ساخت یک درخواست افزودن (old_data خالی)
+        create_change_request(
+            self.profile, DependentChangeRequest.Action.CREATE,
+            {'first_name': 'رضا', 'last_name': 'حسینی', 'national_code': '0499370891'},
+        )
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('accounts:dependent_changes'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'مریم حسینی')
+        self.assertContains(response, 'رضا حسینی')
+
+
