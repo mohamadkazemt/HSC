@@ -233,7 +233,14 @@ def send_broadcast_template_sms(
         (success: bool, message_id: str, error_msg: str)
     """
     template_id = getattr(settings, "BROADCAST_SMS_TEMPLATE_ID", 253085)
-    clean_name = str(name or "همکار گرامی").strip()[:25]
+
+    # رفع باگ تکرار «همکار گرامی همکار گرامی»: قالب از قبل متن «همکار گرامی » دارد
+    raw_name = str(name or "").strip()
+    clean_name = raw_name.replace("همکار گرامی", "").strip()
+    if not clean_name:
+        clean_name = "محترم"
+    clean_name = clean_name[:25].strip()
+
     clean_title = str(title or "اطلاعیه اداری").strip()[:25]
     clean_text = str(text or "اطلاعیه جدید").strip()[:25]
     clean_link = str(link or getattr(settings, "SMS_PORTAL_LINK", "miepcoj.ir")).strip()[:25]
@@ -259,13 +266,18 @@ def send_broadcast_template_sms(
         return False, "", str(exc)
 
 
-def _send_sms_numbers(client, numbers, message, return_data: bool = False):
+def _send_sms_numbers(client, numbers, message, title: str = "", return_data: bool = False):
     """ارسال پیامک با قالب خدماتی ۲۵۳۰۸۵ جهت عبور از بلک‌لیست مخابرات؛ بازگشت (ok, error) یا (ok, error, data)."""
     if not numbers:
         return (True, "", {}) if return_data else (True, "")
 
     message_ids = []
-    title_val, text_val = _extract_title_and_text("", message)
+    if title:
+        title_val = title[:25].strip()
+        text_val = message[:25].strip()
+    else:
+        title_val, text_val = _extract_title_and_text("", message)
+
     last_err = ""
     any_ok = False
 
@@ -273,7 +285,7 @@ def _send_sms_numbers(client, numbers, message, return_data: bool = False):
         ok, msg_id, err = send_broadcast_template_sms(
             client=client,
             mobile=num,
-            name="همکار گرامی",
+            name="محترم",
             title=title_val,
             text=text_val,
         )
@@ -297,26 +309,58 @@ def _send_sms_broadcast(broadcast: Broadcast, recipients):
     client = _get_sms_client()
     if recipients and hasattr(recipients[0], "mobile"):
         rec_list = recipients
-        numbers = [r.mobile for r in rec_list if r.mobile]
     else:
         rec_list = list(broadcast.recipients.filter(resolve_status=BroadcastRecipient.ResolveStatus.OK))
-        numbers = [r.mobile for r in rec_list if r.mobile]
 
     now_time = timezone.now()
-    ok, error, data = _send_sms_numbers(client, numbers, broadcast.text, return_data=True)
-    if not ok:
-        raise RuntimeError(error or "خطا در ارسال پیامک با قالب خدماتی")
+    success_count = 0
+    fail_count = 0
+    last_error = ""
 
-    message_ids = (data.get("messageIds") or []) if isinstance(data, dict) else []
-    for i, rec in enumerate(rec_list):
-        if i < len(message_ids):
-            rec.message_id = str(message_ids[i])
-        rec.send_status = BroadcastRecipient.SendStatus.SENT
-        rec.sent_at = now_time
-        rec.error = "ارسال شد (قالب خدماتی ۲۵۳۰۸۵ - بدون بلک‌لیست)"
-        rec.save(update_fields=["message_id", "send_status", "sent_at", "error"])
+    title_val = str(broadcast.title or "اطلاعیه اداری").strip()[:25]
+    text_val = str(broadcast.text or "بررسی کارکرد").strip()[:25]
+    link_val = getattr(settings, "SMS_PORTAL_LINK", "miepcoj.ir")[:25]
 
-    return ok
+    for rec in rec_list:
+        if not rec.mobile:
+            rec.send_status = BroadcastRecipient.SendStatus.FAILED
+            rec.error = "شماره موبایل ثبت نشده است"
+            rec.save(update_fields=["send_status", "error"])
+            fail_count += 1
+            continue
+
+        raw_name = str(rec.name or (rec.user.get_full_name() if rec.user else "") or "").strip()
+        clean_name = raw_name.replace("همکار گرامی", "").strip()
+        if not clean_name:
+            clean_name = "محترم"
+
+        ok, msg_id, err_msg = send_broadcast_template_sms(
+            client=client,
+            mobile=rec.mobile,
+            name=clean_name,
+            title=title_val,
+            text=text_val,
+            link=link_val,
+        )
+
+        if ok:
+            rec.message_id = msg_id
+            rec.send_status = BroadcastRecipient.SendStatus.SENT
+            rec.sent_at = now_time
+            rec.error = "ارسال شد (قالب خدماتی ۲۵۳۰۸۵ - بدون بلک‌لیست)"
+            rec.save(update_fields=["message_id", "send_status", "sent_at", "error"])
+            success_count += 1
+        else:
+            rec.send_status = BroadcastRecipient.SendStatus.FAILED
+            rec.error = err_msg
+            rec.save(update_fields=["send_status", "error"])
+            fail_count += 1
+            last_error = err_msg
+
+    if success_count == 0 and fail_count > 0:
+        raise RuntimeError(last_error or "ارسال پیامک با قالب خدماتی ناموفق بود.")
+
+    return True
 
 
 def _send_rubika_broadcast(broadcast: Broadcast, recipients):
@@ -398,7 +442,7 @@ def _send_rubika_broadcast(broadcast: Broadcast, recipients):
         # ۲) اگر مدارشکن فعال شده باشد (اکانت روبیکا محدود شده است) -> فال‌بک مستقیم به پیامک
         if circuit_broken:
             if fallback_enabled and sms_client and rec.mobile:
-                ok, err = _send_sms_numbers(sms_client, [rec.mobile], broadcast.text)
+                ok, err = _send_sms_numbers(sms_client, [rec.mobile], broadcast.text, title=broadcast.title)
                 if ok:
                     rec.send_status = BroadcastRecipient.SendStatus.SENT
                     rec.sent_at = now_time
@@ -447,7 +491,7 @@ def _send_rubika_broadcast(broadcast: Broadcast, recipients):
                     broadcast.pk, err_msg
                 )
                 if fallback_enabled and sms_client and rec.mobile:
-                    ok, err = _send_sms_numbers(sms_client, [rec.mobile], broadcast.text)
+                    ok, err = _send_sms_numbers(sms_client, [rec.mobile], broadcast.text, title=broadcast.title)
                     if ok:
                         rec.send_status = BroadcastRecipient.SendStatus.SENT
                         rec.sent_at = now_time
@@ -465,7 +509,7 @@ def _send_rubika_broadcast(broadcast: Broadcast, recipients):
             elif is_permanent:
                 logger.info("[broadcast %s] Target %s is not registered on Rubika; falling back to SMS", broadcast.pk, target)
                 if fallback_enabled and sms_client and rec.mobile:
-                    ok, err = _send_sms_numbers(sms_client, [rec.mobile], broadcast.text)
+                    ok, err = _send_sms_numbers(sms_client, [rec.mobile], broadcast.text, title=broadcast.title)
                     if ok:
                         rec.send_status = BroadcastRecipient.SendStatus.SENT
                         rec.sent_at = now_time
