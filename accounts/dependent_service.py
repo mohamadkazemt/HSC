@@ -388,6 +388,24 @@ def create_change_request(
     return request
 
 
+def _apply_field_to_dependent(dependent: Dependent, field: str, value):
+    """Set field on Dependent model respecting model constraints."""
+    if field == 'birth_date' and isinstance(value, str) and value:
+        from django.utils.dateparse import parse_date
+        value = parse_date(value) or value
+
+    try:
+        model_field = Dependent._meta.get_field(field)
+    except Exception:
+        setattr(dependent, field, value)
+        return
+
+    if model_field.null:
+        setattr(dependent, field, value or None)
+    else:
+        setattr(dependent, field, '' if value is None else str(value))
+
+
 def apply_change_request(change: DependentChangeRequest, *, reviewer=None, note: str = '') -> None:
     """Apply an approved request to the database (create/update/delete)."""
     from django.db import transaction
@@ -398,11 +416,7 @@ def apply_change_request(change: DependentChangeRequest, *, reviewer=None, note:
         if change.action == DependentChangeRequest.Action.CREATE:
             dependent = Dependent(personnel=change.personnel)
             for field in EDITABLE_FIELDS:
-                value = new_data.get(field)
-                if field == 'disease_type':
-                    setattr(dependent, field, value or '')
-                    continue
-                setattr(dependent, field, value or None)
+                _apply_field_to_dependent(dependent, field, new_data.get(field))
             dependent.save()
             change.dependent = dependent
         elif change.action == DependentChangeRequest.Action.UPDATE:
@@ -410,11 +424,7 @@ def apply_change_request(change: DependentChangeRequest, *, reviewer=None, note:
             if dependent is None:
                 raise ChangeRequestError('فرد تحت تکفل مورد نظر یافت نشد.')
             for field in EDITABLE_FIELDS:
-                value = new_data.get(field)
-                if field == 'disease_type':
-                    setattr(dependent, field, value or '')
-                    continue
-                setattr(dependent, field, value or None)
+                _apply_field_to_dependent(dependent, field, new_data.get(field))
             dependent.save()
         elif change.action == DependentChangeRequest.Action.DELETE:
             if change.dependent is not None:
@@ -422,6 +432,7 @@ def apply_change_request(change: DependentChangeRequest, *, reviewer=None, note:
                 change.dependent = None
         else:  # pragma: no cover - guarded by the model choices
             raise ChangeRequestError('نوع درخواست نامعتبر است.')
+
 
         change.status = DependentChangeRequest.Status.APPROVED
         change.reviewed_by = reviewer if getattr(reviewer, 'pk', None) else None

@@ -369,4 +369,35 @@ class HrReviewTests(TestCase):
         self.assertContains(response, 'مریم حسینی')
         self.assertContains(response, 'رضا حسینی')
 
+    def test_approve_with_none_or_blank_fields_does_not_fail(self):
+        dep = Dependent.objects.create(
+            personnel=self.profile, first_name='بردیا', last_name='حسینی',
+            national_code='0499370893', relationship='فرزند', mobile='',
+        )
+        change = create_change_request(
+            self.profile, DependentChangeRequest.Action.UPDATE,
+            {
+                'first_name': 'بردیا', 'last_name': 'حسینی', 'national_code': '0499370893',
+                'relationship': 'فرزند', 'mobile': None, 'father_name': None,
+                'birth_certificate_number': None, 'gender': 'male', 'disease_type': None,
+                'education_level': 'primary', 'education_status': 'studying', 'study_place': 'کافه بارلی',
+            },
+            dependent=dep,
+        )
+        self.client.force_login(self.admin)
+        with patch('accounts.dependent_notifications._send_sms', return_value=True), \
+             patch('accounts.dependent_notifications._send_rubika', return_value=True):
+            response = self.client.post(
+                reverse('accounts:dependent_change_detail', args=[change.pk]),
+                {'action': 'approve', 'note': 'تایید شد'},
+            )
+        self.assertEqual(response.status_code, 302)
+        change.refresh_from_db()
+        self.assertEqual(change.status, 'approved')
+        dep.refresh_from_db()
+        self.assertEqual(dep.mobile, '')
+        self.assertEqual(dep.disease_type, '')
+        self.assertEqual(dep.study_place, 'کافه بارلی')
+
+
 

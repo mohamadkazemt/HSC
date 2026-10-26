@@ -187,16 +187,16 @@ class Dependent(models.Model):
     )
     first_name = models.CharField(max_length=150, verbose_name='نام')
     last_name = models.CharField(max_length=150, verbose_name='نام خانوادگی')
-    father_name = models.CharField(max_length=150, blank=True, verbose_name='نام پدر')
+    father_name = models.CharField(max_length=150, blank=True, default='', verbose_name='نام پدر')
     national_code = models.CharField(max_length=10, verbose_name='کد ملی')
     birth_certificate_number = models.CharField(
-        max_length=20, blank=True, verbose_name='شماره شناسنامه'
+        max_length=20, blank=True, default='', verbose_name='شماره شناسنامه'
     )
     birth_date = models.DateField(null=True, blank=True, verbose_name='تاریخ تولد')
     gender = models.CharField(
-        max_length=10, choices=GENDER_CHOICES, blank=True, verbose_name='جنسیت'
+        max_length=10, choices=GENDER_CHOICES, blank=True, default='', verbose_name='جنسیت'
     )
-    mobile = models.CharField(max_length=11, blank=True, verbose_name='شماره تماس')
+    mobile = models.CharField(max_length=11, blank=True, default='', verbose_name='شماره تماس')
     relationship = models.CharField(
         max_length=50, choices=RELATIONSHIP_CHOICES, verbose_name='نسبت'
     )
@@ -224,7 +224,7 @@ class Dependent(models.Model):
         max_length=20, choices=MILITARY_STATUS_CHOICES, blank=True, null=True,
         verbose_name='وضعیت نظام وظیفه'
     )
-    disease_type = models.CharField(max_length=255, blank=True, verbose_name='نوع بیماری')
+    disease_type = models.CharField(max_length=255, blank=True, default='', verbose_name='نوع بیماری')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
