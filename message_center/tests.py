@@ -471,3 +471,73 @@ class RubikaBroadcastAntiLimitTests(TestCase):
         self.assertEqual(response.status_code, 200)
         mock_delay.assert_called_once_with(self.broadcast.pk, channel="sms")
 
+    @patch("message_center.broadcast_service._get_sms_client")
+    def test_sync_broadcast_delivery_reports(self, mock_get_client):
+        from unittest.mock import MagicMock
+        from message_center.broadcast_service import sync_broadcast_delivery_reports
+        from message_center.models import BroadcastRecipient
+
+        mock_client = MagicMock()
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "status": 1,
+            "data": [
+                {
+                    "messageId": 12345,
+                    "mobile": 9121111111,
+                    "deliveryState": 1,
+                    "deliveryDateTime": 1700000000,
+                },
+                {
+                    "messageId": 67890,
+                    "mobile": 9122222222,
+                    "deliveryState": 2,
+                    "deliveryDateTime": None,
+                },
+            ],
+        }
+        mock_client.report_today.return_value = mock_resp
+        mock_get_client.return_value = mock_client
+
+        rec1 = BroadcastRecipient.objects.create(
+            broadcast=self.broadcast,
+            mobile="09121111111",
+            user=self.u1,
+            resolve_status="ok",
+            send_status=BroadcastRecipient.SendStatus.SENT,
+            message_id="12345",
+        )
+        rec2 = BroadcastRecipient.objects.create(
+            broadcast=self.broadcast,
+            mobile="09122222222",
+            user=self.u2,
+            resolve_status="ok",
+            send_status=BroadcastRecipient.SendStatus.SENT,
+        )
+
+        stats = sync_broadcast_delivery_reports(self.broadcast)
+        self.assertEqual(stats["delivered"], 1)
+        self.assertEqual(stats["failed"], 1)
+
+        rec1.refresh_from_db()
+        self.assertEqual(rec1.send_status, BroadcastRecipient.SendStatus.DELIVERED)
+        self.assertEqual(rec1.delivery_state, 1)
+        self.assertIsNotNone(rec1.delivered_at)
+
+        rec2.refresh_from_db()
+        self.assertEqual(rec2.send_status, BroadcastRecipient.SendStatus.FAILED)
+        self.assertEqual(rec2.delivery_state, 2)
+        self.assertEqual(rec2.message_id, "67890")
+
+    @patch("message_center.broadcast_service.sync_broadcast_delivery_reports")
+    def test_broadcast_refresh_delivery_view(self, mock_sync):
+        from django.urls import reverse
+
+        mock_sync.return_value = {"delivered": 5, "queued": 2, "failed": 1}
+        self.client.force_login(self.staff)
+        url = reverse("message_center:broadcast_refresh_delivery", args=[self.broadcast.id])
+        response = self.client.post(url, follow=True)
+        self.assertEqual(response.status_code, 200)
+        mock_sync.assert_called_once_with(self.broadcast)
+

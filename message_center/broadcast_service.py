@@ -194,16 +194,17 @@ def prepare_broadcast(broadcast: Broadcast):
 # ارسال
 # ---------------------------------------------------------------------------
 
-def _send_sms_numbers(client, numbers, message):
-    """ارسال پیامک دلخواه (bulk) به لیستی از شماره‌ها؛ بازگشت (ok, error)."""
+def _send_sms_numbers(client, numbers, message, return_data: bool = False):
+    """ارسال پیامک دلخواه (bulk) به لیستی از شماره‌ها؛ بازگشت (ok, error) یا (ok, error, data)."""
     if not numbers:
-        return True, ""
+        return (True, "", {}) if return_data else (True, "")
     line = getattr(settings, "SMSIR_LINE_NUMBER", "")
     response = client.send_bulk_sms(numbers=numbers, message=message, linenumber=line)
     status_code = getattr(response, "status_code", None)
     if status_code != 200:
         body = getattr(response, "text", "")[:250]
-        return False, f"HTTP {status_code}: {body}"
+        err_msg = f"HTTP {status_code}: {body}"
+        return (False, err_msg, {}) if return_data else (False, err_msg)
 
     payload = {}
     try:
@@ -212,17 +213,44 @@ def _send_sms_numbers(client, numbers, message):
         payload = {}
     status = payload.get("status")
     is_ok = payload.get("IsSuccessful") is True or status == 1
+    data = payload.get("data") or {}
     if not is_ok:
-        return False, str(payload.get("Message") or payload.get("message") or "ارسال ناموفق")
-    return True, ""
+        err_msg = str(payload.get("Message") or payload.get("message") or "ارسال ناموفق")
+        return (False, err_msg, data) if return_data else (False, err_msg)
+    return (True, "", data) if return_data else (True, "")
 
 
-def _send_sms_broadcast(broadcast: Broadcast, numbers):
-    """ارسال پیامک گروهی؛ شماره‌ها را بسته به محدودیت هر بسته تقسیم می‌کند."""
+def _send_sms_broadcast(broadcast: Broadcast, recipients):
+    """ارسال پیامک گروهی و ذخیره شناسه پیام‌ها برای رهگیری گزارش تحویل."""
+    from django.utils import timezone
+
     client = _get_sms_client()
-    ok, error = _send_sms_numbers(client, numbers, broadcast.text)
+    # در صورتی که لیستی از آبجکت‌های BroadcastRecipient نباشد، آنها را بازیابی کن
+    if recipients and hasattr(recipients[0], "mobile"):
+        rec_list = recipients
+        numbers = [r.mobile for r in rec_list if r.mobile]
+    else:
+        rec_list = list(broadcast.recipients.filter(resolve_status=BroadcastRecipient.ResolveStatus.OK))
+        numbers = [r.mobile for r in rec_list if r.mobile]
+
+    ok, error, data = _send_sms_numbers(client, numbers, broadcast.text, return_data=True)
     if not ok:
         raise RuntimeError(error or "خطا در ارسال پیامک")
+
+    pack_id = data.get("packId") or ""
+    if pack_id:
+        broadcast.sms_pack_id = str(pack_id)
+        broadcast.save(update_fields=["sms_pack_id"])
+
+    message_ids = data.get("messageIds") or []
+    now_time = timezone.now()
+    for i, rec in enumerate(rec_list):
+        if i < len(message_ids):
+            rec.message_id = str(message_ids[i])
+        rec.send_status = BroadcastRecipient.SendStatus.SENT
+        rec.sent_at = now_time
+        rec.save(update_fields=["message_id", "send_status", "sent_at"])
+
     return ok
 
 
@@ -424,19 +452,13 @@ def execute_broadcast(broadcast: Broadcast) -> bool:
         broadcast.save(update_fields=["status", "sent_at"])
         _send_rubika_broadcast(broadcast, recipients)
     else:
-        numbers = [r.mobile for r in recipients]
         broadcast.status = Broadcast.Status.SENDING
         broadcast.sent_at = timezone.now()
         broadcast.save(update_fields=["status", "sent_at"])
         try:
-            ok = _send_sms_broadcast(broadcast, numbers)
+            ok = _send_sms_broadcast(broadcast, recipients)
             if ok:
                 failed = broadcast.recipients.filter(send_status=BroadcastRecipient.SendStatus.FAILED).count()
-                for rec in recipients:
-                    rec.send_status = BroadcastRecipient.SendStatus.SENT
-                    rec.sent_at = timezone.now()
-                    rec.save(update_fields=["send_status", "sent_at"])
-                failed = 0
                 broadcast.status = (
                     Broadcast.Status.COMPLETED if failed == 0 else Broadcast.Status.PARTIAL
                 )
@@ -526,6 +548,148 @@ def retry_broadcast_failed_recipients(broadcast: Broadcast, channel: str = "sms"
     }
 
 
+def sync_broadcast_delivery_reports(broadcast: Broadcast) -> dict:
+    """استعلام و به‌روزرسانی گزارش تحویل پیامک‌ها از وب‌سرویس SMS.ir.
+
+    برای هر گیرنده:
+      - تطبیق با شناسه پیامک (message_id) یا شماره موبایل (۱۰ رقم انتهایی).
+      - کدهای وضعیت پیامک در سامانه SMS.ir:
+          1: تحویل داده شد (رسیده به گوشی) -> send_status = DELIVERED
+          2: نرسیده به گوشی (خاموش/مسدود) -> send_status = FAILED
+          3: رسیده به مخابرات
+          4, 5: خطای اپراتور -> send_status = FAILED
+          7: در صف ارسال اپراتور به گوشی
+      - ذخیره زمان تحویل (delivered_at) در صورت وجود.
+
+    Returns:
+        dict: آمار خلاصه وضعیت تحویل
+    """
+    from datetime import datetime, timezone as dt_timezone
+    from django.utils import timezone
+
+    client = _get_sms_client()
+    recipients = list(broadcast.recipients.filter(
+        resolve_status=BroadcastRecipient.ResolveStatus.OK
+    ))
+
+    # ۱) نگاشت بر اساس message_id
+    by_msg_id = {str(r.message_id).strip(): r for r in recipients if r.message_id}
+    # ۲) نگاشت بر اساس ۱۰ رقم آخر شماره همراه
+    by_mobile_last10 = {}
+    for r in recipients:
+        if r.mobile:
+            digits = "".join(ch for ch in str(r.mobile) if ch.isdigit())
+            if len(digits) >= 10:
+                by_mobile_last10[digits[-10:]] = r
+
+    reports_map = {}
+
+    # مرحله اول: استعلام از گزارش پیام‌های امروز SMS.ir
+    try:
+        page = 1
+        max_pages = 5
+        while page <= max_pages:
+            resp = client.report_today(page_size=100, page_number=page)
+            if getattr(resp, "status_code", None) != 200:
+                break
+            payload = resp.json() if hasattr(resp, "json") else {}
+            items = payload.get("data") or []
+            if not items:
+                break
+            for item in items:
+                msg_id = str(item.get("messageId") or "")
+                mob = str(item.get("mobile") or "")
+                mob_digits = "".join(ch for ch in mob if ch.isdigit())
+                last10 = mob_digits[-10:] if len(mob_digits) >= 10 else ""
+
+                matched_rec = None
+                if msg_id and msg_id in by_msg_id:
+                    matched_rec = by_msg_id[msg_id]
+                elif last10 and last10 in by_mobile_last10:
+                    matched_rec = by_mobile_last10[last10]
+
+                if matched_rec and matched_rec.id not in reports_map:
+                    reports_map[matched_rec.id] = item
+
+            if len(items) < 100:
+                break
+            page += 1
+    except Exception as exc:
+        logger.warning("[sync_delivery %s] Failed to fetch report_today: %s", broadcast.pk, exc)
+
+    # مرحله دوم: استعلام تکی پیام برای رکوردهایی که هنوز یافت نشده‌اند ولی message_id دارند
+    for r in recipients:
+        if r.id not in reports_map and r.message_id:
+            try:
+                msg_id_int = int(r.message_id)
+                res = client.report_message(msg_id_int)
+                if getattr(res, "status_code", None) == 200:
+                    data = res.json().get("data") or {}
+                    if data:
+                        reports_map[r.id] = data
+            except Exception as e:
+                logger.debug("[sync_delivery %s] report_message failed for msg %s: %s", broadcast.pk, r.message_id, e)
+
+    # مرحله سوم: اعمال نتایج روی رکوردها
+    stats = {
+        "total": len(recipients),
+        "delivered": 0,
+        "queued": 0,
+        "failed": 0,
+        "operator": 0,
+        "not_found": 0,
+    }
+
+    for r in recipients:
+        report = reports_map.get(r.id)
+        if not report:
+            if r.send_status == BroadcastRecipient.SendStatus.DELIVERED:
+                stats["delivered"] += 1
+            elif r.send_status == BroadcastRecipient.SendStatus.FAILED:
+                stats["failed"] += 1
+            else:
+                stats["not_found"] += 1
+            continue
+
+        state = report.get("deliveryState")
+        msg_id = report.get("messageId")
+        if msg_id and not r.message_id:
+            r.message_id = str(msg_id)
+
+        r.delivery_state = state
+        delivery_dt = report.get("deliveryDateTime")
+        if delivery_dt and isinstance(delivery_dt, (int, float)):
+            try:
+                r.delivered_at = datetime.fromtimestamp(delivery_dt, tz=dt_timezone.utc)
+            except Exception:
+                pass
+
+        if state == 1:
+            r.send_status = BroadcastRecipient.SendStatus.DELIVERED
+            stats["delivered"] += 1
+        elif state == 2:
+            r.send_status = BroadcastRecipient.SendStatus.FAILED
+            r.error = "نرسیده به گوشی (خاموش یا مسدود)"
+            stats["failed"] += 1
+        elif state in (4, 5):
+            r.send_status = BroadcastRecipient.SendStatus.FAILED
+            r.error = f"خطای اپراتور (کد {state})"
+            stats["failed"] += 1
+        elif state == 7:
+            stats["queued"] += 1
+        elif state == 3:
+            stats["operator"] += 1
+        else:
+            if r.send_status == BroadcastRecipient.SendStatus.DELIVERED:
+                stats["delivered"] += 1
+            elif r.send_status == BroadcastRecipient.SendStatus.FAILED:
+                stats["failed"] += 1
+
+        r.save(update_fields=["message_id", "delivery_state", "delivered_at", "send_status", "error"])
+
+    return stats
+
+
 def mark_invalid_recipients_canceled(broadcast: Broadcast):
     """گیرنده‌های نامعتبر/بدون شماره را به‌صورت لغو علامت‌گذاری می‌کند."""
     broadcast.recipients.exclude(resolve_status=BroadcastRecipient.ResolveStatus.OK).update(
@@ -540,6 +704,7 @@ __all__ = [
     "resolve_recipients",
     "prepare_broadcast",
     "execute_broadcast",
+    "sync_broadcast_delivery_reports",
     "retry_broadcast_failed_recipients",
     "mark_invalid_recipients_canceled",
 ]

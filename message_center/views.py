@@ -3,6 +3,7 @@ import logging
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -343,12 +344,36 @@ def broadcast_detail(request, broadcast_id):
         "stats": {
             "resolved": broadcast.recipients_resolved,
             "invalid": broadcast.recipients_invalid,
-            "sent": broadcast.recipients.filter(send_status=BroadcastRecipient.SendStatus.SENT).count(),
+            "delivered": broadcast.recipients.filter(send_status=BroadcastRecipient.SendStatus.DELIVERED).count(),
+            "sent": broadcast.recipients.filter(send_status__in=[BroadcastRecipient.SendStatus.SENT, BroadcastRecipient.SendStatus.SENDING]).count(),
             "failed": broadcast.recipients.filter(send_status=BroadcastRecipient.SendStatus.FAILED).count(),
             "pending": broadcast.recipients.filter(send_status=BroadcastRecipient.SendStatus.PENDING).count(),
         },
     }
     return render(request, "message_center/broadcast_detail.html", context)
+
+
+@login_required
+@permission_required("message_broadcast_send")
+@require_POST
+def broadcast_refresh_delivery(request, broadcast_id):
+    """استعلام وضعیت زنده تحویل پیامک‌ها از وب‌سرویس SMS.ir."""
+    broadcast = get_object_or_404(Broadcast, pk=broadcast_id)
+    try:
+        from .broadcast_service import sync_broadcast_delivery_reports
+        stats = sync_broadcast_delivery_reports(broadcast)
+        delivered = stats.get("delivered", 0)
+        queued = stats.get("queued", 0)
+        failed = stats.get("failed", 0)
+        messages.success(
+            request,
+            f"وضعیت تحویل از SMS.ir به‌روزرسانی شد: {delivered} تحویل به گوشی، {queued} در صف ارسال، {failed} ناموفق."
+        )
+    except Exception as exc:
+        logger.exception("Failed to sync delivery report for broadcast %s: %s", broadcast.pk, exc)
+        messages.error(request, f"خطا در استعلام وضعیت تحویل: {exc}")
+
+    return redirect("message_center:broadcast_detail", broadcast_id=broadcast.id)
 
 
 @login_required

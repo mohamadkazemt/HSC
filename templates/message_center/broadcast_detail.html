@@ -17,31 +17,55 @@
                     <span class="rounded-full px-2.5 py-0.5 text-xs font-bold {% if broadcast.channel == 'sms' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300{% else %}bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300{% endif %}">{{ broadcast.get_channel_display }}</span>
                     <span>{{ broadcast.get_status_display }}</span>
                     <span class="text-gray-400">· {{ broadcast.created_at|to_jalali:"%Y/%m/%d %H:%M" }}</span>
+                    {% if broadcast.sms_pack_id %}
+                    <span class="rounded bg-gray-100 px-2 py-0.5 text-xs font-mono text-gray-600 dark:bg-gray-700 dark:text-gray-300" title="شناسه بسته پیامک">بسته: {{ broadcast.sms_pack_id }}</span>
+                    {% endif %}
                 </p>
             </div>
         </div>
-        <a href="{% url 'message_center:broadcast_list' %}" class="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">
-            <i class="fas fa-arrow-right"></i>بازگشت به تاریخچه
-        </a>
+        <div class="flex flex-wrap items-center gap-2.5">
+            <form method="post" action="{% url 'message_center:broadcast_refresh_delivery' broadcast.id %}">
+                {% csrf_token %}
+                <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-sky-700 transition">
+                    <i class="fas fa-sync-alt"></i>استعلام وضعیت تحویل (SMS.ir)
+                </button>
+            </form>
+            <a href="{% url 'message_center:broadcast_list' %}" class="inline-flex items-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 transition">
+                <i class="fas fa-arrow-right"></i>بازگشت به تاریخچه
+            </a>
+        </div>
     </header>
 
-    <!-- آمار -->
-    <div class="grid grid-cols-2 gap-4 lg:grid-cols-5">
+    <!-- آمار و گزارش تحویل -->
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-6">
         <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
-            <p class="text-2xl font-bold text-emerald-700 dark:text-emerald-300">{{ stats.resolved }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">قابل ارسال</p>
+            <p class="text-2xl font-bold text-gray-800 dark:text-gray-200">{{ stats.resolved }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">کل گیرندگان</p>
         </div>
-        <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+        <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-emerald-300 bg-emerald-50/30 dark:bg-emerald-950/20 dark:ring-emerald-800">
+            <p class="text-2xl font-bold text-emerald-700 dark:text-emerald-300 flex items-center justify-between">
+                <span>{{ stats.delivered }}</span>
+                <i class="fas fa-check-double text-emerald-500 text-lg"></i>
+            </p>
+            <p class="text-xs font-semibold text-emerald-800 dark:text-emerald-400">تحویل به گوشی</p>
+        </div>
+        <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-sky-200 dark:bg-gray-800 dark:ring-gray-700">
+            <p class="text-2xl font-bold text-sky-700 dark:text-sky-300 flex items-center justify-between">
+                <span>{{ stats.sent }}</span>
+                <i class="fas fa-paper-plane text-sky-500 text-lg"></i>
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">در صف / ارسال‌شده</p>
+        </div>
+        <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-red-200 dark:bg-gray-800 dark:ring-gray-700">
+            <p class="text-2xl font-bold text-red-700 dark:text-red-300 flex items-center justify-between">
+                <span>{{ stats.failed }}</span>
+                <i class="fas fa-times-circle text-red-500 text-lg"></i>
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">ناموفق / نرسیده</p>
+        </div>
+        <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-amber-200 dark:bg-gray-800 dark:ring-gray-700">
             <p class="text-2xl font-bold text-amber-700 dark:text-amber-300">{{ stats.invalid }}</p>
             <p class="text-xs text-gray-500 dark:text-gray-400">نامعتبر</p>
-        </div>
-        <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
-            <p class="text-2xl font-bold text-sky-700 dark:text-sky-300">{{ stats.sent }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">ارسال‌شده</p>
-        </div>
-        <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
-            <p class="text-2xl font-bold text-red-700 dark:text-red-300">{{ stats.failed }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">ناموفق</p>
         </div>
         <div class="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
             <p class="text-2xl font-bold text-gray-700 dark:text-gray-300">{{ stats.pending }}</p>
@@ -62,7 +86,7 @@
                         سازوکار ارسال مجدد به افراد ناموفق ({{ stats.failed }} نفر)
                     </h3>
                     <p class="mt-1 text-xs leading-5 text-amber-800 dark:text-amber-200">
-                        پیام برای <b>{{ stats.failed }} مخاطب</b> به دلیل محدودیت اکانت یا عدم عضویت در روبیکا تحویل نشده است. می‌توانید مستقیماً برای همین افراد مجدداً پیام ارسال نمایید:
+                        پیام برای <b>{{ stats.failed }} مخاطب</b> ناموفق بوده یا به گوشی تحویل نشده است. می‌توانید مستقیماً برای همین افراد مجدداً پیام ارسال نمایید:
                     </p>
                 </div>
             </div>
@@ -99,13 +123,13 @@
         {% if broadcast.error %}<p class="mt-3 rounded-lg bg-red-50 p-3 text-xs text-red-600 dark:bg-red-900/30 dark:text-red-300"><b>خطا:</b> {{ broadcast.error }}</p>{% endif %}
     </section>
 
-    <!-- لاگ گیرندگان -->
+    <!-- لاگ گیرندگان و گزارش تحویل -->
     <section class="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
         <header class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-6 py-4 dark:border-gray-700">
             <h2 class="font-bold text-gray-900 dark:text-white"><i class="fas fa-users ml-2 text-gray-400"></i>گیرندگان ({{ recipients|length }})</h2>
             <form method="get" class="flex items-center gap-2">
                 <select name="status" onchange="this.form.submit()" class="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                    <option value="">همه وضعیت ارسال</option>
+                    <option value="">همه وضعیت‌ها</option>
                     {% for value, label in send_status_choices %}
                     <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
@@ -119,39 +143,80 @@
                         <th class="px-4 py-3">نام</th>
                         <th class="px-4 py-3">شماره</th>
                         <th class="px-4 py-3">تشخیص</th>
-                        <th class="px-4 py-3">وضعیت ارسال</th>
-                        <th class="px-4 py-3">زمان</th>
+                        <th class="px-4 py-3">وضعیت تحویل / ارسال</th>
+                        <th class="px-4 py-3">شناسه پیامک</th>
+                        <th class="px-4 py-3">زمان ارسال / تحویل</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
                     {% for r in recipients %}
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/40">
-                        <td class="px-4 py-2.5">{{ r.name|default:'—' }}</td>
-                        <td class="px-4 py-2.5" dir="ltr">{{ r.mobile|default:'—' }}</td>
+                        <td class="px-4 py-2.5 font-medium text-gray-900 dark:text-gray-100">{{ r.name|default:'—' }}</td>
+                        <td class="px-4 py-2.5 font-mono text-xs text-gray-700 dark:text-gray-300" dir="ltr">{{ r.mobile|default:'—' }}</td>
                         <td class="px-4 py-2.5">
                             {% if r.resolve_status == 'ok' %}
-                            <span class="text-emerald-600 dark:text-emerald-400">یافت شد</span>
+                            <span class="text-xs text-emerald-600 dark:text-emerald-400">یافت شد</span>
                             {% else %}
-                            <span class="text-amber-600 dark:text-amber-400" title="{{ r.resolve_note }}">{{ r.resolve_note|default:r.get_resolve_status_display }}</span>
+                            <span class="text-xs text-amber-600 dark:text-amber-400" title="{{ r.resolve_note }}">{{ r.resolve_note|default:r.get_resolve_status_display }}</span>
                             {% endif %}
                         </td>
                         <td class="px-4 py-2.5">
-                            <span class="rounded-full px-2.5 py-1 text-xs font-semibold
-                                {% if r.send_status == 'sent' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300
-                                {% elif r.send_status == 'failed' %}bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300
-                                {% elif r.send_status == 'sending' %}bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300
-                                {% else %}bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300{% endif %}"
-                                {% if r.error %}title="{{ r.error }}"{% endif %}>
-                                {{ r.get_send_status_display }}
-                            </span>
-                            {% if r.error %}
-                                <div class="mt-1 text-[11px] text-gray-500 dark:text-gray-400 font-medium">{{ r.error }}</div>
+                            {% if r.send_status == 'delivered' %}
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-800 border border-emerald-300 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-700">
+                                    <i class="fas fa-check-double text-emerald-600 dark:text-emerald-400"></i>
+                                    تحویل به گوشی
+                                </span>
+                                {% if r.delivered_at %}
+                                <div class="mt-1 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
+                                    تحویل: {{ r.delivered_at|to_jalali:"%H:%M:%S" }}
+                                </div>
+                                {% endif %}
+                            {% elif r.delivery_state == 7 %}
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 border border-amber-300 dark:bg-amber-950/70 dark:text-amber-300 dark:border-amber-700">
+                                    <i class="fas fa-clock text-amber-600 dark:text-amber-400"></i>
+                                    در صف تحویل مخابرات
+                                </span>
+                            {% elif r.delivery_state == 3 %}
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-sky-100 px-2.5 py-1 text-xs font-semibold text-sky-800 border border-sky-300 dark:bg-sky-950/70 dark:text-sky-300 dark:border-sky-700">
+                                    <i class="fas fa-broadcast-tower text-sky-600 dark:text-sky-400"></i>
+                                    رسیده به مخابرات
+                                </span>
+                            {% elif r.send_status == 'failed' %}
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-800 border border-red-300 dark:bg-red-950/70 dark:text-red-300 dark:border-red-700" {% if r.error %}title="{{ r.error }}"{% endif %}>
+                                    <i class="fas fa-times-circle text-red-600 dark:text-red-400"></i>
+                                    {{ r.delivery_state_display|default:r.get_send_status_display }}
+                                </span>
+                                {% if r.error %}
+                                    <div class="mt-1 text-[11px] text-red-600 dark:text-red-400 font-medium">{{ r.error }}</div>
+                                {% endif %}
+                            {% elif r.send_status == 'sent' %}
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-sky-100 px-2.5 py-1 text-xs font-semibold text-sky-800 dark:bg-sky-950/70 dark:text-sky-300">
+                                    <i class="fas fa-paper-plane text-sky-600 dark:text-sky-400"></i>
+                                    ارسال شد
+                                </span>
+                                {% if r.error %}
+                                    <div class="mt-1 text-[11px] text-gray-500 dark:text-gray-400 font-medium">{{ r.error }}</div>
+                                {% endif %}
+                            {% elif r.send_status == 'sending' %}
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-800 dark:bg-blue-950/70 dark:text-blue-300">
+                                    <i class="fas fa-spinner fa-spin text-blue-600"></i>
+                                    در حال ارسال
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                                    {{ r.get_send_status_display }}
+                                </span>
                             {% endif %}
                         </td>
-                        <td class="whitespace-nowrap px-4 py-2.5 text-xs text-gray-500 dark:text-gray-400">{{ r.sent_at|to_jalali:"%Y/%m/%d %H:%M"|default:'—' }}</td>
+                        <td class="px-4 py-2.5 font-mono text-xs text-gray-500 dark:text-gray-400">
+                            {{ r.message_id|default:'—' }}
+                        </td>
+                        <td class="whitespace-nowrap px-4 py-2.5 text-xs text-gray-500 dark:text-gray-400">
+                            {{ r.sent_at|to_jalali:"%Y/%m/%d %H:%M"|default:'—' }}
+                        </td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="5" class="px-4 py-8 text-center text-sm text-gray-400">گیرنده‌ای ثبت نشده است.</td></tr>
+                    <tr><td colspan="6" class="px-4 py-8 text-center text-sm text-gray-400">گیرنده‌ای ثبت نشده است.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

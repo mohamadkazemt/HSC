@@ -170,6 +170,7 @@ class Broadcast(models.Model):
 
     scheduled_for = models.DateTimeField(null=True, blank=True, verbose_name="زمان‌بندی ارسال")
     sent_at = models.DateTimeField(null=True, blank=True, verbose_name="زمان ارسال")
+    sms_pack_id = models.CharField(max_length=50, blank=True, default="", verbose_name="شناسه بسته پیامک")
 
     source_file_name = models.CharField(max_length=255, blank=True, default="", verbose_name="نام فایل منبع")
     error = models.TextField(blank=True, default="", verbose_name="پیام خطا")
@@ -201,6 +202,7 @@ class BroadcastRecipient(models.Model):
         PENDING = "pending", "در انتظار"
         SENDING = "sending", "در حال ارسال"
         SENT = "sent", "ارسال شد"
+        DELIVERED = "delivered", "تحویل داده شد (رسیده به گوشی)"
         FAILED = "failed", "ناموفق"
         CANCELED = "canceled", "لغو شد"
 
@@ -224,10 +226,28 @@ class BroadcastRecipient(models.Model):
     )
     error = models.TextField(blank=True, default="", verbose_name="خطای ارسال")
     sent_at = models.DateTimeField(null=True, blank=True, verbose_name="زمان ارسال")
+    message_id = models.CharField(max_length=50, blank=True, default="", verbose_name="شناسه پیام")
+    delivery_state = models.IntegerField(null=True, blank=True, verbose_name="کد وضعیت تحویل")
+    delivered_at = models.DateTimeField(null=True, blank=True, verbose_name="زمان تحویل")
 
     class Meta:
         verbose_name = "گیرنده پیام گروهی"
         verbose_name_plural = "گیرندگان پیام گروهی"
+
+    @property
+    def delivery_state_display(self):
+        mapping = {
+            1: "تحویل داده شد (رسیده به گوشی)",
+            2: "نرسیده به گوشی (خاموش/مسدود)",
+            3: "رسیده به مخابرات",
+            4: "ناموفق در مخابرات",
+            5: "خطای ارسال اپراتور",
+            6: "در انتظار تایید مخابرات",
+            7: "در صف ارسال به گوشی",
+        }
+        if self.delivery_state is not None:
+            return mapping.get(self.delivery_state, f"وضعیت {self.delivery_state}")
+        return ""
 
     def __str__(self):
         return f"{self.mobile or self.name or self.user} ({self.get_send_status_display()})"
