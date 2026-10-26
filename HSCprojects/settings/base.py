@@ -194,6 +194,10 @@ LOGIN_OTP_TTL_SECONDS = 300
 LOGIN_OTP_RESEND_SECONDS = 60
 LOGIN_OTP_MAX_ATTEMPTS = 5
 
+# Broadcast personnel notification template ID (SMS.ir Fast Send / Service line bypassing blacklist)
+BROADCAST_SMS_TEMPLATE_ID = int(os.environ.get("BROADCAST_SMS_TEMPLATE_ID", 253085))
+SMS_PORTAL_LINK = os.environ.get("SMS_PORTAL_LINK", "miepcoj.ir")
+
 # Internationalization
 LANGUAGE_CODE = 'fa-ir'
 TIME_ZONE = 'Asia/Tehran'
